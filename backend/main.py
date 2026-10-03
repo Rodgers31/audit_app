@@ -1777,7 +1777,6 @@ _WARMUP_PATHS: List[str] = [
     "/api/v1/budget/utilization",
     # Debt
     "/api/v1/debt/national",
-    "/api/v1/debt/national-loans",
     "/api/v1/debt/timeline",
     "/api/v1/debt/sustainability",
     "/api/v1/debt/loans",
