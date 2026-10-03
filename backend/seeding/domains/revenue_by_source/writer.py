@@ -10,6 +10,7 @@ from typing import Iterable, Optional
 from models import Country, DocumentType, RevenueBySource, SourceDocument
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
+from services.response_receipts import persist_evidence
 
 from ...config import SeedingSettings
 from ...types import DomainRunContext
@@ -134,6 +135,7 @@ def persist_revenue_records(
         stats.processed += 1
         try:
             source = _ensure_source_document(session, country_id, settings, record)
+            record.metadata["source_evidence"] = persist_evidence(session, source, record.metadata.get("source_evidence"))
 
             stmt = select(RevenueBySource).where(
                 and_(

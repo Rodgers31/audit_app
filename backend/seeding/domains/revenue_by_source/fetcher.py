@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
+from ...observations import worldbank_observations
+from services.response_receipts import capture_response
 
 logger = logging.getLogger("seeding.revenue_by_source.fetcher")
 
@@ -59,24 +61,16 @@ def _fetch_wb_revenue(
                 params={"format": "json", "per_page": "20", "date": "2018:2026"},
                 raise_for_status=True,
             )
-            wb_data = resp.json()
-
-            if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
-                continue
-
-            for item in wb_data[1]:
-                if item.get("value") is None:
-                    continue
-
-                year = int(item["date"])
-                value = item["value"]
-
-                # Convert LCU to billions KES for monetary values
-                if indicator_code.endswith(".CN"):
-                    amount_billions = round(value / 1e9, 1)
+            if indicator_code.endswith(".CN"):
+                series = worldbank_observations(resp, client, indicator=indicator_code,
+                    measure="amount_billion_kes", unit="billion_KES", factor="0.000000001", quantum="0.1",
+                    identity_dimensions={"revenue_type": meta["revenue_type"], "category": "tax"},
+                    period_for_year=lambda y: f"FY {y - 1}/{str(y)[-2:]}")
+                for year, amount_billions in series.items():
                     records.append({
                         "fiscal_year": f"FY {year - 1}/{str(year)[-2:]}",
                         "revenue_type": meta["revenue_type"],
+                        "source_evidence": series.evidence[year],
                         "amount_billion_kes": amount_billions,
                         "target_billion_kes": None,
                         "performance_pct": None,
@@ -309,7 +303,19 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
                     report = re.search(r'https://www\.kra\.go\.ke/images/publications/[^"\s]+\.pdf', bundle.text)
                     release.report_url = report.group(0) if report else None
                     release.retrieved_at = datetime.now(timezone.utc).isoformat()
-                    release.content_sha256 = hashlib.sha256(bundle.text.encode()).hexdigest()
+                    receipt = bundle.extensions.get("response_receipt")
+                    if not isinstance(receipt, dict) or "digest" not in receipt:
+                        receipt = capture_response(bundle, getattr(client, "receipt_store", None), source_kind="web")
+                    receipt = {**receipt, "parser_version": "kra-dashboard-v1", "source_kind": "web"}
+                    receipt["observations"] = [{
+                        "identity": {"measure": "amount_billion_kes", "entity_id": None, "geography": "KEN",
+                            "period": release.fiscal_year, "unit": "billion_KES", "basis": "actual",
+                            "dimensions": {"revenue_type": head, "category": "tax"}},
+                        "locator": fig.locator, "raw_value": fig.raw_amount, "raw_unit": "KES",
+                        "transformation": {"operation": "multiply", "factor": "0.000000001", "rounding": 2, "rounding_mode": "ROUND_HALF_UP"},
+                    } for head, fig in release.heads.items() if fig.raw_amount is not None and fig.locator is not None]
+                    release.response_receipt = receipt
+                    release.content_sha256 = receipt["digest"]
                     return release
         logger.warning("KRA page %s embeds %s but no release data was read", url, frame)
         return None
@@ -513,6 +519,21 @@ def _overlay_kra_release(
         if fig.growth_pct is not None:
             bits.append(f"growth {fig.growth_pct}%")
         _stamp_published(row, float(fig.amount_bn), ", ".join(bits), release.url)
+        if release.response_receipt and fig.raw_amount is not None and fig.locator is not None:
+            receipt = release.response_receipt
+            row["source_evidence"] = [{
+                "version": 1, "source_kind": "web",
+                "identity": {"measure": "amount_billion_kes", "entity_id": None, "geography": "KEN",
+                    "period": fy, "unit": "billion_KES", "basis": "actual",
+                    "dimensions": {"revenue_type": head, "category": row.get("category", "tax")}},
+                "receipt": {"digest": receipt["digest"]}, "_response_receipt": receipt,
+                "raw_value": fig.raw_amount, "raw_unit": "KES", "value": str(row["amount_billion_kes"]),
+                "unit": "billion_KES", "locator": fig.locator,
+                "transformation": {"operation": "multiply", "factor": "0.000000001", "rounding": 2, "rounding_mode": "ROUND_HALF_UP"},
+                "checks": {"identity": True, "value": True, "transport": receipt["status"] == 200 and receipt.get("acquired_at") is not None,
+                    "bytes": receipt["byte_check"]["status"] == "matched", "locator": True},
+                "reconciliation": {"status": "matched", "reason": "dashboard token matches amount; independent annual PDF not reconciled"},
+            }]
         # KRA's own statements for this head, or nothing — never the fixture's.
         row["target_billion_kes"] = _q(fig.target_bn) if fig.target_bn is not None else None
         row["performance_pct"] = _q(fig.performance_pct, "0.1") if fig.performance_pct is not None else None

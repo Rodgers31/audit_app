@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
 from models import Country, DebtTimeline, DocumentType, SourceDocument
 from sqlalchemy.orm import Session
+from services.response_receipts import persist_evidence
 
 if TYPE_CHECKING:
     from .parser import DebtTimelineRecord
@@ -77,12 +79,12 @@ def _raw_kes(value: Any) -> Any:
     # would poison the table. Both are parser bugs — fail closed, loudly.
     if isinstance(value, bool):
         raise ValueError(f"boolean is not a money value: {value!r}")
-    v = float(value)
-    if v != v or v in (float("inf"), float("-inf")):
+    v = Decimal(str(value))
+    if not v.is_finite():
         raise ValueError(f"non-finite money value: {value!r}")
     if v < 0:
         raise ValueError(f"negative debt-timeline value: {value!r}")
-    return v * 1e9 if v < 1_000_000 else v
+    return v * Decimal("1e9") if v < 1_000_000 else v
 
 
 def write_debt_timeline_records(
@@ -96,6 +98,7 @@ def write_debt_timeline_records(
 
     default_doc = _get_or_create_source_document(session, metadata)
     doc_cache: dict[str, SourceDocument] = {}
+    gdp_doc = None
 
     def _doc_for(record) -> SourceDocument:
         if not record.source:
@@ -112,6 +115,16 @@ def write_debt_timeline_records(
             session.query(DebtTimeline).filter(DebtTimeline.year == record.year).first()
         )
 
+        evidence = []
+        for item in record.source_evidence or []:
+            if item.get("identity", {}).get("measure") == "gdp":
+                from ..national_gdp import _ensure_gdp_source_document
+                if gdp_doc is None:
+                    gdp_doc = _ensure_gdp_source_document(session)
+                evidence_doc = gdp_doc
+            else:
+                evidence_doc = source_doc
+            evidence.extend(persist_evidence(session, evidence_doc, [item]))
         if existing:
             existing.external = _raw_kes(record.external)
             existing.domestic = _raw_kes(record.domestic)
@@ -120,6 +133,7 @@ def write_debt_timeline_records(
             existing.gdp_ratio = record.gdp_ratio
             existing.unit = "KES"
             existing.source_document_id = source_doc.id
+            existing.meta = {**(existing.meta or {}), "source_evidence": evidence}
             existing.updated_at = datetime.now(timezone.utc)
             updated += 1
         else:
@@ -132,6 +146,7 @@ def write_debt_timeline_records(
                 gdp_ratio=record.gdp_ratio,
                 unit="KES",
                 source_document_id=source_doc.id,
+                meta={"source_evidence": evidence},
             )
             session.add(row)
             created += 1

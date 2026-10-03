@@ -95,6 +95,9 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from ...config import SeedingSettings
 from .fx import rate_provenance, usd_kes_rate_for_year
 from ...http_client import SeedingHttpClient
+from ...observations import ObservedSeries
+from services.response_receipts import capture_response
+import json
 
 logger = logging.getLogger("seeding.national_debt.wb_ids_creditors")
 
@@ -236,6 +239,7 @@ class Creditor:
     #: KES per USD for this creditor's IDS year. Required — there is no
     #: default, so a conversion cannot happen without a rate somebody fetched.
     usd_kes_rate: Decimal = None  # type: ignore[assignment]
+    source_evidence: list | None = None
 
     @property
     def kes(self) -> Decimal:
@@ -257,21 +261,48 @@ def _fetch_series(
     )
     resp = client.get(url)
     resp.raise_for_status()
-    payload = resp.json()
+    payload = json.loads(resp.content, parse_float=Decimal)
+    receipt = resp.extensions.get("response_receipt")
+    if not isinstance(receipt, dict) or "digest" not in receipt:
+        receipt = capture_response(resp, getattr(client, "receipt_store", None))
+    receipt = {**receipt, "parser_version": "wb-ids-creditor-v1"}
     try:
         records = payload["source"]["data"]
     except (KeyError, TypeError) as exc:
         raise IdsCreditorError(f"{series}: unexpected IDS response shape") from exc
 
-    out: Dict[str, Tuple[str, float]] = {}
-    for record in records:
+    out: Dict[str, Tuple[str, float]] = ObservedSeries()
+    for index, record in enumerate(records):
         if record.get("value") is None:
             continue
         dims = {v["concept"]: v for v in record.get("variable", [])}
         area = dims.get("Counterpart-Area")
         if not area:
             continue
-        out[area["value"]] = (area["id"], float(record["value"]))
+        expected = {"Country": "KEN", "Series": series, "Time": f"YR{year}"}
+        for concept, identity in expected.items():
+            if concept in dims and dims[concept].get("id") != identity:
+                raise IdsCreditorError(f"{series}: wrong {concept} in actual response")
+        raw = record["value"]
+        if isinstance(raw, bool) or not isinstance(raw, (int, Decimal)) or not Decimal(raw).is_finite() or raw < 0:
+            raise IdsCreditorError(f"{series}: invalid monetary observation")
+        if area["value"] in out:
+            raise IdsCreditorError(f"{series}: duplicate counterpart area")
+        out[area["value"]] = (area["id"], float(raw))
+        out.evidence[area["value"]] = [{
+            "version": 1, "source_kind": "api", "_response_receipt": receipt,
+            "receipt": {"digest": receipt["digest"]},
+            "identity": {"measure": "outstanding", "entity_id": None, "geography": "KEN", "period": str(year),
+                "unit": "KES", "basis": "actual", "dimensions": {}},
+            "raw_value": str(raw), "raw_unit": "USD", "unit": "KES", "value": None,
+            "locator": {"json_path": f"$.source.data[{index}].value", "indicator": series,
+                "country": "KEN", "date": str(year), "counterpart_area": area["id"]},
+            "transformation": {"operation": "currency_conversion", "factor": None, "rounding": 2},
+            "checks": {"identity": all(k in dims for k in expected), "value": False,
+                "transport": resp.status_code == 200 and receipt.get("acquired_at") is not None and payload.get("pages") == 1,
+                "bytes": receipt["byte_check"]["status"] == "matched", "locator": True},
+            "reconciliation": {"status": "not_checked", "reason": "independent_fx_operand_not_checked"},
+        }]
     return out
 
 
@@ -399,6 +430,7 @@ def fetch_creditors(
                         debt_category=category,
                         usd=usd,
                         usd_kes_rate=usd_kes_rate,
+                        source_evidence=getattr(cache.get(series), "evidence", {}).get(name),
                     )
                 )
 
@@ -669,6 +701,11 @@ def to_loan_rows(
                 "debt_category": c.debt_category,
                 "principal": str(c.kes),
                 "outstanding": str(c.kes),
+                "source_evidence": [{**e,
+                    "identity": {**e["identity"], "dimensions": {"lender": display, "debt_category": c.debt_category}},
+                    "value": str(c.kes),
+                    "transformation": {**e["transformation"], "factor": str(c.usd_kes_rate)},
+                } for e in c.source_evidence or []],
                 "interest_rate": None,
                 "interest_terms": _interest_terms_for(
                     c, year, interest, interest_unavailable_reason

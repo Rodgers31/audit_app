@@ -25,6 +25,8 @@ from . import tls_chain
 from .config import SeedingSettings
 from .rate_limiter import RateLimiter
 from .storage import SimpleHTTPCache
+from services.receipt_store import LocalReceiptStore, ReceiptStore
+from services.response_receipts import capture_response
 
 logger = logging.getLogger("seeding.http")
 
@@ -71,6 +73,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         cache: Optional[SimpleHTTPCache] = None,
         client: Optional[httpx.Client] = None,
         request_logger: Optional[logging.Logger] = None,
+        receipt_store: Optional[ReceiptStore] = None,
     ) -> None:
         self._settings = settings
         self._logger = request_logger or logger
@@ -79,6 +82,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             tokens=tokens, period_seconds=period
         )
         self._cache = cache
+        # Explicitly local CAS. Production durability requires an approved adapter.
+        self.receipt_store = receipt_store if receipt_store is not None else LocalReceiptStore(settings.storage_path / "response-receipts")
         self._client = client or httpx.Client(
             timeout=settings.timeout_seconds,
             headers=settings.default_headers,
@@ -164,6 +169,11 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     "HTTP cache hit",
                     extra={"url": url, "method": method_upper},
                 )
+                # Cache acquisition time is unknown: do not invent a new download.
+                cached_receipt = capture_response(cached_response, getattr(self, "receipt_store", None))
+                cached_receipt["acquired_at"] = None
+                cached_receipt["failure_reason"] = "cached_acquisition_time_unknown"
+                cached_response.extensions["response_receipt"] = cached_receipt
                 return cached_response
 
         self._logger.debug(
@@ -198,6 +208,11 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             raise RuntimeError("HTTP request did not produce a response")
 
         response.extensions["seeding_cache"] = False
+        if method_upper == "GET" and not kwargs.get("stream"):
+            kind = "api" if "json" in response.headers.get("content-type", "").lower() else "web"
+            response.extensions["response_receipt"] = capture_response(
+                response, getattr(self, "receipt_store", None), source_kind=kind
+            )
         if (
             use_cache
             and self._cache

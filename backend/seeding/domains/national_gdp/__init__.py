@@ -32,6 +32,7 @@ from ...http_client import create_http_client
 from ...registries import register_domain
 from ...types import DomainRunContext, DomainRunResult
 from . import fetcher
+from services.response_receipts import persist_evidence
 
 logger = logging.getLogger("seeding.national_gdp")
 
@@ -443,6 +444,7 @@ def run(
                 measures=("GDP, current KES", "GDP, current LCU"),
                 units=("KES", "LCU"),
             )
+            meta["source_evidence"] = persist_evidence(session, gdp_doc, getattr(gdp_by_year, "evidence", {}).get(year))
             if existing is None:
                 session.execute(
                     GDPData.__table__.insert().values(
@@ -591,6 +593,12 @@ def run(
             )
             if headcount is None and gini is None:
                 raise ValueError("Poverty observation has no sourced measure")
+            evidence = []
+            for item in getattr(poverty_by_year, "evidence", {}).get(year, []):
+                stored = headcount if item["identity"]["measure"] == "poverty_headcount_rate" else gini
+                evidence.append({**item, "value": str(stored), "transformation": {
+                    **item["transformation"], "rounding": 2 if item["identity"]["measure"] == "poverty_headcount_rate" else 3}})
+            meta["source_evidence"] = persist_evidence(session, poverty_doc, evidence)
             if existing is None:
                 session.execute(
                     PovertyIndex.__table__.insert().values(

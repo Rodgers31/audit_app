@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Optional
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from ...observations import worldbank_observations
 from .fx import rate_provenance, usd_kes_rate_for_year
 
 logger = logging.getLogger("seeding.national_debt.wb_ids")
@@ -160,6 +161,16 @@ def fetch_external_debt_from_wb_ids(
         out.append(
             {
                 "entity_name": "National Government",
+                "publisher": "World Bank",
+                "source_url": f"{_WB_BASE}/{code}",
+                "source_title": f"World Bank IDS Kenya {code}, {latest_year}",
+                "source_evidence": [{**e,
+                    "identity": {**e["identity"], "unit": "KES", "dimensions": {"lender": creditor["lender"], "debt_category": creditor["debt_category"]}},
+                    "unit": "KES", "value": _format_decimal(kes_value),
+                    "checks": {**e["checks"], "value": False},
+                    "transformation": {"operation": "currency_conversion", "factor": str(rate), "rounding": 0},
+                    "reconciliation": {"status": "not_checked", "reason": "independent_fx_operand_not_checked"},
+                } for e in primary.get("_source_evidence", []) + (secondary.get("_source_evidence", []) if creditor["combine_with"] else [])],
                 "entity_type": "national",
                 "lender": creditor["lender"],
                 "debt_category": creditor["debt_category"],
@@ -213,17 +224,17 @@ def _fetch_latest(
     )
     try:
         response = client.get(url, raise_for_status=True)
-        body = response.json()
+        series = worldbank_observations(response, client, indicator=code,
+            measure="outstanding", unit="USD", raw_unit="USD", quantum="0.01")
     except Exception as exc:
         logger.warning("WB IDS request failed for %s: %s", code, exc)
         return None
-    if not isinstance(body, list) or len(body) < 2 or not body[1]:
+    candidates = [year for year in series if at_year is None or str(year) == str(at_year)]
+    if not candidates:
         logger.info("WB IDS returned no data for %s", code)
         return None
-    return next(
-        (entry for entry in body[1] if entry.get("value") is not None),
-        None,
-    )
+    year = max(candidates)
+    return {"date": str(year), "value": series[year], "_source_evidence": series.evidence[year]}
 
 
 def _format_decimal(value: Decimal) -> str:

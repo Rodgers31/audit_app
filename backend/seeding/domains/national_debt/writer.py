@@ -16,6 +16,7 @@ from models import (
 )
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+from services.response_receipts import persist_evidence
 
 if TYPE_CHECKING:
     from .parser import DebtRecord
@@ -427,6 +428,14 @@ def write_debt_records(
             "ingestion_job_id": job_id,
             "ingested_at": datetime.now(timezone.utc).isoformat(),
         }
+        if record.measurement_period is not None:
+            provenance_entry["measurement_period"] = record.measurement_period
+        if record.source_evidence:
+            bound = []
+            for item in record.source_evidence:
+                item = {**item, "identity": {**item["identity"], "entity_id": entity.id}}
+                bound.append(item)
+            provenance_entry["source_evidence"] = persist_evidence(session, source_doc, bound)
         if record.interest_terms is not None:
             from .interest_terms import TERMS_KEY
 
@@ -475,6 +484,12 @@ def write_debt_records(
                 # the row kept publishing whatever its last entry declared.
                 or keeper.interest_rate != record.interest_rate
                 or _stored_terms(keeper) != record.interest_terms
+                or bool(record.source_evidence)
+                or (record.measurement_period is not None and (
+                    (keeper.provenance[-1].get("measurement_period")
+                     if keeper.provenance and isinstance(keeper.provenance[-1], dict) else None)
+                    != record.measurement_period
+                ))
             )
             if changed or zombies:
                 logger.info(

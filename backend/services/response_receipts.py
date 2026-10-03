@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from copy import deepcopy
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -28,6 +29,7 @@ def capture_response(response, store: ReceiptStore | None, *, source_kind="api")
     receipt = {
         "version": 1, "source_kind": source_kind,
         "request": {"method": response.request.method, "url": str(response.request.url)},
+        "request_url": str(response.request.url), "parser_version": "unparsed-acquisition-v1",
         "response_url": str(response.url), "status": response.status_code,
         "content_type": response.headers.get("content-type", ""),
         "content_encoding": response.headers.get("content-encoding"),
@@ -44,7 +46,7 @@ def capture_response(response, store: ReceiptStore | None, *, source_kind="api")
             raise ValueError("receipt_readback_mismatch")
         receipt["storage_key"] = key
         receipt["byte_check"] = {"status": "matched", "sha256": digest, "checked_at": now_iso()}
-    except (OSError, ValueError) as exc:
+    except Exception as exc:  # Adapter failures retain the observation, with explicit missing-byte evidence.
         receipt["failure_reason"] = f"{type(exc).__name__}: {exc}"
         logger.error("Receipt bytes not retained; observations remain qualified, restart loses bytes: %s", exc)
     return receipt
@@ -57,7 +59,7 @@ def persist_receipt(session, source_document, receipt: dict, *, extractor="http-
     extraction = cache.get(identity)
     if extraction is None or extraction not in session:
         extraction = Extraction(source_document_id=source_document.id, page_number=page_number,
-            extractor=extractor, extracted_json={"response_receipt": receipt})
+            extractor=extractor, extracted_json={"response_receipt": deepcopy(receipt)})
         session.add(extraction)
         session.flush()
         cache[identity] = extraction
@@ -77,7 +79,10 @@ def persist_evidence(session, source_document, evidence: list[dict] | None) -> l
         if receipt is None:
             out.append(item)
             continue
-        extraction = persist_receipt(session, source_document, receipt)
+        kind = receipt.get("source_kind")
+        extraction = persist_receipt(session, source_document, receipt,
+            extractor="pdf-receipt-v1" if kind == "pdf" else "http-response-v1",
+            page_number=item.get("locator", {}).get("page") if kind == "pdf" else None)
         item["receipt"] = {"extraction_id": extraction.id, "digest": receipt["digest"],
                            "source_document_id": source_document.id}
         out.append(item)

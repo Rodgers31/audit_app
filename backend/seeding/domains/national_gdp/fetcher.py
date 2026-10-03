@@ -19,6 +19,7 @@ from typing import Any, Dict
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
+from ...observations import ObservedSeries, worldbank_observations
 
 logger = logging.getLogger("seeding.national_gdp.fetcher")
 
@@ -97,7 +98,8 @@ def fetch_national_gdp_kes(
     if settings.enrich_with_worldbank:
         try:
             resp = client.get(_WB_GDP_URL, raise_for_status=True)
-            gdp = _parse_wb_gdp(resp.json())
+            gdp = worldbank_observations(resp, client, indicator="NY.GDP.MKTP.CN",
+                measure="gdp_value", unit="KES", quantum="1", basis="current_prices")
             if gdp:
                 logger.info(
                     "Fetched %d GDP year(s) from World Bank API (latest=%d)",
@@ -227,21 +229,29 @@ def fetch_kenya_poverty(
     series: Dict[str, Dict[int, float]] = {}
     for field, indicator in _POVERTY_INDICATORS.items():
         url = _WB_POVERTY_URL.format(indicator=indicator)
-        series[field] = _parse_wb_series(client.get(url, raise_for_status=True).json())
+        series[field] = worldbank_observations(
+            client.get(url, raise_for_status=True), client, indicator=indicator,
+            measure="poverty_headcount_rate" if field == "headcount" else "gini_coefficient",
+            unit="percent" if field == "headcount" else "coefficient",
+            factor="1" if field == "headcount" else "0.01",
+            quantum="0.01" if field == "headcount" else "0.0001",
+            evidence_quantum="0.01" if field == "headcount" else "0.001", maximum="100",
+        )
         logger.info(
             "national_gdp: World Bank %s -> %d observed year(s)",
             indicator,
             len(series[field]),
         )
 
-    out: Dict[int, Dict[str, Decimal]] = {}
+    out: Dict[int, Dict[str, Decimal]] = ObservedSeries()
     for year in sorted(set(series["headcount"]) | set(series["gini"]), reverse=True):
         row: Dict[str, Decimal] = {}
         if year in series["headcount"]:
-            row["headcount"] = Decimal(str(round(series["headcount"][year], 2)))
+            row["headcount"] = series["headcount"][year]
         if year in series["gini"]:
             # 0-100 at the source, 0-1 in the column.
-            row["gini"] = Decimal(str(round(series["gini"][year] / 100.0, 4)))
+            row["gini"] = series["gini"][year]
         if row:
             out[year] = row
+            out.evidence[year] = [e for field in series for e in getattr(series[field], "evidence", {}).get(year, [])]
     return out

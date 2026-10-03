@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+import httpx
 from models import DocumentType, RevenueBySource, SourceDocument
 from sqlalchemy import select
 
@@ -57,20 +58,13 @@ _WB_OBSERVATIONS = {
 }
 
 
-class _Resp:
-    def __init__(self, data):
-        self._data = data
-
-    def json(self):
-        return self._data
-
-
 class _WorldBankClient:
-    """Answers the three indicator requests _fetch_wb_revenue makes."""
-
+    """Answers indicator requests with source-shaped bytes and transport metadata."""
     def get(self, url, **_kwargs):
         code = url.rstrip("/").rsplit("/", 1)[-1]
-        return _Resp([{"page": 1, "pages": 1}, _WB_OBSERVATIONS[code]])
+        rows = [{**row, "indicator": {"id": code}, "countryiso3code": "KEN"} for row in _WB_OBSERVATIONS[code]]
+        return httpx.Response(200, json=[{"page": 1, "pages": 1, "total": len(rows)}, rows],
+            headers={"content-type": "application/json"}, request=httpx.Request("GET", url))
 
 
 def _context():
