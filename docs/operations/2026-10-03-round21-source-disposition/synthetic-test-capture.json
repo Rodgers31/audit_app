@@ -1,0 +1,318 @@
+{
+  "captured_utc": "2026-10-03T12:31:21.769044+00:00",
+  "foreign_keys": [
+    {
+      "conname": "audits_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "audits",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "budget_lines_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "budget_lines",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "debt_instruments_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "debt_instruments",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "debt_timeline_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "debt_timeline",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "economic_indicators_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "economic_indicators",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "extractions_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "extractions",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "fiscal_summaries_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "fiscal_summaries",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "gdp_data_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "gdp_data",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "loans_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "loans",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "parliament_source_documents_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "parliament_source_documents",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "population_data_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "population_data",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "poverty_indices_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id) ON DELETE SET NULL",
+      "from_table": "poverty_indices",
+      "to_table": "source_documents"
+    },
+    {
+      "conname": "revenue_by_source_source_document_id_fkey",
+      "definition": "FOREIGN KEY (source_document_id) REFERENCES source_documents(id)",
+      "from_table": "revenue_by_source",
+      "to_table": "source_documents"
+    }
+  ],
+  "logical_matches": [],
+  "logical_scan_columns": [
+    {
+      "column": "payload",
+      "table": "admin_audit_log"
+    },
+    {
+      "column": "provenance",
+      "table": "audits"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "audits"
+    },
+    {
+      "column": "provenance",
+      "table": "budget_lines"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "budget_lines"
+    },
+    {
+      "column": "metadata",
+      "table": "countries"
+    },
+    {
+      "column": "metadata",
+      "table": "debt_instruments"
+    },
+    {
+      "column": "metadata",
+      "table": "debt_timeline"
+    },
+    {
+      "column": "metadata",
+      "table": "economic_indicators"
+    },
+    {
+      "column": "alt_names",
+      "table": "entities"
+    },
+    {
+      "column": "metadata",
+      "table": "entities"
+    },
+    {
+      "column": "extracted_json",
+      "table": "extractions"
+    },
+    {
+      "column": "metadata",
+      "table": "fiscal_summaries"
+    },
+    {
+      "column": "metadata",
+      "table": "gdp_data"
+    },
+    {
+      "column": "errors",
+      "table": "ingestion_jobs"
+    },
+    {
+      "column": "metadata",
+      "table": "ingestion_jobs"
+    },
+    {
+      "column": "provenance",
+      "table": "loans"
+    },
+    {
+      "column": "metadata",
+      "table": "newsletter_subscribers"
+    },
+    {
+      "column": "metadata",
+      "table": "parliament_source_documents"
+    },
+    {
+      "column": "metadata",
+      "table": "population_data"
+    },
+    {
+      "column": "metadata",
+      "table": "poverty_indices"
+    },
+    {
+      "column": "tags",
+      "table": "quick_questions"
+    },
+    {
+      "column": "metadata",
+      "table": "revenue_by_source"
+    },
+    {
+      "column": "metadata",
+      "table": "source_documents"
+    },
+    {
+      "column": "roles",
+      "table": "users"
+    },
+    {
+      "column": "validation_errors",
+      "table": "validation_failures"
+    },
+    {
+      "column": "validation_warnings",
+      "table": "validation_failures"
+    },
+    {
+      "column": "raw_data",
+      "table": "validation_failures"
+    },
+    {
+      "column": "metadata",
+      "table": "validation_failures"
+    },
+    {
+      "column": "metadata",
+      "table": "watchlist_items"
+    }
+  ],
+  "schema": "source_disposition_capture/v1",
+  "scope": "SYNTHETIC TEST CAPTURE. Reference sets are invented empty controls, not production evidence or live execution authority.",
+  "source_references": [
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "audits"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "budget_lines"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "debt_instruments"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "debt_timeline"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "economic_indicators"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "extractions"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "fiscal_summaries"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "gdp_data"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "loans"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "parliament_source_documents"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "population_data"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "poverty_indices"
+    },
+    {
+      "column": "source_document_id",
+      "rows": [],
+      "table": "revenue_by_source"
+    }
+  ],
+  "sources": [
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-02T03:04:49.328928",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-02T03:04:49.328928",
+      "file_path": null,
+      "http_status": null,
+      "id": 1707,
+      "last_seen_at": "2025-11-02T03:04:49.328928",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "dataset_id": "fixture-budgets"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "County Budget Execution Summary",
+      "url": "https://fixtures.example/budgets"
+    },
+    {
+      "content_type": null,
+      "country_id": 1,
+      "created_at": "2025-11-09T21:39:32.113397",
+      "doc_type": "BUDGET",
+      "fetch_date": "2025-11-09T21:39:32.113397",
+      "file_path": null,
+      "http_status": null,
+      "id": 1718,
+      "last_seen_at": "2026-04-20T03:29:19.60125",
+      "last_verified_at": null,
+      "md5": null,
+      "metadata": {
+        "data_quality": "estimated",
+        "source_label": "Estimated based on CRA Equitable Share FY 2023/24"
+      },
+      "publisher": "Controller of Budget",
+      "status": "AVAILABLE",
+      "title": "Estimated based on CRA Equitable Share FY 2023/24",
+      "url": "https://www.crakenya.org/county-allocations/"
+    }
+  ]
+}

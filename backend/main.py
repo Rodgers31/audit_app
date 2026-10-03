@@ -7103,8 +7103,8 @@ async def get_sector_spending():
 async def get_sources_summary():
     """Summary of every agency/publisher feeding the platform.
 
-    Aggregates directly from source_documents (authoritative — everything the
-    app renders traces back through this table). Returns one entry per
+    Aggregates publisher registrations from source_documents, excluding
+    declared app fixtures and generated estimates. Returns one entry per
     publisher with document counts, last-fetched timestamp, and doc-type
     breakdown. Used by the public /sources page so citizens can see where
     the numbers come from and when each feed was last refreshed.
@@ -7113,7 +7113,10 @@ async def get_sources_summary():
         raise HTTPException(status_code=503, detail="Database unavailable")
 
     from sqlalchemy import func as _fn, case
-    from services.source_evidence import downloaded_document_criterion
+    from services.source_evidence import (
+        downloaded_document_criterion,
+        publisher_inventory_criterion,
+    )
     from models import Extraction
 
     with next(get_db()) as db:
@@ -7129,6 +7132,7 @@ async def get_sources_summary():
                 ).label("downloaded"),
                 _fn.max(DBSourceDocument.last_seen_at).label("last_seen_at"),
             )
+            .filter(publisher_inventory_criterion())
             .group_by(DBSourceDocument.publisher)
             .order_by(_fn.count(DBSourceDocument.id).desc())
             .all()
@@ -7140,6 +7144,7 @@ async def get_sources_summary():
                 _fn.count(_fn.distinct(Extraction.source_document_id)),
             )
             .join(Extraction, Extraction.source_document_id == DBSourceDocument.id)
+            .filter(publisher_inventory_criterion())
             .group_by(DBSourceDocument.publisher)
             .all()
         )
@@ -7151,6 +7156,7 @@ async def get_sources_summary():
                 DBSourceDocument.doc_type,
                 _fn.count(DBSourceDocument.id),
             )
+            .filter(publisher_inventory_criterion())
             .group_by(DBSourceDocument.publisher, DBSourceDocument.doc_type)
             .all()
         )
