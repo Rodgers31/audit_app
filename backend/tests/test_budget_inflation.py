@@ -5,7 +5,7 @@ because it read `inflation_rate_cpi` — a key written ONLY by the hardcoded MVP
 seeder. The maintained `inflation_rate` series (the one /economic/summary uses)
 carries the current value. These tests lock in that the budget page reads the
 canonical series (so it self-updates and matches the rest of the site), and
-falls back to the legacy key only when the series is absent.
+reports absence when only the unsupported legacy alias remains (issue #474).
 """
 
 from __future__ import annotations
@@ -58,8 +58,7 @@ def test_budget_inflation_uses_canonical_series_not_stale_cpi(client, seed_infla
     assert ec["inflation_source"] is None
 
 
-def test_budget_inflation_falls_back_to_legacy_key(client, db_session):
-    # When the canonical series is absent, fall back to the dated legacy key.
+def test_budget_inflation_withholds_legacy_only_instead_of_falling_back(client, db_session):
     db_session.add(
         EconomicIndicator(
             indicator_type="inflation_rate_cpi",
@@ -72,5 +71,8 @@ def test_budget_inflation_falls_back_to_legacy_key(client, db_session):
     resp = client.get("/api/v1/budget/enhanced")
     assert resp.status_code == 200
     ec = resp.json()["economic_context"]
-    assert ec["inflation_pct"] == 6.3
-    assert ec["inflation_as_of"].startswith("2024-01")
+    assert ec["inflation_pct"] is None
+    assert ec["inflation_as_of"] is None
+    assert ec["inflation_source"] is None
+    assert ec["inflation_measure"] is None
+    assert "No maintained national" in ec["inflation_missing_reason"]

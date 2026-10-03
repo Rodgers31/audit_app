@@ -8923,8 +8923,8 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         # (CBK table, `inflation_rate_12m`). The World Bank's `inflation_rate`
         # is an annual AVERAGE a year behind. Take whichever is newer — on a
         # tie the monthly headline — and caption it with its own measure, so
-        # a fallback to the annual series reads as what it is. The legacy
-        # `inflation_rate_cpi` key is the last resort only.
+        # a fallback to the annual series reads as what it is. The retired
+        # unsupported `inflation_rate_cpi` alias never stands in for either.
         monthly = _latest_national("inflation_rate_12m")
         annual = _latest_national("inflation_rate")
         if monthly is not None and (
@@ -8932,7 +8932,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         ):
             inflation_row = monthly
         else:
-            inflation_row = annual or _latest_national("inflation_rate_cpi")
+            inflation_row = annual
         inflation = _provenance(inflation_row)
 
         # Kenya's population, not the sum of every row in the table. This was
@@ -8973,6 +8973,11 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             "inflation_as_of": inflation["as_of"],
             "inflation_source": inflation["source"],
             "inflation_measure": inflation["measure"],
+            "inflation_missing_reason": (
+                "No maintained national monthly or annual inflation observation."
+                if inflation_row is None
+                else None
+            ),
             "unemployment_pct": unemployment["value"],
             "unemployment_as_of": unemployment["as_of"],
             "unemployment_source": unemployment["source"],

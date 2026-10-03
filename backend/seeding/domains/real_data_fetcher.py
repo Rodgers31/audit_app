@@ -4,6 +4,10 @@ Real Data Fetcher - DEPRECATED
 This script was used to generate initial fixture files from hardcoded data.
 It is no longer the primary data source.
 
+The unsupported legacy inflation alias is retired and is deliberately omitted
+from this historical fixture generator. Maintained inflation comes from the
+economic_indicators domain's World Bank and CBK fetchers, not these literals.
+
 The seeding pipeline now fetches live data from:
 - World Bank API (population, GDP, inflation, unemployment, CPI)
 - CBK website (debt bulletins via PDF scraping)
@@ -70,16 +74,6 @@ class RealDataFetcher:
                 "source": "KNBS Quarterly GDP Report Q3 2023",
                 "data_quality": "official",
                 "notes": "Real growth rate from KNBS published report",
-            },
-            {
-                "indicator_type": "inflation_rate_cpi",
-                "date": "2024-01-31",  # January 2024
-                "value": 6.3,
-                "unit": "percent",
-                "source_url": "https://www.knbs.or.ke/consumer-price-indices/",
-                "source": "KNBS Consumer Price Index January 2024",
-                "data_quality": "official",
-                "notes": "Annual inflation rate from KNBS",
             },
             {
                 "indicator_type": "total_national_gdp",

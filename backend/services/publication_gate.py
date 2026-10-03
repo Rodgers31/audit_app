@@ -1370,7 +1370,7 @@ def cpi_extraction_digest(payload) -> str:
 
 
 def economic_publication_failure(row, db) -> Optional[str]:
-    """CPI index publication requires an approved, matching source chain.
+    """Retire the unsupported inflation alias; require a reviewed CPI chain.
 
     Other economic measures retain their existing publication policy; this
     does not certify annual World Bank or monthly inflation source acceptance.
@@ -1385,6 +1385,11 @@ def economic_publication_failure(row, db) -> Optional[str]:
         value = None
     if value is None or not value.is_finite():
         return "non-finite economic value"
+    # The deprecated fixture generator's January 2024 literal is not a
+    # maintained measure. Confidence or an "official" label cannot revive it.
+    # Keep the stored history, but never publish this retired alias (#474).
+    if row.indicator_type.lower() == "inflation_rate_cpi":
+        return "retired unsupported inflation alias"
     if row.indicator_type.lower() != "cpi":
         return None
     if row.publishable is not True:
