@@ -64,17 +64,39 @@ def _expiry(value):
         raise SocialError('PROVIDER_RESPONSE_INVALID', 'Meta returned invalid credential expiry metadata.', 502) from None
 
 
+class _SecretQueryTransport(httpx.BaseTransport):
+    """Keep required Graph secret query values below client tracing/logging.
+
+    HTTPX/Sentry observe the outer, secret-free request URL. Only this transport
+    builds the wire request with debug_token's required input_token parameter.
+    No provider-supplied host/path is accepted and no secret URL is retained on
+    the response. Authorization/code-exchange bodies remain server-only.
+    """
+    def __init__(self, transport):
+        self.transport = transport
+
+    def handle_request(self, request):
+        sensitive = request.extensions.pop('meta_secret_query', None)
+        outgoing = request
+        if sensitive:
+            outgoing = httpx.Request(request.method, request.url.copy_merge_params(sensitive), headers=request.headers, stream=request.stream, extensions=request.extensions)
+        response = self.transport.handle_request(outgoing)
+        response.request = request
+        return response
+
+    def close(self):
+        self.transport.close()
+
+
 class MetaProvider:
-    def __init__(self, config, *, client=None):
+    def __init__(self, config, *, transport=None):
         config.require_ready()
         self.config = config
         install_graph_log_redaction()
-        self.client = client or httpx.Client(timeout=httpx.Timeout(15.0, connect=5.0), follow_redirects=False, trust_env=False, limits=httpx.Limits(max_connections=2, max_keepalive_connections=2))
-        self.owns_client = client is None
+        self.client = httpx.Client(transport=_SecretQueryTransport(transport or httpx.HTTPTransport(retries=0, trust_env=False, limits=httpx.Limits(max_connections=2, max_keepalive_connections=2))), timeout=httpx.Timeout(15.0, connect=5.0), follow_redirects=False, trust_env=False)
 
     def close(self):
-        if self.owns_client:
-            self.client.close()
+        self.client.close()
 
     def authorize_url(self, state, redirect_uri):
         self.config.require_redirect(redirect_uri)
@@ -86,7 +108,10 @@ class MetaProvider:
         if token:
             headers['Authorization'] = 'Bearer ' + token
         try:
-            request = self.client.build_request(method, f'https://graph.facebook.com/{self.config.graph_version}/{path}', params=params, data=data, headers=headers)
+            public_params, private_params = {}, {}
+            for key, value in (params or {}).items():
+                (private_params if key in {'input_token','appsecret_proof'} else public_params)[key] = value
+            request = self.client.build_request(method, f'https://graph.facebook.com/{self.config.graph_version}/{path}', params=public_params, data=data, headers=headers, extensions={'meta_secret_query': private_params})
             response = self.client.send(request, stream=True)
             try:
                 # Stream raw identity bytes before allocation; reject unexpected

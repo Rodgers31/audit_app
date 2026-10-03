@@ -74,7 +74,7 @@ def graph():
     return FakeGraph()
 
 def svc(db, config, graph):
-    return ConnectionService(db, config, provider_factory=lambda c: MetaProvider(c, client=httpx.Client(transport=httpx.MockTransport(graph), trust_env=False)))
+    return ConnectionService(db, config, provider_factory=lambda c: MetaProvider(c, transport=httpx.MockTransport(graph)))
 
 def start(service, *, actor=ACTOR, binding=BINDING, key=None, reconnect=None):
     result = service.start(actor, binding, 'POST start', key or uuid4(), StartCommand(redirect_uri=REDIRECT, reconnect_account_id=reconnect, reason='Connect owned assets'), uuid4())
