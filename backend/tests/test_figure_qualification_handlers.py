@@ -54,7 +54,9 @@ PRIMARY = dict(
 )
 
 
-def observation(db, country, entity, period, table, tmp_path, *, value=0, kind="api"):
+def observation(
+    db, country, entity, period, table, tmp_path, *, value=0, kind="api", county=False
+):
     from seeding.domains.national_gdp import _ensure_gdp_source_document
 
     if table == "gdp_data":
@@ -98,6 +100,7 @@ def observation(db, country, entity, period, table, tmp_path, *, value=0, kind="
         )
     elif table == "gdp_data":
         row = GDPData(
+            entity_id=entity.id if county else None,
             year=2024,
             gdp_value=value,
             currency="KES",
@@ -119,6 +122,7 @@ def observation(db, country, entity, period, table, tmp_path, *, value=0, kind="
         )
     elif table == "poverty_indices":
         row = PovertyIndex(
+            entity_id=entity.id if county else None,
             year=2024,
             poverty_headcount_rate=value,
             extreme_poverty_rate=None,
@@ -616,6 +620,175 @@ def test_actual_chart_serializers_use_same_qualification(
     ).json()["qualifications"][PRIMARY[table]]
     assert chart_q == verify_q
     assert chart_q["status"] == "verified"
+
+
+@pytest.mark.parametrize("endpoint", ["loans", "top-loans"])
+@pytest.mark.parametrize("value", [0, 7])
+def test_national_loan_row_id_opens_exact_verification(
+    client,
+    db_session,
+    seed_country,
+    seed_entity,
+    seed_fiscal_period,
+    tmp_path,
+    endpoint,
+    value,
+):
+    from models import EntityType
+
+    seed_entity.type = EntityType.NATIONAL
+    db_session.flush()
+    row, *_ = observation(
+        db_session,
+        seed_country,
+        seed_entity,
+        seed_fiscal_period,
+        "loans",
+        tmp_path,
+        value=value,
+    )
+    payload = client.get(f"/api/v1/debt/{endpoint}").json()["loans"][0]
+    assert payload["id"] == payload["record_id"] == row.id
+    assert payload["outstanding_numeric"] == value
+    assert payload["interest_rate"] is None
+    exact = client.get(
+        "/api/v1/provenance/verify/loans", params={"record_id": payload["record_id"]}
+    ).json()["qualifications"]
+    assert exact == payload["qualifications"]
+    assert exact["outstanding"]["status"] == "verified"
+    assert exact["interest_rate"]["status"] == "unavailable"
+
+
+@pytest.mark.parametrize(
+    "table,key", [("gdp_data", "latest_gcp"), ("poverty_indices", "latest_poverty")]
+)
+@pytest.mark.parametrize("value", [0, 7])
+def test_comprehensive_profile_binds_displayed_county_fact(
+    client,
+    db_session,
+    seed_country,
+    seed_entity,
+    seed_fiscal_period,
+    tmp_path,
+    table,
+    key,
+    value,
+):
+    row, *_ = observation(
+        db_session,
+        seed_country,
+        seed_entity,
+        seed_fiscal_period,
+        table,
+        tmp_path,
+        value=value,
+        county=True,
+    )
+    seed_entity.meta = {"gdp": 999, "poverty_rate": 88}
+    db_session.commit()
+    response = client.get(f"/api/v1/counties/{seed_entity.id}/comprehensive")
+    assert response.status_code == 200, response.text
+    displayed = response.json()["economic_profile"][key]
+    assert displayed["id"] == displayed["record_id"] == row.id
+    assert displayed["entity_id"] == seed_entity.id
+    assert displayed["year"] == row.year
+    assert displayed[PRIMARY[table]] == value
+    separate = client.get(f"/api/v1/economic/counties/{seed_entity.id}/profile").json()[
+        key
+    ]
+    assert displayed["qualifications"] == separate["qualifications"]
+    q = displayed["qualifications"][PRIMARY[table]]
+    assert q["status"] == "verified"
+    assert q["identity"]["geography"] == seed_entity.canonical_name
+    if table == "poverty_indices":
+        assert displayed["extreme_poverty_rate"] is None
+        assert displayed["gini_coefficient"] is None
+        assert (
+            displayed["qualifications"]["gini_coefficient"]["status"] == "unavailable"
+        )
+
+
+def test_comprehensive_profile_does_not_substitute_national_or_metadata_values(
+    client, db_session, seed_country, seed_entity, seed_fiscal_period, tmp_path
+):
+    for table in ("gdp_data", "poverty_indices"):
+        observation(
+            db_session,
+            seed_country,
+            seed_entity,
+            seed_fiscal_period,
+            table,
+            tmp_path,
+            value=7,
+        )
+    seed_entity.meta = {"gdp": 999, "poverty_rate": 88}
+    db_session.commit()
+    response = client.get(f"/api/v1/counties/{seed_entity.id}/comprehensive")
+    assert response.status_code == 200, response.text
+    profile = response.json()["economic_profile"]
+    assert profile["latest_gcp"] is None
+    assert profile["latest_poverty"] is None
+
+
+@pytest.mark.parametrize(
+    "table,key", [("gdp_data", "latest_gcp"), ("poverty_indices", "latest_poverty")]
+)
+def test_comprehensive_latest_fact_cannot_borrow_older_verified_evidence(
+    client,
+    db_session,
+    seed_country,
+    seed_entity,
+    seed_fiscal_period,
+    tmp_path,
+    table,
+    key,
+):
+    older, doc, *_ = observation(
+        db_session,
+        seed_country,
+        seed_entity,
+        seed_fiscal_period,
+        table,
+        tmp_path,
+        value=99,
+        county=True,
+    )
+    if table == "gdp_data":
+        latest = GDPData(
+            entity_id=seed_entity.id,
+            year=2025,
+            quarter=None,
+            gdp_value=0,
+            gdp_growth_rate=0,
+            currency="KES",
+            source_document_id=doc.id,
+        )
+    else:
+        latest = PovertyIndex(
+            entity_id=seed_entity.id,
+            year=2025,
+            poverty_headcount_rate=None,
+            extreme_poverty_rate=0,
+            gini_coefficient=None,
+            source_document_id=doc.id,
+        )
+    db_session.add(latest)
+    db_session.commit()
+    latest_id, older_id = latest.id, older.id
+    response = client.get(f"/api/v1/counties/{seed_entity.id}/comprehensive")
+    assert response.status_code == 200, response.text
+    displayed = response.json()["economic_profile"][key]
+    assert displayed["id"] == latest_id != older_id
+    assert displayed["year"] == 2025
+    q = displayed["qualifications"][PRIMARY[table]]
+    assert q["status"] != "verified" and q["receipt_id"] is None
+    if table == "gdp_data":
+        assert displayed["gdp_value"] == displayed["gdp_growth_rate"] == 0
+        assert q["status"] == "qualified"
+    else:
+        assert displayed["poverty_headcount_rate"] is None
+        assert displayed["extreme_poverty_rate"] == 0
+        assert q["status"] == "unavailable"
 
 
 def test_exact_verification_selector_does_not_return_another_measure(

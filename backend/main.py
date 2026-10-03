@@ -4007,6 +4007,62 @@ async def get_county_comprehensive(
 
             from services.figure_qualification import qualify_rows
 
+            # Exact county facts for this profile; metadata or a national
+            # observation cannot stand in for the row being displayed.
+            from models import PovertyIndex
+
+            latest_gcp = (
+                db.query(DBGDPData)
+                .filter(DBGDPData.entity_id == entity.id)
+                .order_by(DBGDPData.year.desc(), DBGDPData.quarter.desc())
+                .first()
+            )
+            latest_poverty = (
+                db.query(PovertyIndex)
+                .filter(PovertyIndex.entity_id == entity.id)
+                .order_by(PovertyIndex.year.desc())
+                .first()
+            )
+            gcp_profile = None
+            if latest_gcp is not None:
+                gcp_profile = {
+                    "id": latest_gcp.id,
+                    "record_id": latest_gcp.id,
+                    "entity_id": latest_gcp.entity_id,
+                    "year": latest_gcp.year,
+                    "quarter": latest_gcp.quarter,
+                    "gdp_value": float(latest_gcp.gdp_value),
+                    "gdp_growth_rate": float(latest_gcp.gdp_growth_rate)
+                    if latest_gcp.gdp_growth_rate is not None
+                    else None,
+                    "currency": latest_gcp.currency,
+                    "source_document_id": latest_gcp.source_document_id,
+                    "qualifications": qualify_rows(db, "gdp_data", [latest_gcp])[
+                        latest_gcp.id
+                    ],
+                }
+            poverty_profile = None
+            if latest_poverty is not None:
+                poverty_profile = {
+                    "id": latest_poverty.id,
+                    "record_id": latest_poverty.id,
+                    "entity_id": latest_poverty.entity_id,
+                    "year": latest_poverty.year,
+                    "source_document_id": latest_poverty.source_document_id,
+                    "qualifications": qualify_rows(
+                        db, "poverty_indices", [latest_poverty]
+                    )[latest_poverty.id],
+                    **{
+                        measure: float(value) if value is not None else None
+                        for measure in (
+                            "poverty_headcount_rate",
+                            "extreme_poverty_rate",
+                            "gini_coefficient",
+                        )
+                        for value in [getattr(latest_poverty, measure)]
+                    },
+                }
+
             # --- Budget lines (scoped to requested FY, or latest executed) ---
             requested_period_id: Optional[int] = None
             if fiscal_year:
@@ -4629,6 +4685,8 @@ async def get_county_comprehensive(
                 # own findings for this county are right here in `audits`, so
                 # they are what gets served.
                 "economic_profile": {
+                    "latest_gcp": gcp_profile,
+                    "latest_poverty": poverty_profile,
                     "economic_base": None,
                     "major_issues": _county_major_issues(audits, _finding_titles),
                     "major_issues_source": (
@@ -9918,6 +9976,8 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
             principal = float(loan.principal or 0)
             result_loans.append(
                 {
+                    "id": loan.id,
+                    "record_id": loan.id,
                     "lender": loan.lender,
                     "qualifications": qualifications[loan.id],
                     "lender_type": (
@@ -10042,6 +10102,8 @@ async def get_national_loans(db: Session = Depends(get_db)):
 
             national_loans.append(
                 {
+                    "id": loan.id,
+                    "record_id": loan.id,
                     "lender": loan.lender,
                     "qualifications": qualifications[loan.id],
                     "lender_type": (

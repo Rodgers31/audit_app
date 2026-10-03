@@ -59,3 +59,11 @@ Consumer discovery used `rg` across frontend TS/TSX for actual endpoint strings,
 - Final targeted batch: 543 passed, 143 skipped (optional PostgreSQL parameter cases), with only existing deprecation warnings. The batch includes existing CPI, cash, KRA, pending bills, retired inflation, county quantities and GDP identity regressions. PostgreSQL parameter skips are explicit when the optional isolated PostgreSQL test URL is unconfigured; no production DB is queried.
 
 Remaining gates: independently review the combined producers/readers, exercise real retained parser/writer/read round trips after consolidation, run frontend and browser acceptance, select/accept durable production receipt storage, and satisfy the separate history/hosted criteria. No production-store durability or publisher re-fetch on a public request is claimed.
+
+## Scoped frontend integration bridge
+
+The row serializers `/debt/loans` and `/debt/top-loans` expose `id` and `record_id`, both the persisted Loan ID, for an exact verification link. Aggregate responses acquire no synthetic record ID.
+
+The comprehensive county response adds `economic_profile.latest_gcp` and `economic_profile.latest_poverty`. Each is NULL when no county-scoped fact exists; otherwise it contains the selected persisted row's ID/record ID, entity ID, observation year, source document ID, exact reported numeric fields and their `qualifications`. GCP additionally carries quarter and currency. Selection uses the same year/quarter ordering as `/economic/counties/{entity_id}/profile`, with one bounded latest-row read per table followed by batch receipt metadata reads. Existing comprehensive values and source periods remain unchanged. Entity metadata, national observations and older verified receipts never supply the evidence for a displayed county fact.
+
+Actual handler controls cover real loan IDs, zero balances and NULL rates, exact county periods/identity, zero GDP/poverty, NULL poverty/Gini, absent county facts despite national and metadata values, and a newer unverified/NULL county fact beside an older verified fact. Eleven integration controls plus the original qualification suite and county/economic regression gates: **296 passed**, with three existing deprecation warnings. Frontend/browser acceptance remains a separate lane.
