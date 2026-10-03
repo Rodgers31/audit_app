@@ -442,6 +442,22 @@ CATALOG_IDENTITIES = {'schemas':1, 'relations':2, 'columns':3, 'constraints':3,
     'publication_schemas':2}
 
 
+def qualified_relation(value):
+    """Decode the two identifiers emitted by PostgreSQL format('%I.%I')."""
+    identifier = r'(?:"(?:[^"]|"")+"|[a-z_][a-z0-9_$]*)'
+    match = re.fullmatch('(' + identifier + r')\.(' + identifier + ')', value)
+    if match is None:
+        raise Refusal('inventory_extension_config_malformed')
+    return tuple(part[1:-1].replace('""', '"') if part.startswith('"') else part
+                 for part in match.groups())
+
+
+def inventoried_schema(name):
+    # Match the SQL producer's namespace filter. System namespace objects are
+    # outside its promised relation/column coverage, not necessarily absent.
+    return not name.startswith('pg_') and name != 'information_schema'
+
+
 def validate_inventory(records):
     if not isinstance(records, list) or not records or not isinstance(records[0], dict):
         raise Refusal('inventory_empty_or_malformed')
@@ -485,7 +501,8 @@ def validate_inventory(records):
                     and d.get('collprovider') in ('d','c','i','b') and type(d.get('collisdeterministic')) is bool
                     and type(d.get('collencoding')) is int)
             elif key == 'default_acls':
-                valid_shape = isinstance(row[3],list) and all(string(v) for v in row[3])
+                valid_shape = (row[2] in ('r','S','f','T','n') and isinstance(row[3],list)
+                    and all(string(v) for v in row[3]))
             elif key == 'publications':
                 d = row[2]
                 valid_shape = (string(row[1]) and isinstance(d,dict) and d.get('pubname')==row[0]
@@ -534,10 +551,27 @@ def validate_inventory(records):
     publications = {r[0] for r in catalog['publications'] or []}
     relations = {(r[0],r[1]) for r in catalog['relations']}
     schemas = {r[0] for r in catalog['schemas']}
+    roles = {r[0] for r in catalog['roles']}
+    columns = {(r[0],r[1],r[2]) for r in catalog['columns']}
     if (any((r[0],r[1]) not in domains for r in catalog['domain_constraints'] or [])
             or any(r[0] not in publications or (r[1],r[2]) not in relations for r in catalog['publication_relations'] or [])
             or any(r[0] not in publications or r[1] not in schemas for r in catalog['publication_schemas'] or [])):
         raise Refusal('inventory_catalog_reference_mismatch')
+    if (any(r[0] not in schemas or r[3] not in roles for r in catalog['types'])
+            or any(r[0] not in schemas or r[2] not in roles for r in catalog['collations'] or [])
+            or any(r[1] not in roles for r in catalog['publications'] or [])
+            or any(r[0] not in roles or r[1] is not None and inventoried_schema(r[1])
+                   and r[1] not in schemas for r in catalog['default_acls'] or [])
+            or any((r[1],r[2],column) not in columns for r in catalog['publication_relations'] or []
+                   for column in r[3] or [])):
+        raise Refusal('inventory_catalog_reference_mismatch')
+    for extension in catalog['extensions']:
+        configs = [qualified_relation(value) for value in extension[5] or []]
+        if len(configs) != len(set(configs)):
+            raise Refusal('inventory_extension_config_malformed')
+        if any(inventoried_schema(schema) and (schema,name) not in relations
+               for schema,name in configs):
+            raise Refusal('inventory_catalog_reference_mismatch')
     if catalog['database_acl'] is not None and not isinstance(catalog['database_acl'], list):
         raise Refusal('inventory_empty_or_malformed')
     expected = set()

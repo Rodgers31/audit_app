@@ -44,6 +44,17 @@ def _digest(value):
     ).hexdigest()
 
 
+def _require_reviewed_inventory(inventory):
+    expected = {
+        (edition["fiscal_year"], edition["url"])
+        for edition in accepted_editions().values()
+    }
+    if not expected.issubset(set(inventory)):
+        raise AuditSourceScopeError(
+            "publisher no longer lists every reviewed county edition"
+        )
+
+
 def observe_listing(client):
     """Read the parent and every in-window year page with HTTP caching disabled.
 
@@ -111,6 +122,9 @@ def observe_listing(client):
                         discovery.errors.append(
                             f"no discovered {page.fiscal_year} {kind} volume"
                         )
+        _require_reviewed_inventory(
+            (document.fiscal_year, document.url) for document in discovery.volumes()
+        )
     except Exception as exc:
         discovery.errors.append(
             f"listing observation refused: {type(exc).__name__}: {str(exc)[:180]}"
@@ -447,8 +461,7 @@ def observation_gaps(session, meta, *, now=None):
             for fy, urls in discovery["volumes_by_fiscal_year"].items()
             for url in urls
         ]
-        if not selected.issubset({url for _, url in inventory}):
-            raise AuditSourceScopeError("publisher no longer lists selected editions")
+        _require_reviewed_inventory(inventory)
         expected = []
         for fy, url in inventory:
             if url in selected:

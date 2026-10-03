@@ -236,6 +236,8 @@ def capture(client, directory, expected_identity, wall_seconds, transport_bytes)
         # Globals are not MVCC: the separately reviewed writer freeze is necessary.
         roles = backup.run(['docker', 'exec', client, 'pg_dumpall', '--dbname=service=' + SERVICE,
                             '--roles-only', '--no-role-passwords'], timeout=max(.1, deadline - time.monotonic()))
+        if not roles.strip():
+            raise Refusal('roles_dump_empty')
         (directory / 'roles.sql').write_bytes(roles); (directory / 'roles.sql').chmod(0o600)
         dump = backup.run(['docker', 'exec', client, 'pg_dump', '--dbname=service=' + SERVICE,
                            '--format=custom', '--snapshot=' + snapshot, '--lock-wait-timeout=5s',

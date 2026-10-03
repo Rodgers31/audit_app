@@ -611,3 +611,52 @@ def test_backend_packaged_authority_matches_bounded_manifest(monkeypatch, tmp_pa
     actual = list(obs.accepted_editions().values())
     assert len(actual) == 8
     assert receipt_for(actual[3:]) == receipt_for(ENTRIES)
+
+
+def test_publisher_cannot_drop_a_complete_reviewed_year():
+    offered = {
+        url: edition
+        for url, edition in obs.accepted_editions().items()
+        if edition["fiscal_year"] != "2024/2025"
+    }
+    discovery, _ = obs.observe_listing(html_client(offered))
+    assert discovery.errors
+
+
+def test_missing_reviewed_year_refuses_before_selected_writes(harness, monkeypatch):
+    from seeding.domains import audits
+    from seeding.config import SeedingSettings
+    from models import SourceDocument
+
+    allow_controlled_bytes(monkeypatch, harness)
+    real_observe = obs.observe_listing
+    offered = {
+        url: edition
+        for url, edition in obs.accepted_editions().items()
+        if edition["fiscal_year"] != "2024/2025"
+    }
+    monkeypatch.setattr(
+        obs, "observe_listing", lambda client: real_observe(html_client(offered))
+    )
+    monkeypatch.setattr(obs, "verify_adopted_volume", lambda s, d: {"url": d.url})
+    ctx = context()
+    ctx.audits_observe_listing = True
+    before = harness["session"].query(SourceDocument).count()
+    with pytest.raises(AuditSourceScopeError, match="publisher listing incomplete"):
+        audits.run(harness["session"], SeedingSettings(), ctx)
+    assert not harness["fetched"]
+    assert harness["session"].query(SourceDocument).count() == before
+
+
+def test_consumer_rejects_a_coherent_receipt_omitting_a_reviewed_year(adopted):
+    db, meta = adopted
+    missing = "2024/2025"
+    discovery = meta["oag_county_discovery"]
+    discovery["listing_fiscal_years"].remove(missing)
+    discovery["volumes_by_fiscal_year"].pop(missing)
+    discovery["documents_discovered"] -= 2
+    receipt = meta["oag_county_observation"]
+    receipt["discovery"] = copy.deepcopy(discovery)
+    receipt["pages"] = [p for p in receipt["pages"] if "2024-2025" not in p["url"]]
+    receipt["adopted"] = [p for p in receipt["adopted"] if p["fiscal_year"] != missing]
+    assert obs.observation_gaps(db, meta)

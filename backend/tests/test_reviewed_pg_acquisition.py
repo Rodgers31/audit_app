@@ -163,6 +163,45 @@ class ReviewBoundaryTests(unittest.TestCase):
             result=tool.acquire_reviewed(p,h,*args[1:],output)
         self.assertEqual(result['status'],'failed'); self.assertFalse(output.exists());inspect.assert_not_called()
 
+    def test_empty_or_whitespace_roles_never_publish_pending_inputs(self):
+        args = self.credentials(); p, h = self.write(self.request)
+        catalog = {key: None for key in tool.backup.CATALOG_ARRAYS}
+        catalog.update(kind='catalog', database_acl=None,
+            schemas=[['public', 'postgres', None]],
+            relations=[['public', 'fixture', 'r', 'postgres', None, False, False, None]],
+            columns=[['public', 'fixture', 'id', 1, 'integer', True, '', '', None, None]],
+            types=[['public', 'fixture', 'c', 'postgres', None, None, False, None, 'fixture', None]],
+            roles=[['postgres', True, True, True, True, True, True, True, -1, None, None]],
+            extensions=[['plpgsql', '1.0', 'pg_catalog', 'postgres', False, None, None]],
+            tablespaces=[['pg_default', 'postgres', None, None]])
+        raw = '\n'.join(json.dumps(r) for r in [catalog, dict(kind='table', schema='public',
+            name='fixture', count=0, sha256='a'*64)]).encode()
+        @contextlib.contextmanager
+        def exporter(*args): yield {**self.request['identity'], 'snapshot': '0001-0001-1'}
+        for index, roles in enumerate((b'', b' \t\r\n', b'-- reviewed role dump header\n')):
+            captured = None
+            def child(argv, **kwargs):
+                nonlocal captured
+                if argv[:2] == ['docker', 'run']:
+                    captured = Path(argv[argv.index('--mount')+1].split('src=')[1].split(',dst=')[0])
+                if 'psql' in argv: return raw
+                if 'pg_dumpall' in argv: return roles
+                if 'pg_dump' in argv:
+                    dump = captured/'database.dump'; dump.write_bytes(b'PGDMPfixture'); dump.chmod(0o600)
+                if 'sh' in argv and argv[1] == 'exec': return b'0 0'
+                return b''
+            output = self.directory/('roles_bundle_'+str(index))
+            with self.subTest(roles=roles), patch.object(tool, 'exporter', exporter), \
+                 patch.object(tool.backup, 'run', child), patch.object(tool, 'remove'), \
+                 patch.object(tool.backup, 'inspect_archive'):
+                result = tool.acquire_reviewed(p, h, *args[1:], output)
+                if roles.strip():
+                    self.assertEqual(result['status'], 'acquired_inputs_restore_and_completeness_pending')
+                    self.assertFalse(result['backup_verified'])
+                else:
+                    self.assertEqual(result['status'], 'failed')
+                    self.assertFalse(output.exists())
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

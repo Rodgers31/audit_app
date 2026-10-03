@@ -76,6 +76,61 @@ class BoundaryTests(unittest.TestCase):
         records[0]['enum_labels']=[['public','fixture_type',1,''],['public','fixture_type',2,'zero']]
         self.assertEqual(backup.compare_inventory(records,records)['tables'],1)
 
+    def test_extension_config_relations_must_exist_and_be_unique(self):
+        for config in (['public.absent'], ['public.fixture', 'public.fixture']):
+            records = self.catalog_inventory()
+            records[0]['extensions'].append(['fixture_extension', '1.0', 'public', 'postgres',
+                                             False, config, [''] * len(config)])
+            with self.subTest(config=config), self.assertRaises(backup.Refusal):
+                backup.compare_inventory(records, records)
+
+    def test_extension_config_preserves_quoted_and_system_identifiers(self):
+        records = self.catalog_inventory()
+        records[0]['schemas'].append(['odd.schema', 'postgres', None])
+        records[0]['relations'].append(['odd.schema', 'odd."table', 'r', 'postgres', None, False, False, None])
+        records.append(dict(kind='table', schema='odd.schema', name='odd."table', count=0, sha256='a'*64))
+        records[0]['extensions'].append(['fixture_extension', '1.0', 'public', 'postgres', False,
+                                        ['"odd.schema"."odd.""table"', 'pg_catalog.fixture'], ['', '']])
+        self.assertEqual(backup.compare_inventory(records, records)['tables'], 2)
+
+    @staticmethod
+    def publication():
+        return ['fixture_publication', 'postgres', dict(pubname='fixture_publication',
+            puballtables=False, pubinsert=True, pubupdate=True, pubdelete=True,
+            pubtruncate=True, pubviaroot=False)]
+
+    def test_publication_filtered_columns_must_exist(self):
+        records = self.catalog_inventory()
+        records[0]['publications'] = [self.publication()]
+        records[0]['publication_relations'] = [['fixture_publication', 'public', 'fixture', ['absent'], None]]
+        with self.assertRaises(backup.Refusal): backup.compare_inventory(records, records)
+        records[0]['publication_relations'][0][3] = ['id']
+        self.assertEqual(backup.compare_inventory(records, records)['tables'], 1)
+
+    def test_new_catalog_owner_and_schema_references_must_exist(self):
+        import copy
+        base = self.catalog_inventory()
+        base[0]['default_acls'] = [['postgres', 'public', 'r', ['postgres=arwdDxt/postgres']]]
+        base[0]['publications'] = [self.publication()]
+        base[0]['collations'] = [['public', 'fixture_collation', 'postgres', dict(
+            collname='fixture_collation', collprovider='i', collisdeterministic=True, collencoding=-1)]]
+        for key, position in [('types', 0), ('types', 3), ('collations', 0), ('collations', 2),
+                              ('default_acls', 0), ('default_acls', 1), ('publications', 1)]:
+            records = copy.deepcopy(base)
+            records[0][key][0][position] = 'absent'
+            with self.subTest(key=key, position=position), self.assertRaises(backup.Refusal):
+                backup.compare_inventory(records, records)
+
+    def test_default_acl_kinds_and_uninventoried_system_namespaces(self):
+        records = self.catalog_inventory()
+        records[0]['default_acls'] = [['postgres', None, 'garbage', ['postgres=arwdDxt/postgres']]]
+        with self.assertRaises(backup.Refusal): backup.compare_inventory(records, records)
+        for namespace in (None, 'public', 'pg_catalog', 'information_schema'):
+            for kind in ('r', 'S', 'f', 'T', 'n'):
+                records[0]['default_acls'][0][1:3] = [namespace, kind]
+                with self.subTest(namespace=namespace, kind=kind):
+                    self.assertEqual(backup.compare_inventory(records, records)['tables'], 1)
+
     def test_identical_malformed_extended_catalog_values_refuse(self):
         import copy
         base=self.catalog_inventory()
