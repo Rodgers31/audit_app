@@ -324,9 +324,32 @@ class OperationResult(StrictModel):
         return value
 
 
+class DefinitiveAbsenceProof(StrictModel):
+    """A provider-established absence, bound to the original mutation/account.
+
+    A generic nonempty evidence object is audit context, never permission to
+    resend. The worker verifies both identities against the frozen payload and
+    original operation intent before a new public submission can be admitted.
+    """
+
+    kind: Literal["provider_definitive_status", "confirmed_not_sent"]
+    verified: StrictBool
+    coverage_complete: StrictBool
+    account_id: UUID
+    operation_id: UUID
+
+    @field_validator("verified", "coverage_complete")
+    @classmethod
+    def positive_complete_proof(cls, value):
+        if value is not True:
+            raise ValueError("An absence proof must be verified and complete")
+        return value
+
+
 class ReconciliationResult(StrictModel):
     outcome: Literal["confirmed_published", "definitively_unpublished", "still_processing", "unknown"]
     evidence: dict[str, Any] = Field(default_factory=dict)
+    absence_proof: Union[DefinitiveAbsenceProof, None] = None
     result: Union[OperationResult, None] = None
     next_action_at: Union[datetime, None] = None
 

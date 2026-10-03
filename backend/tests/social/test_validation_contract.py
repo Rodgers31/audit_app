@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -128,3 +128,26 @@ def test_public_proof_rejects_whitespace_and_unsafe_provider_url():
         OperationResult(outcome="ambiguous", checkpoint={"bytes": b"private"})
     value = OperationResult(outcome="confirmed_success", primary_remote_id="opaque/id-9223372036854775808", confirmation_kind="provider_receipt", remote_url="https://example.org/post")
     assert value.primary_remote_id == "opaque/id-9223372036854775808"
+
+
+@pytest.mark.parametrize("field, value", [("verified", False), ("coverage_complete", False), ("verified", 1), ("coverage_complete", 1), ("verified", "true"), ("coverage_complete", None)])
+def test_absence_proof_requires_strict_positive_and_complete_evidence(field, value):
+    from social.contracts import DefinitiveAbsenceProof
+    data = {"kind": "provider_definitive_status", "verified": True, "coverage_complete": True, "account_id": str(uuid4()), "operation_id": str(uuid4())}
+    data[field] = value
+    with pytest.raises(ValidationError):
+        DefinitiveAbsenceProof.model_validate(data)
+
+
+def test_reconciliation_generic_evidence_never_becomes_an_absence_proof():
+    from social.contracts import DefinitiveAbsenceProof, ReconciliationResult
+    data = {"kind": "confirmed_not_sent", "verified": True, "coverage_complete": True, "account_id": str(uuid4()), "operation_id": str(uuid4())}
+    proof = DefinitiveAbsenceProof.model_validate(data)
+    assert proof.account_id == UUID(data["account_id"])
+    result = ReconciliationResult(outcome="definitively_unpublished", evidence={"lookup_succeeded": False, "matches": []})
+    assert result.absence_proof is None
+    valid = ReconciliationResult(outcome="definitively_unpublished", absence_proof=proof)
+    assert valid.absence_proof == proof
+    for malformed in ({}, {**data, "kind": "incomplete_lookup"}, {**data, "account_id": "bad"}, {**data, "operation_id": True}, {**data, "unknown": "field"}):
+        with pytest.raises(ValidationError):
+            ReconciliationResult(outcome="definitively_unpublished", absence_proof=malformed)
