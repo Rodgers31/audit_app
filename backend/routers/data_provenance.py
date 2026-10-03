@@ -2,7 +2,8 @@
 Data Provenance Router — registry, stored lineage and qualified citations.
 
 A supported publisher is not evidence that an observation was checked.
-These endpoints do not fetch or validate source-document bytes.
+Public requests do not fetch source bytes. Measure qualifications report stored
+source-parser matches and retained-object checks performed during ingestion.
 
 GET /api/v1/provenance/sources       — list all data sources with URLs
 GET /api/v1/provenance/verify/{table} — verify a specific data point
@@ -15,7 +16,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Annotated, Any, Dict, List, Literal, Optional
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,6 +24,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
+from services.figure_qualification import FigureQualification, qualify_rows
 from services.audit_citations import safe_source_url
 from services.publication_gate import (
     loan_is_modelled_fixture,
@@ -247,6 +249,7 @@ class ProvenanceHealthResponse(BaseModel):
 
 class DataPointVerification(BaseModel):
     table: str
+    qualifications: Dict[str, FigureQualification] = Field(default_factory=dict)
     value: Optional[str] = None
     source_document: Optional[str] = None
     source_url: Optional[str] = None
@@ -1445,27 +1448,6 @@ async def get_data_health(db: Session = Depends(get_db)):
     )
 
 
-def _is_round_number_estimate(row) -> bool:
-    """Is this debt-timeline row a round-number estimate, not a reading?
-
-    Mirrors the frontend's `isRoundNumberEstimate` (NationalDebtCard.tsx):
-    external, domestic AND total all landing exactly on KES 100 billion. Real
-    CBK table values do not. Kept in both layers deliberately — the API must be
-    able to say it without the UI, and the UI must be able to say it without a
-    round trip.
-    """
-    STEP = 100_000_000_000  # KES 100 billion
-    try:
-        parts = [
-            float(row.external or 0),
-            float(row.domestic or 0),
-            float(row.total or 0),
-        ]
-    except (TypeError, ValueError):
-        return False
-    return all(v > 0 and abs(v % STEP) < 1.0 for v in parts)
-
-
 @router.get(
     "/verify/{table_name}",
     response_model=DataPointVerification,
@@ -1476,6 +1458,12 @@ async def verify_data_point(
     entity_id: Optional[int] = Query(None, description="Entity ID to verify"),
     year: Optional[int] = Query(None, description="Year of the data point"),
     db: Session = Depends(get_db),
+    record_id: Annotated[
+        Optional[int], Query(ge=1, description="Exact stored observation ID")
+    ] = None,
+    measure: Annotated[
+        Optional[str], Query(description="Economic indicator type")
+    ] = None,
 ):
     """
     Trace a specific data point back to its official source.
@@ -1488,8 +1476,56 @@ async def verify_data_point(
 
     verification = DataPointVerification(table=table_name, verification_status="unverified")
 
+    record = None
     try:
-        if table_name == "population_data":
+        if table_name in ("economic_indicators", "poverty_indices"):
+            model = (
+                EconomicIndicator
+                if table_name == "economic_indicators"
+                else PovertyIndex
+            )
+            query = db.query(model)
+            if record_id is not None:
+                query = query.filter(model.id == record_id)
+            if measure is not None and table_name == "economic_indicators":
+                query = query.filter(model.indicator_type == measure)
+            if entity_id is not None:
+                query = query.filter(model.entity_id == entity_id)
+            elif record_id is None:
+                query = query.filter(model.entity_id.is_(None))
+            if year is not None:
+                query = (
+                    query.filter(
+                        model.indicator_date >= datetime(year, 1, 1),
+                        model.indicator_date < datetime(year + 1, 1, 1),
+                    )
+                    if table_name == "economic_indicators"
+                    else query.filter(model.year == year)
+                )
+            order = (
+                model.indicator_date
+                if table_name == "economic_indicators"
+                else model.year
+            )
+            record = query.order_by(desc(order), desc(model.id)).first()
+            if record is None:
+                verification.reason = (
+                    "no_rows_for_year" if year is not None else "no_rows"
+                )
+            else:
+                verification.value = (
+                    f"{record.indicator_type}: {record.value} {record.unit or chr(32)} ({record.indicator_date.date().isoformat()})"
+                    if table_name == "economic_indicators"
+                    else (
+                        f"{record.poverty_headcount_rate}% poverty headcount (year {record.year})"
+                        if record.poverty_headcount_rate is not None
+                        else None
+                    )
+                )
+                _attach_source_document(verification, db, record.source_document_id)
+                _grade_verification(verification)
+
+        elif table_name == "population_data":
             query = db.query(PopulationData)
             if entity_id is not None:
                 query = query.filter(PopulationData.entity_id == entity_id)
@@ -1511,9 +1547,11 @@ async def verify_data_point(
 
         elif table_name == "gdp_data":
             query = db.query(GDPData)
+            if record_id is not None:
+                query = query.filter(GDPData.id == record_id)
             if entity_id is not None:
                 query = query.filter(GDPData.entity_id == entity_id)
-            else:
+            elif record_id is None:
                 query = query.filter(GDPData.entity_id.is_(None))
             if year is not None:
                 query = query.filter(GDPData.year == year)
@@ -1574,9 +1612,13 @@ async def verify_data_point(
 
         elif table_name == "loans":
             query = db.query(Loan)
+            if record_id is not None:
+                query = query.filter(Loan.id == record_id)
             if entity_id:
                 query = query.filter(Loan.entity_id == entity_id)
             record = query.order_by(desc(Loan.id)).first()
+            if record is None:
+                verification.reason = "no_rows"
             if record:
                 verification.value = f"KES {float(record.outstanding):,.0f} ({record.lender})"
                 if record.source_document_id:
@@ -1604,6 +1646,8 @@ async def verify_data_point(
             query = db.query(BudgetLine).join(
                 FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id
             )
+            if record_id is not None:
+                query = query.filter(BudgetLine.id == record_id)
             if entity_id:
                 query = query.filter(BudgetLine.entity_id == entity_id)
             if year:
@@ -1662,29 +1706,13 @@ async def verify_data_point(
                         )
                 _grade_verification(verification)
                 _note_document_integrity(verification, db, record.source_document_id)
-                # County budget lines are modelled from the CRA equitable-share
-                # formula, not read from a CoB table. A resolvable source
-                # document does not make the FIGURE sourced, so say so rather
-                # than let the grade imply otherwise.
-                if not record.provenance:
-                    verification.verification_status = "modelled"
-                    _modelled_reason = (
-                        "county budget lines are modelled from the CRA "
-                        "equitable-share formula; this figure is not read from "
-                        "a Controller of Budget implementation table"
-                    )
-                    # Don't clobber a more specific reason (e.g. the row has no
-                    # allocation at all) — both facts matter to the reader.
-                    verification.reason = (
-                        f"{verification.reason}; {_modelled_reason}"
-                        if verification.reason
-                        else _modelled_reason
-                    )
 
         elif table_name == "debt_timeline":
             # Honour `year`: without it, asking about an older modelled year
             # always returned the newest row instead.
             _dt_query = db.query(DebtTimeline)
+            if record_id is not None:
+                _dt_query = _dt_query.filter(DebtTimeline.id == record_id)
             if year:
                 _dt_query = _dt_query.filter(DebtTimeline.year == year)
             record = _dt_query.order_by(desc(DebtTimeline.year)).first()
@@ -1710,16 +1738,6 @@ async def verify_data_point(
                 _note_document_integrity(
                     verification, db, getattr(record, "source_document_id", None)
                 )
-                # 2013-2021 are round-number estimates across external,
-                # domestic AND total at once — no CBK table produces that.
-                # Flag the row rather than grading an estimate as sourced.
-                if _is_round_number_estimate(record):
-                    verification.verification_status = "modelled"
-                    verification.reason = (
-                        "round-number estimate: external, domestic and total "
-                        "are all exact multiples of KES 100 billion, which no "
-                        "published CBK table produces"
-                    )
 
         elif table_name == "fiscal_summaries":
             # Every national headline on /budget — appropriated budget, total
@@ -1759,6 +1777,8 @@ async def verify_data_point(
             # One row is one tax head for one year, so identify WHICH — a
             # verification that cannot name its own data point is not one.
             _rev_query = db.query(RevenueBySource)
+            if record_id is not None:
+                _rev_query = _rev_query.filter(RevenueBySource.id == record_id)
             if year:
                 _rev_query = _rev_query.filter(
                     _fiscal_year_matches(RevenueBySource.fiscal_year, year)
@@ -1892,7 +1912,7 @@ async def verify_data_point(
                 detail=(
                     f"Unknown table: {table_name}. Supported: population_data, "
                     "gdp_data, audits, loans, budget_lines, debt_timeline, "
-                    "fiscal_summaries, revenue_by_source, pending_bills, counties"
+                    "fiscal_summaries, revenue_by_source, economic_indicators, poverty_indices, pending_bills, counties"
                 ),
             )
 
@@ -1902,4 +1922,56 @@ async def verify_data_point(
         logger.error("Verification error for %s: %s", table_name, e)
         verification.verification_status = "error"
 
+    if record is not None and table_name in {
+        "budget_lines",
+        "loans",
+        "gdp_data",
+        "economic_indicators",
+        "poverty_indices",
+        "debt_timeline",
+        "revenue_by_source",
+    }:
+        qualifications = qualify_rows(db, table_name, [record])[record.id]
+        # Keep existing coherent-GDP refusal; new receipts cannot rescue a
+        # contradicting publisher/country/measure declaration.
+        if (
+            table_name == "gdp_data"
+            and verification.verification_status == "unverified"
+            and verification.reason
+        ):
+            q = qualifications["gdp_value"]
+            q.update(
+                status="unavailable",
+                reason=verification.reason,
+                value_checked=False,
+                document_bytes_checked=False,
+            )
+        verification.qualifications = {
+            k: FigureQualification.model_validate(v) for k, v in qualifications.items()
+        }
+        primary = {
+            "budget_lines": "allocated_amount",
+            "loans": "outstanding",
+            "gdp_data": "gdp_value",
+            "economic_indicators": getattr(record, "indicator_type", None),
+            "poverty_indices": "poverty_headcount_rate",
+            "debt_timeline": "total",
+            "revenue_by_source": "amount_billion_kes",
+        }[table_name]
+        q = qualifications[primary]
+        verification.verification_status = (
+            "publishable"
+            if q["status"] == "qualified"
+            else "unverified"
+            if q["status"] == "unavailable"
+            else q["status"]
+        )
+        if q["status"] != "qualified":
+            verification.reason = q["reason"]
+        elif (
+            verification.reason is None
+            or "round-number" in verification.reason
+            or "modelled" in verification.reason
+        ):
+            verification.reason = q["reason"]
     return verification

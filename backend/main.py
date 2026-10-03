@@ -1605,6 +1605,7 @@ class SearchResponse(BaseModel):
 
 
 class BudgetLineResponse(BaseModel):
+    qualifications: Dict[str, Any] = {}
     id: int
     category: str
     subcategory: Optional[str] = None
@@ -3198,6 +3199,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
             if period_ids:
                 bl_query = bl_query.filter(DBBudgetLine.period_id.in_(period_ids))
             all_budget_lines = bl_query.all()
+            from services.figure_qualification import qualify_rows
+
+            budget_qualifications = qualify_rows(db, "budget_lines", all_budget_lines)
             bl_by_entity: dict = {}
             for bl in all_budget_lines:
                 bl_by_entity.setdefault(bl.entity_id, []).append(bl)
@@ -3444,6 +3448,12 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 results.append(
                     {
                         "id": county_id or str(e.id),
+                        "figure_qualifications": {
+                            "budget_lines": {
+                                str(bl.id): budget_qualifications[bl.id]
+                                for bl in budget_lines
+                            }
+                        },
                         "name": name,
                         "code": official_county_code(e.canonical_name),
                         "coordinates": coords,
@@ -3850,7 +3860,17 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             )
                         )
 
+                from services.figure_qualification import qualify_rows
+
+                figure_qualifications = {
+                    "budget_lines": qualify_rows(db, "budget_lines", budget_lines)
+                }
+                if gdp_data is not None:
+                    figure_qualifications["gdp_data"] = qualify_rows(
+                        db, "gdp_data", [gdp_data]
+                    )
                 payload = {
+                    "figure_qualifications": figure_qualifications,
                     "id": county_id,
                     "name": cname,
                     "code": official_county_code(e.canonical_name),
@@ -3984,6 +4004,8 @@ async def get_county_comprehensive(
                 .order_by(DBPopulationData.year.desc())
                 .first()
             )
+
+            from services.figure_qualification import qualify_rows
 
             # --- Budget lines (scoped to requested FY, or latest executed) ---
             requested_period_id: Optional[int] = None
@@ -4615,6 +4637,9 @@ async def get_county_comprehensive(
                 },
                 # Budget
                 "budget": {
+                    "figure_qualifications": qualify_rows(
+                        db, "budget_lines", budget_lines
+                    ),
                     "total_allocated": total_allocated,
                     "total_spent": total_spent,
                     "utilization_rate": round(
@@ -4834,7 +4859,10 @@ async def get_county_budget(county_id: str):
             summary = financial_summary(
                 budget_lines, budget_lines[0].period if budget_lines else None
             )
+            from services.figure_qualification import qualify_rows
+            summary["figure_qualifications"] = qualify_rows(db, "budget_lines", budget_lines)
             response = {
+                "figure_qualifications": {"budget_lines": summary["figure_qualifications"]},
                 "county_id": county_id,
                 "county_name": entity.canonical_name.removesuffix(" County"),
                 "budget_execution_rate": summary["execution_rate"],
@@ -8857,6 +8885,7 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         RevenueBySource,
     )
     from services.revenue_publication import revenue_source_row
+    from services.figure_qualification import qualify_rows
 
     try:
         # ── 1. Revenue by source ──
@@ -8866,13 +8895,19 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
             .all()
         )
 
+        revenue_qualifications = qualify_rows(db, "revenue_by_source", rev_rows)
         # Group by fiscal year
         rev_by_fy: dict = {}
         for r in rev_rows:
             fy = r.fiscal_year
             if fy not in rev_by_fy:
                 rev_by_fy[fy] = []
-            rev_by_fy[fy].append(revenue_source_row(r))
+            rev_by_fy[fy].append(
+                {
+                    **revenue_source_row(r),
+                    "qualifications": revenue_qualifications[r.id],
+                }
+            )
 
         revenue_by_source = [
             {"fiscal_year": fy, "sources": sources}
@@ -8920,11 +8955,14 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
                 "measure": meta.get("measure") or None,
             }
 
-        gdp = _provenance(_latest_national("total_national_gdp"))
+        gdp_row = _latest_national("total_national_gdp")
+        growth_row = _latest_national("gdp_growth_rate")
+        unemployment_row = _latest_national("unemployment_rate")
+        gdp = _provenance(gdp_row)
         gdp_million = gdp["value"]
         gdp_billion = gdp_million / 1000 if gdp_million else None  # Convert to billions
-        growth = _provenance(_latest_national("gdp_growth_rate"))
-        unemployment = _provenance(_latest_national("unemployment_rate"))
+        growth = _provenance(growth_row)
+        unemployment = _provenance(unemployment_row)
 
         # Inflation: KNBS's headline is the 12-month rate, published monthly
         # (CBK table, `inflation_rate_12m`). The World Bank's `inflation_rate`
@@ -8941,6 +8979,21 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         else:
             inflation_row = annual
         inflation = _provenance(inflation_row)
+        context_rows = [
+            r
+            for r in (gdp_row, growth_row, unemployment_row, inflation_row)
+            if r is not None
+        ]
+        context_qualifications = qualify_rows(db, "economic_indicators", context_rows)
+        for value, row in (
+            (gdp, gdp_row),
+            (growth, growth_row),
+            (unemployment, unemployment_row),
+            (inflation, inflation_row),
+        ):
+            value["qualifications"] = (
+                context_qualifications.get(row.id, {}) if row is not None else {}
+            )
 
         # Kenya's population, not the sum of every row in the table. This was
         # `func.sum(PopulationData.total_population)` over the whole table —
@@ -8970,6 +9023,12 @@ async def get_budget_enhanced(db: Session = Depends(get_db)):
         )
 
         economic_context = {
+            "qualifications": {
+                "gdp": gdp["qualifications"],
+                "gdp_growth": growth["qualifications"],
+                "inflation": inflation["qualifications"],
+                "unemployment": unemployment["qualifications"],
+            },
             "gdp_billion_kes": gdp_billion,
             "gdp_as_of": gdp["as_of"],
             "gdp_source": gdp["source"],
@@ -9071,6 +9130,7 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
     from sqlalchemy import func  # noqa: F401 — used for reconciliation sum
 
     from models import DebtTimeline
+    from services.figure_qualification import qualify_rows
 
     try:
         rows = db.query(DebtTimeline).order_by(DebtTimeline.year.asc()).all()
@@ -9085,16 +9145,20 @@ async def get_debt_timeline(db: Session = Depends(get_db)):
                 "timeline": [],
             }
 
+        qualifications = qualify_rows(db, "debt_timeline", rows)
         timeline = []
         for r in rows:
             timeline.append(
                 {
                     "year": r.year,
+                    "qualifications": qualifications[r.id],
                     "external": float(r.external),
                     "domestic": float(r.domestic),
                     "total": float(r.total),
                     "gdp": float(r.gdp) if r.gdp is not None else None,
-                    "gdp_ratio": float(r.gdp_ratio) if r.gdp_ratio is not None else None,
+                    "gdp_ratio": float(r.gdp_ratio)
+                    if r.gdp_ratio is not None
+                    else None,
                     # The row's declared unit (stage1 3a): "KES" = raw KES.
                     # Consumers convert on this field, never by guessing
                     # magnitude — see F5.5.
@@ -9803,6 +9867,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
     Reads from the database (loans table seeded from Treasury data).
     """
     from models import DebtCategory
+    from services.figure_qualification import qualify_rows
 
     try:
         # Get national entity
@@ -9846,6 +9911,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
             }
 
         top = loans[:limit]
+        qualifications = qualify_rows(db, "loans", top)
         result_loans = []
         for loan in top:
             outstanding = float(loan.outstanding or 0)
@@ -9853,6 +9919,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
             result_loans.append(
                 {
                     "lender": loan.lender,
+                    "qualifications": qualifications[loan.id],
                     "lender_type": (
                         loan.debt_category.value if loan.debt_category else "other"
                     ),
@@ -9908,6 +9975,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
     All data comes from the database (seeded from Treasury/CBK sources).
     """
     from models import DebtCategory
+    from services.figure_qualification import qualify_rows
 
     try:
         from models import EntityType as ET
@@ -9963,6 +10031,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
                 "last_updated": "",
             }
 
+        qualifications = qualify_rows(db, "loans", loans)
         national_loans = []
         total_outstanding = 0.0
 
@@ -9974,6 +10043,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
             national_loans.append(
                 {
                     "lender": loan.lender,
+                    "qualifications": qualifications[loan.id],
                     "lender_type": (
                         loan.debt_category.value if loan.debt_category else "other"
                     ),
@@ -10591,11 +10661,29 @@ async def get_national_debt():
                         debt_to_gdp=debt_to_gdp_ratio,
                     )
 
+                    from services.figure_qualification import qualify_rows
+
+                    loan_qualifications = qualify_rows(db, "loans", loans)
+                    gdp_qualifications = (
+                        qualify_rows(db, "gdp_data", [latest_gdp_row])
+                        if latest_gdp_row is not None
+                        else {}
+                    )
                     return {
                         "status": "success",
                         "data_source": "database",
                         "last_updated": _vintage_iso,
                         "data": {
+                            "figure_qualifications": {
+                                "loans": loan_qualifications,
+                                "gdp_data": gdp_qualifications,
+                                "derived_ratio": {
+                                    "status": "qualified",
+                                    "reason": "published_imf_ratio_outside_seven_table_contract"
+                                    if _imf is not None
+                                    else "aggregate_operands_not_independently_reconciled",
+                                },
+                            },
                             "total_debt": total_debt,
                             "total_outstanding": total_outstanding,
                             "loan_count": len(loans),
@@ -12327,11 +12415,15 @@ async def get_entity(entity_id: int, db: Session = Depends(get_db)):
         )
         entity_meta = public_entity_metadata(entity.meta)
 
+        from services.figure_qualification import qualify_rows
+
+        budget_qualifications = qualify_rows(db, "budget_lines", recent_budget_lines)
         recent_budget_lines_payload = []
         for bl in recent_budget_lines:
             recent_budget_lines_payload.append(
                 {
                     "id": bl.id,
+                    "qualifications": budget_qualifications[bl.id],
                     "category": bl.category,
                     "subcategory": bl.subcategory,
                     "allocated_amount": float(bl.allocated_amount)
@@ -12430,11 +12522,15 @@ async def get_budget_lines(
 
         from services.financial_publication import monetary_fields
 
+        from services.figure_qualification import qualify_rows
+
+        qualifications = qualify_rows(db, "budget_lines", budget_lines)
         items: List[Dict[str, Any]] = []
         for bl in budget_lines:
             items.append(
                 {
                     "id": bl.id,
+                    "qualifications": qualifications[bl.id],
                     "category": bl.category,
                     "subcategory": bl.subcategory,
                     **monetary_fields(

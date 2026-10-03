@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cache.redis_cache import cached
 from provenance import vintage_iso
+from services.figure_qualification import FigureQualification, qualify_rows
 from services.publication_gate import economic_publication_rows
 
 try:
@@ -88,6 +89,7 @@ class PopulationLatestResponse(BaseModel):
 class GDPResponse(BaseModel):
     """GDP/GCP data response."""
 
+    qualifications: Dict[str, FigureQualification] = Field(default_factory=dict)
     id: int
     entity_id: Optional[int]
     entity_name: Optional[str]
@@ -107,6 +109,7 @@ class GDPResponse(BaseModel):
 class EconomicIndicatorResponse(BaseModel):
     """Economic indicator response."""
 
+    qualifications: Dict[str, FigureQualification] = Field(default_factory=dict)
     id: int
     indicator_type: str
     indicator_date: str
@@ -131,6 +134,7 @@ class EconomicIndicatorResponse(BaseModel):
 class PovertyIndexResponse(BaseModel):
     """Poverty index response."""
 
+    qualifications: Dict[str, FigureQualification] = Field(default_factory=dict)
     id: int
     entity_id: Optional[int]
     entity_name: Optional[str]
@@ -163,6 +167,10 @@ class CountyEconomicProfile(BaseModel):
 
 class EconomicSummary(BaseModel):
     """National economic summary."""
+
+    qualifications: Dict[str, Dict[str, FigureQualification]] = Field(
+        default_factory=dict
+    )
 
     total_population: Optional[int]
     total_gdp: Optional[float]
@@ -452,6 +460,7 @@ async def get_gdp(
         entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
         entities_map = {e.id: e for e in entities}
 
+    qualifications = qualify_rows(db, "gdp_data", results)
     # Enrich with entity information
     response = []
     for row in results:
@@ -467,6 +476,7 @@ async def get_gdp(
             entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             GDPResponse(
+                qualifications=qualifications[row.id],
                 id=row.id,
                 entity_id=row.entity_id,
                 entity_name=entity_name,
@@ -475,7 +485,9 @@ async def get_gdp(
                 quarter=row.quarter,
                 gdp_value=float(row.gdp_value),
                 gdp_growth_rate=(
-                    float(row.gdp_growth_rate) if row.gdp_growth_rate else None
+                    float(row.gdp_growth_rate)
+                    if row.gdp_growth_rate is not None
+                    else None
                 ),
                 currency=row.currency,
                 confidence=float(row.confidence) if row.confidence else None,
@@ -487,7 +499,7 @@ async def get_gdp(
     return response
 
 
-def _indicator_source_fields(row):
+def _indicator_source_fields(row, qualifications=None):
     meta = row.meta if isinstance(row.meta, dict) else {}
     labels = {}
     for field in ("measure", "base_period"):
@@ -501,11 +513,13 @@ def _indicator_source_fields(row):
         **labels,
         "page_ref": row.page_ref,
         "source_hash": row.source_hash,
-        "source_url": row.source_document.url if row.source_document else None,
+        "source_url": next(iter((qualifications or {}).values()), {}).get("source_url"),
         "publication_status": "source_bound"
         if row.indicator_type.lower() == "cpi"
         else "not_checked_here",
     }
+
+
 # ===== Economic Indicators Endpoints =====
 
 
@@ -603,6 +617,7 @@ async def get_economic_indicators(
         entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
         entities_map = {e.id: e for e in entities}
 
+    qualifications = qualify_rows(db, "economic_indicators", results)
     # Enrich with entity information
     response = []
     for row in results:
@@ -618,7 +633,8 @@ async def get_economic_indicators(
             entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             EconomicIndicatorResponse(
-                **_indicator_source_fields(row),
+                qualifications=qualifications[row.id],
+                **_indicator_source_fields(row, qualifications[row.id]),
                 id=row.id,
                 indicator_type=row.indicator_type,
                 indicator_date=(
@@ -629,7 +645,9 @@ async def get_economic_indicators(
                 entity_name=entity_name,
                 entity_type=entity_type,
                 unit=row.unit,
-                confidence=float(row.confidence) if row.confidence is not None else None,
+                confidence=float(row.confidence)
+                if row.confidence is not None
+                else None,
                 source_document_id=row.source_document_id,
                 created_at=row.created_at.isoformat() if row.created_at else "",
             )
@@ -713,6 +731,7 @@ async def get_poverty_indices(
         entities = db.query(Entity).filter(Entity.id.in_(entity_ids)).all()
         entities_map = {e.id: e for e in entities}
 
+    qualifications = qualify_rows(db, "poverty_indices", results)
     # Enrich with entity information
     response = []
     for row in results:
@@ -728,6 +747,7 @@ async def get_poverty_indices(
             entity_type = "national" if row.entity_id is None else "unknown"
         response.append(
             PovertyIndexResponse(
+                qualifications=qualifications[row.id],
                 id=row.id,
                 entity_id=row.entity_id,
                 entity_name=entity_name,
@@ -735,16 +755,18 @@ async def get_poverty_indices(
                 year=row.year,
                 poverty_headcount_rate=(
                     float(row.poverty_headcount_rate)
-                    if row.poverty_headcount_rate
+                    if row.poverty_headcount_rate is not None
                     else None
                 ),
                 extreme_poverty_rate=(
                     float(row.extreme_poverty_rate)
-                    if row.extreme_poverty_rate
+                    if row.extreme_poverty_rate is not None
                     else None
                 ),
                 gini_coefficient=(
-                    float(row.gini_coefficient) if row.gini_coefficient else None
+                    float(row.gini_coefficient)
+                    if row.gini_coefficient is not None
+                    else None
                 ),
                 confidence=float(row.confidence) if row.confidence else None,
                 source_document_id=row.source_document_id,
@@ -844,6 +866,9 @@ async def get_county_economic_profile(
         per_capita_gcp = None
         if latest_gcp:
             gcp_response = GDPResponse(
+                qualifications=qualify_rows(db, "gdp_data", [latest_gcp])[
+                    latest_gcp.id
+                ],
                 id=latest_gcp.id,
                 entity_id=latest_gcp.entity_id,
                 entity_name=county.canonical_name,
@@ -853,7 +878,7 @@ async def get_county_economic_profile(
                 gdp_value=float(latest_gcp.gdp_value),
                 gdp_growth_rate=(
                     float(latest_gcp.gdp_growth_rate)
-                    if latest_gcp.gdp_growth_rate
+                    if latest_gcp.gdp_growth_rate is not None
                     else None
                 ),
                 currency=latest_gcp.currency,
@@ -883,6 +908,9 @@ async def get_county_economic_profile(
         poverty_response = None
         if latest_poverty:
             poverty_response = PovertyIndexResponse(
+                qualifications=qualify_rows(db, "poverty_indices", [latest_poverty])[
+                    latest_poverty.id
+                ],
                 id=latest_poverty.id,
                 entity_id=latest_poverty.entity_id,
                 entity_name=county.canonical_name,
@@ -890,17 +918,17 @@ async def get_county_economic_profile(
                 year=latest_poverty.year,
                 poverty_headcount_rate=(
                     float(latest_poverty.poverty_headcount_rate)
-                    if latest_poverty.poverty_headcount_rate
+                    if latest_poverty.poverty_headcount_rate is not None
                     else None
                 ),
                 extreme_poverty_rate=(
                     float(latest_poverty.extreme_poverty_rate)
-                    if latest_poverty.extreme_poverty_rate
+                    if latest_poverty.extreme_poverty_rate is not None
                     else None
                 ),
                 gini_coefficient=(
                     float(latest_poverty.gini_coefficient)
-                    if latest_poverty.gini_coefficient
+                    if latest_poverty.gini_coefficient is not None
                     else None
                 ),
                 confidence=(
@@ -930,11 +958,15 @@ async def get_county_economic_profile(
         )
         recent_indicators, withheld = economic_publication_rows(indicator_query, db, 20)
 
+        indicator_qualifications = qualify_rows(
+            db, "economic_indicators", recent_indicators
+        )
         indicators_response = []
         for ind in recent_indicators:
             indicators_response.append(
                 EconomicIndicatorResponse(
-                    **_indicator_source_fields(ind),
+                    qualifications=indicator_qualifications[ind.id],
+                    **_indicator_source_fields(ind, indicator_qualifications[ind.id]),
                     id=ind.id,
                     indicator_type=ind.indicator_type,
                     indicator_date=(
@@ -945,7 +977,9 @@ async def get_county_economic_profile(
                     entity_name=county.canonical_name,
                     entity_type="county",
                     unit=ind.unit,
-                    confidence=float(ind.confidence) if ind.confidence is not None else None,
+                    confidence=float(ind.confidence)
+                    if ind.confidence is not None
+                    else None,
                     source_document_id=ind.source_document_id,
                     created_at=ind.created_at.isoformat() if ind.created_at else "",
                 )
@@ -1045,7 +1079,7 @@ async def get_economic_summary(
         total_gdp = float(latest_gdp.gdp_value) if latest_gdp else None
         gdp_growth_rate = (
             float(latest_gdp.gdp_growth_rate)
-            if latest_gdp and latest_gdp.gdp_growth_rate
+            if latest_gdp and latest_gdp.gdp_growth_rate is not None
             else None
         )
 
@@ -1091,11 +1125,25 @@ async def get_economic_summary(
 
         poverty_rate = (
             float(latest_poverty.poverty_headcount_rate)
-            if latest_poverty and latest_poverty.poverty_headcount_rate
+            if latest_poverty and latest_poverty.poverty_headcount_rate is not None
             else None
         )
 
+        summary_qualifications = {}
+        for table, name, row in [
+            ("gdp_data", "gdp", latest_gdp),
+            ("poverty_indices", "poverty", latest_poverty),
+        ]:
+            if row is not None:
+                summary_qualifications[name] = qualify_rows(db, table, [row])[row.id]
+        indicators = [
+            r for r in (latest_inflation, latest_unemployment) if r is not None
+        ]
+        iq = qualify_rows(db, "economic_indicators", indicators)
+        for row in indicators:
+            summary_qualifications[row.indicator_type] = iq[row.id]
         return EconomicSummary(
+            qualifications=summary_qualifications,
             total_population=total_population,
             total_gdp=total_gdp,
             gdp_growth_rate=gdp_growth_rate,
