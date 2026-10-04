@@ -57,3 +57,27 @@ collection through the new identity binding and real negative database changes
 rolled back after each control. No fixture skips were used. Hosted native amd64
 cold-cache execution remains the final acceptance gate; local ARM execution and
 registry manifests do not substitute for that run.
+
+## Failure diagnostics
+
+The third retained hosted attempt at `c504d8a2031e9fe596b06cf051777cc5d2a4c056`
+prepared PostgreSQL, then returned only `image_preparation_command_failed`.
+Its destroyed runner's discarded child diagnostics cannot establish the
+underlying cause. A later successful registry control cannot recover it.
+
+Failures now emit one bounded JSON receipt with the command phase, exact public
+image pin, native platform, exit code and a fixed diagnostic category. Only the
+first 8192 stderr bytes are inspected for classification; raw child text, URLs,
+tokens and credentials are never printed. The receipt reports stderr byte
+count and whether the classification sample was truncated. Categories describe
+message patterns rather than proving a root cause; unknown messages remain
+`unclassified`. Timeouts and unavailable clients have explicit categories.
+
+Cached inspection authorizes a pull only for exit 1 with the exact image-bound
+`No such image` diagnostic and empty/empty-list stdout. An unavailable or denied
+daemon, wrong image or ambiguous inspection failure refuses preparation. This
+also fixes an exercised false success where an inspect daemon failure was
+mistaken for a cache miss and a subsequent pull/readback masked it. Post-pull
+inspection remains mandatory; failures identify `inspect_pulled`. The shared
+240-second deadline, no retries, immutable pins, platform/identity checks,
+workflow step and job limits are unchanged.

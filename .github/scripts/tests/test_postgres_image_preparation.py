@@ -31,13 +31,20 @@ root=pathlib.Path(__file__).parent
 config=json.loads((root/'fixture.json').read_text())
 args=sys.argv[1:]
 with (root/'calls.jsonl').open('a') as stream: stream.write(json.dumps(args)+'\\n')
+phase='docker_server' if args[:1]==['version'] else 'pull' if args[:1]==['pull'] else 'inspect_pulled' if (root/('pulled-'+args[-1].split(':')[-1])).exists() else 'inspect_cached'
+failure=config.get('failure',{})
+if failure.get('phase')==phase and failure.get('image',args[-1])==args[-1]:
+ print(failure.get('stderr','owned command failure'),file=sys.stderr)
+ sys.exit(failure.get('exit_code',1))
 if args==['version','--format','{{json .Server}}']:
  print(json.dumps(config.get('server',{'Os':'linux','Arch':'amd64'})))
 elif args[:2]==['image','inspect']:
  ref=args[2]
  pulled=(root/('pulled-'+ref.split(':')[-1])).exists()
  images=config.get('after',config['cached']) if pulled else config['cached']
- if ref not in images: sys.exit(1)
+ if ref not in images:
+  print('Error response from daemon: No such image: '+ref,file=sys.stderr)
+  sys.exit(1)
  print(json.dumps(images[ref]))
 elif args[:1]==['pull']:
  if config.get('pull_failed'): sys.exit(2)
@@ -95,6 +102,45 @@ else: sys.exit(9)
         result, calls = self.run_cli(server={"Os": "windows", "Arch": "amd64"})
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(len(calls), 1)
+
+    def test_cached_inspect_daemon_failure_is_not_treated_as_missing_image(self):
+        secret = 'do-not-print-this-token'
+        result, calls = self.run_cli(failure={'phase': 'inspect_cached', 'stderr': 'Cannot connect to the Docker daemon; ' + secret})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any(command[0] == 'pull' for command in calls))
+        receipt = json.loads(result.stderr)
+        self.assertEqual(receipt['phase'], 'inspect_cached')
+        self.assertEqual(receipt['image'], self.refs[0])
+        self.assertEqual(receipt['platform'], 'linux/amd64')
+        self.assertEqual(receipt['exit_code'], 1)
+        self.assertEqual(receipt['diagnostic_category'], 'docker_daemon_unavailable')
+        self.assertNotIn(secret, result.stdout + result.stderr)
+
+    def test_pull_failure_records_second_exact_pin_and_safe_bounded_category(self):
+        secret = 'do-not-print-this-token'
+        result, calls = self.run_cli(cached={self.refs[0]: self.cached[self.refs[0]]},
+            failure={'phase': 'pull', 'image': self.refs[1], 'exit_code': 42,
+                     'stderr': 'toomanyrequests: ' + secret + 'x' * 20000})
+        self.assertNotEqual(result.returncode, 0)
+        receipt = json.loads(result.stderr)
+        self.assertEqual(receipt['phase'], 'pull')
+        self.assertEqual(receipt['image'], self.refs[1])
+        self.assertEqual(receipt['platform'], 'linux/amd64')
+        self.assertEqual(receipt['exit_code'], 42)
+        self.assertEqual(receipt['diagnostic_category'], 'registry_rate_limited')
+        self.assertTrue(receipt['diagnostic_sample_truncated'])
+        self.assertLess(len(result.stderr), 1000)
+        self.assertNotIn(secret, result.stdout + result.stderr)
+        self.assertEqual(sum(command[0] == 'pull' for command in calls), 1)
+
+    def test_unknown_failure_text_is_redacted_without_guessing_cause(self):
+        result, _ = self.run_cli(failure={'phase': 'docker_server', 'stderr': 'token=arbitrary-secret'})
+        receipt = json.loads(result.stderr)
+        self.assertEqual(receipt['phase'], 'docker_server')
+        self.assertIsNone(receipt['image'])
+        self.assertIsNone(receipt['platform'])
+        self.assertEqual(receipt['diagnostic_category'], 'unclassified')
+        self.assertNotIn('arbitrary-secret', result.stderr)
 
     def test_timeout_is_bounded_and_not_retried(self):
         with patch.object(prepare_images.subprocess, "run", side_effect=subprocess.TimeoutExpired("docker", 15)) as run:
