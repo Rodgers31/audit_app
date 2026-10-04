@@ -20,6 +20,14 @@ function matchesPrefix(pathname: string, prefixes: string[]): boolean {
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  // This exact route serves standalone callback HTML that immediately scrubs
+  // the OAuth query. Redirecting an expired session would copy code/state to
+  // the public page and its analytics. It exposes no account data or grant;
+  // completing a connection still requires the verified admin session API.
+  if (pathname === '/admin/social/accounts/callback') {
+    return NextResponse.next({ request });
+  }
+
   /* ── Fast path: anonymous visitor on a public route ──
    * getUser() costs a network round-trip to Supabase on every request.
    * A visitor with no sb-* auth cookies has no session to refresh, and

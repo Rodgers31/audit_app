@@ -121,7 +121,7 @@ class SocialAccount(Base):
     display_name = Column(Text, nullable=False)
     handle = Column(Text)
     profile_url = Column(Text)
-    credential_id = Column(Uuid(as_uuid=True))  # Staged FK when OAuth/encrypted credentials land.
+    credential_id = Column(Uuid(as_uuid=True), ForeignKey("social_credentials.id", name="fk_social_account_credential"))
     connection_state = Column(Text, nullable=False, default="unverified")
     granted_scopes = Column(JSON().with_variant(ARRAY(Text()), "postgresql"), nullable=False, default=list)
     capability_snapshot = Column(J, nullable=False, default=dict)
@@ -318,7 +318,9 @@ def immutable_payload(mapper, connection, target):
             raise ValueError("Approved social target payload is immutable")
 
 
-SOCIAL_TABLES = tuple(table for table in Base.metadata.sorted_tables if table.name.startswith("social_"))
+# Package registration refreshes this after additive models are declared; do
+# not sort here while their referenced tables are still being imported.
+SOCIAL_TABLES = tuple(table for table in Base.metadata.tables.values() if table.name.startswith("social_"))
 
 
 @event.listens_for(SocialPublication, "before_update")

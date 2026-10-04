@@ -52,3 +52,25 @@ assert os.environ['DATABASE_URL']=='postgresql+psycopg2://test:test@127.0.0.1/un
 '''
     result=subprocess.run([sys.executable,'-c',script],cwd=ROOT,capture_output=True,text=True)
     assert result.returncode==0, result.stderr
+
+@pytest.mark.parametrize('package', [False, True])
+def test_connected_feature_first_registers_complete_schema_and_single_public_prefix(package):
+    prefix = 'backend.' if package else ''
+    script = f'''import socket
+socket.socket.connect=lambda *a,**k: (_ for _ in ()).throw(AssertionError("network"))
+import {prefix}social.connections.models as feature
+import {prefix}social.models as domain
+import {prefix}social.api as api
+assert feature.SocialCredential.metadata is domain.Base.metadata
+assert {{t.name for t in domain.SOCIAL_TABLES}} == {{name for name in domain.Base.metadata.tables if name.startswith('social_')}}
+assert len(domain.SOCIAL_TABLES) == len({{t.name for t in domain.SOCIAL_TABLES}})
+assert next(iter(domain.SocialAccount.__table__.c.credential_id.foreign_keys)).column.table is feature.SocialCredential.__table__
+paths = [route.path for route in api.router.routes]
+assert '/api/v1/admin/social/connections/meta/status' in paths
+assert '/api/v1/admin/social/accounts' in paths
+assert not any('/social/api/v1/' in path for path in paths)
+'''
+    env = {**os.environ, 'DATABASE_URL': 'postgresql+psycopg2://test:test@127.0.0.1/unused'}
+    env.pop('PYTHONPATH', None)
+    result = subprocess.run([sys.executable, '-c', script], cwd=ROOT if package else ROOT/'backend', env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr

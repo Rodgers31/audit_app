@@ -13,7 +13,6 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import event as sqlalchemy_event, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from social.contracts import CapabilitySet, OperationPlan, OperationResult, ReconciliationResult, ResolvedPostPayload, ValidationResult, canonical_hash
@@ -21,6 +20,7 @@ from social.models import SOCIAL_TABLES, SocialAccount, SocialControls, SocialPo
 from social.worker.config import WorkerConfig, create_worker_engine
 from social.worker.repository import QueueRepository, LeaseLost
 from social.worker.runner import SocialWorker
+from local_postgres import local_postgres_url
 
 
 @pytest.fixture
@@ -28,10 +28,8 @@ def engine():
     dsn = os.environ.get("SOCIAL_WORKER_TEST_DATABASE_URL")
     if not dsn:
         pytest.skip("Set an explicit isolated local worker test DSN")
-    url = make_url(dsn)
-    if url.host not in ("127.0.0.1", "localhost", "::1") or url.database != "social_worker_test":
-        pytest.fail("Worker tests require the dedicated local social_worker_test database")
-    config = WorkerConfig(dsn)
+    url = local_postgres_url(dsn, 'social_worker_test')
+    config = WorkerConfig(url.render_as_string(hide_password=False))
     engine = create_worker_engine(config)
     SocialPost.metadata.create_all(engine, tables=SOCIAL_TABLES)
     names = ",".join('"'+table.name+'"' for table in SOCIAL_TABLES)
@@ -642,8 +640,12 @@ async def run():
     await worker.process(claim)
 asyncio.run(run())
 '''
+    child_env = os.environ.copy()
+    # Preserve the endpoint already validated and pinned by the parent fixture.
+    # Re-reading the raw DSN would reintroduce libpq environment redirection.
+    child_env['SOCIAL_WORKER_TEST_DATABASE_URL'] = engine.url.render_as_string(hide_password=False)
     child = subprocess.Popen([sys.executable, "-c", script, str(ledger)], stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, text=True, env=os.environ.copy())
+                             stderr=subprocess.PIPE, text=True, env=child_env)
     try:
         import select
         readable, _, _ = select.select([child.stdout], [], [], 10)
