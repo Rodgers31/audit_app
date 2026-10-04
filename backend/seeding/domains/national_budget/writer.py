@@ -18,7 +18,7 @@ from models import (
     SourceDocument,
 )
 from sqlalchemy import and_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from ...config import SeedingSettings
 from ...types import DomainRunContext
@@ -76,11 +76,14 @@ def _ensure_source_document(
     country_id: int,
     settings: SeedingSettings,
     record: NationalBudgetRecord,
+    *, sources_by_url: Optional[dict[str, SourceDocument]] = None,
 ) -> SourceDocument:
     url = record.source_url or settings.national_budget_execution_dataset_url
-    source = session.execute(
-        select(SourceDocument).where(SourceDocument.url == url)
-    ).scalar_one_or_none()
+    source = sources_by_url.get(url) if sources_by_url is not None else None
+    if source is None:
+        source = session.execute(
+            select(SourceDocument).options(load_only(SourceDocument.id)).where(SourceDocument.url == url)
+        ).scalar_one_or_none()
     now = datetime.now(timezone.utc)
 
     if source is None:
@@ -100,6 +103,8 @@ def _ensure_source_document(
     else:
         source.status = DocumentStatus.AVAILABLE
         source.last_seen_at = now
+    if sources_by_url is not None:
+        sources_by_url[url] = source
     return source
 
 
@@ -200,6 +205,9 @@ def persist_national_budget_records(
     context: DomainRunContext,
 ) -> PersistenceStats:
     stats = PersistenceStats()
+    # Invocation-local ORM identities never escape the caller's transaction.
+    # A rollback or later run must resolve its sources from PostgreSQL again.
+    sources_by_url: dict[str, SourceDocument] = {}
     # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
     expenditure_periods: set[tuple[int, int]] = set()
 
@@ -213,7 +221,8 @@ def persist_national_budget_records(
             continue
         assert entity is not None
 
-        source = _ensure_source_document(session, entity.country_id, settings, record)
+        source = _ensure_source_document(session, entity.country_id, settings, record,
+                                         sources_by_url=sources_by_url)
         period = _ensure_period(session, entity.country_id, record)
 
         # Match on entity + period + category + subcategory (natural key)
@@ -306,6 +315,10 @@ def persist_national_budget_records(
                     existing.provenance = provenance
 
     stats.superseded += _retire_superseded_lines(session, expenditure_periods)
+    logger.info("national_budget_persistence_prepared", extra={
+        "processed_records": stats.processed, "distinct_sources": len(sources_by_url),
+        "error_count": len(stats.errors),
+    })
     return stats
 
 
