@@ -8,16 +8,20 @@ Provides endpoints for:
 """
 
 from datetime import datetime, timedelta, timezone
+import logging
+from time import monotonic
 from typing import List, Optional
 
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from models import IngestionJob, IngestionStatus
 from pydantic import ConfigDict, BaseModel
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from supabase_auth import require_admin
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -229,17 +233,25 @@ async def get_ingestion_stats(
     - Total items processed, created, and updated
     - Breakdown by domain
     """
-    # Build query with date filter
-    query = db.query(IngestionJob)
+    started = monotonic()
+    # The response only needs counts and counters. Diagnostics and job metadata
+    # stay in PostgreSQL instead of being downloaded for Python aggregation.
+    query = db.query(
+        IngestionJob.domain, IngestionJob.status,
+        func.count(IngestionJob.id).label("job_count"),
+        func.sum(IngestionJob.items_processed).label("items_processed"),
+        func.sum(IngestionJob.items_created).label("items_created"),
+        func.sum(IngestionJob.items_updated).label("items_updated"),
+    )
     if days:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         query = query.filter(IngestionJob.created_at >= cutoff)
 
-    jobs = query.all()
+    rows = query.group_by(IngestionJob.domain, IngestionJob.status).all()
 
     # Calculate statistics
     stats = {
-        "total_jobs": len(jobs),
+        "total_jobs": 0,
         "completed": 0,
         "failed": 0,
         "running": 0,
@@ -251,25 +263,16 @@ async def get_ingestion_stats(
         "domains": {},
     }
 
-    for job in jobs:
-        # Count by status
-        if job.status == IngestionStatus.COMPLETED:
-            stats["completed"] += 1
-        elif job.status == IngestionStatus.FAILED:
-            stats["failed"] += 1
-        elif job.status == IngestionStatus.RUNNING:
-            stats["running"] += 1
-        elif job.status == IngestionStatus.PENDING:
-            stats["pending"] += 1
-        elif job.status == IngestionStatus.COMPLETED_WITH_ERRORS:
-            stats["completed_with_errors"] += 1
+    for row in rows:
+        stats["total_jobs"] += row.job_count
+        stats[row.status.value] += row.job_count
+        stats["total_items_processed"] += row.items_processed
+        stats["total_items_created"] += row.items_created
+        stats["total_items_updated"] += row.items_updated
+        stats["domains"][row.domain] = stats["domains"].get(row.domain, 0) + row.job_count
 
-        # Sum metrics
-        stats["total_items_processed"] += job.items_processed
-        stats["total_items_created"] += job.items_created
-        stats["total_items_updated"] += job.items_updated
-
-        # Count by domain
-        stats["domains"][job.domain] = stats["domains"].get(job.domain, 0) + 1
+    logger.info("ingestion_stats_compacted", extra={
+        "result_rows": len(rows), "duration_ms": int((monotonic()-started)*1000),
+    })
 
     return IngestionJobStatsResponse(**stats)

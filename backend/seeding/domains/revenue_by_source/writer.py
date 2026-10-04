@@ -9,7 +9,7 @@ from typing import Iterable, Optional
 
 from models import Country, DocumentType, RevenueBySource, SourceDocument
 from sqlalchemy import and_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from ...config import SeedingSettings
 from ...types import DomainRunContext
@@ -40,6 +40,7 @@ def _ensure_source_document(
     country_id: int,
     settings: SeedingSettings,
     record: RevenueBySourceRecord,
+    *, sources_by_url: Optional[dict[str, SourceDocument]] = None,
 ) -> SourceDocument:
     url = record.source_url or settings.revenue_by_source_dataset_url
     # The row declares who published it. This was a literal "Kenya Revenue
@@ -49,23 +50,25 @@ def _ensure_source_document(
     # fixture, which cites KRA press releases) keep the old default.
     publisher = record.publisher or _DEFAULT_PUBLISHER
     title = record.source_title or _DEFAULT_TITLE
-    stmt = select(SourceDocument).where(SourceDocument.url == url)
-    source = session.execute(stmt).scalar_one_or_none()
+    source = sources_by_url.get(url) if sources_by_url is not None else None
+    if source is None:
+        stmt = select(SourceDocument).options(load_only(
+            SourceDocument.id, SourceDocument.publisher, SourceDocument.title,
+        )).where(SourceDocument.url == url)
+        source = session.execute(stmt).scalar_one_or_none()
     if source is not None:
         # Only a declaration corrects an existing document; the default is
         # for creating one. Otherwise an undeclared row at the same URL would
         # reset a correct label on every run.
         if record.publisher and source.publisher != record.publisher:
-            logger.info(
-                "Relabelled source document %s publisher %r -> %r",
-                source.id, source.publisher, record.publisher,
-            )
+            logger.info("source_document_relabelled", extra={
+                "source_document_id": source.id, "changed_field": "publisher",
+            })
             source.publisher = record.publisher
         if record.source_title and source.title != record.source_title:
-            logger.info(
-                "Relabelled source document %s title %r -> %r",
-                source.id, source.title, record.source_title,
-            )
+            logger.info("source_document_relabelled", extra={
+                "source_document_id": source.id, "changed_field": "title",
+            })
             source.title = record.source_title
     if source is None:
         source = SourceDocument(
@@ -81,6 +84,8 @@ def _ensure_source_document(
         )
         session.add(source)
         session.flush()
+    if sources_by_url is not None:
+        sources_by_url[url] = source
     return source
 
 
@@ -125,6 +130,9 @@ def persist_revenue_records(
     context: DomainRunContext,
 ) -> PersistenceStats:
     stats = PersistenceStats()
+    # Keep ordered relabeling in memory within this invocation, never in a
+    # process-global cache that survives rollback or another ingestion run.
+    sources_by_url: dict[str, SourceDocument] = {}
     country_id = _resolve_country_id(session)
     if country_id is None:
         stats.errors.append("No country found in database — seed countries first")
@@ -133,7 +141,8 @@ def persist_revenue_records(
     for record in records:
         stats.processed += 1
         try:
-            source = _ensure_source_document(session, country_id, settings, record)
+            source = _ensure_source_document(session, country_id, settings, record,
+                                             sources_by_url=sources_by_url)
 
             stmt = select(RevenueBySource).where(
                 and_(
@@ -186,7 +195,11 @@ def persist_revenue_records(
                 f"Error persisting revenue record "
                 f"{record.fiscal_year}/{record.revenue_type}: {exc}"
             )
-            logger.warning(msg)
+            logger.warning("revenue_record_persistence_failed", extra={"error_type": type(exc).__name__})
             stats.errors.append(msg)
 
+    logger.info("revenue_persistence_prepared", extra={
+        "processed_records": stats.processed, "distinct_sources": len(sources_by_url),
+        "error_count": len(stats.errors),
+    })
     return stats
