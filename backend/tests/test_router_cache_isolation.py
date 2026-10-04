@@ -1,6 +1,6 @@
 """Every response cache must be cleared between tests.
 
-``main.clear_all_caches()`` runs before every test (conftest ``_setup_tables``).
+``main.clear_all_caches()`` runs before every test (conftest ``_clear_endpoint_caches``).
 It used to enumerate the RedisCache singletons *by name* — ``main.redis_cache``
 and ``cache.redis_cache.cache`` — and there is a third one it never knew about:
 ``routers/money_flow.py`` builds its own ``RedisCache()`` at import.  With no

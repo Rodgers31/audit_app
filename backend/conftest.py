@@ -179,20 +179,26 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture(autouse=True)
-def _setup_tables():
-    """Create all tables before each test, drop them after."""
+def _clear_endpoint_caches():
+    """Clear caches before every case, including tests with their own database."""
     # Clear in-memory endpoint caches so stale responses from previous
     # tests (which may have had different seed data) don't leak through.
     from main import clear_all_caches
     clear_all_caches()
 
+
+@pytest.fixture()
+def _setup_tables():
+    """Create a fresh shared schema only for cases that consume db_session."""
     Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
+    try:
+        yield
+    finally:
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture()
-def db_session():
+def db_session(_setup_tables):
     """Provide a transactional DB session that rolls back after each test."""
     connection = engine.connect()
     transaction = connection.begin()
