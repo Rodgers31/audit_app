@@ -278,9 +278,9 @@ export default function Navigation() {
               animate={{ x: 0 }}
               exit={{ x: 28 }}
               transition={{ duration: reduceMotion ? 0 : 0.2, ease: 'easeOut' }}
-              className='ml-auto flex h-full w-[min(88vw,390px)] flex-col border-l border-neutral-border bg-gov-cream p-6 dark:bg-gov-dark'>
+              className='ml-auto flex h-full w-[min(88vw,390px)] flex-col overflow-y-auto overscroll-contain border-l border-neutral-border bg-gov-cream p-6 dark:bg-gov-dark'>
               <p className='source-label mb-5'>Navigate the public record</p>
-              <nav aria-label='Mobile primary navigation' className='border-t border-neutral-border'>
+              <nav aria-label='Mobile primary navigation' className='shrink-0 border-t border-neutral-border'>
                 {navItems.map((item, index) => {
                   const active = isActive(item.href);
                   return (

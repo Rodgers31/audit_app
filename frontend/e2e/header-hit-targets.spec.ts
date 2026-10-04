@@ -8,6 +8,11 @@ async function useFallbackTextSpacing(page: Page) {
       letter-spacing: 0.12em !important;
       word-spacing: 0.16em !important;
     }
+    [aria-label="Mobile primary navigation"] a {
+      font-family: Arial, sans-serif !important;
+      letter-spacing: 0.12em !important;
+      word-spacing: 0.16em !important;
+    }
   ` });
 }
 
@@ -19,6 +24,9 @@ async function expectOwnedHitTarget(target: Locator) {
       const hit = document.elementFromPoint(rect.x + rect.width * dx, rect.y + rect.height * dy);
       return {
         owned: hit === element || !!hit && element.contains(hit),
+        x: rect.x + rect.width * dx,
+        y: rect.y + rect.height * dy,
+        viewport: [window.innerWidth, window.innerHeight],
         interceptor: hit?.closest('a,button')?.outerHTML.slice(0, 180) ?? hit?.tagName,
       };
     });
@@ -75,6 +83,7 @@ for (const lang of ['en', 'sw', 'plain']) {
     await page.route(/fonts\.(?:googleapis|gstatic)\.com/, (route) => route.abort());
     await page.goto('/learn');
     const header = page.getByRole('banner');
+    await useFallbackTextSpacing(page);
     for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 },
       { width: 768, height: 1024 }, { width: 1279, height: 900 }]) {
       await page.setViewportSize(viewport);
@@ -91,11 +100,21 @@ for (const lang of ['en', 'sw', 'plain']) {
         await link.scrollIntoViewIfNeeded();
         await expectOwnedHitTarget(link);
       }
+      if (viewport.width === 320) {
+        // A mouse user must be able to scroll the drawer itself, with the
+        // underlying page still locked, to reach its language/auth controls.
+        await menu.getByRole('link').last().hover();
+        await page.mouse.wheel(0, viewport.height);
+        await expect(menu.getByRole('button', { name: 'Sign in or register', exact: true })).toBeInViewport();
+      }
       const active = menu.getByRole('radio', { name: lang === 'en' ? 'EN' : lang === 'sw' ? 'SW' : 'Aa', exact: true });
       await active.scrollIntoViewIfNeeded();
       await expectOwnedHitTarget(active);
       await active.click();
       await expect(active).toHaveAttribute('aria-checked', 'true');
+      const signIn = menu.getByRole('button', { name: 'Sign in or register', exact: true });
+      await signIn.scrollIntoViewIfNeeded();
+      await expectOwnedHitTarget(signIn);
       if (viewport.width === 320) {
         await page.screenshot({ path: testInfo.outputPath(`menu-${lang}-320.png`) });
       }
