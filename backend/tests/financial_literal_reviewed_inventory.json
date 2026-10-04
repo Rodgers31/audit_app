@@ -1,53 +1,67 @@
 {
   "backend/main.py": {
-    "ast_sha256": "e936625a3785c8ecbb53c84df2f6e7100f4f6ae35e085319ab0dc0f89295e000",
+    "ast_sha256": "32925d4aafa7c95a0656ce04f865362bdb90da2015e386db1ae084a31e01f1a1",
     "sites": [
       {
         "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "unused private upper-bound constant; no code reference beyond definition",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       },
       {
         "signature": "'_PENDING_BILLS_SEVERE_SHARE' is published from typed-in numbers [25.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented score policy calibration threshold, not a measured monetary observation",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       },
       {
         "signature": "'_budget_overview_meta' is published from typed-in numbers [1800]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "response metadata TTL keyword 1800 seconds, not a finance amount",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       },
       {
         "signature": "'anchor_pct_gdp' is published from typed-in numbers [55.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       }
     ]
   },
   "backend/routers/data_provenance.py": {
-    "ast_sha256": "f9bece6d20f86ecd6e9c338092b040834d501e445f010a74839d9d2fd31eea66",
+    "ast_sha256": "f3ab6701dca0108ff79141fd544306975c5d5e65a521bad2a6a8d93f686f1953",
     "sites": [
       {
         "signature": "'budget_lines' is published from typed-in numbers [180]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "reason": "table source-age threshold in days, read by _apply_freshness for stale status/age metadata; not a reported monetary value",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       },
       {
         "signature": "'gdp_data' is published from typed-in numbers [550]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "reason": "table source-age threshold in days, read by _apply_freshness for stale status/age metadata; not a reported monetary value",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       },
       {
         "signature": "'debt_timeline' is published from typed-in numbers [240]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "documented source cadence threshold in days; not measured finance; Session3 product file remains untouched",
+        "reason": "table source-age threshold in days, read by _apply_freshness for stale status/age metadata; not a reported monetary value",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       }
     ]
   },
@@ -127,13 +141,15 @@
     ]
   },
   "tools/verify_sourced_record_cleanup.py": {
-    "ast_sha256": "c397b1d73b6c4d48bf8a7c95dccaed73cb25af0c3cccee5498a2f36a188ee155",
+    "ast_sha256": "5ad5c1603f9620e93682acefe088e76e156d6774868d8f8a64eb484d9ce914c5",
     "sites": [
       {
         "signature": "'synthetic_budget_rows_unchanged' is published from typed-in numbers [2]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "declared synthetic-row verification expected count; not a reported budget amount",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
+        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
       }
     ]
   }
