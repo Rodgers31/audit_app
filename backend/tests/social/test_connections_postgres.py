@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID,uuid4
 import pytest
 from sqlalchemy import create_engine,select,text
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 from social.models import Base,SOCIAL_TABLES,SocialAccount,SocialControls
 from social.connections.models import CONNECTION_TABLES,SocialOAuthFlow,SocialCredential
@@ -17,14 +16,13 @@ from social.connections.contracts import AccountCommand
 from social.connections.service import ConnectionService
 from social.service import SocialError
 from test_connections_support import *
+from local_postgres import local_postgres_url
 
 @pytest.fixture
 def connection_pg_engine():
     dsn=os.getenv('SOCIAL_CONNECTIONS_TEST_DATABASE_URL')
     if not dsn:pytest.skip('Set the explicit isolated local connection test DSN')
-    url=make_url(dsn)
-    if url.host not in {'127.0.0.1','localhost','::1'} or url.port!=62124 or url.database!='social_worker_test':
-        pytest.fail('Connection tests require local social_worker_test on port 62124')
+    url=local_postgres_url(dsn, 'social_worker_test')
     schema='social_connections_'+uuid4().hex
     admin=create_engine(url,pool_size=1,max_overflow=0)
     with admin.begin() as connection:connection.execute(text('CREATE SCHEMA '+schema))

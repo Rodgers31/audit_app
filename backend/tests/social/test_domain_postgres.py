@@ -9,7 +9,6 @@ import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import create_engine, func, select, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,6 +16,7 @@ from social.contracts import ApproveCommand, PatchPost
 from social.models import SocialAccount, SocialAuditEvent, SocialPost, SocialPostRevision, SocialPostTarget, SocialPublication
 from social.service import SocialError
 from test_domain_support import ACTOR, account, call, draft_body
+from local_postgres import local_postgres_url
 
 
 def migration():
@@ -32,9 +32,7 @@ def pg_engine():
     dsn = os.getenv("SOCIAL_TEST_DATABASE_URL")
     if not dsn:
         pytest.skip("Set SOCIAL_TEST_DATABASE_URL for the isolated PostgreSQL lane")
-    url = make_url(dsn)
-    if url.host not in {"localhost", "127.0.0.1", "::1"} or url.database != "social_domain_test" or url.port != 62124:
-        pytest.fail("PostgreSQL tests require the dedicated local social_domain_test database on port 62124")
+    url = local_postgres_url(dsn, 'social_domain_test')
     schema = "social_domain_" + uuid4().hex
     admin = create_engine(url, pool_size=1, max_overflow=0)
     with admin.begin() as conn:
