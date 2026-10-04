@@ -1,0 +1,94 @@
+{
+  "results": [
+    {
+      "view": "library",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "upload",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "library",
+      "width": 768,
+      "scrollWidth": 768,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "upload",
+      "width": 768,
+      "scrollWidth": 768,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "library",
+      "width": 390,
+      "scrollWidth": 390,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "upload",
+      "width": 390,
+      "scrollWidth": 390,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "library",
+      "width": 320,
+      "scrollWidth": 320,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    },
+    {
+      "view": "upload",
+      "width": 320,
+      "scrollWidth": 320,
+      "smallButtons": [],
+      "unlabeledInputs": 0,
+      "focus": {
+        "style": "solid",
+        "width": "3px"
+      }
+    }
+  ],
+  "externalRequests": "blocked",
+  "scope": "Rendered component markup; interaction tests run in Jest."
+}

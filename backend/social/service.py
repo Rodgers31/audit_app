@@ -531,6 +531,7 @@ class SocialService:
         return {"platforms": [{"platform": platform, "capabilities": CapabilitySet().model_dump(mode="json")} for platform in ("facebook", "instagram", "threads", "x", "tiktok")]}
 
     def status(self):
+        from .media.runtime import media_runtime
         controls = self.db.get(SocialControls, 1)
         heart = self.db.scalar(select(SocialWorkerHeartbeat).order_by(SocialWorkerHeartbeat.heartbeat_at.desc()).limit(1))
         now = self.now()
@@ -548,7 +549,7 @@ class SocialService:
             else:
                 worker_state = heart.state
         counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
-        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": sorted(self.available_adapters), "media_upload_available": False, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": sorted(self.available_adapters), "media_upload_available": bool(media_runtime().available_mimes()), "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
 
     def accepted(self, post, publication):
         targets = self._targets(publication)

@@ -64,7 +64,7 @@ export interface SocialControls {
 }
 export interface SocialSystemStatus extends Omit<SocialControls, 'version'> {
   controls_version: number; worker: { state: string; heartbeat_at: string | null; last_scan_at: string | null };
-  queue_counts: Record<string, number>; adapters_available: string[]; media_upload_available: false;
+  queue_counts: Record<string, number>; adapters_available: string[]; media_upload_available: boolean;
 }
 export interface SocialPublication { post_id: string; publication_id: string; status: 'queued'; scheduled_for: string | null; targets: Array<{ id: string; account_id: string; platform: SocialPlatform; status: TargetState }>; status_url: string }
 export interface SocialDraftInput { title: string; content_type: string; document: SocialDocument; references: SocialReference[] }
@@ -163,7 +163,7 @@ function disabledAutomation(o: Obj) { return { generation_enabled: falseFlag(o.g
 export function decodeControls(v: unknown): SocialControls { const o = obj(v); return { version: integer(o.version), publishing_enabled: bool(o.publishing_enabled), ...disabledAutomation(o) }; }
 export function decodeSystem(v: unknown): SocialSystemStatus {
   const o = obj(v), worker = obj(o.worker);
-  return { publishing_enabled: bool(o.publishing_enabled), controls_version: integer(o.controls_version), worker: { state: str(worker.state), heartbeat_at: nullable(worker.heartbeat_at), last_scan_at: nullable(worker.last_scan_at) }, queue_counts: Object.fromEntries(Object.entries(obj(o.queue_counts)).map(([k, count]) => [k, integer(count, 0)])), adapters_available: arr(o.adapters_available).map(str), media_upload_available: falseFlag(o.media_upload_available), ...disabledAutomation(o) };
+  return { publishing_enabled: bool(o.publishing_enabled), controls_version: integer(o.controls_version), worker: { state: str(worker.state), heartbeat_at: nullable(worker.heartbeat_at), last_scan_at: nullable(worker.last_scan_at) }, queue_counts: Object.fromEntries(Object.entries(obj(o.queue_counts)).map(([k, count]) => [k, integer(count, 0)])), adapters_available: arr(o.adapters_available).map(str), media_upload_available: bool(o.media_upload_available), ...disabledAutomation(o) };
 }
 function decodeCapabilities(v: unknown): SocialCapabilities {
   const o = obj(v);

@@ -54,11 +54,14 @@ assert os.environ['DATABASE_URL']=='postgresql+psycopg2://test:test@127.0.0.1/un
     assert result.returncode==0, result.stderr
 
 @pytest.mark.parametrize('package', [False, True])
-def test_connected_feature_first_registers_complete_schema_and_single_public_prefix(package):
+@pytest.mark.parametrize('first_feature', ['connections', 'media'])
+def test_connected_feature_first_registers_complete_schema_and_single_public_prefix(package, first_feature):
     prefix = 'backend.' if package else ''
     script = f'''import socket
 socket.socket.connect=lambda *a,**k: (_ for _ in ()).throw(AssertionError("network"))
+import {prefix}social.{first_feature}.models as first
 import {prefix}social.connections.models as feature
+import {prefix}social.media.models as media
 import {prefix}social.models as domain
 import {prefix}social.api as api
 assert feature.SocialCredential.metadata is domain.Base.metadata
@@ -66,6 +69,8 @@ assert {{t.name for t in domain.SOCIAL_TABLES}} == {{name for name in domain.Bas
 assert len(domain.SOCIAL_TABLES) == len({{t.name for t in domain.SOCIAL_TABLES}})
 assert next(iter(domain.SocialAccount.__table__.c.credential_id.foreign_keys)).column.table is feature.SocialCredential.__table__
 paths = [route.path for route in api.router.routes]
+assert '/api/v1/admin/social/media/capabilities' in paths
+assert next(iter(media.SocialMediaUpload.__table__.c.asset_id.foreign_keys)).column.table is domain.SocialMediaAsset.__table__
 assert '/api/v1/admin/social/connections/meta/status' in paths
 assert '/api/v1/admin/social/accounts' in paths
 assert not any('/social/api/v1/' in path for path in paths)

@@ -8,7 +8,8 @@ Start here when continuing the social publishing or infrastructure cost work, in
 - [Complete engineering blueprint](social-publishing/ENGINEERING_BLUEPRINT.md)
 - [Low-cost operating requirements](social-publishing/LOW_COST_OPERATING_PROFILE.md)
 - [Batch 1 implementation scope and frozen contracts](social-publishing/implementation/BATCH_1_CONTRACT.md)
-- [Implementation status, verification and review handoff](social-publishing/implementation/BATCH_1_STATUS.md)
+- [Current implementation status, verification and review handoff](social-publishing/implementation/BATCH_2_STATUS.md)
+- [Historical foundation ledger](social-publishing/implementation/BATCH_1_STATUS.md)
 - [Existing social accounts, branding and remaining setup](social-publishing/ACCOUNT_SETUP_AND_BRANDING.md)
 - [Content and video strategy](social-publishing/CONTENT_AND_VIDEO_STRATEGY.md)
 

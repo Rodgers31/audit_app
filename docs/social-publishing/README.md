@@ -2,7 +2,7 @@
 
 Consolidated **2026-10-03**. This directory preserves the account work, product decisions, approved visual direction, SDK research and engineering design previously held in the conversation and local task artifacts.
 
-**Status: account branding was performed earlier; the first publishing foundation is under implementation/review.** The [batch 1 ledger](implementation/BATCH_1_STATUS.md) distinguishes tested code from future design and production deployment. Batch 1 includes an additive schema, manual admin API, durable worker and admin composer. Real adapters, OAuth, uploads, deployment and automatic approval remain deferred. No real social publishing is enabled by this work.
+**Status: foundation PRs #485/#486 and reviewed egress/Meta PRs #487/#489 are merged; #492's media review fixes passed combined verification.** The [current batch ledger](implementation/BATCH_2_STATUS.md) records accepted commits, review dispositions and remaining operational gates; the linked PR timelines are authoritative for the final media merge identity. Read the historical [batch 1 ledger](implementation/BATCH_1_STATUS.md) for its original slice. Live storage/OAuth, real publishing adapters, deployment and automatic approval remain gated.
 
 ## Read in this order
 
@@ -12,7 +12,8 @@ Consolidated **2026-10-03**. This directory preserves the account work, product 
 4. [Account setup and branding](ACCOUNT_SETUP_AND_BRANDING.md) — what was actually configured and what remains unverified.
 5. [Content and video strategy](CONTENT_AND_VIDEO_STRATEGY.md) — fact provenance, recurring formats, platform variants and lightweight video direction.
 6. [Approved admin concept](design-reference/README.md) — preserved visual artifact; detailed current behavior is specified in the blueprint.
-7. [Batch 1 contract](implementation/BATCH_1_CONTRACT.md) and [verification/review ledger](implementation/BATCH_1_STATUS.md) — exact implementation slice, APIs, defaults, tests and remaining gates.
+7. [Current implementation/review ledger](implementation/BATCH_2_STATUS.md) and [batch 2 ownership contract](implementation/BATCH_2_CONTRACT.md).
+8. [Batch 1 contract](implementation/BATCH_1_CONTRACT.md) and [verification/review ledger](implementation/BATCH_1_STATUS.md) — exact implementation slice, APIs, defaults, tests and remaining gates.
 
 ## Decisions to retain
 
@@ -48,6 +49,6 @@ The current source/application can change independently of these records. Rechec
 
 Read the blueprint, low-cost profile and current egress evidence before implementing. Establish the domain/state/adapter/API contracts before parallel work. Inspect dirty files and recent commits; use an isolated branch/worktree for separately authorized code changes and coordinate shared auth/cache/main-module ownership. Never reset another agent's work.
 
-Check the batch ledger and Git/PR state before recreating the shared domain or worker. The next priorities after review are the egress/hosting gates, inspected media uploads and Meta OAuth/account discovery. Do not begin with all five real integrations, automated copy generation or video rendering. Use the blueprint's phase definitions and acceptance tests.
+Check the batch ledger and Git/PR state before recreating the shared domain or worker. The reviewed batch supplies egress reduction, inspected media and Meta connection code with executed regression receipts. Next coding priorities are queue/schedule completion (#484), safe media maintenance (#490) and native Meta publishing adapters (#491); live egress/hosting and account/storage gates remain separate. Do not begin with all five real integrations, automated copy generation or video rendering. Use the blueprint's phase definitions and acceptance tests.
 
 When this design changes, update the authoritative blueprint and decision log, date the change, and preserve the reason. Keep historical reports clearly labelled. Documentation being present in the working tree is not proof it has been committed, pushed or merged; check Git before handing work to a different checkout.

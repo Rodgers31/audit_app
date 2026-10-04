@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
-from pydantic import Field
+from pydantic import Field, StrictBool
 from sqlalchemy.orm import Session
 if __package__ == "backend.social":
     from ..database import get_db
@@ -119,7 +119,7 @@ class SystemDTO(StrictModel):
     worker: WorkerDTO
     queue_counts: dict[str, int]
     adapters_available: tuple[str, ...]
-    media_upload_available: Literal[False]
+    media_upload_available: StrictBool
     generation_enabled: Literal[False]
     auto_approve_enabled: Literal[False]
     auto_schedule_enabled: Literal[False]
@@ -218,7 +218,9 @@ def set_controls(request: Request, body: ControlsCommand, svc: Service, admin: A
 # Feature routers already have their complete public prefix. Aggregate beside
 # the editorial router rather than nesting under its prefix a second time.
 from .connections.api import router as connection_router
+from .media.api import router as media_router
 _editorial_router = router
 router = APIRouter()
 router.include_router(_editorial_router)
 router.include_router(connection_router)
+router.include_router(media_router)
