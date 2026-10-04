@@ -133,7 +133,9 @@ export default function Navigation() {
             </span>
           </Link>
 
-          <nav aria-label='Primary navigation' className='hidden min-w-0 flex-1 items-stretch xl:flex'>
+          {/* Keep every route visible when fallback fonts or translated labels
+              need more space; wrap within the nav's own 64px header column. */}
+          <nav aria-label='Primary navigation' className='hidden min-w-0 flex-1 flex-wrap items-stretch xl:flex'>
             {navItems.map((item) => {
               const active = isActive(item.href);
               return (
@@ -141,7 +143,7 @@ export default function Navigation() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`relative flex items-center whitespace-nowrap px-3 text-[12px] font-semibold min-[1440px]:px-4 min-[1440px]:text-[13px] ${
+                  className={`relative flex shrink-0 items-center whitespace-nowrap px-3 text-[12px] font-semibold min-[1440px]:px-4 min-[1440px]:text-[13px] ${
                     active
                       ? 'text-gov-dark dark:text-white'
                       : 'text-neutral-muted hover:bg-surface-sunken/55 hover:text-gov-dark dark:hover:text-white'
@@ -234,6 +236,7 @@ export default function Navigation() {
               <button
                 type='button'
                 onClick={() => setAuthModalOpen(true)}
+                aria-label={t('nav.sign_in')}
                 className='flex h-9 items-center gap-2 rounded-sm bg-gov-sage px-3 text-sm font-semibold text-white hover:bg-gov-forest active:translate-y-px'>
                 <LogIn className='h-4 w-4' aria-hidden='true' />
                 <span className='hidden sm:inline'>{t('nav.sign_in')}</span>
