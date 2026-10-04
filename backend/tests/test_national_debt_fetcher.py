@@ -14,6 +14,7 @@ from decimal import Decimal
 from typing import Any, Dict, List
 from unittest.mock import patch
 
+import httpx
 import pytest
 from seeding.config import SeedingSettings
 from seeding.domains.national_debt import cbk_bulletin
@@ -93,13 +94,13 @@ def _baseline_payload() -> Dict[str, Any]:
 FAKE_USD_KES = Decimal("134.822483279332")
 
 
-def _wb_response(value_usd: float, year: str = "2024") -> List[Any]:
+def _wb_response(value_usd: float | None, indicator: str, year: str = "2024") -> List[Any]:
     """Minimal WB API response with a single observation."""
     return [
         {"page": 1, "pages": 1, "per_page": 10, "total": 1},
         [
             {
-                "indicator": {"id": "X", "value": "x"},
+                "indicator": {"id": indicator, "value": indicator},
                 "country": {"id": "KE", "value": "Kenya"},
                 "countryiso3code": "KEN",
                 "date": year,
@@ -110,6 +111,14 @@ def _wb_response(value_usd: float, year: str = "2024") -> List[Any]:
             }
         ],
     ]
+
+
+def _wb_http_response(url: str, value: float | None) -> httpx.Response:
+    """Exercise the byte parser and receipt capture with HTTP metadata."""
+    indicator = url.split("/indicator/", 1)[1].split("?", 1)[0]
+    return httpx.Response(
+        200, json=_wb_response(value, indicator), request=httpx.Request("GET", url)
+    )
 
 
 # ── wb_ids.fetch_external_debt_from_wb_ids ──
@@ -128,22 +137,19 @@ class TestWbIdsFetcher:
                 # Different USD totals depending on indicator so we can
                 # tell them apart in assertions.
                 if "MIBR" in url:
-                    body = _wb_response(8_000_000_000)  # IBRD
+                    value = 8_000_000_000  # IBRD
                 elif "MIDA" in url:
-                    body = _wb_response(2_000_000_000)  # IDA combined into the row
+                    value = 2_000_000_000  # IDA combined into the row
                 elif "DIMF" in url:
-                    body = _wb_response(3_300_000_000)  # IMF
+                    value = 3_300_000_000  # IMF
                 elif "PA.NUS.FCRF" in url:
                     # USD/KES for the observation year. Conversion refuses
                     # without it, so the fake has to publish one.
-                    body = _wb_response(float(FAKE_USD_KES))
+                    value = float(FAKE_USD_KES)
                 else:
                     raise AssertionError(f"unexpected URL: {url}")
 
-                class R:
-                    def json(self_):
-                        return body
-                return R()
+                return _wb_http_response(url, value)
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)
 
@@ -170,10 +176,7 @@ class TestWbIdsFetcher:
                     raise RuntimeError("simulated 502")
                 value = float(FAKE_USD_KES) if "PA.NUS.FCRF" in url else 1.0
                 # All others return 1 USD so we can count them.
-                class R:
-                    def json(self_):
-                        return _wb_response(value)
-                return R()
+                return _wb_http_response(url, value)
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)
         # IMF is missing; World Bank still comes through.
@@ -188,16 +191,7 @@ class TestWbIdsFetcher:
 
         class FakeClient:
             def get(self, url, **_kwargs):
-                empty = [
-                    {"page": 1, "pages": 1, "per_page": 10, "total": 1},
-                    [
-                        {"date": "2024", "value": None}
-                    ],
-                ]
-                class R:
-                    def json(self_):
-                        return empty
-                return R()
+                return _wb_http_response(url, None)
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)
         assert loans == []
@@ -219,10 +213,7 @@ class TestWbIdsFetcher:
                     float(FAKE_USD_KES) if "PA.NUS.FCRF" in url else 1_000_000_000
                 )
                 # Both MIBR (IBRD primary) and DIMF (IMF) succeed.
-                class R:
-                    def json(self_):
-                        return _wb_response(value)
-                return R()
+                return _wb_http_response(url, value)
 
         loans = wb_ids.fetch_external_debt_from_wb_ids(FakeClient(), settings)
         lenders = {l["lender"] for l in loans}
