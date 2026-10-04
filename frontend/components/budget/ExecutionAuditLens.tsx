@@ -310,7 +310,7 @@ export default function ExecutionAuditLens({ rows, fiscalYear, source, coverage,
                   }`}
                 />
               </button>
-              <div className='px-4'><FigureEvidence label={`${r.sector} allocation and expenditure`} qualifications={r.qualifications} /></div>
+              <div className='px-4'><FigureEvidence label={`${r.sector} allocation and expenditure`} labelKey='evidence.label.sector_allocation' labelValues={{ sector: r.sector }} qualifications={r.qualifications} /></div>
               {isOpen && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}

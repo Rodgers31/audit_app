@@ -738,10 +738,10 @@ export default function NationalDebtPage() {
           </section>
         )}
 
-      <FigureEvidence label='debt register operands' rows={(overview?.data ?? overview)?.figure_qualifications?.loans} table='loans' />
-      <FigureEvidence label='published debt-to-GDP ratio' note={(overview?.data ?? overview)?.figure_qualifications?.derived_ratio} />
-      <FigureEvidence label='GDP observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
-      <FigureEvidence label='debt timeline observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
+      <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={(overview?.data ?? overview)?.figure_qualifications?.loans} table='loans' />
+      <FigureEvidence label='published debt-to-GDP ratio' labelKey='evidence.label.published_debt_ratio' note={(overview?.data ?? overview)?.figure_qualifications?.derived_ratio} />
+      <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
+      <FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}

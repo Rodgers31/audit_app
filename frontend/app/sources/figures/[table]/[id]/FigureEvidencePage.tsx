@@ -33,7 +33,7 @@ export default function FigureEvidencePage({ table, id }: { table: string; id: s
       </div> : query.isPending ? <p role='status'>{t('evidence.page.loading')}</p> : <>
         <p>{t('evidence.page.stored_value')}: {query.data.value ?? t('evidence.page.not_published')}</p>
         {query.data.reason && <p>{query.data.reason.replace(/_/g, ' ')}</p>}
-        <FigureEvidence label={t('evidence.page.this_observation')} qualifications={query.data.qualifications} />
+        <FigureEvidence label='this observation' labelKey='evidence.label.this_observation' qualifications={query.data.qualifications} />
         <button type='button' className='min-h-11 rounded border border-neutral-border px-4 focus-visible:outline focus-visible:outline-2' disabled={query.isFetching} onClick={() => { void query.refetch({ cancelRefetch: false }); }}>{t('evidence.page.refresh')}</button>
       </>}
     </div>

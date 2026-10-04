@@ -164,8 +164,8 @@ export default function DebtExplainerModal({ context, className = '' }: Props) {
                   </p>
                 </div>
 
-                <FigureEvidence label='debt register operands' rows={apiData?.figure_qualifications?.loans} table='loans' />
-                <FigureEvidence label='latest debt timeline' qualifications={newest?.qualifications} />
+                <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={apiData?.figure_qualifications?.loans} table='loans' />
+                <FigureEvidence label='latest debt timeline' labelKey='evidence.label.latest_debt_timeline' qualifications={newest?.qualifications} />
                 {/* Card 2 — what CBK itself publishes */}
                 <div className='rounded-xl border border-gov-copper/15 bg-gov-copper/[0.04] px-4 py-3'>
                   <p className='text-xs font-semibold uppercase tracking-wider text-gov-copper/60 mb-1'>

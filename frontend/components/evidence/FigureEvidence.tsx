@@ -2,10 +2,16 @@
 
 import Link from 'next/link';
 import { useLang } from '@/lib/i18n/LangProvider';
+import type { TranslationKey } from '@/lib/i18n/messages';
 import { evidenceUrl, qualificationMessageKey, type Qualifications, type QualificationRows, type QualificationTable } from '@/lib/evidence/qualification';
 
+export type EvidenceLabelKey = Extract<TranslationKey, `evidence.label.${string}`>;
+
 export interface FigureEvidenceProps {
+  /** Stable selector/source label. Application copy opts into explicit display keys. */
   label: string;
+  labelKey?: EvidenceLabelKey;
+  labelValues?: Readonly<Record<string, string>>;
   qualifications?: Qualifications | null;
   rows?: QualificationRows | null;
   table?: QualificationTable;
@@ -14,8 +20,9 @@ export interface FigureEvidenceProps {
 }
 
 /** A disclosure describes individual observations; it never verifies their sum. */
-export default function FigureEvidence({ label, qualifications, rows, table, recordId, note }: FigureEvidenceProps) {
+export default function FigureEvidence({ label, labelKey, labelValues, qualifications, rows, table, recordId, note }: FigureEvidenceProps) {
   const { t } = useLang();
+  const displayLabel = labelKey ? t(labelKey).replace(/\{(\w+)\}/g, (token, key: string) => labelValues?.[key] ?? token) : label;
   const words = (value: unknown) => typeof value === 'string' ? value.replace(/_/g, ' ') : t('evidence.unavailable');
   const statusLabel = (q: Parameters<typeof qualificationMessageKey>[0]) => t(qualificationMessageKey(q));
   const observations = rows
@@ -26,7 +33,7 @@ export default function FigureEvidence({ label, qualifications, rows, table, rec
   return (
     <details className='mt-2 min-w-0 max-w-full text-xs text-gray-700 dark:text-neutral-text' data-figure-evidence={label}>
       <summary className='min-h-11 cursor-pointer rounded px-1 py-2 leading-relaxed break-words focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gov-forest'>
-        {t('evidence.for').replace('{label}', () => label)} · {labels.length ? labels.join(' / ') : note?.status === 'qualified' && typeof note.reason === 'string' && note.reason.trim() ? t('evidence.status.qualified') : t('evidence.status.unavailable')}
+        {t('evidence.for').replace('{label}', () => displayLabel)} · {labels.length ? labels.join(' / ') : note?.status === 'qualified' && typeof note.reason === 'string' && note.reason.trim() ? t('evidence.status.qualified') : t('evidence.status.unavailable')}
       </summary>
       <div className='space-y-3 border-l-2 border-neutral-border pl-3 pb-2'>
         {!observations.length && <p>{note?.reason ? words(note.reason) : t('evidence.no_qualification')}{' '}{t('evidence.listing_limit')}</p>}

@@ -40,3 +40,32 @@ These 36 new draft translations need competent human language review. The earlie
 | `evidence.page.not_published` | Not published | Haijachapishwa |
 | `evidence.page.this_observation` | this observation | takwimu hii |
 | `evidence.page.refresh` | Refresh evidence | Onyesha ushahidi upya |
+
+## Caller-label supplement — 22 additional draft keys
+
+These descriptive application labels preserve separately supplied raw county/sector names and stable selector labels. Human review remains pending.
+
+| Key | English meaning | Draft Kiswahili |
+| --- | --- | --- |
+| `evidence.label.debt_register` | debt register operands | vipengele vya rejesta ya deni |
+| `evidence.label.gdp_observations` | GDP observations | takwimu za GDP |
+| `evidence.label.debt_to_gdp` | debt-to-GDP observation | takwimu ya deni ikilinganishwa na GDP |
+| `evidence.label.published_debt_ratio` | published debt-to-GDP ratio | uwiano uliochapishwa wa deni ikilinganishwa na GDP |
+| `evidence.label.county_budget` | county budget observations | takwimu za bajeti ya kaunti |
+| `evidence.label.latest_debt_timeline` | latest debt timeline | mfululizo wa deni wa hivi karibuni |
+| `evidence.label.gross_county_product` | gross county product | pato la kaunti |
+| `evidence.label.poverty_observations` | poverty observations | takwimu za umaskini |
+| `evidence.label.revenue_by_period` | revenue observations by period | takwimu za mapato kwa kipindi |
+| `evidence.label.county_named` | {name} budget observations | takwimu za bajeti ya {name} |
+| `evidence.label.county_budget_named` | {name} budget | bajeti ya {name} |
+| `evidence.label.sector_allocation` | {sector} allocation and expenditure | mgao na matumizi ya {sector} |
+| `evidence.label.gdp` | GDP | GDP |
+| `evidence.label.budget_gdp` | Budget / GDP | bajeti / GDP |
+| `evidence.label.inflation` | Inflation | mfumuko wa bei |
+| `evidence.label.this_observation` | this observation | takwimu hii |
+| `evidence.label.timeline_observations` | debt timeline observations | takwimu za mfululizo wa deni |
+| `evidence.county.gcp_title` | Gross county product | Pato la kaunti |
+| `evidence.county.poverty_title` | Poverty observations | Takwimu za umaskini |
+| `evidence.county.headcount` | Poverty headcount | Kiwango cha umaskini |
+| `evidence.county.extreme` | Extreme poverty | Umaskini uliokithiri |
+| `evidence.county.gini` | Gini coefficient | Mgawo wa Gini |

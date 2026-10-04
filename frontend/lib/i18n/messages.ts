@@ -24,6 +24,29 @@ export interface Translation {
 }
 
 export const MESSAGES = {
+  // Explicit evidence display labels; selector labels and raw names stay unchanged.
+  "evidence.label.debt_register": { en: "debt register operands", sw: "vipengele vya rejesta ya deni", plain: "debt register inputs" },
+  "evidence.label.gdp_observations": { en: "GDP observations", sw: "takwimu za GDP", plain: "GDP observations" },
+  "evidence.label.debt_to_gdp": { en: "debt-to-GDP observation", sw: "takwimu ya deni ikilinganishwa na GDP", plain: "debt compared with GDP" },
+  "evidence.label.published_debt_ratio": { en: "published debt-to-GDP ratio", sw: "uwiano uliochapishwa wa deni ikilinganishwa na GDP", plain: "published debt compared with GDP" },
+  "evidence.label.county_budget": { en: "county budget observations", sw: "takwimu za bajeti ya kaunti", plain: "county budget observations" },
+  "evidence.label.latest_debt_timeline": { en: "latest debt timeline", sw: "mfululizo wa deni wa hivi karibuni", plain: "latest debt timeline" },
+  "evidence.label.gross_county_product": { en: "gross county product", sw: "pato la kaunti", plain: "county economic output" },
+  "evidence.label.poverty_observations": { en: "poverty observations", sw: "takwimu za umaskini", plain: "poverty observations" },
+  "evidence.label.revenue_by_period": { en: "revenue observations by period", sw: "takwimu za mapato kwa kipindi", plain: "revenue observations by period" },
+  "evidence.label.county_named": { en: "{name} budget observations", sw: "takwimu za bajeti ya {name}", plain: "{name} budget observations" },
+  "evidence.label.county_budget_named": { en: "{name} budget", sw: "bajeti ya {name}", plain: "{name} budget" },
+  "evidence.label.sector_allocation": { en: "{sector} allocation and expenditure", sw: "mgao na matumizi ya {sector}", plain: "{sector} allocation and spending" },
+  "evidence.label.gdp": { en: "GDP", sw: "GDP", plain: "GDP" },
+  "evidence.label.budget_gdp": { en: "Budget / GDP", sw: "bajeti / GDP", plain: "budget / GDP" },
+  "evidence.label.inflation": { en: "Inflation", sw: "mfumuko wa bei", plain: "price increases" },
+  "evidence.label.this_observation": { en: "this observation", sw: "takwimu hii", plain: "this observation" },
+  "evidence.label.timeline_observations": { en: "debt timeline observations", sw: "takwimu za mfululizo wa deni", plain: "debt timeline observations" },
+  "evidence.county.gcp_title": { en: "Gross county product", sw: "Pato la kaunti", plain: "County economic output" },
+  "evidence.county.poverty_title": { en: "Poverty observations", sw: "Takwimu za umaskini", plain: "Poverty observations" },
+  "evidence.county.headcount": { en: "Poverty headcount", sw: "Kiwango cha umaskini", plain: "People below the poverty line" },
+  "evidence.county.extreme": { en: "Extreme poverty", sw: "Umaskini uliokithiri", plain: "Extreme poverty" },
+  "evidence.county.gini": { en: "Gini coefficient", sw: "Mgawo wa Gini", plain: "Gini coefficient" },
   // Observation evidence UI. Source facts and diagnostic identifiers remain verbatim.
   "evidence.for": { en: "Evidence for {label}", sw: "Ushahidi wa {label}", plain: "Evidence for {label}" },
   "evidence.status.verified": { en: "Verified observation", sw: "Takwimu iliyothibitishwa", plain: "Checked observation" },

@@ -1373,7 +1373,7 @@ function CountyRankingsTable({
                       className='block text-sm text-gray-700 dark:text-neutral-muted tabular-nums font-medium hover:text-gov-forest dark:text-emerald-100 transition-colors'>
                       {fmtKESorDash(budget)}
                     </Link>
-                    <FigureEvidence label={`${county.name} budget`} rows={county.figureQualifications?.budget_lines} table="budget_lines" />
+                    <FigureEvidence label={`${county.name} budget`} labelKey='evidence.label.county_budget_named' labelValues={{ name: county.name }} rows={county.figureQualifications?.budget_lines} table="budget_lines" />
                   </td>
                   <td data-label={t('counties.rankings.col_execution')} className='py-3 px-3'>
                     <Link

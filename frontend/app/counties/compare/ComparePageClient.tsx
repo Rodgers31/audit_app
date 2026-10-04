@@ -348,7 +348,7 @@ function CompareContent() {
       <ModelledDataNote
         budgetSource={(picked.length ? picked : all || []).map((c) => c.budget_source)}
       />
-      {!error && picked.map(county => <FigureEvidence key={county.id} label={`${county.name} budget observations`} rows={county.figure_qualifications?.budget_lines} table='budget_lines' />)}
+      {!error && picked.map(county => <FigureEvidence key={county.id} label={`${county.name} budget observations`} labelKey='evidence.label.county_named' labelValues={{ name: county.name }} rows={county.figure_qualifications?.budget_lines} table='budget_lines' />)}
       {isLoading && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
           <Loader2 className='animate-spin' size={18} />

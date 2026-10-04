@@ -488,7 +488,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
           trend is real; marked because the level is not KRA&rsquo;s own.
         </p>
       )}
-      <FigureEvidence label='revenue observations by period' rows={Object.fromEntries((revenueBySource ?? []).flatMap(fy => (fy.sources ?? []).map((source, index) => [`${fy.fiscal_year}-${index}`, source.qualifications ?? {}])))} />
+      <FigureEvidence label='revenue observations by period' labelKey='evidence.label.revenue_by_period' rows={Object.fromEntries((revenueBySource ?? []).flatMap(fy => (fy.sources ?? []).map((source, index) => [`${fy.fiscal_year}-${index}`, source.qualifications ?? {}])))} />
     </motion.section>
   );
 }

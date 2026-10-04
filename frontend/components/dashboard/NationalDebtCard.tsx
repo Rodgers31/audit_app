@@ -273,7 +273,7 @@ export default function NationalDebtCard() {
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.6, delay: 0.1 }}
       className='glass-card overflow-hidden h-full flex flex-col'>
-      <div className='px-6 sm:px-8'><FigureEvidence label='debt timeline observations' rows={Object.fromEntries(debtTimeline.map(row => [row.year, row.qualifications ?? {}]))} /></div>
+      <div className='px-6 sm:px-8'><FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(debtTimeline.map(row => [row.year, row.qualifications ?? {}]))} /></div>
       {/* Header */}
       <div className='bg-surface-sunken/45 px-6 sm:px-8 pt-5 pb-4 border-b border-neutral-border'>
         <div className='flex items-start justify-between'>
