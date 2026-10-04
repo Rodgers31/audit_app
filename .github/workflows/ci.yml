@@ -96,8 +96,8 @@ jobs:
             echo "⚠️ No coverage.xml found, skipping check"
           fi
 
-      - name: Test optional coverage reporting
-        run: python -m unittest discover -s .github/scripts/tests -p test_coverage_upload.py -v
+      - name: Test workflow boundaries and optional coverage reporting
+        run: python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v
 
       - name: Prepare optional Codecov upload
         id: coverage_upload_prepare
