@@ -92,6 +92,11 @@ KNOWN_UNGATED_WRITE_ROUTES: dict = {}
 # test_signed_write_routes_refuse_an_unsigned_request proves the handler turns
 # away anyone without the signature before it does any work.
 SIGNED_WRITE_ROUTES = {
+    ("POST", "/api/v1/system/cache/status"): (
+        "Worker cache observation uses the same HMAC-SHA256 signature and "
+        "freshness check as invalidate; observation is refused before "
+        "generation_status when the caller is unsigned or the secret is unset."
+    ),
     ("POST", "/api/v1/system/cache/invalidate"): (
         "Called by the nightly seed after seed+validate. HMAC-SHA256 of the raw "
         "body with REVALIDATE_SECRET in x-revalidate-signature, and a ts within "
@@ -163,6 +168,7 @@ def test_every_write_route_verifies_the_caller():
     assert ("DELETE", "/api/v1/admin/users/{user_id}") in keys  # router-level
     assert ("POST", "/api/v1/user/watchlist") in keys  # router, route dep
     assert ("POST", "/api/v1/newsletter/subscribe") in keys  # allowlisted
+    assert ("POST", "/api/v1/system/cache/status") in keys  # signed caller
 
     open_routes = sorted(
         f"{method} {path}"
@@ -344,6 +350,9 @@ def test_signed_write_routes_refuse_an_unsigned_request(
     monkeypatch.setattr(
         handler_module, "invalidate_all", lambda *a, **k: ran.append(1) or {}
     )
+    monkeypatch.setattr(
+        handler_module, "generation_status", lambda: ran.append("status") or {}
+    )
 
     # A FRESH timestamp, so the only thing that can refuse these is the
     # signature check. (A stale ts is refused by the replay check too, which
@@ -370,4 +379,4 @@ def test_signed_write_routes_refuse_an_unsigned_request(
     assert (
         disabled.json()["detail"]["error"] == "invalidation_not_configured"
     ), disabled.text
-    assert ran == [], "an unsigned request reached invalidate_all()"
+    assert ran == [], "an unsigned request reached cache invalidation or observation"
