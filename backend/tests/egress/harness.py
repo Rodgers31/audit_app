@@ -19,15 +19,24 @@ from seeding.domains.revenue_by_source.parser import RevenueBySourceRecord
 
 
 def local_url(value):
+    """Validate caller input, then return pinned SQLAlchemy connection options."""
+    # make_url drops blank query values. Reject their syntax before parsing too.
+    if isinstance(value, str) and '?' in value:
+        raise ValueError('Caller database query options are unsupported')
     try:
         url = make_url(value)
     except ArgumentError:
         raise ValueError('An explicit dedicated loopback database URL is required') from None
     if (url.drivername not in ('postgresql', 'postgresql+psycopg2') or
             url.host not in ('localhost', '127.0.0.1', '::1') or
-            url.port != 62124 or url.database != 'social_worker_test'):
+            url.port != 62124 or url.database != 'social_worker_test' or url.query):
         raise ValueError('Use only the dedicated loopback social_worker_test database on port 62124')
-    return url.set(drivername='postgresql+psycopg2')
+    # libpq query arguments override URL authority fields; reject all caller
+    # options rather than maintaining a bypass-prone key denylist. Pin hostaddr
+    # too, so inherited PGHOSTADDR/service defaults cannot redirect the socket.
+    address = '::1' if url.host == '::1' else '127.0.0.1'
+    return url.set(drivername='postgresql+psycopg2', host=address,
+                   query={'hostaddr': address})
 
 
 def cell_bytes(value):

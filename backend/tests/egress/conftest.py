@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from harness import isolated_engine
+from harness import isolated_engine, local_url
 
 
 @pytest.fixture
@@ -13,5 +13,6 @@ def pg_fixture(monkeypatch):
         pytest.skip('Set explicit local EGRESS_TEST_DATABASE_URL')
     monkeypatch.setenv('PYTHON_DOTENV_DISABLED','1')
     with isolated_engine(dsn) as fixture:
-        monkeypatch.setenv('DATABASE_URL',dsn)  # Import-only web dependency; never a configured environment file.
+        # The import-only engine gets the same pinned address as the fixture.
+        monkeypatch.setenv('DATABASE_URL',local_url(dsn).render_as_string(hide_password=False))
         yield fixture

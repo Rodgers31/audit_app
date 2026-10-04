@@ -52,8 +52,9 @@ def measure_worker(dsn):
     from social.contracts import OperationResult
     from test_queue_postgres import FakeAdapter,run_claim,seed
     result={}
+    worker_dsn=local_url(dsn).render_as_string(hide_password=False)
     with isolated_engine(dsn,social=True) as (engine,probe):
-        repo=QueueRepository(engine,WorkerConfig(dsn),uuid4())
+        repo=QueueRepository(engine,WorkerConfig(worker_dsn),uuid4())
         with probe.capture():
             repo.recover_expired()
             assert repo.claim_due(2)==[]
@@ -71,7 +72,7 @@ def measure_worker(dsn):
         result['pool_size']=engine.pool.size()
         result['pool_max_overflow']=engine.pool._max_overflow
     with isolated_engine(dsn,social=True) as (engine,probe):
-        repo=QueueRepository(engine,WorkerConfig(dsn),uuid4())
+        repo=QueueRepository(engine,WorkerConfig(worker_dsn),uuid4())
         seed(engine,count=2)
         async def two_slots():
             both_started=asyncio.Event()
@@ -117,8 +118,11 @@ def main():
         report={'measurement':'UTF-8 decoded selected-value estimate; excludes protocol/TLS/pooler bytes',
                 'fixture':{'jobs':100,'matched_jobs':80,'writer_records':20,'distinct_sources':2,
                            'diagnostic_bytes_per_job':65536,'metadata_bytes_per_source':65536},
-                'ingestion_stats':measure_stats(dsn),'source_documents':measure_writers(dsn),
-                'social_worker':measure_worker(dsn)}
+                # Revalidate original caller input at each fixture boundary;
+                # generated hostaddr is an engine option, not a caller option.
+                'ingestion_stats':measure_stats(args.database_url),
+                'source_documents':measure_writers(args.database_url),
+                'social_worker':measure_worker(args.database_url)}
     except Exception as error:
         print(json.dumps({'outcome':'benchmark_failed','error_type':type(error).__name__}),file=sys.stderr)
         return 1
