@@ -17,6 +17,7 @@ import {
   History,
   ListChecks,
   PlayCircle,
+  Send,
   Users,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: '/admin/ingestion', label: 'Ingestion', icon: ListChecks },
   { href: '/admin/etl', label: 'ETL Schedule', icon: PlayCircle },
   { href: '/admin/audit-log', label: 'Audit Log', icon: History },
+  { href: '/admin/social', label: 'Social Media', icon: Send },
   { href: '/status', label: 'Pipeline Status', icon: Activity },
 ];
 
