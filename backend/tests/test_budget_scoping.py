@@ -20,18 +20,20 @@ def seed_multi_period_data(db_session, seed_country, seed_source_doc):
     - 2 counties with budget lines in FY2024/25
     - 1 national entity with budget lines in FY2023/24 and FY2024/25
     """
+    # Synthetic monetary values on genuine Kenyan county identities: the
+    # public overview deliberately refuses invented/foreign county names.
     # Entities
     county_a = Entity(
         country_id=seed_country.id,
         type=EntityType.COUNTY,
-        canonical_name="Alpha County",
-        slug="alpha-county",
+        canonical_name="Baringo County",
+        slug="baringo-county",
     )
     county_b = Entity(
         country_id=seed_country.id,
         type=EntityType.COUNTY,
-        canonical_name="Beta County",
-        slug="beta-county",
+        canonical_name="Kajiado County",
+        slug="kajiado-county",
     )
     national = Entity(
         country_id=seed_country.id,
@@ -185,6 +187,29 @@ class TestBudgetOverviewScoping:
         resp = client.get("/api/v1/budget/overview")
         data = resp.json()
         assert data.get("fiscal_period") == "FY2024/25"
+
+    def test_unknown_county_cannot_select_a_newer_period_or_add_money(
+        self, client, db_session, seed_country, seed_source_doc, seed_multi_period_data,
+    ):
+        unknown = Entity(country_id=seed_country.id, type=EntityType.COUNTY,
+                         canonical_name="Alpha County", slug="alpha-county")
+        newer = FiscalPeriod(country_id=seed_country.id, label="FY2025/26",
+                             start_date=datetime(2025, 7, 1), end_date=datetime(2026, 6, 30))
+        db_session.add_all([unknown, newer])
+        db_session.flush()
+        # A newer unknown county must not displace the legitimate latest FY.
+        for period in (newer, seed_multi_period_data["fp_current"]):
+            db_session.add(BudgetLine(entity_id=unknown.id, period_id=period.id,
+                                     category="Health", allocated_amount=90_000_000_000,
+                                     actual_spent=80_000_000_000, currency="KES",
+                                     source_document_id=seed_source_doc.id))
+        db_session.commit()
+        response = client.get("/api/v1/budget/overview")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["fiscal_period"] == "FY2024/25"
+        assert data["summary"]["total_budget"] == pytest.approx(23_000_000_000)
+        assert "Alpha County" not in str(data.get("county_utilization", {}))
 
     def test_county_utilization_excludes_national(self, client, seed_multi_period_data):
         resp = client.get("/api/v1/budget/overview")
