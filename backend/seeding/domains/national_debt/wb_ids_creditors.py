@@ -96,7 +96,7 @@ from ...config import SeedingSettings
 from .fx import rate_provenance, usd_kes_rate_for_year
 from ...http_client import SeedingHttpClient
 from ...observations import ObservedSeries
-from services.response_receipts import capture_response
+from services.response_receipts import response_receipt, copy_receipt, seal_receipt
 import json
 
 logger = logging.getLogger("seeding.national_debt.wb_ids_creditors")
@@ -262,10 +262,8 @@ def _fetch_series(
     resp = client.get(url)
     resp.raise_for_status()
     payload = json.loads(resp.content, parse_float=Decimal)
-    receipt = resp.extensions.get("response_receipt")
-    if not isinstance(receipt, dict) or "digest" not in receipt:
-        receipt = capture_response(resp, getattr(client, "receipt_store", None))
-    receipt = {**receipt, "parser_version": "wb-ids-creditor-v1"}
+    receipt = response_receipt(resp, getattr(client, "receipt_store", None))
+    receipt = copy_receipt(receipt, parser_version="wb-ids-creditor-v1")
     try:
         records = payload["source"]["data"]
     except (KeyError, TypeError) as exc:
@@ -303,6 +301,12 @@ def _fetch_series(
                 "bytes": receipt["byte_check"]["status"] == "matched", "locator": True},
             "reconciliation": {"status": "not_checked", "reason": "independent_fx_operand_not_checked"},
         }]
+    # IDS supplies USD inputs. A normalized KES manifest would also need the
+    # independent FX observation and resolved creditor identity; neither is
+    # checked here. Retain the genuine acquisition without certifying a partial
+    # KES manifest (which could mislabel this qualified value as a conflict).
+    receipt["observations"] = []
+    seal_receipt(receipt)
     return out
 
 
@@ -701,11 +705,10 @@ def to_loan_rows(
                 "debt_category": c.debt_category,
                 "principal": str(c.kes),
                 "outstanding": str(c.kes),
-                "source_evidence": [{**e,
-                    "identity": {**e["identity"], "dimensions": {"lender": display, "debt_category": c.debt_category}},
-                    "value": str(c.kes),
-                    "transformation": {**e["transformation"], "factor": str(c.usd_kes_rate)},
-                } for e in c.source_evidence or []],
+                # A raw USD response is not independent evidence of this KES
+                # loan amount. Keep the historical source association without
+                # an unsupported normalized receipt or invented as-at date.
+                "source_evidence": [],
                 "interest_rate": None,
                 "interest_terms": _interest_terms_for(
                     c, year, interest, interest_unavailable_reason
@@ -718,7 +721,10 @@ def to_loan_rows(
                     f"{c.series}, counterpart area {c.counterpart_id} "
                     f"({c.name}). USD {c.usd:,.0f} "
                     f"{rate_provenance(year, c.usd_kes_rate)}. "
-                    + _COMPONENT_OF_SERIES[c.series].row_note
+                    + f" Source observation period: {year} (annual USD). "
+                    "KES amount remains qualified: independent FX operand is "
+                    "not bound to the source receipt, and no genuine measurement "
+                    "date is persisted. " + _COMPONENT_OF_SERIES[c.series].row_note
                 ),
             }
         )

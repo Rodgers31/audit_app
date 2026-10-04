@@ -72,6 +72,7 @@ never cached, and every run reparses, rather than being quietly altered.
 from __future__ import annotations
 
 import hashlib
+from copy import deepcopy
 import inspect
 import json
 import logging
@@ -92,6 +93,51 @@ _ENVELOPE_VERSION = 1
 _DECIMAL_TAG = "__decimal__"
 
 _READ_CHUNK = 1024 * 1024
+_FRESH_PARSE = object()
+
+
+class FreshParseRecords(list):
+    """Runtime-only source parse; cached JSON cannot claim this authority."""
+
+    def __init__(self, records, digest, *, _capability=None):
+        if _capability is not _FRESH_PARSE:
+            raise TypeError("Fresh records require actual source parsing")
+        super().__init__(records)
+        self._source_digest = digest
+        self._snapshot = json.dumps(_encode(self), sort_keys=True)
+
+    def __deepcopy__(self, memo):
+        copied = FreshParseRecords(
+            deepcopy(list(self), memo), self._source_digest, _capability=_FRESH_PARSE
+        )
+        copied._snapshot = self._snapshot
+        memo[id(self)] = copied
+        return copied
+
+    def __reduce_ex__(self, protocol):
+        return list, (list(self),)
+
+
+def fresh_parse_matches(records, source_digest):
+    try:
+        return (
+            isinstance(records, FreshParseRecords)
+            and records._source_digest == source_digest
+            and records._snapshot == json.dumps(_encode(records), sort_keys=True)
+        )
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
+def _parse_fresh(parse_fn, path):
+    before = content_digest(path)
+    records = parse_fn()
+    if isinstance(records, list) and content_digest(path) == before:
+        try:
+            return FreshParseRecords(records, before, _capability=_FRESH_PARSE)
+        except (TypeError, ValueError):
+            pass  # Nonserializable results remain usable, without stronger evidence.
+    return records
 
 
 def content_digest(path: Path) -> str:
@@ -262,7 +308,7 @@ def parse_with_cache(
 
     if not enabled:
         logger.info("%s parse cache disabled; parsing %s", kind, pdf_path.name)
-        return parse_fn()
+        return _parse_fresh(parse_fn, pdf_path)
 
     pdf_digest = content_digest(pdf_path)
     code_digest = parser_digest(parse_fn)
@@ -273,7 +319,7 @@ def parse_with_cache(
             kind,
             pdf_path.name,
         )
-        return parse_fn()
+        return _parse_fresh(parse_fn, pdf_path)
 
     key = _key(pdf_digest, code_digest, key_extra)
     entry = _entry_path(cache_dir, kind, key)
@@ -326,7 +372,7 @@ def parse_with_cache(
             _miss_reason(cache_dir, kind, pdf_digest, code_digest),
         )
 
-    records = parse_fn()
+    records = _parse_fresh(parse_fn, pdf_path)
 
     # Never bank a result the parse did not produce. An empty list is a real
     # outcome the caller treats as failure (it falls back to the fixture), and

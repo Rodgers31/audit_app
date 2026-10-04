@@ -11,7 +11,16 @@ from pathlib import Path
 import hashlib
 
 from services.receipt_store import LocalReceiptStore
-from services.response_receipts import now_iso, persist_receipt, capture_response
+from services.response_receipts import (
+    persist_receipt,
+    persist_evidence,
+    response_receipt,
+    acquisition_is_intact,
+    receipt_is_sealed,
+    copy_receipt,
+    capture_local_bytes,
+    seal_receipt,
+)
 
 
 class PdfCellEvidence(dict):
@@ -22,37 +31,28 @@ class PdfCellEvidence(dict):
     """
 
 
+def bind_parse_receipt(receipt, parsed_records):
+    """Cached normalized cells stay usable but cannot seal a new source claim."""
+    from .parse_cache import fresh_parse_matches
+
+    if fresh_parse_matches(parsed_records, receipt.get("digest")):
+        return receipt
+    untrusted = deepcopy(dict(receipt))
+    untrusted[
+        "parser_result_origin"
+    ] = "cached_or_unbound_parse_not_independently_checked"
+    return untrusted
+
+
 def receipt_for_response(client, response, parser_version: str) -> dict:
     """Preserve the original acquisition when GET returned cached bytes."""
-    recorded = response.extensions.get("response_receipt")
-    if isinstance(recorded, dict):
-        receipt = deepcopy(recorded)
-        digest = hashlib.sha256(response.content).hexdigest()
-        if receipt.get("digest") != digest:
-            receipt["byte_check"] = {
-                "status": "conflict",
-                "sha256": digest,
-                "checked_at": now_iso(),
-            }
-    else:
-        store = getattr(client, "receipt_store", None)
-        if store is None and hasattr(client, "_settings"):
-            store = LocalReceiptStore(
-                Path(client._settings.storage_path) / "response-receipts"
-            )
-        receipt = capture_response(response, store, source_kind="pdf")
-        if response.extensions.get("seeding_cache"):
-            receipt.update(
-                status=None,
-                content_type=None,
-                acquisition_kind="cached_response_without_acquisition_receipt",
-            )
-    receipt.update(
-        source_kind="pdf",
-        request_url=str(response.request.url),
-        parser_version=parser_version,
-    )
-    return receipt
+    store = getattr(client, "receipt_store", None)
+    if store is None and hasattr(client, "_settings"):
+        store = LocalReceiptStore(
+            Path(client._settings.storage_path) / "response-receipts"
+        )
+    receipt = response_receipt(response, store, source_kind="pdf")
+    return copy_receipt(receipt, parser_version=parser_version)
 
 
 def receipt_for_pdf(
@@ -62,51 +62,40 @@ def receipt_for_pdf(
 
     body = path.read_bytes()
     digest = hashlib.sha256(body).hexdigest()
-    recorded = cached_pdf_meta(path.parent, url).get("response_receipt")
-    receipt = (
-        deepcopy(recorded)
-        if isinstance(recorded, dict)
-        else {
-            "version": 1,
-            "source_kind": "pdf",
-            "request_url": url,
-            "status": None,
-            "content_type": None,
-            "acquired_at": now_iso(),
-            "acquisition_kind": "local_cached_bytes",
-            "digest": digest,
-            "byte_size": len(body),
-            "digest_scope": "pdf_file",
-        }
+    recorded = (
+        client.download_receipt(url) if hasattr(client, "download_receipt") else None
     )
-    receipt.update(
-        source_kind="pdf", parser_version=parser_version, storage_scope="local"
-    )
-    # A recorded receipt from a different body is retained as a contradiction.
-    agrees = receipt.get("digest") == digest and receipt.get("byte_size") == len(body)
+    claimed = cached_pdf_meta(path.parent, url).get("response_receipt")
     store = getattr(client, "receipt_store", None)
     if store is None and settings is not None:
         store = LocalReceiptStore(Path(settings.storage_path) / "response-receipts")
-    try:
-        if store is None:
-            raise ValueError("receipt_store_unconfigured")
-        key = store.put(body)
-        matched = key == digest and store.read(key) == body and agrees
-        receipt["storage_key"] = key
-        receipt["byte_check"] = {
-            "status": "matched" if matched else "conflict",
-            "sha256": digest,
-            "checked_at": now_iso(),
-        }
-    except (OSError, ValueError) as exc:
-        receipt["storage_key"] = None
-        receipt["byte_check"] = {
-            "status": "missing",
-            "sha256": None,
-            "checked_at": now_iso(),
-        }
-        receipt["failure_reason"] = f"{type(exc).__name__}: {exc}"
-    return receipt
+    if (
+        acquisition_is_intact(recorded)
+        and recorded.get("digest") == digest
+        and recorded.get("byte_size") == len(body)
+    ):
+        # Actual runtime download capability, independently associated with
+        # the file parsed now. A serialized sidecar cannot enter this branch.
+        receipt = copy_receipt(
+            recorded, parser_version=parser_version, source_kind="pdf"
+        )
+        try:
+            if store is None or store.read(receipt["storage_key"]) != body:
+                raise ValueError("receipt_readback_mismatch")
+        except (OSError, ValueError, TypeError, RuntimeError):
+            return copy_receipt(
+                capture_local_bytes(body, store, url=url), parser_version=parser_version
+            )
+        return receipt
+    return copy_receipt(
+        capture_local_bytes(
+            body,
+            store,
+            url=url,
+            claimed_receipt=recorded if isinstance(recorded, dict) else claimed,
+        ),
+        parser_version=parser_version,
+    )
 
 
 def cell_evidence(
@@ -215,12 +204,16 @@ def bind_pdf_evidence(
     out = []
     for original in evidence:
         if not isinstance(original, PdfCellEvidence):
-            raise ValueError(
-                "PDF evidence requires an actual parser ingestion envelope"
-            )
+            untrusted = dict(original)
+            untrusted.pop("_response_receipt", None)
+            out.extend(persist_evidence(session, source_document, [untrusted]))
+            continue
         observation = deepcopy(original)
         observed = observation.get("identity", {})
         receipt = observation["_response_receipt"]
+        if not receipt_is_sealed(receipt):
+            out.extend(persist_evidence(session, source_document, [observation]))
+            continue
         manifest = receipt.get("observations", [])
         raw_agrees = any(
             all(
@@ -322,3 +315,5 @@ def seal_pdf_observations(evidence: list) -> None:
         receipt["observations"] = deepcopy(
             manifests[(receipt["digest"], receipt["acquired_at"])]
         )
+        if acquisition_is_intact(receipt):
+            seal_receipt(receipt)

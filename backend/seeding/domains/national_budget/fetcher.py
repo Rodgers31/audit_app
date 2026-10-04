@@ -297,8 +297,15 @@ def _fetch_annual_sector_expenditure(
         return [], "no_sector_passed_verification"
 
     records = build_expenditure_records(result, report)
-    from ...pdf_evidence import receipt_for_pdf, cell_evidence, seal_pdf_observations
+    from ...pdf_evidence import (
+        receipt_for_pdf,
+        cell_evidence,
+        seal_pdf_observations,
+        bind_parse_receipt,
+    )
+
     receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1")
+    receipt = bind_parse_receipt(receipt, page_rows)
     evidence = []
     for row, sector in zip(records, result.accepted):
         cells = []

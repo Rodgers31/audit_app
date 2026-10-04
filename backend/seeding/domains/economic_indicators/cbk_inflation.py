@@ -41,7 +41,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from bs4 import BeautifulSoup
 from decimal import Decimal
-from services.response_receipts import capture_response
+from services.response_receipts import (
+    response_receipt,
+    copy_receipt,
+    seal_receipt,
+    acquisition_is_intact,
+)
 
 CBK_INFLATION_URL = "https://www.centralbank.go.ke/inflation-rates/"
 INDICATOR_TYPE = "inflation_rate_12m"
@@ -135,7 +140,13 @@ def _month_index(year: int, month: int) -> int:
     return year * 12 + (month - 1)
 
 
-def parse_cbk_inflation(html: str, response_receipt: dict | None = None) -> CbkInflationResult:
+def parse_cbk_inflation(
+    html: str,
+    response_receipt: dict | None = None,
+    *,
+    source_bytes=None,
+    source_encoding="utf-8",
+) -> CbkInflationResult:
     """Parse the CBK page into checked economic-indicator payload dicts.
 
     Records are newest first and shaped for
@@ -217,8 +228,20 @@ def parse_cbk_inflation(html: str, response_receipt: dict | None = None) -> CbkI
                 "data_quality": "official",
             }
         )
-    if response_receipt is not None:
-        receipt = {**response_receipt, "source_kind": "web", "parser_version": "cbk-inflation-table-v1"}
+    import hashlib
+
+    input_bound = isinstance(source_bytes, bytes) and hashlib.sha256(
+        source_bytes
+    ).hexdigest() == (response_receipt or {}).get("digest")
+    if input_bound:
+        try:
+            input_bound = source_bytes.decode(source_encoding) == html
+        except (LookupError, UnicodeError):
+            input_bound = False
+    if input_bound and acquisition_is_intact(response_receipt):
+        receipt = copy_receipt(
+            response_receipt, source_kind="web", parser_version="cbk-inflation-table-v1"
+        )
         manifest = []
         for record in result.records:
             period = record["reference_month"]
@@ -237,6 +260,7 @@ def parse_cbk_inflation(html: str, response_receipt: dict | None = None) -> CbkI
                     "bytes": receipt["byte_check"]["status"] == "matched"},
                 "reconciliation": {"status": "matched", "reason": "parsed monthly cell matches stored value; annual-window guard accepted"}}]
         receipt["observations"] = manifest
+        seal_receipt(receipt)
     return result
 
 
@@ -245,10 +269,15 @@ def fetch_cbk_inflation(client) -> CbkInflationResult:
     resp = client.get(CBK_INFLATION_URL, raise_for_status=True)
     if resp.status_code != 200 or "html" not in resp.headers.get("content-type", "").lower():
         raise CbkTableNotFound("CBK table requires a complete HTTP200 HTML response")
-    receipt = resp.extensions.get("response_receipt")
-    if not isinstance(receipt, dict) or "digest" not in receipt:
-        receipt = capture_response(resp, getattr(client, "receipt_store", None), source_kind="web")
-    return parse_cbk_inflation(resp.text, receipt)
+    receipt = response_receipt(
+        resp, getattr(client, "receipt_store", None), source_kind="web"
+    )
+    return parse_cbk_inflation(
+        resp.text,
+        receipt,
+        source_bytes=resp.content,
+        source_encoding=resp.encoding or "utf-8",
+    )
 
 
 __all__ = [

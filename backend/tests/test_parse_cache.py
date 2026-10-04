@@ -127,7 +127,18 @@ class TestTheFetcherDoesNotReparseAnUnchangedDocument:
             f"{walk.call_count} times; at the ~250s/walk the nightly logs "
             "that is the 19% of the budget this change exists to remove"
         )
-        assert first == second, "the cached second run must be the same records"
+        assert [dict(r, source_evidence=[]) for r in first] == [
+            dict(r, source_evidence=[]) for r in second
+        ], "the cached second run must preserve quantities, identities and periods"
+        # Acquisition times and fresh/cache parser authority are separate from
+        # normalized financial values; a cache hit cannot recreate that proof.
+        from services.response_receipts import receipt_is_sealed
+
+        assert all(
+            not receipt_is_sealed(e["_response_receipt"])
+            for r in second
+            for e in r.get("source_evidence", [])
+        )
         assert first, "the fixture tables should yield records at all"
 
     def test_a_changed_document_is_parsed_again(self, settings, fake_pdf):

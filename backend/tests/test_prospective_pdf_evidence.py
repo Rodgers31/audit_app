@@ -156,7 +156,8 @@ def test_changed_cached_bytes_conflict_with_retained_transport(settings):
         path.write_bytes(b"%PDF-1.7\nnew\n%%EOF")
         receipt = receipt_for_pdf(client, settings, path, url, "owned-control-v1")
     assert receipt["byte_check"]["status"] == "conflict"
-    assert receipt["digest"] != receipt["byte_check"]["sha256"]
+    assert receipt["claimed_digest"] != receipt["byte_check"]["sha256"]
+    assert receipt["status"] is None
 
 
 def draft(receipt):
@@ -188,10 +189,11 @@ def test_json_dataset_cannot_self_attest_a_pdf_receipt(
 ):
     observation = draft(local_receipt(settings, tmp_path))
     seal_pdf_observations([observation])
-    with pytest.raises(ValueError, match="actual parser ingestion envelope"):
-        bind_pdf_evidence(
-            db_session, seed_source_doc, [dict(observation)], identity={}, values={}
-        )
+    bound = bind_pdf_evidence(
+        db_session, seed_source_doc, [dict(observation)], identity={}, values={}
+    )
+    assert bound[0]["receipt"]["extraction_id"] is None
+    assert bound[0]["checks"]["bytes"] is False
     assert db_session.query(Extraction).count() == 0
 
 
@@ -218,7 +220,7 @@ def test_cached_response_preserves_unknown_acquisition(settings):
         response.extensions["response_receipt"] = receipt
         assert (
             receipt_for_response(client, response, "owned-control-v2")["acquired_at"]
-            == "2026-09-01T00:00:00Z"
+            is None
         )
 
 

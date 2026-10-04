@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from decimal import Decimal, ROUND_HALF_EVEN
 
-from services.response_receipts import capture_response
+from services.response_receipts import response_receipt, copy_receipt, seal_receipt
 
 
 class ObservedSeries(dict):
@@ -21,9 +21,7 @@ def worldbank_observations(response, client, *, indicator: str, measure: str,
     Legacy parser helpers remain usable for local fixtures, but only this strict
     response parser emits evidence for response verification.
     """
-    receipt = response.extensions.get("response_receipt")
-    if not isinstance(receipt, dict) or "digest" not in receipt:
-        receipt = capture_response(response, getattr(client, "receipt_store", None))
+    receipt = response_receipt(response, getattr(client, "receipt_store", None))
     if response.status_code != 200 or "json" not in response.headers.get("content-type", "").lower():
         raise ValueError("World Bank response requires complete 200 JSON")
     payload = json.loads(response.content, parse_float=Decimal)
@@ -32,7 +30,7 @@ def worldbank_observations(response, client, *, indicator: str, measure: str,
     meta, rows = payload
     if meta.get("pages") != 1 or meta.get("page") != 1 or meta.get("total") != len(rows):
         raise ValueError("World Bank response is partial or missing completeness metadata")
-    receipt = {**receipt, "parser_version": "worldbank-observation-v1"}
+    receipt = copy_receipt(receipt, parser_version="worldbank-observation-v1")
     out = ObservedSeries()
     conversion = Decimal(factor)
     precision = Decimal(quantum)
@@ -84,4 +82,5 @@ def worldbank_observations(response, client, *, indicator: str, measure: str,
         {key: e[key] for key in ("identity", "locator", "raw_value", "raw_unit", "transformation")}
         for entries in out.evidence.values() for e in entries
     ]
+    seal_receipt(receipt)
     return out

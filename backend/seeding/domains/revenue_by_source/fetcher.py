@@ -13,7 +13,7 @@ from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from ...observations import worldbank_observations
-from services.response_receipts import capture_response
+from services.response_receipts import response_receipt, copy_receipt, seal_receipt
 
 logger = logging.getLogger("seeding.revenue_by_source.fetcher")
 
@@ -303,10 +303,14 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
                     report = re.search(r'https://www\.kra\.go\.ke/images/publications/[^"\s]+\.pdf', bundle.text)
                     release.report_url = report.group(0) if report else None
                     release.retrieved_at = datetime.now(timezone.utc).isoformat()
-                    receipt = bundle.extensions.get("response_receipt")
-                    if not isinstance(receipt, dict) or "digest" not in receipt:
-                        receipt = capture_response(bundle, getattr(client, "receipt_store", None), source_kind="web")
-                    receipt = {**receipt, "parser_version": "kra-dashboard-v1", "source_kind": "web"}
+                    receipt = response_receipt(
+                        bundle,
+                        getattr(client, "receipt_store", None),
+                        source_kind="web",
+                    )
+                    receipt = copy_receipt(
+                        receipt, parser_version="kra-dashboard-v1", source_kind="web"
+                    )
                     receipt["observations"] = [{
                         "identity": {"measure": "amount_billion_kes", "entity_id": None, "geography": "KEN",
                             "period": release.fiscal_year, "unit": "billion_KES", "basis": "actual",
@@ -314,6 +318,7 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
                         "locator": fig.locator, "raw_value": fig.raw_amount, "raw_unit": "KES",
                         "transformation": {"operation": "multiply", "factor": "0.000000001", "rounding": 2, "rounding_mode": "ROUND_HALF_UP"},
                     } for head, fig in release.heads.items() if fig.raw_amount is not None and fig.locator is not None]
+                    seal_receipt(receipt)
                     release.response_receipt = receipt
                     release.content_sha256 = receipt["digest"]
                     return release

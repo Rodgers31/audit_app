@@ -428,6 +428,10 @@ def write_debt_records(
             "ingestion_job_id": job_id,
             "ingested_at": datetime.now(timezone.utc).isoformat(),
         }
+        if record.notes is not None:
+            # Declared source context and limitations remain visible in exact
+            # provenance. This text grants no receipt or qualification authority.
+            provenance_entry["source_note"] = record.notes
         if record.measurement_period is not None:
             provenance_entry["measurement_period"] = record.measurement_period
         if record.source_evidence:

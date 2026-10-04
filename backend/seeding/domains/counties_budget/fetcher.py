@@ -701,8 +701,10 @@ def _download_and_parse_county_pdf(
             logger.warning("CoBQuarterlyReportParser returned no records")
             return None
 
-        from ...pdf_evidence import receipt_for_pdf
+        from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
+
         receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-county-budget-v1")
+        receipt = bind_parse_receipt(receipt, parsed_records)
         return convert_county_pdf_records(
             parsed_records, pdf_url, getattr(downloaded, "sha256", None), receipt=receipt
         ) or None

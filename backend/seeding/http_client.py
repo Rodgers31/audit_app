@@ -170,9 +170,11 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     extra={"url": url, "method": method_upper},
                 )
                 # Cache acquisition time is unknown: do not invent a new download.
-                cached_receipt = capture_response(cached_response, getattr(self, "receipt_store", None))
-                cached_receipt["acquired_at"] = None
-                cached_receipt["failure_reason"] = "cached_acquisition_time_unknown"
+                cached_receipt = capture_response(
+                    cached_response,
+                    getattr(self, "receipt_store", None),
+                    acquisition_kind="cached_acquisition_time_unknown",
+                )
                 cached_response.extensions["response_receipt"] = cached_receipt
                 return cached_response
 
@@ -562,9 +564,13 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                 decoded_headers = {k: v for k, v in response_headers.items() if k.lower() not in ("content-encoding", "content-length")}
                 receipt = capture_response(httpx.Response(status, headers=decoded_headers,
                     content=dest.read_bytes(), request=request), store, source_kind="pdf")
-                receipt["content_encoding"] = response_headers.get("content-encoding")
-                receipt["request_url"] = str(request.url)
-                receipt["digest_scope"] = "decoded_stream_body"
+                from services.response_receipts import copy_receipt
+
+                receipt = copy_receipt(
+                    receipt,
+                    content_encoding=response_headers.get("content-encoding"),
+                    digest_scope="decoded_stream_body",
+                )
                 self._download_receipts[url] = receipt
         except PdfDownloadIncomplete:
             # Deliberately KEEP a resumable partial: it is the progress this

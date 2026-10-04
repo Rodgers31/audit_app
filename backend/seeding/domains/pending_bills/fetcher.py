@@ -727,8 +727,10 @@ def fetch_county_payables_payload(
         raise CountyPayablesUnavailable(f"{pdf_url}: {type(exc).__name__}: {exc}") from exc
 
     check_county_payables_entries(entries, pdf_url)
-    from ...pdf_evidence import receipt_for_pdf
+    from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
+
     receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1")
+    receipt = bind_parse_receipt(receipt, entries)
     return county_payables_payload(entries, pdf_url, receipt=receipt)
 
 
