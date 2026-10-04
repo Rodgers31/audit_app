@@ -90,7 +90,7 @@ jobs:
         REDIS_URL: redis://localhost:6379
         TESTING: true
         PYTHONPATH: ${{ github.workspace }}/backend
-    - name: Check Test Coverage Threshold
+    - name: Report Local Backend Coverage
       id: local_coverage
       continue-on-error: true
       run: "cd backend\nif [ -f coverage.xml ]; then\n  COVERAGE=$(python -c \"import xml.etree.ElementTree\
