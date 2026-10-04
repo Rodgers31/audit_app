@@ -293,7 +293,15 @@ def test_legacy_official_slug_and_entity_routes_and_direct_callable(
     result = _budget(legacy_client, route)
     assert result["county_id"] == route and result["county_name"] == "Mandera"
     assert result["budget_2025"] == 2000
-    assert asyncio.run(main.get_county_budget(route)) == result
+    from fastapi.encoders import jsonable_encoder
+
+    # JSON object keys are strings; direct Python row-ID maps use integers.
+    # Compare the actual HTTP encoding without dropping qualification fields.
+    direct = asyncio.run(main.get_county_budget(route))
+    assert json.loads(json.dumps(jsonable_encoder(direct), allow_nan=False)) == result
+    assert set(result["figure_qualifications"]["budget_lines"]) == {
+        str(row_id) for row_id in direct["figure_qualifications"]["budget_lines"]
+    }
 
 
 def test_reported_classification_parts_survive_estimated_sector_noise(

@@ -223,7 +223,7 @@ def test_direct_call_rejects_bad_debt_values_before_json(
     # SQLite converts NaN to NULL and bool to int. Keep the hostile value in
     # the identity-mapped ORM row so this exercises the handler itself.
     row.gdp_ratio = value
-    body = asyncio.run(main.get_debt_sustainability.__wrapped__(db_session))
+    body = asyncio.run(main.get_debt_sustainability(db_session))
     assert body["debt_to_gdp"] is None, body["debt_to_gdp"]
 
 
@@ -240,7 +240,7 @@ def test_direct_call_rejects_bad_fiscal_values_before_json(
 
     row = seed_fiscal(db_session, seed_source_doc.id)
     setattr(row, field, value)
-    body = asyncio.run(main.get_debt_sustainability.__wrapped__(db_session))
+    body = asyncio.run(main.get_debt_sustainability(db_session))
     assert body["debt_service_to_revenue"] is None, body["debt_service_to_revenue"]
 
 

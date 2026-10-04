@@ -61,6 +61,7 @@ def test_fixture_refuses_extra_rows_in_marked_database(tmp_path):
         ("FiscalPeriod", 1, "label", "FY2099/00"),
         ("SourceDocument", 1, "url", "https://production.example/budget.pdf"),
         ("SourceDocument", 2, "url", "https://production.example/audit.pdf"),
+        ("SourceDocument", 2, "meta", {"synthetic": True, "extraction_stats": {"volume_kind": "assemblies"}}),
         ("BudgetLine", 1, "allocated_amount", 42),
         ("BudgetLine", 2, "publishable", False),
         ("Audit", 1, "entity_id", 1),

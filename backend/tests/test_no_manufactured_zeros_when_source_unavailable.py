@@ -184,7 +184,9 @@ def dead_db_client():
     # The rate limiter is bypassed session-wide in conftest.pytest_configure;
     # patching it here would be a no-op (the middleware instance binds
     # dispatch_func at construction, long before this fixture runs).
-    with patch("main.get_db", _raise):
+    # Pipeline health uses its own executor-thread session; its factory must
+    # fail through this same fixture rather than touch a configured engine.
+    with patch("main.get_db", _raise), patch("database.SessionLocal", _raise):
         yield TestClient(app, raise_server_exceptions=False)
 
     if _saved_override is None:
@@ -338,7 +340,7 @@ class TestTheFixtureReachesEveryRoute:
     """
 
     def test_no_route_reaches_the_real_session_factory(self, dead_db_client):
-        """RED against the pre-fix fixture: ``reached`` held six entries.
+        """Every route uses fixture dependencies, including the worker factory.
 
         The tripwire RAISES instead of connecting, so this test never opens a
         connection to whatever ``DATABASE_URL`` points at — including when it
@@ -352,15 +354,27 @@ class TestTheFixtureReachesEveryRoute:
             reached.append("SessionLocal()")
             raise OperationalError("SELECT 1", {}, Exception("tripwire"))
 
-        with patch.object(database, "SessionLocal", _tripwire):
+        fixture_factory = database.SessionLocal
+        worker_calls = []
+
+        def _watched_fixture_factory():
+            worker_calls.append("fixture_factory")
+            return fixture_factory()
+
+        # A worker factory is now an intended route dependency. Watch its
+        # actual fixture call and trip on any connection to the real engine.
+        with patch.object(database, "SessionLocal", _watched_fixture_factory), patch.object(
+            database.engine, "connect", _tripwire
+        ):
             spec = app.openapi()
             for route in _derived_routes():
                 url, query = _concrete_url(route, spec["paths"][route])
                 dead_db_client.get(url, params=query)
 
+        assert worker_calls, "pipeline health never exercised the dead worker factory"
         assert not reached, (
-            f"{len(reached)} request(s) built a session from the REAL "
-            "database.SessionLocal. Those routes are not being exercised "
+            f"{len(reached)} request(s) opened the REAL "
+            "database engine. Those routes are not being exercised "
             "against a dead database, so the sweep's pass does not cover them."
         )
 

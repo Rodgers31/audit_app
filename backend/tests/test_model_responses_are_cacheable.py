@@ -312,7 +312,7 @@ _TIMESTAMP = re.compile(
 
 
 @pytest.fixture()
-def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source_doc):
+def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source_doc, monkeypatch):
     """One row, or a few, behind every branch a cached route builds from rows.
 
     The county is named "<Name> County" because several county handlers match
@@ -321,6 +321,14 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
     a document with a URL and ``publishable``, because the publication gates
     drop anything less before the handler's populated branch is reached.
     """
+    import database
+    from sqlalchemy.orm import Session
+
+    # Pipeline health deliberately owns a session in its executor thread.
+    # Bind a distinct worker session to this isolated SQLite connection so the
+    # populated/empty/restored sweep observes the same fixture transaction.
+    fixture_connection = db_session.connection()
+    monkeypatch.setattr(database, "SessionLocal", lambda: Session(bind=fixture_connection))
     from models import (
         Audit,
         BudgetLine,
