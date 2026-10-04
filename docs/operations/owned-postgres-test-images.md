@@ -12,7 +12,9 @@ The helper reads the two literal pins from `tools/bounded_pg_backup.py`, checks
 the native Linux Docker platform, and pulls each missing exact digest once. It
 then checks the publisher RepoDigest, local image ID, OS and architecture.
 Preparation has a shared 240-second deadline and a five-minute workflow step
-limit. The backend job retains its 15-minute limit. A failed pull, missing or
+limit. The backend job has a 20-minute limit, including the full test suite;
+the measured capacity decision is in `bounded-backend-job-capacity.md`.
+A failed pull, missing or
 malformed readback, wrong pin, wrong platform or timeout fails preparation.
 The logical fixture retains `--pull never` and its isolated local database.
 

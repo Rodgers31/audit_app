@@ -60,7 +60,7 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py")
             self.assertEqual(preparation["timeout-minutes"], 5)
             self.assertNotIn("continue-on-error", preparation)
-            self.assertEqual(job["timeout-minutes"], 15)
+            self.assertEqual(job["timeout-minutes"], 20)
             self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
 
     def test_manual_jobs_keep_the_required_ci_contract(self):
