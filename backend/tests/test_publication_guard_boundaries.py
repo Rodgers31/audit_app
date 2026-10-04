@@ -111,14 +111,10 @@ def test_remote_endpoint_context_does_not_waive_local_or_unknown_paths(source):
 
 
 def test_reviewed_figure_inventory_keeps_raw_detection_and_exact_context():
-    import ast
-    import hashlib
-
     source = "budget = 1234\n"
     entry = {
-        "ast_sha256": hashlib.sha256(
-            ast.dump(ast.parse(source), include_attributes=False).encode()
-        ).hexdigest(),
+        # Existing Python 3.13 representation, independent of local ast.dump.
+        "ast_sha256": "94ac75f9452f9104ceb9148e719b0d71e052b091d665a36b819ba5af394dcc7c",
         "sites": [
             {
                 "signature": figures.find_invented_figures(source)[0].split(": ", 1)[1],
