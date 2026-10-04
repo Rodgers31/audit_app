@@ -518,7 +518,12 @@ class SocialService:
         return self._summary(post, publication, targets)
 
     def accounts(self):
-        accounts = self.db.scalars(select(SocialAccount).order_by(SocialAccount.display_name, SocialAccount.id).limit(100))
+        from types import SimpleNamespace
+        fields = (SocialAccount.id, SocialAccount.platform, SocialAccount.display_name,
+                  SocialAccount.handle, SocialAccount.profile_url, SocialAccount.connection_state,
+                  SocialAccount.publishing_enabled, SocialAccount.capability_snapshot)
+        accounts = (SimpleNamespace(**row._mapping) for row in self.db.execute(
+            select(*fields).order_by(SocialAccount.display_name, SocialAccount.id).limit(100)))
         return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters).model_dump(mode="json")} for a in accounts]}
 
     def platforms(self):

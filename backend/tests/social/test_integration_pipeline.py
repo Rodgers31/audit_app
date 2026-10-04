@@ -15,7 +15,6 @@ from alembic.operations import Operations
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from social.api import get_db, require_admin, router, service
@@ -27,6 +26,7 @@ from social.worker.config import WorkerConfig
 from social.worker.repository import QueueRepository
 from social.worker.runner import SocialWorker
 from supabase_auth import AdminUser
+from local_postgres import local_postgres_url
 
 
 @pytest.fixture
@@ -34,14 +34,12 @@ def migrated_engine():
     dsn = os.getenv("SOCIAL_INTEGRATION_DATABASE_URL")
     if not dsn:
         pytest.skip("Supply an isolated local integration database explicitly")
-    parsed = make_url(dsn)
-    if parsed.host not in {"127.0.0.1", "localhost"} or not parsed.database.endswith("social_test"):
-        pytest.fail("Integration DSN must identify an isolated loopback social_test database")
-    root = create_engine(dsn, hide_parameters=True)
+    url = local_postgres_url(dsn, 'auditgava_social_test')
+    root = create_engine(url, hide_parameters=True)
     schema = "social_integration_" + uuid4().hex
     with root.begin() as conn:
         conn.execute(text("CREATE SCHEMA " + schema))
-    engine = create_engine(dsn, hide_parameters=True, pool_size=2, max_overflow=0,
+    engine = create_engine(url, hide_parameters=True, pool_size=2, max_overflow=0,
                            connect_args={"options": "-csearch_path=" + schema})
     migration_path = Path(__file__).parents[2] / "alembic/versions/f38c61a9d203_social_manual_domain_queue.py"
     spec = importlib.util.spec_from_file_location("social_integration_migration", migration_path)
