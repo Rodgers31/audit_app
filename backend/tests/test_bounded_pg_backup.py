@@ -186,6 +186,32 @@ class BoundaryTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 backup.write_new(path, receipt)
 
+    def test_acquisition_output_requires_caller_owner_and_exact_private_modes(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory(prefix=backup.PREFIX) as directory:
+            path = Path(directory) / 'acquisition.partial'
+            path.write_bytes(b'PGDMP')
+            path.chmod(0o600)
+            self.assertEqual(backup.private_acquisition_file(path), path.resolve())
+            for mode in (0o400, 0o640, 0o644):
+                path.chmod(mode)
+                with self.subTest(mode=mode), self.assertRaises(backup.Refusal):
+                    backup.private_acquisition_file(path)
+            path.chmod(0o600)
+            for function in ('geteuid', 'getegid'):
+                original = getattr(os, function)()
+                with patch.object(backup.os, function, return_value=original + 1):
+                    with self.assertRaises(backup.Refusal):
+                        backup.private_acquisition_file(path)
+            Path(directory).chmod(0o755)
+            with self.assertRaises(backup.Refusal):
+                backup.private_acquisition_file(path)
+            Path(directory).chmod(0o700)
+            link = Path(directory) / 'symlink'
+            link.symlink_to(path)
+            with self.assertRaises(backup.Refusal):
+                backup.private_acquisition_file(link)
+
     def test_empty_inventory_cannot_certify_restore(self):
         for value in (None, {}, [], [{'kind': 'catalog'}]):
             with self.subTest(value=value), self.assertRaises(backup.Refusal):
@@ -308,6 +334,32 @@ INSERT INTO public.transport_fixture SELECT i,repeat(md5(i::text),128) FROM gene
         destination = self.new_path()
         result = backup.acquire_local(self.source, self.network, self.snapshot, destination, **kwargs)
         return destination, result
+
+    def test_acquired_archive_is_caller_owned_private_and_reloadable(self):
+        self.assertEqual(self.archive.stat().st_uid, os.geteuid())
+        self.assertEqual(self.archive.stat().st_gid, os.getegid())
+        self.assertEqual(self.archive.stat().st_mode & 0o777, 0o600)
+        with self.archive.open('rb') as stream:
+            self.assertEqual(stream.read(5), b'PGDMP')
+        receipt = backup.inspect_archive(self.archive, self.acquisition['archive_sha256'])
+        self.assertEqual(receipt['status'], 'archive_readable_not_recovery_proof')
+        self.assertEqual(receipt['archive_sha256'], self.acquisition['archive_sha256'])
+        self.assertFalse(receipt['backup_verified'])
+        published = self.private / 'ownership-receipt.json'
+        backup.write_new(published, receipt)
+        self.assertEqual(json.loads(published.read_text()), receipt)
+        self.assertEqual(published.stat().st_uid, os.geteuid())
+        self.assertEqual(published.stat().st_mode & 0o777, 0o600)
+
+    def test_child_cannot_publish_public_or_readonly_acquisition_file(self):
+        for mode in ('644', '400'):
+            path, result = self.acquire(command=['sh', '-c',
+                'pg_dump --dbname=service=rehearsal -Fc; chmod ' + mode + ' /backup/acquisition.partial'])
+            with self.subTest(mode=mode):
+                self.assertEqual(result['status'], 'failed')
+                self.assertEqual(result['reason'], 'archive_or_counter_refused')
+                self.assertFalse(result['backup_verified'])
+                self.assertFalse(path.exists())
 
     def test_full_archive_restore_inventory_permissions_constraints_allocation(self):
         with contextlib.contextmanager(backup.restore_local)(self.archive, backup.sha256(self.archive), self.roles, backup.sha256(self.roles)) as restored:
