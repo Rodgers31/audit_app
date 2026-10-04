@@ -1,3 +1,5 @@
+import { MESSAGES, type TranslationKey } from '@/lib/i18n/messages';
+
 /** Measure-specific response contract owned by services/figure_qualification.py. */
 export interface FigureQualification {
   status: 'qualified' | 'verified' | 'unavailable' | 'conflicting' | 'modelled' | 'projected';
@@ -36,19 +38,24 @@ export function evidenceUrl(value: string | null | undefined): string | undefine
   } catch { return undefined; }
 }
 
-export function qualificationLabel(q: FigureQualification | undefined): string {
+export function qualificationMessageKey(q: FigureQualification | undefined): TranslationKey {
   const identity = q?.identity;
   if (!q || typeof q.reason !== 'string' || !q.reason.trim() || !identity ||
-      ![identity.measure, identity.geography, identity.period, identity.unit, identity.basis].every(value => typeof value === 'string' && value.trim().length > 0)) return 'Evidence unavailable';
+      ![identity.measure, identity.geography, identity.period, identity.unit, identity.basis].every(value => typeof value === 'string' && value.trim().length > 0)) return 'evidence.status.unavailable';
   switch (q.status) {
     case 'verified':
-      return q.document_bytes_checked === true && q.value_checked === true ? 'Verified observation' : 'Evidence incomplete';
-    case 'qualified': return 'Qualified citation';
-    case 'conflicting': return 'Conflicting evidence';
-    case 'modelled': return 'Modelled';
-    case 'projected': return 'Projected';
-    default: return 'Evidence unavailable';
+      return q.document_bytes_checked === true && q.value_checked === true ? 'evidence.status.verified' : 'evidence.status.incomplete';
+    case 'qualified': return 'evidence.status.qualified';
+    case 'conflicting': return 'evidence.status.conflicting';
+    case 'modelled': return 'evidence.status.modelled';
+    case 'projected': return 'evidence.status.projected';
+    default: return 'evidence.status.unavailable';
   }
+}
+
+/** English compatibility label for non-localized consumers. */
+export function qualificationLabel(q: FigureQualification | undefined): string {
+  return MESSAGES[qualificationMessageKey(q)].en;
 }
 
 /** Model origin comes from explicit backend qualification, never numeric shape. */
