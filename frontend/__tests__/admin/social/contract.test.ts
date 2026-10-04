@@ -30,6 +30,8 @@ test('typed system DTO accepts a missing worker heartbeat without manufacturing 
   expect(decodeSystem(system).worker).toEqual({ state: 'unavailable', heartbeat_at: null, last_scan_at: null });
   expect(() => decodeSystem({ ...system, worker: {} })).toThrow(SocialApiError);
   expect(() => decodeSystem({ ...system, auto_publish_enabled: true })).toThrow(SocialApiError);
+  expect(decodeSystem({ ...system, media_upload_available: true }).media_upload_available).toBe(true);
+  expect(() => decodeSystem({ ...system, media_upload_available: 'true' })).toThrow(SocialApiError);
 });
 test('future schedule uses its selected zone and rejects DST gaps or invalid dates', () => {
   expect(resolveCivilTime('2027-01-05T10:00', 'Africa/Nairobi').candidates).toEqual([{ utc: '2027-01-05T07:00:00.000Z', offset: '+03:00' }]);

@@ -4,7 +4,7 @@ import logging
 from uuid import UUID
 
 logger = logging.getLogger("social")
-_ALLOWED = {"request_id", "worker_id", "post_id", "revision_id", "publication_id", "target_id", "account_id", "platform", "operation_id", "operation", "lease_epoch", "attempt_sequence", "duration_ms", "result", "error_code", "error_type", "action"}
+_ALLOWED = {"request_id", "worker_id", "post_id", "revision_id", "publication_id", "target_id", "account_id", "asset_id", "flow_id", "platform", "operation_id", "operation", "lease_epoch", "attempt_sequence", "duration_ms", "result", "error_code", "error_type", "action"}
 
 
 def log_event(event: str, **fields):

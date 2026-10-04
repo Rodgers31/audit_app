@@ -132,13 +132,15 @@ test('unsaved credential-bearing sources are not clickable', () => {
   expect(screen.queryByRole('link', { name: 'Open source 1' })).not.toBeInTheDocument();
 });
 
-test('each Master and Account media instance has its own valid unavailable-control description', () => {
-  const { container } = render(<div>{['Master', 'Account', 'Account'].map((label, i) => <section key={i}><SocialMedia label={label} media={[]} onChange={jest.fn()} /></section>)}</div>);
+test('each Master and Account media instance has its own valid unavailable-control description', async () => {
+  get.mockResolvedValue({ data: { upload_available: false, library_available: false, allowed_mime_types: [], max_image_bytes: 10485760, max_video_bytes: 52428800, unavailable_reason: 'Private media is unavailable.' } });
+  const { container } = render(<QueryClientProvider client={client()}><div>{['Master', 'Account', 'Account'].map((label, i) => <section key={i}><SocialMedia label={label} media={[]} onChange={jest.fn()} /></section>)}</div></QueryClientProvider>);
+  await waitFor(() => expect(screen.getAllByText('Private media is unavailable.')).toHaveLength(3));
   const ids = Array.from(container.querySelectorAll('section')).map(section => {
     const buttons = section.querySelectorAll('button'), id = buttons[0].getAttribute('aria-describedby');
     expect(id).toBeTruthy();
     expect(buttons[1].getAttribute('aria-describedby')).toBe(id);
-    expect(Array.from(section.querySelectorAll('p')).find(p => p.id === id)).toHaveTextContent('Media uploads and the storage library are unavailable');
+    expect(Array.from(section.querySelectorAll('p')).find(p => p.id === id)).toHaveTextContent('Private media is unavailable.');
     return id;
   });
   expect(new Set(ids).size).toBe(3);
