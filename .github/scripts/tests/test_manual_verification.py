@@ -29,6 +29,17 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
         self.assertEqual(set(workflow["jobs"]), JOBS)
         self.assertIs(workflow["concurrency"]["cancel-in-progress"], False)
 
+    def test_owned_postgres_images_are_prepared_before_backend_tests(self):
+        for filename in ("ci.yml", "verification.yml"):
+            job = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]
+            steps = job["steps"]
+            preparation = next(step for step in steps if step.get("name") == "Prepare pinned owned PostgreSQL test images")
+            self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py")
+            self.assertEqual(preparation["timeout-minutes"], 5)
+            self.assertNotIn("continue-on-error", preparation)
+            self.assertEqual(job["timeout-minutes"], 15)
+            self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
+
     def test_manual_jobs_keep_the_required_ci_contract(self):
         ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
         manual = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())

@@ -68,6 +68,10 @@ jobs:
           # Fail on critical errors (syntax errors, undefined names, etc.)
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.git
 
+      - name: Prepare pinned owned PostgreSQL test images
+        timeout-minutes: 5
+        run: python .github/scripts/prepare_postgres_test_images.py
+
       - name: Run Core Backend Tests (REQUIRED)
         id: backend_tests
         run: |

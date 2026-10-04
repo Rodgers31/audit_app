@@ -239,8 +239,17 @@ def collect_local(target):
     if (state['Name'] != '/' + target or state['HostConfig']['NetworkMode'] != 'none'
             or state['HostConfig']['PortBindings'] not in (None, {})
             or type(state['HostConfig']['PortBindings']) not in (type(None), dict)
-            or state['State']['Running'] is not True
-            or state['Image'] != backup.SUPABASE_IMAGE.split('@')[1]):
+            or state['State']['Running'] is not True):
+        raise Refusal('logical_target_not_isolated_pinned_image')
+    # Docker may report a platform config ID or an index ID. Bind the exact
+    # immutable publisher reference to its inspected local ID, then the target.
+    images = json.loads(backup.run(['docker', 'image', 'inspect', backup.SUPABASE_IMAGE]))
+    if (not isinstance(images, list) or len(images) != 1 or not isinstance(images[0], dict)
+            or not isinstance(images[0].get('RepoDigests'), list)
+            or backup.SUPABASE_IMAGE not in images[0]['RepoDigests']
+            or not isinstance(images[0].get('Id'), str)
+            or re.fullmatch(r'sha256:[0-9a-f]{64}', images[0]['Id']) is None
+            or state['Image'] != images[0]['Id']):
         raise Refusal('logical_target_not_isolated_pinned_image')
     query = """BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO, YMD'; SET LOCAL extra_float_digits=3;
