@@ -7,11 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialComposer from './SocialComposer';
 import { SocialErrorBanner } from './SocialNotice';
-import { httpsUrl, platformLabels, supportedFormats } from './socialDocument';
+import { platformLabels } from './socialDocument';
 import styles from './social.module.css';
 
-type View = 'drafts' | 'pending' | 'scheduled' | 'history' | 'accounts';
-const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History', accounts: 'Accounts' };
+type View = 'drafts' | 'pending' | 'scheduled' | 'history';
+const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History' };
 export function SocialSystemStrip({ status, error, refresh }: { status?: SocialSystemStatus; error?: unknown; refresh: () => void }) {
   const [editingControls, setEditingControls] = useState(false);
   const [reason, setReason] = useState('');
@@ -58,7 +58,7 @@ export default function SocialWorkspace() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string>();
   const [unsaved, setUnsaved] = useState(false);
-  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, view !== 'accounts');
+  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined);
   const detail = useSocialPost(selected);
   const accounts = useSocialAccounts();
   const system = useSocialSystem();
@@ -68,9 +68,8 @@ export default function SocialWorkspace() {
   return <div className={styles.workspace}>
     <div className={styles.toolbar}><p><strong>Manual approval</strong> is the default. Review the evidence and every selected account.</p><Link href='/admin/social/new' className={`${styles.button} ${styles.primary}`}>Create manual post</Link></div>
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
-    <nav className={styles.tabs} aria-label='Social sections'><Link href='/admin/social/accounts' className={styles.button}>Connected accounts</Link>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}</nav>
+    <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/accounts' className={styles.button}>Accounts</Link></nav>
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
-    {view === 'accounts' ? <section className={styles.accountList} aria-label='Connected accounts'><h2>Connected accounts</h2><p className={styles.muted}>Account connection and OAuth are unavailable in this batch. Only actual server-provided identities appear here.</p>{accounts.isPending && <p role='status'>Loading accounts…</p>}{accounts.data?.length === 0 && <p className={styles.empty}>No connected accounts. Manual drafts can be saved without a destination.</p>}{accounts.data?.map(a => <article className={styles.accountCard} key={a.id}><h3>{platformLabels[a.platform]} · {a.display_name}</h3><p>{a.handle ?? 'Handle unavailable'}</p><p>{a.connection_state} · publishing {a.publishing_enabled ? 'enabled' : 'disabled'}</p><p className={styles.muted}>Reported formats: {supportedFormats(a).join(', ') || 'unknown; backend validation required'}</p>{httpsUrl(a.profile_url) && <a target='_blank' rel='noopener noreferrer' href={httpsUrl(a.profile_url)}>Open account profile</a>}<Link href='/admin/social/accounts' className={styles.button}>Manage Meta connections</Link></article>)}</section> : <>
       <div className={styles.toolbar}><div><h2>{viewLabels[view]}</h2>{view === 'scheduled' || view === 'history' ? <p className={styles.muted}>Delivery entries from this page of compact posts. Open a post for its exact schedule and independent results. Pagination covers all posts; counts are not global delivery totals.</p> : <p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'drafts' ? 'drafts' : 'posts awaiting review'}` : 'Loading compact post summaries…'}</p>}</div><button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button></div>
       {list.error && <SocialErrorBanner error={list.error} onRetry={() => list.refetch()} />}
       {list.isPending && <p role='status'>Loading posts…</p>}
@@ -84,7 +83,6 @@ export default function SocialWorkspace() {
         {selected && detail.data && <><Link href={`/admin/social/${selected}`}>Open this post in the full composer</Link><SocialComposer key={selected} initialPost={detail.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={p => router.push(`/admin/social/${p.id}`)} onDirtyChange={setUnsaved} /></>}
         {!selected && <div className={styles.empty}><h3>Queue and preview</h3><p>Select a post to review its sources, account versions, schedule, and delivery results.</p></div>}
       </div></div>
-    </>}
   </div>;
 }
 

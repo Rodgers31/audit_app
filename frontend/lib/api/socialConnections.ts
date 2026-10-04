@@ -27,7 +27,7 @@ export function decodeConnectionStatus(v: unknown): MetaConnectionStatus {
   const o = exact(v, ['provider','available','blockers','access_mode','scopes','publishing_adapter_available']);
   if (o.provider !== 'meta' || o.publishing_adapter_available !== false || !['unverified','owned_standard','advanced'].includes(text(o.access_mode))) invalid();
   const available = bool(o.available), blockers = list(o.blockers);
-  if (available !== (blockers.length === 0)) invalid();
+  if (available !== (blockers.length === 0) || available && o.access_mode === 'unverified') invalid();
   return { provider: 'meta', available, blockers, access_mode: o.access_mode as MetaConnectionStatus['access_mode'], scopes: list(o.scopes), publishing_adapter_available: false };
 }
 export function decodeStartedFlow(v: unknown): MetaStartedFlow {
