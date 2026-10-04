@@ -23,11 +23,13 @@ class MediaConfig:
     preview_ttl: int = 120
     orphan_hours: int = 24
     ready_retention_days: int = 30
-    ffprobe_path: str = ''
+    ffprobe_path: str | None = ''
 
     def validate(self):
         if type(self.enabled) is not bool:
             raise ValueError('Media feature flag must be boolean')
+        if self.ffprobe_path is not None and not isinstance(self.ffprobe_path, str):
+            raise ValueError('Media inspection executable path must be a string or unset')
         for name, maximum in [('max_image_bytes', 10 * 1024 * 1024), ('max_video_bytes', 50 * 1024 * 1024), ('actor_quota_bytes', 1024 ** 3), ('total_quota_bytes', 10 * 1024 ** 3), ('max_pending', 10), ('upload_ttl', 600), ('inspection_timeout', 30), ('lease_seconds', 300), ('preview_ttl', 300), ('orphan_hours', 168), ('ready_retention_days', 90)]:
             value = getattr(self, name)
             if type(value) is not int or not 1 <= value <= maximum:
