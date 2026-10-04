@@ -19,7 +19,7 @@ class UploadIntent(StrictModel):
     @field_validator('filename')
     @classmethod
     def filename_only(cls, value):
-        if not value.strip() or '/' in value or '\\' in value or any(ord(c) < 32 for c in value):
+        if not value.strip() or '/' in value or '\\' in value or any(ord(c) < 32 or ord(c) == 127 for c in value):
             raise ValueError('Use a filename without paths or control characters')
         return value
 

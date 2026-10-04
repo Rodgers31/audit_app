@@ -13,8 +13,9 @@ export default function MediaUpload({ capabilities, onSelect, onClose, onBusy, c
   const mounted = useRef(false), latest = useRef({ contextKey, onSelect, onBusy }); latest.current = { contextKey, onSelect, onBusy };
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; latest.current.onBusy(false); }; }, []);
   const qc = useQueryClient();
+  const imageFormats = [capabilities.allowed_mime_types.includes('image/jpeg') && 'JPEG', capabilities.allowed_mime_types.includes('image/png') && 'PNG'].filter(Boolean).join('/');
   async function upload() {
-    if (!file || !actor || !enabled || busy) return;
+    if (!file || !actor || !enabled || !capabilities.upload_available || busy) return;
     if (!capabilities.allowed_mime_types.includes(file.type as MediaMime) || file.size <= 0 || file.size > (file.type === 'video/mp4' ? capabilities.max_video_bytes : capabilities.max_image_bytes)) { setError('Choose a supported file within the displayed size limit.'); return; }
     const current = attempt.current ?? { file, alt, initiateKey: crypto.randomUUID(), completeKey: crypto.randomUUID(), contextKey, actor };
     attempt.current = current; setBusy(true); onBusy(true); setError(''); setRetryable(false);
@@ -34,10 +35,10 @@ export default function MediaUpload({ capabilities, onSelect, onClose, onBusy, c
   function reset() { attempt.current = undefined; setFile(undefined); setError(''); setRetryable(false); setPhase(''); }
   return <section className={styles.panel} aria-labelledby={title} aria-busy={busy}>
     <h3 id={title}>Upload original media</h3>
-    <p className={styles.muted}>JPEG/PNG up to {(capabilities.max_image_bytes / 1024 / 1024).toFixed(0)} MiB. {capabilities.allowed_mime_types.includes('video/mp4') ? `H.264 MP4 with optional AAC up to ${(capabilities.max_video_bytes / 1024 / 1024).toFixed(0)} MiB and 120 seconds.` : 'Video inspection is unavailable.'} Files are checked before they can be selected.</p>
-    <label>Media file<input type='file' accept={capabilities.allowed_mime_types.join(',')} disabled={busy || !!attempt.current} onChange={event => { setFile(event.target.files?.[0]); setError(''); }} /></label>
-    <label>Default media alt text<input maxLength={2000} value={alt} disabled={busy || !!attempt.current} onChange={event => setAlt(event.target.value)} /></label>
+    <p className={styles.muted}>{capabilities.upload_available ? <>{imageFormats ? `${imageFormats} up to ${(capabilities.max_image_bytes / 1024 / 1024).toFixed(0)} MiB.` : 'Image inspection is unavailable.'} {capabilities.allowed_mime_types.includes('video/mp4') ? `H.264 MP4 with optional AAC up to ${(capabilities.max_video_bytes / 1024 / 1024).toFixed(0)} MiB and 120 seconds.` : 'Video inspection is unavailable.'} Files are checked before they can be selected.</> : capabilities.unavailable_reason || 'Private media uploads are unavailable.'}</p>
+    <label>Media file<input type='file' accept={capabilities.allowed_mime_types.join(',')} disabled={busy || !capabilities.upload_available || !!attempt.current} onChange={event => { setFile(event.target.files?.[0]); setError(''); }} /></label>
+    <label>Default media alt text<input maxLength={2000} value={alt} disabled={busy || !capabilities.upload_available || !!attempt.current} onChange={event => setAlt(event.target.value)} /></label>
     {phase && <p role='status'>{phase}</p>}{error && <p className={styles.error} role='alert'>{error}</p>}
-    <div className={styles.actions}><button type='button' className={`${styles.button} ${styles.primary}`} disabled={!file || busy || !enabled || !!attempt.current && !retryable} onClick={() => void upload()}>{retryable ? 'Retry this upload' : 'Upload and inspect'}</button>{attempt.current && !busy && <button type='button' className={styles.button} onClick={reset}>Choose another file</button>}<button type='button' className={styles.button} disabled={busy} onClick={onClose}>Close upload</button></div>
+    <div className={styles.actions}><button type='button' className={`${styles.button} ${styles.primary}`} disabled={!file || busy || !enabled || !capabilities.upload_available || !!attempt.current && !retryable} onClick={() => void upload()}>{retryable ? 'Retry this upload' : 'Upload and inspect'}</button>{attempt.current && !busy && <button type='button' className={styles.button} onClick={reset}>Choose another file</button>}<button type='button' className={styles.button} disabled={busy} onClick={onClose}>Close upload</button></div>
   </section>;
 }
