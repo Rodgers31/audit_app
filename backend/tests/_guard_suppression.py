@@ -1,21 +1,27 @@
 """Reasoned comments attach to one AST site, never an adjacent expression."""
 import ast
+from functools import lru_cache
 import io
 import tokenize
+
+
+@lru_cache(maxsize=8)
+def _reasoned_comment_positions(source: str, marker: str) -> frozenset[tuple[int, int]]:
+    """Reuse immutable lexical facts for these exact bytes and marker only."""
+    return frozenset(
+        t.start
+        for t in tokenize.generate_tokens(io.StringIO(source).readline)
+        if t.type == tokenize.COMMENT
+        and marker in t.string
+        and t.string.split(marker, 1)[1].strip()
+    )
 
 
 def suppressed(
     lines: list[str], node: ast.AST, marker: str, sites: list[ast.AST]
 ) -> bool:
-    comments = [
-        t
-        for t in tokenize.generate_tokens(io.StringIO("\n".join(lines)).readline)
-        if t.type == tokenize.COMMENT
-        and marker in t.string
-        and t.string.split(marker, 1)[1].strip()
-    ]
-    for comment in comments:
-        line, col = comment.start
+    comments = _reasoned_comment_positions("\n".join(lines), marker)
+    for line, col in comments:
         if lines[line - 1][:col].strip():
             # Inline: the closest completed site owns the comment.
             candidates = [
