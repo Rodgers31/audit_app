@@ -76,14 +76,15 @@ export function decodeSelectedAccounts(v: unknown): { flow_id: string; accounts:
     const a = exact(raw, ['id','platform','display_name','handle','profile_url','connection_state','publishing_enabled','capabilities']);
     if (!['facebook','instagram'].includes(text(a.platform)) || a.publishing_enabled !== false) invalid();
     const c = exact(a.capabilities, ['rules_version','provider_api_version','eligible','supported_formats','feature_states','limits','granted_scopes','required_scopes','price_class','source_links','verified_at','adapter_available']);
-    if (c.adapter_available !== false || c.price_class !== 'free') invalid();
+    const adapterAvailable = bool(c.adapter_available);
+    if (c.price_class !== 'free') invalid();
     const formats = list(c.supported_formats);
     if (formats.some(f => !['text','image','carousel','video','reel'].includes(f))) invalid();
     const features = object(c.feature_states), limits = object(c.limits);
     if (Object.values(features).some(value => !['supported','restricted','requires_review','paid','unsupported','unverified'].includes(text(value))) || Object.values(limits).some(value => value !== null && (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0))) invalid();
     const profile = nullable(a.profile_url);
     if (profile) { const u = new URL(profile); if (u.protocol !== 'https:' || u.search || u.hash || u.username || u.password || !['www.facebook.com','www.instagram.com'].includes(u.hostname)) invalid(); }
-    return { id: id(a.id), platform: a.platform as 'facebook' | 'instagram', display_name: text(a.display_name), handle: nullable(a.handle), profile_url: profile, connection_state: text(a.connection_state), publishing_enabled: false, capabilities: { rules_version: text(c.rules_version), provider_api_version: text(c.provider_api_version), eligible: bool(c.eligible), supported_formats: formats as SocialAccount['capabilities']['supported_formats'], feature_states: features as Record<string,string>, limits: limits as Record<string, number | null>, granted_scopes: list(c.granted_scopes), required_scopes: list(c.required_scopes), price_class: 'free' as const, source_links: list(c.source_links), verified_at: nullableDate(c.verified_at), adapter_available: false } };
+    return { id: id(a.id), platform: a.platform as 'facebook' | 'instagram', display_name: text(a.display_name), handle: nullable(a.handle), profile_url: profile, connection_state: text(a.connection_state), publishing_enabled: false, capabilities: { rules_version: text(c.rules_version), provider_api_version: text(c.provider_api_version), eligible: bool(c.eligible), supported_formats: formats as SocialAccount['capabilities']['supported_formats'], feature_states: features as Record<string,string>, limits: limits as Record<string, number | null>, granted_scopes: list(c.granted_scopes), required_scopes: list(c.required_scopes), price_class: 'free' as const, source_links: list(c.source_links), verified_at: nullableDate(c.verified_at), adapter_available: adapterAvailable } };
   });
   if (!accounts.length || accounts.length > 2 || new Set(accounts.map(a => a.id)).size !== accounts.length) invalid();
   return { flow_id: id(o.flow_id), accounts };

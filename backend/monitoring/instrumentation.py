@@ -238,13 +238,22 @@ def setup_sentry(app: FastAPI, dsn: str = None):
         logger.warning("Sentry DSN not configured. Error tracking disabled.")
         return
 
+    # Reject nonfinite/out-of-range configuration before SDK construction.
+    # The startup boundary reports only a fixed configuration failure.
+    try:
+        traces_sample_rate = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+    except (ValueError, TypeError, OverflowError):
+        raise ValueError("Sentry trace sampling configuration is invalid.") from None
+    if not math.isfinite(traces_sample_rate) or not 0 <= traces_sample_rate <= 1:
+        raise ValueError("Sentry trace sampling configuration is invalid.")
+
     sentry_sdk.init(
         dsn=dsn,
         integrations=[
             FastApiIntegration(),
             SqlalchemyIntegration(),
         ],
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        traces_sample_rate=traces_sample_rate,
         # Profiles are separate envelope items, outside the final payload hooks.
         profiles_sample_rate=0.0,
         environment=os.getenv("ENVIRONMENT", "production"),
