@@ -2,6 +2,8 @@
 
 Refs #137. Based on actual main f9685067ca56fc3ef01d162c6ab4b3a716642b91; prospective writes only. No migration, historical backfill, production/provider calls, deployment, GitHub mutation, or Actions execution.
 
+Subsequent preparation after PR #495: the owner selected the existing Supabase project. See [optional runtime binding and pending durable acceptance](supabase-runtime-preparation.md). The proposal below records the prior local implementation; it does not establish current provider acceptance.
+
 ## Implemented boundary
 
 `services/receipt_store.py` defines `ReceiptStore.put(bytes)->digest` and `read(digest)->bytes`; `LocalReceiptStore` is the concrete local adapter, SHA256 keys, bounded 64MiB objects, exclusive atomic links, file/directory fsync, no overwrite, and digest-checked readback. Existing corrupt objects refuse both put and read. `SeedingHttpClient` accepts an injected adapter; its default is explicitly local `settings.storage_path/response-receipts`. Production durability has not been selected or established.
