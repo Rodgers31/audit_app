@@ -84,13 +84,22 @@ def resolve_data_vintage(db, source_document_ids: Iterable) -> Optional[_dt.date
         from models import SourceDocument
 
         docs = (
-            db.query(SourceDocument).filter(SourceDocument.id.in_(ids)).all()
+            db.query(
+                SourceDocument.meta["publication_date"].label("publication_date"),
+                SourceDocument.fetch_date,
+            )
+            .filter(SourceDocument.id.in_(ids))
+            .all()
         )
     except Exception as exc:  # pragma: no cover - defensive
         logger.warning("resolve_data_vintage query failed: %s", exc)
         return None
 
-    vintages = [v for v in (doc_vintage(d) for d in docs) if v is not None]
+    vintages = [
+        v
+        for v in (_parse_dt(d.publication_date) or d.fetch_date for d in docs)
+        if v is not None
+    ]
     if not vintages:
         return None
     return max(vintages, key=_naive)

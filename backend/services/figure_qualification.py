@@ -608,10 +608,16 @@ def row_identities(table, row, entities=None, periods=None):
 
 
 def qualify_rows(db, table, rows):
-    """Bounded metadata loads, independent of row count (at most five queries)."""
+    """Bounded context loads, independent of row count (at most five queries).
+
+    Budget context uses plain projections so unrelated model columns cannot be
+    loaded lazily. Source metadata and the complete response receipt remain
+    intact; other tables retain their full publication-check context.
+    """
     from models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
 
     rows = list(rows)
+    budget = table == "budget_lines"
     entries = {r.id: _evidence_entries(r) for r in rows}
     ids = {r.source_document_id for r in rows if r.source_document_id is not None}
     for items in entries.values():
@@ -622,14 +628,33 @@ def qualify_rows(db, table, rows):
     docs = (
         {
             d.id: d
-            for d in db.query(SourceDocument).filter(SourceDocument.id.in_(ids)).all()
+            for d in db.query(
+                *(
+                    (
+                        SourceDocument.id, SourceDocument.country_id,
+                        SourceDocument.publisher, SourceDocument.url,
+                        SourceDocument.content_type, SourceDocument.meta,
+                    )
+                    if budget
+                    else (SourceDocument,)
+                )
+            ).filter(SourceDocument.id.in_(ids)).all()
         }
         if ids
         else {}
     )
     entity_ids = {getattr(r, "entity_id", None) for r in rows} - {None}
     entities = (
-        {e.id: e for e in db.query(Entity).filter(Entity.id.in_(entity_ids)).all()}
+        {
+            e.id: e
+            for e in db.query(
+                *(
+                    (Entity.id, Entity.country_id, Entity.type, Entity.canonical_name)
+                    if budget
+                    else (Entity,)
+                )
+            ).filter(Entity.id.in_(entity_ids)).all()
+        }
         if entity_ids
         else {}
     )
@@ -637,7 +662,7 @@ def qualify_rows(db, table, rows):
     periods = (
         {
             p.id: p
-            for p in db.query(FiscalPeriod)
+            for p in db.query(FiscalPeriod.id, FiscalPeriod.label)
             .filter(FiscalPeriod.id.in_(period_ids))
             .all()
         }
@@ -648,7 +673,12 @@ def qualify_rows(db, table, rows):
         e.country_id for e in entities.values()
     }
     countries = (
-        {c.id: c for c in db.query(Country).filter(Country.id.in_(country_ids)).all()}
+        {
+            c.id: c
+            for c in db.query(
+                *((Country.id, Country.iso_code) if budget else (Country,))
+            ).filter(Country.id.in_(country_ids)).all()
+        }
         if country_ids
         else {}
     )
@@ -667,7 +697,17 @@ def qualify_rows(db, table, rows):
     receipts = (
         {
             r.id: r
-            for r in db.query(Extraction).filter(Extraction.id.in_(receipt_ids)).all()
+            for r in db.query(
+                *(
+                    (
+                        Extraction.id, Extraction.source_document_id,
+                        Extraction.extractor,
+                        Extraction.extracted_json["response_receipt"].label("response_receipt"),
+                    )
+                    if budget
+                    else (Extraction,)
+                )
+            ).filter(Extraction.id.in_(receipt_ids)).all()
         }
         if receipt_ids
         else {}
@@ -703,13 +743,17 @@ def qualify_rows(db, table, rows):
                 if isinstance(ref, dict)
                 else None
             )
-            receipt = (
-                extraction.extracted_json.get("response_receipt")
-                if extraction is not None
-                and extraction.extractor in ("http-response-v1", "pdf-receipt-v1")
-                and isinstance(extraction.extracted_json, dict)
-                else None
-            )
+            receipt = None
+            if extraction is not None and extraction.extractor in (
+                "http-response-v1", "pdf-receipt-v1"
+            ):
+                if budget:
+                    # A named JSON member on a non-object root is NULL in the
+                    # supported PostgreSQL/SQLite dialects, preserving refusal
+                    # of serialized strings, arrays and malformed payloads.
+                    receipt = extraction.response_receipt
+                elif isinstance(extraction.extracted_json, dict):
+                    receipt = extraction.extracted_json.get("response_receipt")
             evidence_source_id = (
                 ref.get("source_document_id", row.source_document_id)
                 if isinstance(ref, dict)
