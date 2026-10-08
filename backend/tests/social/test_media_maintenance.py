@@ -37,6 +37,81 @@ def ledger(svc):
         return budget.bytes_used, budget.pending_count
 
 
+def legacy_cleaned_ready(media, pending_released, copies=1):
+    """A historical DELETE reduced bytes but an old grant can recreate them."""
+    svc, store = media
+    ready = upload_ready(media)
+    with svc.db.begin():
+        upload = svc.db.get(SocialMediaUpload, ready.id)
+        upload.version = 2 if pending_released else 1
+        upload.grant_expires_at = None
+        upload.quarantine_cleaned = 1
+        upload.pending_released = pending_released
+        upload.reserved_bytes = copies * upload.declared_size
+        upload.expires_at = svc.now() - timedelta(seconds=1)
+        for budget in svc.db.scalars(select(SocialMediaBudget)):
+            budget.bytes_used -= (2 - copies) * upload.declared_size
+            budget.pending_count -= pending_released
+        quarantine = upload.quarantine_key
+    store.objects.pop(quarantine)
+    # The old acknowledgement cannot exclude a browser PUT admitted earlier.
+    store.objects[quarantine] = (png(), 'image/png', None)
+    return ready
+
+
+@pytest.mark.parametrize('pending_released', [0, 1])
+@pytest.mark.parametrize('copies', [1, 2])
+def test_legacy_cleaned_ready_requires_trusted_evidence_without_releasing_capacity(media, pending_released, copies):
+    svc, store = media
+    ready = legacy_cleaned_ready(media, pending_released, copies)
+    before = ledger(svc)
+    with pytest.raises(SocialError, match='MEDIA_WRITE_QUIESCENCE_UNCONFIRMED'):
+        svc.reconcile(ACTOR, ready.id, request_for(svc, ready.id), uuid4())
+    assert ledger(svc) == before == (copies * len(png()), 1 - pending_released)
+    assert svc.backlog().unknown_browser_writes == 1
+    assert svc.cleanup() == 0 and 'delete' not in store.operations
+    with svc.db.begin():
+        upload = svc.db.get(SocialMediaUpload, ready.id)
+        assert upload.quarantine_cleaned == 1 and upload.grant_settled_epoch == 0
+
+
+@pytest.mark.parametrize('pending_released', [0, 1])
+@pytest.mark.parametrize('copies', [1, 2])
+def test_legacy_ready_recovery_requires_a_fresh_delete_and_retains_original_reservation(media, pending_released, copies):
+    svc, store = media
+    ready = legacy_cleaned_ready(media, pending_released, copies)
+    originals = {key: value for key, value in store.objects.items() if key.startswith('ready/')}
+    reconciled = settle_writes(svc, ready.id)
+    assert reconciled.state == 'ready'
+    assert ledger(svc) == (copies * len(png()), 1 - pending_released)
+    with svc.db.begin():
+        upload = svc.db.get(SocialMediaUpload, ready.id)
+        assert upload.quarantine_cleaned == 0 and upload.grant_settled_epoch == upload.grant_epoch
+        assert upload.reserved_bytes == copies * upload.declared_size
+    store.fail = 'delete'
+    assert svc.cleanup() == 0 and ledger(svc) == (copies * len(png()), 1 - pending_released)
+    with svc.db.begin():
+        svc.db.get(SocialMediaAsset, ready.id).lease_expires_at = svc.now() - timedelta(seconds=1)
+    store.fail = None
+    assert svc.cleanup() == 1 and svc.cleanup() == 0
+    assert ledger(svc) == (len(png()), 0)
+    assert store.objects == originals and svc.preview(ready.id).asset.sha256 == ready.sha256
+
+
+def test_settled_cleaned_ready_cannot_reopen_cleanup_or_release_original_again(media):
+    svc, _ = media
+    ready = upload_ready(media)
+    expire(svc, ready.id)
+    settle_writes(svc, ready.id)
+    assert svc.cleanup() == 1
+    verifier = svc.runtime.write_quiescence_verifier
+    calls = len(verifier.calls)
+    with pytest.raises(SocialError, match='UPLOAD_NOT_PENDING'):
+        svc.reconcile(ACTOR, ready.id, request_for(svc, ready.id), uuid4())
+    assert len(verifier.calls) == calls and svc.cleanup() == 0
+    assert ledger(svc) == (len(png()), 0)
+
+
 def test_expired_browser_write_remains_reserved_after_late_put(media):
     svc, store = media
     grant = svc.initiate(ACTOR, uuid4(), intent(), uuid4())
@@ -404,6 +479,37 @@ def test_pg_two_grant_signers_keep_one_intent_and_reservation(media_pg):
         budget = db.get(SocialMediaBudget, 'global')
         assert upload.grant_epoch >= 3 and upload.grant_settled_epoch == 0
         assert budget.bytes_used == 2 * len(png()) and budget.pending_count == 1
+
+
+def test_pg_reconciliation_accepts_receipt_between_its_locked_transactions(media_pg, monkeypatch):
+    """The lower bound is first-tx time; future evidence uses second-tx time."""
+    engine, runtime = media_pg
+    sampled, verified = [], []
+
+    class DatabaseClockVerifier:
+        def verify(self, scope, receipt):
+            with engine.connect() as conn:
+                at = conn.scalar(select(func.clock_timestamp()))
+            verified.append(at)
+            return WriteQuiescenceEvidence(scope=scope, receipt=receipt, verified_at=at)
+
+    runtime = replace(runtime, write_quiescence_verifier=DatabaseClockVerifier())
+    with Session(engine, expire_on_commit=False) as db:
+        service = MediaService(db, runtime)
+        grant = service.initiate(ACTOR, uuid4(), intent(), uuid4())
+        body = request_for(service, grant.asset.id)
+        original_now = service.now
+
+        def clock():
+            at = original_now()
+            sampled.append(at)
+            return at
+
+        monkeypatch.setattr(service, 'now', clock)
+        result = service.reconcile(ACTOR, grant.asset.id, body, uuid4())
+        assert result.state == 'archived'
+        assert len(sampled) == 2 and sampled[0] < verified[0] < sampled[1]
+        assert ledger(service) == (2 * len(png()), 1)
 
 
 def test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once(media_pg):

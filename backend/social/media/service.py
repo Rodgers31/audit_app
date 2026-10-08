@@ -301,7 +301,14 @@ class MediaService:
             if upload.version != body.expected_version or upload.grant_epoch != body.expected_grant_epoch or upload.finalization_epoch != body.expected_finalization_epoch:
                 raise SocialError('VERSION_CONFLICT', 'This media upload changed before reconciliation.')
             now = self.now()
-            if upload.reservation_released or upload.quarantine_cleaned:
+            # A legacy ready cleanup can precede the end of an admitted PUT.
+            # Its old delete marker cannot prove the quarantine stayed absent.
+            legacy_ready_cleanup = bool(upload.quarantine_cleaned and asset.state == 'ready')
+            recoverable_ready_cleanup = legacy_ready_cleanup and (
+                upload.grant_settled_epoch < upload.grant_epoch
+                or (upload.finalization_epoch is not None and not upload.finalization_settled)
+                or not upload.pending_released)
+            if upload.reservation_released or (upload.quarantine_cleaned and not recoverable_ready_cleanup):
                 raise SocialError('UPLOAD_NOT_PENDING', 'This upload has already been cleaned.')
             if asset.lease_expires_at and utc(asset.lease_expires_at) > now:
                 raise SocialError('MEDIA_INSPECTION_BUSY', 'A media operation is still active.', retryable=True)
@@ -337,6 +344,10 @@ class MediaService:
                 if upload.finalization_epoch is not None:
                     upload.finalization_settled = 1
                 upload.write_quiescence_receipt_hash = body.receipt.evidence_hash
+                if legacy_ready_cleanup:
+                    # Scoped quiescence permits another DELETE, not a release
+                    # based on a historical acknowledgement. Ledger stays held.
+                    upload.quarantine_cleaned = 0
                 if asset.state != 'ready':
                     asset.state = 'archived'
                 asset.lease_token, asset.lease_expires_at = None, None
@@ -431,8 +442,11 @@ class MediaService:
                     upload.reservation_released = 1
                     upload.version += 1; asset.deleted_at = self.now()
                 else:
-                    for budget in budgets: budget.bytes_used -= upload.declared_size
-                    upload.reserved_bytes -= upload.declared_size
+                    # Legacy ready cleanup may already have released the
+                    # quarantine copy. Never subtract its original a second time.
+                    released_bytes = min(upload.declared_size, max(0, upload.reserved_bytes - upload.declared_size))
+                    for budget in budgets: budget.bytes_used -= released_bytes
+                    upload.reserved_bytes -= released_bytes
                     self._release_pending(upload, budgets)
                 self._audit(None, uuid4(), asset, 'media.quarantine_cleaned' if ready else 'media.orphan_cleaned', 'ready' if ready else 'archived')
                 cleaned += 1
