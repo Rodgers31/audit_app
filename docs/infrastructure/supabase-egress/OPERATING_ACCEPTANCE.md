@@ -3,8 +3,12 @@
 This prepares the remaining operating-budget review after merged #487, #505 and
 #510. It does not repeat their query changes or establish deployed savings.
 Issue #481 remains open for actual representative measurements, attribution and
-the owner's hosting/availability decision. No collection, database connection,
-provider request, environment lookup, billing change or scheduled job is included.
+the owner's hosting/availability decision. This evaluator includes no collection,
+database connection, provider request, environment lookup, billing change or job.
+The separate opt-in collector and partial preparation seam are documented in
+[OPERATING_COLLECTION_HANDOFF.md](OPERATING_COLLECTION_HANDOFF.md), with dated
+actual readbacks and explicit missing coverage. They do not authenticate imported
+artifacts or change this evaluator's declaration-only authority.
 
 `scripts/verification/evaluate_social_operating_budget.py` uses only the Python
 standard library. Its direct interface is
@@ -26,7 +30,8 @@ Use existing retained dashboard/readback/log evidence. Do not scan/export data,
 reset statistics, run a load test or enable jobs merely to fill this packet.
 An operator must separately obtain and inspect actual evidence under the intended
 workload. Quiet days with Actions off or no worker cannot represent future
-nightly/worker traffic. The evaluator has no collector or automatic monitoring.
+nightly/worker traffic. The evaluator performs no collection or monitoring; the
+separate collector requires explicit read-only execution and never enables jobs.
 
 The checked integration checkout has prior R2 acceptance, controlled query/worker
 benchmarks, fixed-name cache counters and hosting configuration source. It has
@@ -72,8 +77,9 @@ match the independently supplied expected identity. PostgreSQL 18 exposes
 `pg_stat_statements_info.dealloc` for evictions and each entry's `stats_since` for
 its statistics start; matching endpoint counts alone cannot establish continuous
 history. See the [official pg_stat_statements documentation](https://www.postgresql.org/docs/18/pgstatstatements.html),
-read on 2026-10-08. Unsupported source metadata stays blocked; no query collector,
-statistics reset or fallback estimate is supplied.
+read on 2026-10-08. Unsupported source metadata stays blocked. The separate
+allowlisted collector retains actual snapshot ends and reset/history metadata;
+it supplies no statistics reset, billed-byte estimate or authenticated import.
 
 Allowed receipt kinds are `provider_dashboard`, `runtime_logs`,
 `social_provider_meter`, `social_protocol_measurement`, `hosting_readback`,
