@@ -24,6 +24,6 @@ Author Jest used a temporary runtime-only module map to make cached React/React 
 
 ## Language review and scope
 
-The [new Kiswahili worksheet](2026-10-03-evidence-language-review.md) lists all 36 newly authored draft keys. Their runtime localization is tested; competent human wording/meaning review remains pending. Earlier approved 144 strings and closed #307/#372 work are unchanged.
+The [new Kiswahili worksheet](2026-10-03-evidence-language-review.md) lists all 58 newly authored draft keys: the initial 36 evidence UI keys and the 22 caller/county keys in the [follow-up](2026-10-03-evidence-label-followup.md). Technical checks cover shared localization and selected callers; competent human wording/meaning review remains pending for all 58. The [7 October human review packet](2026-10-07-evidence-swahili-review.md) includes the reconciled scope and contextual review instructions. Earlier approved 144 strings and closed #307/#372 work are unchanged.
 
 No additional defect requiring a new issue was identified in this bounded review. No new issue or review-thread mutation was performed. No GitHub, Actions, provider or production writes were made.
