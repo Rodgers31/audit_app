@@ -7,6 +7,7 @@ from typing import Protocol, TYPE_CHECKING
 from uuid import UUID
 
 from ..contracts import InspectedAsset, ResolvedPostPayload, canonical_hash
+from ..native_admission import NativeCapabilityAdmission
 
 if TYPE_CHECKING:
     from .repository import Claim
@@ -25,6 +26,7 @@ class WorkerCredentialMaterial:
     granted_scopes: tuple[str, ...]
     access_expires_at: datetime | None
     data_access_expires_at: datetime | None
+    capability_admission: NativeCapabilityAdmission | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -155,11 +157,17 @@ class CredentialMaterialLoader:
                 raise MaterialUnavailable('CREDENTIAL_MATERIAL_INVALID') from None
             access_expiry = [utc(row.access_expires_at) for row in (credential, parent) if row.access_expires_at]
             data_expiry = [utc(row.data_access_expires_at) for row in (credential, parent) if row.data_access_expires_at]
+            try:
+                admission = NativeCapabilityAdmission.from_snapshot(account.capability_snapshot)
+            except (ValueError, TypeError):
+                # An unreadable publishing gate cannot authorize another write,
+                # but authenticated recovery still needs the owned credentials.
+                admission = None
             return WorkerCredentialMaterial(account.id, credential.id, credential.version,
                 account.platform, account.api_product, account.external_account_id, bundle['page_id'],
                 bundle['access_token'], tuple(account.granted_scopes),
                 min(access_expiry) if access_expiry else None,
-                min(data_expiry) if data_expiry else None)
+                min(data_expiry) if data_expiry else None, admission)
 
 
 class VerifiedMediaAccess:

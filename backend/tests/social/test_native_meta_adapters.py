@@ -11,7 +11,8 @@ import httpx
 import pytest
 
 from social.adapters import FacebookPageAdapter, InstagramFacebookLoginAdapter, MetaAdapterConfig
-from social.contracts import InspectedAsset, ResolvedPostPayload, canonical_hash
+from social.contracts import CapabilitySet, InspectedAsset, ResolvedPostPayload, canonical_hash
+from social.native_admission import NativeCapabilityAdmission
 from social.worker.materials import ProviderFetchURL, WorkerCredentialMaterial
 
 
@@ -40,8 +41,12 @@ def rehash(value):
 
 
 def credential(value):
+    kind = FacebookPageAdapter if value.platform == "facebook" else InstagramFacebookLoginAdapter
+    admission = NativeCapabilityAdmission.from_snapshot(CapabilitySet(provider_api_version="v26.0", eligible=True,
+        supported_formats=kind.formats, required_scopes=kind.scopes, granted_scopes=tuple(sorted(SCOPES)),
+        limits=kind.limits, adapter_available=True, feature_states={"publishing": "supported"}, price_class="free"))
     return WorkerCredentialMaterial(value.account_id, uuid4(), 1, value.platform, value.api_product,
-        value.external_account_id, "901", TOKEN, SCOPES, NOW + timedelta(days=1), NOW + timedelta(days=1))
+        value.external_account_id, "901", TOKEN, SCOPES, NOW + timedelta(days=1), NOW + timedelta(days=1), admission)
 
 
 class Media:

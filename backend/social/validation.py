@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from .contracts import (CapabilitySet, InspectedAsset, PostDocument, ResolvedPostPayload, ScheduleTime, TargetValidation, ValidationIssue, ValidationResult, canonical_hash)
 from .models import SocialAccount, SocialMediaAsset
+from .native_admission import native_capability_matches
 
 
 def issue(code, field, message):
@@ -34,21 +35,9 @@ def registered_capability(account: SocialAccount, available_adapters) -> Capabil
 def capability_for(account: SocialAccount, available_adapters=frozenset()) -> CapabilitySet:
     if isinstance(available_adapters, Mapping):
         caps = registered_capability(account, available_adapters)
-        try:
-            stored = CapabilitySet.model_validate(account.capability_snapshot)
-        except (ValueError, TypeError):
-            return CapabilitySet()
         # Registry presence cannot silently upgrade a legacy connected account.
         # A provider-verified reconnect persists the native capability snapshot.
-        if (not stored.eligible or not stored.adapter_available
-                or stored.provider_api_version != caps.provider_api_version
-                or stored.rules_version != caps.rules_version
-                or stored.supported_formats != caps.supported_formats
-                or stored.required_scopes != caps.required_scopes
-                or stored.granted_scopes != caps.granted_scopes
-                or stored.limits != caps.limits
-                or stored.feature_states.get('publishing') != 'supported'
-                or stored.price_class != 'free'):
+        if not native_capability_matches(account.capability_snapshot, caps):
             return caps.model_copy(update={'eligible':False,'adapter_available':False,
                 'feature_states':{**caps.feature_states,'publishing':'requires_review'}})
         return caps

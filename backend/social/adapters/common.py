@@ -13,6 +13,7 @@ from pydantic import Field, field_validator
 from ..contracts import (CapabilitySet, Hash, OperationPlan, OperationResult,
     ResolvedPostPayload, StrictModel, ValidationIssue, ValidationResult, canonical_hash)
 from ..worker.materials import WorkerCredentialMaterial
+from ..native_admission import NativeCapabilityAdmission, native_capability_matches
 from .meta_http import MetaHTTP, MetaHTTPFailure, remote_id
 
 
@@ -216,9 +217,18 @@ class MetaAdapter:
 
     def _admission(self, payload, operation, credential):
         material = self._material(payload, credential)
+        admission = material.capability_admission
         caps = self.capabilities({"platform": material.platform, "api_product": material.api_product,
             "granted_scopes": material.granted_scopes, "connection_state": "connected",
-            "capability_snapshot": {"eligible": True}})
+            "capability_snapshot": {"eligible": isinstance(admission, NativeCapabilityAdmission) and admission.eligible is True}})
+        if operation.safe_replay_class != "read_only":
+            if not native_capability_matches(admission, caps) or payload.capability_version != caps.rules_version:
+                raise MetaHTTPFailure("ACCOUNT_INELIGIBLE", retry_safe=True)
+        else:
+            # Publishing restrictions do not erase readback of an accepted send.
+            # Credentials, identity, payload integrity and read-only fencing stay
+            # mandatory; this copy is used only for local payload validation.
+            caps = caps.model_copy(update={"eligible": True})
         if not self.validate(payload, caps).valid:
             raise MetaHTTPFailure("INVALID_PUBLISHING_PAYLOAD", retry_safe=True)
         state = self._checkpoint(payload, operation.checkpoint)
@@ -226,6 +236,14 @@ class MetaAdapter:
         if operation.operation != expected.operation or operation.publication_capable != expected.publication_capable or operation.safe_replay_class != expected.safe_replay_class:
             raise ValueError("Operation does not match checkpoint")
         return material, state
+
+    def validate_mutation_admission(self, payload, account):
+        """Explicit worker hook, shared with API and final material admission."""
+        caps = self.capabilities(account)
+        if not native_capability_matches(account.get("capability_snapshot"), caps) or payload.capability_version != caps.rules_version:
+            return ValidationResult(valid=False, errors=(issue("ACCOUNT_INELIGIBLE", "capabilities",
+                "The persisted native publishing admission requires verification."),))
+        return self.validate(payload, caps)
 
 
 def verify_bytes(asset, value, maximum):

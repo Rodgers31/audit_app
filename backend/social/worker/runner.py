@@ -145,6 +145,12 @@ class SocialWorker:
                         return
                 plan = OperationPlan.model_validate(adapter.next_operation(payload, snapshot["checkpoint"]))
             validate_plan(plan, snapshot["checkpoint"])
+            admission_check = getattr(adapter, "validate_mutation_admission", None)
+            if plan.safe_replay_class != "read_only" and callable(admission_check):
+                admission = ValidationResult.model_validate(admission_check(payload, snapshot))
+                if not admission.valid or admission.errors or any(not target.valid or target.errors for target in admission.targets):
+                    await self.db(self.repository.abandon, claim, state="blocked", code="ACCOUNT_INELIGIBLE")
+                    return
             if not 0 < plan.timeout_seconds < self.config.lease_seconds:
                 raise ValueError("Adapter timeout must be shorter than claim lease")
             intent = await self.db(
