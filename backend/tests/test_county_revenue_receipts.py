@@ -471,7 +471,10 @@ def test_a_revenue_table_that_raises_costs_that_county_only(monkeypatch):
 
     caption = "Table 3.444: Nairobi City County, Revenue Performance in the first nine months"
     pages = [
-        SimpleNamespace(extract_text=(lambda i=i: caption if i == 612 else ""))
+        SimpleNamespace(
+            extract_text=(lambda i=i: caption if i == 612 else ""),
+            close=lambda: None,
+        )
         for i in range(1, 700)
     ]
     pdf = SimpleNamespace(pages=pages)
