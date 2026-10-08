@@ -1,29 +1,61 @@
-# Use the official Node.js runtime as a parent image
-FROM node:22-alpine
-
-# Set the working directory in the container
+# Build and runtime use the same glibc base for native optional dependencies.
+FROM node:22-bookworm-slim AS base
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy package.json and package-lock.json (if available)
-COPY package*.json ./
+FROM base AS dependencies
+# npm ci needs the lockfile's peer policy and the local ESLint package.
+COPY package.json package-lock.json .npmrc ./
+COPY eslint-rules ./eslint-rules
+# Keep build tools and native optional packages. Only skip ONNX's extra GPU
+# download; its bundled CPU binaries and other dependency scripts remain intact.
+RUN ONNXRUNTIME_NODE_INSTALL=skip npm ci --include=dev --include=optional --no-audit --no-fund
 
-# Install dependencies
-RUN npm ci --only=production
+# Docker Compose selects this target for its source bind mount.
+FROM dependencies AS development
+ENV NODE_ENV=development
+ENV PORT=3000
+COPY --chown=node:node . .
+RUN chown node:node /app
+USER node
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
 
-# Copy the rest of the application code
+FROM dependencies AS builder
 COPY . .
-
-# Supabase env vars must be present at build time (Next.js inlines NEXT_PUBLIC_*)
+# Next.js inlines NEXT_PUBLIC_* values at build time. Pass public values only.
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-# Build the Next.js application
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
+# Prune after Tailwind, TypeScript and ESLint have finished the build. Optional
+# production dependencies (including Next's Sharp image decoder) are retained.
+RUN npm prune --omit=dev --include=optional --ignore-scripts --no-audit --no-fund
+# Build caches are disposable; the nonroot runtime can recreate its own cache.
+RUN rm -rf .next/cache
 
-# Expose the port the app runs on
+FROM base AS runner
+# next.config.js is evaluated again by next start. Keep its public API/image
+# host config aligned with the values embedded during the build.
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY --from=builder --chown=node:node /app/.next ./.next
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
+COPY --from=builder --chown=node:node /app/next.config.js ./
+COPY --from=builder --chown=node:node /app/node_modules ./node_modules
+USER node
 EXPOSE 3000
-
-# Define the command to run the application
+# Public readiness endpoint: no auth cookies or backend connection required.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "const req=require('http').get('http://127.0.0.1:'+process.env.PORT+'/api/health',res=>{res.resume();process.exit(res.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.setTimeout(3000,()=>{req.destroy();process.exit(1)});"
 CMD ["npm", "start"]

@@ -11,8 +11,9 @@ import { County } from '@/types';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Eye, Layers, MapPin } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
+import { ComposableMap, Geographies } from 'react-simple-maps';
 import CountyMarker from './map/CountyMarker';
+import Geography from './map/StyledGeography';
 import MapTooltip from './map/MapTooltip';
 import {
   getCountyByName,
