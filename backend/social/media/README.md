@@ -69,6 +69,13 @@ evidence. They establish code behavior, PostgreSQL fencing and crash recovery;
 they do not establish live R2/CORS behavior or production write-drain evidence.
 Issue #490 retains those operational acceptance gates.
 
+The offline declaration reviewer is `python -m scripts.social_media_acceptance`.
+It validates a bounded packet against an independently supplied social scope and
+explicit review time. Review readiness authenticates no receipt and authorizes
+no storage, maintenance or publishing; all reports keep write-quiescence and
+production acceptance false/not run. The exact input/gate contract and remaining
+live evidence are in [MEDIA_OPERATIONAL_ACCEPTANCE.md](../../../docs/social-publishing/implementation/MEDIA_OPERATIONAL_ACCEPTANCE.md).
+
 Storage contract references: [R2 presigned URLs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/),
 [S3 DeleteObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html),
 [Boto3 retries](https://docs.aws.amazon.com/boto3/latest/guide/retries.html).
