@@ -58,6 +58,8 @@ persisted capability restrictions being relaxed by registry presence. Each
 retained negative fixture has a working positive baseline. Final independent
 SQLite/fake-provider review passed 240 tests, with its PostgreSQL case explicitly
 excluded because root owns that lane. Root executed the actual PostgreSQL cases.
+The separated native branch, including its media prerequisite and all four
+explicit local PostgreSQL lanes, passed **1,016 backend tests with zero skips**.
 
 The native PR is stacked on `codex/social-media-maintenance`: material access
 depends on its authoritative signed-expiry contract. Queue UI remains a separate
