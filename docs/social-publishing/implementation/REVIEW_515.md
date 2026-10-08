@@ -97,3 +97,10 @@ No live provider or storage request, deployment, production database, default
 registry, runtime setting or dependency changed. The review body's additional
 timestamp, media metadata, schema and interface claims had no concrete supporting
 location or reproduction; this receipt does not invent findings for them.
+
+Root merged media prerequisite `8d0a9d6` into the native branch and ran its full
+backend social suite with all four explicit local PostgreSQL lanes enabled:
+**1,089 passed, zero skipped**. The only two warnings were the existing
+SQLAlchemy declarative-base deprecations. Worker tests ran serially against the
+disposable database. The native PR diff still contains only native changes
+relative to the updated media base; the migration graph retains its single head.
