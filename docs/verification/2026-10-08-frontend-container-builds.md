@@ -2,6 +2,11 @@
 
 Scope: issue #511, the frontend Docker build and runtime packaging. Work was performed in the isolated `codex/frontend-container-packaging-511` checkout based on main `3dfc7b9e57311fc38f02683b9ce1985fd4365fe3`.
 
+This report preserves the initial packaging receipts. PR #516's subsequent
+review correction removes the production API default and adds build/runtime
+configuration checks plus server-only SSR transport. The current contract and
+new build/runtime receipts are in the [PR #516 configuration report](2026-10-08-pr516-configuration.md).
+
 ## Baseline reproduction
 
 A temporary context containing HEAD's unmodified Dockerfile and manifests failed in Docker on Linux arm64 at `npm ci --only=production`, before source copy or compilation. npm reported `ERESOLVE`: react-simple-maps 3.0.0 requires React 16.8/17/18 while the app installs React 19.2.4. The original Dockerfile copies neither `.npmrc` nor the local ESLint package before installation. Evidence: `baseline-default-arm64.log` in the local evidence directory.
@@ -16,7 +21,7 @@ The default Dockerfile also provides a `development` target with the full build 
 
 The runtime contains `.next`, public assets, production dependencies, and `next.config.js`, starts with `npm start`, and runs as the image's nonroot `node` user. The existing `/api/health` route returns HTTP 200 and `{ "status": "ok" }`; anonymous middleware bypasses Supabase session refresh for this public route. The Docker health command now handles connection errors and times out after three seconds.
 
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_API_URL` are explicit build arguments. Public values must be supplied for the intended deployment at build time because Next embeds them in browser output. The runtime repeats the same public build values so reevaluating `next.config.js` preserves the API rewrite destination and image host configuration. The API argument's default remains `http://localhost:8000`, matching `next.config.js`. No public API routing or data semantics were changed.
+At the initially reviewed head, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_API_URL` were explicit build arguments. Public values must be supplied for the intended deployment at build time because Next embeds them in browser output. The runtime repeated the same public build values so reevaluating `next.config.js` preserved the API rewrite destination and image host configuration. That head retained a `http://localhost:8000` API argument default, matching `next.config.js`. The review follow-up supersedes that default and rejects absent or conflicting production public configuration.
 
 ## Context isolation
 

@@ -9,8 +9,8 @@ export interface StyledGeographyProps extends Omit<GeographyProps, 'style'> {
   style?: GeographyStyles;
 }
 
-/** v5 accepts plain SVG styles. Preserve the v3 county style states, including
- * keyboard focus, without changing the callers' colors or input handlers. */
+/** v5 accepts plain SVG styles. Keep the county palette's style states while
+ * tracking hover and keyboard focus separately, so either can remain visible. */
 const StyledGeography = forwardRef<SVGPathElement, StyledGeographyProps>(
   function StyledGeography(
     {
@@ -26,19 +26,20 @@ const StyledGeography = forwardRef<SVGPathElement, StyledGeographyProps>(
     ref
   ) {
     const [isPressed, setPressed] = useState(false);
+    const [isHovered, setHovered] = useState(false);
     const [isFocused, setFocused] = useState(false);
 
     return (
       <Geography
         {...props}
         ref={ref}
-        style={style[isPressed ? 'pressed' : isFocused ? 'hover' : 'default']}
+        style={style[isPressed ? 'pressed' : isHovered || isFocused ? 'hover' : 'default']}
         onMouseEnter={(event) => {
-          setFocused(true);
+          setHovered(true);
           onMouseEnter?.(event);
         }}
         onMouseLeave={(event) => {
-          setFocused(false);
+          setHovered(false);
           setPressed(false);
           onMouseLeave?.(event);
         }}

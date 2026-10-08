@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import StyledGeography from '@/components/map/StyledGeography';
 
@@ -70,4 +70,65 @@ it('does not invent missing style states or retain default styles on hover', () 
   expect(county.style.stroke).toBe('');
   fireEvent.mouseLeave(county);
   expect(county).toHaveStyle({fill:'#c3cdd5',stroke:'#3d5a45'});
+});
+
+it('keeps the keyboard focus style when the pointer leaves the focused county', () => {
+  render(<svg><StyledGeography geography={geography} aria-label='Synthetic county'
+    role='button' style={{default:{fill:'#c3cdd5'},hover:{fill:'#a9b6c0'},pressed:{fill:'#1B3A2A'}}}/></svg>);
+  const county = screen.getByRole('button', {name:'Synthetic county'});
+  act(() => county.focus());
+  expect(county).toHaveFocus();
+  fireEvent.mouseEnter(county);
+  fireEvent.mouseDown(county);
+  expect(county).toHaveStyle({fill:'#1B3A2A'});
+  fireEvent.mouseLeave(county);
+  expect(county).toHaveFocus();
+  expect(county).toHaveStyle({fill:'#a9b6c0'});
+  act(() => county.blur());
+  expect(county).not.toHaveFocus();
+  expect(county).toHaveStyle({fill:'#c3cdd5'});
+});
+
+it('keeps the pointer hover style when keyboard focus moves away', () => {
+  render(<svg><StyledGeography geography={geography} aria-label='Synthetic county'
+    role='button' style={{default:{fill:'#c3cdd5'},hover:{fill:'#a9b6c0'},pressed:{fill:'#1B3A2A'}}}/></svg>);
+  const county = screen.getByRole('button', {name:'Synthetic county'});
+  fireEvent.mouseEnter(county);
+  act(() => county.focus());
+  fireEvent.mouseDown(county);
+  expect(county).toHaveStyle({fill:'#1B3A2A'});
+  act(() => county.blur());
+  expect(county).not.toHaveFocus();
+  expect(county).toHaveStyle({fill:'#a9b6c0'});
+  fireEvent.mouseLeave(county);
+  expect(county).toHaveStyle({fill:'#c3cdd5'});
+});
+
+it('uses current styles and callbacks after a rerender during interaction', () => {
+  const oldLeave = jest.fn();
+  const newLeave = jest.fn();
+  const newDown = jest.fn();
+  const ref = createRef<SVGPathElement>();
+  const {rerender} = render(<svg><StyledGeography ref={ref} geography={geography}
+    role='button' aria-label='Synthetic county' aria-expanded={false} onMouseLeave={oldLeave}
+    style={{default:{fill:'#c3cdd5'},hover:{fill:'#a9b6c0'}}}/></svg>);
+  const county = screen.getByRole('button', {name:'Synthetic county'});
+  fireEvent.mouseEnter(county);
+  act(() => county.focus());
+  rerender(<svg><StyledGeography ref={ref} geography={geography} role='button'
+    aria-label='Synthetic county' aria-expanded={true} onMouseLeave={newLeave}
+    onMouseDown={newDown} style={{default:{fill:'#4A7C5C'},hover:{fill:'#3d6a4e'},pressed:{fill:'#1B3A2A'}}}/></svg>);
+  expect(ref.current).toBe(county);
+  expect(county).toHaveAttribute('aria-expanded', 'true');
+  expect(county).toHaveStyle({fill:'#3d6a4e'});
+  fireEvent.mouseDown(county);
+  expect(county).toHaveStyle({fill:'#1B3A2A'});
+  fireEvent.mouseLeave(county);
+  expect(county).toHaveFocus();
+  expect(county).toHaveStyle({fill:'#3d6a4e'});
+  expect(oldLeave).not.toHaveBeenCalled();
+  expect(newLeave).toHaveBeenCalledTimes(1);
+  expect(newDown).toHaveBeenCalledTimes(1);
+  act(() => county.blur());
+  expect(county).toHaveStyle({fill:'#4A7C5C'});
 });

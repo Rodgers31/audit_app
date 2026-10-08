@@ -37,3 +37,38 @@ The current audit remains 38 affected entries overall (33 high, five moderate), 
 
 Local raw receipts, rejected-candidate evidence and screenshots:
 `/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/DEPENDENCY_511_2026-10-08/`.
+
+## PR #516 review follow-up
+
+Copilot's mixed pointer/keyboard finding was reproduced against the reviewed
+head `2014b826d8efb2490eb124bb9233a2f8f73c25ab`. The original compatibility
+wrapper used one flag for hover and focus, so pointer leave could clear the
+highlight while the SVG path remained the active DOM element. Hover followed
+by focus and blur had the reciprocal defect.
+
+The wrapper now tracks hover and focus independently. Either keeps the
+existing hover palette visible; leave and blur still cancel pressed styling.
+This intentionally improves the inherited v3 mixed-input behavior. The earlier
+single-input palette and geometry comparisons remain historical migration
+receipts, rather than a claim that the new mixed-input behavior exactly matches
+v3.
+
+Three new tests were observed failing before this correction and passing
+afterward, including a rerender with current styles, callbacks and the same
+forwarded ref. All five wrapper tests pass. Twelve additional real Chromium
+component runs cover both mixed-input sequences in all three callers at desktop
+1280px and touch/mobile 390px. Each retains its active highlight after the
+other input state clears. The home map's coarse-pointer tooltip overlaps the
+small fixture county; its two mobile sequences therefore use DOM MouseEvents
+with native DOM focus. Those two runs verify component event handling, not
+persistent native CSS hover on a touch device. The other ten runs use native
+mouse input and DOM focus.
+
+Receipts and before/after screenshots:
+`/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/REVIEW_516_2026-10-08/map-focus/`.
+
+The coordinator's follow-up full isolated frontend run passes 126 suites and
+1,605 tests, with the same one existing skip. TypeScript, lint and dependency
+tooling pass. The final API helper also passes the affected Axios, endpoint,
+server retry and county SSR suites (41 tests), the configuration scripts
+(24 tests), and 33 independent transport-selection checks.
