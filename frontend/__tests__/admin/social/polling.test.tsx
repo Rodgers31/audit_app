@@ -17,7 +17,7 @@ beforeEach(() => { jest.clearAllMocks(); Object.defineProperty(document, 'visibi
 afterEach(() => jest.useRealTimers());
 test('active timer polls compact summaries, retains the document, and stops hidden or terminal', async () => {
   jest.useFakeTimers();
-  const p = post({ targets: [target('queued')] }); let compact = { ...p, document: undefined, references: undefined, publication: undefined };
+  const p = post({ targets: [target('queued')] }); let compact = { ...p, document: undefined, references: undefined };
   get.mockImplementation(async (path: string) => ({ data: path.endsWith('/status') ? compact : p }));
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={qc}><Observer id={p.id} /></QueryClientProvider>);
@@ -45,7 +45,7 @@ test('a new compact version refreshes detail once without merging a new version 
   const next = post({ version: 2, targets: [target('queued')], document: { ...p.document, master: { ...p.document.master, text: 'Authoritative new revision' } } });
   let detailReads = 0;
   get.mockImplementation(async (path: string) => {
-    if (path.endsWith('/status')) return { data: { ...next, document: undefined, references: undefined, publication: undefined } };
+    if (path.endsWith('/status')) return { data: { ...next, document: undefined, references: undefined } };
     detailReads++; return { data: detailReads === 1 ? p : next };
   });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });

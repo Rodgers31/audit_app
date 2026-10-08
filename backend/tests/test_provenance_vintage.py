@@ -70,7 +70,14 @@ class _FakeDB:
         self._docs = docs
 
     def query(self, *a, **k):
-        return _FakeQuery(self._docs)
+        return _FakeQuery([
+            SimpleNamespace(
+                publication_date=d.meta.get("publication_date")
+                if isinstance(d.meta, dict) else None,
+                fetch_date=d.fetch_date,
+            )
+            for d in self._docs
+        ])
 
 
 def test_resolve_returns_most_recent_vintage():

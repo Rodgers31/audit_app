@@ -82,7 +82,7 @@
 .accountList { display: grid; gap: 10px; }
 .accountCard { padding: 18px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); display: grid; gap: 7px; }
 .pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-top: 12px; }
-.schedule { border: 1px solid var(--line); border-radius: 5px; padding: 14px; display: grid; gap: 12px; }
+.schedule { min-width: 0; overflow-wrap: anywhere; border: 1px solid var(--line); border-radius: 5px; padding: 14px; display: grid; gap: 12px; }
 .mobileSwitch { display: none; }
 @media (max-width: 1150px) { .composerGrid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 850px) {

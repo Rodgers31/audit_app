@@ -1,17 +1,18 @@
 'use client';
 
-import { decodeControls, SocialPost, SocialSummary, SocialSystemStatus } from '@/lib/api/social';
+import { decodeControls, SocialAccount, SocialPost, SocialSummary, SocialSystemStatus } from '@/lib/api/social';
 import { useSocialAccounts, useSocialMutation, useSocialPost, useSocialPosts, useSocialSystem } from '@/lib/hooks/useSocial';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialComposer from './SocialComposer';
+import SocialDeliveryHistory from './SocialDeliveryHistory';
 import { SocialErrorBanner } from './SocialNotice';
-import { platformLabels } from './socialDocument';
+import { httpsUrl, platformLabels } from './socialDocument';
 import styles from './social.module.css';
 
-type View = 'drafts' | 'pending' | 'scheduled' | 'history';
-const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History' };
+type View = 'drafts' | 'pending' | 'scheduled' | 'history' | 'needs_attention';
+const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History', needs_attention: 'Needs attention' };
 export function SocialSystemStrip({ status, error, refresh }: { status?: SocialSystemStatus; error?: unknown; refresh: () => void }) {
   const [editingControls, setEditingControls] = useState(false);
   const [reason, setReason] = useState('');
@@ -49,8 +50,22 @@ export function SocialSystemStrip({ status, error, refresh }: { status?: SocialS
     {!!error && <SocialErrorBanner error={error} onRetry={refresh} />}
   </div>;
 }
-function DeliverySummary({ post }: { post: SocialSummary }) {
-  return <>{post.targets.map(t => <span key={t.id} className={styles.muted}>{platformLabels[t.platform]}: {t.state.replaceAll('_', ' ')} </span>)}</>;
+function DeliverySummary({ post, accounts, historical, attention }: { post: SocialSummary; accounts: SocialAccount[]; historical: boolean; attention: boolean }) {
+  if (attention) {
+    const attentionStates = new Set(['failed', 'blocked', 'reconciling', 'outcome_unknown']);
+    const currentIds = new Set(post.targets.map(t => t.id));
+    const current = post.targets.filter(t => attentionStates.has(t.state));
+    const past = post.historical_targets.filter(t => attentionStates.has(t.state) && !currentIds.has(t.id));
+    return <>{current.map(t => <span key={t.id} className={styles.muted}>Current {platformLabels[t.platform]} · {accounts.find(a => a.id === t.account_id)?.display_name ?? t.account_id}: {t.state.replaceAll('_', ' ')}</span>)}{past.map(t => <span key={t.id} className={styles.muted}>Historical {platformLabels[t.platform]} · {accounts.find(a => a.id === t.account_id)?.display_name ?? t.account_id}: {t.state.replaceAll('_', ' ')}</span>)}{post.historical_target_count > 20 && <span className={styles.muted}>Some older deliveries are on later history pages. Select this post to inspect all delivery history.</span>}</>;
+  }
+  if (historical) return <>{post.historical_targets.map(t => <span key={t.id} className={styles.muted}>Historical {platformLabels[t.platform]} · {accounts.find(a => a.id === t.account_id)?.display_name ?? t.account_id}: {t.state.replaceAll('_', ' ')}{t.published_at ? ` · confirmed ${t.published_at} (UTC)` : ''}{t.scheduled_for ? ` · due ${t.scheduled_for} (UTC)` : ''}</span>)}{post.historical_target_count > 20 && <span className={styles.muted}>Showing 20 of {post.historical_target_count} historical deliveries. Select to inspect all.</span>}</>;
+  return <>{post.publication && <><span className={styles.muted}>{post.publication.requested_local_time ?? 'Local time unavailable'} · {post.publication.schedule_timezone ?? 'Timezone unavailable'}</span>{post.publication.scheduled_for && <span className={styles.muted}>Due: {post.publication.scheduled_for} (UTC)</span>}<span className={styles.muted}>Created by {post.created_by ?? "Identity unavailable"} · approved by {post.publication.approved_by}</span></>}{post.targets.map(t => <span key={t.id} className={styles.muted}>{platformLabels[t.platform]} · {accounts.find(a => a.id === t.account_id)?.display_name ?? t.account_id}: {t.state.replaceAll('_', ' ')}{t.published_at ? ` · confirmed ${t.published_at} (UTC)` : ''} </span>)}</>;
+}
+function HistoryLinks({ post }: { post: SocialSummary }) {
+  return <>{post.historical_targets.map(t => {
+    const url = t.state === 'published' ? httpsUrl(t.remote_url) : undefined;
+    return url ? <a key={t.id} href={url} target='_blank' rel='noopener noreferrer'>View {platformLabels[t.platform]} published post</a> : null;
+  })}</>;
 }
 export default function SocialWorkspace() {
   const router = useRouter();
@@ -58,11 +73,12 @@ export default function SocialWorkspace() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string>();
   const [unsaved, setUnsaved] = useState(false);
-  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined);
-  const detail = useSocialPost(selected);
+  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all');
+  const detail = useSocialPost(selected, view !== 'history');
   const accounts = useSocialAccounts();
   const system = useSocialSystem();
-  const posts = list.data?.posts.filter(p => view === 'scheduled' ? p.delivery_status === 'scheduled' : view === 'history' ? p.targets.some(t => ['published', 'failed', 'outcome_unknown', 'cancelled'].includes(t.state)) : true);
+  const posts = list.data?.posts;
+  const historicalPost = view === 'history' ? posts?.find(p => p.id === selected) : undefined;
   function mayLeave() { return !unsaved || window.confirm('This draft has unsaved edits. Leave without saving?'); }
   function changeView(next: View) { if (next !== view && mayLeave()) { setView(next); setPage(1); setSelected(undefined); setUnsaved(false); } }
   return <div className={styles.workspace}>
@@ -70,17 +86,18 @@ export default function SocialWorkspace() {
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
     <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/accounts' className={styles.button}>Accounts</Link></nav>
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
-      <div className={styles.toolbar}><div><h2>{viewLabels[view]}</h2>{view === 'scheduled' || view === 'history' ? <p className={styles.muted}>Delivery entries from this page of compact posts. Open a post for its exact schedule and independent results. Pagination covers all posts; counts are not global delivery totals.</p> : <p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'drafts' ? 'drafts' : 'posts awaiting review'}` : 'Loading compact post summaries…'}</p>}</div><button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button></div>
+      <div className={styles.toolbar}><div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'drafts' ? 'drafts' : view === 'pending' ? 'posts awaiting review' : view === 'needs_attention' ? 'posts needing attention' : `${view} posts`}` : 'Loading compact post summaries…'}</p>{(view === 'scheduled' || view === 'history' || view === 'needs_attention') && <p className={styles.muted}>Global delivery results. Mixed posts can appear in several views; each account keeps its independent result.</p>}</div><button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button></div>
       {list.error && <SocialErrorBanner error={list.error} onRetry={() => list.refetch()} />}
       {list.isPending && <p role='status'>Loading posts…</p>}
       <div className={styles.reviewGrid}><aside className={styles.queue} aria-label='Post queue'>
-        {posts?.length === 0 && <div className={styles.empty}><p>No matching entries on this page.</p><p>Create a manual draft or browse the next page.</p></div>}
-        {posts?.map(p => <button className={styles.draft} type='button' key={p.id} aria-pressed={selected === p.id} onClick={() => { if (p.id !== selected && mayLeave()) { setSelected(p.id); setUnsaved(false); } }}><span className={styles.tag}>{p.origin_type} · {p.content_type}</span><strong>{p.title}</strong><span className={styles.muted}>{p.editorial_state.replaceAll('_', ' ')} · {p.delivery_status.replaceAll('_', ' ')}</span><DeliverySummary post={p} /></button>)}
+        {posts?.length === 0 && <div className={styles.empty}><p>No matching posts.</p><p>Create a manual draft or choose another view.</p></div>}
+        {posts?.map(p => <div key={p.id} className={styles.fields}><button className={styles.draft} type='button' aria-pressed={selected === p.id} onClick={() => { if (p.id !== selected && mayLeave()) { setSelected(p.id); setUnsaved(false); } }}><span className={styles.tag}>{p.origin_type} · {p.content_type}</span><strong>{p.title}</strong><span className={styles.muted}>{p.editorial_state.replaceAll('_', ' ')} · {p.delivery_status.replaceAll('_', ' ')}</span><DeliverySummary post={p} accounts={accounts.data ?? []} historical={view === 'history'} attention={view === 'needs_attention'} /></button>{view === 'history' && <HistoryLinks post={p} />}</div>)}
         {list.data && <div className={styles.pagination}><button type='button' className={styles.button} disabled={page === 1 || list.isFetching} onClick={() => { if (mayLeave()) { setPage(page - 1); setSelected(undefined); setUnsaved(false); } }}>Previous page</button><span className={styles.muted}>Page {list.data.page}</span><button type='button' className={styles.button} disabled={!list.data.has_more || list.isFetching} onClick={() => { if (mayLeave()) { setPage(page + 1); setSelected(undefined); setUnsaved(false); } }}>Next page</button></div>}
       </aside><div className={styles.fields}>
-        {detail.error && <SocialErrorBanner error={detail.error} onRetry={() => detail.refetch()} />}
-        {selected && detail.isPending && <p className={styles.empty} role='status'>Loading the selected revision…</p>}
-        {selected && detail.data && <><Link href={`/admin/social/${selected}`}>Open this post in the full composer</Link><SocialComposer key={selected} initialPost={detail.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={p => router.push(`/admin/social/${p.id}`)} onDirtyChange={setUnsaved} /></>}
+        {view !== 'history' && detail.error && <SocialErrorBanner error={detail.error} onRetry={() => detail.refetch()} />}
+        {selected && view !== 'history' && detail.isPending && <p className={styles.empty} role='status'>Loading the selected revision…</p>}
+        {selected && view !== 'history' && detail.data && <><Link href={`/admin/social/${selected}`}>Open this post in the full composer</Link><SocialComposer key={selected} initialPost={detail.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={p => router.push(`/admin/social/${p.id}`)} onDirtyChange={setUnsaved} /></>}
+        {historicalPost && <><Link href={`/admin/social/${historicalPost.id}`}>Open this post in the full composer</Link><SocialDeliveryHistory key={historicalPost.id} postId={historicalPost.id} preview={historicalPost.historical_targets} count={historicalPost.historical_target_count} accounts={accounts.data ?? []} /></>}
         {!selected && <div className={styles.empty}><h3>Queue and preview</h3><p>Select a post to review its sources, account versions, schedule, and delivery results.</p></div>}
       </div></div>
   </div>;

@@ -2,25 +2,31 @@
 
 import { useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
+import { DeliveryFilter, EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 export const socialKeys = {
   root: (actor: string | undefined) => ['admin', 'social', actor] as const,
   lists: (actor: string | undefined) => [...socialKeys.root(actor), 'posts'] as const,
-  list: (actor: string | undefined, page: number, state?: EditorialState) => [...socialKeys.lists(actor), { page, editorial_state: state }] as const,
+  list: (actor: string | undefined, page: number, state?: EditorialState, delivery_filter: DeliveryFilter = 'all') => [...socialKeys.lists(actor), { page, editorial_state: state, delivery_filter }] as const,
   detail: (actor: string | undefined, id: string) => [...socialKeys.root(actor), 'post', id] as const,
   status: (actor: string | undefined, id: string) => [...socialKeys.root(actor), 'status', id] as const,
+  histories: (actor: string | undefined, id: string) => [...socialKeys.root(actor), 'history', id] as const,
+  history: (actor: string | undefined, id: string, page: number) => [...socialKeys.histories(actor, id), page] as const,
 };
 function useSocialAccess() {
   const { isAdmin } = useAdmin();
   const { user } = useAuth();
   return { enabled: isAdmin, actor: user?.id };
 }
-export function useSocialPosts(page: number, state?: EditorialState, active = true) {
+export function useSocialPosts(page: number, state?: EditorialState, active = true, delivery: DeliveryFilter = 'all') {
   const { enabled, actor } = useSocialAccess();
-  return useQuery({ queryKey: socialKeys.list(actor, page, state), queryFn: ({ signal }) => socialApi.posts(page, state, signal), enabled: enabled && active, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
+  return useQuery({ queryKey: socialKeys.list(actor, page, state, delivery), queryFn: ({ signal }) => socialApi.posts(page, state, signal, delivery), enabled: enabled && active, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
+}
+export function useSocialHistory(id: string, page: number, active: boolean) {
+  const { enabled, actor } = useSocialAccess();
+  return useQuery({ queryKey: socialKeys.history(actor, id, page), queryFn: ({ signal }) => socialApi.history(id, page, signal), enabled: enabled && active, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
 }
 export function hasActiveDelivery(post: SocialSummary | undefined) {
   return !!post?.targets.some(t => ['queued', 'claimed', 'dispatching', 'processing', 'retry_wait', 'reconciling'].includes(t.state));
@@ -31,11 +37,11 @@ function inconsistentStatus(compact: SocialSummary, current: SocialSummary | und
 function statusError() {
   return new SocialApiError('INVALID_RESPONSE', 'Delivery status is stale or refers to an inconsistent revision. The current document and results were preserved; refresh the full revision.');
 }
-export function useSocialPost(id: string | undefined) {
+export function useSocialPost(id: string | undefined, active = true) {
   const { enabled, actor } = useSocialAccess();
   return useQuery({
     queryKey: socialKeys.detail(actor, id ?? ''), queryFn: ({ signal }) => socialApi.post(id!, signal),
-    enabled: enabled && !!id, staleTime: 60_000, gcTime: 60_000, retry: false,
+    enabled: enabled && !!id && active, staleTime: 60_000, gcTime: 60_000, retry: false,
     refetchOnWindowFocus: false,
   });
 }
@@ -81,7 +87,7 @@ export function useSocialDeliveryStatus(post: SocialPost | undefined) {
     if (!detail) return;
     if (compact.version === detail.version && compact.revision_id === detail.revision_id) {
       // Only delivery fields change. Never replace a document/revision with a summary.
-      qc.setQueryData(key, { ...detail, targets: compact.targets, delivery_status: compact.delivery_status, updated_at: compact.updated_at });
+      qc.setQueryData(key, { ...detail, targets: compact.targets, publication: compact.publication, historical_targets: compact.historical_targets, historical_target_count: compact.historical_target_count, delivery_status: compact.delivery_status, updated_at: compact.updated_at });
     } else if (compact.version > detail.version) {
       const scope = JSON.stringify([actor, compact.id]);
       if ((requestedVersions.current.get(scope) ?? 0) >= compact.version) return;
@@ -124,8 +130,9 @@ export function useSocialMutation() {
         await qc.invalidateQueries({ queryKey: socialKeys.detail(c.actor, c.postId), exact: true });
       }
       if (c.postId) await qc.invalidateQueries({ queryKey: socialKeys.status(c.actor, c.postId), exact: true });
+      if (c.postId) await qc.invalidateQueries({ queryKey: socialKeys.histories(c.actor, c.postId) });
       if (c.path !== '/controls') await qc.invalidateQueries({ queryKey: socialKeys.lists(c.actor) });
-      if (c.path === '/controls' || /\/(publish|schedule|cancel|retry|resume)$/.test(c.path)) {
+      if (c.path === '/controls' || /\/(publish|publish-now|schedule|reschedule|cancel|retry|resume)$/.test(c.path)) {
         await qc.invalidateQueries({ queryKey: [...socialKeys.root(c.actor), 'system'], exact: true });
       }
     },

@@ -1,5 +1,5 @@
 """Resolve the exact selected accounts and inspected assets; no network fetches."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from collections.abc import Mapping
 
@@ -174,6 +174,9 @@ def resolve_schedule(schedule: ScheduleTime, now: datetime) -> datetime:
         value = candidates[0]
         if value <= now:
             raise ValueError("Choose a future schedule time")
+        # All scheduling commands reserve a representable 24-hour retry window.
+        if value > datetime.max.replace(tzinfo=timezone.utc) - timedelta(hours=24):
+            raise ValueError("The schedule must leave a representable retry window")
         return value
     except (ValueError, ZoneInfoNotFoundError, OverflowError) as exc:
         raise ValueError("Choose a valid future civil time, IANA timezone and matching UTC offset") from exc

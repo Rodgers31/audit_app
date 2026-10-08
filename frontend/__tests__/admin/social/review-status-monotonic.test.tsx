@@ -15,7 +15,7 @@ const get = api.get as jest.Mock;
 const clients: QueryClient[] = [];
 const nextRevision = '00000000-0000-4000-8000-000000000041';
 function summary(p: SocialPost): SocialSummary {
-  const { document: _document, references: _references, publication: _publication, ...compact } = p;
+  const { document: _document, references: _references, ...compact } = p;
   return compact;
 }
 function client() {

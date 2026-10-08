@@ -1,6 +1,17 @@
 # Supabase egress remediation plan
 
-Status: **proposed, not implemented**. Date: 2026-10-03. Read [evidence](EVIDENCE.md) and [code audit](CODE_AUDIT.md) first. Existing work is active on the same branch; inspect current source and recent diffs before planning an isolated implementation checkout. Do not reset, overwrite or stop another workstream.
+Status: **partially implemented; live attribution and Free-tier acceptance remain open in #481**. Updated 2026-10-08. The phases below preserve the original 2026-10-03 plan; they are not a list of entirely unfixed defects. Read [evidence](EVIDENCE.md) and [code audit](CODE_AUDIT.md) as dated records, and inspect current main before choosing work. Do not reset, overwrite or stop another workstream.
+
+## Current implementation map — 8 October
+
+- PR #487 merged SQL ingestion statistics and distinct-source lookup reductions for national budget/revenue writers. [Batch 2 receipts](batch2-egress/README.md).
+- PR #505 merged economic source identity batching and narrow Audit comparison reads, preserving full extraction hashes and partial-load repair. [Batch 3 receipts](batch3-query-transfer.md).
+- Current main already has county-list/federal projections, freshness caching, shared-cache coalescing, bounded client retries and matching SSR hydration. Their historical findings must not be implemented again from this plan alone.
+- This investigation implements the remaining bounded public query reductions: money-flow accounting/context columns, county findings page hydration, basic county audit summaries, budget-only qualification context and source-vintage dates. [Current query measurements and remaining work](2026-10-08-public-query-transfer.md).
+- Source-object storage has independently passed private R2/runtime acceptance (#137/#504). It does not fix database query overfetch or prove Free-tier headroom. Supabase Pro remains active.
+- Actions remains OFF. Local query fixtures do not require hosted Actions. Code work proceeds now; seven representative deployed days are the final operating-profile gate, not a reason to postpone implementation.
+
+Startup/recycle frequency, actual cache behavior across all cache instances, completed-load checkpoints, a separate compact federal homepage fill and future worker demand remain measurement or implementation candidates. The legacy cache yielding probe does not establish a current single-worker SQL stampede. Use the current evidence to select each follow-up.
 
 ## Outcome and acceptance criteria
 
