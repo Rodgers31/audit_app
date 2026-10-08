@@ -7,6 +7,12 @@ them registers nothing. Both `enabled` and `operational_gates_verified` must be
 explicit `True` values; an async HTTP transport is mandatory. The API and worker
 retain their default unavailable-provider behavior.
 
+Registration also requires a persisted native capability snapshot from a
+provider-verified connection or reconnect. Injecting the registry cannot upgrade
+a legacy unsupported account or relax its recorded publishing, cost, scope or
+format limits. Changed admission capabilities require provider verification
+before approval and worker dispatch can use them.
+
 ## Supported content and source evidence
 
 Graph version is pinned to `v26.0`. Meta's current
