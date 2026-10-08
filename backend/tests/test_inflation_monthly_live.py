@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+import httpx
 from models import EconomicIndicator, Entity, EntityType, SourceDocument
 
 from seeding import freshness
@@ -43,13 +44,6 @@ WB = {
 }
 
 
-class _Resp:
-    def __init__(self, *, json_data=None, text=""):
-        self._json = json_data
-        self.text = text
-
-    def json(self):
-        return self._json
 
 
 class FakeClient:
@@ -69,12 +63,12 @@ class FakeClient:
         if url == cbk_inflation.CBK_INFLATION_URL:
             if isinstance(self.cbk, Exception):
                 raise self.cbk
-            return _Resp(text=self.cbk)
+            return httpx.Response(200, text=self.cbk, headers={"content-type": "text/html"}, request=httpx.Request("GET", url))
         code = url.rsplit("/", 1)[1]
         rows = self.wb.get(code, [])
-        return _Resp(
-            json_data=[{"page": 1}, [{"date": str(y), "value": v} for y, v in rows]]
-        )
+        return httpx.Response(200, json=[{"page": 1, "pages": 1, "total": len(rows)},
+            [{"indicator": {"id": code}, "countryiso3code": "KEN", "date": str(y), "value": v} for y, v in rows]],
+            headers={"content-type": "application/json"}, request=httpx.Request("GET", url))
 
 
 # ── The parser, on the real page ─────────────────────────────────────────

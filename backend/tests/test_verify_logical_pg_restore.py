@@ -217,7 +217,7 @@ class LogicalBoundaryTests(unittest.TestCase):
 class OwnedPostgreSQLTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.name = 'round20_logical_fixture_' + uuid.uuid4().hex[:12]
+        cls.name = 'round20_s1_actual_restore_' + uuid.uuid4().hex[:12]
         cls.created = False
         cls.directory = tempfile.TemporaryDirectory(prefix='round20_logical_fixture_')
         try:
@@ -281,6 +281,15 @@ GRANT SELECT ON public.fixture TO reader_a WITH GRANT OPTION;''', 'restored')
     def inventory(cls, database='postgres'):
         raw = cls.sql("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY; SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO,YMD'; SET LOCAL extra_float_digits=3;\n" + logical.backup.INVENTORY_SQL + '\nROLLBACK;', database)
         return [json.loads(line)for line in raw.decode().splitlines()]
+
+    def test_real_owned_target_binds_publisher_image_before_readonly_inventory(self):
+        records, props, proof, context = logical.collect_local(self.name)
+        self.assertEqual(records, self.before)
+        self.assertEqual(context['server_version'], '17.6')
+        self.assertIs(context['local_socket'], True)
+        self.assertEqual(proof['actual_acl'], logical.DEFAULT_ACL)
+        self.assertEqual(proof['default_acl'], logical.DEFAULT_ACL)
+        self.assertEqual(props['kind'], 'recovery_prerequisites')
 
     def test_real_logical_dump_red_strict_green_logical(self):
         self.assertEqual(self.sql("SELECT current_setting('server_version');").decode().strip(), '17.6')
@@ -422,13 +431,43 @@ class ReceiptBoundaryTests(unittest.TestCase):
                 with self.assertRaises(logical.Refusal):logical.collect_local(name)
                 run.assert_not_called()
 
+    def test_classic_docker_config_id_binds_exact_publisher_pin(self):
+        image_id = "sha256:" + "a" * 64
+        state = {"Name": "/" + self.target, "HostConfig": {"NetworkMode": "none", "PortBindings": {}},
+                 "State": {"Running": True}, "Image": image_id}
+        image = {"Id": image_id, "RepoDigests": [logical.backup.SUPABASE_IMAGE]}
+        context = {"kind": "local_execution_context", "executor": "postgres", "server_version": "17.6",
+                   "local_socket": True, "search_path": "public", "database": "postgres"}
+        payload = "\n".join(json.dumps(r) for r in [context, *self.records, self.props]).encode()
+        with patch.object(logical.backup, "run", side_effect=[json.dumps([state]).encode(), json.dumps([image]).encode(), payload]) as run:
+            self.assertEqual(logical.collect_local(self.target)[0], self.records)
+            self.assertEqual(run.call_args_list[1].args[0], ["docker", "image", "inspect", logical.backup.SUPABASE_IMAGE])
+
+    def test_image_identity_refusals_stop_before_database_execution(self):
+        digest = logical.backup.SUPABASE_IMAGE.split('@')[1]
+        state = {'Name': '/' + self.target, 'HostConfig': {'NetworkMode': 'none', 'PortBindings': {}},
+                 'State': {'Running': True}, 'Image': digest}
+        healthy = {'Id': digest, 'RepoDigests': [logical.backup.SUPABASE_IMAGE]}
+        wrong_images = [[], [healthy, healthy], [None],
+                        [{**healthy, 'Id': 'mutable'}], [{**healthy, 'Id': None}],
+                        [{**healthy, 'Id': 'sha256:' + 'b' * 64}],
+                        [{**healthy, 'RepoDigests': []}], [{**healthy, 'RepoDigests': None}],
+                        [{**healthy, 'RepoDigests': logical.backup.SUPABASE_IMAGE}],
+                        [{**healthy, 'RepoDigests': ['supabase/postgres@' + digest]}]]
+        for images in wrong_images:
+            with self.subTest(images=images), patch.object(logical.backup, 'run', side_effect=[json.dumps([state]).encode(), json.dumps(images).encode()]) as run:
+                with self.assertRaises(logical.Refusal):
+                    logical.collect_local(self.target)
+                self.assertEqual(run.call_count, 2)
+
     def test_malformed_inspection_and_execution_context_cannot_certify(self):
         state = {'Name':'/'+self.target,'HostConfig':{'NetworkMode':'none','PortBindings':{}},
                  'State':{'Running':True},'Image':logical.backup.SUPABASE_IMAGE.split('@')[1]}
+        image = {'Id': state['Image'], 'RepoDigests': [logical.backup.SUPABASE_IMAGE]}
         context = {'kind':'local_execution_context','executor':'postgres','server_version':'17.6',
                    'local_socket':True,'search_path':'public','database':'postgres'}
         healthy_payload = '\n'.join(json.dumps(r)for r in [context,*self.records,self.props]).encode()
-        with patch.object(logical.backup,'run',side_effect=[json.dumps([state]).encode(),healthy_payload]):
+        with patch.object(logical.backup,'run',side_effect=[json.dumps([state]).encode(),json.dumps([image]).encode(),healthy_payload]):
             self.assertEqual(logical.collect_local(self.target)[0],self.records)
         for running,ports in [('false',{}),({'success':False},{}),(1,{}),(True,False),(True,[])]:
             changed = copy.deepcopy(state)
@@ -441,7 +480,7 @@ class ReceiptBoundaryTests(unittest.TestCase):
         missing_path.pop('search_path')
         for ctx in (missing_path,{**context,'search_path':None},{**context,'search_path':''}):
             payload = '\n'.join(json.dumps(r)for r in [ctx,*self.records,self.props]).encode()
-            with patch.object(logical.backup,'run',side_effect=[json.dumps([state]).encode(),payload]):
+            with patch.object(logical.backup,'run',side_effect=[json.dumps([state]).encode(),json.dumps([image]).encode(),payload]):
                 with self.assertRaises(logical.Refusal):logical.collect_local(self.target)
 
 

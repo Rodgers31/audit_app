@@ -340,32 +340,98 @@ LISTING = f"""
 """
 
 
-def test_discovery_reads_every_edition_and_records_the_listing(monkeypatch, tmp_path):
+@pytest.mark.parametrize("parse_cache_enabled", [False, True])
+def test_discovery_reads_every_edition_and_records_the_listing(
+    monkeypatch, tmp_path, parse_cache_enabled
+):
+    from seeding import pdf_download
+    from seeding.config import SeedingSettings
+
+    by_url = {URL_2627: "fy2026_27", URL_2324: "fy2023_24"}
+    for name in by_url.values():
+        # Owned files satisfy the downloader's actual file contract. The
+        # parser seam below supplies retained text, not publisher PDF evidence.
+        (tmp_path / f"{name}.pdf").write_bytes(
+            f"%PDF-1.7\nowned {name}\n%%EOF".encode()
+        )
+
+    def fake_download(client, url, **kw):
+        if url not in by_url:
+            raise RuntimeError("404")
+        return tmp_path / f"{by_url[url]}.pdf"
+
+    parsed = []
+
+    def extract_owned_text(path):
+        assert path.is_file()
+        parsed.append(path.stem)
+        return [{"page": i + 1, "text": t} for i, t in enumerate(_pages(path.stem))]
+
+    monkeypatch.setattr(pdf_download, "get_or_download_pdf", fake_download)
+    monkeypatch.setattr(ff, "extract_page_texts", extract_owned_text)
+    settings = SeedingSettings(
+        cache_path=str(tmp_path), parse_cache_enabled=parse_cache_enabled
+    )
+    editions, facts = _fetch_budget_summary_editions(_Client(LISTING), settings)
+
+    assert [e.fiscal_year for _u, e in editions] == ["FY 2026/27", "FY 2023/24"]
+    assert facts["budget_summary_listing_newest_fy"] == "FY 2026/27"
+    statuses = {
+        u.rsplit("/", 1)[-1]: e["status"]
+        for u, e in facts["budget_summary_editions"].items()
+    }
+    assert (
+        statuses["Budget-Summary-for-the-FY-2025-26F.pdf"] == "unreadable(RuntimeError)"
+    )
+    # The requisition form is not a Budget Summary.
+    assert len(statuses) == 3
+    assert parsed == ["fy2026_27", "fy2023_24"]
+
+    if parse_cache_enabled:
+        reused, repeated_facts = _fetch_budget_summary_editions(
+            _Client(LISTING), settings
+        )
+        assert [e.fiscal_year for _u, e in reused] == ["FY 2026/27", "FY 2023/24"]
+        assert reused == editions
+        assert repeated_facts == facts
+        assert parsed == ["fy2026_27", "fy2023_24"]  # Actual cache hit skips parsing.
+
+
+@pytest.mark.parametrize("parse_cache_enabled", [False, True])
+def test_discovery_records_missing_source_without_publishing_retained_text(
+    monkeypatch, tmp_path, parse_cache_enabled
+):
     from seeding import pdf_download
     from seeding.config import SeedingSettings
 
     by_url = {URL_2627: "fy2026_27", URL_2324: "fy2023_24"}
 
-    def fake_download(client, url, **kw):
+    def missing_download(client, url, **kw):
         if url not in by_url:
             raise RuntimeError("404")
-        return Path(by_url[url])
+        return tmp_path / f"{by_url[url]}.pdf"
 
-    monkeypatch.setattr(pdf_download, "get_or_download_pdf", fake_download)
+    monkeypatch.setattr(pdf_download, "get_or_download_pdf", missing_download)
+    # A parser seam with available text must not hide a missing source file.
     monkeypatch.setattr(
         ff,
         "extract_page_texts",
-        lambda p: [{"page": i + 1, "text": t} for i, t in enumerate(_pages(str(p)))],
+        lambda p: [{"page": i + 1, "text": t} for i, t in enumerate(_pages(p.stem))],
     )
-    settings = SeedingSettings(cache_path=str(tmp_path), parse_cache_enabled=False)
+    settings = SeedingSettings(
+        cache_path=str(tmp_path), parse_cache_enabled=parse_cache_enabled
+    )
     editions, facts = _fetch_budget_summary_editions(_Client(LISTING), settings)
-
-    assert [e.fiscal_year for _u, e in editions] == ["FY 2026/27", "FY 2023/24"]
+    assert editions == []
     assert facts["budget_summary_listing_newest_fy"] == "FY 2026/27"
-    statuses = {u.rsplit("/", 1)[-1]: e["status"] for u, e in facts["budget_summary_editions"].items()}
-    assert statuses["Budget-Summary-for-the-FY-2025-26F.pdf"] == "unreadable(RuntimeError)"
-    # The requisition form is not a Budget Summary.
-    assert len(statuses) == 3
+    assert (
+        facts["budget_summary_editions"][URL_2627]["status"]
+        == "unreadable(FileNotFoundError)"
+    )
+    assert (
+        facts["budget_summary_editions"][URL_2324]["status"]
+        == "unreadable(FileNotFoundError)"
+    )
 
 
 # ── End to end: through the writer and the API ──────────────────────────

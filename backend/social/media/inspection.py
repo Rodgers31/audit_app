@@ -38,6 +38,9 @@ def count(value):
 class LocalInspector:
     def __init__(self, config):
         self.config = config.validate()
+        # shutil.which() returns None when no executable is installed. This
+        # disables video alone and keeps the image child's argument a string.
+        self._ffprobe_path = self.config.ffprobe_path or ''
         self._available = None
 
     def available_mimes(self):
@@ -49,14 +52,17 @@ class LocalInspector:
                 Image.init()
                 if {'JPEG', 'PNG'} <= Image.OPEN.keys(): images = ('image/jpeg', 'image/png')
         except (ImportError, OSError): pass
-        path = Path(self.config.ffprobe_path)
-        if path.is_absolute() and path.is_file() and os.access(path, os.X_OK):
+        if self._ffprobe_path:
             try:
+                path = Path(self._ffprobe_path)
+                if not path.is_absolute() or not path.is_file() or not os.access(path, os.X_OK):
+                    self._available = images
+                    return self._available
                 with tempfile.TemporaryFile() as output:
                     result = subprocess.run([str(path), '-version'], stdout=output, stderr=subprocess.DEVNULL, timeout=2, check=False, env={'PATH': '/usr/bin:/bin', 'LANG': 'C'})
                     output.seek(0)
                     if result.returncode == 0 and output.read(16).startswith(b'ffprobe version '): videos = ('video/mp4',)
-            except (OSError, subprocess.TimeoutExpired): pass
+            except (OSError, ValueError, subprocess.TimeoutExpired): pass
         self._available = images + videos
         return self._available
 
@@ -82,7 +88,7 @@ class LocalInspector:
         if video and (magic[4:8] != b'ftyp' or magic[8:12] not in {b'isom', b'iso2', b'iso6', b'mp41', b'mp42', b'avc1', b'dash', b'M4V '}):
             raise InspectionFailure('Actual bytes are not supported MP4 media')
         with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-            result = subprocess.run([sys.executable, '-B', '-I', str(Path(__file__).with_name('inspection_child.py')), 'video' if video else 'image', str(path.resolve()), self.config.ffprobe_path], stdout=output, stderr=errors, timeout=self.config.inspection_timeout, check=False, env={'PATH': '/usr/bin:/bin', 'LANG': 'C'})
+            result = subprocess.run([sys.executable, '-B', '-I', str(Path(__file__).with_name('inspection_child.py')), 'video' if video else 'image', str(path.resolve()), self._ffprobe_path if video else ''], stdout=output, stderr=errors, timeout=self.config.inspection_timeout, check=False, env={'PATH': '/usr/bin:/bin', 'LANG': 'C'})
             output.seek(0); raw = output.read(64 * 1024 + 1)
             errors.seek(0)
             if result.returncode != 0 or errors.read(1) or len(raw) > 64 * 1024:

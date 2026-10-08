@@ -25,6 +25,8 @@ from . import tls_chain
 from .config import SeedingSettings
 from .rate_limiter import RateLimiter
 from .storage import SimpleHTTPCache
+from services.receipt_store import LocalReceiptStore, ReceiptStore
+from services.response_receipts import capture_response
 
 logger = logging.getLogger("seeding.http")
 
@@ -71,6 +73,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         cache: Optional[SimpleHTTPCache] = None,
         client: Optional[httpx.Client] = None,
         request_logger: Optional[logging.Logger] = None,
+        receipt_store: Optional[ReceiptStore] = None,
     ) -> None:
         self._settings = settings
         self._logger = request_logger or logger
@@ -79,6 +82,8 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             tokens=tokens, period_seconds=period
         )
         self._cache = cache
+        # Explicitly local CAS. Production durability requires an approved adapter.
+        self.receipt_store = receipt_store if receipt_store is not None else LocalReceiptStore(settings.storage_path / "response-receipts")
         self._client = client or httpx.Client(
             timeout=settings.timeout_seconds,
             headers=settings.default_headers,
@@ -164,6 +169,13 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                     "HTTP cache hit",
                     extra={"url": url, "method": method_upper},
                 )
+                # Cache acquisition time is unknown: do not invent a new download.
+                cached_receipt = capture_response(
+                    cached_response,
+                    getattr(self, "receipt_store", None),
+                    acquisition_kind="cached_acquisition_time_unknown",
+                )
+                cached_response.extensions["response_receipt"] = cached_receipt
                 return cached_response
 
         self._logger.debug(
@@ -198,6 +210,11 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             raise RuntimeError("HTTP request did not produce a response")
 
         response.extensions["seeding_cache"] = False
+        if method_upper == "GET" and not kwargs.get("stream"):
+            kind = "api" if "json" in response.headers.get("content-type", "").lower() else "web"
+            response.extensions["response_receipt"] = capture_response(
+                response, getattr(self, "receipt_store", None), source_kind=kind
+            )
         if (
             use_cache
             and self._cache
@@ -216,6 +233,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
     def head(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request("HEAD", url, **kwargs)
+
+    def download_receipt(self, url: str) -> Optional[dict]:
+        """Receipt for a completed full response from this client's last download."""
+        return getattr(self, "_download_receipts", {}).get(url)
 
     def download_to_file(
         self,
@@ -288,6 +309,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         replaced by the two checks above, which run on every resume.
         """
         dest = Path(dest_path)
+        if not hasattr(self, "_download_receipts"):
+            self._download_receipts = {}
+        self._download_receipts.pop(url, None)
+        full_response = None
         base_headers = dict(headers or {})
         # Fail a dead connection fast (no bytes at all / no handshake), but let
         # a slow steady stream run up to the wall-clock cap the loop enforces.
@@ -475,6 +500,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
                                             f"cap: {url}"
                                         )
                                     handle.write(chunk)
+                            # A single complete decoded body is distinct from
+                            # assembled ranges or a stream interrupted at EOF.
+                            if mode == "wb" and response.status_code == 200:
+                                full_response = (response.status_code, dict(response.headers), response.request)
                     # iter_bytes() ran to completion => the server closed the
                     # body normally, so we have the whole document.
                     complete = True
@@ -522,6 +551,27 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
 
             written = _on_disk()
             os.replace(tmp, dest)
+            if full_response is not None:
+                from services.receipt_store import LocalReceiptStore
+                from services.response_receipts import capture_response
+
+                status, response_headers, request = full_response
+                store = getattr(self, "receipt_store", None)
+                if store is None:
+                    store = LocalReceiptStore(Path(self._settings.storage_path) / "response-receipts")
+                # iter_bytes() already decoded transfer content. Reusing the
+                # encoding header would make httpx decompress these bytes twice.
+                decoded_headers = {k: v for k, v in response_headers.items() if k.lower() not in ("content-encoding", "content-length")}
+                receipt = capture_response(httpx.Response(status, headers=decoded_headers,
+                    content=dest.read_bytes(), request=request), store, source_kind="pdf")
+                from services.response_receipts import copy_receipt
+
+                receipt = copy_receipt(
+                    receipt,
+                    content_encoding=response_headers.get("content-encoding"),
+                    digest_scope="decoded_stream_body",
+                )
+                self._download_receipts[url] = receipt
         except PdfDownloadIncomplete:
             # Deliberately KEEP a resumable partial: it is the progress this
             # mechanism exists to preserve.

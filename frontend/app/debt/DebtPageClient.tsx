@@ -1,4 +1,5 @@
 'use client';
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
 
 import { toRawKES } from '@/lib/utils';
@@ -737,6 +738,10 @@ export default function NationalDebtPage() {
           </section>
         )}
 
+      <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={(overview?.data ?? overview)?.figure_qualifications?.loans} table='loans' />
+      <FigureEvidence label='published debt-to-GDP ratio' labelKey='evidence.label.published_debt_ratio' note={(overview?.data ?? overview)?.figure_qualifications?.derived_ratio} />
+      <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={(overview?.data ?? overview)?.figure_qualifications?.gdp_data} table='gdp_data' />
+      <FigureEvidence label='debt timeline observations' labelKey='evidence.label.timeline_observations' rows={Object.fromEntries(timeline.map(row => [String(row.year), row.qualifications ?? {}]))} />
       {/* ═══════════ SECTION 2 — WHO KENYA OWES ═══════════ */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
@@ -1512,6 +1517,7 @@ export default function NationalDebtPage() {
                     className='border-b border-neutral-border/20 hover:bg-white/40 dark:bg-surface-elevated transition-colors'>
                     <td className='px-4 py-3 text-sm font-medium text-gov-dark dark:text-white'>
                       {displayLenderName(l.lender)}
+                      <FigureEvidence label={displayLenderName(l.lender)} qualifications={l.qualifications} table='loans' recordId={l.record_id ?? l.id} />
                     </td>
                     <td className='px-4 py-3 text-xs text-neutral-muted'>
                       {l.lender_type?.replace(/_/g, ' ')}
@@ -1541,6 +1547,7 @@ export default function NationalDebtPage() {
                   <div className='text-[11px] text-neutral-muted mb-2'>
                     {l.lender_type?.replace(/_/g, ' ')}
                   </div>
+                  <FigureEvidence label={displayLenderName(l.lender)} qualifications={l.qualifications} table='loans' recordId={l.record_id ?? l.id} />
                   <div className='grid grid-cols-2 gap-2 text-xs'>
                     <div>
                       <span className='text-neutral-muted block text-[11px] uppercase'>Outstanding</span>

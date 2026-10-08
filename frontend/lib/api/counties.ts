@@ -8,6 +8,7 @@ import {
   CountyComprehensive,
   CountyRevenue,
 } from '@/types';
+import type { QualificationRows } from '@/lib/evidence/qualification';
 import type { CountyFiscalYears } from '@/lib/utils';
 import { apiClient } from './axios';
 import { apiGet } from './request';
@@ -17,6 +18,7 @@ import { financialHealthBand } from '@/lib/counties/financialHealth';
 
 // Backend county response type — matches the real /api/v1/counties endpoint shape
 interface BackendCountyResponse {
+  figure_qualifications?: { budget_lines?: QualificationRows; gdp_data?: QualificationRows };
   id: string;
   name: string;
   code?: string;
@@ -146,6 +148,7 @@ export const transformCountyData = (value: unknown): County => {
   };
 
   return {
+    figureQualifications: bc.figure_qualifications,
     id: bc.id,
     name: bc.name,
     code: bc.code || bc.id,

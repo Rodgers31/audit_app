@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
+import httpx
+import json
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -39,7 +41,10 @@ class Publisher:
         indicator = url.split("/indicator/")[1].split("?")[0]
         value = self.overrides.get(indicator, {GDP: 18, HC: 39, GINI: 38.5}[indicator])
         response = payload(value, "2024" if indicator == GDP else "2022")
-        return type("Response", (), {"json": lambda _: response})()
+        response[0].update(page=1, total=1)
+        response[1][0].update(indicator={"id": indicator}, countryiso3code="KEN")
+        return httpx.Response(200, content=json.dumps(response, default=str).encode(),
+            headers={"content-type": "application/json"}, request=httpx.Request("GET", url))
 
 
 @pytest.mark.parametrize("value", BAD_NUMBERS)

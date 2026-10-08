@@ -450,10 +450,13 @@ class TestOwnSourceRevenue:
 class TestTheApiReadsTheRealisedFigure:
     @staticmethod
     def _line(category, allocated, actual):
-        from types import SimpleNamespace
+        from models import BudgetLine
 
-        return SimpleNamespace(
-            category=category, allocated_amount=allocated, actual_spent=actual
+        # Use the actual reader row contract. These unbound summary rows carry
+        # no source/page receipt and cannot establish a cash refusal reason.
+        return BudgetLine(
+            category=category, allocated_amount=allocated, actual_spent=actual,
+            currency="KES", subcategory=None, provenance=[],
         )
 
     def test_it_reads_the_own_source_revenue_row(self):
@@ -482,6 +485,13 @@ class TestTheApiReadsTheRealisedFigure:
 
         assert result is None
         assert result != 0
+
+    def test_missing_cash_lineage_cannot_invent_a_source_refusal(self):
+        from services.county_budget import county_cash_refusal
+
+        total = self._line("Total", 9_542_030_000, 4_092_380_000)
+        assert total.source_document is None and total.period is None
+        assert county_cash_refusal([total]) is None
 
     def test_a_published_zero_is_kept(self):
         import main

@@ -39,7 +39,9 @@ PRODUCER_SHA = "e6df47b5bb143f3ade47c80a6cd0fc15c289b70e21a1b4dbe85d679d0543f65b
 PRODUCER_PAYLOAD_SHA = "d3570dd4d3bf51a5662e19ab952224092820223da0d333ae3056eae2781c112b"
 SOURCE_URL = ("https://cob.go.ke/download/county-governments-budget-implementation-"
               "review-report-for-the-financial-year-2025-26/?wpdmdl=16482")
+# counties-literal-ok: six source-replayed cash sets approved in round21-closure-validation; exact47-county baseline/payload guards limit the operation.
 RECOVERED = {"Bungoma", "Busia", "Kilifi", "Kisii", "Kisumu", "Kitui"}
+# counties-literal-ok: four explicit source contradiction/incomplete-cell refusals in the pinned47-county producer coverage; never promoted or ranked.
 WITHHELD = {"Kwale", "Migori", "Nyeri", "Samburu"}
 MONEY = {"allocated_amount", "actual_spent", "committed_amount"}
 

@@ -44,8 +44,8 @@ def seed_credibility_data(db_session, seed_country, seed_source_doc):
     county = Entity(
         country_id=seed_country.id,
         type=EntityType.COUNTY,
-        canonical_name="Test County",
-        slug="test-county",
+        canonical_name="Baringo County",  # official identity; quantities below are synthetic
+        slug="baringo-county",
     )
     db_session.add_all([national, ministry, county])
     db_session.flush()

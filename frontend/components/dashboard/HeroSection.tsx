@@ -1,5 +1,6 @@
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { KenyaFlag } from '@/components/ui/KenyaFlag';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -211,6 +212,7 @@ export function SummaryStrip() {
               </span>
             </p>
           )}
+          <FigureEvidence label='debt register operands' labelKey='evidence.label.debt_register' rows={apiData?.figure_qualifications?.loans} table='loans' />
           <div className='mt-3 text-xs leading-snug text-neutral-muted'>
             <span>{registerSourceLabel(summedRows)}</span>
             {publishedTotalT && (
@@ -230,6 +232,8 @@ export function SummaryStrip() {
 
         <div className='figure-cell border-b border-neutral-border p-5 md:border-b-0 md:border-r md:p-6'>
           <p className='figure-label'>Debt-to-GDP</p>
+          <FigureEvidence label='GDP observations' labelKey='evidence.label.gdp_observations' rows={apiData?.figure_qualifications?.gdp_data} table='gdp_data' />
+          <FigureEvidence label='debt-to-GDP observation' labelKey='evidence.label.debt_to_gdp' note={apiData?.debt_to_gdp_ratio != null ? apiData?.figure_qualifications?.derived_ratio : undefined} qualifications={apiData?.debt_to_gdp_ratio == null && latest?.qualifications?.gdp_ratio ? { gdp_ratio: latest.qualifications.gdp_ratio } : undefined} />
           <p className={`figure-value figure-fluid mt-4 leading-none ${figureTone}`} data-figure>
             {typeof gdpPct === 'number' ? `${gdpPct.toFixed(1)}%` : '—'}
           </p>

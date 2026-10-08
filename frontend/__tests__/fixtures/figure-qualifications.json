@@ -1,0 +1,612 @@
+{
+  "budget_lines": {
+    "table": "budget_lines",
+    "qualifications": {
+      "allocated_amount": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "allocated_amount",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "FY2024/25",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {
+            "category": "Total",
+            "subcategory": null,
+            "line_type": null
+          }
+        },
+        "source_document_id": 1,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 1,
+        "digest": "61c74b4e9e02ae1ad6820c5383d42d6d7e90a04fb88394f4b8e53266e7fe4fb8",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "actual_spent": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "actual_spent",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "FY2024/25",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {
+            "category": "Total",
+            "subcategory": null,
+            "line_type": null
+          }
+        },
+        "source_document_id": 1,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "committed_amount": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "committed_amount",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "FY2024/25",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {
+            "category": "Total",
+            "subcategory": null,
+            "line_type": null
+          }
+        },
+        "source_document_id": 1,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "KES 0 allocated (Total \u00b7 FY2024/25)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": "2026-01-01T00:00:00",
+    "provenance_chain": [],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "loans": {
+    "table": "loans",
+    "qualifications": {
+      "outstanding": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "outstanding",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "2024-01-01",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {
+            "lender": "Official creditor",
+            "debt_category": "other"
+          }
+        },
+        "source_document_id": 2,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 2,
+        "digest": "57161618dcb295c9c2db3889fe8e26e547dfbc6451c17ee9f9c0b63893a45dc4",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "principal": {
+        "status": "qualified",
+        "reason": "historical_source_not_value_checked",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "principal",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "2024-01-01",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {
+            "lender": "Official creditor",
+            "debt_category": "other"
+          }
+        },
+        "source_document_id": 2,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "interest_rate": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "interest_rate",
+          "entity_id": 1,
+          "geography": "Nairobi",
+          "period": "2024-01-01",
+          "unit": "percent",
+          "basis": "actual",
+          "dimensions": {
+            "lender": "Official creditor",
+            "debt_category": "other"
+          }
+        },
+        "source_document_id": 2,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "KES 0 (Official creditor)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": null,
+    "provenance_chain": [
+      {
+        "as_at": "2024-01-01",
+        "source_evidence": [
+          {
+            "version": 1,
+            "source_kind": "api",
+            "identity": {
+              "measure": "outstanding",
+              "entity_id": 1,
+              "geography": "Nairobi",
+              "period": "2024-01-01",
+              "unit": "KES",
+              "basis": "actual",
+              "dimensions": {
+                "lender": "Official creditor",
+                "debt_category": "other"
+              }
+            },
+            "receipt": {
+              "extraction_id": 2,
+              "digest": "57161618dcb295c9c2db3889fe8e26e547dfbc6451c17ee9f9c0b63893a45dc4"
+            },
+            "raw_value": "0",
+            "raw_unit": "KES",
+            "value": "0",
+            "unit": "KES",
+            "locator": {
+              "json_path": "$.observation"
+            },
+            "transformation": {
+              "operation": "identity"
+            },
+            "checks": {
+              "identity": true,
+              "value": true,
+              "transport": true,
+              "bytes": true,
+              "locator": true
+            },
+            "reconciliation": {
+              "status": "matched"
+            }
+          }
+        ]
+      }
+    ],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "gdp_data": {
+    "table": "gdp_data",
+    "qualifications": {
+      "gdp_value": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "gdp_value",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "KES",
+          "basis": "current_prices",
+          "dimensions": {}
+        },
+        "source_document_id": 3,
+        "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+        "publisher": "World Bank",
+        "receipt_id": 3,
+        "digest": "f0bd861a508c3131271a00d9f0faa655ee41e95e82c6e9efe7b456633ba92038",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "gdp_growth_rate": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "gdp_growth_rate",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "percent",
+          "basis": "current_prices",
+          "dimensions": {}
+        },
+        "source_document_id": 3,
+        "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+        "publisher": "World Bank",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "KES 0.00T (year 2024)",
+    "source_document": "World Bank \u2014 Kenya GDP, current LCU (NY.GDP.MKTP.CN)",
+    "source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+    "publisher": "World Bank",
+    "fetch_date": "2026-10-03T23:33:32.549816",
+    "provenance_chain": [
+      {
+        "record_id": 1,
+        "year": 2024,
+        "quarter": null,
+        "entity_id": null,
+        "country_code": "KEN",
+        "currency": "KES",
+        "measure": "GDP, current KES",
+        "source": "World Bank",
+        "dataset": "World Bank \u2014 Kenya GDP, current LCU (NY.GDP.MKTP.CN)",
+        "url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+        "source_document_id": 3
+      }
+    ],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "economic_indicators": {
+    "table": "economic_indicators",
+    "qualifications": {
+      "unemployment_rate": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "unemployment_rate",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "percent",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 4,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 4,
+        "digest": "8dba47004658be1d82a08816de7b36ac4c9f3616c89f36943e112ce140231b25",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      }
+    },
+    "value": "unemployment_rate: 0.00 percent (2024-01-01)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": "2026-01-01T00:00:00",
+    "provenance_chain": [],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "poverty_indices": {
+    "table": "poverty_indices",
+    "qualifications": {
+      "poverty_headcount_rate": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "poverty_headcount_rate",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "percent",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 5,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 5,
+        "digest": "4ae65ea028acf6d776a4837019e8f95afdf33c3e478fbe0f285b643924b2e23d",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "extreme_poverty_rate": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "extreme_poverty_rate",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "percent",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 5,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "gini_coefficient": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "gini_coefficient",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "coefficient",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 5,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "0.00% poverty headcount (year 2024)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": "2026-01-01T00:00:00",
+    "provenance_chain": [],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "debt_timeline": {
+    "table": "debt_timeline",
+    "qualifications": {
+      "external": {
+        "status": "qualified",
+        "reason": "historical_source_not_value_checked",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "external",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 6,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "domestic": {
+        "status": "qualified",
+        "reason": "historical_source_not_value_checked",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "domestic",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 6,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "total": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "total",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "KES",
+          "basis": "actual",
+          "dimensions": {}
+        },
+        "source_document_id": 6,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 6,
+        "digest": "c0ce0397cce7545902f44c0c7dc44d4e972b820097593c806f3b590d8c1de904",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "gdp": {
+        "status": "qualified",
+        "reason": "historical_source_not_value_checked",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "gdp",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "KES",
+          "basis": "current_prices",
+          "dimensions": {}
+        },
+        "source_document_id": 6,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      },
+      "gdp_ratio": {
+        "status": "qualified",
+        "reason": "ratio_operands_not_independently_checked",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "gdp_ratio",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "2024",
+          "unit": "percent",
+          "basis": "derived",
+          "dimensions": {}
+        },
+        "source_document_id": 6,
+        "source_url": null,
+        "publisher": null,
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "KES 0 total (year 2024)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": null,
+    "provenance_chain": [],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  },
+  "revenue_by_source": {
+    "table": "revenue_by_source",
+    "qualifications": {
+      "amount_billion_kes": {
+        "status": "verified",
+        "reason": "retained_source_and_observation_matched",
+        "source_kind": "api",
+        "identity": {
+          "measure": "amount_billion_kes",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "FY 2024/25",
+          "unit": "billion_KES",
+          "basis": "actual",
+          "dimensions": {
+            "revenue_type": "PAYE",
+            "category": "tax"
+          }
+        },
+        "source_document_id": 7,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": 7,
+        "digest": "7b520990bc577a72868c43a76b9fb5beb9d20096c4f58b400b8a09696e46eea7",
+        "locator": {
+          "json_path": "$.observation"
+        },
+        "document_bytes_checked": true,
+        "value_checked": true
+      },
+      "share_of_total_pct": {
+        "status": "unavailable",
+        "reason": "value_not_reported",
+        "source_kind": "unknown",
+        "identity": {
+          "measure": "share_of_total_pct",
+          "entity_id": null,
+          "geography": "KEN",
+          "period": "FY 2024/25",
+          "unit": "percent",
+          "basis": "actual",
+          "dimensions": {
+            "revenue_type": "PAYE",
+            "category": "tax"
+          }
+        },
+        "source_document_id": 7,
+        "source_url": "https://www.centralbank.go.ke/data",
+        "publisher": "Central Bank of Kenya",
+        "receipt_id": null,
+        "digest": null,
+        "locator": null,
+        "document_bytes_checked": false,
+        "value_checked": false
+      }
+    },
+    "value": "KES 0.00 billion collected (PAYE \u00b7 FY 2024/25)",
+    "source_document": "Observed official estimate",
+    "source_url": "https://www.centralbank.go.ke/data",
+    "publisher": "Central Bank of Kenya",
+    "fetch_date": "2026-01-01T00:00:00",
+    "provenance_chain": [],
+    "verification_status": "verified",
+    "reason": "retained_source_and_observation_matched"
+  }
+}

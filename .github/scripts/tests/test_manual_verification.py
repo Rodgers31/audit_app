@@ -17,6 +17,8 @@ JOBS = {
     "test-browser", "test-browser-legacy", "quality-gate",
 }
 GUARD_NAME = "Verify frozen checkout"
+FULL_SCOPE = "${{ inputs.verification_scope == 'full' }}"
+FULL_QUALITY_SCOPE = "${{ always() && inputs.verification_scope == 'full' }}"
 
 
 class ManualWorkflowBoundaryTests(unittest.TestCase):
@@ -29,6 +31,38 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
         self.assertEqual(set(workflow["jobs"]), JOBS)
         self.assertIs(workflow["concurrency"]["cancel-in-progress"], False)
 
+    def test_explicit_scope_selects_only_backend_without_claiming_full_quality(self):
+        workflow = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())
+        trigger = workflow.get("on", workflow.get(True))
+        scope = trigger["workflow_dispatch"]["inputs"]["verification_scope"]
+        self.assertEqual(scope, {
+            "description": "full: all seven CI jobs; backend: backend only, full quality gate skipped",
+            "required": True, "default": "full", "type": "choice",
+            "options": ["full", "backend"],
+        })
+        self.assertEqual(workflow["run-name"],
+                         "Manual verification [${{ inputs.verification_scope }}] ${{ inputs.commit_sha }}")
+        self.assertNotIn("if", workflow["jobs"]["test-backend"])
+        for name in JOBS - {"test-backend"}:
+            self.assertEqual(workflow["jobs"][name]["if"],
+                             FULL_QUALITY_SCOPE if name == "quality-gate" else FULL_SCOPE)
+        # Model only the exact scope conditions above, not arbitrary expressions.
+        for mode, expected in (("full", JOBS), ("backend", {"test-backend"})):
+            selected = {name for name, job in workflow["jobs"].items()
+                        if "if" not in job or mode == "full"}
+            self.assertEqual(selected, expected)
+
+    def test_owned_postgres_images_are_prepared_before_backend_tests(self):
+        for filename in ("ci.yml", "verification.yml"):
+            job = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]
+            steps = job["steps"]
+            preparation = next(step for step in steps if step.get("name") == "Prepare pinned owned PostgreSQL test images")
+            self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py")
+            self.assertEqual(preparation["timeout-minutes"], 5)
+            self.assertNotIn("continue-on-error", preparation)
+            self.assertEqual(job["timeout-minutes"], 20)
+            self.assertLess(steps.index(preparation), next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests"))
+
     def test_manual_jobs_keep_the_required_ci_contract(self):
         ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
         manual = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())
@@ -37,6 +71,11 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
             with self.subTest(job=name):
                 expected = ci["jobs"][name]
                 actual = deepcopy(manual["jobs"][name])
+                if name != "test-backend":
+                    self.assertEqual(actual.pop("if"),
+                                     FULL_QUALITY_SCOPE if name == "quality-gate" else FULL_SCOPE)
+                    if name == "quality-gate":
+                        actual["if"] = "always()"
                 steps = actual["steps"]
                 guards = [step for step in steps if step.get("name") == GUARD_NAME]
                 checkouts = [step for step in steps
@@ -51,7 +90,8 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     self.assertEqual(guards[0], {
                         "name": GUARD_NAME,
                         "run": "python3 .github/scripts/verify_checkout.py",
-                        "env": {"VERIFICATION_COMMIT": "${{ inputs.commit_sha }}"},
+                        "env": {"VERIFICATION_COMMIT": "${{ inputs.commit_sha }}",
+                                "VERIFICATION_SCOPE": "${{ inputs.verification_scope }}"},
                     })
                     self.assertEqual(checkouts[0]["with"], {
                         "ref": "${{ inputs.commit_sha }}",
@@ -93,6 +133,37 @@ class CheckoutGuardTests(unittest.TestCase):
         result = self.run_guard()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(self.sha, result.stdout)
+
+    def test_explicit_full_and_backend_scopes_are_reported(self):
+        for scope in ("full", "backend"):
+            with self.subTest(scope=scope):
+                result = self.run_guard(VERIFICATION_SCOPE=scope)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f"scope={scope}", result.stdout)
+                self.assertIn(self.sha, result.stdout)
+                if scope == "backend":
+                    self.assertIn("full quality gate skipped", result.stdout)
+        self.assertIn("scope=full", self.run_guard().stdout)
+
+    def test_unknown_empty_and_hostile_scopes_are_refused(self):
+        for scope in ("", "all", "frontend", "BACKEND", " full", "backend\n", "$(echo unsafe)"):
+            with self.subTest(scope=scope):
+                result = self.run_guard(VERIFICATION_SCOPE=scope)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("scope", result.stderr.lower())
+
+    def test_backend_scope_preserves_frozen_commit_and_attempt_refusals(self):
+        for overrides in (
+            {"GITHUB_SHA": "0" * 40},
+            {"VERIFICATION_COMMIT": "0" * 40, "GITHUB_SHA": "0" * 40},
+            {"VERIFICATION_COMMIT": "main"},
+            {"GITHUB_RUN_ATTEMPT": "2"},
+            {"GITHUB_EVENT_NAME": "push"},
+        ):
+            with self.subTest(overrides=overrides):
+                self.assertNotEqual(self.run_guard(
+                    VERIFICATION_SCOPE="backend", **overrides
+                ).returncode, 0)
 
     def test_automatic_events_are_refused(self):
         for event in ("push", "pull_request", "schedule", ""):

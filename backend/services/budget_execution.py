@@ -86,6 +86,9 @@ def execution_by_sector(db) -> Dict[str, Any]:
     period = periods[newest_id]
 
     order = {name: i for i, (_, name) in enumerate(SECTORS)}
+    from services.figure_qualification import qualify_ratio, qualify_rows
+
+    qualifications = qualify_rows(db, "budget_lines", lines)
     rows: List[Dict[str, Any]] = []
     for line in sorted(lines, key=lambda l: (order.get(l.category, 99), l.category)):
         if line.allocated_amount is None or line.actual_spent is None:
@@ -95,9 +98,18 @@ def execution_by_sector(db) -> Dict[str, Any]:
         if allocated <= 0:
             continue
         decl = _declaration(line)
+        qualifications[line.id]["execution_rate"] = qualify_ratio(
+            qualifications[line.id]["actual_spent"],
+            qualifications[line.id]["allocated_amount"],
+            round(spent / allocated * 100, 1),
+            spent,
+            allocated,
+            measure="execution_rate",
+        )
         rows.append(
             {
                 "sector": line.category,
+                "qualifications": qualifications[line.id],
                 "allocated": allocated,
                 "spent": spent,
                 "unspent": allocated - spent,

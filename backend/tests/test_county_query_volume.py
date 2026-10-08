@@ -56,6 +56,13 @@ def audit_query_data(db_session, seed_country, seed_source_doc):
         PopulationData(entity_id=kwale.id, year=2023, total_population=600_000),
         PopulationData(entity_id=lamu.id, year=2023, total_population=140_000),
     ])
+    earlier_period = FiscalPeriod(id=903, country_id=seed_country.id, label="FY2021/22",
+                                 start_date=datetime(2021, 7, 1), end_date=datetime(2022, 6, 30))
+    # Source identity declares an executive volume. County association alone
+    # cannot supply this institution under the current county-health policy.
+    seed_source_doc.meta = {"extraction_stats": {"volume_kind": "executives"}}
+    db_session.add(earlier_period)
+    db_session.flush()
 
     def add_audit(entity, *, text, created, period=old_period, source=seed_source_doc,
                   provenance=None, severity=Severity.WARNING, amount=None,
@@ -78,6 +85,7 @@ def audit_query_data(db_session, seed_country, seed_source_doc):
                        severity=Severity.INFO, amount=Decimal("0"), audit_year=2023)
     for i in range(11):
         add_audit(mombasa, text=f"older {i} " + "y" * 2000,
+                  period=earlier_period,
                   created=datetime(2024, 8, 1) if i < 2 else datetime(2024, 7, 31 - i),
                   provenance=["malformed", {"data_quality": "official"}],
                   severity=Severity.WARNING, audit_year=2022)
@@ -138,10 +146,17 @@ def test_county_list_keeps_latest_display_grade_and_short_findings(
     assert [issue["description"][:7] for issue in county["audit_issues"][1:3]] == [
         "older 0", "older 1"
     ]
-    assert county["last_audit_date"] == "2025-08-01"
+    # Coverage is the selected executive FY end, not the ingestion timestamp.
+    assert county["last_audit_date"] == "2023-06-30"
+    assert county["audit_signal"]["source_period"] == "FY2022/23"
+    assert county["audit_signal"]["official_opinion"] is False
     assert county["budget_2025"] == 1000
     audit_reads = [s for s in select_statements if "FROM audits" in s]
-    assert len(audit_reads) <= 2
+    # The source-bound health selector adds one batch of citation/period
+    # metadata to the finding metadata + short-description batches.
+    assert len(audit_reads) == 3
+    assert sum("json_type(extractions.extracted_json)" in s for s in audit_reads) == 1
+    assert sum("substr(audits.finding_text" in s.lower() for s in audit_reads) == 1
     assert not any("audits.finding_text AS audits_finding_text" in s for s in audit_reads)
     assert not any("audits.management_response" in s for s in audit_reads)
     assert any("substr(audits.finding_text" in s.lower() for s in audit_reads)
@@ -166,6 +181,21 @@ def test_peer_comparison_reads_only_metrics_and_preserves_zero(
     assert "audits.finding_text" not in selected
     assert "audits.provenance" not in selected
     assert "audits.management_response" not in selected
+
+
+def test_county_list_does_not_infer_executive_identity_from_county_association(
+    client, db_session, audit_query_data, seed_source_doc
+):
+    seed_source_doc.meta = {}
+    db_session.commit()
+    response = client.get("/api/v1/counties?fiscal_year=2024/25")
+    assert response.status_code == 200, response.text
+    county = next(row for row in response.json() if row["id"] == "047")
+    assert county["audit_status"] == "pending"
+    assert county["audit_signal"]["absent_reason"] == "missing_or_conflicting_audit_institution"
+    assert county["last_audit_date"] is None
+    assert county["audit_findings_count"] == 12
+    assert county["budget_2025"] == 1000
 
 
 def test_federal_full_and_top_contract_without_unused_audit_columns(

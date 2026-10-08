@@ -1123,6 +1123,7 @@ def _narrative_statement(
 def _narrative_corpus(county: str, excerpts: dict) -> dict:
     """Derive the observation from an already bound bounded passage, not a row template."""
     nyamira = county == "Nyamira"
+    # counties-literal-ok: exact narrative anchors bound to NARRATIVE_SOURCE PDF pages686/758 and excerpt equality; no county ranking.
     if county not in {"Nyamira", "Siaya"}:
         raise ValueError("unapproved_narrative_county")
     named = "nyamira-named" if nyamira else "siaya-named"

@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -150,6 +150,7 @@ class NationalPendingBills:
     #: The paragraph's number in this edition (18 in 2025, 20 in 2026), for
     #: the citation; None when it is not printed before the anchor.
     paragraph: Optional[int] = None
+    raw_cells: dict = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -323,6 +324,10 @@ def _read_national_paragraph(
         mdas=mdas,
         as_at_stated=date_match is not None,
         paragraph=int(number.group(1)) if number else None,
+        raw_cells={name: {"raw_value": match.group("amount").replace(",", ""),
+                          "text_span": match.group(0), "offset": start + match.start(),
+                          "end_offset": start + match.end()}
+                   for name, match in (("state_corporations", halves["sc"]), ("mdas", halves["mda"]))},
     )
 
 
@@ -339,11 +344,19 @@ def _detect_national_paragraph(
     as a natural key only — ``as_at_stated`` stays False, so it is never
     published as the figure's date.
     """
-    text = "\n".join((page.extract_text() or "") for page in pdf.pages[:40])
+    texts = [(page.extract_text() or "") for page in pdf.pages[:40]]
+    text = "\n".join(texts)
     for anchor in _NATIONAL_ANCHOR_RE.finditer(text):
         national = _read_national_paragraph(text, anchor, fy_label)
         if national is not None:
-            return national
+            offset = 0
+            cells = {name: dict(cell) for name, cell in national.raw_cells.items()}
+            for page, page_text in enumerate(texts, 1):
+                for cell in cells.values():
+                    if offset <= cell["offset"] and cell["end_offset"] <= offset + len(page_text):
+                        cell["page"] = page
+                offset += len(page_text) + 1
+            return replace(national, raw_cells=cells)
     return None
 
 

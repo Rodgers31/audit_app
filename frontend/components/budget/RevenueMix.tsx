@@ -17,11 +17,15 @@
  * contribute via these tax streams."
  */
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import type { Qualifications } from '@/lib/evidence/qualification';
+
 export interface RevSource {
+  qualifications?: Qualifications;
   revenue_type: string;
   category?: string | null;
   amount?: number | null; // KES billions
@@ -229,6 +233,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
       return {
         key: r.revenue_type,
         label: r.measure ?? r.revenue_type,
+        qualifications: r.qualifications,
         source: r.source,
         sourceAbsent: r.source_absent_reason,
         // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- the caller filters to fiscal years whose streams all carry amounts, so a null here is unreachable
@@ -397,6 +402,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
                 <p className='text-[11px] text-neutral-muted mt-1'>
                   <SourceQualification source={r.source} absentReason={r.sourceAbsent} />
                 </p>
+                <FigureEvidence label={r.label} qualifications={r.qualifications} />
                 {/* Mini multi-year bar */}
                 {r.series.length > 1 && (
                   <div className='mt-2 flex items-end gap-1 h-6'>
@@ -482,6 +488,7 @@ export default function RevenueMix({ revenueBySource }: Props) {
           trend is real; marked because the level is not KRA&rsquo;s own.
         </p>
       )}
+      <FigureEvidence label='revenue observations by period' labelKey='evidence.label.revenue_by_period' rows={Object.fromEntries((revenueBySource ?? []).flatMap(fy => (fy.sources ?? []).map((source, index) => [`${fy.fiscal_year}-${index}`, source.qualifications ?? {}])))} />
     </motion.section>
   );
 }

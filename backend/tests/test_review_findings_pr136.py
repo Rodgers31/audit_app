@@ -307,8 +307,12 @@ class _RecordingClient:
         self.sent_headers: list[dict] = []
 
     def stream(self, method, url, headers=None, timeout=None):
+        import httpx
+
         self.sent_headers.append(dict(headers or {}))
-        return self._responder(dict(headers or {}))
+        response = self._responder(dict(headers or {}))
+        response.request = httpx.Request(method, url, headers=headers)
+        return response
 
 
 def _wrap(fake):
@@ -318,6 +322,9 @@ def _wrap(fake):
 
     obj = object.__new__(SeedingHttpClient)
     obj._client = fake
+    from tests.test_pdf_resume import _MemoryReceiptStore
+
+    obj.receipt_store = _MemoryReceiptStore()
 
     class _NullLimiter:
         def context(self):

@@ -582,7 +582,7 @@ class TestTheGateFoundByTheAdversarialPass:
         return SimpleNamespace(
             debt_category=SimpleNamespace(value="pending_bills"),
             entity=SimpleNamespace(type="county"),
-            outstanding=amount, principal=amount, provenance=provenance,
+            outstanding=amount, principal=amount, currency="KES", provenance=provenance,
         )
 
     COB = {"publication": "cob_cbirr_year_end", "category": "county", "as_at": "2026-06-30"}
@@ -600,6 +600,14 @@ class TestTheGateFoundByTheAdversarialPass:
 
         assert county_pending_bills([self._row([dict(self.COB)])]) is None
         assert county_pending_bills([self._row(dict(self.COB))]) == 1e9
+
+    @pytest.mark.parametrize("currency", [None, "USD"])
+    def test_a_county_stock_requires_its_declared_kes_currency(self, currency):
+        from services.publication_gate import county_pending_bills
+
+        row = self._row(dict(self.COB))
+        row.currency = currency
+        assert county_pending_bills([row]) is None
 
     def test_a_national_line_on_a_county_entity_is_not_the_countys_figure(self):
         from services.publication_gate import county_pending_bills

@@ -8,6 +8,7 @@
  */
 'use client';
 
+import FigureEvidence from '@/components/evidence/FigureEvidence';
 import PageShell from '@/components/layout/PageShell';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { getCountyList } from '@/lib/api/counties';
@@ -45,7 +46,10 @@ const SECTOR_LABEL_TO_KEY: Array<[string, TranslationKey]> = [
 ];
 
 
+import type { QualificationRows } from '@/lib/evidence/qualification';
+
 interface CountySummary {
+  figure_qualifications?: { budget_lines?: QualificationRows };
   id: string;
   name: string;
   code: string;
@@ -66,7 +70,7 @@ interface CountySummary {
 }
 
 function fmtKES(n: number | null | undefined): string {
-  if (!n) return '—';
+  if (n == null) return '—';
   if (n >= 1e9) return `KES ${(n / 1e9).toFixed(1)}B`;
   if (n >= 1e6) return `KES ${(n / 1e6).toFixed(0)}M`;
   if (n >= 1e3) return `KES ${(n / 1e3).toFixed(0)}K`;
@@ -344,6 +348,7 @@ function CompareContent() {
       <ModelledDataNote
         budgetSource={(picked.length ? picked : all || []).map((c) => c.budget_source)}
       />
+      {!error && picked.map(county => <FigureEvidence key={county.id} label={`${county.name} budget observations`} labelKey='evidence.label.county_named' labelValues={{ name: county.name }} rows={county.figure_qualifications?.budget_lines} table='budget_lines' />)}
       {isLoading && (
         <div className='bg-white dark:bg-surface-base rounded-xl border border-gray-100 dark:border-neutral-border p-8 flex items-center justify-center gap-3 text-gray-500 dark:text-neutral-muted/80'>
           <Loader2 className='animate-spin' size={18} />

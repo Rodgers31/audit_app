@@ -324,23 +324,38 @@ def test_backend_only_packaging_preserves_authority_and_executable(tmp_path):
     backend = Path(__file__).resolve().parents[1]
     packaged = tmp_path / "app"
     packaged.mkdir()
-    shutil.copytree(
-        backend / "seeding",
-        packaged / "seeding",
-        ignore=shutil.ignore_patterns("__pycache__"),
-    )
-    env = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    env.pop("PYTHONPATH", None)
+    # Backend deployment includes the shared receipt/publication services and
+    # their models; a seeding-only copy no longer represents that package.
+    for package in ("seeding", "services"):
+        shutil.copytree(
+            backend / package,
+            packaged / package,
+            ignore=shutil.ignore_patterns("__pycache__"),
+        )
+    for module in ("models.py", "database.py", "db_url.py"):
+        shutil.copy2(backend / module, packaged / module)
+    env = {
+        "PATH": os.defpath,
+        "HOME": str(tmp_path),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://fixture:fixture@127.0.0.1:65534/fixture",
+    }
     result = subprocess.run(
         [
             sys.executable,
             "-c",
-            'from seeding.source_cache import reviewed_sources; assert len(reviewed_sources("county"))==8; assert len(reviewed_sources("reviewed"))==11',
+            'from pathlib import Path; import seeding.source_cache as cache; '
+            'import services.receipt_store as receipts; '
+            'assert Path(cache.__file__).resolve().is_relative_to(Path.cwd()); '
+            'assert Path(receipts.__file__).resolve().is_relative_to(Path.cwd()); '
+            'assert len(cache.reviewed_sources("county"))==8; '
+            'assert len(cache.reviewed_sources("reviewed"))==11',
         ],
         cwd=packaged,
         env=env,
         capture_output=True,
         text=True,
+        timeout=30,
     )
     assert result.returncode == 0, result.stderr
     help_result = subprocess.run(
@@ -349,6 +364,7 @@ def test_backend_only_packaging_preserves_authority_and_executable(tmp_path):
         env=env,
         capture_output=True,
         text=True,
+        timeout=30,
     )
     assert help_result.returncode == 0 and "--fetch" in help_result.stdout
     assert not (packaged / "docs").exists() and not (packaged / "tools").exists()

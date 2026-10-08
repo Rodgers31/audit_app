@@ -40,6 +40,13 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from bs4 import BeautifulSoup
+from decimal import Decimal
+from services.response_receipts import (
+    response_receipt,
+    copy_receipt,
+    seal_receipt,
+    acquisition_is_intact,
+)
 
 CBK_INFLATION_URL = "https://www.centralbank.go.ke/inflation-rates/"
 INDICATOR_TYPE = "inflation_rate_12m"
@@ -133,7 +140,13 @@ def _month_index(year: int, month: int) -> int:
     return year * 12 + (month - 1)
 
 
-def parse_cbk_inflation(html: str) -> CbkInflationResult:
+def parse_cbk_inflation(
+    html: str,
+    response_receipt: dict | None = None,
+    *,
+    source_bytes=None,
+    source_encoding="utf-8",
+) -> CbkInflationResult:
     """Parse the CBK page into checked economic-indicator payload dicts.
 
     Records are newest first and shaped for
@@ -142,6 +155,28 @@ def parse_cbk_inflation(html: str) -> CbkInflationResult:
     the row never has to guess where it came from.
     """
     rows = _read_table(html)
+    source_cells = {}
+    if response_receipt is not None:
+        for table_index, table in enumerate(BeautifulSoup(html, "html.parser").find_all("table")):
+            header = table.find("tr")
+            headers = [_norm(c.get_text()) for c in header.find_all(["th", "td"])] if header else []
+            if not all(k in headers for k in (_COL_YEAR, _COL_MONTH, _COL_12M)):
+                continue
+            yi, mi, vi = [headers.index(k) for k in (_COL_YEAR, _COL_MONTH, _COL_12M)]
+            for row_index, tr in enumerate((table.find("tbody") or table).find_all("tr")):
+                cells = [c.get_text().strip() for c in tr.find_all("td")]
+                if len(cells) <= max(yi, mi, vi):
+                    continue
+                year, month = _to_float(cells[yi]), _MONTHS.get(_norm(cells[mi]))
+                if year is None or month is None:
+                    continue
+                key = (int(year), month)
+                raw = cells[vi].replace(",", "")
+                if key in source_cells and source_cells[key][0] != raw:
+                    raise CbkTableNotFound("contradictory duplicate month in CBK source cells")
+                source_cells[key] = (raw, {"table": f"table[{table_index}]", "row": row_index,
+                    "cell": vi, "column": _COL_12M, "edition": response_receipt.get("digest"), "date": f"{int(year):04d}-{month:02d}"})
+            break
     by_month: Dict[int, Tuple[int, int, float, float]] = {}
     for r in rows:
         by_month[_month_index(r[0], r[1])] = r
@@ -193,13 +228,56 @@ def parse_cbk_inflation(html: str) -> CbkInflationResult:
                 "data_quality": "official",
             }
         )
+    import hashlib
+
+    input_bound = isinstance(source_bytes, bytes) and hashlib.sha256(
+        source_bytes
+    ).hexdigest() == (response_receipt or {}).get("digest")
+    if input_bound:
+        try:
+            input_bound = source_bytes.decode(source_encoding) == html
+        except (LookupError, UnicodeError):
+            input_bound = False
+    if input_bound and acquisition_is_intact(response_receipt):
+        receipt = copy_receipt(
+            response_receipt, source_kind="web", parser_version="cbk-inflation-table-v1"
+        )
+        manifest = []
+        for record in result.records:
+            period = record["reference_month"]
+            raw, locator = source_cells[(int(period[:4]), int(period[5:]))]
+            identity = {"measure": INDICATOR_TYPE, "entity_id": None, "geography": "KEN", "period": period,
+                "unit": "percent", "basis": "actual", "dimensions": {}}
+            manifest.append({"identity": identity, "locator": locator, "raw_value": raw, "raw_unit": "percent",
+                "transformation": {"operation": "identity", "factor": "1", "rounding": 2, "rounding_mode": "ROUND_HALF_EVEN"}})
+            record["source_evidence"] = [{"version": 1, "source_kind": "web", "identity": identity,
+                "_response_receipt": receipt, "receipt": {"digest": receipt["digest"]},
+                "raw_value": raw, "raw_unit": "percent", "value": str(Decimal(raw).quantize(Decimal("0.01"))),
+                "unit": "percent", "locator": locator,
+                "transformation": {"operation": "identity", "factor": "1", "rounding": 2, "rounding_mode": "ROUND_HALF_EVEN"},
+                "checks": {"identity": True, "value": True, "locator": True,
+                    "transport": receipt["status"] == 200 and receipt.get("acquired_at") is not None,
+                    "bytes": receipt["byte_check"]["status"] == "matched"},
+                "reconciliation": {"status": "matched", "reason": "parsed monthly cell matches stored value; annual-window guard accepted"}}]
+        receipt["observations"] = manifest
+        seal_receipt(receipt)
     return result
 
 
 def fetch_cbk_inflation(client) -> CbkInflationResult:
     """GET the CBK page and parse it. Raises on HTTP or structural failure."""
     resp = client.get(CBK_INFLATION_URL, raise_for_status=True)
-    return parse_cbk_inflation(resp.text)
+    if resp.status_code != 200 or "html" not in resp.headers.get("content-type", "").lower():
+        raise CbkTableNotFound("CBK table requires a complete HTTP200 HTML response")
+    receipt = response_receipt(
+        resp, getattr(client, "receipt_store", None), source_kind="web"
+    )
+    return parse_cbk_inflation(
+        resp.text,
+        receipt,
+        source_bytes=resp.content,
+        source_encoding=resp.encoding or "utf-8",
+    )
 
 
 __all__ = [

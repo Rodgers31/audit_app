@@ -138,6 +138,8 @@ export interface CountyFinancialHealth {
   }>;
 }
 
+import type { QualificationRows, Qualifications } from '@/lib/evidence/qualification';
+
 export interface CountyComprehensive {
   id: string;
   name: string;
@@ -164,6 +166,8 @@ export interface CountyComprehensive {
     population_density?: number;
   };
   economic_profile: {
+    latest_gcp?: { id: number; record_id: number; entity_id: number; year: number; quarter: string | null; gdp_value: number | null; gdp_growth_rate: number | null; currency: string; qualifications: Qualifications } | null;
+    latest_poverty?: { id: number; record_id: number; entity_id: number; year: number; poverty_headcount_rate: number | null; extreme_poverty_rate: number | null; gini_coefficient: number | null; qualifications: Qualifications } | null;
     // Null: nobody publishes a county's "economic base". The fixture said
     // "agriculture" for 42 of the 47 — a judgement, not a figure. KNBS's
     // Gross County Product would support one; the fixture did not.
@@ -174,6 +178,7 @@ export interface CountyComprehensive {
     major_issues_source?: string | null;
   };
   budget: {
+    figure_qualifications?: QualificationRows;
     total_allocated: number;
     total_spent: number;
     utilization_rate: number;
@@ -346,6 +351,7 @@ export interface CountyComprehensive {
 export type BudgetSource = 'cob_cbirr' | 'cra_model' | 'mixed' | null;
 
 export interface County {
+  figureQualifications?: { budget_lines?: QualificationRows; gdp_data?: QualificationRows };
   id: string;
   name: string;
   code?: string;

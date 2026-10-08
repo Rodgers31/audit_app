@@ -421,6 +421,10 @@ def get_or_download_pdf(
                     "bytes": size,
                     "sha256": _sha256_of(pdf_path),
                     "fingerprint": fingerprint,
+                    "response_receipt": (
+                        client.download_receipt(url)
+                        if hasattr(client, "download_receipt") else None
+                    ),
                 }
             ),
             encoding="utf-8",

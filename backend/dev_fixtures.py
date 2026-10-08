@@ -65,7 +65,7 @@ def _fixture_rows():
                 "url": "https://example.invalid/auditgava-local-audit.pdf",
                 "doc_type": DocumentType.AUDIT, "status": DocumentStatus.AVAILABLE,
                 "fetch_date": stamp, "last_seen_at": stamp, "created_at": stamp,
-                "meta": {"synthetic": True},
+                "meta": {"synthetic": True, "extraction_stats": {"volume_kind": "executives"}},
             },
         ],
         BudgetLine: [

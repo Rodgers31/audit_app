@@ -22,7 +22,7 @@ from ..validation import validate_document
 
 ACTIONABLE_STATES = ("queued", "retry_wait", "processing", "reconciling")
 READ_BUDGET_LIMIT = 100
-READ_BUDGET_WINDOW_SECONDS = 86400
+READ_REQUEST_WINDOW_SECONDS = 86400
 REQUIRED_TABLES = (
     "social_controls", "social_accounts", "social_posts", "social_post_revisions",
     "social_publications", "social_post_targets", "social_publish_attempts",
@@ -532,7 +532,7 @@ class QueueRepository:
               AND created_at > :now-make_interval(secs => :seconds)
             ORDER BY created_at DESC OFFSET :offset LIMIT 1
         """), {**self._params(claim), "now": now,
-                "seconds": READ_BUDGET_WINDOW_SECONDS, "offset": READ_BUDGET_LIMIT-1}).scalar()
+                "seconds": READ_REQUEST_WINDOW_SECONDS, "offset": READ_BUDGET_LIMIT-1}).scalar()
 
     def heartbeat(self, *, state: str, active_claims: int, scanned: bool = False,
                   success: bool = False, error_code: str | None = None):

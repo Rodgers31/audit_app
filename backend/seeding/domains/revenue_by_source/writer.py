@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterable, Optional
 
+from services.response_receipts import persist_evidence
+
 from models import Country, DocumentType, RevenueBySource, SourceDocument
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session, load_only
@@ -151,6 +153,9 @@ def persist_revenue_records(
                 )
             )
             existing = session.execute(stmt).scalar_one_or_none()
+            record.metadata["source_evidence"] = persist_evidence(
+                session, source, record.metadata.get("source_evidence")
+            )
 
             if existing:
                 if _apply_updates(existing, record, source.id):

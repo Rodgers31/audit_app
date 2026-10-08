@@ -526,7 +526,8 @@ def _discover_latest_county_birr_pdf(
 
 
 def convert_county_pdf_records(
-    parsed_records: List[Dict[str, Any]], pdf_url: str, artifact_sha256: str | None
+    parsed_records: List[Dict[str, Any]], pdf_url: str, artifact_sha256: str | None,
+    *, receipt: Optional[dict] = None
 ) -> List[Dict[str, Any]]:
     """Convert actual CBIRR producer output without downloading or caching.
 
@@ -561,11 +562,11 @@ def convert_county_pdf_records(
             # small stream (a KSh 50,000 refund) scaled here would become
             # KSh 50 billion.
             if allocated is not None:
-                allocated = _birr_amount_to_kes(float(allocated))
+                allocated = _birr_amount_to_kes(allocated)
             if absorbed is not None:
-                absorbed = _birr_amount_to_kes(float(absorbed))
+                absorbed = _birr_amount_to_kes(absorbed)
 
-        budget_records.append({
+        converted = {
             "entity_slug": entity_slug,
             "entity": f"{county} County",
             "fiscal_year": fy,
@@ -587,7 +588,22 @@ def convert_county_pdf_records(
             "page_ref": record.get("page_ref"),
             "artifact_sha256": artifact_sha256,
             "revenue_coverage": record.get("revenue_coverage"),
-        })
+        }
+        if receipt is not None:
+            from ...pdf_evidence import cell_evidence
+            converted["source_evidence"] = []
+            for measure, value in (("allocated_amount", allocated), ("actual_spent", absorbed)):
+                cell = record.get("_pdf_cells", {}).get(measure)
+                if cell is None or value is None:
+                    continue
+                converted["source_evidence"].append(cell_evidence(receipt=receipt, identity={
+                    "measure": measure, "entity_id": None, "geography": f"{county} County",
+                    "period": period_label, "unit": "KES", "basis": "actual",
+                    "dimensions": {"category": converted["category"], "subcategory": converted["subcategory"], "line_type": None}},
+                    raw_value=cell["raw_value"], value=value, raw_unit=cell["raw_unit"],
+                    factor="1" if record.get("amounts_in") == "kes" else "1000000",
+                    locator=cell["locator"], unit_checked=cell.get("unit_checked", False)))
+        budget_records.append(converted)
 
     if dropped_no_fy:
         logger.warning(
@@ -595,6 +611,9 @@ def convert_county_pdf_records(
             dropped_no_fy,
         )
 
+    if receipt is not None:
+        from ...pdf_evidence import seal_pdf_observations
+        seal_pdf_observations([e for row in budget_records for e in row.get("source_evidence", [])])
     return budget_records
 
 
@@ -682,8 +701,12 @@ def _download_and_parse_county_pdf(
             logger.warning("CoBQuarterlyReportParser returned no records")
             return None
 
+        from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
+
+        receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-county-budget-v1")
+        receipt = bind_parse_receipt(receipt, parsed_records)
         return convert_county_pdf_records(
-            parsed_records, pdf_url, getattr(downloaded, "sha256", None)
+            parsed_records, pdf_url, getattr(downloaded, "sha256", None), receipt=receipt
         ) or None
 
     except ImportError:

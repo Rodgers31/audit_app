@@ -79,6 +79,7 @@ def retry_decision(result: OperationResult, *, now: datetime, submit_count: int,
                               retry_deadline, content_valid_until) if d is not None)
     if submit_count >= max_submissions:
         return RetryDecision(action="block", reason="SUBMISSION_LIMIT")
+    # nondeterminism-ok: jitter schedules operational retries; it never supplies a published financial figure.
     jitter = (random_fraction if random_fraction is not None else random.random())
     next_at = now+timedelta(seconds=max(1, jitter * min(3600, 30 * 2 ** max(0, submit_count-1))))
     if result.next_action_at:

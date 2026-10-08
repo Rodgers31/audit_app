@@ -218,7 +218,9 @@ def test_a_null_allocation_is_not_reported_as_zero(
         f"an absent allocation was published as a figure: {body.get('value')!r}"
     )
     assert "KES 0" not in str(body.get("value")), body
-    assert "no allocation recorded" in (body.get("reason") or "").lower(), body
+    assert body["reason"] == "value_not_reported", body
+    assert body["qualifications"]["allocated_amount"]["status"] == "unavailable"
+    assert body["qualifications"]["allocated_amount"]["reason"] == "value_not_reported"
 
 
 def test_debt_timeline_verification_honours_the_year_parameter(

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import httpx
 import pytest
 from seeding.domains.national_debt import wb_ids_creditors as mod
 from seeding.domains.national_debt.wb_ids_creditors import (
@@ -117,15 +118,11 @@ def _record(area_name, area_id, series, value):
     }
 
 
-class _Resp:
-    def __init__(self, payload):
-        self._payload = payload
+class _Resp(httpx.Response):
+    """Real response bytes and acquisition metadata over captured observations."""
 
-    def raise_for_status(self):
-        return None
-
-    def json(self):
-        return self._payload
+    def __init__(self, payload, url):
+        super().__init__(200, json=payload, request=httpx.Request("GET", url))
 
 
 class FakeIds:
@@ -140,13 +137,20 @@ class FakeIds:
         self.requested.append(url)
         if "PA.NUS.FCRF" in url:
             return _Resp(
-                [{"page": 1}, [{"date": "2024", "value": float(IDS_TEST_RATE)}]]
+                [
+                    {"page": 1, "pages": 1, "total": 1},
+                    [{"date": "2024", "value": float(IDS_TEST_RATE),
+                      "indicator": {"id": "PA.NUS.FCRF"},
+                      "countryiso3code": "KEN", "unit": ""}],
+                ],
+                url,
             )
         series = url.split("/series/")[1].split("/")[0]
         year = int(url.split("/time/YR")[1].split("?")[0])
         rows = self.data.get(series, []) if year in self.years else []
         return _Resp(
-            {"source": {"data": [_record(n, i, series, v) for n, i, v in rows]}}
+            {"source": {"data": [_record(n, i, series, v) for n, i, v in rows]}},
+            url,
         )
 
 

@@ -30,6 +30,8 @@ class DebtRecord:
         interest_rate: Decimal | None = None,
         notes: str | None = None,
         interest_terms: dict | None = None,
+        source_evidence: list | None = None,
+        measurement_period: str | None = None,
     ):
         self.entity_name = entity_name
         self.entity_type = entity_type
@@ -51,6 +53,8 @@ class DebtRecord:
         #: What this row may publish about its rate and annual cost — a
         #: sourced value or a reason there is none. See ``interest_terms``.
         self.interest_terms = interest_terms
+        self.source_evidence = source_evidence
+        self.measurement_period = measurement_period
 
 
 def _declared(value: Any) -> str | None:
@@ -154,6 +158,8 @@ def parse_debt_payload(payload: dict[str, Any]) -> list[DebtRecord]:
                 interest_rate=interest_rate,
                 notes=loan_data.get("notes"),
                 interest_terms=loan_data.get("interest_terms"),
+                source_evidence=loan_data.get("source_evidence"),
+                measurement_period=loan_data.get("measurement_period"),
             )
 
             records.append(record)

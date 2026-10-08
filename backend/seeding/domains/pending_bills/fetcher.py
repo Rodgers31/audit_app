@@ -342,8 +342,29 @@ def _fetch_from_treasury_brop(
         # the national paragraph, and with counties off that paragraph is
         # required.
         result = parse_brop_pdf(tmp_path, counties=False)
-
-        return _brop_result_to_payload(result, brop_url)
+        payload = _brop_result_to_payload(result, brop_url)
+        from ...pdf_evidence import receipt_for_pdf, receipt_for_response, cell_evidence, seal_pdf_observations
+        # Local retained files have no observed HTTP status. A real GET keeps
+        # the exact response metadata and body identity consumed above.
+        receipt = receipt_for_pdf(client, getattr(client, "_settings", None), tmp_path, brop_url, "treasury-brop-pending-v1")
+        if not brop_url.startswith("file://") and hasattr(response, "request"):
+            receipt = receipt_for_response(client, response, "treasury-brop-pending-v1")
+        evidence = []
+        for row in payload["pending_bills"]:
+            key = "state_corporations" if row["category"] == "state_corporation" else "mdas"
+            cell = result.national.raw_cells.get(key, {})
+            locator = {"page": cell["page"], "text_span": cell["text_span"],
+                       "cell": key} if cell.get("page") else None
+            row["source_evidence"] = [cell_evidence(receipt=receipt, identity={
+                "measure": "outstanding", "entity_id": None, "geography": "KEN",
+                "period": row["as_at"], "unit": "KES", "basis": "actual",
+                "dimensions": {"lender": "Pending Bills — " + ("State Corporations" if key == "state_corporations" else "MDAs") + f" ({row['entity_name']})", "debt_category": "pending_bills"}},
+                raw_value=cell.get("raw_value", result.national.__dict__[key] / Decimal(1_000_000_000)),
+                value=row["total_pending"], raw_unit="KES billion", factor="1000000000",
+                locator=locator, identity_checked=result.national.as_at_stated, rounding=0)]
+            evidence.extend(row["source_evidence"])
+        seal_pdf_observations(evidence)
+        return payload
     finally:
         if tmp_path and tmp_path.exists():
             try:
@@ -563,7 +584,7 @@ def _reader_notes(entry: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def county_payables_payload(
-    entries: List[Dict[str, Any]], pdf_url: str
+    entries: List[Dict[str, Any]], pdf_url: str, *, receipt: Optional[dict] = None
 ) -> Dict[str, Any]:
     """The pending-bills payload for one year-end report's county table.
 
@@ -615,6 +636,21 @@ def county_payables_payload(
                 ),
             }
         )
+    if receipt is not None:
+        from ...pdf_evidence import cell_evidence, seal_pdf_observations
+        evidence = []
+        reported = {e["county"]: e for e in entries if e.get("status") == "reported"}
+        for row in records:
+            entry = reported[row["entity_name"].removesuffix(" County")]
+            row["source_evidence"] = [cell_evidence(receipt=receipt, identity={
+                "measure": "outstanding", "entity_id": None, "geography": row["entity_name"],
+                "period": row["as_at"], "unit": "KES", "basis": "actual",
+                "dimensions": {"lender": f"Pending Bills — County Governments ({row['entity_name']})", "debt_category": "pending_bills"}},
+                raw_value=entry["total_millions"], value=row["total_pending"], raw_unit="KES million", factor="1000000",
+                locator={"page": entry["page"], "table": entry["table"], "cell": f"{entry['county']} / Grand Total"},
+                unit_checked=entry.get("unit_checked", False))]
+            evidence.extend(row["source_evidence"])
+        seal_pdf_observations(evidence)
     return {
         "pending_bills": records,
         "source_url": pdf_url,
@@ -691,7 +727,11 @@ def fetch_county_payables_payload(
         raise CountyPayablesUnavailable(f"{pdf_url}: {type(exc).__name__}: {exc}") from exc
 
     check_county_payables_entries(entries, pdf_url)
-    return county_payables_payload(entries, pdf_url)
+    from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
+
+    receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1")
+    receipt = bind_parse_receipt(receipt, entries)
+    return county_payables_payload(entries, pdf_url, receipt=receipt)
 
 
 def check_county_payables_entries(entries: List[Dict[str, Any]], pdf_url: str) -> None:

@@ -14,6 +14,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 from models import Country, DocumentType, EconomicIndicator, Entity, SourceDocument
 from sqlalchemy import and_, inspect, select
 from sqlalchemy.orm import Session
+from services.response_receipts import persist_evidence
 
 from ...config import SeedingSettings
 from ...types import DomainRunContext
@@ -162,6 +163,7 @@ def persist_economic_records(
             continue
 
         source = _ensure_source_document(session, country_id, settings, record)
+        record.metadata["source_evidence"] = persist_evidence(session, source, record.metadata.get("source_evidence"))
 
         conditions = [
             EconomicIndicator.indicator_type == record.indicator_type,

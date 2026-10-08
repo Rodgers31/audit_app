@@ -102,7 +102,26 @@ class _FakeClient:
     def stream(self, method, url, headers=None, timeout=None):
         rng = (headers or {}).get("Range")
         self.ranges.append(rng)
-        return self._responder(rng)
+        response = self._responder(rng)
+        response.request = httpx.Request(method, url, headers=headers)
+        return response
+
+
+class _MemoryReceiptStore:
+    """Owned byte store for the streaming seam; no publisher/storage claim."""
+
+    def __init__(self):
+        self.bodies = {}
+
+    def put(self, body):
+        from hashlib import sha256
+
+        digest = sha256(body).hexdigest()
+        self.bodies[digest] = body
+        return digest
+
+    def read(self, digest):
+        return self.bodies[digest]
 
 
 def _client_wrapper(fake):
@@ -111,6 +130,7 @@ def _client_wrapper(fake):
 
     obj = object.__new__(SeedingHttpClient)
     obj._client = fake
+    obj.receipt_store = _MemoryReceiptStore()
 
     class _NullLimiter:
         def context(self):

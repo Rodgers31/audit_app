@@ -1,0 +1,41 @@
+{
+  "scope": "direct generated-source-evidence contract check against sibling reader W; synthetic refs; not final public-handler acceptance",
+  "results": {
+    "gdp": {
+      "status": "verified",
+      "reason": "retained_source_and_observation_matched"
+    },
+    "cbk-2025-01": {
+      "status": "verified",
+      "reason": "retained_source_and_observation_matched"
+    },
+    "cbk-2024-01": {
+      "status": "verified",
+      "reason": "retained_source_and_observation_matched"
+    },
+    "cbk-2023-06": {
+      "status": "verified",
+      "reason": "retained_source_and_observation_matched"
+    },
+    "kra-PAYE": {
+      "status": "conflicting",
+      "reason": "receipt_request_source_mismatch"
+    },
+    "kra-Corporation Tax": {
+      "status": "conflicting",
+      "reason": "receipt_request_source_mismatch"
+    },
+    "kra-VAT": {
+      "status": "conflicting",
+      "reason": "receipt_request_source_mismatch"
+    },
+    "kra-Excise Duty": {
+      "status": "conflicting",
+      "reason": "receipt_request_source_mismatch"
+    },
+    "kra-Customs & Import Duty": {
+      "status": "conflicting",
+      "reason": "receipt_request_source_mismatch"
+    }
+  }
+}

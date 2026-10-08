@@ -29,7 +29,9 @@ def prepare(monkeypatch, settings, fake):
 
     monkeypatch.setattr(pdf_parsers, "CbirrYearEndPayablesParser", Parser)
     monkeypatch.setattr(fetcher, "check_county_payables_entries", lambda *a: None)
-    monkeypatch.setattr(fetcher, "county_payables_payload", lambda *a: {"tested": True})
+    monkeypatch.setattr(
+        fetcher, "county_payables_payload", lambda *a, **kw: {"tested": True}
+    )
     settings.live_pdf_fetch_enabled = True
     settings.parse_cache_enabled = False
     return client, seen

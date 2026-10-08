@@ -1,7 +1,9 @@
 # Manual-only verification while automatic development workflows remain disabled.
-# Keep the seven job contracts identical to ci.yml; offline parity controls detect drift.
+# Full scope keeps all seven ci.yml contracts; backend scope skips the other jobs.
+# Offline controls permit only the explicit scope conditions and frozen checkout guard.
 # Disable this workflow and repository Actions again immediately after the approved run.
 name: Bounded manual verification
+run-name: Manual verification [${{ inputs.verification_scope }}] ${{ inputs.commit_sha }}
 'on':
   workflow_dispatch:
     inputs:
@@ -9,6 +11,14 @@ name: Bounded manual verification
         description: Approved immutable commit SHA; must match the selected dispatch ref
         required: true
         type: string
+      verification_scope:
+        description: 'full: all seven CI jobs; backend: backend only, full quality gate skipped'
+        required: true
+        default: full
+        type: choice
+        options:
+        - full
+        - backend
 permissions:
   contents: read
   security-events: write
@@ -19,7 +29,7 @@ concurrency:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:17
@@ -43,6 +53,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -66,6 +77,9 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.git
 
         '
+    - name: Prepare pinned owned PostgreSQL test images
+      timeout-minutes: 5
+      run: python .github/scripts/prepare_postgres_test_images.py
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: "cd backend\n# Run unit tests (exclude integration tests that require real DB)\npytest tests/\
@@ -76,7 +90,7 @@ jobs:
         REDIS_URL: redis://localhost:6379
         TESTING: true
         PYTHONPATH: ${{ github.workspace }}/backend
-    - name: Check Test Coverage Threshold
+    - name: Report Local Backend Coverage
       id: local_coverage
       continue-on-error: true
       run: "cd backend\nif [ -f coverage.xml ]; then\n  COVERAGE=$(python -c \"import xml.etree.ElementTree\
@@ -116,6 +130,7 @@ jobs:
       run: "cd backend\n# Quick smoke test - ensure main app can import\npython -c \"from main import\
         \ app; print('\u2705 App imports successfully')\"\n"
   test-frontend:
+    if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -126,6 +141,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
@@ -175,6 +191,7 @@ jobs:
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
   test-etl:
+    if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -185,6 +202,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
@@ -204,6 +222,7 @@ jobs:
         \ --cov=. --cov-report=xml --verbose --maxfail=1\nrc=$?\nset -e\nif [ $rc -eq 5 ]; then\n  echo\
         \ 'No tests collected, skipping'\n  exit 0\nfi\nexit $rc\n"
   security-scan:
+    if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -214,6 +233,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - name: Install Trivy
       run: 'sudo apt-get install -y wget apt-transport-https gnupg lsb-release
 
@@ -237,6 +257,7 @@ jobs:
       with:
         sarif_file: trivy-results.sarif
   test-browser:
+    if: ${{ inputs.verification_scope == 'full' }}
     name: Browser publication acceptance
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -248,6 +269,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - uses: actions/setup-node@v6
       with:
         node-version: '22'
@@ -283,6 +305,7 @@ jobs:
           '
         retention-days: 14
   test-browser-legacy:
+    if: ${{ inputs.verification_scope == 'full' }}
     name: Original Chromium end-to-end suite
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -294,6 +317,7 @@ jobs:
       run: python3 .github/scripts/verify_checkout.py
       env:
         VERIFICATION_COMMIT: ${{ inputs.commit_sha }}
+        VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - uses: actions/setup-node@v6
       with:
         node-version: '22'
@@ -338,7 +362,7 @@ jobs:
     - test-browser-legacy
     - test-etl
     - security-scan
-    if: always()
+    if: ${{ always() && inputs.verification_scope == 'full' }}
     steps:
     - name: Check All Tests Passed
       run: "echo \"Backend Tests: ${{ needs.test-backend.result }}\"\necho \"Frontend Tests: ${{ needs.test-frontend.result\

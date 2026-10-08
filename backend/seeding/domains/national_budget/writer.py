@@ -245,6 +245,16 @@ def persist_national_budget_records(
             provenance_entry["ingestion_job_id"] = context.job_id
         # Declared measure (and its evidence) travels with the row.
         provenance_entry.update(record.provenance_extra)
+        if record.provenance_extra.get("source_evidence"):
+            from ...pdf_evidence import bind_pdf_evidence
+            provenance_entry["source_evidence"] = bind_pdf_evidence(
+                session, source, record.provenance_extra["source_evidence"],
+                identity={"entity_id": entity.id, "geography": "KEN", "period": period.label,
+                          "unit": currency, "basis": "actual", "dimensions": {
+                              "category": record.category, "subcategory": record.subcategory,
+                              "line_type": existing.line_type if existing else None}},
+                values={"allocated_amount": record.allocated_amount, "actual_spent": record.actual_spent,
+                        "committed_amount": record.committed_amount})
         declares_measure = "measure" in record.provenance_extra
         if record.provenance_extra.get("measure") == EXPENDITURE_MEASURE:
             expenditure_periods.add((entity.id, period.id))

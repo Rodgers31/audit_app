@@ -6,6 +6,9 @@ import subprocess
 
 
 def main():
+    scope = os.environ.get("VERIFICATION_SCOPE", "full")
+    if scope not in {"full", "backend"}:
+        raise SystemExit("Verification scope must be full or backend.")
     expected = os.environ.get("VERIFICATION_COMMIT", "")
     if not re.fullmatch(r"[0-9a-f]{40}", expected):
         raise SystemExit("Verification requires a complete lowercase commit SHA.")
@@ -20,7 +23,9 @@ def main():
     ).strip()
     if actual != expected:
         raise SystemExit("Checked-out commit differs from the approved commit.")
-    print(f"Verified frozen checkout: {actual}; manual dispatch, attempt 1.")
+    print(f"Verified frozen checkout: {actual}; scope={scope}; manual dispatch, attempt 1.")
+    if scope == "backend":
+        print("Backend only: frontend, ETL, security and browser jobs skipped; full quality gate skipped.")
 
 
 if __name__ == "__main__":

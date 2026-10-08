@@ -85,6 +85,17 @@ def private_file(path):
     return path.resolve()
 
 
+def private_acquisition_file(path):
+    """Require the child output to remain private and owned by this caller."""
+    path = private_file(path)
+    metadata, parent = path.stat(), path.parent.stat()
+    if (metadata.st_uid != os.geteuid() or metadata.st_gid != os.getegid()
+            or metadata.st_mode & 0o777 != 0o600
+            or parent.st_uid != os.geteuid() or parent.st_mode & 0o777 != 0o700):
+        raise Refusal('caller_owned_private_acquisition_required')
+    return path
+
+
 def sha256(path):
     digest = hashlib.sha256()
     with Path(path).open('rb') as handle:
@@ -198,6 +209,7 @@ def acquire_local(source, network, snapshot, destination, *, wall_seconds=MAX_WA
         began = time.monotonic()
         try:
             run(['docker', 'run', '-d', '--name', client, '--network', network,
+                 '--user', f'{os.geteuid()}:{os.getegid()}',
                  '--mount', f'type=bind,src={private},dst=/backup',
                  '-e', 'PGSERVICEFILE=/backup/pg_service.conf',
                  '-e', 'PGOPTIONS=-c default_transaction_read_only=on -c statement_timeout=300000',
@@ -217,9 +229,10 @@ def acquire_local(source, network, snapshot, destination, *, wall_seconds=MAX_WA
                                         'transport_exceeded' if result['transport_bytes'] > transport_bytes else
                                         'child_failed_or_warning')
                 else:
-                    inspect_archive(private / 'acquisition.partial')
+                    partial = private_acquisition_file(private / 'acquisition.partial')
+                    inspect_archive(partial)
                     # Exclusive publication; never replace an existing backup path.
-                    os.link(private / 'acquisition.partial', destination)
+                    os.link(partial, destination)
                     destination.chmod(0o600)
                     result.update(status='acquired_unverified', archive_sha256=sha256(destination),
                                   archive_bytes=destination.stat().st_size)

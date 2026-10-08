@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
+import httpx
 from sqlalchemy.orm import Session, sessionmaker
 
 from models import GDPData, IngestionJob, IngestionStatus, PovertyIndex, SourceDocument
@@ -27,15 +28,15 @@ class Publisher:
         if self.case in {"outage", "malformed"} and indicator == self.failed_indicator:
             if self.case == "outage":
                 raise RuntimeError("owned synthetic provider outage")
-            return type("Response", (), {"json": lambda _: {"unexpected": []}})()
+            return httpx.Response(200, json={"unexpected": []}, headers={"content-type": "application/json"}, request=httpx.Request("GET", url))
         value = {"NY.GDP.MKTP.CN": 18, "SI.POV.NAHC": 39, "SI.POV.GINI": 38.5}[indicator]
         if indicator != "NY.GDP.MKTP.CN":
             if self.case == "empty" or (self.case == "missing" and indicator == "SI.POV.GINI"):
                 value = None
             if self.case == "zero":
                 value = 0
-        payload = [{"pages": 1}, [{"date": "2024" if indicator == "NY.GDP.MKTP.CN" else "2022", "value": value}]]
-        return type("Response", (), {"json": lambda _: payload})()
+        payload = [{"page": 1, "pages": 1, "total": 1}, [{"indicator": {"id": indicator}, "countryiso3code": "KEN", "date": "2024" if indicator == "NY.GDP.MKTP.CN" else "2022", "value": value}]]
+        return httpx.Response(200, json=payload, headers={"content-type": "application/json"}, request=httpx.Request("GET", url))
 
 
 def settings(tmp_path):
@@ -87,7 +88,9 @@ def test_coherent_sparse_empty_and_zero_are_successful_checks(pg, tmp_path, monk
         assert row.poverty_headcount_rate == Decimal("38.6" if case == "empty" else "0" if case == "zero" else "39")
         assert row.gini_coefficient == (None if case == "missing" else Decimal("0" if case == "zero" else "0.387" if case == "empty" else "0.385"))
         repeat = domain.run(db, settings(tmp_path), DomainRunContext(since=None, dry_run=False))
-        assert repeat.errors == [] and repeat.items_updated == repeat.items_created == 0
+        # New acquisitions append metadata receipts even when observed values hold.
+        assert repeat.errors == [] and repeat.items_created == 0
+        assert repeat.items_updated == (1 if case == "empty" else 2)
         db.commit()
 
 

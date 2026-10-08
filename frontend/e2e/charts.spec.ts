@@ -22,10 +22,33 @@ test.describe('Chart Data Validation - Counties Page', () => {
   });
   test('chart tooltip shows correct data on hover', async ({ page }) => {
     await registerApiMocks(page); await page.goto('/debt');
-    const chart = page.locator('.recharts-wrapper').filter({ hasText: 'FY 2024/25' }).last();
-    await chart.locator('.recharts-area-area').hover();
-    await expect(chart.locator('.recharts-tooltip-wrapper')).toBeVisible();
-    await expect(chart.locator('.recharts-tooltip-wrapper')).toContainText('50');
+    const figure = page.getByRole('figure', { name: 'The cost of debt over time', exact: true });
+    const chart = figure.locator('.recharts-wrapper');
+    const points = chart.locator('.recharts-line-dot');
+    await expect(points).toHaveCount(2);
+    await chart.scrollIntoViewIfNeeded();
+    // Observe font/layout/scroll readiness before placing the pointer on a
+    // real fiscal-year point. The hosted trace showed correct 50B/50% payload
+    // immediately after hover, then pending scroll moved the chart away.
+    await expect.poll(() => chart.evaluate(async (element) => {
+      await document.fonts.ready;
+      const position = () => {
+        const rect = element.getBoundingClientRect();
+        return [rect.x, rect.y, rect.width, rect.height, window.scrollX, window.scrollY];
+      };
+      const initial = position();
+      for (let frame = 0; frame < 6; frame += 1) {
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        if (position().some((value, index) => Math.abs(value - initial[index]) > 0.5)) return false;
+      }
+      return true;
+    })).toBe(true);
+    await points.first().hover();
+    const tooltip = chart.locator('.recharts-tooltip-wrapper');
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).toContainText('FY 2024/25');
+    await expect(tooltip).toContainText('Debt service : KES 50.0B');
+    await expect(tooltip).toContainText('Service / Revenue : 50.0%');
   });
   // Counties now has a rankings table/map, not a togglable chart legend. #291.
   test.fixme('chart legend is interactive', async () => {});

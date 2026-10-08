@@ -246,6 +246,7 @@ class NgBirrPdfRecord:
     subcategory: str      # "Recurrent" | "Development"
     net_estimates: Decimal
     exchequer_issues: Decimal
+    source_cells: Optional[dict] = None
 
 
 class NgBirrSectoralParser:
@@ -262,6 +263,7 @@ class NgBirrSectoralParser:
 
     def __init__(self, pdf_path: Path) -> None:
         self.pdf_path = pdf_path
+        self._table_sources = {}
 
     def parse(self) -> Tuple[PeriodInfo, List[NgBirrPdfRecord]]:
         with pdfplumber.open(self.pdf_path) as pdf:
@@ -287,6 +289,7 @@ class NgBirrSectoralParser:
                     subcategory="Development",
                     net_estimates=net,
                     exchequer_issues=exch,
+                    source_cells=self._source_cells("development", sector, net, exch),
                 )
             )
         for sector, net, exch in _extract_sector_rows(rec_table or []):
@@ -296,6 +299,7 @@ class NgBirrSectoralParser:
                     subcategory="Recurrent",
                     net_estimates=net,
                     exchequer_issues=exch,
+                    source_cells=self._source_cells("recurrent", sector, net, exch),
                 )
             )
 
@@ -310,6 +314,23 @@ class NgBirrSectoralParser:
             len(records), period.label, self.pdf_path.name,
         )
         return period, records
+
+    def _source_cells(self, kind, sector, net, exch):
+        source = self._table_sources.get(kind)
+        if source is None:
+            return None
+        page, table_index, table, title, unit_checked = source
+        matches = [(i, r) for i, r in enumerate(table, 1) if _row_matches_sector(r) == sector
+                   and len(r) >= 3 and _parse_kes_billion(r[1] or "") == net
+                   and _parse_kes_billion(r[2] or "") == exch]
+        if len(matches) != 1:
+            return None
+        row_number, row = matches[0]
+        return {measure: {"raw_value": str(value / Decimal(1_000_000_000)),
+                          "raw_token": row[column], "unit_checked": unit_checked,
+                          "locator": {"page": page, "table": title,
+                                      "cell": f"{row[0]} / row {row_number} / column {column + 1}"}}
+                for measure, column, value in (("allocated_amount", 1, net), ("actual_spent", 2, exch))}
 
     def _find_best_sector_table(
         self, pdf: pdfplumber.PDF, kind: str,
@@ -330,14 +351,16 @@ class NgBirrSectoralParser:
         )
         best: Optional[List[List[Optional[str]]]] = None
         best_score = 0
-        for page in pdf.pages[:80]:  # Section 2 is well within the front 80 pages
+        for number, page in enumerate(pdf.pages[:80], 1):  # Section 2 is well within the front 80 pages
             text = page.extract_text() or ""
             if not title_re.search(text):
                 continue
-            for table in page.extract_tables() or []:
+            for table_index, table in enumerate(page.extract_tables() or []):
                 score = _sector_table_score(table)
                 if score > best_score:
                     best, best_score = table, score
+                    self._table_sources[kind] = (number, table_index, table, title_re.search(text).group(0),
+                        bool(re.search(r"(?:Kshs?|KES)[\s.()]*B(?:illion|n)\b", text, re.I)))
             if best_score >= 8:
                 # 8+ of 10 sectors found; further pages won't have a
                 # better hit for this kind.

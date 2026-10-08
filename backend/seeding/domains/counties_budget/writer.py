@@ -703,6 +703,17 @@ def persist_budget_records(
             provenance_entry["revenue_coverage"] = record.revenue_coverage
         provenance_entry["ingested_at"] = datetime.now(timezone.utc).isoformat()
 
+        if record.source_evidence:
+            from ...pdf_evidence import bind_pdf_evidence
+            provenance_entry["source_evidence"] = bind_pdf_evidence(session, source, record.source_evidence,
+                identity={"entity_id": entity.id, "geography": entity.canonical_name, "period": period.label,
+                          "unit": currency, "basis": "actual", "dimensions": {
+                              "category": record.category, "subcategory": record.subcategory,
+                              "line_type": existing_lines.get((entity.id, period.id, record.category, record.subcategory)).line_type
+                              if (entity.id, period.id, record.category, record.subcategory) in existing_lines else None}},
+                values={"allocated_amount": record.allocated_amount, "actual_spent": record.actual_amount,
+                        "committed_amount": record.committed_amount})
+
         record_hash = _record_hash(record, currency)
         key = (entity.id, period.id, record.category, record.subcategory)
         existing = existing_lines.get(key)
@@ -764,6 +775,7 @@ def persist_budget_records(
                         e.get("artifact_sha256"),
                         e.get("page_ref"),
                         e.get("revenue_coverage"),
+                        e.get("source_evidence"),
                     )
 
                 new_key = _dedupe_key(provenance_entry)

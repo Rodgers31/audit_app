@@ -16,6 +16,8 @@ from typing import Any
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
+from ...observations import worldbank_observations
+from decimal import Decimal
 from ...utils import load_json_resource
 from . import cbk_inflation
 
@@ -126,31 +128,20 @@ def _fetch_wb_indicators(client: SeedingHttpClient) -> list[dict[str, Any]]:
                 params={"format": "json", "per_page": "20", "date": "2015:2026"},
                 raise_for_status=True,
             )
-            wb_data = resp.json()
-
-            if not isinstance(wb_data, list) or len(wb_data) < 2 or not wb_data[1]:
-                logger.warning(
-                    "World Bank API returned no data for %s", indicator_code
-                )
-                continue
-
-            records = wb_data[1]
+            series = worldbank_observations(resp, client, indicator=indicator_code,
+                measure=meta["indicator_type"], unit=meta["unit"],
+                factor=str(Decimal(1) / Decimal(str(meta["divisor"]))),
+                quantum=str(Decimal(1).scaleb(-meta["round_digits"])),
+                raw_unit="index_2010_100" if indicator_code == "FP.CPI.TOTL" else None,
+                allow_negative=indicator_code in {"NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG"},
+                basis="official_estimate" if indicator_code == "SL.UEM.TOTL.ZS" else "actual")
             fetched_count = 0
-
-            for item in sorted(records, key=lambda x: x["date"], reverse=True):
-                if item.get("value") is None:
-                    continue
-
-                year = int(item["date"])
-                raw_value = item["value"]
-                value = round(raw_value / meta["divisor"], meta["round_digits"])
-
-                # For integer-rounded values, convert to int for cleaner output
-                if meta["round_digits"] == 0:
-                    value = int(value)
-
+            for year, value in sorted(series.items(), reverse=True):
                 all_indicators.append({
                     "indicator_type": meta["indicator_type"],
+                    "source_evidence": series.evidence[year],
+                    "frequency": "annual",
+                    "observation_basis": "official_estimate" if indicator_code == "SL.UEM.TOTL.ZS" else "actual",
                     "date": f"{year}-12-31",
                     "value": value,
                     "unit": meta["unit"],

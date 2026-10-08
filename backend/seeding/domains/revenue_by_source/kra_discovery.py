@@ -83,6 +83,8 @@ class HeadFigure:
     growth_pct: Optional[Decimal] = None
     performance_pct: Optional[Decimal] = None
     target_bn: Optional[Decimal] = None
+    raw_amount: Optional[str] = None
+    locator: Optional[dict] = None
 
 
 @dataclass
@@ -102,6 +104,7 @@ class KraRelease:
     retrieved_at: Optional[str] = None
     content_sha256: Optional[str] = None
     report_url: Optional[str] = None
+    response_receipt: Optional[dict] = None
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -281,6 +284,10 @@ def parse_dashboard_bundle(js: str, *, url: str, data_url: str) -> Optional[KraR
             continue
         release.heads[head] = HeadFigure(
             amount_bn=_bn(amount),  # type: ignore[arg-type]
+            raw_amount=amount,
+            locator={"table": "revenueStreams", "cell": name + ".amount", "edition": fy,
+                "char_start": js.find(streams, data_start) + item.start(2),
+                "char_end": js.find(streams, data_start) + item.end(2)},
             growth_pct=_num(_field(rest, "growth") or "x"),
             performance_pct=_num(_field(rest, "performanceRate") or "x"),
             target_bn=_bn(_field(rest, "target")),
@@ -294,6 +301,8 @@ def parse_dashboard_bundle(js: str, *, url: str, data_url: str) -> Optional[KraR
         if value is not None:
             release.heads[CUSTOMS_HEAD] = HeadFigure(
                 amount_bn=value,
+                raw_amount=_field(customs, "value"),
+                locator={"table": "customsVsDomestic", "cell": "customs.value", "edition": fy},
                 growth_pct=_num(_field(customs, "growth") or "x"),
                 performance_pct=_num(_field(customs, "performanceRate") or "x"),
             )

@@ -209,12 +209,20 @@ def _structural_literals(tree: ast.AST) -> set[int]:
     printed. Neither asserts anything about public money.
     """
     ids: set[int] = set()
+    nodes = tuple(ast.walk(tree))
     parents = {
         id(child): parent
-        for parent in ast.walk(tree)
+        for parent in nodes
         for child in ast.iter_child_nodes(parent)
     }
-    for assignment in ast.walk(tree):
+    # Preserve the existing whole-module name-use rule, including uses in
+    # nested scopes. Index it once instead of walking every node for each
+    # assignment; coverage tracing made that quadratic scan costly in CI.
+    loads_by_name: dict[str, list[ast.Name]] = {}
+    for node in nodes:
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            loads_by_name.setdefault(node.id, []).append(node)
+    for assignment in nodes:
         if isinstance(assignment, ast.Assign) and len(assignment.targets) == 1:
             target, value = assignment.targets[0], assignment.value
         elif isinstance(assignment, ast.AnnAssign):
@@ -223,13 +231,7 @@ def _structural_literals(tree: ast.AST) -> set[int]:
             continue
         if not isinstance(target, ast.Name) or value is None:
             continue
-        uses = [
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.Name)
-            and isinstance(n.ctx, ast.Load)
-            and n.id == target.id
-        ]
+        uses = loads_by_name.get(target.id, [])
         if (
             isinstance(value, ast.Constant)
             and type(value.value) in (int, float)
@@ -237,7 +239,7 @@ def _structural_literals(tree: ast.AST) -> set[int]:
             and all(isinstance(parents.get(id(n)), ast.Compare) for n in uses)
         ):
             ids.update(id(n) for n in ast.walk(value))
-    for node in ast.walk(tree):
+    for node in nodes:
         # Indices, annotations/schema declarations and query/window arguments
         # describe structure. Clamp/coercion/get defaults can create figures.
         if isinstance(node, ast.Compare):
@@ -289,7 +291,7 @@ def _structural_literals(tree: ast.AST) -> set[int]:
                     ),
                 ]:
                     ids.update(id(n) for n in ast.walk(arg))
-    for node in ast.walk(tree):
+    for node in nodes:
         if isinstance(node, ast.Slice):
             for part in (node.lower, node.upper, node.step):
                 if part is not None:
@@ -444,9 +446,32 @@ REVIEWED_FIGURE_INVENTORY = json.loads(
 )
 
 
+def _context_ast_dump(node):
+    """Freeze the reviewed Python 3.13 format across Python 3.12/3.13.
+
+    ast.dump changed its default empty-list rendering in 3.13. These pins
+    describe parsed source, so omit empty structural fields explicitly while
+    retaining node types, field order, scalar values and every nonempty child.
+    A literal None remains Constant(value=None); an empty list remains List.
+    Locations are excluded, as in the original include_attributes=False pins.
+    """
+    if isinstance(node, ast.AST):
+        fields = []
+        for name, value in ast.iter_fields(node):
+            if value is None and getattr(type(node), name, ...) is None:
+                continue
+            if isinstance(value, list) and not value:
+                continue
+            fields.append(f"{name}={_context_ast_dump(value)}")
+        return f"{type(node).__name__}({', '.join(fields)})"
+    if isinstance(node, list):
+        return f"[{', '.join(_context_ast_dump(value) for value in node)}]"
+    return repr(node)
+
+
 def _assert_reviewed_figure_source(source, relative_path, entry, findings=None):
     digest = hashlib.sha256(
-        ast.dump(ast.parse(source), include_attributes=False).encode("utf-8")
+        _context_ast_dump(ast.parse(source)).encode("utf-8")
     ).hexdigest()
     assert digest == entry["ast_sha256"], (
         f"{relative_path}: reviewed figure use context changed. Re-review each "

@@ -17,6 +17,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+import httpx
 from seeding.domains.national_debt.wb_ids_creditors import (
     EXTERNAL_COVERAGE_BAND,
     IdsCreditorError,
@@ -94,15 +95,10 @@ IDS_2024 = {
 }
 
 
-class _Resp:
-    def __init__(self, payload):
-        self._payload = payload
-
-    def raise_for_status(self):
-        return None
-
-    def json(self):
-        return self._payload
+class _Resp(httpx.Response):
+    def __init__(self, payload, url="https://api.worldbank.org/v2/sources/6/country/KEN/series"):
+        super().__init__(200, json=payload, headers={"content-type": "application/json"},
+                         request=httpx.Request("GET", url))
 
 
 class FakeIds:
@@ -126,7 +122,7 @@ class FakeIds:
         year = int(url.split("/time/YR")[1].split("?")[0])
         rows = self.data.get(series, []) if year in self.years else []
         return _Resp(
-            {"source": {"data": [_record(n, i, series, v) for n, i, v in rows]}}
+            {"pages": 1, "source": {"data": [_record(n, i, series, v) for n, i, v in rows]}}
         )
 
 

@@ -18,7 +18,7 @@
  * Payload: GET /api/v1/debt/national, 2026-09-06 (production, `5ff5fa9`).
  */
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 
 const LIVE_OVERVIEW = {
   data: {
@@ -45,9 +45,10 @@ const LIVE_OVERVIEW = {
 };
 
 let overview: any = LIVE_OVERVIEW;
+let mockTimeline: any = undefined;
 
 jest.mock('@/lib/react-query/useDebt', () => ({
-  useDebtTimeline: () => ({ data: undefined }),
+  useDebtTimeline: () => ({ data: mockTimeline }),
   useNationalDebtOverview: () => ({ data: overview }),
 }));
 
@@ -68,6 +69,7 @@ import { SummaryStrip } from '@/components/dashboard/HeroSection';
 
 beforeEach(() => {
   overview = LIVE_OVERVIEW;
+  mockTimeline = undefined;
 });
 
 describe('hero source line — the set the headline was summed over', () => {
@@ -117,4 +119,15 @@ describe('hero source line — when the count cannot be established', () => {
     render(<SummaryStrip />);
     expect(screen.getByText(/11\.86T/)).toBeInTheDocument();
   });
+});
+
+it('does not attach timeline verification to the separately published overview ratio', () => {
+ const fixture = require('../fixtures/figure-qualifications.json');
+ mockTimeline = { timeline: [{year:2024,total:100,external:50,domestic:50,gdp_ratio:75,unit:'billion_KES',qualifications:fixture.debt_timeline.qualifications}] };
+ overview = {data:{...LIVE_OVERVIEW.data,figure_qualifications:{derived_ratio:{status:'qualified',reason:'published_imf_ratio_outside_seven_table_contract'}}}};
+ render(<SummaryStrip/>);
+ const ratio = screen.getByText('Debt-to-GDP', {exact:true}).parentElement!;
+ expect(within(ratio).getByText(/Evidence for debt-to-GDP observation · Qualified citation/)).toBeInTheDocument();
+ expect(within(ratio).queryByText(/Verified observation/)).not.toBeInTheDocument();
+ expect(ratio).toHaveTextContent('69.3%');
 });

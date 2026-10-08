@@ -1,0 +1,25 @@
+{
+  "scope": "local retained fixture bytes; MockTransport; no publisher/network/provider read",
+  "responses": {
+    "kra": {
+      "body_bytes": 628097,
+      "digest": "f3cf2fd1075f4af3eb0aafb92ed6c8a1e336437b2603a9dc67a28283561d03d7",
+      "observations": 5,
+      "receipt_json_bytes": 3489
+    },
+    "cbk": {
+      "body_bytes": 48607,
+      "digest": "6b021c0460e4442a20d421fb348ae34ed9cba5e322d79f3028306719d4ea65fa",
+      "observations": 248,
+      "receipt_json_bytes": 126506
+    },
+    "gdp": {
+      "body_bytes": 294,
+      "digest": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+      "observations": 1,
+      "receipt_json_bytes": 1335
+    }
+  },
+  "unique_local_objects": 5,
+  "unique_local_body_bytes": 768969
+}

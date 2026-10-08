@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from decimal import Decimal
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -25,28 +26,13 @@ _WB_GDP_URL = (
 def _fetch_wb_gdp(client: SeedingHttpClient) -> dict[int, int]:
     """Fetch Kenya GDP by year from World Bank API.
 
-    Returns a mapping of ``{year: gdp_in_billions_kes}``.
-    The World Bank value is in raw KES; we divide by 1e9 to match
-    the fixture unit (billions KES).
+    Returns raw KES with byte-bound evidence; the overlay converts to
+    the payload billions convention without whole-billion rounding.
     """
     resp = client.get(_WB_GDP_URL, raise_for_status=True)
-    wb_data = resp.json()
-
-    # World Bank JSON response: [metadata_dict, data_list]
-    if not isinstance(wb_data, list) or len(wb_data) < 2:
-        raise ValueError("Unexpected World Bank API response format")
-
-    data_array = wb_data[1]
-    if not isinstance(data_array, list):
-        raise ValueError("World Bank data element is not a list")
-
-    gdp_by_year: dict[int, int] = {}
-    for item in data_array:
-        if item.get("value") is not None:
-            year = int(item["date"])
-            gdp_by_year[year] = round(item["value"] / 1e9)  # → billions KES
-
-    return gdp_by_year
+    from ...observations import worldbank_observations
+    return worldbank_observations(resp, client, indicator="NY.GDP.MKTP.CN",
+        measure="gdp", unit="KES", quantum="1", basis="current_prices")
 
 
 def _enrich_with_wb_gdp(
@@ -72,10 +58,11 @@ def _enrich_with_wb_gdp(
     for entry in timeline:
         year = entry.get("year")
         if year in gdp_by_year:
-            entry["gdp"] = gdp_by_year[year]
+            entry["gdp"] = gdp_by_year[year] / Decimal("1e9")
+            entry["source_evidence"] = [*(entry.get("source_evidence") or []), *getattr(gdp_by_year, "evidence", {}).get(year, [])]
             total = entry.get("total", 0)
-            if gdp_by_year[year] > 0:
-                entry["gdp_ratio"] = round(total / gdp_by_year[year] * 100, 1)
+            if entry["gdp"] > 0:
+                entry["gdp_ratio"] = float((Decimal(str(total)) / entry["gdp"] * 100).quantize(Decimal("0.1")))
             updated += 1
 
     if updated:
