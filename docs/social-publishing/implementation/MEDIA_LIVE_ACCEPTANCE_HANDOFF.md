@@ -155,8 +155,19 @@ Standards/Spec verdicts, commit and managed worktree. No billable bot review,
 ready-for-review transition, merge, scheduler or live mutation is part of this
 handoff. #490 and #481 remain operational gates.
 
-At the local review checkpoint, the complete media cohort passed **739 tests**,
+After the final code changes, the complete media cohort passed **739 tests**,
 with **15 explicit skips** for other unassigned PostgreSQL lanes and two existing
 SQLAlchemy deprecation warnings. The two owned PostgreSQL report tests ran and
 passed. The independent adversarial suite passed **104 tests**, no skips,
 including all 29 observed-red regressions, with one existing deprecation warning.
+
+Independent Standards review found zero documented violations; its one optional
+duplication finding was resolved by sharing strict page validation before either
+entry point accesses a session/service. Final Standards review has no remaining
+findings. Independent Spec review found no in-scope defect or scope expansion,
+reran 79 tests, and confirmed the storage, host/request and backup/profile gaps
+above remain external gates. A fresh-process PostgreSQL preparation CLI also
+passed on the owned empty database with no invented ledger or authority.
+Changed Python sources parse with Python 3.9 grammar; a Python 3.9 runtime was
+not exercised. The owned PostgreSQL container was stopped and removed; no
+volumes were created. Disposable browser servers exited and discarded bytes.

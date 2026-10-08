@@ -79,9 +79,13 @@ def _actor_match(scope, actor, dialect):
     return scope == 'actor:' + identity
 
 
-def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
+def validate_report_page(limit, after_asset_id):
     if type(limit) is not int or not 1 <= limit <= 20 or (after_asset_id is not None and type(after_asset_id) is not UUID):
         raise SocialError('INVALID_REQUEST', 'Use a batch of one to twenty and an optional UUID cursor.', 422)
+
+
+def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
+    validate_report_page(limit, after_asset_id)
     db = service.db
     if db.new or db.dirty or db.deleted:
         raise SocialError('INVALID_REQUEST', 'Read-only preparation requires a clean session.', 422)

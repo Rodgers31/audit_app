@@ -5,6 +5,7 @@ request. Cleanup is opt-in; report-only is the default. No reconciliation proof
 is fabricated by this runner or the production media runtime.
 """
 import json
+from uuid import UUID
 
 from sqlalchemy.orm import sessionmaker
 
@@ -14,7 +15,7 @@ from .cli import CLIInputError, PrivateArgumentParser, bounded_arguments
 from .contracts import MaintenanceResult
 from .runtime import media_runtime
 from .service import MediaService
-from .operator import prepare_reconciliation
+from .operator import prepare_reconciliation, validate_report_page
 
 
 def run_once(session_factory, runtime, *, allow_cleanup=False, limit=20):
@@ -28,9 +29,7 @@ def run_once(session_factory, runtime, *, allow_cleanup=False, limit=20):
 
 def report_once(session_factory, runtime, *, limit=20, after_asset_id=None):
     # Validate before opening a connection, including direct operator callers.
-    from uuid import UUID
-    if type(limit) is not int or not 1 <= limit <= 20 or (after_asset_id is not None and type(after_asset_id) is not UUID):
-        raise SocialError('INVALID_REQUEST', 'Use a batch of one to twenty and an optional UUID cursor.', 422)
+    validate_report_page(limit, after_asset_id)
     with session_factory() as db:
         return prepare_reconciliation(MediaService(db, runtime), limit=limit, after_asset_id=after_asset_id)
 
@@ -51,7 +50,6 @@ def main(argv=None):
         if (args.allow_cleanup and args.prepare_reconciliation
                 or args.after_asset_id is not None and not args.prepare_reconciliation):
             raise SocialError('INVALID_REQUEST', 'Reconciliation preparation is read-only and cannot be combined with cleanup.', 422)
-        from uuid import UUID
         cursor = UUID(args.after_asset_id) if args.after_asset_id is not None else None
         engine = create_worker_engine(WorkerConfig(database_url=args.database_url))
         factory, runtime = sessionmaker(engine, expire_on_commit=False), media_runtime()
