@@ -24,6 +24,7 @@ class Boundary:
     def __init__(self, root):
         self.root = root
         self.requests = []
+        self.get_transfers = []
         self.metadata = {"id": BUCKET, "public": False, "file_size_limit": 1024}
         self.read_status = 200
         self.read_headers = {}
@@ -37,11 +38,11 @@ class Boundary:
         path = request.url.path
         if path == f"/storage/v1/bucket/{BUCKET}":
             return httpx.Response(200, json=self.metadata)
-        prefix = f"/storage/v1/object/{BUCKET}/sha256/"
+        prefix = f"/storage/v1/object/{BUCKET}/receipts-v1/"
         if request.method == "POST" and path.startswith(prefix):
             assert request.headers["x-upsert"] == "false"
-            digest = path.rsplit("/", 1)[1]
-            dest = self.root / digest
+            dest = self.root / path.removeprefix(f"/storage/v1/object/{BUCKET}/")
+            dest.parent.mkdir(parents=True, exist_ok=True)
             try:
                 with dest.open("xb") as out:
                     out.write(request.content)
@@ -53,12 +54,18 @@ class Boundary:
                 content=b"provider body must never be trusted",
             )
         if request.method == "GET" and path.startswith(
-            f"/storage/v1/object/authenticated/{BUCKET}/sha256/"
+            f"/storage/v1/object/authenticated/{BUCKET}/receipts-v1/"
         ):
-            dest = self.root / path.rsplit("/", 1)[1]
+            dest = self.root / path.removeprefix(
+                f"/storage/v1/object/authenticated/{BUCKET}/"
+            )
+            content = dest.read_bytes() if dest.exists() else b"missing"
+            self.get_transfers.append(
+                ("manifest" if "/manifests/" in path else "chunk", len(content))
+            )
             return httpx.Response(
                 self.read_status if dest.exists() else 404,
-                content=dest.read_bytes() if dest.exists() else b"missing",
+                content=content,
                 headers=self.read_headers,
             )
         raise AssertionError(f"Unexpected operation {request.method} {path}")
@@ -69,9 +76,13 @@ class Boundary:
             BUCKET,
             KEY,
             max_bytes=1024,
+            part_max_bytes=1024,
             transport=httpx.MockTransport(self),
             **kwargs,
         )
+
+    def object_file(self, kind, digest):
+        return self.root / "receipts-v1" / kind / digest[:2] / digest
 
 
 def test_local_boundary_put_get_fresh_adapter_and_no_overwrite(tmp_path):
@@ -82,17 +93,17 @@ def test_local_boundary_put_get_fresh_adapter_and_no_overwrite(tmp_path):
     fresh_boundary = Boundary(tmp_path)
     assert fresh_boundary.store().read(digest) == BODY
     assert fresh_boundary.store().put(BODY) == digest
-    assert list(tmp_path.iterdir()) == [tmp_path / digest]
+    assert len([p for p in tmp_path.rglob("*") if p.is_file()]) == 2
     changed = BODY + b"changed at same publisher URL"
     changed_digest = boundary.store().put(changed)
     assert changed_digest != digest
     assert boundary.store().read(digest) == BODY
-    (tmp_path / digest).write_bytes(b"corrupt")
+    boundary.object_file("chunks", digest).write_bytes(b"corrupt")
     with pytest.raises(ReceiptStorageError, match="digest mismatch"):
         boundary.store().read(digest)
     with pytest.raises(ReceiptStorageError, match="digest mismatch"):
         boundary.store().put(BODY)
-    assert (tmp_path / digest).read_bytes() == b"corrupt"
+    assert boundary.object_file("chunks", digest).read_bytes() == b"corrupt"
 
 
 @pytest.mark.parametrize(
@@ -107,7 +118,7 @@ def test_local_boundary_put_get_fresh_adapter_and_no_overwrite(tmp_path):
         {"id": BUCKET, "public": 0},
         {"id": "wrong", "public": False},
         {"id": BUCKET, "public": False, "file_size_limit": True},
-        {"id": BUCKET, "public": False, "file_size_limit": 1023},
+        {"id": BUCKET, "public": False, "file_size_limit": 1},
     ],
 )
 def test_bucket_unknown_or_public_refuses_before_write(tmp_path, metadata):
@@ -216,7 +227,8 @@ def test_partial_redirect_missing_denied_read_refuses(tmp_path, status):
 def test_hostile_readback_refuses(tmp_path, body, headers):
     boundary = Boundary(tmp_path)
     digest = hashlib.sha256(BODY).hexdigest()
-    (tmp_path / digest).write_bytes(body)
+    boundary.store().put(BODY)
+    boundary.object_file("chunks", digest).write_bytes(body)
     boundary.read_headers = headers
     with pytest.raises(ReceiptStorageError):
         boundary.store().read(digest)
@@ -231,7 +243,9 @@ def test_stream_without_declared_size_is_bounded():
 
     def handler(request):
         if "/bucket/" in request.url.path:
-            return httpx.Response(200, json={"id": BUCKET, "public": False})
+            return httpx.Response(
+                200, json={"id": BUCKET, "public": False, "file_size_limit": 1024}
+            )
         return httpx.Response(200, stream=ChunkStream())
 
     store = SupabaseReceiptStore(
@@ -430,7 +444,26 @@ def test_capture_and_many_fact_associations_have_bounded_storage_gets(
     one_fact_reads = sum(
         "/object/authenticated/" in r.url.path for r in boundary.requests
     )
-    assert one_fact_reads == 2  # capture + immutable persistence revalidation
+    assert one_fact_reads == 4  # manifest + chunk, capture + first persistence
+    one_fact_bytes = sum(size for _, size in boundary.get_transfers)
+    manifest_bytes = boundary.object_file("manifests", receipt["digest"]).stat().st_size
+    assert sum(
+        size for kind, size in boundary.get_transfers if kind == "chunk"
+    ) == 2 * len(BODY)
+    assert (
+        sum(size for kind, size in boundary.get_transfers if kind == "manifest")
+        == 2 * manifest_bytes
+    )
+    assert (
+        sum("/chunks/" in r.url.path and r.method == "GET" for r in boundary.requests)
+        == 2
+    )
+    assert (
+        sum(
+            "/manifests/" in r.url.path and r.method == "GET" for r in boundary.requests
+        )
+        == 2
+    )
     for year in range(2000, 2020):
         assert persist_receipt(session, source, receipt) is first
         session.add(
@@ -461,6 +494,7 @@ def test_capture_and_many_fact_associations_have_bounded_storage_gets(
         sum("/object/authenticated/" in r.url.path for r in boundary.requests)
         == one_fact_reads
     )
+    assert sum(size for _, size in boundary.get_transfers) == one_fact_bytes
     receipt["byte_size"] += 1
     with pytest.raises(ValueError, match="intact captured"):
         persist_receipt(session, source, receipt)

@@ -68,16 +68,17 @@ class SeedingSettings(BaseSettings):
     # Required for Supabase: owner must choose the account AND bucket cap.
     # Local storage retains its existing 64MiB default.
     receipt_max_bytes: Optional[int] = Field(default=None, ge=1, le=64 * 1024 * 1024)
+    receipt_part_max_bytes: Optional[int] = Field(default=None, ge=1, le=32 * 1024 * 1024)
     receipt_storage_timeout_seconds: float = Field(default=30.0, gt=0, le=120, allow_inf_nan=False)
 
-    @field_validator("receipt_max_bytes", "receipt_storage_timeout_seconds", mode="before")
+    @field_validator("receipt_max_bytes", "receipt_part_max_bytes", "receipt_storage_timeout_seconds", mode="before")
     @classmethod
     def reject_receipt_bool(cls, value):
         if isinstance(value, bool):
             raise ValueError("Receipt storage limits cannot be boolean")
         return value
 
-    @field_validator("receipt_max_bytes", mode="before")
+    @field_validator("receipt_max_bytes", "receipt_part_max_bytes", mode="before")
     @classmethod
     def empty_optional_receipt_limit(cls, value):
         # An unset optional GitHub variable resolves to an empty environment
@@ -85,6 +86,15 @@ class SeedingSettings(BaseSettings):
         if isinstance(value, str) and not value.strip():
             return None
         return value
+
+    @field_validator("receipt_part_max_bytes", mode="before")
+    @classmethod
+    def strict_receipt_part_limit(cls, value):
+        if value is None or isinstance(value, str) and not value.strip():
+            return None
+        if type(value) is int or isinstance(value, str) and value.isascii() and value.isdecimal():
+            return value
+        raise ValueError("Receipt part limit must be an integer byte count")
 
     cache_path: Path = Field(
         default=Path("data/seeding/cache"),

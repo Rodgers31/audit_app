@@ -6,6 +6,7 @@ backup, quota, retention or disaster recovery guarantees.
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 import re
 import time
@@ -44,6 +45,9 @@ def validate_destination(project_url: str, bucket: str) -> str:
 
 class SupabaseReceiptStore:
     storage_scope = "supabase_private"
+    MANIFEST_MAX_BYTES = 64 * 1024
+    MAX_PARTS = 64
+    DEFAULT_PART_BYTES = 32 * 1024 * 1024
 
     def __init__(
         self,
@@ -52,6 +56,7 @@ class SupabaseReceiptStore:
         secret_key: str,
         *,
         max_bytes: int = 64 * 1024 * 1024,
+        part_max_bytes: int = DEFAULT_PART_BYTES,
         timeout_seconds: float = 30.0,
         transport: httpx.BaseTransport | None = None,
     ):
@@ -74,6 +79,14 @@ class SupabaseReceiptStore:
                 "Receipt timeout must be finite and within (0, 120] seconds"
             )
         self.max_bytes = max_bytes
+        if (
+            type(part_max_bytes) is not int
+            or not 1 <= part_max_bytes <= self.DEFAULT_PART_BYTES
+        ):
+            raise ValueError(
+                "Receipt part byte limit must be an integer within 1..33554432"
+            )
+        self.part_max_bytes = part_max_bytes
         self._timeout = timeout_seconds
         self._transport = transport
         self._headers = {
@@ -86,10 +99,12 @@ class SupabaseReceiptStore:
     def project_ref(self) -> str:
         return urlsplit(self.project_url).hostname.split(".")[0]
 
-    def _object_path(self, digest: str) -> str:
+    def _object_path(self, digest: str, *, kind: str = "manifests") -> str:
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
             raise ValueError("Receipt digest must be lowercase SHA256")
-        return f"{self.bucket}/sha256/{digest[:2]}/{digest}"
+        if kind not in ("manifests", "chunks"):
+            raise ValueError("Unknown receipt object namespace")
+        return f"{self.bucket}/receipts-v1/{kind}/{digest[:2]}/{digest}"
 
     def _request(
         self,
@@ -183,9 +198,7 @@ class SupabaseReceiptStore:
             # Suppress chained exceptions too: transports may echo request headers.
             raise ReceiptStorageError("Receipt storage transport failed") from None
 
-    def _private_bucket(self, deadline: float) -> None:
-        import json
-
+    def _private_bucket(self, deadline: float) -> int | None:
         status, body = self._request(
             "GET", f"bucket/{self.bucket}", limit=16 * 1024, deadline=deadline
         )
@@ -193,7 +206,7 @@ class SupabaseReceiptStore:
             raise ReceiptStorageError(f"Receipt bucket check refused (HTTP {status})")
         try:
             metadata = json.loads(body)
-        except (ValueError, UnicodeError):
+        except (ValueError, UnicodeError, RecursionError):
             raise ReceiptStorageError("Receipt bucket metadata malformed") from None
         if (
             not isinstance(metadata, dict)
@@ -203,11 +216,109 @@ class SupabaseReceiptStore:
             raise ReceiptStorageError("Receipt bucket must be confirmed private")
         bucket_limit = metadata.get("file_size_limit")
         if bucket_limit is not None and (
-            type(bucket_limit) is not int or bucket_limit < self.max_bytes
+            type(bucket_limit) is not int or bucket_limit <= 0
         ):
             raise ReceiptStorageError(
                 "Receipt byte limit exceeds or cannot validate bucket capacity"
             )
+        return bucket_limit
+
+    def _manifest(self, body: bytes, digest: str) -> tuple[bytes, list[bytes]]:
+        # Refuse unsupported segmentation before allocating/slicing any parts.
+        part_count = (len(body) + self.part_max_bytes - 1) // self.part_max_bytes
+        if part_count > self.MAX_PARTS:
+            raise ValueError(
+                "Receipt requires too many parts for configured part limit"
+            )
+        parts = [
+            body[start : start + self.part_max_bytes]
+            for start in range(0, len(body), self.part_max_bytes)
+        ]
+        manifest = {
+            "version": 1,
+            "type": "source-receipt-chunks",
+            "sha256": digest,
+            "byte_size": len(body),
+            "part_count": len(parts),
+            "parts": [
+                {
+                    "index": i,
+                    "sha256": hashlib.sha256(part).hexdigest(),
+                    "byte_size": len(part),
+                }
+                for i, part in enumerate(parts)
+            ],
+        }
+        encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+        if len(encoded) > self.MANIFEST_MAX_BYTES:
+            raise ValueError("Receipt manifest exceeds byte limit")
+        return encoded, parts
+
+    def _parse_manifest(
+        self, encoded: bytes, digest: str, bucket_limit: int | None
+    ) -> dict:
+        def unique_object(pairs):
+            result = {}
+            for name, value in pairs:
+                if name in result:
+                    raise ValueError("Duplicate manifest field")
+                result[name] = value
+            return result
+
+        try:
+            manifest = json.loads(encoded, object_pairs_hook=unique_object)
+        except (ValueError, UnicodeError, RecursionError):
+            raise ReceiptStorageError("Receipt manifest malformed") from None
+        if (
+            not isinstance(manifest, dict)
+            or set(manifest)
+            != {"version", "type", "sha256", "byte_size", "part_count", "parts"}
+            or type(manifest["version"]) is not int
+            or manifest["version"] != 1
+            or manifest["type"] != "source-receipt-chunks"
+            or manifest["sha256"] != digest
+            or type(manifest["byte_size"]) is not int
+            or not 1 <= manifest["byte_size"] <= self.max_bytes
+            or not isinstance(manifest["parts"], list)
+            or not 1 <= len(manifest["parts"]) <= self.MAX_PARTS
+            or type(manifest["part_count"]) is not int
+            or manifest["part_count"] != len(manifest["parts"])
+        ):
+            raise ReceiptStorageError("Receipt manifest shape or identity mismatch")
+        total = 0
+        for index, part in enumerate(manifest["parts"]):
+            if (
+                not isinstance(part, dict)
+                or set(part) != {"index", "sha256", "byte_size"}
+                or type(part["index"]) is not int
+                or part["index"] != index
+                or not isinstance(part["sha256"], str)
+                or not re.fullmatch(r"[0-9a-f]{64}", part["sha256"])
+                or type(part["byte_size"]) is not int
+                or not 1 <= part["byte_size"] <= self.part_max_bytes
+                or bucket_limit is not None
+                and part["byte_size"] > bucket_limit
+            ):
+                raise ReceiptStorageError("Receipt manifest part invalid")
+            total += part["byte_size"]
+        if total != manifest["byte_size"]:
+            raise ReceiptStorageError("Receipt manifest size mismatch")
+        return manifest
+
+    def _insert(self, path: str, body: bytes, deadline: float) -> None:
+        status, _ = self._request(
+            "POST", f"object/{path}", limit=16 * 1024, body=body, deadline=deadline
+        )
+        if status not in (200, 201, 400, 409):
+            raise ReceiptStorageError(f"Receipt upload refused (HTTP {status})")
+
+    def _get(self, path: str, limit: int, deadline: float) -> bytes:
+        status, body = self._request(
+            "GET", f"object/authenticated/{path}", limit=limit, deadline=deadline
+        )
+        if status != 200:
+            raise ReceiptStorageError(f"Receipt read refused (HTTP {status})")
+        return body
 
     def put(self, body: bytes) -> str:
         digest, _ = self.put_and_read(body)
@@ -221,22 +332,37 @@ class SupabaseReceiptStore:
         """
         if not isinstance(body, bytes) or not body or len(body) > self.max_bytes:
             raise ValueError("Receipt body absent or exceeds byte limit")
-        digest = hashlib.sha256(body).hexdigest()
         deadline = time.monotonic() + self._timeout
-        self._private_bucket(deadline)
-        status, _ = self._request(
-            "POST",
-            f"object/{self._object_path(digest)}",
-            limit=16 * 1024,
-            body=body,
-            deadline=deadline,
-        )
-        # Supabase reports duplicate insert as 400 (older API) or 409.
-        # Neither is success until authenticated readback proves the exact bytes.
-        if status not in (200, 201, 400, 409):
-            raise ReceiptStorageError(f"Receipt upload refused (HTTP {status})")
-        retained = self._read(digest, deadline)
-        if len(retained) != len(body) or retained != body:
+        digest = hashlib.sha256(body).hexdigest()
+        encoded, parts = self._manifest(body, digest)
+        bucket_limit = self._private_bucket(deadline)
+        if (
+            bucket_limit is not None
+            and max(len(encoded), *(len(part) for part in parts)) > bucket_limit
+        ):
+            raise ReceiptStorageError("Receipt physical object exceeds bucket capacity")
+        # Verify each part before publishing the manifest. Partial attempts can
+        # leave immutable orphan parts, but cannot certify an incomplete source.
+        reconstructed = bytearray()
+        for part in parts:
+            part_digest = hashlib.sha256(part).hexdigest()
+            path = self._object_path(part_digest, kind="chunks")
+            self._insert(path, part, deadline)
+            retained_part = self._get(path, len(part), deadline)
+            if retained_part != part:
+                raise ReceiptStorageError("Receipt part readback digest mismatch")
+            reconstructed.extend(retained_part)
+        self._insert(self._object_path(digest), encoded, deadline)
+        # Manifest readback binds the already verified parts in this same
+        # bounded operation; no second source download or cross-operation cache.
+        if self._get(self._object_path(digest), len(encoded), deadline) != encoded:
+            raise ReceiptStorageError("Receipt manifest readback mismatch")
+        retained = bytes(reconstructed)
+        if (
+            len(retained) != len(body)
+            or retained != body
+            or hashlib.sha256(retained).hexdigest() != digest
+        ):
             raise ReceiptStorageError("Receipt upload readback mismatch")
         if time.monotonic() >= deadline:
             raise ReceiptStorageError("Receipt storage exceeded transfer time limit")
@@ -247,15 +373,31 @@ class SupabaseReceiptStore:
 
     def _read(self, digest: str, deadline: float) -> bytes:
         path = self._object_path(digest)
-        self._private_bucket(deadline)
-        status, body = self._request(
-            "GET",
-            f"object/authenticated/{path}",
-            limit=self.max_bytes,
-            deadline=deadline,
+        bucket_limit = self._private_bucket(deadline)
+        encoded = self._get(
+            path,
+            min(self.MANIFEST_MAX_BYTES, bucket_limit)
+            if bucket_limit is not None
+            else self.MANIFEST_MAX_BYTES,
+            deadline,
         )
-        if status != 200:
-            raise ReceiptStorageError(f"Receipt read refused (HTTP {status})")
+        manifest = self._parse_manifest(encoded, digest, bucket_limit)
+        reconstructed = bytearray()
+        for part in manifest["parts"]:
+            retained = self._get(
+                self._object_path(part["sha256"], kind="chunks"),
+                part["byte_size"],
+                deadline,
+            )
+            if (
+                len(retained) != part["byte_size"]
+                or hashlib.sha256(retained).hexdigest() != part["sha256"]
+            ):
+                raise ReceiptStorageError("Receipt part readback digest mismatch")
+            reconstructed.extend(retained)
+        body = bytes(reconstructed)
+        if len(body) != manifest["byte_size"]:
+            raise ReceiptStorageError("Receipt reconstructed size mismatch")
         if not body or hashlib.sha256(body).hexdigest() != digest:
             raise ReceiptStorageError("Receipt readback digest mismatch")
         if time.monotonic() >= deadline:

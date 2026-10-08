@@ -42,9 +42,11 @@ def test_unset_workflow_config_retains_local_mode_without_secret_lookup(
     workflow, environment = job_environment({}, {})
     assert environment["SEED_RECEIPT_STORAGE_BACKEND"] == "local"
     assert environment["SEED_RECEIPT_MAX_BYTES"] == ""
+    assert environment["SEED_RECEIPT_PART_MAX_BYTES"] == ""
     apply_environment(monkeypatch, environment)
     settings = SeedingSettings(storage_path=tmp_path)
     assert settings.receipt_max_bytes is None
+    assert settings.receipt_part_max_bytes is None
     monkeypatch.setattr(
         secrets,
         "get_secret",
@@ -67,6 +69,7 @@ def test_supabase_workflow_variables_reach_actual_settings_and_adapter(
         "SEED_RECEIPT_SUPABASE_URL": URL,
         "SEED_RECEIPT_SUPABASE_BUCKET": BUCKET,
         "SEED_RECEIPT_MAX_BYTES": "1024",
+        "SEED_RECEIPT_PART_MAX_BYTES": "512",
         "SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS": "12",
     }
     _, environment = job_environment(variables, {"RECEIPT_SUPABASE_SECRET_KEY": KEY})
@@ -76,12 +79,22 @@ def test_supabase_workflow_variables_reach_actual_settings_and_adapter(
     assert settings.receipt_supabase_url == URL
     assert settings.receipt_supabase_bucket == BUCKET
     assert settings.receipt_max_bytes == 1024
+    assert settings.receipt_part_max_bytes == 512
     assert settings.receipt_storage_timeout_seconds == 12
     store = configured_receipt_store(settings)
     assert isinstance(store, SupabaseReceiptStore)
     assert (
         store.project_url == URL and store.bucket == BUCKET and store.max_bytes == 1024
     )
+    assert store.part_max_bytes == 512
+
+
+@pytest.mark.parametrize("cap", ["true", "0", "-1", "1.0", "1e3", "NaN", "33554433"])
+def test_workflow_hostile_part_caps_refuse_settings(monkeypatch, cap):
+    _, environment = job_environment({"SEED_RECEIPT_PART_MAX_BYTES": cap}, {})
+    apply_environment(monkeypatch, environment)
+    with pytest.raises(ValueError):
+        SeedingSettings()
 
 
 def test_selected_supabase_without_workflow_cap_refuses_before_secret_lookup(

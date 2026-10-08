@@ -40,6 +40,7 @@ def configured_receipt_store(settings) -> ReceiptStore:
         settings.receipt_supabase_bucket,
         get_secret("RECEIPT_SUPABASE_SECRET_KEY"),
         max_bytes=max_bytes,
+        part_max_bytes=SupabaseReceiptStore.DEFAULT_PART_BYTES if getattr(settings, "receipt_part_max_bytes", None) is None else settings.receipt_part_max_bytes,
         timeout_seconds=settings.receipt_storage_timeout_seconds,
     )
 
