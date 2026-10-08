@@ -1,6 +1,6 @@
 # Meta operational readiness: recovery and deployment evidence (#488)
 
-Prepared 2026-10-08 in `/Users/roger/.codex/worktrees/meta-operational-readiness/audit_app`,
+Prepared 2026-10-08 in the isolated `meta-operational-readiness` worktree,
 branch `codex/meta-operational-readiness`, fetched base
 `bd46832156cb921173fea32d9d9698d696a676dc` (main with #513–#519).
 Draft PR/commit: see this branch's attached PR and final handoff receipt.
@@ -230,3 +230,9 @@ approved app/host/build/secret store/role topology and private receipt locations
 perform read-only readbacks, obtain retention approval and separately authorize
 restore-clone/account/deployment acceptance. Publishing/connection enablement
 remains a distinct explicit decision after all real receipts.
+
+## Coordinator verification and fixes — 2026-10-08
+
+Copilot's restoration alias finding was valid and is tracked as #534. The same ring and separate rings sharing a keys mapping each produced an observed-red DID NOT RAISE in the retained review regressions. Verification now refuses both before constructing ciphers; independently parsed backups still pass. Parser, file reader and fixture drill produce fresh mappings; direct verification callers receive the same guard. A developer-specific path in this handoff was replaced with the worktree name.
+
+The coordinator executed 110 readiness/recovery tests with zero skips, including the owned disposable PostgreSQL role lane, actual memory-only Sentry captures, failure/restart cases and three restoration review controls. Two existing SQLAlchemy warnings remain. Independent Spec review replayed alias refusals and the positive backup control. Passing telemetry tests continue to record the unresolved #525 behavior; no deployed log protection is certified. #524, #526, #527 and #534 are fixed in this PR; #488 stays open.

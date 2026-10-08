@@ -176,6 +176,7 @@ def verify_restoration(original: RecoveryKeyring, restored: RecoveryKeyring,
     """
     try:
         if (type(original) is not RecoveryKeyring or type(restored) is not RecoveryKeyring
+                or original is restored or original.keys is restored.keys
                 or type(probes) is not list or not 1 <= len(probes) <= 100):
             raise RecoveryError()
         first, second = original.cipher(), restored.cipher()
