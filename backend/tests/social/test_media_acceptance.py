@@ -54,7 +54,7 @@ def packet(scope):
             "total_quota_bytes": 2 * 1024**3, "actor_quota_bytes": 200 * 1024**2,
             "ready_original_deletion_enabled": False, "quota_tracking_exercised": True,
             "retention_policy_sha256": "e" * 64, "backup_restore_receipt_sha256": "f" * 64, "backup_restore_exercised": True,
-            "retained_probe_identity_sha256": "a" * 64, "retained_probe_bytes": 64, "probe_actor_reserved_bytes": 64},
+            "retained_probe_identity_sha256": "a" * 64, "retained_probe_bytes": 64, "probe_actor_reserved_bytes": 128},
         "hosting_profile": {"profile_purpose": "social_media_481", "operating_receipt_sha256": "1" * 64,
             "owner_cost_review_sha256": "2" * 64, "deployment_bound": True, "always_on_inspection_host": True,
             "capacity_bounds_reviewed": True, "egress_profile_reviewed": True},
@@ -124,6 +124,42 @@ def test_missing_and_empty_are_truthful(packet, scope):
 def test_top_level_scope_is_independently_bound(packet, scope, field, value):
     packet["scope"][field] = value
     assert evaluate(packet, scope)["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+
+
+@pytest.mark.parametrize("scheme", ["HTTPS", "hTtPs"])
+def test_browser_origin_requires_an_exact_lowercase_scheme_before_url_parsing(packet, scope, scheme):
+    # Keep all declarations equal so this checks the raw scheme, not a mismatch.
+    scope["browser_origin"] = scheme + scope["browser_origin"][5:]
+    packet["scope"] = deepcopy(scope)
+    for item in packet["evidence"]: item["scope"] = deepcopy(scope)
+    gate(packet, "browser_cors").update(request_origin=scope["browser_origin"], allowed_origins=[scope["browser_origin"]])
+    result = evaluate(packet, scope)
+    assert result["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+    assert result["reason_codes"] == ["INVALID_REVIEW_SCOPE_OR_AS_OF"]
+
+
+@pytest.mark.parametrize("origin", [
+    "https://admin.example.org?", "https://admin.example.org#", "https://admin.example.org?#",
+    "https://admin.example.org:443", "https://127.1", "https://2130706433", "https://0x7f000001",
+    "https://0177.0.0.1", "https://127.000.000.001", "https://08.0.0.1", "https://1.2.3.256",
+    "https://admin.example.123", "https://admin.example.0x10", "https://admin.example.0x",
+])
+def test_observed_red_origin_must_equal_literal_browser_serialization(packet, scope, origin):
+    scope["browser_origin"] = origin
+    packet["scope"] = deepcopy(scope)
+    for item in packet["evidence"]: item["scope"] = deepcopy(scope)
+    gate(packet, "browser_cors").update(request_origin=origin, allowed_origins=[origin])
+    assert evaluate(packet, scope)["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+
+
+@pytest.mark.parametrize("origin", ["https://admin.example.org", "https://admin.example.org:8443",
+    "https://127.0.0.1", "https://127.0.0.1:8443"])
+def test_canonical_dns_and_ipv4_origins_remain_reviewable(packet, scope, origin):
+    scope["browser_origin"] = origin
+    packet["scope"] = deepcopy(scope)
+    for item in packet["evidence"]: item["scope"] = deepcopy(scope)
+    gate(packet, "browser_cors").update(request_origin=origin, allowed_origins=[origin])
+    assert evaluate(packet, scope)["status"] == "READY_FOR_OPERATOR_REVIEW"
 
 
 @pytest.mark.parametrize("field,value", [
@@ -229,6 +265,21 @@ def test_a_retained_probe_must_fit_both_declared_quotas(packet, scope):
 def test_global_ledger_covers_probe_actor_reservation_subset(packet, scope):
     gate(packet, "storage_accounting")["probe_actor_reserved_bytes"] = 513
     assert evaluate(packet, scope)["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+
+
+@pytest.mark.parametrize("reserved", [64, 127])
+def test_retained_probe_preserves_capacity_for_quarantine_and_final_copies(packet, scope, reserved):
+    # A 64-byte retained upload needs 128 bytes even when only one copy is
+    # currently inventoried. Inventory/actor/global consistency alone is weaker.
+    gate(packet, "storage_accounting").update(inventory_objects=1, inventory_bytes=64,
+        ledger_reserved_bytes=reserved, probe_actor_reserved_bytes=reserved)
+    assert evaluate(packet, scope)["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+
+
+def test_retained_probe_two_copy_reservation_boundary_allows_declared_review_only(packet, scope):
+    gate(packet, "storage_accounting").update(inventory_objects=1, inventory_bytes=64,
+        ledger_reserved_bytes=128, probe_actor_reserved_bytes=128, actor_quota_bytes=128, total_quota_bytes=128)
+    assert evaluate(packet, scope)["status"] == "READY_FOR_OPERATOR_REVIEW"
 
 
 def test_api_metadata_request_measurement_must_fit_its_own_limit(packet, scope):
@@ -353,6 +404,21 @@ def test_cli_positive_and_invalid_input_only_print_declared_review(packet, scope
     source.write_text('{"x":"' + SECRET)
     assert cli.main(args) == 2
     assert SECRET not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("origin", ["https://admin.example.org?", "https://admin.example.org#",
+    "https://admin.example.org:443", "https://127.1"])
+def test_observed_red_cli_refuses_noncanonical_browser_origin(packet, scope, origin, tmp_path, capsys):
+    scope["browser_origin"] = origin
+    packet["scope"] = deepcopy(scope)
+    for item in packet["evidence"]: item["scope"] = deepcopy(scope)
+    gate(packet, "browser_cors").update(request_origin=origin, allowed_origins=[origin])
+    source = tmp_path / "packet.json"; scope_file = tmp_path / "scope.json"
+    source.write_text(json.dumps(packet)); scope_file.write_text(json.dumps(scope))
+    assert cli.main(["--packet", str(source), "--scope", str(scope_file), "--as-of", AS_OF]) == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "UNVERIFIED_SUPPLIED_EVIDENCE"
+    assert result["production_authorized"] is False
 
 
 @pytest.mark.parametrize("kind", ["missing", "directory", "oversized", "symlink", "fifo"])

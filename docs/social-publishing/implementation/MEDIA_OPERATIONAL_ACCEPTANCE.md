@@ -92,7 +92,12 @@ global ledger, including after declared probe removal.
 A `retained` probe has no removal receipt. Its identity must match
 `retained_probe_identity_sha256`, its size must equal `retained_probe_bytes`, and
 the inventory must contain at least one object. Those bytes must fit the
-inventory and the probe actor's reservation. A `confirmed_removed` declaration
+inventory. The probe actor's reservation must cover **twice the probe size**,
+matching the upload service's quarantine and final-copy reservation, even when
+only one copy is currently inventoried. This schema carries no settlement
+evidence and cannot encode a settled one-copy ready original.
+
+A `confirmed_removed` declaration
 needs its own removal receipt hash, null retained identity and zero retained
 probe bytes. An `unknown` disposition stays unverified. These checks only
 compare supplied assertions: a removal hash proves neither deletion nor write
@@ -146,7 +151,7 @@ adds no receipt trust, production verification or quiescence authority.
 
 ## Executed verification
 
-The authored `test_media_acceptance.py` suite passed 170 cases: scoped positive
+The initial authored `test_media_acceptance.py` suite passed 170 cases: scoped positive
 declarations, marked synthetic and missing gates, unrelated source receipts,
 stale/mixed identities, strict types/limits, malformed/duplicate JSON, secret
 redaction, regular-file bounds and direct/CLI invocation. Its fresh-process
@@ -165,3 +170,34 @@ inspection timeout remains valid.
 Fixtures are deliberately invented, and no real storage/host acceptance is
 claimed. The assigned worktree's existing libraries were reused; no deployment,
 configuration, live provider, database or dependency change occurred.
+
+## PR #517 review receipt
+
+Review baseline: `ee86d2e`. The review has no inline threads; its body identifies
+retained-probe reservation accounting and exact lowercase HTTPS scheme
+validation. Both findings are valid. Four retained tests failed against that
+baseline: consistent `HTTPS://` and `hTtPs://` declarations became review-ready,
+as did a retained 64-byte probe with only 64 or 127 reserved bytes. URL parsing
+normalizes scheme case, so the origin validator now checks the raw `https://`
+prefix. Retained probes now require the full two-copy upload reservation.
+
+The updated authored suite passes 175 cases, including a 128-byte reservation
+positive for a retained 64-byte probe. Scope/CORS identities still compare
+exactly; all reports retain false authority fields. An isolated SQLite execution
+of the actual `MediaService.initiate` with fake storage also confirmed that a
+64-byte declaration reserves 128 bytes in the upload, global and actor ledgers
+while its grant remains unsettled. The separately declared
+removed-probe path still proves neither quiescence nor permission to release
+reservations. No runtime/storage behavior, shared handoff or live operational
+acceptance changed.
+
+Independent review also uncovered [#520](https://github.com/Rodgers31/audit_app/issues/520):
+empty query/fragment delimiters, an explicit HTTPS default port, and numeric
+hosts that a browser normalizes or rejects could become declaration-ready.
+Node's actual WHATWG URL serializer established the mismatch. The validator
+now rejects those spellings, permits only canonical dotted-decimal IPv4 for
+numeric-ending hosts, and keeps canonical DNS/nondefault ports reviewable.
+Root ran all 18 retained direct/CLI cases against the reviewed source and
+observed failures before the fix. Four canonical origin positive controls pass;
+the complete authored suite now passes **197 cases**. This still authenticates
+no actual browser receipt and grants no operational authority.

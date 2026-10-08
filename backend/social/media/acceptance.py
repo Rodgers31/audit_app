@@ -6,6 +6,7 @@ Caller-supplied scope and as-of time are required independently of the packet.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from ipaddress import IPv4Address
 import hashlib
 import json
 import re
@@ -110,14 +111,21 @@ def _time(value):
 def _origin(value, *, wildcard=False):
     if wildcard and value == "*":
         return value
-    if type(value) is not str or len(value) > 253 or not value.isascii() or any(c.isspace() for c in value):
+    if (type(value) is not str or not value.startswith("https://") or "?" in value or "#" in value or len(value) > 253
+            or not value.isascii() or any(c.isspace() for c in value)):
         raise ValueError("Invalid browser origin")
     parts = urlsplit(value)
     if (parts.scheme != "https" or not parts.hostname or parts.username or parts.password
             or parts.path or parts.query or parts.fragment or parts.netloc != parts.netloc.lower()
             or not re.fullmatch(r"[a-z0-9]+(?:[.-][a-z0-9]+)*(?::[1-9][0-9]{0,4})?", parts.netloc)
-            or (parts.port is not None and not 1 <= parts.port <= 65535)):
+            or (parts.port is not None and (parts.port == 443 or not 1 <= parts.port <= 65535))):
         raise ValueError("Invalid browser origin")
+    # WHATWG treats a final numeric/hex label as an IPv4 address, including
+    # abbreviated, integer and octal forms. Accept only its canonical spelling.
+    last_label = parts.hostname.rsplit(".", 1)[-1]
+    if re.fullmatch(r"(?:[0-9]+|0x[0-9a-f]*)", last_label):
+        if str(IPv4Address(parts.hostname)) != parts.hostname:
+            raise ValueError("Invalid browser origin")
     return value
 
 
@@ -359,6 +367,9 @@ def _probe_accounting(accounting, signed_put):
     if signed_put.probe_disposition == "retained":
         return (accounting.retained_probe_identity_sha256 == signed_put.probe_identity_sha256
                 and accounting.retained_probe_bytes == signed_put.probe_size_bytes
+                # This packet carries no independently established settlement
+                # for reducing the upload's quarantine + final-copy envelope.
+                and accounting.probe_actor_reserved_bytes >= 2 * signed_put.probe_size_bytes
                 and accounting.inventory_objects >= 1)
     if signed_put.probe_disposition == "confirmed_removed":
         return (signed_put.probe_removal_receipt_sha256 is not None
