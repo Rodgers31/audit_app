@@ -453,9 +453,98 @@ def test_protocol_receipt_is_explicit_not_a_provider_bill(declared):
         day['social']['receipt']['kind'] = 'social_protocol_measurement'
     declared['cycle_social']['measurement'] = 'protocol_bytes'
     declared['cycle_social']['receipt']['kind'] = 'social_protocol_measurement'
+    declared['future_increments'][0]['measurement'] = 'protocol_bytes'
     report = evaluate(reseal(declared))
     assert report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
     assert report['evidence_authentication'] == 'UNVERIFIED_OPERATOR_ASSERTIONS'
+
+
+@pytest.mark.parametrize('scope', ['daily', 'cycle', 'increment'])
+def test_observed_red_mixed_social_measurement_bases_cannot_form_one_forecast(declared, scope):
+    target = (declared['days'][0]['social'] if scope == 'daily' else declared['cycle_social']
+              if scope == 'cycle' else declared['future_increments'][0])
+    target['measurement'] = 'protocol_bytes'
+    if scope != 'increment': target['receipt']['kind'] = 'social_protocol_measurement'
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'BLOCKED'
+    assert 'SOCIAL_MEASUREMENT_SCOPE_MISMATCH' in report['unknowns']
+
+
+def test_observed_red_protocol_wire_transfer_is_independent_of_zero_charged_meter(declared):
+    declared['future_increments'] = []
+    for day in declared['days']:
+        day['provider']['total_uncached'] = quantity(0)
+        for key in day['provider']['services']: day['provider']['services'][key] = quantity(0)
+        day['social'].update(measurement='protocol_bytes', transfer=quantity(1))
+        day['social']['receipt']['kind'] = 'social_protocol_measurement'
+    declared['cycle_usage']['total_uncached'] = quantity(0)
+    declared['cycle_social'].update(measurement='protocol_bytes', transfer=quantity(8))
+    declared['cycle_social']['receipt']['kind'] = 'social_protocol_measurement'
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
+    assert report['measurements']['cycle_projection_upper_bytes'] == 0
+    assert report['measurements']['social_cycle_upper_bytes'] > 0
+
+
+def test_observed_red_query_receipt_cannot_precede_its_own_snapshot_end(declared):
+    declared['query_counters']['end_at'] = AS_OF.isoformat()
+    declared['query_counters']['receipt']['captured_at'] = '2026-10-15T00:00:00Z'
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'BLOCKED'
+    assert 'RECEIPT_TIME_MISMATCH' in report['unknowns']
+    assert report.get('query_attribution', {}).get('available', False) is False
+
+
+def test_extended_query_interval_with_receipt_after_actual_end_remains_reviewable(declared):
+    declared['query_counters']['end_at'] = AS_OF.isoformat()
+    assert evaluate(reseal(declared))['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
+
+
+def test_hosting_receipt_before_deployment_was_already_refused(declared):
+    declared['hosting']['receipt']['captured_at'] = '2026-10-07T23:00:00Z'
+    assert 'RECEIPT_TIME_MISMATCH' in evaluate(reseal(declared))['unknowns']
+
+
+def test_protocol_future_proxy_is_explicit_and_never_claimed_as_provider_meter(declared):
+    increment = declared['future_increments'][0]
+    increment.update(workload='nightly', measurement='protocol_bytes', inclusion='additional_future',
+                     bytes_per_unit=quantity(10_000_000), remaining_units=1)
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
+    assert report['measurements']['cycle_projection_upper_bytes'] == 3_110_000_000
+    assert report['measurements']['additional_future_protocol_proxy_upper_bytes'] == 10_000_000
+    assert report['projection_basis']['protocol_future'] == 'CONSERVATIVE_PLANNING_PROXY_NOT_BILLED_BYTES'
+
+
+def protocol_profile(packet):
+    for section in [*(day['social'] for day in packet['days']), packet['cycle_social']]:
+        section['measurement'] = 'protocol_bytes'
+        section['receipt']['kind'] = 'social_protocol_measurement'
+    packet['future_increments'][0]['measurement'] = 'protocol_bytes'
+    return packet
+
+
+@pytest.mark.parametrize('inclusion', ['already_in_provider_total', 'additional_future'])
+@pytest.mark.parametrize('rounding,resolution', [('exact', 0), ('up', 2)])
+def test_observed_red_521_positive_future_worker_units_cannot_claim_zero_protocol(declared, inclusion, rounding, resolution):
+    protocol_profile(declared)
+    declared['future_increments'][0].update(inclusion=inclusion, remaining_units=100,
+        bytes_per_unit=quantity(0, rounding=rounding, resolution=resolution))
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'BLOCKED'
+    assert 'FUTURE_PROTOCOL_TRANSFER_CONTRADICTS_UNITS' in report['unknowns']
+
+
+@pytest.mark.parametrize('inclusion', ['already_in_provider_total', 'additional_future'])
+@pytest.mark.parametrize('control', ['zero_units', 'provider_zero', 'rounded_protocol'])
+def test_521_future_zero_controls_preserve_distinct_declared_meanings(declared, inclusion, control):
+    if control != 'provider_zero': protocol_profile(declared)
+    declared['future_increments'][0].update(inclusion=inclusion,
+        remaining_units=0 if control == 'zero_units' else 100,
+        bytes_per_unit=quantity(0, rounding='nearest', resolution=2) if control == 'rounded_protocol' else quantity(0))
+    report = evaluate(reseal(declared))
+    assert report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW'
+    assert report['measurements']['additional_future_upper_bytes'] == (100 if inclusion == 'additional_future' and control == 'rounded_protocol' else 0)
 
 
 @pytest.mark.parametrize('start,cycle_end,as_of,window_seconds', [
@@ -579,3 +668,19 @@ def test_cli_synthetic_nonexistent_malformed_paths_and_error_redaction(tmp_path,
     args = cli_args(tmp_path, packet); args[1] = str(tmp_path / 'DO-NOT-PRINT.json')
     assert budget.main(args) == 2
     assert 'DO-NOT-PRINT' not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('failure', ['arguments', 'input', 'output'])
+def test_observed_red_cli_failures_retain_unverified_evidence_provenance(tmp_path, declared, capsys, failure):
+    args = cli_args(tmp_path, declared)
+    if failure == 'arguments': args = ['--unknown=DO-NOT-PRINT']
+    elif failure == 'input': Path(args[1]).unlink()
+    else:
+        destination = tmp_path / 'existing.json'; destination.write_text('DO-NOT-PRINT')
+        args += ['--out', str(destination)]
+    assert budget.main(args) == 2
+    displayed = capsys.readouterr().out
+    report = json.loads(displayed)
+    assert report['status'] == 'BLOCKED' and report['production_authorized'] is False
+    assert report['evidence_authentication'] == 'UNVERIFIED_OPERATOR_ASSERTIONS'
+    assert 'DO-NOT-PRINT' not in displayed

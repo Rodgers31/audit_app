@@ -215,7 +215,7 @@ def _evaluate(packet, expected, as_of, report):
         receipt(measured, {'social_provider_meter', 'social_protocol_measurement'}, binding, synthetic, finish, as_of, (begin, finish))
         require((measured['measurement'] == 'provider_bytes') == (measured['receipt']['kind'] == 'social_provider_meter') or measured['measurement'] in ('decoded_estimate', 'cumulative_counter'), 'MEASUREMENT_KIND_MISMATCH')
         social_upper = amount(measured['transfer'])[1]
-        require(social_upper <= totals[-1], 'SOCIAL_EXCEEDS_TOTAL')
+        if measured['measurement'] == 'provider_bytes': require(social_upper <= totals[-1], 'SOCIAL_EXCEEDS_TOTAL')
         if measured['measurement'] == 'protocol_bytes' and social_upper == 0 and any(activity[k] for k in TRAFFIC_COUNTS):
             unknowns.append('PROTOCOL_TRANSFER_CONTRADICTS_ACTIVITY')
         if measured['measurement'] not in ('provider_bytes', 'protocol_bytes'): unknowns.append('SOCIAL_TRANSFER_NOT_MEASURED')
@@ -236,9 +236,13 @@ def _evaluate(packet, expected, as_of, report):
     receipt(accrued_social, {'social_provider_meter', 'social_protocol_measurement'}, binding, synthetic, as_of, as_of, (cycle_start, as_of))
     require((accrued_social['measurement'] == 'provider_bytes') == (accrued_social['receipt']['kind'] == 'social_provider_meter') or accrued_social['measurement'] in ('decoded_estimate', 'cumulative_counter'), 'MEASUREMENT_KIND_MISMATCH')
     social_accrued_upper = amount(accrued_social['transfer'])[1]
-    require(social_accrued_upper <= accrued_upper and social_accrued_upper >= sum((amount(day['social']['transfer'])[0] for day in days), Decimal(0)), 'ACCRUED_SOCIAL_CONTRADICTS_DAYS')
     if accrued_social['measurement'] == 'protocol_bytes' and social_accrued_upper == 0 and any(a[k] for a in activities for k in TRAFFIC_COUNTS):
         unknowns.append('PROTOCOL_TRANSFER_CONTRADICTS_ACTIVITY')
+    social_basis = days[0]['social']['measurement']
+    require(all(day['social']['measurement'] == social_basis for day in days)
+            and accrued_social['measurement'] == social_basis, 'SOCIAL_MEASUREMENT_SCOPE_MISMATCH')
+    require(social_accrued_upper >= sum((amount(day['social']['transfer'])[0] for day in days), Decimal(0)), 'ACCRUED_SOCIAL_CONTRADICTS_DAYS')
+    if social_basis == 'provider_bytes': require(social_accrued_upper <= accrued_upper, 'ACCRUED_SOCIAL_CONTRADICTS_DAYS')
     if accrued_social['measurement'] not in ('provider_bytes', 'protocol_bytes'): unknowns.append('SOCIAL_TRANSFER_NOT_MEASURED')
     if not all(sum(a[key] for a in activities) > 0 for key in ('api_requests', 'worker_publications', 'deployments')):
         unknowns.append('REPRESENTATIVE_ACTIVITY_MISSING')
@@ -278,21 +282,28 @@ def _evaluate(packet, expected, as_of, report):
     increments = packet['future_increments']
     require(type(increments) is list and len(increments) <= 16, 'INVALID_INCREMENT_COUNT')
     workloads, extra, social_extra, included, included_social = set(), Decimal(0), Decimal(0), Decimal(0), Decimal(0)
+    protocol_extra, protocol_included = Decimal(0), Decimal(0)
     for increment in increments:
         shape(increment, {'workload', 'measurement', 'bytes_per_unit', 'remaining_units', 'inclusion', 'receipt'} | PERIOD_KEYS)
         workload = increment['workload']
         require(workload in ('nightly', 'social_worker', 'public_api', 'cache_warmup') and workload not in workloads, 'INCREMENT_OVERLAP')
         require(increment['inclusion'] in ('already_in_provider_total', 'additional_future'), 'INCREMENT_INCLUSION_REQUIRED')
         require(increment['measurement'] in ('provider_bytes', 'protocol_bytes', 'decoded_estimate'), 'INVALID_MEASUREMENT')
+        if workload == 'social_worker' and increment['measurement'] != 'decoded_estimate':
+            require(increment['measurement'] == social_basis, 'SOCIAL_MEASUREMENT_SCOPE_MISMATCH')
         receipt(increment, {'future_measurement'}, binding, synthetic, window_end, as_of, (window_start, window_end))
         units = integer(increment['remaining_units'], 1_000_000)
         cost = amount(increment['bytes_per_unit'])[1] * units
+        if workload == 'social_worker' and increment['measurement'] == 'protocol_bytes' and units > 0 and cost == 0:
+            unknowns.append('FUTURE_PROTOCOL_TRANSFER_CONTRADICTS_UNITS')
         if increment['measurement'] == 'decoded_estimate': unknowns.append('FUTURE_TRANSFER_NOT_MEASURED')
         if increment['inclusion'] == 'additional_future':
             extra += cost
+            if increment['measurement'] == 'protocol_bytes': protocol_extra += cost
             if workload == 'social_worker': social_extra += cost
         else:
             included += cost
+            if increment['measurement'] == 'protocol_bytes': protocol_included += cost
             if workload == 'social_worker': included_social += cost
         workloads.add(workload)
     counters = packet['query_counters']
@@ -302,7 +313,7 @@ def _evaluate(packet, expected, as_of, report):
         shape(counters, {'kind', 'start_at', 'end_at', 'start_reset', 'end_reset',
                          'before_database_sha256', 'after_database_sha256', 'before_dealloc', 'after_dealloc',
                          'before', 'after', 'receipt'})
-        receipt(counters, {'query_stats_snapshots'}, binding, synthetic, window_end, as_of)
+        receipt(counters, {'query_stats_snapshots'}, binding, synthetic, instant(counters['end_at']), as_of)
         require(counters['kind'] in ('snapshot_delta', 'cumulative'), 'INVALID_COUNTER_KIND')
         require(digest(counters['before_database_sha256']) == digest(counters['after_database_sha256']) == expected['database_fingerprint_sha256'], 'QUERY_DB_IDENTITY_MISMATCH')
         require(instant(counters['start_at']) <= window_start and instant(counters['end_at']) >= window_end and instant(counters['end_at']) <= as_of, 'COUNTER_WINDOW_MISMATCH')
@@ -343,6 +354,8 @@ def _evaluate(packet, expected, as_of, report):
     require(included <= remaining_total and included_social <= remaining_social, 'INCLUSION_CONTRADICTS_BASELINE')
     cycle_projection = ceiling(accrued_upper + remaining_total + extra)
     social_cycle = ceiling(social_accrued_upper + remaining_social + social_extra)
+    report['projection_basis'] = {'total': 'DECLARED_PROVIDER_BASELINE_PLUS_FUTURE_PLANNING_INCREMENTS',
+        'social': social_basis, 'protocol_future': 'CONSERVATIVE_PLANNING_PROXY_NOT_BILLED_BYTES'}
     report['measurements'] = {'days': len(days), 'cycle_days': (end - start).days,
         'uncached_upper_bytes': ceiling(total), 'mean_daily_upper_bytes': ceiling(mean),
         'peak_daily_upper_bytes': ceiling(max(totals)),
@@ -351,6 +364,8 @@ def _evaluate(packet, expected, as_of, report):
         'cycle_seconds': cycle_seconds,
         'remaining_cycle_seconds': int(remaining_seconds), 'window_seconds': int(window_seconds),
         'additional_future_upper_bytes': ceiling(extra), 'additional_social_upper_bytes': ceiling(social_extra),
+        'additional_future_protocol_proxy_upper_bytes': ceiling(protocol_extra),
+        'included_future_protocol_proxy_upper_bytes_not_added': ceiling(protocol_included),
         'included_future_upper_bytes_not_added': ceiling(included),
         'cycle_projection_upper_bytes': cycle_projection,
         'remaining_cycle_headroom_bytes': expected['uncached_allowance_bytes'] - cycle_projection,
@@ -367,14 +382,18 @@ def _evaluate(packet, expected, as_of, report):
     report['status'] = 'BLOCKED' if unknowns else 'OVER_BUDGET' if exceeded else 'CANDIDATE_FOR_OWNER_REVIEW'
 
 
-def evaluate(packet, *, expected_identity, as_of):
-    """Validate declared evidence, never authenticate it or grant authorization."""
-    report = {'status': 'BLOCKED', 'production_authorized': False, 'synthetic': None,
+def _report():
+    return {'status': 'BLOCKED', 'production_authorized': False, 'synthetic': None,
         'evidence_authentication': 'UNVERIFIED_OPERATOR_ASSERTIONS', 'unknowns': [], 'exceeded': [],
         'generated_by': 'scripts/verification/evaluate_social_operating_budget.py',
         'generated_at': datetime.now(timezone.utc).isoformat(),
         'generator_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         'input_sha256': None, 'expected_identity_sha256': None}
+
+
+def evaluate(packet, *, expected_identity, as_of):
+    """Validate declared evidence, never authenticate it or grant authorization."""
+    report = _report()
     try:
         raw = canonical(packet)
         require(len(raw) <= MAX_BYTES, 'INPUT_TOO_LARGE')
@@ -448,8 +467,9 @@ def main(argv=None):
         return 0 if report['status'] == 'CANDIDATE_FOR_OWNER_REVIEW' else 1
     except (EvidenceError, OSError, ValueError, TypeError):
         error = sys.exc_info()[1]
-        print(json.dumps({'status': 'BLOCKED', 'production_authorized': False,
-            'unknowns': [str(error) if isinstance(error, EvidenceError) else 'CLI_FAILED']}))
+        failure = _report()
+        failure['unknowns'] = [str(error) if isinstance(error, EvidenceError) else 'CLI_FAILED']
+        print(json.dumps(failure))
         return 2
 
 

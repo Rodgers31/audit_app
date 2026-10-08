@@ -83,6 +83,9 @@ readback is also fresh within 48 hours. Report provenance includes the tool's
 actual content SHA-256, generation time, canonical input/expected-identity hashes
 and the explicit evaluation time. Optional saved reports are created exclusively,
 never overwrite inputs/results, and are reopened to verify their contents.
+CLI argument/read/write failures retain the same unverified-authentication flag,
+tool identity/hash and generation time. Unvalidated packet/identity hashes remain
+null in those failure reports; no caller values or raw file errors are returned.
 
 ## Budget arithmetic and limitations
 
@@ -100,6 +103,13 @@ and cycle records. A charged provider meter may legitimately read zero. A rounde
 protocol reading of zero with positive upper uncertainty is also distinct from
 exact zero; the evaluator preserves that uncertainty without inventing a bill.
 
+Daily social records, accumulated social usage and measured `social_worker`
+increments must use the same measurement basis. Charged provider bytes and
+protocol wire bytes cannot be combined into one social rate. Only provider-byte
+social records must fit the corresponding charged provider total; protocol
+traffic can be positive when that charged meter is zero. The 200 MB social
+planning target still applies to the consistently declared social basis.
+
 The existing planning margins remain 120,000,000 bytes/day averaged across the
 observed calendar days and 200,000,000 social bytes over the exact billing cycle.
 Keep peak days visible. Forecast each scope as accrued upper bytes plus measured
@@ -108,6 +118,12 @@ additional future activity. This preserves historical charges and handles the
 actual cycle length and timezone/DST boundaries. Check total allowance minus the
 explicit reserve and the matching connection capacity with its reserve. Future
 demand and representativeness remain operator assertions, not guarantees.
+`projection_basis` identifies the provider baseline, social basis and protocol
+future policy. `additional_future_protocol_proxy_upper_bytes` separately exposes
+protocol contributions to the total forecast; included protocol workloads appear
+as `included_future_protocol_proxy_upper_bytes_not_added`. Additional protocol
+bytes remain conservative planning proxies rather than claimed provider-metered
+charges. They remain subject to explicit overlap handling and reserve checks.
 
 ## Run and verification
 
@@ -156,3 +172,38 @@ accrued over-quota/social spikes, rounding, exact cycle/DST seconds, overlap,
 snapshot identity/deltas, incomplete activity, strict direct/JSON/CLI inputs,
 secret redaction, bounded regular-file reads and report provenance/readback.
 No test supplies live acceptance evidence.
+
+## PR #519 review receipt
+
+The remote review exposed one inline finding and three body-only categories,
+without further inline details. At `53dba78`, nine retained cases were observed
+red before fixes; all passed afterward with the complete authored suite.
+
+- **Provenance: valid.** CLI argument, file-read and report-write failures omitted
+  `evidence_authentication`. A common report constructor now preserves provenance
+  and false production authorization for all three paths.
+- **Measurement scope: valid.** Mixed daily/cycle/social-worker bases could form
+  one forecast. Protocol bytes were also compared against a charged provider
+  meter. Mixed bases now block; consistent protocol measurements with a zero
+  charged meter remain reviewable. Consistent provider/protocol controls pass.
+- **Provider-byte forecasting: reporting ambiguity, with intentional arithmetic.**
+  Measured protocol future traffic remains an explicit conservative planning
+  proxy under the batch contract. A 10 MB extra protocol workload increases the
+  total planning forecast by 10 MB; its contribution and basis are now exposed.
+  It never becomes an authenticated or actual provider charge.
+  Independent follow-up [#521](https://github.com/Rodgers31/audit_app/issues/521)
+  found that positive future social-worker units could claim protocol upper-bound
+  zero in either inclusion mode. All four exact/upward-rounded combinations were
+  observed red against committed `53dba78`; they now block with
+  `FUTURE_PROTOCOL_TRANSFER_CONTRADICTS_UNITS`. Zero remaining
+  units, legitimately zero charged-provider bytes and rounded protocol zero with
+  positive upper uncertainty remain passing controls in both modes.
+- **Receipt interval: valid for query snapshots.** A receipt captured at the daily
+  window end could precede its own later snapshot `end_at` and still qualify.
+  Capture must now reach that actual end. A matching later receipt passes.
+  The hosting-before-deployment suspicion was refuted by execution: it already
+  blocks, because deployment precedes window start and capture follows window end.
+
+Actual provider/project attribution, complete representative measurements and
+owner hosting/headroom acceptance remain tracked by #481. The review establishes
+internal declaration consistency only and supplies no operational authorization.
