@@ -21,6 +21,7 @@ from social.connections.service import ConnectionService
 from social.privacy.api import DATA_PATH, STATUS_PATH, create_privacy_router
 from social.privacy.models import SocialPrivacyOwnership, SocialPrivacyReceipt, SocialPrivacyRequestVariant
 from social.privacy.ownership import OwnershipRecorder
+from social.privacy.runtime import PrivacyRegistration, install_privacy
 from social.service import SocialError
 from test_privacy_support import *
 from test_privacy_postgres import privacy_pg
@@ -28,10 +29,10 @@ from test_privacy_postgres import privacy_pg
 
 def http_client(engine, config):
     app=FastAPI()
-    def dependency():
-        with Session(engine) as session:
-            yield privacy(session, config)
-    app.include_router(create_privacy_router(dependency))
+    registration = PrivacyRegistration(
+        PrivacyConfig(config.app_id, config.app_secret, 'https://privacy.example.test' + STATUS_PATH, True),
+        digester(), CredentialCipher(config.active_key_version, config.encryption_keys), lambda: Session(engine))
+    install_privacy(app, registration)
     return TestClient(app, raise_server_exceptions=False)
 
 

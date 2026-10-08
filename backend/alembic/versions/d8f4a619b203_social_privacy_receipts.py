@@ -86,6 +86,9 @@ CREATE TABLE social_privacy_request_variants (
 	FOREIGN KEY(receipt_id) REFERENCES social_privacy_receipts (id)
 )
     """,
+    """
+CREATE INDEX ix_social_privacy_variant_receipt ON social_privacy_request_variants (receipt_id)
+    """,
 )
 
 

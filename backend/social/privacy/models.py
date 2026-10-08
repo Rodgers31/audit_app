@@ -63,7 +63,10 @@ class SocialPrivacyRequestVariant(Base):
     fingerprint = Column(String(64), nullable=False)
     receipt_id = Column(Uuid(as_uuid=True), ForeignKey('social_privacy_receipts.id'), nullable=False)
     received_at = Column(TZ, nullable=False, server_default=func.now())
-    __table_args__ = (UniqueConstraint('app_id', 'kind', 'fingerprint', name='uq_social_privacy_variant'),)
+    __table_args__ = (
+        UniqueConstraint('app_id', 'kind', 'fingerprint', name='uq_social_privacy_variant'),
+        Index('ix_social_privacy_variant_receipt', 'receipt_id'),
+    )
 
 
 @event.listens_for(SocialPrivacyOwnership, 'before_update')

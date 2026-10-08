@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from ..http_boundary import SocialRoute
 from ..service import SocialError
-from .service import PrivacyService, invalid
+from .service import PrivacyServiceFactory, invalid
 
 DATA_PATH = '/api/v1/social/privacy/meta/data-deletion'
 STATUS_PATH = DATA_PATH + '/status'
@@ -31,7 +31,7 @@ def create_privacy_router(service_dependency):
     router = APIRouter(route_class=PrivacyRoute, include_in_schema=False)
 
     async def get_service(svc=Depends(service_dependency)):
-        if type(svc) is not PrivacyService:
+        if type(svc) is not PrivacyServiceFactory:
             raise SocialError('PRIVACY_UNAVAILABLE', 'Privacy callbacks are unavailable.', 503)
         from urllib.parse import urlsplit
         if urlsplit(svc.config.status_url_base).path != STATUS_PATH:
@@ -43,6 +43,7 @@ def create_privacy_router(service_dependency):
         if (request.scope.get('query_string', b'') or request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/x-www-form-urlencoded'
                 or request.headers.get('content-encoding', 'identity').lower() != 'identity'):
             raise invalid()
+        fields = None
         try:
             length = request.headers.get('content-length')
             if length is not None and (not length.isascii() or not length.isdecimal() or int(length) > MAX_BODY_BYTES):
@@ -61,7 +62,9 @@ def create_privacy_router(service_dependency):
             if len(fields) != 1 or fields[0][0] != 'signed_request':
                 raise ValueError()
         except (ValueError, UnicodeError):
-            raise invalid() from None
+            pass
+        if fields is None or len(fields) != 1 or fields[0][0] != 'signed_request':
+            raise invalid()
         result = await run_in_threadpool(svc.receive, fields[0][1], kind='data_deletion')
         return JSONResponse(result, headers=HEADERS)
 

@@ -1,5 +1,6 @@
 """Record only the inspected provider port, inside the connection transaction."""
 from uuid import UUID, uuid4
+import re
 from sqlalchemy import func, select
 from ..models import SocialAccount
 from ..connections.provider import InspectedDiscovery
@@ -40,6 +41,8 @@ class OwnershipRecorder:
     def record_discovery(self, db, flow, inspected):
         if (type(inspected) is not InspectedDiscovery or inspected.app_id != self.app_id
                 or type(inspected.page_ids) is not tuple or len(inspected.page_ids) > 100
+                or any(type(page_id) is not str or not re.fullmatch(r'[1-9][0-9]{0,63}', page_id)
+                       for page_id in inspected.page_ids)
                 or len(set(inspected.page_ids)) != len(inspected.page_ids)):
             raise unavailable()
         subject = self.digester.digest(self.app_id, inspected.subject)

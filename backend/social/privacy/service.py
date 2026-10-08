@@ -52,6 +52,26 @@ class PrivacyConfig:
             raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'Explicit privacy configuration is unavailable.', 503)
 
 
+@dataclass(frozen=True)
+class PrivacyServiceFactory:
+    """Dispatch port whose session lifetime stays inside one worker call."""
+    config: PrivacyConfig
+    digester: SubjectDigester = field(repr=False)
+    cipher: CredentialCipher = field(repr=False)
+    session_factory: object = field(repr=False)
+
+    def _run(self, operation, *args, **kwargs):
+        with self.session_factory() as db:
+            service = PrivacyService(db, self.config, digester=self.digester, cipher=self.cipher)
+            return getattr(service, operation)(*args, **kwargs)
+
+    def receive(self, signed_request, *, kind):
+        return self._run('receive', signed_request, kind=kind)
+
+    def status(self, confirmation_code):
+        return self._run('status', confirmation_code)
+
+
 class PrivacyService:
     def __init__(self, db, config, *, digester, cipher):
         if (type(config) is not PrivacyConfig or not isinstance(digester, SubjectDigester)

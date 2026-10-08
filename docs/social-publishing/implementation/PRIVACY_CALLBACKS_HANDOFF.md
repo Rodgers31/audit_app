@@ -227,3 +227,13 @@ contain capabilities and must be redacted at every ingress and tracing layer.
 No production migration, public route installation, OAuth/provider mutation,
 policy publication, environment/hosting change or job enablement happened here.
 No coding or review work is interrupted; those actual-world gates remain pending.
+
+## Coordinator verification and fixes — 2026-10-08
+
+The Session lifetime finding was valid (#535). The installed dependency now returns a session-free PrivacyServiceFactory; each dispatched receive/status call creates, uses, commits or rolls back, and closes its Session inside the same worker. Router injection accepts this factory rather than a pre-created request Session. A forced alternate-worker regression returned 500 before this repair; callback and status now pass, and malformed ingress creates no Session. Internal direct PrivacyService callers retain explicit synchronous session ownership.
+
+Provider-port shape findings are grouped in #536. Page IDs are now validated as bounded numeric strings before hashing/deduplication; list/dict IDs were observed-red TypeError cases and now refuse with sanitized ownership errors. Independent review additionally found raw decoder context retained by a malformed form (#537). The public 400 remains unchanged, while the refusal is raised outside the decoder handler so it retains no raw exception context. The receipt variant count now has a receipt_id index in both model metadata and the sequential migration.
+
+The distinct-version LIMIT(17) finding was refuted by executed 16/17/20-version boundaries: SubjectDigester supports at most 16 keys, so any 17 distinct versions necessarily triggers unresolved coverage, regardless of order. The existing bounded queries remain; no unbounded history scan was introduced. Reusing key material under distinct version names does not bypass tuple matching or give recovery/rotation authority. The earlier frozen ownership, timestamp and replay defects are now tracked together in #538; malformed inspected shapes share #536.
+
+Coordinator verification: 124 tests passed with zero skips (121 privacy cases including actual PostgreSQL concurrency/rollback/uniqueness/migration and real HTTP, plus three Alembic chain checks). Two existing SQLAlchemy and three existing Alembic configuration warnings remain. Independent Spec review replayed all 12 new review controls; independent Standards review executed malformed-context controls. #535–#538 are fixed in this PR; #488 remains open for the explicit live/protocol/retention gates. Overall Sentry frame-local and transaction capture remains separately blocked by #525.

@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from .api import STATUS_PATH, create_privacy_router
 from .ownership import OwnershipRecorder
-from .service import PrivacyConfig, PrivacyService
+from .service import PrivacyConfig, PrivacyServiceFactory
 from .subjects import SubjectDigester
 from ..connections.crypto import CredentialCipher
 from ..service import SocialError
@@ -25,8 +25,7 @@ class PrivacyRegistration:
             raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'The exact installed status path is required.', 503)
 
     def service_dependency(self):
-        with self.session_factory() as db:
-            yield PrivacyService(db, self.config, digester=self.digester, cipher=self.cipher)
+        return PrivacyServiceFactory(self.config, self.digester, self.cipher, self.session_factory)
 
 
 def install_privacy(app, registration):
