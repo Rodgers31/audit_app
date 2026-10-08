@@ -5,6 +5,10 @@ name: Build and Deploy (Docker Hub)
 on:
   workflow_dispatch:
     inputs:
+      public_api_url:
+        description: 'Public browser API base URL for this image (must match the deployment BACKEND_HOST and scheme)'
+        type: string
+        required: true
       tag:
         description: 'Tag to deploy (e.g., v1.2.3) or leave empty for latest'
         required: false
@@ -127,10 +131,15 @@ jobs:
         working-directory: frontend
         run: npm test -- --ci --passWithNoTests
 
+      - name: Verify frontend build and runtime configuration (REQUIRED)
+        working-directory: frontend
+        run: node --test scripts/container-config.test.cjs scripts/api-base.test.cjs
+
       - name: Build Next.js (REQUIRED)
         working-directory: frontend
         run: npm run build
         env:
+          NEXT_PUBLIC_API_URL: ${{ inputs.public_api_url }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
@@ -236,6 +245,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Use Node.js 22 for frontend configuration preflight
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Validate public frontend build configuration before registry writes
+        run: node frontend/scripts/container-config.cjs validate
+        env:
+          NEXT_PUBLIC_API_URL: ${{ inputs.public_api_url }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -295,6 +316,7 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           build-args: |
+            NEXT_PUBLIC_API_URL=${{ inputs.public_api_url }}
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           tags: |
