@@ -237,3 +237,49 @@ Provider-port shape findings are grouped in #536. Page IDs are now validated as 
 The distinct-version LIMIT(17) finding was refuted by executed 16/17/20-version boundaries: SubjectDigester supports at most 16 keys, so any 17 distinct versions necessarily triggers unresolved coverage, regardless of order. The existing bounded queries remain; no unbounded history scan was introduced. Reusing key material under distinct version names does not bypass tuple matching or give recovery/rotation authority. The earlier frozen ownership, timestamp and replay defects are now tracked together in #538; malformed inspected shapes share #536.
 
 Coordinator verification: 124 tests passed with zero skips (121 privacy cases including actual PostgreSQL concurrency/rollback/uniqueness/migration and real HTTP, plus three Alembic chain checks). Two existing SQLAlchemy and three existing Alembic configuration warnings remain. Independent Spec review replayed all 12 new review controls; independent Standards review executed malformed-context controls. #535–#538 are fixed in this PR; #488 remains open for the explicit live/protocol/retention gates. Overall Sentry frame-local and transaction capture remains separately blocked by #525.
+
+## Current-model migration fixture parity — 2026-10-08
+
+The combined PostgreSQL run exposed a fixture boundary missed by the earlier
+privacy-only lane. At `d3315e1368ad49630a12cb17e8da15b95b05b683`, the unchanged
+connection behavior test reproduced `UndefinedColumn: privacy_blocked_at` when
+the current OAuth model inserted into a schema stopped at the old credentials
+migration. Native capability admission and credential-rotation recovery used
+the same stale schema boundary.
+
+`test_connections_migration_postgres.upgrade(engine, current=False)` preserves
+the historical credentials-only default. Current OAuth/native behavior opts
+into `current=True`, which runs the actual sequential private-media, settlement
+and privacy migrations after credentials. Both native fixtures reuse that
+helper. There is no ad hoc column repair, metadata creation, migration change or
+product change. The connection behavior case then runs real downgrades of its
+empty newer descendants before the original connection-history refusal check;
+its original 14-table assertion remains unchanged. The historical RLS/FK,
+14-table upgrade and 12-table empty downgrade assertions are also unchanged.
+An AST comparison confirmed all 50 existing assertions across the three files
+are identical to the baseline.
+
+Executed against the coordinator-assigned disposable PostgreSQL lane on
+loopback port 62124: **30 passed, zero skips**, with two existing SQLAlchemy
+deprecation warnings. This covers three connection migration cases, 26 native
+capability cases and one post-intent rotation/recovery case. The same connection
+behavior test was observed red before editing, then green in this cohort. The
+shared lane was released before coordinator full-suite verification.
+
+The command used the existing configured interpreter with `-B -m pytest -q`,
+`PYTHON_DOTENV_DISABLED=1`, `PYTHONPATH` set to this worktree's absolute `backend`
+directory, and the explicitly assigned `SOCIAL_TEST_DATABASE_URL`. It selected
+only `test_connections_migration_postgres.py`,
+`test_native_capability_admission_postgres.py` and
+`test_native_credential_race_postgres.py`. Tests retained the random-schema
+fixture; no worker/truncating fixture was requested.
+
+Caller audit: historical domain, media, settlement and API/worker integration
+migration fixtures do not execute OAuth-flow model reads/writes. Their historical
+DDL/backfill purposes remain intact. The privacy PostgreSQL fixture already
+applies the complete chain. Connection concurrency and the ordinary native
+worker lane use current model metadata, which contains `privacy_blocked_at`.
+No additional OAuth/current-model migration caller was found. The separately
+reported missing-PYTHONPATH subprocess failures were invocation issues and were
+not addressed by product or test changes. These remain local fake-provider
+schema-parity receipts, with no production or privacy activation authority.

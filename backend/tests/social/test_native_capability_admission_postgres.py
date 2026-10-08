@@ -1,10 +1,5 @@
 """Capability admission before intent and after intent, in random PG schemas."""
 import asyncio
-import importlib.util
-from pathlib import Path
-
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
 import pytest
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -12,6 +7,7 @@ from sqlalchemy.orm import Session
 from social.models import SocialAccount, SocialPostTarget, SocialPublishAttempt
 from social.worker.runner import SocialWorker
 from test_connections_support import config
+from test_connections_migration_postgres import upgrade
 from test_domain_postgres import pg_engine
 from test_native_capability_admission import restricted
 from test_native_meta_adapters import Graph
@@ -21,14 +17,7 @@ from test_queue_postgres import repository
 
 @pytest.fixture
 def native_pg(pg_engine):
-    for filename in ("c96d13e2f411_social_meta_credentials.py", "a42b86e1d310_social_private_media_intake.py",
-            "b73e19a4f602_social_media_write_settlement.py"):
-        path = Path(__file__).resolve().parents[2] / "alembic/versions" / filename
-        spec = importlib.util.spec_from_file_location("native_capability_" + filename, path)
-        migration = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(migration)
-        with pg_engine.begin() as connection, Operations.context(MigrationContext.configure(connection)):
-            migration.upgrade()
+    upgrade(pg_engine, current=True)
     return pg_engine
 
 
