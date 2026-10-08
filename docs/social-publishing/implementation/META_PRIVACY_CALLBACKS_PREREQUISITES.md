@@ -165,3 +165,36 @@ independent suite then passed **240 tests**. This finding conferred no provider
 authority, but violated the declared shape check and is now rejected.
 One pre-existing SQLAlchemy `declarative_base` deprecation warning was emitted.
 No live callback or provider behavior was tested.
+
+## PR #518 supported-runtime review
+
+Both Python 3.9 review findings were valid. The repository advertises Python
+3.9+ in `README.md`, and the batch 1 receipt records Python 3.9 checks. The
+Dockerfiles' Python 3.12 images do not replace that support promise. Real
+Python 3.9.6 rejected `dataclass(slots=True)` at import. Sequential removal of
+the unsupported option exposed the same failure independently in
+`VerifiedSignedRequest`, `DeclaredCredentialOwnership` and
+`DeclaredOwnershipBinding`; the retained runtime test executed red before the
+fix and then passed both module cases on 3.9.6 and 3.13.
+
+All three dataclasses now use `frozen=True` with the sensitive representation
+fields still hidden. Slots were not an authorization or tamper-proof boundary:
+server callers already could access/serialize fields or construct declarations,
+and the binding helper rechecks its inputs. Ordinary assignments remain frozen,
+representations remain sanitized, incomplete objects fail closed, and results
+still grant no provider authority.
+
+The two module-import/behavior regressions in
+`test_connections_privacy_runtime.py` run using the selected test interpreter
+and load the unchanged helper sources through an isolated package namespace.
+They use real standard-library dataclasses and HMAC, exercising verification,
+declared binding, frozen results, hidden representations, sanitized errors and
+incomplete-object rejection. The authored suite is now 209 cases; with the
+previous 33 independent cases, **242 passed** on Python 3.13 using ordinary
+package imports. Those same 242 helper cases also passed on actual Python 3.9.6
+with package paths supplied to bypass the unrelated ORM initializer. Full
+application/package startup on the available 3.9 interpreter remains untested:
+ordinary package import stops at its missing SQLAlchemy dependency. No
+dependency was installed, and no PostgreSQL test was run. Python 3.9 pytest
+emitted two configuration warnings for unavailable asyncio plugin options;
+Python 3.13 retained the existing SQLAlchemy deprecation warning.

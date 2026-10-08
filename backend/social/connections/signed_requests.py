@@ -26,7 +26,7 @@ class SignedRequestError(ValueError):
         self.code = "SIGNED_REQUEST_INVALID"
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class VerifiedSignedRequest:
     """Ephemeral MAC result. This is not a public receipt or ownership proof."""
 

@@ -10,7 +10,7 @@ from uuid import UUID
 from .signed_requests import VerifiedSignedRequest, _identity, _timestamp
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DeclaredCredentialOwnership:
     """Server-supplied inspection declaration; matching does not authenticate it."""
 
@@ -20,7 +20,7 @@ class DeclaredCredentialOwnership:
     credential_version: int = field(repr=False)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DeclaredOwnershipBinding:
     status: Literal["declared_match", "unverified"]
     credential_id: UUID | None = field(default=None, repr=False)
