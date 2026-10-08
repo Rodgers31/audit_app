@@ -200,6 +200,17 @@ class ScheduleCommand(PublishCommand):
     schedule: ScheduleTime
 
 
+class ScheduleEditCommand(VersionCommand):
+    publication_id: UUID
+    expected_publication_version: Annotated[int, Field(strict=True, ge=1)]
+    reason: Reason
+    acknowledged_warning_codes: Annotated[tuple[StrictStr, ...], Field(max_length=50)] = ()
+
+
+class RescheduleCommand(ScheduleEditCommand):
+    schedule: ScheduleTime
+
+
 class ResumeCommand(PublishCommand):
     reason: Reason
 

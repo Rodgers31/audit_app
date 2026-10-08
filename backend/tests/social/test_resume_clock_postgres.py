@@ -97,6 +97,13 @@ def test_pre_cancellation_claim_remains_fenced_after_explicit_resume(pg_engine):
     repo = QueueRepository(pg_engine, config, uuid4())
     old = repo.claim_due()[0]
     cancel(pg_engine, post_id)
+    # Cancellation now retains worker-owned work until the worker acknowledges.
+    # A rejected resume must not reopen the retained claim or create an intent.
+    with pytest.raises(SocialError, match="INVALID_STATE"):
+        resume(pg_engine, post_id, revision_id)
+    assert repo.begin_operation(old, operation_id=uuid4(), operation="publish",
+        publication_capable=True, mutating=True, safe_replay_class="requires_reconciliation",
+        request_fingerprint="a"*64, checkpoint_input={}) is None
     status, accepted = resume(pg_engine, post_id, revision_id)
     assert status == 202 and accepted["publication_id"] == str(publication_id)
     with pytest.raises(LeaseLost):

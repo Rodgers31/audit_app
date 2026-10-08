@@ -2,14 +2,14 @@
 
 import { useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';
-import { EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
+import { DeliveryFilter, EditorialState, sendSocialCommand, SocialApiError, SocialPost, socialApi, SocialSummary } from '@/lib/api/social';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 
 export const socialKeys = {
   root: (actor: string | undefined) => ['admin', 'social', actor] as const,
   lists: (actor: string | undefined) => [...socialKeys.root(actor), 'posts'] as const,
-  list: (actor: string | undefined, page: number, state?: EditorialState) => [...socialKeys.lists(actor), { page, editorial_state: state }] as const,
+  list: (actor: string | undefined, page: number, state?: EditorialState, delivery_filter: DeliveryFilter = 'all') => [...socialKeys.lists(actor), { page, editorial_state: state, delivery_filter }] as const,
   detail: (actor: string | undefined, id: string) => [...socialKeys.root(actor), 'post', id] as const,
   status: (actor: string | undefined, id: string) => [...socialKeys.root(actor), 'status', id] as const,
 };
@@ -18,9 +18,9 @@ function useSocialAccess() {
   const { user } = useAuth();
   return { enabled: isAdmin, actor: user?.id };
 }
-export function useSocialPosts(page: number, state?: EditorialState, active = true) {
+export function useSocialPosts(page: number, state?: EditorialState, active = true, delivery: DeliveryFilter = 'all') {
   const { enabled, actor } = useSocialAccess();
-  return useQuery({ queryKey: socialKeys.list(actor, page, state), queryFn: ({ signal }) => socialApi.posts(page, state, signal), enabled: enabled && active, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
+  return useQuery({ queryKey: socialKeys.list(actor, page, state, delivery), queryFn: ({ signal }) => socialApi.posts(page, state, signal, delivery), enabled: enabled && active, staleTime: 30_000, gcTime: 60_000, retry: false, refetchOnWindowFocus: false });
 }
 export function hasActiveDelivery(post: SocialSummary | undefined) {
   return !!post?.targets.some(t => ['queued', 'claimed', 'dispatching', 'processing', 'retry_wait', 'reconciling'].includes(t.state));
@@ -81,7 +81,7 @@ export function useSocialDeliveryStatus(post: SocialPost | undefined) {
     if (!detail) return;
     if (compact.version === detail.version && compact.revision_id === detail.revision_id) {
       // Only delivery fields change. Never replace a document/revision with a summary.
-      qc.setQueryData(key, { ...detail, targets: compact.targets, delivery_status: compact.delivery_status, updated_at: compact.updated_at });
+      qc.setQueryData(key, { ...detail, targets: compact.targets, publication: compact.publication, delivery_status: compact.delivery_status, updated_at: compact.updated_at });
     } else if (compact.version > detail.version) {
       const scope = JSON.stringify([actor, compact.id]);
       if ((requestedVersions.current.get(scope) ?? 0) >= compact.version) return;
@@ -125,7 +125,7 @@ export function useSocialMutation() {
       }
       if (c.postId) await qc.invalidateQueries({ queryKey: socialKeys.status(c.actor, c.postId), exact: true });
       if (c.path !== '/controls') await qc.invalidateQueries({ queryKey: socialKeys.lists(c.actor) });
-      if (c.path === '/controls' || /\/(publish|schedule|cancel|retry|resume)$/.test(c.path)) {
+      if (c.path === '/controls' || /\/(publish|publish-now|schedule|reschedule|cancel|retry|resume)$/.test(c.path)) {
         await qc.invalidateQueries({ queryKey: [...socialKeys.root(c.actor), 'system'], exact: true });
       }
     },

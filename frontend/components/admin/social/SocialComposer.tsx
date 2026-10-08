@@ -6,6 +6,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { draftFingerprint, emptyDocument, httpsUrl, platformLabels, resolveCivilTime, resolveContent, supportedFormats, targetHints } from './socialDocument';
 import SocialMedia from './SocialMedia';
+import SocialScheduleControls from './SocialScheduleControls';
 import { SocialErrorBanner } from './SocialNotice';
 import SocialOverrides from './SocialOverrides';
 import SocialPreview from './SocialPreview';
@@ -243,6 +244,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
         </div>
       </fieldset>
       {valid && <section className={styles.validation} aria-label='Backend validation'><h3>Saved revision validation</h3><p>{allValid ? 'All selected destinations passed.' : 'Publication blocked. Every selected destination must pass.'} · {valid.rules_version}</p>{valid.errors.map((issue, i) => <p className={styles.notice} key={i}>{issue.message}</p>)}{valid.targets.map((t, index) => <div className={styles.validationTarget} key={`${t.account_id}-${index}`}><strong>{t.platform ? platformLabels[t.platform] : 'Unknown platform'} · {accounts.find(a => a.id === t.account_id)?.display_name ?? 'Unavailable account'} · {t.valid ? 'Valid' : 'Needs attention'}</strong><ul>{[...t.errors, ...t.warnings].map((issue, i) => <li key={i}>{issue.message}</li>)}</ul></div>)}{warningCodes.map(code => <label className={styles.reviewCheck} key={code}><input type='checkbox' checked={acknowledged.includes(code)} disabled={commandBusy} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, code] : acknowledged.filter(c => c !== code))} />Acknowledge {code}: {warnings.filter(w => w.code === code).map(w => w.message).join(' ')}</label>)}</section>}
+      {post && effectivePost?.publication && <SocialScheduleControls post={effectivePost} system={system} disabled={commandBusy || dirty || stale} onUpdated={adopt} />}
       {post && <><div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || live.isFetching} onClick={() => live.refetch()}>Refresh revision & results</button></div><SocialResults targets={latestResults} accounts={accounts} postId={post.id} />{effectivePost?.cancellation && <p className={styles.notice}>{effectivePost.cancellation.message} · {effectivePost.cancellation.in_flight_target_ids.length} in-flight destination(s) reported.</p>}</>}
     </div>
     <div className={styles.footer}>
