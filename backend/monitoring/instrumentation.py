@@ -154,17 +154,39 @@ def _timing_ids(value):
     return result
 
 
+def _http_status(value, *, allow_text=False):
+    # Older SDKs serialize the HTTP status tag as decimal text. Accept that
+    # exact representation only at the tag boundary; data/context fields are
+    # integers. Never coerce arbitrary objects, booleans or private strings.
+    if allow_text and type(value) is str and re.fullmatch(r'[1-5][0-9]{2}', value):
+        value = int(value)
+    if type(value) is not int or not 100 <= value <= 599:
+        raise _UnsafeTelemetry()
+    return value
+
+
 def _http_metadata(value):
     value, result = _mapping(value), {}
     for key in ('method', 'http.method'):
         if key in value and _known(value[key], _METHODS):
             result[key] = value[key]
-    for key in ('status_code', 'http.response.status_code'):
+    status = None
+    for key in ('status_code', 'http.status_code', 'http.response.status_code'):
         if key in value:
-            status = value[key]
-            if type(status) is not int or not 100 <= status <= 599:
+            candidate = _http_status(value[key])
+            if status is not None and candidate != status:
                 raise _UnsafeTelemetry()
+            status = candidate
             result[key] = status
+    return result
+
+
+def _status_tags(value):
+    value, result = _mapping(value), {}
+    if 'http.status_code' in value:
+        result['http.status_code'] = str(_http_status(value['http.status_code'], allow_text=True))
+    if _known(value.get('status'), _STATUSES):
+        result['status'] = value['status']
     return result
 
 
@@ -262,13 +284,19 @@ def before_send_filter(event, hint):
             result.update(_timing_ids(event))
         if 'request' in event:
             result['request'] = _http_metadata(event['request'])
+        if 'tags' in event:
+            result['tags'] = _status_tags(event['tags'])
         if 'contexts' in event:
-            contexts = _mapping(event['contexts'])
+            contexts, safe_contexts = _mapping(event['contexts']), {}
             if 'trace' in contexts:
                 trace = _mapping(contexts['trace'])
-                result['contexts'] = {'trace': _timing_ids(trace)}
+                safe_contexts['trace'] = _timing_ids(trace)
                 if 'data' in trace:
-                    result['contexts']['trace']['data'] = _http_metadata(trace['data'])
+                    safe_contexts['trace']['data'] = _http_metadata(trace['data'])
+            if 'response' in contexts:
+                safe_contexts['response'] = _http_metadata(contexts['response'])
+            if safe_contexts:
+                result['contexts'] = safe_contexts
         if 'exception' in event:
             values = _items(_mapping(event['exception']).get('values', []), 20)
             result['exception'] = {'values': []}
@@ -302,6 +330,8 @@ def before_send_filter(event, hint):
                 safe = _timing_ids(value)
                 if 'data' in value:
                     safe['data'] = _http_metadata(value['data'])
+                if 'tags' in value:
+                    safe['tags'] = _status_tags(value['tags'])
                 result['spans'].append(safe)
         return result
     except (_UnsafeTelemetry, ValueError, TypeError, OverflowError):

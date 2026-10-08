@@ -26,7 +26,7 @@ numeric metadata are correlation observations, not authenticated provenance.
 
 It excludes all URLs, query strings, fragments/userinfo, headers of every case,
 cookies, bodies, arbitrary messages/log-entry arguments, exception text, SQL,
-user/tags/extra data, unreviewed contexts and frame variables/source. Supplied
+user/extra data, arbitrary tags, unreviewed contexts and frame variables/source. Supplied
 frames and manually constructed events receive the same treatment as automatic
 SDK captures. Breadcrumbs retain fixed labels, time and reviewed HTTP metadata.
 This deliberately sacrifices detailed messages, paths, filenames and grouping
@@ -140,6 +140,64 @@ Final reviewed policy SHA-256:
 `206470b5f7f8158bebd2ae3ac496200f6da6248fc61036c5661cf185a539008e`.
 No outstanding local defect was reported. No commit or push has occurred at
 this authored checkpoint; final Git receipts are supplied by the coordinator.
+
+## PR #543 status compatibility review — 2026-10-08
+
+The review's body-only HTTP-status concern was half-right: installed SDK 2.53.0
+retained numeric status through trace/child data, but minimum SDK 1.38.0 core
+transactions lost it because their numeric sources were response context and
+legacy tags. Fixed local regression #544 is distinct from #525's deployed gate.
+Fourteen retained regression cases failed on original PR head `6cddcbb` before
+repair; all pass now. These include response-only errors, legacy HTTP and
+status-name child tags, legacy numeric data and conflicting known aliases.
+
+The projection now retains `contexts.response` reviewed method/status metadata,
+event/span `http.status_code` tags and fixed known status-name tags. Other tags,
+response headers and bodies remain excluded. Data/context fields accept exact
+integer status 100..599 under `status_code`, `http.status_code` and
+`http.response.status_code`; HTTP tags also accept exact three-digit ASCII
+decimal text and emit canonical text. Booleans, floats, noncanonical text and
+invalid ranges are refused. Conflicting aliases within one metadata container
+are refused; equal aliases survive. Distinct containers/child spans are not
+asserted to describe the same HTTP observation. Status metadata remains an
+observation, never authenticated provenance.
+
+Root verification: **105 affected tests passed, zero skips**, with two existing
+SQLAlchemy deprecation warnings. Actual SDK 2.53.0 captures include GET and form
+POST 200/500 response contexts, plus five transactions and five children with
+200/418/422/500/503 in both response/data and HTTP tags. Whole emitted payloads
+exclude the inert private markers. SDK 1.38.0 was separately executed from
+official immutable source commit
+`2904574dea5cb3d1f330cb549f269c0eda0a51a7`, without installation: two transactions
+and two children preserve numeric 200/500 and fixed status names after repair.
+The identical core replay on original `6cddcbb` loses both transaction numeric
+codes. This is SDK-core evidence, not old-SDK/current-framework parity.
+
+The startup inline finding re-litigates the scope recorded at the start of this
+handoff: **“No application installation, environment change, deployment or
+external Sentry request was performed.”** An isolated execution with dotenv
+disabled, inert settings, temporary SQLite and sockets blocked constructed the
+real `main.app` with **zero Sentry init calls**. An explicit helper call made
+exactly one intercepted init call and registered both final hooks and the
+breadcrumb hook. Lifespan/background tasks and exporters were not executed.
+The repository's missing automatic call is acknowledged; actual deployed
+initialization remains unverified under #525/#488. This review does not add it.
+
+The coordinator retains `status_baseline_red.log`, `status_final_green.log`,
+`minimum_core_original_red.json`, `minimum_core_final_green.json` and
+`startup_receipt.json` in `PR_543_REVIEW`. Final policy SHA-256:
+`e238e15ff30521e04a05ef3d802ba7e380d5c69c05575d4f4865bc66f8f77146`.
+Historical execution counts above overlap these checks and are not additive.
+
+Independent Standards verification passed 978 combined checks, including 678
+status/alias inputs, earlier retained boundaries and authored cohorts, plus 12
+separate actual SDK cases. Independent Spec verification passed all 102 declared
+contract cases and characterized three cross-container observations without
+claiming provenance/consistency. Its real GET/POST run retained five transactions
+and two errors with exact 200/422/500 statuses and no private markers; the prior
+six-error/eight-transaction/one-span controls also passed. These executions
+overlap the root suite. Both axes found no remaining local defect. Separate
+reports and categorized receipts are retained in `PR_543_REVIEW`.
 
 ## Exact-host acceptance remains pending
 

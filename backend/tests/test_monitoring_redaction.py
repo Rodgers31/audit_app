@@ -198,6 +198,14 @@ elif mode=='breadcrumb_span':
             span.set_data('private_bundle',M)
             span.set_data('http.response.status_code',200)
     sentry_sdk.capture_message('ordinary operation failed',level='error')
+elif mode=='status':
+    for code in (200,418,422,500,503):
+        with sentry_sdk.start_transaction(name='ordinary_operation',op='http.server') as transaction:
+            transaction.set_http_status(code)
+            transaction.set_tag('private',M)
+            with transaction.start_child(op='http.client',description=M) as span:
+                span.set_http_status(code)
+                span.set_tag('private',M)
 elif mode=='profile':
     import time
     namespace={'time':time}
@@ -218,6 +226,12 @@ print(json.dumps({'mode':mode,'event_count':len(events),'transaction_count':len(
     'private_marker_present':M in json.dumps(sent),
     'error_identity_preserved':all(value.get('event_id') and value.get('level')=='error' for value in events),
     'span_count':sum(len(value.get('spans',[])) for value in transactions),
+    'response_codes':[value.get('contexts',{}).get('response',{}).get('status_code') for value in transactions],
+    'transaction_status_tags':[value.get('tags',{}).get('http.status_code') for value in transactions],
+    'child_status_codes':[span.get('data',{}).get('http.response.status_code')
+                          for value in transactions for span in value.get('spans',[])],
+    'child_status_tags':[span.get('tags',{}).get('http.status_code')
+                         for value in transactions for span in value.get('spans',[])],
     'item_types':item_types,
     'drop_count':sum(item[2] for item in lost)}))
 '''
@@ -241,6 +255,16 @@ def test_real_setup_sdk_excludes_markers_and_preserves_operational_captures(mode
     assert result['event_count'] == events and result['transaction_count'] == transactions
     assert result['error_identity_preserved']
     if mode == 'breadcrumb_span': assert result['span_count'] == 1
+    if mode in ('inbound', 'forms'): assert result['response_codes'] == [200,500]
+    assert result['private_marker_present'] is False
+
+
+def test_real_sdk_preserves_numeric_transaction_and_child_status():
+    result = capture('status')
+    codes = [200,418,422,500,503]
+    assert result['event_count'] == 0 and result['transaction_count'] == result['span_count'] == len(codes)
+    assert result['response_codes'] == result['child_status_codes'] == codes
+    assert result['transaction_status_tags'] == result['child_status_tags'] == list(map(str, codes))
     assert result['private_marker_present'] is False
 
 
