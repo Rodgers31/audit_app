@@ -9,6 +9,8 @@
 
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
+import { useAdmin } from '@/lib/auth/admin';
+import { auditFilters, AuditEntry, AuditList, decodeAudit, timeAgo } from '@/lib/admin/audit';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -21,25 +23,6 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useState } from 'react';
-
-interface AuditEntry {
-  id: number;
-  actor_id: string;
-  actor_email: string | null;
-  action: string;
-  target_type: string | null;
-  target_id: string | null;
-  payload: Record<string, unknown>;
-  created_at: string;
-}
-
-interface AuditList {
-  entries: AuditEntry[];
-  total: number;
-  page: number;
-  page_size: number;
-  has_more: boolean;
-}
 
 const PAGE_SIZE = 25;
 const DAYS_OPTIONS = [
@@ -78,106 +61,53 @@ function AuditLogInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const actor_id = searchParams.get('actor_id') ?? '';
-  const action = searchParams.get('action') ?? '';
-  const target_type = searchParams.get('target_type') ?? '';
-  const target_id = searchParams.get('target_id') ?? '';
-  const days = Number(searchParams.get('days') ?? '30');
-  const page = Number(searchParams.get('page') ?? '1');
-
+  const { isAdmin } = useAdmin();
+  const filters = auditFilters(new URLSearchParams(searchParams));
+  const { actor_id, action, target_type, target_id, days, page, snapshot_id, as_of, visibility_snapshot } = filters;
   const setQuery = useCallback(
-    (updates: Record<string, string | number | null>) => {
-      const next = new URLSearchParams(searchParams);
-      for (const [k, v] of Object.entries(updates)) {
-        if (v === null || v === '') next.delete(k);
-        else next.set(k, String(v));
+    (updates: Record<string, string | number | null | undefined>) => {
+      const next = new URLSearchParams();
+      for (const [k, v] of Object.entries({ ...filters, ...updates })) {
+        if (v !== null && v !== undefined && v !== '') next.set(k, String(v));
       }
-      if (!('page' in updates)) next.delete('page');
-      router.replace(`/admin/audit-log${next.size ? '?' + next.toString() : ''}`);
+      if (!('page' in updates)) {
+        next.delete('page'); next.delete('snapshot_id'); next.delete('as_of'); next.delete('visibility_snapshot');
+      }
+      router.push(`/admin/audit-log${next.size ? '?' + next.toString() : ''}`, { scroll: false });
     },
-    [router, searchParams]
+    [router, filters]
   );
-
-  const { data, isLoading, error, refetch, isFetching } = useQuery<AuditList>({
-    queryKey: ['admin', 'audit-log', { actor_id, action, target_type, target_id, days, page }],
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<AuditList>({
+    queryKey: ['admin', 'audit-log', filters],
     queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE, days };
-      if (actor_id) params.actor_id = actor_id;
-      if (action) params.action = action;
-      if (target_type) params.target_type = target_type;
-      if (target_id) params.target_id = target_id;
-      return (await api.get('/admin/audit-log', { params, signal })).data;
+      for (const [key, value] of Object.entries({ actor_id, action, target_type, target_id })) if (value) params[key] = value;
+      if (snapshot_id !== undefined && as_of !== undefined) { params.snapshot_id = snapshot_id; params.as_of = as_of; }
+      if (visibility_snapshot !== undefined) params.visibility_snapshot = visibility_snapshot;
+      const result = decodeAudit((await api.get('/admin/audit-log', { params, signal, headers: { 'Cache-Control': 'no-store' } })).data);
+      if (result.page !== page || result.page_size !== PAGE_SIZE) throw new Error('Unexpected audit page');
+      return result;
     },
-    staleTime: 15_000,
+    enabled: isAdmin, retry: false, gcTime: 0, staleTime: 15_000,
   });
 
   return (
     <PageShell
       title='Audit Log'
       subtitle={
-        data
+        data && !error
           ? `${data.total.toLocaleString()} action${data.total === 1 ? '' : 's'} recorded.`
-          : 'Every privileged admin action, attributable to its actor.'
+          : 'Recorded user and ETL actions. Social publishing has its own activity trail.'
       }
       back={{ href: '/admin', label: 'Back to overview' }}>
       <div className='space-y-5'>
-        {/* ── Filter bar ── */}
-        <div className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl p-4 shadow-surface flex flex-wrap items-end gap-3'>
-          <FilterField label='Actor (UUID)'>
-            <input
-              type='text'
-              value={actor_id}
-              onChange={(e) => setQuery({ actor_id: e.target.value || null })}
-              placeholder='admin user id'
-              className='w-56 px-3 py-1.5 text-xs rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken font-mono'
-            />
-          </FilterField>
-          <FilterField label='Action'>
-            <input
-              type='text'
-              value={action}
-              onChange={(e) => setQuery({ action: e.target.value || null })}
-              placeholder='e.g. users.update_roles'
-              className='w-56 px-3 py-1.5 text-xs rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken font-mono'
-            />
-          </FilterField>
-          <FilterField label='Target type'>
-            <input
-              type='text'
-              value={target_type}
-              onChange={(e) => setQuery({ target_type: e.target.value || null })}
-              placeholder='user / etl_source'
-              className='w-44 px-3 py-1.5 text-xs rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken font-mono'
-            />
-          </FilterField>
-          <FilterField label='Time window'>
-            <select
-              value={days}
-              onChange={(e) => setQuery({ days: e.target.value })}
-              className='w-36 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'>
-              {DAYS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.value === 0 ? opt.label : `Last ${opt.label}`}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <div className='ml-auto flex items-center gap-2'>
-            {(actor_id || action || target_type || target_id || days !== 30) && (
-              <button
-                onClick={() => router.replace('/admin/audit-log')}
-                className='text-xs text-neutral-muted hover:text-neutral-text underline underline-offset-2 px-2'>
-                Clear filters
-              </button>
-            )}
-            <button
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className='inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text rounded-lg text-sm transition-all shadow-surface disabled:opacity-50'>
-              <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+        <AuditFilters key={searchParams.toString()} filters={filters} apply={setQuery} clear={() => router.push('/admin/audit-log', { scroll: false })} />
+        <div className='flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-muted'>
+          <p>Audit recording is best-effort. Missing evidence does not prove no activity. Payload fields may be redacted.</p>
+          <button onClick={() => { if (page !== 1 || snapshot_id !== undefined) setQuery({ page: 1, snapshot_id: null, as_of: null, visibility_snapshot: null }); else void refetch(); }} disabled={isFetching} className='inline-flex min-h-11 items-center gap-2 px-3 py-1.5 border border-neutral-border rounded-lg focus-visible:ring-2 focus-visible:ring-gov-sage disabled:opacity-50'>
+            <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} aria-hidden='true' />Refresh
+          </button>
+          {dataUpdatedAt > 0 && <span>{error ? 'Last successful fetch ' : 'Fetched '}{timeAgo(new Date(dataUpdatedAt).toISOString())}{isFetching ? ' · Refreshing…' : ''}</span>}
         </div>
 
         {isLoading ? (
@@ -188,26 +118,24 @@ function AuditLogInner() {
         ) : error ? (
           <BodyState>
             <XCircle className='w-8 h-8 text-gov-copper dark:text-red-400' />
-            <p className='text-gov-copper dark:text-red-400 text-sm'>Could not load audit log.</p>
+            <p className='text-gov-copper dark:text-red-400 text-sm'>Could not load audit log. Audit evidence is unavailable; retry with Refresh.</p>
           </BodyState>
-        ) : !data || data.entries.length === 0 ? (
-          <BodyState>
-            <Pause className='w-8 h-8 text-neutral-muted/40' />
-            <p className='text-neutral-muted text-sm'>No actions match these filters.</p>
-          </BodyState>
-        ) : (
+        ) : !data ? (<BodyState><p>Audit evidence is unavailable.</p></BodyState>) : (
           <>
-            <ul className='space-y-2'>
+            {data.entries.length === 0 ? <BodyState>
+            <Pause className='w-8 h-8 text-neutral-muted/40' />
+            <p className='text-neutral-muted text-sm'>{page > 1 ? 'No entries on this page. Use Prev or refresh the snapshot.' : 'No actions match these filters.'}</p>
+          </BodyState> : <ul className='space-y-2'>
               {data.entries.map((entry, i) => (
                 <AuditRow key={entry.id} entry={entry} index={i} />
               ))}
-            </ul>
+            </ul>}
             <Pagination
               page={page}
               pageSize={PAGE_SIZE}
               total={data.total}
               hasMore={data.has_more}
-              onChange={(p) => setQuery({ page: p })}
+              onChange={(p) => setQuery({ page: p, snapshot_id: data.snapshot_id, as_of: data.as_of, visibility_snapshot: data.visibility_snapshot })}
             />
           </>
         )}
@@ -227,6 +155,8 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
       custom={index}
       className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl shadow-surface overflow-hidden'>
       <button
+        aria-expanded={hasPayload ? expanded : undefined}
+        aria-controls={hasPayload ? `audit-payload-${entry.id}` : undefined}
         onClick={() => hasPayload && setExpanded(!expanded)}
         className={`w-full text-left px-4 py-3 flex flex-wrap items-center gap-3 ${
           hasPayload ? 'hover:bg-gov-cream/50 dark:hover:bg-surface-elevated cursor-pointer' : 'cursor-default'
@@ -246,7 +176,7 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
             )}
           </span>
         )}
-        <span className='text-xs text-neutral-muted ml-auto whitespace-nowrap'>
+        <span className='text-xs text-neutral-muted ml-auto whitespace-nowrap' title={entry.created_at}>
           by{' '}
           <span className='font-medium text-neutral-text'>
             {entry.actor_email
@@ -257,7 +187,7 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
         </span>
       </button>
       {expanded && hasPayload && (
-        <div className='px-4 pb-4 border-t border-neutral-border'>
+        <div id={`audit-payload-${entry.id}`} className='px-4 pb-4 border-t border-neutral-border'>
           <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mt-3 mb-1.5'>
             Payload
           </p>
@@ -270,15 +200,22 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className='flex flex-col'>
-      <label className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
-        {label}
+function AuditFilters({ filters, apply, clear }: { filters: ReturnType<typeof auditFilters>; apply: (updates: Record<string, string | number | null>) => void; clear: () => void }) {
+  const [draft, setDraft] = useState(filters);
+  return <form onSubmit={event => { event.preventDefault(); apply({ actor_id: draft.actor_id.trim(), action: draft.action.trim(), target_type: draft.target_type.trim(), target_id: draft.target_id.trim(), days: draft.days }); }} className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl p-4 shadow-surface flex flex-wrap items-end gap-3'>
+    {([{ key: 'actor_id', label: 'Actor (UUID)', max: 64 }, { key: 'action', label: 'Action', max: 80 }, { key: 'target_type', label: 'Target type', max: 40 }, { key: 'target_id', label: 'Target id', max: 64 }] as const).map(({ key, label, max }) => (
+      <label key={key} className='flex flex-col text-xs text-neutral-muted gap-1'>{label}
+        <input type='text' value={draft[key]} maxLength={max} onChange={event => setDraft({ ...draft, [key]: event.target.value })} className='w-44 max-w-full min-h-11 px-3 py-1.5 rounded-lg border border-neutral-border focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken font-mono' />
       </label>
-      {children}
-    </div>
-  );
+    ))}
+    <label className='flex flex-col text-xs text-neutral-muted gap-1'>Time window
+      <select value={draft.days} onChange={event => setDraft({ ...draft, days: Number(event.target.value) })} className='min-h-11 px-3 py-1.5 rounded-lg border border-neutral-border bg-gov-cream/40 dark:bg-surface-sunken focus:ring-2 focus:ring-gov-sage/40'>
+        {DAYS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.value === 0 ? opt.label : `Last ${opt.label}`}</option>)}
+      </select>
+    </label>
+    <button type='submit' className='min-h-11 rounded-lg bg-gov-forest text-white px-3 focus-visible:ring-2 focus-visible:ring-gov-gold'>Apply filters</button>
+    <button type='button' onClick={clear} className='min-h-11 px-3 underline focus-visible:ring-2 focus-visible:ring-gov-sage'>Clear filters</button>
+  </form>;
 }
 
 function Pagination({
@@ -299,9 +236,7 @@ function Pagination({
   return (
     <div className='flex items-center justify-between text-sm flex-wrap gap-3 pt-2'>
       <span className='text-neutral-muted'>
-        Showing <span className='font-medium text-neutral-text'>{start.toLocaleString()}</span>–
-        <span className='font-medium text-neutral-text'>{end.toLocaleString()}</span> of{' '}
-        <span className='font-medium text-neutral-text'>{total.toLocaleString()}</span>
+        {total === 0 || start > total ? `Showing 0 entries on this page (${total.toLocaleString()} total)` : `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()}`}
       </span>
       <div className='flex items-center gap-2'>
         <button
@@ -314,7 +249,7 @@ function Pagination({
         <span className='text-neutral-muted text-xs'>Page {page}</span>
         <button
           onClick={() => onChange(page + 1)}
-          disabled={!hasMore}
+          disabled={!hasMore || page >= 10000}
           className='inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text disabled:opacity-40 transition-all shadow-surface'>
           Next
           <ArrowRight className='w-3.5 h-3.5' />
@@ -330,14 +265,4 @@ function BodyState({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }

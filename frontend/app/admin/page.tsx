@@ -13,13 +13,15 @@
 
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
+import { useAdmin } from '@/lib/auth/admin';
+import { decodeAudit, timeAgo } from '@/lib/admin/audit';
+import { decodeFailures, decodeHealth, decodeIngestion, decodeSchedule, decodeSocial, decodeUsers, socialWorkerEvidence } from '@/lib/admin/overview';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Activity,
   AlertTriangle,
   ArrowRight,
-  CheckCircle2,
   Clock,
   History,
   Loader2,
@@ -27,83 +29,11 @@ import {
   PlayCircle,
   TrendingUp,
   Users,
+  Send,
+  RefreshCcw,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
-
-/* ── API response shapes ── */
-interface IngestionStats {
-  total_jobs: number;
-  completed: number;
-  failed: number;
-  running: number;
-  pending: number;
-  completed_with_errors: number;
-  total_items_processed: number;
-  total_items_created: number;
-  total_items_updated: number;
-  domains: Record<string, number>;
-}
-
-interface ScheduleSummary {
-  timestamp: string;
-  running_today: number;
-  skipping_today: number;
-  total_sources: number;
-  efficiency: { skip_percentage: number; vs_fixed_schedule: string };
-  sources_to_run: Array<{ source: string; reason: string }>;
-}
-
-interface EtlHealth {
-  timestamp: string;
-  scheduler_status: string;
-  schedule_summary: unknown;
-}
-
-interface UserStats {
-  total_users: number;
-  admin_users: number;
-  new_last_7_days: number;
-  new_last_30_days: number;
-}
-
-interface AuditEntry {
-  id: number;
-  actor_id: string;
-  actor_email: string | null;
-  action: string;
-  target_type: string | null;
-  target_id: string | null;
-  payload: Record<string, unknown>;
-  created_at: string;
-}
-
-interface AuditList {
-  entries: AuditEntry[];
-  total: number;
-  page: number;
-  page_size: number;
-  has_more: boolean;
-}
-
-interface FailedJob {
-  id: number;
-  domain: string;
-  status: string;
-  started_at: string | null;
-  finished_at: string | null;
-  duration_seconds: number | null;
-  errors: Array<{ message?: string; type?: string } | string>;
-  created_at: string;
-}
-
-interface FailedJobList {
-  jobs: FailedJob[];
-  total: number;
-  page: number;
-  page_size: number;
-  has_more: boolean;
-}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -115,72 +45,83 @@ const fadeUp = {
 };
 
 export default function AdminOverviewPage() {
-  const ingestion = useQuery<IngestionStats>({
+  const { isAdmin } = useAdmin();
+  const ingestion = useQuery<ReturnType<typeof decodeIngestion>>({
     queryKey: ['admin', 'ingestion-stats', 7],
     queryFn: async ({ signal }) =>
-      (await api.get('/admin/ingestion-jobs/stats/summary', { params: { days: 7 }, signal })).data,
+      decodeIngestion((await api.get('/admin/ingestion-jobs/stats/summary', { params: { days: 7 }, signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 30_000,
   });
 
-  const schedule = useQuery<ScheduleSummary>({
+  const schedule = useQuery<ReturnType<typeof decodeSchedule>>({
     queryKey: ['admin', 'etl-schedule-summary'],
-    queryFn: async ({ signal }) => (await api.get('/admin/etl/schedule/summary', { signal })).data,
+    queryFn: async ({ signal }) => decodeSchedule((await api.get('/admin/etl/schedule/summary', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
-  const health = useQuery<EtlHealth>({
+  const health = useQuery<ReturnType<typeof decodeHealth>>({
     queryKey: ['admin', 'etl-health'],
-    queryFn: async ({ signal }) => (await api.get('/admin/etl/health', { signal })).data,
+    queryFn: async ({ signal }) => decodeHealth((await api.get('/admin/etl/health', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
-  const userStats = useQuery<UserStats>({
+  const userStats = useQuery<ReturnType<typeof decodeUsers>>({
     queryKey: ['admin', 'user-stats'],
-    queryFn: async ({ signal }) => (await api.get('/admin/users/stats', { signal })).data,
+    queryFn: async ({ signal }) => decodeUsers((await api.get('/admin/users/stats', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
-  const recentActions = useQuery<AuditList>({
+  const recentActions = useQuery<ReturnType<typeof decodeAudit>>({
     queryKey: ['admin', 'audit-log', { recent: true }],
     queryFn: async ({ signal }) =>
-      (await api.get('/admin/audit-log', { params: { page_size: 5, days: 30 }, signal })).data,
+      decodeAudit((await api.get('/admin/audit-log', { params: { page_size: 5, days: 30 }, signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 30_000,
   });
 
-  const failedJobs = useQuery<FailedJobList>({
+  const failedJobs = useQuery<ReturnType<typeof decodeFailures>>({
     queryKey: ['admin', 'ingestion-jobs', 'failed'],
     queryFn: async ({ signal }) =>
-      (
+      decodeFailures((
         await api.get('/admin/ingestion-jobs', {
-          params: { status: 'failed', days: 7, page_size: 5 }, signal
+          params: { status: 'failed', days: 7, page_size: 5 }, signal, headers: { 'Cache-Control': 'no-store' }
         })
-      ).data,
+      ).data),
+    enabled: isAdmin, retry: false, gcTime: 0,
     staleTime: 30_000,
     // Refetch every 60s so the alerts banner reflects new failures without
     // a full page reload.
     refetchInterval: 60_000,
   });
 
-  // Anything we surface to the admin as an unresolved problem. Keep this
-  // tightly scoped — the banner should only appear when there's something
-  // genuinely actionable, otherwise it becomes noise.
+  const social = useQuery({
+    queryKey: ['admin', 'overview-social-status'],
+    queryFn: async ({ signal }) => decodeSocial((await api.get('/admin/social/system/status', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
+    enabled: isAdmin, retry: false, gcTime: 0, staleTime: 30_000, refetchInterval: 60_000,
+  });
+  const queries = [ingestion, schedule, health, userStats, recentActions, failedJobs, social];
   const alerts: { kind: 'failed-jobs' | 'unhealthy-etl'; count?: number }[] = [];
-  if (failedJobs.data && failedJobs.data.total > 0) {
-    alerts.push({ kind: 'failed-jobs', count: failedJobs.data.total });
-  }
-  if (
-    health.data &&
-    health.data.scheduler_status &&
-    health.data.scheduler_status !== 'healthy'
-  ) {
-    alerts.push({ kind: 'unhealthy-etl' });
-  }
+  if (!failedJobs.error && failedJobs.data && failedJobs.data.total > 0) alerts.push({ kind: 'failed-jobs', count: failedJobs.data.total });
+  if (!health.error && health.data && health.data.scheduler_status !== 'healthy') alerts.push({ kind: 'unhealthy-etl' });
 
   return (
     <PageShell
       title='Admin Overview'
-      subtitle='Monitor users, ingestion, ETL schedule and system health at a glance.'>
+      subtitle='Monitor users, ingestion, ETL decisions, recorded actions and social publishing.'>
       <div className='space-y-8'>
+        <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
+          <p className='text-neutral-muted'>Counts describe each API's stated scope. Recorded actions do not prove worker execution.</p>
+          <button className='inline-flex min-h-11 items-center gap-2 rounded-lg border border-neutral-border px-3 focus-visible:ring-2 focus-visible:ring-gov-sage' disabled={queries.some(q => q.isFetching)} onClick={() => queries.forEach(q => void q.refetch())}><RefreshCcw className='h-4 w-4' aria-hidden='true' />Refresh overview</button>
+        </div>
+        {(failedJobs.error || recentActions.error) && <div role='status' className='rounded-2xl border border-gov-warning p-4 text-sm'>
+          {failedJobs.error && <p>Failure evidence unavailable. Recent ingestion failures could not be checked. <Link href='/admin/ingestion?status=failed&days=7' className='underline'>Review ingestion</Link></p>}
+          {recentActions.error && <p>Audit evidence unavailable. Recorded actions could not be checked. <Link href='/admin/audit-log' className='underline'>Review audit log</Link></p>}
+        </div>}
+
         {/* ── Alerts banner ──
              Only renders when there's something actionable. Red so it
              reads instantly and the admin doesn't mistake "no alerts
@@ -217,7 +158,7 @@ export default function AdminOverviewPage() {
                             the last 7 days.
                           </span>
                           <Link
-                            href='/admin/ingestion?status=failed'
+                            href='/admin/ingestion?status=failed&days=7'
                             className='inline-flex items-center gap-1 text-xs font-semibold text-gov-copper dark:text-red-200 underline underline-offset-2 hover:text-gov-copper/80 dark:hover:text-red-100'>
                             View failures
                             <ArrowRight className='w-3 h-3' />
@@ -229,12 +170,12 @@ export default function AdminOverviewPage() {
                           <span className='text-gov-copper/90 dark:text-red-100/90'>
                             ETL scheduler reports{' '}
                             <strong className='font-mono font-semibold'>
-                              {health.data?.scheduler_status}
+                              Calculation unavailable
                             </strong>
                             .
                           </span>
                           <Link
-                            href='/status'
+                            href='/admin/etl'
                             className='inline-flex items-center gap-1 text-xs font-semibold text-gov-copper dark:text-red-200 underline underline-offset-2 hover:text-gov-copper/80 dark:hover:text-red-100'>
                             Check pipeline status
                             <ArrowRight className='w-3 h-3' />
@@ -252,7 +193,7 @@ export default function AdminOverviewPage() {
         {/* ── Top stat grid ── */}
         <section>
           <SectionHeader icon={TrendingUp} title='At a glance' />
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
             <StatCard
               order={0}
               title='Ingestion (last 7 days)'
@@ -294,7 +235,7 @@ export default function AdminOverviewPage() {
                 <>
                   <BigNumber
                     value={`${d.running_today}/${d.total_sources}`}
-                    label='sources running'
+                    label='sources due by calendar'
                   />
                   <p className='text-[11px] text-neutral-muted mt-3 line-clamp-1'>
                     {d.efficiency.vs_fixed_schedule}
@@ -305,30 +246,17 @@ export default function AdminOverviewPage() {
 
             <StatCard
               order={2}
-              title='ETL system health'
+              title='ETL scheduler calculation'
               icon={Activity}
               query={health}
-              href='/status'
-              renderValue={(d) => {
-                const ok = d.scheduler_status === 'healthy';
-                return (
-                  <>
-                    <div className='flex items-center gap-2'>
-                      {ok ? (
-                        <CheckCircle2 className='w-7 h-7 text-emerald-500' />
-                      ) : (
-                        <XCircle className='w-7 h-7 text-gov-copper dark:text-red-400' />
-                      )}
-                      <span className='text-2xl font-bold text-neutral-text capitalize'>
-                        {d.scheduler_status.split(':')[0]}
-                      </span>
-                    </div>
-                    <p className='text-[11px] text-neutral-muted mt-3'>
-                      Updated {timeAgo(d.timestamp)}
-                    </p>
-                  </>
-                );
-              }}
+              href='/admin/etl'
+              renderValue={(d) => (
+                <>
+                  <p className='text-lg font-bold text-neutral-text'>{d.scheduler_status === 'healthy' ? 'Schedule calculated' : 'Calculation unavailable'}</p>
+                  <p className='text-xs text-neutral-muted mt-2'>Worker execution unverified</p>
+                  <p className='text-[11px] text-neutral-muted mt-3'>Reported {timeAgo(d.timestamp)}</p>
+                </>
+              )}
             />
 
             <StatCard
@@ -339,7 +267,8 @@ export default function AdminOverviewPage() {
               href='/admin/users'
               renderValue={(d) => (
                 <>
-                  <BigNumber value={d.total_users} label='total' />
+                  <BigNumber value={d.total_users} label='Profile records' />
+                  <p className='text-xs text-neutral-muted mt-2'>Auth identities without profiles are outside this count.</p>
                   <SubStatRow>
                     <SubStat label='admins' value={d.admin_users} tone='info' />
                     <SubStat label='new this week' value={d.new_last_7_days} tone='ok' />
@@ -347,6 +276,16 @@ export default function AdminOverviewPage() {
                 </>
               )}
             />
+            <StatCard order={4} title='Social publishing' icon={Send} query={social} href='/admin/social' renderValue={(d) => (
+              <>
+                <p className='text-xl font-bold text-neutral-text'>{d.publishing_enabled ? 'Publishing enabled' : 'Publishing disabled'}</p>
+                <p className='text-xs text-neutral-muted mt-2'>Worker evidence: {socialWorkerEvidence(d.worker)}</p>
+                <p className='text-xs text-neutral-muted mt-2'>{Object.values(d.queue_counts).reduce((a, b) => a + b, 0)} delivery targets across all states</p>
+              </>
+            )} />
+            <StatCard order={5} title='Audit evidence (30 days)' icon={History} query={recentActions} href='/admin/audit-log' renderValue={(d) => (
+              <><BigNumber value={d.total} label='recorded actions' /><p className='text-xs text-neutral-muted mt-2'>Best-effort recording. Missing records do not prove no activity.</p></>
+            )} />
           </div>
         </section>
 
@@ -354,7 +293,7 @@ export default function AdminOverviewPage() {
              Always rendered when there are failures so the admin can
              click straight through to the offending job. Hidden when
              everything's clean to keep the page calm. */}
-        {failedJobs.data && failedJobs.data.jobs.length > 0 && (
+        {!failedJobs.error && failedJobs.data && failedJobs.data.jobs.length > 0 && (
           <motion.section
             variants={fadeUp}
             initial='hidden'
@@ -377,7 +316,7 @@ export default function AdminOverviewPage() {
                 </div>
               </div>
               <Link
-                href='/admin/ingestion?status=failed'
+                href='/admin/ingestion?status=failed&days=7'
                 className='text-xs text-gov-copper dark:text-red-300 hover:text-gov-copper/80 dark:hover:text-red-200 inline-flex items-center gap-1 font-medium'>
                 View all
                 <ArrowRight className='w-3 h-3' />
@@ -385,11 +324,6 @@ export default function AdminOverviewPage() {
             </div>
             <ul className='space-y-2'>
               {failedJobs.data.jobs.map((job) => {
-                const firstError = job.errors?.[0];
-                const errorMessage =
-                  typeof firstError === 'string'
-                    ? firstError
-                    : firstError?.message || 'Unknown error';
                 return (
                   <li key={job.id}>
                     <Link
@@ -413,7 +347,7 @@ export default function AdminOverviewPage() {
                           )}
                         </div>
                         <p className='text-xs text-neutral-text mt-0.5 line-clamp-1'>
-                          {errorMessage}
+                          Recorded failure. Open the job to inspect details.
                         </p>
                       </div>
                       <ArrowRight className='shrink-0 w-3.5 h-3.5 text-neutral-muted group-hover:text-gov-copper dark:group-hover:text-red-300 mt-1 transition-colors' />
@@ -426,7 +360,7 @@ export default function AdminOverviewPage() {
         )}
 
         {/* ── Ingestion volume + by-domain ── */}
-        {ingestion.data && (
+        {!ingestion.error && ingestion.data && (
           <motion.section
             variants={fadeUp}
             initial='hidden'
@@ -464,7 +398,7 @@ export default function AdminOverviewPage() {
                     .map(([domain, count]) => (
                       <Link
                         key={domain}
-                        href={`/admin/ingestion?domain=${encodeURIComponent(domain)}`}
+                        href={`/admin/ingestion?days=7&domain=${encodeURIComponent(domain)}`}
                         className='inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gov-sage/10 hover:bg-gov-sage/20 dark:bg-gov-sage/20 dark:hover:bg-gov-sage/30 ring-1 ring-inset ring-gov-sage/20 dark:ring-gov-sage/30 text-xs font-medium text-gov-forest dark:text-emerald-200 transition-colors'>
                         <span className='font-mono'>{domain}</span>
                         <span className='text-neutral-muted'>·</span>
@@ -480,7 +414,7 @@ export default function AdminOverviewPage() {
         {/* ── Two-column: recent actions + sources scheduled ── */}
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-5'>
           {/* Recent admin actions */}
-          {recentActions.data && recentActions.data.entries.length > 0 && (
+          {!recentActions.error && recentActions.data && (
             <motion.section
               variants={fadeUp}
               initial='hidden'
@@ -496,6 +430,7 @@ export default function AdminOverviewPage() {
                   <ArrowRight className='w-3 h-3' />
                 </Link>
               </div>
+              {recentActions.data.entries.length === 0 && <p className='text-sm text-neutral-muted'>No actions recorded in this window. Audit recording is best-effort.</p>}
               <ul className='space-y-2'>
                 {recentActions.data.entries.map((entry) => (
                   <li
@@ -522,7 +457,7 @@ export default function AdminOverviewPage() {
           )}
 
           {/* Sources scheduled today */}
-          {schedule.data && schedule.data.sources_to_run.length > 0 && (
+          {!schedule.error && schedule.data && (
             <motion.section
               variants={fadeUp}
               initial='hidden'
@@ -534,6 +469,7 @@ export default function AdminOverviewPage() {
                 title='Sources scheduled today'
                 subtitle='Smart-scheduler decisions for the next ETL cycle.'
               />
+              {schedule.data.sources_to_run.length === 0 && <p className='text-sm text-neutral-muted'>No sources due by calendar today. Worker execution is unverified.</p>}
               <ul className='space-y-2 mt-4'>
                 {schedule.data.sources_to_run.map(({ source, reason }) => (
                   <li
@@ -563,6 +499,8 @@ interface QueryLike<T> {
   data?: T;
   isLoading: boolean;
   error: unknown;
+  dataUpdatedAt?: number;
+  isFetching?: boolean;
 }
 
 function StatCard<T>({
@@ -612,7 +550,7 @@ function StatCard<T>({
             Could not load
           </div>
         ) : (
-          renderValue(query.data)
+          <>{renderValue(query.data)}<p className='text-[11px] text-neutral-muted mt-3'>{query.isFetching ? 'Refreshing… ' : 'Fetched '}{timeAgo(query.dataUpdatedAt ? new Date(query.dataUpdatedAt).toISOString() : null)}</p></>
         )}
       </Link>
     </motion.div>
@@ -708,15 +646,4 @@ function SectionHeader({
       {subtitle && <p className='text-xs text-neutral-muted mt-0.5 ml-6'>{subtitle}</p>}
     </div>
   );
-}
-
-function timeAgo(iso: string | null | undefined): string {
-  if (!iso) return 'never';
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
 }
