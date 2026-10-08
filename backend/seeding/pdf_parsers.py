@@ -101,34 +101,40 @@ def extract_all_tables(pdf_path: Path, *, pages: Optional[List[int]] = None) -> 
             for page_num, page in enumerate(pdf.pages, start=1):
                 if pages is not None and page_num not in pages:
                     continue
-                page_tables = page.extract_tables()
+                try:
+                    page_tables = page.extract_tables()
 
-                for table_idx, table_data in enumerate(page_tables):
-                    if not table_data or len(table_data) < 2:
-                        # Skip empty tables or tables with only header
-                        continue
+                    for table_idx, table_data in enumerate(page_tables):
+                        if not table_data or len(table_data) < 2:
+                            # Skip empty tables or tables with only header
+                            continue
 
-                    # First row is typically headers
-                    headers = [
-                        str(cell).strip() if cell else "" for cell in table_data[0]
-                    ]
-                    rows = [
-                        [str(cell).strip() if cell else "" for cell in row]
-                        for row in table_data[1:]
-                    ]
+                        # First row is typically headers
+                        headers = [
+                            str(cell).strip() if cell else "" for cell in table_data[0]
+                        ]
+                        rows = [
+                            [str(cell).strip() if cell else "" for cell in row]
+                            for row in table_data[1:]
+                        ]
 
-                    # Get table bounding box if available
-                    bbox = page.bbox if hasattr(page, "bbox") else (0, 0, 0, 0)
+                        # Get table bounding box if available
+                        bbox = page.bbox if hasattr(page, "bbox") else (0, 0, 0, 0)
 
-                    extracted_tables.append(
-                        ExtractedTable(
-                            page_number=page_num,
-                            table_index=table_idx,
-                            headers=headers,
-                            rows=rows,
-                            bbox=bbox,
+                        extracted_tables.append(
+                            ExtractedTable(
+                                page_number=page_num,
+                                table_index=table_idx,
+                                headers=headers,
+                                rows=rows,
+                                bbox=bbox,
+                            )
                         )
-                    )
+                finally:
+                    # Tables above own only strings and coordinates. The Page
+                    # keeps its much larger layout/object caches until closed;
+                    # release them before advancing, including on parse failure.
+                    page.close()
 
     except Exception as e:
         raise PDFCorruptedError(f"Failed to parse PDF {pdf_path}: {e}") from e
@@ -1899,9 +1905,11 @@ class CoBQuarterlyReportParser:
                 for number in pages:
                     if number > len(pdf.pages):
                         continue
-                    match = _REVENUE_CAPTION_RE.search(
-                        pdf.pages[number - 1].extract_text() or ""
-                    )
+                    page = pdf.pages[number - 1]
+                    try:
+                        match = _REVENUE_CAPTION_RE.search(page.extract_text() or "")
+                    finally:
+                        page.close()
                     if match:
                         captions[number] = match.group(1)
         except Exception as exc:  # noqa: BLE001 - no captions means no owners

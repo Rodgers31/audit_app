@@ -13,7 +13,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from models import Country, DocumentType, EconomicIndicator, Entity, SourceDocument
 from sqlalchemy import and_, inspect, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 from services.response_receipts import persist_evidence
 
 from ...config import SeedingSettings
@@ -70,6 +70,8 @@ def _ensure_source_document(
     country_id: int,
     settings: SeedingSettings,
     record: EconomicIndicatorRecord,
+    *,
+    sources_by_url: Optional[dict[str, SourceDocument]] = None,
 ) -> SourceDocument:
     url = record.source_url or settings.economic_indicators_dataset_url
     # The row declares who published it. This was a literal "Kenya National
@@ -80,8 +82,15 @@ def _ensure_source_document(
         str(record.metadata.get("publisher") or "").strip()
         or _DEFAULT_PUBLISHER
     )
-    stmt = select(SourceDocument).where(SourceDocument.url == url)
-    source = session.execute(stmt).scalar_one_or_none()
+    source = sources_by_url.get(url) if sources_by_url is not None else None
+    if source is None:
+        # Receipt association needs these four identity fields; existing
+        # metadata, file paths and diagnostics are neither read nor replaced.
+        stmt = select(SourceDocument).options(load_only(
+            SourceDocument.id, SourceDocument.country_id,
+            SourceDocument.publisher, SourceDocument.url,
+        )).where(SourceDocument.url == url)
+        source = session.execute(stmt).scalar_one_or_none()
     if source is not None and record.metadata.get("publisher"):
         if source.publisher != publisher:
             source.publisher = publisher
@@ -99,6 +108,10 @@ def _ensure_source_document(
         )
         session.add(source)
         session.flush()
+    # Cache only a resolved row or a successful creation flush. The caller's
+    # transaction owns commit/rollback; no ORM object survives into another run.
+    if sources_by_url is not None:
+        sources_by_url[url] = source
     return source
 
 
@@ -137,6 +150,7 @@ def persist_economic_records(
     context: DomainRunContext,
 ) -> PersistenceStats:
     stats = PersistenceStats()
+    sources_by_url: dict[str, SourceDocument] = {}
 
     for record in records:
         stats.processed += 1
@@ -162,7 +176,9 @@ def persist_economic_records(
             stats.skipped += 1
             continue
 
-        source = _ensure_source_document(session, country_id, settings, record)
+        source = _ensure_source_document(
+            session, country_id, settings, record, sources_by_url=sources_by_url
+        )
         record.metadata["source_evidence"] = persist_evidence(session, source, record.metadata.get("source_evidence"))
 
         conditions = [

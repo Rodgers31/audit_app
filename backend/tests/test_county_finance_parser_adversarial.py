@@ -110,7 +110,10 @@ def test_valid_caption_and_table_are_positive_coverage_control(monkeypatch):
         ["A", "Equitable Share", "10000", "10000"],
         ["", "Grand Total", "10000", "10000"],
     ])]
-    page = SimpleNamespace(extract_text=lambda: "Table 3.1: Nairobi County, Revenue Performance")
+    page = SimpleNamespace(
+        extract_text=lambda: "Table 3.1: Nairobi County, Revenue Performance",
+        close=lambda: None,
+    )
     pdf = MagicMock()
     pdf.__enter__.return_value = SimpleNamespace(pages=[page])
     monkeypatch.setattr(pdf_parsers.pdfplumber, "open", lambda _: pdf)

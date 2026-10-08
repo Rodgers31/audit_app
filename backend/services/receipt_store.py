@@ -27,13 +27,25 @@ def configured_receipt_store(settings) -> ReceiptStore:
             Path(settings.storage_path) / "response-receipts",
             max_bytes=64 * 1024 * 1024 if max_bytes is None else max_bytes,
         )
-    if backend != "supabase":
+    if backend not in ("supabase", "r2"):
         raise ValueError("Unknown receipt storage backend")
-    from config.secrets import get_secret
-    from services.supabase_receipt_store import SupabaseReceiptStore, validate_destination
-
     if max_bytes is None:
-        raise ValueError("Supabase receipt byte limit must be explicitly configured")
+        raise ValueError("Durable receipt byte limit must be explicitly configured")
+    from config.secrets import get_secret
+    if backend == "r2":
+        from services.r2_receipt_store import R2ReceiptStore, validate_destination
+        validate_destination(settings.receipt_r2_account_id, settings.receipt_r2_bucket, settings.receipt_r2_jurisdiction)
+        return R2ReceiptStore(
+            settings.receipt_r2_account_id, settings.receipt_r2_bucket,
+            get_secret("RECEIPT_R2_ACCESS_KEY_ID"),
+            get_secret("RECEIPT_R2_SECRET_ACCESS_KEY"),
+            get_secret("RECEIPT_R2_CONTROL_TOKEN"),
+            jurisdiction=settings.receipt_r2_jurisdiction,
+            max_bytes=max_bytes,
+            part_max_bytes=R2ReceiptStore.DEFAULT_PART_BYTES if getattr(settings, "receipt_part_max_bytes", None) is None else settings.receipt_part_max_bytes,
+            timeout_seconds=settings.receipt_storage_timeout_seconds,
+        )
+    from services.supabase_receipt_store import SupabaseReceiptStore, validate_destination
     validate_destination(settings.receipt_supabase_url, settings.receipt_supabase_bucket)
     return SupabaseReceiptStore(
         settings.receipt_supabase_url,

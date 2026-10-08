@@ -1,0 +1,32 @@
+{
+  "source_commit": "77a68925756ade06e06f31ee4347e992e772ace0",
+  "source_sha256": "1825e3c1b3d4441abdf32f0e0dc5a7020a751fc48441475a7e50d163f635bfed",
+  "part_max_bytes": 4,
+  "cases": [
+    {
+      "body_hex": "61",
+      "digest": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+      "manifest": "{\"byte_size\":1,\"part_count\":1,\"parts\":[{\"byte_size\":1,\"index\":0,\"sha256\":\"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb\"}],\"sha256\":\"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb\",\"type\":\"source-receipt-chunks\",\"version\":1}"
+    },
+    {
+      "body_hex": "61626364",
+      "digest": "88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589",
+      "manifest": "{\"byte_size\":4,\"part_count\":1,\"parts\":[{\"byte_size\":4,\"index\":0,\"sha256\":\"88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589\"}],\"sha256\":\"88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589\",\"type\":\"source-receipt-chunks\",\"version\":1}"
+    },
+    {
+      "body_hex": "6162636465",
+      "digest": "36bbe50ed96841d10443bcb670d6554f0a34b761be67ec9c4a8ad2c0c44ca42c",
+      "manifest": "{\"byte_size\":5,\"part_count\":2,\"parts\":[{\"byte_size\":4,\"index\":0,\"sha256\":\"88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589\"},{\"byte_size\":1,\"index\":1,\"sha256\":\"3f79bb7b435b05321651daefd374cdc681dc06faa65e374e38337b88ca046dea\"}],\"sha256\":\"36bbe50ed96841d10443bcb670d6554f0a34b761be67ec9c4a8ad2c0c44ca42c\",\"type\":\"source-receipt-chunks\",\"version\":1}"
+    },
+    {
+      "body_hex": "73616d6573616d6573616d65",
+      "digest": "1020252f300d280dfffb59051230b9bca980c33aa41790dd6090a70bb6d10e49",
+      "manifest": "{\"byte_size\":12,\"part_count\":3,\"parts\":[{\"byte_size\":4,\"index\":0,\"sha256\":\"0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5\"},{\"byte_size\":4,\"index\":1,\"sha256\":\"0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5\"},{\"byte_size\":4,\"index\":2,\"sha256\":\"0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5\"}],\"sha256\":\"1020252f300d280dfffb59051230b9bca980c33aa41790dd6090a70bb6d10e49\",\"type\":\"source-receipt-chunks\",\"version\":1}"
+    },
+    {
+      "body_hex": "7b227061727473223a5b5d7d",
+      "digest": "7dba634a8fdf114f36c3d7a724dded2d3c18a68313011e81e8b850909e539910",
+      "manifest": "{\"byte_size\":12,\"part_count\":3,\"parts\":[{\"byte_size\":4,\"index\":0,\"sha256\":\"b87c2acac41b0923fec81e239d22bfad8609e0a701148e16ef6cd442c0d3efd5\"},{\"byte_size\":4,\"index\":1,\"sha256\":\"9792c2fd5c975dab067512fcc1bd0e0f8d3f83987f9f985accdb15e9a9eb399d\"},{\"byte_size\":4,\"index\":2,\"sha256\":\"e5ee522bddab521f2e1693653e93760f6a43a290cb89e37008b681fb783b5319\"}],\"sha256\":\"7dba634a8fdf114f36c3d7a724dded2d3c18a68313011e81e8b850909e539910\",\"type\":\"source-receipt-chunks\",\"version\":1}"
+    }
+  ]
+}

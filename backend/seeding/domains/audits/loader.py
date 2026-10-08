@@ -32,7 +32,7 @@ from models import (
 )
 from sqlalchemy import and_, select
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
 from ...config import SeedingSettings
 from ...extractors import oag_county_volume
@@ -177,6 +177,20 @@ def _ensure_period(
 _LOOKUP_CHUNK = 500
 
 
+def _audit_lookup():
+    """Only fields this loader compares or updates, for both lookup paths.
+
+    Retain ORM mutation/duplicate refusal semantics while omitting unrelated
+    management responses, actions and other stored publication details.
+    """
+    return select(Audit).options(load_only(
+        Audit.id, Audit.extraction_id, Audit.entity_id, Audit.period_id,
+        Audit.finding_text, Audit.severity, Audit.amount, Audit.page_ref,
+        Audit.source_hash, Audit.audit_opinion, Audit.external_reference,
+        Audit.provenance,
+    ))
+
+
 def _audits_by_extraction_id(session: Session, extraction_ids: list) -> dict:
     """Existing audit rows for these extractions, keyed by extraction_id.
 
@@ -193,7 +207,7 @@ def _audits_by_extraction_id(session: Session, extraction_ids: list) -> dict:
     for start in range(0, len(extraction_ids), _LOOKUP_CHUNK):
         chunk = extraction_ids[start : start + _LOOKUP_CHUNK]
         for audit in (
-            session.execute(select(Audit).where(Audit.extraction_id.in_(chunk)))
+            session.execute(_audit_lookup().where(Audit.extraction_id.in_(chunk)))
             .scalars()
             .all()
         ):
@@ -281,6 +295,8 @@ def load_blue_book_extractions(
         .scalars()
         .all()
     )
+    # Full extracted_json remains necessary: source_hash_of binds the complete
+    # canonical payload, including keys not displayed by the public endpoint.
     if not extractions:
         logger.info(
             "No %s extractions for document %s", "/".join(LOADED_EXTRACTORS), doc.id
@@ -427,7 +443,7 @@ def load_blue_book_extractions(
         existing = existing_by_extraction.get(ext.id)
         if existing is None and ext.id not in fresh:
             existing = session.execute(
-                select(Audit).where(Audit.extraction_id == ext.id)
+                _audit_lookup().where(Audit.extraction_id == ext.id)
             ).scalar_one_or_none()
 
         if context.dry_run:

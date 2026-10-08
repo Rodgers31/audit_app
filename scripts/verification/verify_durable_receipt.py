@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guarded prospective Supabase acceptance; run put and read in separate processes.
+"""Guarded prospective durable storage acceptance; run put and read in separate processes.
 
 Never provisions a bucket, changes access, deletes bytes or upgrades historical
 evidence. No automatic dotenv loading. Secret resolution uses the backend's
@@ -22,7 +22,10 @@ from services.supabase_receipt_store import ReceiptStorageError, validate_destin
 
 def parser() -> argparse.ArgumentParser:
     cli = argparse.ArgumentParser(description=__doc__)
-    cli.add_argument("--expected-project-ref", required=True)
+    cli.add_argument("--expected-backend", choices=("supabase", "r2"), default="supabase")
+    cli.add_argument("--expected-project-ref")
+    cli.add_argument("--expected-account-id")
+    cli.add_argument("--expected-jurisdiction", choices=("default", "eu", "us"))
     cli.add_argument("--expected-bucket", required=True)
     operations = cli.add_subparsers(dest="operation", required=True)
     put = operations.add_parser(
@@ -30,6 +33,7 @@ def parser() -> argparse.ArgumentParser:
     )
     put.add_argument("--file", type=Path, required=True)
     put.add_argument("--allow-supabase-write", action="store_true")
+    put.add_argument("--allow-r2-write", action="store_true")
     read = operations.add_parser(
         "read", help="Verify a retained digest in this fresh process"
     )
@@ -39,24 +43,26 @@ def parser() -> argparse.ArgumentParser:
 
 
 def verify(args, settings: SeedingSettings) -> dict:
-    if settings.receipt_storage_backend != "supabase":
-        raise ValueError("Acceptance requires the selected Supabase backend")
-    destination = validate_destination(
-        settings.receipt_supabase_url, settings.receipt_supabase_bucket
-    )
-    if (
-        destination != f"https://{args.expected_project_ref}.supabase.co"
-        or settings.receipt_supabase_bucket != args.expected_bucket
-    ):
-        raise ValueError(
-            "Acceptance target does not match the explicit project and bucket"
-        )
+    backend = getattr(args, "expected_backend", "supabase")
+    if settings.receipt_storage_backend != backend or backend not in ("supabase", "r2"):
+        raise ValueError("Acceptance requires the explicitly selected durable backend")
+    if backend == "supabase":
+        destination = validate_destination(settings.receipt_supabase_url, settings.receipt_supabase_bucket)
+        if destination != f"https://{args.expected_project_ref}.supabase.co" or settings.receipt_supabase_bucket != args.expected_bucket:
+            raise ValueError("Acceptance target does not match the explicit project and bucket")
+        target = {"project_ref": args.expected_project_ref}
+    else:
+        from services.r2_receipt_store import validate_destination as validate_r2_destination
+        validate_r2_destination(settings.receipt_r2_account_id, settings.receipt_r2_bucket, settings.receipt_r2_jurisdiction)
+        if settings.receipt_r2_account_id != getattr(args, "expected_account_id", None) or settings.receipt_r2_bucket != args.expected_bucket or settings.receipt_r2_jurisdiction != getattr(args, "expected_jurisdiction", None):
+            raise ValueError("Acceptance target does not match the explicit account, bucket and jurisdiction")
+        target = {"account_id": args.expected_account_id, "jurisdiction": args.expected_jurisdiction}
     limit = settings.receipt_max_bytes
     if type(limit) is not int or not 1 <= limit <= 64 * 1024 * 1024:
         raise ValueError("Acceptance requires an explicit bounded byte limit")
     if args.operation == "put":
-        if not args.allow_supabase_write:
-            raise ValueError("Acceptance put requires --allow-supabase-write")
+        if not getattr(args, "allow_" + backend + "_write", False):
+            raise ValueError("Acceptance put requires the selected provider write flag")
         with args.file.open("rb") as source:
             body = source.read(limit + 1)
         if not body or len(body) > limit:
@@ -78,7 +84,8 @@ def verify(args, settings: SeedingSettings) -> dict:
     return {
         "status": "authenticated_readback_matched",
         "operation": args.operation,
-        "project_ref": args.expected_project_ref,
+        "backend": backend,
+        **target,
         "bucket": args.expected_bucket,
         "digest": digest,
         "byte_size": size,
