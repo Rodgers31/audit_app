@@ -15,9 +15,12 @@ class CredentialCipher:
             if not keys or active_version not in keys or any(not isinstance(v, str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,64}', v) for v in keys):
                 raise ValueError()
             self._keys = {version: Fernet(key.encode('ascii')) for version, key in keys.items()}
+            self.active_version = active_version
+            return
         except (ValueError, TypeError, AttributeError, UnicodeError):
-            raise SocialError('ENCRYPTION_UNAVAILABLE', 'The stable social credential key ring is unavailable.', 503) from None
-        self.active_version = active_version
+            pass
+        # Raise outside the decoder handler: `from None` only hides context.
+        raise SocialError('ENCRYPTION_UNAVAILABLE', 'The stable social credential key ring is unavailable.', 503)
 
     def encrypt(self, owner: UUID, purpose: str, bundle: dict):
         envelope = {'schema_version': 1, 'owner_id': str(owner), 'provider': 'meta', 'purpose': purpose, 'bundle': bundle}
@@ -31,7 +34,8 @@ class CredentialCipher:
                 raise ValueError()
             return value['bundle']
         except (KeyError, InvalidToken, ValueError, TypeError, UnicodeError):
-            raise SocialError('CREDENTIAL_UNREADABLE', 'This credential cannot be verified with the configured key ring. Restore the required key or reconnect.', 503) from None
+            pass
+        raise SocialError('CREDENTIAL_UNREADABLE', 'This credential cannot be verified with the configured key ring. Restore the required key or reconnect.', 503)
 
     def rotate(self, owner: UUID, purpose: str, version: str, ciphertext: bytes):
         return self.encrypt(owner, purpose, self.decrypt(owner, purpose, version, ciphertext))
