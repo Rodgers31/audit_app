@@ -178,12 +178,24 @@ To connect to the backend API:
 ### Docker
 
 ```bash
-# Build image
-docker build -t audit-app-frontend .
+# Build with the intended deployment's public configuration.
+docker build -t audit-app-frontend \
+  --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:?Set the public backend URL}" \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:?Set the public Supabase URL}" \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:?Set the public anon key}" \
+  .
 
 # Run container
 docker run -p 3000:3000 audit-app-frontend
 ```
+
+Public configuration is embedded in the browser bundle. Build an image for its
+destination environment; changing these public variables when starting the
+container does not rewrite the bundle, and conflicting overrides are rejected.
+An optional `INTERNAL_API_URL` supplies a server-only SSR transport address. On
+a Compose network this can be `http://backend:8000`, while
+`NEXT_PUBLIC_API_URL` remains the address reachable by browsers. The root
+Compose file uses the Dockerfile's `development` target for source development.
 
 ### Vercel (Recommended)
 
@@ -199,7 +211,10 @@ vercel
 
 Set these in your deployment platform:
 
-- `NEXT_PUBLIC_API_URL`: Production API URL
+- `NEXT_PUBLIC_API_URL`: Production API URL, required when building
+- `NEXT_PUBLIC_SUPABASE_URL`: Public Supabase project URL, required for Docker builds
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key, required for Docker builds
+- `INTERNAL_API_URL`: Optional server-only backend URL for SSR requests
 - `NEXT_PUBLIC_APP_NAME`: Application name
 - `NEXT_PUBLIC_APP_VERSION`: Current version
 

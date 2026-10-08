@@ -69,9 +69,19 @@
 # Backend
 docker build -f backend/Dockerfile.prod -t audit-app-backend:latest ./backend
 
-# Frontend
-docker build -f frontend/Dockerfile.prod -t audit-app-frontend:latest ./frontend
+# Frontend: export the intended deployment's public values before building.
+docker build -f frontend/Dockerfile.prod -t audit-app-frontend:latest \
+  --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:?Set the public backend URL}" \
+  --build-arg NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:?Set the public Supabase URL}" \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:?Set the public anon key}" \
+  ./frontend
 ```
+
+The frontend embeds these public values at build time. Use an image built for
+the destination environment; runtime public overrides must match its build
+configuration. `INTERNAL_API_URL` is an optional server-only address for SSR
+requests, such as `http://backend:8000` on the Compose network. It does not change
+the browser's public API URL. See the [configuration verification](verification/2026-10-08-pr516-configuration.md).
 
 ### 2. Push to Registry
 

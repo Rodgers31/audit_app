@@ -83,7 +83,8 @@ services:
   frontend:
     image: ${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE:-yourhubname}/audit-app-frontend:qa}
     environment:
-      NEXT_PUBLIC_API_URL: https://${BACKEND_HOST}
+      NEXT_PUBLIC_API_URL: https://${BACKEND_HOST:?BACKEND_HOST must match the public API hostname used to build the frontend image}
+      INTERNAL_API_URL: http://backend:8000
       NODE_ENV: production
     labels:
       - traefik.enable=true
