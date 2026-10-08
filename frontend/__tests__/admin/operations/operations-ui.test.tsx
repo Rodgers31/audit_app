@@ -122,3 +122,13 @@ test('malformed schedule and health are recoverable errors', async () => {
   await screen.findByText('Could not load schedule.');
   expect(screen.getByText('Could not load execution evidence.')).toBeInTheDocument();
 });
+
+test.each(['ingestion', 'etl'])('an initially hidden %s page awaits its first read without claiming empty or failed results', async surface => {
+  Object.defineProperty(document, 'visibilityState', { configurable:true, value:'hidden' });
+  get.mockResolvedValue({data:list});
+  mount(surface === 'ingestion' ? <Ingestion /> : <Etl />);
+  await act(async () => {});
+  expect(get).not.toHaveBeenCalled();
+  expect(screen.queryByText('No jobs match these filters.')).not.toBeInTheDocument();
+  expect(screen.queryByText('Could not load schedule.')).not.toBeInTheDocument();
+});

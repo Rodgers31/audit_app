@@ -124,7 +124,7 @@ export default function AdminEtlPage() {
               <h2 className='font-display text-lg text-neutral-text'>Sources</h2>
             </div>
           </header>
-          {schedule.isLoading ? (
+          {schedule.isLoading || (!planData && !schedule.isError) ? (
             <div className='py-16 flex justify-center'>
               <Loader2 className='w-5 h-5 text-gov-sage animate-spin' />
             </div>

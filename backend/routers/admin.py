@@ -20,7 +20,7 @@ from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session
 
 from supabase_auth import require_admin
-from routers.admin_operations import (OperationsRoute, PRIVATE_HEADERS, bounded_domain, bounded_integer, error_count_expression, job_projection, private_operations_response)
+from routers.admin_operations import (OperationsRoute, PRIVATE_HEADERS, bounded_domain, bounded_integer, error_count_expression, job_projection)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ router = APIRouter(
     prefix="/api/v1/admin",
     tags=["Admin"],
     route_class=OperationsRoute,
-    dependencies=[Depends(require_admin), Depends(private_operations_response)],
+    dependencies=[Depends(require_admin)],
 )
 
 

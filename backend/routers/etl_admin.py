@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 
-from routers.admin_operations import DISPATCH_ERROR, DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS, private_operations_response
+from routers.admin_operations import DISPATCH_ERROR, DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
 
 # The root and backend both have an etl package. Load the standalone calendar
@@ -26,7 +26,7 @@ except Exception:
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/admin/etl", tags=["ETL Administration"],
     route_class=OperationsRoute,
-    dependencies=[Depends(require_admin), Depends(private_operations_response)])
+    dependencies=[Depends(require_admin)])
 VALID_SOURCES = ["treasury", "cob", "oag", "knbs", "opendata", "cra"]
 MANUAL_TRIGGER = {"available": False, "reason": DISPATCH_REASON}
 

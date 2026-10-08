@@ -1,7 +1,7 @@
 """Safe operational projections; stored runner diagnostics stay private."""
 from datetime import datetime
 
-from fastapi import HTTPException, Response
+from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -40,10 +40,6 @@ class OperationsRoute(APIRoute):
             return response
 
         return private_handler
-
-
-def private_operations_response(response: Response):
-    response.headers.update(PRIVATE_HEADERS)
 
 
 def bounded_integer(value, minimum, maximum):

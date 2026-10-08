@@ -185,7 +185,7 @@ function IngestionJobsInner() {
         </div>
 
         {/* ── Body ── */}
-        {isLoading ? (
+        {isLoading || (!data && !error) ? (
           <BodyState>
             <Loader2 className='w-6 h-6 text-gov-sage animate-spin' />
             <p className='text-neutral-muted text-sm'>Loading jobs…</p>
