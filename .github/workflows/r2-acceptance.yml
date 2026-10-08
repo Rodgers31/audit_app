@@ -1,0 +1,85 @@
+# Manual verification only; no pull-request, push, or schedule trigger.
+# App checkout is fixed at the reviewed merged507 source below.
+name: Bounded private R2 producer acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Enter RUN_BOUNDED_R2_ACCEPTANCE after root approves this run'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: bounded-private-r2-producer-acceptance
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHON_DOTENV_DISABLED: '1'
+      PYTHONDONTWRITEBYTECODE: '1'
+      SECRET_BACKEND: env
+      DATABASE_URL: sqlite:////tmp/r2-acceptance-unused.sqlite
+      AUTO_SEEDER_ENABLED: 'false'
+      AUTO_WARMUP_ENABLED: 'false'
+      TESTING: 'true'
+      ENVIRONMENT: testing
+      REDIS_URL: ''
+    steps:
+      - name: Refuse unapproved manual invocation
+        env:
+          APPROVAL_TEXT: ${{ inputs.confirmation }}
+        run: test "$APPROVAL_TEXT" = RUN_BOUNDED_R2_ACCEPTANCE
+      - uses: actions/checkout@v5
+        with:
+          ref: 420cdc1887502940db32403fe26c6158789f9bc3
+          path: app
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          path: acceptance-tools
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install actual backend requirement file
+        run: python -m pip install -r app/backend/requirements.txt
+      - name: Single official source pilot then complete retained PDF
+        # Only this acceptance step receives provider secrets; dependency
+        # installation and upload steps have no provider credential environment.
+        env:
+          RECEIPT_R2_ACCESS_KEY_ID: ${{ secrets.RECEIPT_R2_ACCESS_KEY_ID }}
+          RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
+          RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
+        timeout-minutes: 12
+        # Reject any unreviewed harness bytes before credentials are read.
+        run: |
+          set -eu
+          script="$GITHUB_WORKSPACE/acceptance-tools/backend/scripts/r2_producer_acceptance.py"
+          expected_script_sha=15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028
+          actual_script_sha=$(sha256sum "$script" | cut -d " " -f 1)
+          test "$actual_script_sha" = "$expected_script_sha"
+          repo="$GITHUB_WORKSPACE/app"
+          reports="$RUNNER_TEMP/r2-acceptance-reports"
+          python "$script" --stage pilot --repo "$repo" --output "$reports/pilot.json" \
+            --expected-account 6929fa03fad58c2f93c70196ec498c69 \
+            --expected-bucket audit-source-evidence-v1 --expected-jurisdiction default \
+            --expected-head 420cdc1887502940db32403fe26c6158789f9bc3 \
+            --expected-source-sha256 5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3 \
+            --memory-budget-bytes 8589934592 --timeout-seconds 720 \
+            --allow-live-r2 --allow-official-worldbank
+          python "$script" --stage pdf --repo "$repo" --output "$reports/pdf.json" \
+            --expected-account 6929fa03fad58c2f93c70196ec498c69 \
+            --expected-bucket audit-source-evidence-v1 --expected-jurisdiction default \
+            --expected-head 420cdc1887502940db32403fe26c6158789f9bc3 \
+            --expected-source-sha256 5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3 \
+            --memory-budget-bytes 8589934592 --timeout-seconds 720 --allow-live-r2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bounded-r2-safe-summaries
+          path: ${{ runner.temp }}/r2-acceptance-reports/*.json
+          if-no-files-found: warn
+          retention-days: 7
+          # Never upload PDFs, parser tables, raw JSON, caches, SQLite or env.
