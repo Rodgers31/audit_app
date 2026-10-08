@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only, selectinload
 
 from services.county_budget import (
     BUDGET_PROVENANCE_STAGE_LABELS,
@@ -22,7 +22,7 @@ from services.audit_amounts import audit_amount_columns, audit_amount_result
 from services.entity_financials import financial_summary, summary_budget_source
 
 from database import get_db
-from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod
+from models import Audit, BudgetLine, Entity, EntityType, FiscalPeriod, SourceDocument
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +281,34 @@ def _resolve_periods_or_400(db: Session, year: str) -> List[int]:
         ) from exc
 
 
+def _money_flow_budget_rows(db, entity_ids, period_ids, *, include_committed=False):
+    """Keep every accounting row; batch only the summary's required context."""
+    columns = [
+        BudgetLine.entity_id, BudgetLine.period_id, BudgetLine.category,
+        BudgetLine.subcategory, BudgetLine.allocated_amount, BudgetLine.actual_spent,
+        BudgetLine.currency, BudgetLine.source_document_id, BudgetLine.page_ref,
+        BudgetLine.provenance, BudgetLine.basis, BudgetLine.quarantine_reason,
+    ]
+    if include_committed:
+        columns.append(BudgetLine.committed_amount)
+    return (
+        db.query(BudgetLine)
+        .options(
+            load_only(*columns, raiseload=True),
+            selectinload(BudgetLine.period).load_only(
+                FiscalPeriod.label, FiscalPeriod.start_date, FiscalPeriod.end_date,
+                raiseload=True,
+            ),
+            selectinload(BudgetLine.source_document).load_only(
+                SourceDocument.title, SourceDocument.publisher, SourceDocument.url,
+                SourceDocument.meta, raiseload=True,
+            ),
+        )
+        .filter(BudgetLine.entity_id.in_(entity_ids), BudgetLine.period_id.in_(period_ids))
+        .all()
+    )
+
+
 def _money_flow_for_entity(
     db: Session,
     entity_id: int,
@@ -308,11 +336,9 @@ def _money_flow_for_entity(
             "budget_source": None,
         }
 
-    budget_q = db.query(BudgetLine).filter(
-        BudgetLine.entity_id == entity_id,
-        BudgetLine.period_id.in_(period_ids),
+    budget_lines = _money_flow_budget_rows(
+        db, [entity_id], period_ids, include_committed=True,
     )
-    budget_lines = budget_q.all()
 
     if budget_lines:
         summary = financial_summary(budget_lines, budget_lines[0].period)
@@ -476,7 +502,7 @@ async def national_money_flow(
     period_ids = _resolve_periods_or_400(db, year)
 
     county_entities = (
-        db.query(Entity).filter(Entity.type == EntityType.COUNTY).all()
+        db.query(Entity.id).filter(Entity.type == EntityType.COUNTY).all()
     )
     if not county_entities:
         raise HTTPException(status_code=404, detail="No county entities found")
@@ -491,11 +517,7 @@ async def national_money_flow(
         flagged, coverage = audit_amount_result(reason="fiscal_period_not_found")
         budget_source = None
     else:
-        budget_q = db.query(BudgetLine).filter(
-            BudgetLine.entity_id.in_(entity_ids),
-            BudgetLine.period_id.in_(period_ids),
-        )
-        budget_lines = budget_q.all()
+        budget_lines = _money_flow_budget_rows(db, entity_ids, period_ids)
 
         if budget_lines:
             # Same split as the per-county waterfall — summing the CoB
@@ -674,14 +696,7 @@ async def all_counties_money_flow(
     # split of the same money, and adding both inflated every county on the map
     # by up to 2.8x. Fetch the rows and apply the shared rule per entity — one
     # query still, ~14 rows per county.
-    budget_lines_all = (
-        db.query(BudgetLine)
-        .filter(
-            BudgetLine.entity_id.in_(entity_ids),
-            BudgetLine.period_id.in_(period_ids),
-        )
-        .all()
-    )
+    budget_lines_all = _money_flow_budget_rows(db, entity_ids, period_ids)
     lines_by_entity: Dict[int, list] = {}
     for b in budget_lines_all:
         lines_by_entity.setdefault(b.entity_id, []).append(b)

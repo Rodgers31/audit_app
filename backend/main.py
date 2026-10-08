@@ -71,7 +71,7 @@ from services.entity_publication import public_entity_metadata
 from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
 from services.county_financial_health import county_audit_signals
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, load_only, selectinload
 from starlette.responses import JSONResponse, Response
 
 # Initialize logger early (before Redis cache import).
@@ -3767,7 +3767,11 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                 audits = [
                     a
                     for a in (
-                        db.query(DBAudit)
+                        db.query(
+                            DBAudit.id, DBAudit.entity_id, DBAudit.created_at,
+                            DBAudit.severity, DBAudit.source_document_id,
+                            DBAudit.provenance,
+                        )
                         .filter(publishable_audit_criterion())
                         .filter(DBAudit.entity_id == e.id)
                         .order_by(DBAudit.created_at.desc())
@@ -3775,7 +3779,15 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                     )
                     if _audit_is_display_grade(a)
                 ]
-                latest_audit = audits[0] if audits else None
+                # Preserve the display-grade gate and full count before picking
+                # ten issues; only those bounded descriptions leave the database.
+                from sqlalchemy import func as _audit_sqlfunc
+
+                issue_ids = [audit.id for audit in audits[:10]]
+                issue_text_by_id = dict(
+                    db.query(DBAudit.id, _audit_sqlfunc.substr(DBAudit.finding_text, 1, 200))
+                    .filter(DBAudit.id.in_(issue_ids)).all()
+                ) if issue_ids else {}
 
                 audit_issues = []
                 for a in audits[:10]:
@@ -3786,7 +3798,7 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                             "severity": (
                                 a.severity.value if a.severity else "medium"
                             ),
-                            "description": (a.finding_text or "")[:200],
+                            "description": issue_text_by_id.get(a.id) or "",
                             "status": "open",
                         }
                     )
@@ -6011,6 +6023,16 @@ def _county_audit_scope(db, county_id):
     return entity, query
 
 
+def _county_audit_status(stored_status, provenance):
+    """The stored status wins; only the first provenance entry is a fallback."""
+    first = provenance[0] if isinstance(provenance, list) and provenance else provenance
+    meta = first if isinstance(first, dict) else {}
+    fallback = meta.get("status")
+    return stored_status or (
+        fallback if isinstance(fallback, str) and fallback.strip() else None
+    )
+
+
 def _county_audit_item(audit, county_name):
     """Preserve report identity and citation; never infer money from prose."""
     from services.audit_citations import audited_institution
@@ -6034,7 +6056,7 @@ def _county_audit_item(audit, county_name):
         "id": audit.id,
         "description": audit.finding_text,
         "severity": audit.severity.value if audit.severity else None,
-        "status": audit.status or label("status"),
+        "status": _county_audit_status(audit.status, provenance),
         "category": label("category"),
         "amountLabel": str(amount) if amount is not None else None,
         "amount": amount,
@@ -6057,6 +6079,22 @@ def _county_audit_rows(query):
     return query.options(joinedload(DBAudit.source_document), joinedload(DBAudit.period)).filter(
         publishable_audit_criterion()
     ).order_by(DBAudit.created_at.desc(), DBAudit.id.desc()).all()
+
+
+def _county_audit_page_rows(query):
+    """Hydrate only the selected page, with the fields its public items use."""
+    return query.options(
+        load_only(
+            DBAudit.finding_text, DBAudit.severity, DBAudit.status, DBAudit.provenance,
+            DBAudit.amount, DBAudit.page_ref, DBAudit.period_id, DBAudit.source_document_id,
+            raiseload=True,
+        ),
+        selectinload(DBAudit.source_document).load_only(
+            DBSourceDocument.title, DBSourceDocument.publisher, DBSourceDocument.url,
+            DBSourceDocument.meta, raiseload=True,
+        ),
+        selectinload(DBAudit.period).load_only(DBFiscalPeriod.label, raiseload=True),
+    ).all()
 
 
 def _county_findings_reason(published, withheld):
@@ -6190,20 +6228,39 @@ async def list_county_audits(
                 raise HTTPException(status_code=422, detail="Unknown audit severity")
             query = query.filter(DBAudit.severity == severity_value)
         county_name = entity.canonical_name.removesuffix(" County")
-        items = [_county_audit_item(a, county_name) for a in _county_audit_rows(query)]
+        published = query.filter(publishable_audit_criterion()).order_by(
+            DBAudit.created_at.desc(), DBAudit.id.desc()
+        )
+        start = (page - 1) * limit
         if status:
-            items = [item for item in items if (item["status"] or "").casefold() == status.casefold()]
+            # Python casefold and first-entry provenance fallback are the public
+            # contract. Scan only these inputs, then hydrate the selected IDs.
+            requested_status = status.casefold()
+            matching_ids = [
+                audit_id
+                for audit_id, stored_status, provenance in published.with_entities(
+                    DBAudit.id, DBAudit.status, DBAudit.provenance
+                ).all()
+                if (_county_audit_status(stored_status, provenance) or "").casefold()
+                == requested_status
+            ]
+            total = len(matching_ids)
+            page_ids = matching_ids[start:start + limit]
+            audits = _county_audit_page_rows(published.filter(DBAudit.id.in_(page_ids))) if page_ids else []
+        else:
+            total = published.order_by(None).count()
+            audits = _county_audit_page_rows(published.offset(start).limit(limit))
+        items = [_county_audit_item(audit, county_name) for audit in audits]
         # Withheld count belongs to the entity/period/severity scope, before
         # the status facet (withheld metadata is not a publishable status).
         from services.publication_gate import retired_audit_fixture_criterion
 
         withheld = query.filter(~publishable_audit_criterion(), ~retired_audit_fixture_criterion()).count()
-        start = (page - 1) * limit
         return {
-            "total": len(items), "page": page, "limit": limit,
-            "items": items[start:start + limit],
+            "total": total, "page": page, "limit": limit,
+            "items": items,
             "withheld_findings": withheld,
-            "findings_reason": _county_findings_reason(items, withheld),
+            "findings_reason": _county_findings_reason(total, withheld),
         }
     except HTTPException:
         raise
