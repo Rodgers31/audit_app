@@ -1,14 +1,17 @@
 'use strict';
 
 // Run against installed packages after npm ci. These expectations describe
-// visible CSS behavior retained by the scoped selector-parser security update.
+// visible CSS behavior retained by the selector-parser security update.
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const postcss = require('postcss');
 const tailwindcss = require('tailwindcss');
 const autoprefixer = require('autoprefixer');
-const nested = require('postcss-nested');
+// Resolve transitive tooling through its declared caller, even when npm has
+// installed it beneath Tailwind instead of hoisting it to the application root.
+const tailwindRequire = createRequire(require.resolve('tailwindcss/package.json'));
+const nested = tailwindRequire('postcss-nested');
 const appConfig = require('../tailwind.config.js');
 
 function expectDeclaration(root, selector, property, value) {
@@ -25,8 +28,11 @@ function expectDeclaration(root, selector, property, value) {
 async function main() {
   // Each caller has its own dependency range; a root-only parser upgrade can
   // leave vulnerable nested copies installed without breaking an ordinary build.
-  for (const caller of ['tailwindcss', 'postcss-nested', '@tailwindcss/typography']) {
-    const callerRequire = createRequire(require.resolve(`${caller}/package.json`));
+  for (const [caller, callerRequire] of [
+    ['tailwindcss', tailwindRequire],
+    ['postcss-nested', createRequire(tailwindRequire.resolve('postcss-nested/package.json'))],
+    ['@tailwindcss/typography', createRequire(require.resolve('@tailwindcss/typography/package.json'))],
+  ]) {
     const version = callerRequire('postcss-selector-parser/package.json').version;
     assert.equal(version, '7.1.6', `${caller} resolved an unexpected selector parser`);
     assert.ok(callerRequire.resolve('postcss-selector-parser/dist/util/unesc'));

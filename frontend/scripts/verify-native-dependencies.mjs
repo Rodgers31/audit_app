@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { env, pipeline, RawImage } from '@huggingface/transformers';
 
 const require = createRequire(import.meta.url);
+const transformersRequire = createRequire(require.resolve('@huggingface/transformers'));
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'public/data/constitution');
 const model = 'Xenova/all-MiniLM-L6-v2';
@@ -58,7 +59,7 @@ async function checkImages(caller, callerRequire) {
 }
 
 async function checkInstallerZip() {
-  const runtimeRequire = createRequire(require.resolve('onnxruntime-node'));
+  const runtimeRequire = createRequire(transformersRequire.resolve('onnxruntime-node'));
   const AdmZip = runtimeRequire('adm-zip');
   const entryName = 'runtimes/linux-x64/native/verification.txt';
   const contents = Buffer.from('Public native dependency verification fixture\n');
@@ -80,9 +81,8 @@ async function checkInstallerZip() {
 }
 
 async function main() {
-  console.log(JSON.stringify({ check: 'environment', node: process.version, platform: process.platform, arch: process.arch, transformers: env.version, onnxruntime: require('onnxruntime-node').env.versions, model, revision, cacheDir: env.cacheDir }));
+  console.log(JSON.stringify({ check: 'environment', node: process.version, platform: process.platform, arch: process.arch, transformers: env.version, onnxruntime: transformersRequire('onnxruntime-node').env.versions, model, revision, cacheDir: env.cacheDir }));
   await checkInstallerZip();
-  const transformersRequire = createRequire(require.resolve('@huggingface/transformers'));
   const png = await checkImages('transformers', transformersRequire);
   await checkImages('next', createRequire(require.resolve('next/package.json')));
   // Also pass the image through Transformers' actual Sharp adapter.

@@ -49,6 +49,8 @@ All commands ran against isolated checkout/installations with local inert API/au
 
 CSS SHA256: `502d213b6024c30d95c1712a0d6dcfb2f00d521078843e32d532e74684663351`.
 
+Copilot's review summary correctly identified that the tooling verifier initially imported transitive postcss-nested from application scope. It now resolves that dependency through declared Tailwind, including the parser check. The native verifier similarly resolves ORT through declared Transformers. An isolated resolver probe rejecting those undeclared application-scope imports fails both original scripts and passes both corrected scripts, including actual CSS generation and native model/image/ZIP checks. No extra direct dependencies or lockfile changes were needed for this review correction.
+
 macOS used Node 22.19.0. Linux used Node 22.23.3 in node:22-bookworm-slim, image digest `sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392`, under Docker amd64 emulation. Both installations used the repository's existing .npmrc. Linux CPU verification set the upstream-supported `ONNXRUNTIME_NODE_INSTALL=skip` to skip optional unbundled GPU downloads, while retaining bundled CPU binaries. Actual GPU execution/full NuGet CUDA downloads, native Linux hardware, other browser engines and hosted model CDN delivery were not verified.
 
 ### Numerical compatibility
