@@ -1,5 +1,31 @@
 # Batch 3 status and next work
 
+## Merge and final-main update — 2026-10-08
+
+All three PRs are merged, including their completed review-comment round:
+
+| PR | Scope | Main squash commit |
+| --- | --- | --- |
+| [#513](https://github.com/Rodgers31/audit_app/pull/513) | Media maintenance | `531939365eddc7f7f5bad1bcc829fcb19a1fa17a` |
+| [#514](https://github.com/Rodgers31/audit_app/pull/514) | Schedule management | `3141b008611a6e2d74e8bb03e23b70a91e85cd84` |
+| [#515](https://github.com/Rodgers31/audit_app/pull/515) | Native Meta/material integration | `f5239ed63e146650bee2d0fb1cec9b23616eb648` |
+
+Native was retargeted to main after media/schedule merged. Its source matched
+the tested combined social implementation. On that final base the full social
+backend suite passed **1,168 tests, zero skips**, with all four disposable
+PostgreSQL lanes; frontend passed **501 tests across 27 suites**. Two existing
+SQLAlchemy deprecation warnings remain. TypeScript now reports three TS2353
+map-style errors also reproduced on main without the native PR; they are a
+baseline limitation, not a passing check. Hosted required Actions checks remain
+disabled under the existing repository setup; owner-authorized merges used
+GitHub's admin path with exact reviewed head commits.
+
+No unfinished Batch 3 coding remains. The existing agents and worktrees proceed
+with the bounded scopes in `BATCH_4_CONTRACT.md`. #490 storage/browser/host
+acceptance, #488 Meta/privacy acceptance and #481 hosting/egress acceptance remain
+open. The historical implementation report below describes the earlier draft
+stage; this update supersedes its draft/stacked status and next-review step.
+
 2026-10-08. Baseline main: `e9da7c7e7149bddb54eb917cd391f4b67ccd827d`.
 The three implementation agents and root's integration/review work are complete.
 No unfinished or interrupted coding assignment remains in this batch. Branches
