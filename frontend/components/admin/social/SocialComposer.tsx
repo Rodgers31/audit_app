@@ -11,6 +11,7 @@ import { SocialErrorBanner } from './SocialNotice';
 import SocialOverrides from './SocialOverrides';
 import SocialPreview from './SocialPreview';
 import SocialResults from './SocialResults';
+import SocialDeliveryHistory from './SocialDeliveryHistory';
 import styles from './social.module.css';
 
 function draftInput(post?: SocialPost): SocialDraftInput {
@@ -246,6 +247,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       {valid && <section className={styles.validation} aria-label='Backend validation'><h3>Saved revision validation</h3><p>{allValid ? 'All selected destinations passed.' : 'Publication blocked. Every selected destination must pass.'} · {valid.rules_version}</p>{valid.errors.map((issue, i) => <p className={styles.notice} key={i}>{issue.message}</p>)}{valid.targets.map((t, index) => <div className={styles.validationTarget} key={`${t.account_id}-${index}`}><strong>{t.platform ? platformLabels[t.platform] : 'Unknown platform'} · {accounts.find(a => a.id === t.account_id)?.display_name ?? 'Unavailable account'} · {t.valid ? 'Valid' : 'Needs attention'}</strong><ul>{[...t.errors, ...t.warnings].map((issue, i) => <li key={i}>{issue.message}</li>)}</ul></div>)}{warningCodes.map(code => <label className={styles.reviewCheck} key={code}><input type='checkbox' checked={acknowledged.includes(code)} disabled={commandBusy} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, code] : acknowledged.filter(c => c !== code))} />Acknowledge {code}: {warnings.filter(w => w.code === code).map(w => w.message).join(' ')}</label>)}</section>}
       {post && effectivePost?.publication && <SocialScheduleControls post={effectivePost} system={system} disabled={commandBusy || dirty || stale} onUpdated={adopt} />}
       {post && <><div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || live.isFetching} onClick={() => live.refetch()}>Refresh revision & results</button></div><SocialResults targets={latestResults} accounts={accounts} postId={post.id} />{effectivePost?.cancellation && <p className={styles.notice}>{effectivePost.cancellation.message} · {effectivePost.cancellation.in_flight_target_ids.length} in-flight destination(s) reported.</p>}</>}
+      {!!effectivePost?.historical_target_count && <SocialDeliveryHistory key={effectivePost.id} postId={effectivePost.id} preview={effectivePost.historical_targets} count={effectivePost.historical_target_count} accounts={accounts} />}
     </div>
     <div className={styles.footer}>
       <p className={styles.muted}>{system ? system.publishing_enabled ? 'Publishing enabled. Backend gates are checked again for every command.' : 'Publishing is paused. Draft saving and review remain available.' : 'Publishing status unavailable. Draft saving remains available.'}</p>

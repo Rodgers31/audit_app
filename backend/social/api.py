@@ -40,6 +40,24 @@ class PublicationDTO(StrictModel):
     requested_local_time: Union[str, None]
     cancel_requested_at: Union[datetime, None]
 
+class HistoricalTargetDTO(TargetDTO):
+    publication_id: UUID
+    revision_id: UUID
+    approved_at: datetime
+    approved_by: UUID
+    scheduled_for: Union[datetime, None]
+    cancel_requested_at: Union[datetime, None]
+    revoked_at: Union[datetime, None]
+    updated_at: datetime
+
+class DeliveryHistoryDTO(StrictModel):
+    post_id: UUID
+    targets: tuple[HistoricalTargetDTO, ...]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool
+
 class PostSummary(StrictModel):
     id: UUID
     title: str
@@ -54,6 +72,8 @@ class PostSummary(StrictModel):
     updated_at: datetime
     targets: tuple[TargetDTO, ...]
     publication: Union[PublicationDTO, None]
+    historical_targets: tuple[HistoricalTargetDTO, ...]
+    historical_target_count: int
 
 class CancellationDTO(StrictModel):
     in_flight_target_ids: tuple[UUID, ...]
@@ -145,7 +165,7 @@ Admin = Annotated[AdminUser, Depends(social_admin)]
 Service = Annotated[SocialService, Depends(service)]
 
 @router.get('/posts', response_model=PostList)
-def list_posts(svc: Service, page: int=Query(1, ge=1), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all'):
+def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all'):
     return svc.posts(page, page_size, editorial_state, delivery_filter)
 
 @router.post('/posts', response_model=PostDetail, status_code=201)
@@ -159,6 +179,10 @@ def get_post(post_id: UUID, svc: Service):
 @router.get("/posts/{post_id}/status", response_model=PostSummary)
 def post_status(post_id: UUID, svc: Service):
     return svc.summary(post_id)
+
+@router.get('/posts/{post_id}/history', response_model=DeliveryHistoryDTO)
+def post_history(post_id: UUID, svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=20)):
+    return svc.history(post_id, page, page_size)
 
 @router.patch('/posts/{post_id}', response_model=PostDetail)
 def patch_post(post_id: UUID, request: Request, body: PatchPost, svc: Service, admin: Admin, key: IdempotencyKey):

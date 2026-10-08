@@ -23,13 +23,39 @@ Mixed posts can belong to several views. These are post counts, rather than
 summed destination counts. Queue cards show account names/identities, the creator
 and reviewer, requested local time/timezone, exact UTC due time and independent
 confirmed target timestamps. History provides verified HTTPS publication links.
-Only the selected post loads its document.
+History selection uses compact receipts without loading the draft document.
+Other views load the document only for the selected post.
 
 Summary, detail and compact status share nullable `publication` metadata:
 `id`, `revision_id`, `version`, `approved_at`, `approved_by`, `scheduled_for`,
 `schedule_timezone`, `requested_local_time`, `cancel_requested_at`. Nullable
 `created_by` remains separate from the approval admin. The strict client expects
 these serialized fields, so API and client changes should ship together.
+
+Historical visibility includes targets belonging to revoked authorizations. The
+current `publication` and `targets` retain their current authorization binding;
+old approvals never bind a new draft. Summary/detail/status additionally return
+`historical_targets` (at most 20) and exact `historical_target_count`. These
+receipts include published/failed/cancelled/outcome_unknown/blocked/reconciling
+states. Each retains the compact delivery fields plus its own `publication_id`,
+`revision_id`, `approved_at`, `approved_by`, `scheduled_for`,
+`cancel_requested_at`, `revoked_at` and `updated_at`.
+
+`GET /posts/{id}/history?page=1&page_size=20` returns
+`{post_id,targets,total,page,page_size,has_more}`. The maximum page size is 20;
+the window preview and endpoint use the same deterministic updated-time/ID
+order. Window counting bounds previews in SQL and provides an exact count;
+endpoint count/page share one SQL snapshot, including empty late pages. Neither
+loads documents, evidence, payloads, checkpoints, attempt receipts or grants.
+The readonly history section uses existing styling, preserves each receipt's
+dates and safe links, and fetches further pages only when explicitly inspected.
+History cache keys include actor/post/page; relevant commands invalidate them.
+
+Post/history service pagination requires exact integer values and rejects
+Boolean/floating values. Pages are bounded to 2,147,483,647 before SQL. HTTP
+queries share the upper bound. Schedule validation rejects civil times that
+cannot represent the existing 24-hour retry window, so malformed extremes return
+atomic client errors instead of database/arithmetic failures.
 
 `POST /posts/{id}/reschedule` returns PostDetail with HTTP 200;
 `POST /posts/{id}/publish-now` returns PostDetail with HTTP 202. Both require the
@@ -108,8 +134,9 @@ query parameters, exact guarded bodies, DST gaps/overlaps, wrong authorization
 receipts, retained idempotent intent, successful/unsent independence, safe history
 links, claim controls and strict schedule response shapes.
 
-Final checks: **666 backend social tests passed, 71 skipped** with the explicit
-domain PostgreSQL lane; **461 frontend social/connections tests passed**;
+Final checks after the historical-delivery review fix: **684 backend social tests
+passed, 71 skipped** with the explicit domain PostgreSQL lane; **474 frontend
+social/connections tests passed**;
 whole-frontend TypeScript and owned code/test lint passed. The skips are the
 unassigned worker/connection/integration database lanes and optional platform
 fixtures; the integrator owns the combined lanes. Existing SQLAlchemy and
@@ -122,6 +149,14 @@ Every external browser request was blocked. This verifies static responsive
 fixtures and mounted interactions, not live auth/provider behavior or production
 hydration.
 
+The historical-delivery follow-up observed three backend failures before the
+fix, eleven pagination-boundary failures and twelve mounted/parser failures.
+All now pass. Three additional actual PostgreSQL fixtures verify revoked
+history, separation from a replacement authorization, and 25 receipts paginated
+20/5/0 with exact counts. The four original claim/action race fixtures still
+pass. The expanded responsive export verifies both schedule and historical
+receipt states at all four widths, and its mobile rendering was inspected.
+
 Reproduce from this worktree with the integrator's explicitly assigned,
 loopback-only `SOCIAL_TEST_DATABASE_URL` (the shared validator rejects remote
 or libpq query overrides):
@@ -131,7 +166,7 @@ PYTHONPATH=backend PYTHON_DOTENV_DISABLED=1 /Users/roger/Documents/projects/audi
 cd frontend
 npm test -- --runInBand __tests__/admin/social __tests__/social-connections
 ./node_modules/.bin/tsc --noEmit --incremental false
-SOCIAL_SCHEDULE_VISUAL_DIR=.social-schedule-preview ./node_modules/.bin/jest __tests__/admin/social/schedules.test.tsx --runInBand
+SOCIAL_SCHEDULE_VISUAL_DIR=.social-schedule-preview ./node_modules/.bin/jest __tests__/admin/social/schedules.test.tsx __tests__/admin/social/delivery-history.test.tsx --runInBand
 ./node_modules/.bin/tailwindcss -i app/globals.css -o .social-schedule-preview/global.css
 node tests/socialSchedulesVisualCheck.mjs
 ```

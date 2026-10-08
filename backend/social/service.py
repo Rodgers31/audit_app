@@ -559,26 +559,29 @@ class SocialService:
         fields = (SocialPublication.id, SocialPublication.post_id, SocialPublication.revision_id, SocialPublication.version, SocialPublication.approved_at, SocialPublication.approved_by, SocialPublication.scheduled_for, SocialPublication.schedule_timezone, SocialPublication.requested_local_time, SocialPublication.cancel_requested_at)
         return {row.post_id: SimpleNamespace(**row._mapping) for row in self.db.execute(select(*fields).where(SocialPublication.post_id.in_(post_ids), SocialPublication.revoked_at.is_(None)))} if post_ids else {}
 
-    def _summary(self, post, publication, targets, now=None):
-        return {"id": str(post.id), "title": post.title, "content_type": post.content_type, "origin_type": post.origin_type, "editorial_state": post.editorial_state, "delivery_status": self._delivery(targets, publication, now), "version": post.row_version, "revision_id": str(post.current_revision_id), "created_at": iso(post.created_at), "created_by": str(post.created_by) if post.created_by else None, "updated_at": iso(post.updated_at), "targets": [self._target_dto(t) for t in targets], "publication": self._publication_dto(publication)}
+    def _summary(self, post, publication, targets, now=None, history=None):
+        historical = history or {"targets": [], "total": 0}
+        return {"id": str(post.id), "title": post.title, "content_type": post.content_type, "origin_type": post.origin_type, "editorial_state": post.editorial_state, "delivery_status": self._delivery(targets, publication, now), "version": post.row_version, "revision_id": str(post.current_revision_id), "created_at": iso(post.created_at), "created_by": str(post.created_by) if post.created_by else None, "updated_at": iso(post.updated_at), "targets": [self._target_dto(t) for t in targets], "publication": self._publication_dto(publication), "historical_targets": historical["targets"], "historical_target_count": historical["total"]}
 
     def detail(self, post_id):
         post = self._post(post_id)
         revision = self._revision(post)
         publication = self._publication(post)
-        result = self._summary(post, publication, self._targets(publication))
+        result = self._summary(post, publication, self._targets(publication), history=self._compact_history([post.id]).get(post.id))
         result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []))
         return result
 
     def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all"):
+        if type(page) is not int or not 1 <= page <= 2_147_483_647 or type(page_size) is not int or not 1 <= page_size <= 100:
+            raise SocialError("INVALID_REQUEST", "Choose a valid post page and page size.", 422)
         if delivery_filter not in {"all", "scheduled", "history", "needs_attention"}:
             raise SocialError("INVALID_REQUEST", "Choose a supported delivery filter.", 422)
         now = self.now()
         condition = [SocialPost.editorial_state == editorial_state] if editorial_state else []
         if delivery_filter != "all":
-            membership = [SocialPublication.post_id == SocialPost.id, SocialPublication.revoked_at.is_(None)]
+            membership = [SocialPublication.post_id == SocialPost.id]
             if delivery_filter == "scheduled":
-                membership += [SocialPublication.cancel_requested_at.is_(None), SocialPostTarget.state.in_(("ready", "queued")), SocialPostTarget.submit_count == 0, func.coalesce(SocialPostTarget.next_action_at, SocialPublication.scheduled_for) > now]
+                membership += [SocialPublication.revoked_at.is_(None), SocialPublication.cancel_requested_at.is_(None), SocialPostTarget.state.in_(("ready", "queued")), SocialPostTarget.submit_count == 0, func.coalesce(SocialPostTarget.next_action_at, SocialPublication.scheduled_for) > now]
             else:
                 states = ("published", "failed", "cancelled", "outcome_unknown") if delivery_filter == "history" else ("failed", "blocked", "reconciling", "outcome_unknown")
                 membership.append(SocialPostTarget.state.in_(states))
@@ -593,7 +596,50 @@ class SocialService:
         total = rows[0].total
         pubs = self._compact_publications([p.id for p in posts])
         grouped = self._compact_targets([p.id for p in pubs.values()])
-        return {"posts": [self._summary(p, pubs.get(p.id), grouped.get(pubs[p.id].id, []) if p.id in pubs else [], now) for p in posts], "total": total, "page": page, "page_size": page_size, "has_more": page * page_size < total}
+        history = self._compact_history([p.id for p in posts])
+        return {"posts": [self._summary(p, pubs.get(p.id), grouped.get(pubs[p.id].id, []) if p.id in pubs else [], now, history.get(p.id)) for p in posts], "total": total, "page": page, "page_size": page_size, "has_more": page * page_size < total}
+
+    def _history_projection(self):
+        # Historical delivery receipts never load payloads, revisions or grants.
+        target, publication = SocialPostTarget, SocialPublication
+        return select(target.id, target.publication_id, publication.post_id, publication.revision_id,
+            target.account_id, SocialAccount.platform, target.state, target.remote_url, target.safe_error_message,
+            target.next_action_at, target.published_at, target.updated_at, publication.approved_at,
+            publication.approved_by, publication.scheduled_for, publication.cancel_requested_at, publication.revoked_at
+        ).join(publication, target.publication_id == publication.id).join(SocialAccount, target.account_id == SocialAccount.id
+        ).where(target.state.in_(("published", "failed", "cancelled", "outcome_unknown", "blocked", "reconciling")))
+
+    def _historical_target_dto(self, row):
+        return {key: str(row[key]) if key in {"id", "publication_id", "revision_id", "account_id", "approved_by"}
+            else iso(row[key]) if key in {"next_action_at", "published_at", "updated_at", "approved_at", "scheduled_for", "cancel_requested_at", "revoked_at"}
+            else row[key] for key in row if key not in {"post_id", "history_rank", "history_count", "total"}}
+
+    def _compact_history(self, post_ids):
+        if not post_ids:
+            return {}
+        target, publication = SocialPostTarget, SocialPublication
+        ranked = self._history_projection().add_columns(
+            func.row_number().over(partition_by=publication.post_id, order_by=(target.updated_at.desc(), target.id)).label("history_rank"),
+            func.count().over(partition_by=publication.post_id).label("history_count")
+        ).where(publication.post_id.in_(post_ids)).cte("ranked_delivery_history")
+        rows = self.db.execute(select(ranked).where(ranked.c.history_rank <= 20).order_by(ranked.c.post_id, ranked.c.history_rank)).mappings()
+        grouped = {}
+        for row in rows:
+            history = grouped.setdefault(row["post_id"], {"targets": [], "total": row["history_count"]})
+            history["targets"].append(self._historical_target_dto(row))
+        return grouped
+
+    def history(self, post_id, page=1, page_size=20):
+        self._post(post_id)
+        if type(page) is not int or not 1 <= page <= 2_147_483_647 or type(page_size) is not int or not 1 <= page_size <= 20:
+            raise SocialError("INVALID_REQUEST", "Choose a valid delivery history page.", 422)
+        receipts = self._history_projection().where(SocialPublication.post_id == post_id).cte("delivery_history")
+        count = select(func.count().label("total")).select_from(receipts).cte("history_count")
+        page_rows = select(receipts).order_by(receipts.c.updated_at.desc(), receipts.c.id).offset((page - 1) * page_size).limit(page_size).cte("history_page")
+        rows = self.db.execute(select(page_rows, count.c.total).select_from(count.outerjoin(page_rows, true())).order_by(page_rows.c.updated_at.desc(), page_rows.c.id)).mappings().all()
+        total = rows[0]["total"]
+        return {"post_id": str(post_id), "targets": [self._historical_target_dto(row) for row in rows if row["id"] is not None],
+            "total": total, "page": page, "page_size": page_size, "has_more": page * page_size < total}
 
     def _compact_targets(self, publication_ids):
         # Explicit projection excludes resolved payloads, receipts and checkpoints.
@@ -609,7 +655,7 @@ class SocialService:
         post = self._post(post_id)
         publication = self._compact_publications([post.id]).get(post.id)
         targets = self._compact_targets([publication.id]).get(publication.id, []) if publication else []
-        return self._summary(post, publication, targets, self.now())
+        return self._summary(post, publication, targets, self.now(), self._compact_history([post.id]).get(post.id))
 
     def accounts(self):
         from types import SimpleNamespace

@@ -112,6 +112,10 @@ test('optional actual queue and schedule fixture export preserves the existing d
 test('history shows independent confirmed timestamps and only verified HTTPS publication links', async () => {
   const p = scheduled();
   p.targets = [{ ...target('published'), published_at: '2026-10-03T12:05:00Z', remote_url: 'https://example.org/confirmed' }, { ...target('outcome_unknown', 'instagram'), remote_url: 'https://example.org/unconfirmed' }];
+  p.historical_targets = p.targets.map(t => ({ ...t, publication_id: p.publication!.id, revision_id: p.revision_id,
+    approved_by: p.publication!.approved_by, approved_at: p.publication!.approved_at, scheduled_for: p.publication!.scheduled_for,
+    cancel_requested_at: null, revoked_at: null, updated_at: p.updated_at }));
+  p.historical_target_count = p.historical_targets.length;
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } }));
   mount(); fireEvent.click(screen.getByRole('button', { name: 'History' }));
   expect(await screen.findByRole('link', { name: 'View Facebook published post' })).toHaveAttribute('href', 'https://example.org/confirmed');

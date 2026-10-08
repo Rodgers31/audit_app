@@ -18,6 +18,11 @@ export interface SocialTarget {
   remote_url: string | null; safe_error_message: string | null;
   next_action_at: string | null; published_at: string | null;
 }
+export interface SocialHistoricalTarget extends SocialTarget {
+  publication_id: string; revision_id: string; approved_at: string; approved_by: string;
+  scheduled_for: string | null; cancel_requested_at: string | null; revoked_at: string | null; updated_at: string;
+}
+export interface SocialHistory { post_id: string; targets: SocialHistoricalTarget[]; total: number; page: number; page_size: number; has_more: boolean }
 export type DeliveryFilter = 'all' | 'scheduled' | 'history' | 'needs_attention';
 export interface SocialSchedule {
   id: string; revision_id: string; version: number; approved_at: string; approved_by: string;
@@ -28,6 +33,7 @@ export interface SocialSummary {
   id: string; title: string; content_type: string; origin_type: string;
   editorial_state: EditorialState; delivery_status: string; version: number;
   revision_id: string; created_at: string; created_by: string | null; updated_at: string; targets: SocialTarget[]; publication: SocialSchedule | null;
+  historical_targets: SocialHistoricalTarget[]; historical_target_count: number;
 }
 export interface SocialPost extends SocialSummary {
   document: SocialDocument; references: SocialReference[];
@@ -136,6 +142,25 @@ function decodeTarget(v: unknown): SocialTarget {
 }
 function timestamp(v: unknown): string { const s = str(v); if (!/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(s) || !Number.isFinite(Date.parse(s))) throw contractError(); return s; }
 function nullableTimestamp(v: unknown): string | null { return v === null ? null : timestamp(v); }
+function decodeHistoricalTarget(v: unknown): SocialHistoricalTarget {
+  const o = exactObject(v, ['id', 'account_id', 'platform', 'state', 'remote_url', 'safe_error_message', 'next_action_at', 'published_at', 'publication_id', 'revision_id', 'approved_at', 'approved_by', 'scheduled_for', 'cancel_requested_at', 'revoked_at', 'updated_at']);
+  return { ...decodeTarget(o), id: uuid(o.id), account_id: uuid(o.account_id),
+    state: oneOf(o.state, ['published', 'failed', 'cancelled', 'outcome_unknown', 'blocked', 'reconciling']),
+    publication_id: uuid(o.publication_id), revision_id: uuid(o.revision_id), approved_at: timestamp(o.approved_at), approved_by: uuid(o.approved_by),
+    scheduled_for: nullableTimestamp(o.scheduled_for), cancel_requested_at: nullableTimestamp(o.cancel_requested_at), revoked_at: nullableTimestamp(o.revoked_at),
+    next_action_at: nullableTimestamp(o.next_action_at), published_at: nullableTimestamp(o.published_at), updated_at: timestamp(o.updated_at) };
+}
+function historicalTargets(v: unknown): SocialHistoricalTarget[] {
+  const targets = arr(v).map(decodeHistoricalTarget);
+  if (targets.length > 20 || new Set(targets.map(t => t.id)).size !== targets.length) throw contractError();
+  return targets;
+}
+export function decodeHistory(v: unknown): SocialHistory {
+  const o = exactObject(v, ['post_id', 'targets', 'total', 'page', 'page_size', 'has_more']);
+  const targets = historicalTargets(o.targets), total = integer(o.total, 0), page = integer(o.page), page_size = integer(o.page_size), has_more = bool(o.has_more);
+  if (page > 2_147_483_647 || page_size > 20 || targets.length !== Math.max(0, Math.min(page_size, total - (page - 1) * page_size)) || has_more !== (page * page_size < total)) throw contractError();
+  return { post_id: uuid(o.post_id), targets, total, page, page_size, has_more };
+}
 function decodeSchedule(v: unknown): SocialSchedule | null {
   if (v === null) return null;
   const o = exactObject(v, ['id', 'revision_id', 'version', 'approved_at', 'approved_by', 'scheduled_for', 'schedule_timezone', 'requested_local_time', 'cancel_requested_at']);
@@ -145,7 +170,9 @@ function decodeSchedule(v: unknown): SocialSchedule | null {
   return { id: uuid(o.id), revision_id: uuid(o.revision_id), version: integer(o.version), approved_at: timestamp(o.approved_at), approved_by: uuid(o.approved_by), scheduled_for: nullableTimestamp(o.scheduled_for), schedule_timezone: zone, requested_local_time: local, cancel_requested_at: nullableTimestamp(o.cancel_requested_at) };
 }
 export function decodeSummary(v: unknown): SocialSummary {
-  const o = obj(v); return { id: str(o.id), title: str(o.title), content_type: str(o.content_type), origin_type: str(o.origin_type), editorial_state: oneOf(o.editorial_state, editorialStates), delivery_status: str(o.delivery_status), version: integer(o.version), revision_id: str(o.revision_id), created_at: str(o.created_at), created_by: o.created_by === null ? null : uuid(o.created_by), updated_at: str(o.updated_at), targets: arr(o.targets).map(decodeTarget), publication: decodeSchedule(o.publication) };
+  const o = obj(v), historical_targets = historicalTargets(o.historical_targets), historical_target_count = integer(o.historical_target_count, 0);
+  if (historical_targets.length !== Math.min(20, historical_target_count)) throw contractError();
+  return { id: str(o.id), title: str(o.title), content_type: str(o.content_type), origin_type: str(o.origin_type), editorial_state: oneOf(o.editorial_state, editorialStates), delivery_status: str(o.delivery_status), version: integer(o.version), revision_id: str(o.revision_id), created_at: str(o.created_at), created_by: o.created_by === null ? null : uuid(o.created_by), updated_at: str(o.updated_at), targets: arr(o.targets).map(decodeTarget), publication: decodeSchedule(o.publication), historical_targets, historical_target_count };
 }
 export function decodePost(v: unknown): SocialPost {
   const o = obj(v);
@@ -212,6 +239,7 @@ export const socialApi = {
   posts: (page: number, editorial_state?: EditorialState, signal?: AbortSignal, delivery_filter: DeliveryFilter = 'all') => read('/posts', v => { const o = obj(v); return { posts: arr(o.posts).map(decodeSummary), total: integer(o.total, 0), page: integer(o.page), page_size: integer(o.page_size), has_more: bool(o.has_more) }; }, signal, { page, page_size: 20, delivery_filter, ...(editorial_state ? { editorial_state } : {}) }),
   post: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}`, v => { const post = decodePost(v); if (post.id !== id) throw contractError(); return post; }, signal),
   postStatus: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/status`, v => { const post = decodeSummary(v); if (post.id !== id) throw contractError(); return post; }, signal),
+  history: (id: string, page: number, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/history`, v => { const result = decodeHistory(v); if (result.post_id !== id || result.page !== page || result.page_size !== 20) throw contractError(); return result; }, signal, { page, page_size: 20 }),
   accounts: (signal?: AbortSignal) => read('/accounts', v => arr(obj(v).accounts).map(item => { const o = obj(item); return { id: str(o.id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), display_name: str(o.display_name), handle: nullable(o.handle), profile_url: nullable(o.profile_url), connection_state: str(o.connection_state), publishing_enabled: bool(o.publishing_enabled), capabilities: decodeCapabilities(o.capabilities) }; }), signal),
   platforms: (signal?: AbortSignal) => read('/platforms', v => arr(obj(v).platforms).map(item => { const o = obj(item); return { platform: oneOf(o.platform, SOCIAL_PLATFORMS), capabilities: decodeCapabilities(o.capabilities) }; }), signal),
   status: (signal?: AbortSignal) => read('/system/status', decodeSystem, signal),
