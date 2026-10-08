@@ -39,6 +39,14 @@ design generation or scheduling service is introduced.
 - Summary/detail/status share nullable compact publication metadata: identity,
   revision/version, approval time/admin, UTC due time, timezone/requested local
   time and cancellation time. Independent target receipt times/links remain.
+- History and attention membership span prior revoked authorizations. Current
+  `publication` and `targets` retain only the current authorization binding.
+  Separate `historical_targets` carry their publication/revision IDs, with at
+  most 20 receipts per preview and exact `historical_target_count`.
+  `GET /posts/{id}/history` pages compact receipts in batches of at most 20;
+  no revision document, payload, checkpoint or grant is loaded. Both post and
+  history pages require integers in 1..2,147,483,647. Reject civil times that
+  cannot represent the full 24-hour retry window before changing anything.
 - Existing-authorization `reschedule` and `publish-now` commands require strict
   post/publication expected versions, publication identity, reason, idempotency;
   reschedule also uses existing strict `ScheduleTime`. Approved revision, hash,
@@ -118,6 +126,12 @@ Facebook supports text and one inspected static JPEG/PNG; Instagram supports
 one inspected JPEG. Other formats/caption assets are explicitly unsupported.
 Endpoint-specific official evidence pins version/scopes/limits; stricter app
 ceilings are identified as app policy. Runtime eligibility remains gated.
+
+Provider-verified connection selection/reconnection must persist the native
+capability snapshot. Registry presence cannot upgrade a legacy snapshot or
+relax recorded eligibility, publishing, cost, scopes, formats or limits. Changed
+admission fields require verification before approval and dispatch. The account
+list reads only compact capability metadata; credential bundles remain private.
 
 All mutating upload/container/publish operations require reconciliation after
 an uncertain outcome. Persist provider IDs before the next step. Polling and
