@@ -128,3 +128,32 @@ def test_actual_cli_process_exits_nonzero_for_unconfigured_backend():
     assert process.returncode == 1
     assert '"status": "refused"' in process.stderr
     assert not process.stdout
+
+
+def r2_settings(tmp_path):
+    from test_r2_receipt_store import ACCOUNT, R2_BUCKET
+    return SeedingSettings(storage_path=tmp_path, receipt_storage_backend="r2", receipt_r2_account_id=ACCOUNT, receipt_r2_bucket=R2_BUCKET, receipt_max_bytes=1024)
+
+
+def r2_args(tmp_path, **changes):
+    from test_r2_receipt_store import ACCOUNT, R2_BUCKET
+    return arguments(tmp_path, expected_backend="r2", expected_account_id=ACCOUNT, expected_bucket=R2_BUCKET, expected_jurisdiction="default", allow_r2_write=True, **changes)
+
+
+@pytest.mark.parametrize("field,value", [("expected_account_id", "b" * 32), ("expected_bucket", "other"), ("expected_jurisdiction", "eu"), ("allow_r2_write", False)])
+def test_r2_cli_guards_before_store(tmp_path, monkeypatch, field, value):
+    args = r2_args(tmp_path)
+    setattr(args, field, value)
+    monkeypatch.setattr(CLI, "configured_receipt_store", lambda settings: pytest.fail("must refuse before storage"))
+    with pytest.raises(ValueError): CLI.verify(args, r2_settings(tmp_path))
+
+
+def test_r2_actual_cli_parsing_and_fresh_boundary_read(tmp_path, monkeypatch):
+    from test_r2_receipt_store import ACCOUNT, R2_BUCKET, Boundary as R2Boundary
+    (tmp_path / "input").write_bytes(BODY)
+    args = CLI.parser().parse_args(["--expected-backend", "r2", "--expected-account-id", ACCOUNT, "--expected-bucket", R2_BUCKET, "--expected-jurisdiction", "default", "put", "--file", str(tmp_path / "input"), "--allow-r2-write"])
+    monkeypatch.setattr(CLI, "configured_receipt_store", lambda settings: R2Boundary(tmp_path / "objects").store())
+    put = CLI.verify(args, r2_settings(tmp_path))
+    assert put["backend"] == "r2" and put["account_id"] == ACCOUNT
+    read = CLI.verify(r2_args(tmp_path, operation="read", digest=put["digest"], expected_size=put["byte_size"]), r2_settings(tmp_path))
+    assert read["digest"] == put["digest"]

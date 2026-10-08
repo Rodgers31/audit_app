@@ -62,10 +62,13 @@ class SeedingSettings(BaseSettings):
         default=Path("data/seeding"),
         description="Base directory for caching downloads and generated assets.",
     )
-    receipt_storage_backend: Literal["local", "supabase"] = "local"
+    receipt_storage_backend: Literal["local", "supabase", "r2"] = "local"
     receipt_supabase_url: str = ""
     receipt_supabase_bucket: str = ""
-    # Required for Supabase: owner must choose the account AND bucket cap.
+    receipt_r2_account_id: str = ""
+    receipt_r2_bucket: str = ""
+    receipt_r2_jurisdiction: Literal["default", "eu", "us"] = "default"
+    # Required for durable providers: owner must choose an explicit byte cap.
     # Local storage retains its existing 64MiB default.
     receipt_max_bytes: Optional[int] = Field(default=None, ge=1, le=64 * 1024 * 1024)
     receipt_part_max_bytes: Optional[int] = Field(default=None, ge=1, le=32 * 1024 * 1024)

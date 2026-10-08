@@ -19,7 +19,7 @@ def job_environment(variables, secrets):
     resolved = {}
     for name, expression in environment.items():
         match = re.fullmatch(
-            r"\$\{\{ (vars|secrets)\.([A-Z_]+)(?: \|\| '([^']*)')? \}\}", expression
+            r"\$\{\{ (vars|secrets)\.([A-Z0-9_]+)(?: \|\| '([^']*)')? \}\}", expression
         )
         assert match, (name, expression)
         source, key, fallback = match.groups()
@@ -119,4 +119,35 @@ def test_selected_supabase_without_workflow_cap_refuses_before_secret_lookup(
     )
     with pytest.raises(ValueError, match="explicitly configured"):
         configured_receipt_store(settings)
+    assert not (tmp_path / "response-receipts").exists()
+
+
+def test_r2_workflow_binding_and_job_only_secrets(tmp_path, monkeypatch):
+    from config import secrets
+    from services.r2_receipt_store import R2ReceiptStore
+    from test_r2_receipt_store import ACCOUNT, R2_BUCKET, ACCESS, SECRET, CONTROL
+    variables = {"SEED_RECEIPT_STORAGE_BACKEND": "r2", "SEED_RECEIPT_R2_ACCOUNT_ID": ACCOUNT, "SEED_RECEIPT_R2_BUCKET": R2_BUCKET, "SEED_RECEIPT_R2_JURISDICTION": "default", "SEED_RECEIPT_MAX_BYTES": "1024", "SEED_RECEIPT_PART_MAX_BYTES": "512", "SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS": "12"}
+    credentials = {"RECEIPT_R2_ACCESS_KEY_ID": ACCESS, "RECEIPT_R2_SECRET_ACCESS_KEY": SECRET, "RECEIPT_R2_CONTROL_TOKEN": CONTROL}
+    workflow, environment = job_environment(variables, credentials)
+    apply_environment(monkeypatch, environment)
+    monkeypatch.setattr(secrets, "get_secret", lambda name: environment[name])
+    settings = SeedingSettings(storage_path=tmp_path)
+    store = configured_receipt_store(settings)
+    assert isinstance(store, R2ReceiptStore)
+    assert (store.account_id, store.bucket, store.jurisdiction) == (ACCOUNT, R2_BUCKET, "default")
+    assert (store.max_bytes, store.part_max_bytes, store._timeout) == (1024, 512, 12)
+    for name in credentials:
+        assert name not in workflow.get("env", {})
+        for job_name, job in workflow["jobs"].items():
+            if job_name != "seed": assert name not in str(job)
+
+
+@pytest.mark.parametrize("changes", [{"receipt_max_bytes": None}, {"receipt_r2_account_id": "evil.example"}, {"receipt_r2_bucket": "../other"}])
+def test_r2_invalid_target_or_missing_cap_before_secret_lookup(tmp_path, monkeypatch, changes):
+    from config import secrets
+    from test_r2_receipt_store import ACCOUNT, R2_BUCKET
+    values = dict(storage_path=tmp_path, receipt_storage_backend="r2", receipt_r2_account_id=ACCOUNT, receipt_r2_bucket=R2_BUCKET, receipt_max_bytes=1024)
+    values.update(changes)
+    monkeypatch.setattr(secrets, "get_secret", lambda name: pytest.fail("invalid target must refuse before secret lookup"))
+    with pytest.raises(ValueError): configured_receipt_store(SeedingSettings(**values))
     assert not (tmp_path / "response-receipts").exists()
