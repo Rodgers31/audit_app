@@ -131,9 +131,12 @@ class SocialService:
 
     def _new_revision(self, post, document, references, revision_no):
         ids = all_asset_ids(document)
-        existing = set(self.db.scalars(select(SocialMediaAsset.id).where(SocialMediaAsset.id.in_(ids)))) if ids else set()
-        if ids != existing:
+        assets = list(self.db.scalars(select(SocialMediaAsset).where(SocialMediaAsset.id.in_(ids))
+            .order_by(SocialMediaAsset.id).with_for_update().execution_options(populate_existing=True))) if ids else []
+        if ids != {asset.id for asset in assets}:
             raise SocialError("TARGET_VALIDATION_FAILED", "One or more referenced media assets do not exist.", 422)
+        if any(asset.state != 'ready' or asset.deleted_at is not None for asset in assets):
+            raise SocialError("TARGET_VALIDATION_FAILED", "Referenced media assets must be ready and available.", 422)
         evidence = {"references": [r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in references]}
         value = document_json(document)
         revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, created_by=self.actor)

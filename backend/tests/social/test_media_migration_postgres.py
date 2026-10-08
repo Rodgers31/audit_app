@@ -28,6 +28,8 @@ def upgrade(engine):
             from test_connections_migration_postgres import connection_migration
             connection_migration().upgrade()
             media_migration().upgrade()
+            from test_media_settlement_migration_postgres import settlement_migration
+            settlement_migration().upgrade()
 
 
 def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
@@ -39,6 +41,8 @@ def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
             assert not conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_class c, LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a WHERE c.oid=CAST(:name AS regclass) AND a.grantee=0)"), {'name': table}).scalar()
         assert inspect(conn).get_foreign_keys('social_media_uploads')[0]['referred_table'] == 'social_media_assets'
         with Operations.context(MigrationContext.configure(conn)):
+            from test_media_settlement_migration_postgres import settlement_migration
+            settlement_migration().downgrade()
             media_migration().downgrade()
         assert len(inspect(conn).get_table_names()) == 14
 

@@ -73,3 +73,20 @@ class MediaCapabilities(StrictModel):
     max_image_bytes: int
     max_video_bytes: int
     unavailable_reason: Union[str, None]
+
+
+class MaintenanceBacklog(StrictModel):
+    eligible_cleanup: Annotated[int, Field(strict=True, ge=0)]
+    unknown_browser_writes: Annotated[int, Field(strict=True, ge=0)]
+    unknown_finalizations: Annotated[int, Field(strict=True, ge=0)]
+    active_leases: Annotated[int, Field(strict=True, ge=0)]
+    protected_references: Annotated[int, Field(strict=True, ge=0)]
+    reserved_bytes: Annotated[int, Field(strict=True, ge=0)]
+    pending_uploads: Annotated[int, Field(strict=True, ge=0)]
+    oldest_orphan_at: datetime | None
+
+
+class MaintenanceResult(StrictModel):
+    cleanup_enabled: bool
+    cleaned: Annotated[int, Field(strict=True, ge=0, le=20)]
+    backlog: MaintenanceBacklog

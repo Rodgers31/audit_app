@@ -1,10 +1,11 @@
 """Lazy optional runtime; absence never silently substitutes fake storage."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 
 from .config import MediaConfig, config_from_environment
 from .inspection import LocalInspector
 from .storage import MediaStorage, R2Storage
+from .reconciliation import UnsupportedWriteQuiescenceVerifier, WriteQuiescenceVerifier
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,7 @@ class MediaRuntime:
     storage: MediaStorage | None
     inspector: LocalInspector | None
     unavailable_reason: str | None = None
+    write_quiescence_verifier: WriteQuiescenceVerifier = field(default_factory=UnsupportedWriteQuiescenceVerifier)
 
     def available_mimes(self):
         if not self.config.enabled or self.storage is None or self.inspector is None:

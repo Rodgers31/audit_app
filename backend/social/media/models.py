@@ -15,6 +15,12 @@ class SocialMediaUpload(Base):
     declared_size = Column(BigInteger, nullable=False)
     version = Column(BigInteger, nullable=False, default=1)
     expires_at = Column(TZ, nullable=False)
+    grant_renewal_deadline = Column(TZ, nullable=False)
+    grant_epoch = Column(BigInteger, nullable=False, default=0, server_default='0')
+    grant_expires_at = Column(TZ)
+    grant_settled_epoch = Column(BigInteger, nullable=False, default=0, server_default='0')
+    write_quiescence_receipt_hash = Column(String(64))
+    pending_released = Column(Integer, nullable=False, default=0, server_default='0')
     completion_key = Column(Uuid(as_uuid=True))
     completion_hash = Column(String(64))
     reservation_released = Column(Integer, nullable=False, default=0)
@@ -23,7 +29,7 @@ class SocialMediaUpload(Base):
     finalization_epoch = Column(BigInteger)
     finalization_settled = Column(Integer, nullable=False, default=0)
     created_at = created()
-    __table_args__ = (UniqueConstraint('actor_id', 'initiation_key', name='uq_social_media_intent'), CheckConstraint('declared_size > 0 AND version > 0 AND reserved_bytes >= 0 AND reservation_released IN (0,1) AND quarantine_cleaned IN (0,1) AND finalization_settled IN (0,1) AND (finalization_epoch IS NULL OR finalization_epoch > 0)', name='ck_social_media_upload_bounds'), Index('ix_social_media_upload_expiry', 'expires_at'))
+    __table_args__ = (UniqueConstraint('actor_id', 'initiation_key', name='uq_social_media_intent'), CheckConstraint('declared_size > 0 AND version > 0 AND reserved_bytes >= 0 AND reservation_released IN (0,1) AND quarantine_cleaned IN (0,1) AND finalization_settled IN (0,1) AND (finalization_epoch IS NULL OR finalization_epoch > 0)', name='ck_social_media_upload_bounds'), CheckConstraint('grant_epoch >= 0 AND grant_settled_epoch >= 0 AND grant_settled_epoch <= grant_epoch AND pending_released IN (0,1)', name='ck_social_media_grant_bounds'), Index('ix_social_media_upload_expiry', 'expires_at'))
 
 
 class SocialMediaBudget(Base):
