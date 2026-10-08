@@ -1,0 +1,903 @@
+{
+  "cycle_social": {
+    "direction": "database_to_worker",
+    "measurement": "provider_bytes",
+    "period_end": "2026-10-15T12:00:00Z",
+    "period_start": "2026-10-08T00:00:00Z",
+    "receipt": {
+      "captured_at": "2026-10-15T12:00:00Z",
+      "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+      "kind": "social_provider_meter",
+      "observer": "SYNTHETIC-test-owner",
+      "payload_sha256": "8ef169b2fa92b788061e04966f7cd825c673c8a3f4245e4fc966804af5af466a",
+      "source_sha256": "b8c5d783eeed28a98849adc77db2a70d88e125682b3b026d78c07b430488320f",
+      "synthetic": true
+    },
+    "transfer": {
+      "resolution": 0,
+      "rounding": "exact",
+      "unit": "B",
+      "value": 30000000
+    }
+  },
+  "cycle_usage": {
+    "meter_scope": "organization_uncached",
+    "period_end": "2026-10-15T12:00:00Z",
+    "period_start": "2026-10-08T00:00:00Z",
+    "receipt": {
+      "captured_at": "2026-10-15T12:00:00Z",
+      "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+      "kind": "provider_dashboard",
+      "observer": "SYNTHETIC-test-owner",
+      "payload_sha256": "f62a40d039c171f29a51ea96f4f58dee9c6330fdf8df73788a8f62699ceb7ffd",
+      "source_sha256": "7e05cd597348f4d41dee63025e37a1785b4c732c87f6cd01fc573ba1e139a791",
+      "synthetic": true
+    },
+    "total_uncached": {
+      "resolution": 0,
+      "rounding": "exact",
+      "unit": "B",
+      "value": 750000000
+    }
+  },
+  "days": [
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 1,
+        "nightly_runs": 1,
+        "period_end": "2026-10-09T00:00:00+00:00",
+        "period_start": "2026-10-08T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "cf9213cf6384a715e198b2caccd6b74ae3e5fece9d087fdf484c4e646eaae637",
+          "source_sha256": "f24c2ab75e5fd23cf7a81908157d15209b9d35df989b1a69c8f2bea0c7b2243e",
+          "synthetic": true
+        },
+        "restarts": 1,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-08",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-09T00:00:00+00:00",
+        "period_start": "2026-10-08T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "7d39f2e5faa2859fe581b8e5fcd5fc699996a5bec8f4269e17d2fe4ba78c4ae6",
+          "source_sha256": "bd0755d8db1efb17ba0b497d59e1eb502ff91c2692e6ce1633de2540b92c8925",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-09T00:00:00+00:00",
+        "period_start": "2026-10-08T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "d2f9795e52806da6402dc39e92ba06a1391c358cc224f881ea4b248b4eee8136",
+          "source_sha256": "5ddd76cfe629ed62be5aa3a6ae24507d4a83d32486326c21c09eb36a92ba6a50",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-10T00:00:00+00:00",
+        "period_start": "2026-10-09T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "6994744706465fde60c127655a38a7342f95e1977e46a5b311b0861feed443b2",
+          "source_sha256": "dca81a20fb3ac6f7f4b724043d1a84fd0031e60643cce1eab9c7add43145029b",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-09",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-10T00:00:00+00:00",
+        "period_start": "2026-10-09T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "dd07993532560658a54731f444da067a50a21ab749bb905b8152554993e331fa",
+          "source_sha256": "f1de564bac43672a2062f1ac02ee17b82e46de86e64c7003690da284dc44647e",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-10T00:00:00+00:00",
+        "period_start": "2026-10-09T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "3a48a058425fbb674e8b04afe595262c3011494f7b90bc6cd9e1b887d9ba4b1d",
+          "source_sha256": "7f9adc96326fcec7b384174f4171c71ddfa520cdb542d8f0e352c6015cbc5db0",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-11T00:00:00+00:00",
+        "period_start": "2026-10-10T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "6b0a1863c870be7b7ae5cf648328444e68b96edb8333378048d4d26871ab1413",
+          "source_sha256": "4dae7ae36db7c2cc7c8d1a9b883dab6792711cf256dd3463ad09c3bf452917be",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-10",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-11T00:00:00+00:00",
+        "period_start": "2026-10-10T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "52d22da38326c021a08eeb2f514e0f00accf91349d3272c9c0d90ebc9e932369",
+          "source_sha256": "6b0c604339358cd3bc2ab71dce97242cc7f32ce29875bf6f2e5be3d9b5e47bcd",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-11T00:00:00+00:00",
+        "period_start": "2026-10-10T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "7cb486b8e8a863fd340b3ed1748aa8f243b320edf8485206884398b43ed205a2",
+          "source_sha256": "4b071a9c90b005b08a135bc0830b409e420b4c50081da92e3906b1177e7d4d2b",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-12T00:00:00+00:00",
+        "period_start": "2026-10-11T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "54bed3e912ba2ced9c785d41a9e5d70fa833c634bc82133405c3b16b979d72a0",
+          "source_sha256": "43c44080327712cfac8f28bb9980e1d139a4d85077f28e0aee817ac0f371ec88",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-11",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-12T00:00:00+00:00",
+        "period_start": "2026-10-11T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "3ae307789888c98c3cab08bb63e2aea7a7fff9f3eaa170bb7f75619f16d535b2",
+          "source_sha256": "cdb318e5bba5fcfc04e62d9cb953a09ac6960a4326e0708aa64dd05d0fa62617",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-12T00:00:00+00:00",
+        "period_start": "2026-10-11T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "364ce209978ffe0dcbcd328aff214a8c6e14bd396ca14efb60bbdb993658d2bb",
+          "source_sha256": "87cd7f80db83176d3ecd9302aa80b9d79b6c734a03fade5af2f1547d11385f87",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-13T00:00:00+00:00",
+        "period_start": "2026-10-12T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "27735a012af742f2626795df56c4f5ca065e8d7926b78c7417c22d68bca912fe",
+          "source_sha256": "48848f2258c359756000959803f1c636a7e909f9bbba12ec4604baccbf93a890",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-12",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-13T00:00:00+00:00",
+        "period_start": "2026-10-12T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "2572807b18592bfabae0e3a54da1bd69dae76c1f71bfba7bf847c3e76c76ee2a",
+          "source_sha256": "a50c5060d80ea43d87d4b5a96a2f1624a9d34fd8eaf66eacfdf49c918dbb7e69",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-13T00:00:00+00:00",
+        "period_start": "2026-10-12T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "c5cf51cb5f266d636278deb56136b4ca6ce11f76f52cba13ace54fbd1d65eb6d",
+          "source_sha256": "e731798fdf9e84cf308a80ccbd089ab608a7380fcfc644a627757a2aaebbf5f7",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-14T00:00:00+00:00",
+        "period_start": "2026-10-13T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "d5100d793ad135528ced23e2e2342accfc917880b5a7dda7cd903df5e2603f04",
+          "source_sha256": "5a45261ba00c30a3a8dbba9a00e183cdbad984d4ebbb6b817b5679243eb30e1a",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-13",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-14T00:00:00+00:00",
+        "period_start": "2026-10-13T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "b51a25052fb146f0459acafab93b2ccabfb65eb165245129a812fc87f1644866",
+          "source_sha256": "5c5a844322476b872797ff10e86f25234f810d5792791af5e54a96f2d12a74c0",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-14T00:00:00+00:00",
+        "period_start": "2026-10-13T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "e337cdc7a168b9a79b84660fec323d7d2cfe525a9e483570bb8b83f1d60d2043",
+          "source_sha256": "728cb3b4a62cdb277c9a3350240b24b70734a512d3d70ea43d9cb7b7c0c70225",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    },
+    {
+      "activity": {
+        "actions_enabled": true,
+        "api_requests": 10000,
+        "cache_hits": 9000,
+        "cache_misses": 1000,
+        "coverage_complete": true,
+        "deployments": 0,
+        "nightly_runs": 1,
+        "period_end": "2026-10-15T00:00:00+00:00",
+        "period_start": "2026-10-14T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "runtime_logs",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "df803114248d93b40ea77be42c54a95cd61b9ab0f197fdde81b899f14b2feb2f",
+          "source_sha256": "e494413abab4bc314d88c7adf338cccee6e4287fa2fc727c52d173c08bde9d1e",
+          "synthetic": true
+        },
+        "restarts": 0,
+        "worker_covered_seconds": 86400,
+        "worker_heartbeats": 1440,
+        "worker_publications": 1,
+        "worker_scans": 2880,
+        "worker_uptime_seconds": 86400
+      },
+      "complete": true,
+      "date": "2026-10-14",
+      "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+      "provider": {
+        "meter_scope": "organization_uncached",
+        "period_end": "2026-10-15T00:00:00+00:00",
+        "period_start": "2026-10-14T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "provider_dashboard",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "bd2370bdd785f7ba4e1dc289774947d7fa7151ac7612c09a80235ed7f1def262",
+          "source_sha256": "87ca041ba3de003808bc4f14fdcffb99bc0ce57cbe31f4d73d794bf9018653fb",
+          "synthetic": true
+        },
+        "services": {
+          "auth": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "database": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "other_uncached": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          },
+          "shared_pooler": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 100000000
+          },
+          "storage": {
+            "resolution": 0,
+            "rounding": "exact",
+            "unit": "B",
+            "value": 0
+          }
+        },
+        "total_uncached": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 100000000
+        }
+      },
+      "social": {
+        "direction": "database_to_worker",
+        "measurement": "provider_bytes",
+        "period_end": "2026-10-15T00:00:00+00:00",
+        "period_start": "2026-10-14T00:00:00+00:00",
+        "receipt": {
+          "captured_at": "2026-10-15T12:00:00Z",
+          "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+          "kind": "social_provider_meter",
+          "observer": "SYNTHETIC-test-owner",
+          "payload_sha256": "552463f38b2b5c94ee843b038e6fc4f6e6caf3d53d2d5411d24bba13ce941e75",
+          "source_sha256": "7b523ae3b98c33b61d7a6f7f23686cbd8b74e829a5c0941c614b804bb6d05151",
+          "synthetic": true
+        },
+        "transfer": {
+          "resolution": 0,
+          "rounding": "exact",
+          "unit": "B",
+          "value": 4000000
+        }
+      }
+    }
+  ],
+  "future_increments": [
+    {
+      "bytes_per_unit": {
+        "resolution": 0,
+        "rounding": "exact",
+        "unit": "B",
+        "value": 4000000
+      },
+      "inclusion": "already_in_provider_total",
+      "measurement": "provider_bytes",
+      "period_end": "2026-10-15T00:00:00Z",
+      "period_start": "2026-10-08T00:00:00Z",
+      "receipt": {
+        "captured_at": "2026-10-15T12:00:00Z",
+        "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+        "kind": "future_measurement",
+        "observer": "SYNTHETIC-test-owner",
+        "payload_sha256": "f8584d55bb9cd0d32b8155b0927eb03499ba313a1ff8a788fa362bbb5773155c",
+        "source_sha256": "5b9e9ee4d4797a53284a7f176d9df063b2486fc066fdf1526f1a96b92c9a8f12",
+        "synthetic": true
+      },
+      "remaining_units": 23,
+      "workload": "social_worker"
+    }
+  ],
+  "hosting": {
+    "always_on": true,
+    "capacity": {
+      "limit_kind": "pooler_client_connections",
+      "reserved_connections": 5,
+      "verified_limit": 40
+    },
+    "cost_accepted": true,
+    "deployed_at": "2026-10-08T00:00:00Z",
+    "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+    "owner": "SYNTHETIC-test-owner",
+    "processes": [
+      {
+        "connection_kind": "pooler_client_connections",
+        "overflow": 10,
+        "pool_size": 5,
+        "processes_per_replica": 1,
+        "replicas": 1,
+        "role": "web"
+      },
+      {
+        "connection_kind": "pooler_client_connections",
+        "overflow": 0,
+        "pool_size": 2,
+        "processes_per_replica": 1,
+        "replicas": 1,
+        "role": "worker"
+      },
+      {
+        "connection_kind": "pooler_client_connections",
+        "overflow": 0,
+        "pool_size": 1,
+        "processes_per_replica": 1,
+        "replicas": 1,
+        "role": "etl"
+      },
+      {
+        "connection_kind": "pooler_client_connections",
+        "overflow": 0,
+        "pool_size": 1,
+        "processes_per_replica": 1,
+        "replicas": 1,
+        "role": "admin"
+      }
+    ],
+    "receipt": {
+      "captured_at": "2026-10-15T12:00:00Z",
+      "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+      "kind": "hosting_readback",
+      "observer": "SYNTHETIC-test-owner",
+      "payload_sha256": "aea4cfc3d01c8f5e97feb4a3fc6866289d51c286b61df5a0b34738cfac4a23fa",
+      "source_sha256": "7e6a8a8d2c367bf91702cc0b1d88f258080c25df180946f09b7a7183192eb2f3",
+      "synthetic": true
+    }
+  },
+  "identity": {
+    "cycle_end": "2026-11-08",
+    "cycle_start": "2026-10-08",
+    "database_fingerprint_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "deployment_sha": "f5239ed63e146650bee2d0fb1cec9b23616eb648",
+    "organization_id": "SYNTHETIC-organization",
+    "project_id": "SYNTHETIC-project",
+    "required_reserve_bytes": 500000000,
+    "timezone": "UTC",
+    "uncached_allowance_bytes": 5000000000
+  },
+  "query_counters": {
+    "after": [
+      {
+        "calls": 5200,
+        "query_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rows": 45000,
+        "stats_since": "2026-10-01T00:00:00Z"
+      }
+    ],
+    "after_database_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "after_dealloc": 5,
+    "before": [
+      {
+        "calls": 5000,
+        "query_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "rows": 40000,
+        "stats_since": "2026-10-01T00:00:00Z"
+      }
+    ],
+    "before_database_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "before_dealloc": 5,
+    "end_at": "2026-10-15T00:00:00Z",
+    "end_reset": "2026-04-22T20:29:28Z",
+    "kind": "snapshot_delta",
+    "receipt": {
+      "captured_at": "2026-10-15T12:00:00Z",
+      "identity_sha256": "e71b84413ddd4ba26f0f77fd8d0bd6d6b60948a21de6419b65298e008ebb9d74",
+      "kind": "query_stats_snapshots",
+      "observer": "SYNTHETIC-test-owner",
+      "payload_sha256": "6796897e2ad488f7d425b9152197e36687d22191900d675055de139387a3a3d3",
+      "source_sha256": "d02844ce5e8fa2ad5fba3c838c2c84b218c3dd0dab87b89a225b555e32d97c39",
+      "synthetic": true
+    },
+    "start_at": "2026-10-08T00:00:00Z",
+    "start_reset": "2026-04-22T20:29:28Z"
+  },
+  "representative": true,
+  "schema_version": 1,
+  "synthetic": true
+}
