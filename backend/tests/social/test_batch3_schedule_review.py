@@ -152,5 +152,3 @@ def test_edit_retains_cancelled_delivery_in_global_history(db):
     row = history["posts"][0]
     assert row["id"] == original["id"]
     assert row["publication"] is None  # Old authorization must not bind new draft.
-
-
