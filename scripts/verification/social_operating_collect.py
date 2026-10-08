@@ -24,16 +24,19 @@ IDENTITY_SQL = """
 SELECT clock_timestamp(), current_database(), d.oid, current_user, session_user,
        current_setting('transaction_read_only'),
        current_setting('statement_timeout'), current_setting('lock_timeout'),
+       current_setting('idle_in_transaction_session_timeout'),
        current_setting('server_version_num')::integer,
        EXISTS (SELECT 1 FROM pg_catalog.pg_roles r
          WHERE pg_has_role(current_user, r.oid, 'MEMBER')
          AND (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication)),
        EXISTS (SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
          WHERE left(n.nspname,3) <> 'pg_' AND n.nspname <> 'information_schema'
-         AND c.relkind IN ('r','p','v','m','f')
-         AND (has_table_privilege(current_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')
-              OR has_any_column_privilege(current_user,c.oid,'INSERT,UPDATE')
-              OR pg_has_role(current_user,c.relowner,'MEMBER'))),
+         AND (pg_has_role(current_user,c.relowner,'MEMBER')
+              OR CASE WHEN c.relkind IN ('r','p','v','m','f') THEN
+                   has_table_privilege(current_user,c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')
+                   OR has_any_column_privilege(current_user,c.oid,'INSERT,UPDATE')
+                 WHEN c.relkind='S' THEN has_sequence_privilege(current_user,c.oid,'USAGE,UPDATE')
+                 ELSE false END)),
        EXISTS (SELECT 1 FROM pg_catalog.pg_namespace n
          WHERE left(n.nspname,3) <> 'pg_' AND n.nspname <> 'information_schema'
          AND has_schema_privilege(current_user,n.oid,'CREATE')),
@@ -141,12 +144,12 @@ def _snapshot(connection, config, reader_user):
     with connection.cursor() as cursor:
         cursor.execute(BEGIN)
         row = _one(cursor, IDENTITY_SQL)
-        budget.require(len(row) == 13, 'INVALID_IDENTITY_ROW')
-        start, database, oid, user, session, readonly, statement, lock, version, *privileges = row
+        budget.require(len(row) == 14, 'INVALID_IDENTITY_ROW')
+        start, database, oid, user, session, readonly, statement, lock, idle, version, *privileges = row
         budget.require(database == config['database_name'] and type(oid) is int
                        and oid == config['expected_database_oid'], 'DATABASE_IDENTITY_MISMATCH')
         budget.require(user == session == reader_user, 'READER_IDENTITY_MISMATCH')
-        budget.require(readonly == 'on' and statement == '5s' and lock == '1s', 'SESSION_GUARDS_MISMATCH')
+        budget.require(readonly == 'on' and statement == '5s' and lock == '1s' and idle == '5s', 'SESSION_GUARDS_MISMATCH')
         budget.require(all(type(p) is bool and not p for p in privileges), 'PRIVILEGED_READER_REFUSED')
         budget.integer(version, 1_000_000)
         extension = _one(cursor, EXTENSION_SQL)

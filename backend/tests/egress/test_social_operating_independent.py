@@ -115,6 +115,13 @@ def test_resealed_fabricated_delta_retains_unverified_authority(pair):
     assert 'IMPORTED_RECEIPTS_UNAUTHENTICATED' in result['unknowns']
 
 
+@pytest.mark.parametrize('index',[0,1])
+def test_partial_artifact_without_disclosed_unknowns_cannot_certify_counter_delta(pair,index):
+    pair[index]['status']='PARTIAL_OBSERVATION'
+    result=delta(pair)
+    assert result['status']=='BLOCKED' and result['unknowns']==['SNAPSHOT_STATUS_MISMATCH']
+
+
 def test_observed_red_equivalent_reset_offsets_do_not_invent_capture_reset():
     value = snapshot()
     value['info_after']['stats_reset'] = '2026-10-01T03:00:00+03:00'

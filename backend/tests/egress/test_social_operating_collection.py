@@ -40,7 +40,7 @@ class Driver:
         self.rows = []
         self.executed = []
         self.closed = self.rolled_back = False
-        self.identity = (NOW, 'postgres', 5, 'egress_reader', 'egress_reader', 'on', '5s', '1s', 170000, False, False, False, False)
+        self.identity = (NOW, 'postgres', 5, 'egress_reader', 'egress_reader', 'on', '5s', '1s', '5s', 170000, False, False, False, False)
         self.extension = ('public', '1.11', True, True)
         self.info = (NOW+timedelta(seconds=1), PAST, 0)
         self.query = (NOW+timedelta(seconds=2), 10, 20, PAST)
@@ -129,7 +129,8 @@ def test_query_count_and_duplicate_caps(config):
     assert collect.collect(config,credential_file=None,execute=True)['unknowns'] == ['DUPLICATE_QUERY_ID']
 
 
-@pytest.mark.parametrize('index,bad', [(1,'other'),(2,6),(2,True),(3,'postgres'),(4,'other'),(5,'off'),(6,'0'),(7,'0'),(9,True),(10,True),(11,True),(12,True),(9,None)])
+@pytest.mark.parametrize('index,bad', [(1,'other'),(2,6),(2,True),(3,'postgres'),(4,'other'),(5,'off'),(6,'0'),(7,'0'),
+    (8,'0'),(8,'4s'),(8,True),(8,None),(10,True),(11,True),(12,True),(13,True),(10,None)])
 def test_wrong_scope_privileges_and_guards(config, private_file, index, bad):
     driver=Driver(); values=list(driver.identity); values[index]=bad; driver.identity=tuple(values)
     assert run(config, private_file,driver)[0]['status'] == 'BLOCKED'
@@ -267,6 +268,40 @@ def test_coverage_seven_declared_days_still_never_accepts(declared):
     result=covered(declared)
     assert result['covered_days']==7 and result['status']=='BLOCKED'
     assert result['production_authorized'] is False
+
+
+@pytest.mark.parametrize('partial',['supplied_receipts','unvalidated_sections','missing_sections'])
+def test_open_slot_does_not_discard_six_closed_days_or_validate_full_day_receipts(declared,partial):
+    as_of=datetime(2026,10,14,12,tzinfo=timezone.utc)
+    for day in declared['days']:
+        for key in ('provider','activity','social'): day[key]['receipt']['captured_at']=as_of.isoformat()
+    current=declared['days'][-1]
+    current['complete']=False
+    if partial=='supplied_receipts':
+        for key in ('provider','activity','social'):
+            section=current[key]; section['period_end']=as_of.isoformat()
+            section['receipt']['payload_sha256']=budget.content_hash({k:v for k,v in section.items() if k!='receipt'})
+    elif partial=='unvalidated_sections':
+        current.update(provider={'secret':'DO_NOT_ECHO'},activity={'api_requests':True},social={'measurement':'decoded_estimate'})
+    else: current.update(provider=None,activity=None,social=None)
+    result=prepare.coverage(declared['days'],expected_identity=declared['identity'],first_day='2026-10-08',as_of=as_of)
+    assert len(result['ledger'])==7 and result['covered_days']==6
+    assert 'DAY_NOT_COMPLETE_AND_CLOSED' in result['ledger'][-1]['missing']
+    assert result['ledger'][-1]['provider_byte_bounds'] is None
+    assert result['production_authorized'] is False and result['provider_meter_authenticated'] is False
+    assert 'DO_NOT_ECHO' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('measurement',['decoded_estimate','cumulative_counter'])
+@pytest.mark.parametrize('receipt_kind',['social_provider_meter','social_protocol_measurement'])
+def test_unmeasured_social_receipt_kinds_match_evaluator_without_certifying_coverage(declared,measurement,receipt_kind):
+    for day in declared['days']:
+        section=day['social']; section['measurement']=measurement; section['receipt']['kind']=receipt_kind
+        section['receipt']['payload_sha256']=budget.content_hash({k:v for k,v in section.items() if k!='receipt'})
+    result=covered(declared)
+    assert result['covered_days']==0 and len(result['ledger'])==7
+    assert all('SOCIAL_TRANSFER_NOT_MEASURED' in day['missing'] for day in result['ledger'])
+    assert result['status']=='BLOCKED' and result['evidence_authentication']=='UNVERIFIED_OPERATOR_ASSERTIONS'
 
 
 def test_seven_complete_slots_expose_missing_ordinary_workload(declared):

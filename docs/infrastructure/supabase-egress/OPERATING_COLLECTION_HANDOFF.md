@@ -61,7 +61,9 @@ variables are refused to prevent libpq redirection. Read-only repeatable-read
 sessions have 5-second statement/connect/idle-transaction deadlines and
 1-second lock timeout. Catalog readback rejects administrative/inherited admin
 roles, table/column write privileges, relation ownership even after revoked DML,
-schema CREATE and database CREATE/TEMP. Application schemas beginning `pgx_`
+sequence USAGE/UPDATE and direct/inherited sequence ownership, schema CREATE
+and database CREATE/TEMP. Every requested session timeout is read back, including
+the 5-second idle-in-transaction timeout. Application schemas beginning `pgx_`
 remain subject to the checks; only the literal `pg_` catalog prefix is excluded.
 The reader must already be approved/provisioned; this task provisions none.
 
@@ -80,6 +82,8 @@ endpoint/session readback; it does not verify an organization bill, deployment
 or caller. An imported file is always **unverified**: hashes are not signatures
 and a person can reseal a fabricated TLS label. Unknown/history disclosures are
 validated from the data, rather than trusted from a self-described status.
+Imported status must match the validated unknown list; a partial label with no
+disclosed unknowns is inconsistent and blocks counter-delta preparation.
 
 `scripts/verification/social_operating_prepare.py` provides:
 
@@ -97,6 +101,12 @@ validated from the data, rather than trusted from a self-described status.
   imported deltas retain exact per-shape observed times, `interval_exact:false`,
   caller attribution unverified and provider bytes unmeasured. They include the
   bracket margins; do not assign them to a narrower workload or create a rate.
+
+A supplied open civil-day record stays missing after basic record identity
+validation. Its partial sections contribute neither receipt bounds nor window
+activity/basis aggregates, preserving the validated closed-day ledger. Decoded
+estimates and cumulative counters accept the evaluator's declared social receipt
+kinds while remaining explicitly unmeasured with no covered-day credit.
 
 No adapter auto-promotes these artifacts into evaluator authority. The unchanged
 [full evaluator](OPERATING_ACCEPTANCE.md) still checks accrued charges, all
@@ -261,3 +271,14 @@ logs and hostile scripts are retained in the scope-owned session artifact folder
 The delivery SHA and draft PR are recorded in the final session handoff.
 No new proven shared-query defect was discovered; #481 already tracks the
 unfilled operational gates. No unrelated issue was closed or duplicated.
+
+The later [PR #531 review receipt](OPERATING_REVIEW.md) records the new observed
+red/green sequence/session, open-slot, receipt-kind and import-status repairs.
+Its final combined suite passed **371 tests** (352 offline and 19 actual private
+PostgreSQL); the 194-case hostile collector matrix passed on Python 3.9.6,
+3.12.15 and 3.13.9. These supplement the original delivery receipts above and
+grant no production evidence authority or acceptance.
+The repairs address [#539 reader boundary](https://github.com/Rodgers31/audit_app/issues/539),
+[#540 history/status/workload coverage](https://github.com/Rodgers31/audit_app/issues/540)
+and [#541 partial ledger/receipt kinds](https://github.com/Rodgers31/audit_app/issues/541).
+Those code defect fixes leave #481's real operating gates open.

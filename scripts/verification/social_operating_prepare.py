@@ -38,6 +38,10 @@ def _day(record, expected, begin, end, as_of):
     budget.shape(record, {'date', 'deployment_sha', 'complete', 'provider', 'activity', 'social'})
     budget.require(record['deployment_sha'] == expected['deployment_sha'], 'DEPLOYMENT_MISMATCH')
     budget.require(type(record['complete']) is bool, 'INVALID_BOOLEAN')
+    if end > as_of:
+        # Current-day sections cannot satisfy a closed civil-day receipt. Keep
+        # the slot missing without validating or using their partial assertions.
+        return {'missing': ['DAY_NOT_COMPLETE_AND_CLOSED'], 'provider_byte_bounds': None}
     missing = [] if record['complete'] and end <= as_of else ['DAY_NOT_COMPLETE_AND_CLOSED']
     binding = budget.content_hash(expected)
     ranges = None
@@ -73,7 +77,9 @@ def _day(record, expected, begin, end, as_of):
             budget.require(section['direction'] == 'database_to_worker', 'SOCIAL_DIRECTION_MISMATCH')
             measurement = section['measurement']
             budget.require(measurement in ('provider_bytes', 'protocol_bytes', 'decoded_estimate', 'cumulative_counter'), 'INVALID_MEASUREMENT')
-            kinds = {'social_provider_meter'} if measurement == 'provider_bytes' else {'social_protocol_measurement'}
+            kinds = ({'social_provider_meter'} if measurement == 'provider_bytes' else
+                     {'social_protocol_measurement'} if measurement == 'protocol_bytes' else
+                     {'social_provider_meter', 'social_protocol_measurement'})
             low, high = budget.amount(section['transfer'])
             if measurement not in ('provider_bytes', 'protocol_bytes'): missing.append('SOCIAL_TRANSFER_NOT_MEASURED')
             if measurement == 'protocol_bytes' and high == 0 and record['activity'] is not None and any(record['activity'][k] for k in budget.TRAFFIC_COUNTS):
@@ -121,13 +127,15 @@ def coverage(records, *, expected_identity, first_day, as_of):
         # only by the unchanged full evaluator, never by these seven slots.
         report['unknowns'] = ['FULL_OPERATING_ACCEPTANCE_PENDING', 'IMPORTED_RECEIPTS_UNAUTHENTICATED']
         if report['covered_days'] != 7: report['unknowns'].append('SEVEN_REPRESENTATIVE_DAYS_MISSING')
-        activities = [record['activity'] for record in records if record['activity'] is not None]
+        closed_records = [record for record in records if datetime.combine(
+            budget.civil_date(record['date'])+timedelta(days=1), time(), zone).astimezone(timezone.utc) <= as_of]
+        activities = [record['activity'] for record in closed_records if record['activity'] is not None]
         missing = []
         if not all(sum(a[k] for a in activities) > 0 for k in ('api_requests', 'worker_publications', 'deployments')):
             missing.append('REPRESENTATIVE_ACTIVITY_MISSING')
         if sum(a['restarts'] for a in activities) == 0: missing.append('RESTART_PROFILE_NOT_OBSERVED')
         if sum(a['cache_hits']+a['cache_misses'] for a in activities) == 0: missing.append('CACHE_ACTIVITY_MISSING')
-        bases = {record['social']['measurement'] for record in records if record['social'] is not None}
+        bases = {record['social']['measurement'] for record in closed_records if record['social'] is not None}
         budget.require(len(bases) <= 1, 'SOCIAL_MEASUREMENT_SCOPE_MISMATCH')
         report['window_missing'] = missing
         report['unknowns'].extend(missing)
@@ -151,7 +159,9 @@ def _import_snapshot(report):
     snapshot = collector.validate_snapshot(report['snapshot'])
     budget.require(budget.digest(report['payload_sha256']) == budget.content_hash(snapshot), 'SNAPSHOT_PAYLOAD_MISMATCH')
     budget.require(budget.instant(report['captured_at']) >= budget.instant(snapshot['snapshot_end']), 'CAPTURE_BEFORE_SNAPSHOT_END')
-    budget.require(report['unknowns'] == snapshot['unknowns'], 'SNAPSHOT_STATUS_MISMATCH')
+    expected_status = 'PARTIAL_OBSERVATION' if snapshot['unknowns'] else 'OBSERVED_COUNTERS_ONLY'
+    budget.require(report['unknowns'] == snapshot['unknowns'] and report['status'] == expected_status,
+                   'SNAPSHOT_STATUS_MISMATCH')
     return snapshot
 
 
