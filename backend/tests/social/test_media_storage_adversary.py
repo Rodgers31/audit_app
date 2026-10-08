@@ -1,5 +1,6 @@
 """Execute the real R2 port with hostile SDK outputs; no network or credentials."""
 import hashlib
+from types import SimpleNamespace
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 import pytest
@@ -60,6 +61,11 @@ class SDK:
         self.calls = []
         self.response_changes = {}
         self.head_changes = {}
+        self.meta = SimpleNamespace(config=SimpleNamespace(retries={'total_max_attempts': 1}))
+
+    def delete_object(self, **params):
+        self.calls.append(('delete_object', params))
+        return {'ResponseMetadata': {'HTTPStatusCode': 204, 'RetryAttempts': 0}}
 
     def generate_presigned_url(self, operation, **params):
         self.calls.append((operation, params))
@@ -307,3 +313,44 @@ def test_finalize_requires_a_confirmed_single_wire_success_response(tmp_path,res
     local=tmp_path/'inspected.png'; local.write_bytes(GOOD); sdk=SDK()
     sdk.put_object=lambda **params:response
     with pytest.raises(StorageFailure): storage(sdk).finalize(local,KEY,len(GOOD),'image/png',HASH)
+
+
+@pytest.mark.parametrize('response', [None, [], {}, {'ResponseMetadata': None}, {'ResponseMetadata': {'HTTPStatusCode': 200, 'RetryAttempts': 0}}, {'ResponseMetadata': {'HTTPStatusCode': 204, 'RetryAttempts': 1}}, {'ResponseMetadata': {'HTTPStatusCode': 204, 'RetryAttempts': False}}, {'ResponseMetadata': {'HTTPStatusCode': 204.0, 'RetryAttempts': 0}}])
+def test_delete_requires_an_actual_single_attempt_http204_ack(response):
+    sdk = SDK()
+    sdk.delete_object = lambda **params: response
+    with pytest.raises(StorageFailure): storage(sdk).delete(KEY)
+
+
+def test_delete_normal_ack_uses_exact_bucket_and_key():
+    sdk = SDK()
+    storage(sdk).delete(KEY)
+    assert sdk.calls == [('delete_object', {'Bucket': BUCKET, 'Key': KEY})]
+
+
+@pytest.mark.parametrize('retries', [None, {}, {'max_attempts': 1}, {'total_max_attempts': 2}, {'total_max_attempts': True}, {'total_max_attempts': 1.0}])
+def test_mutations_reject_sdk_retry_configuration_before_any_remote_write(retries, tmp_path):
+    sdk = SDK()
+    sdk.meta.config.retries = retries
+    local = tmp_path / 'source'; local.write_bytes(GOOD)
+    with pytest.raises(StorageFailure): storage(sdk).delete(KEY)
+    with pytest.raises(StorageFailure): storage(sdk).finalize(local, KEY, len(GOOD), 'image/png', HASH)
+    assert sdk.calls == []
+
+
+def test_signed_access_uses_signature_date_instead_of_a_caller_clock():
+    from datetime import datetime, timezone
+    access = storage(SDK()).authorize_upload(KEY, len(GOOD), 'image/png', 300)
+    assert access.expires_at == datetime(2026, 10, 3, 12, 5, tzinfo=timezone.utc)
+
+
+def test_invalid_calendar_signature_date_is_not_certified():
+    with pytest.raises(StorageFailure):
+        storage(SDK(url=signed_url(**{'X-Amz-Date': '20269999T999999Z'}))).authorize_upload(KEY, len(GOOD), 'image/png', 300)
+
+
+@pytest.mark.parametrize('retained_version', [{'DeleteMarker': True}, {'DeleteMarker': False}, {'VersionId': 'retained-version'}])
+def test_delete_marker_does_not_prove_physical_bytes_were_removed(retained_version):
+    sdk = SDK()
+    sdk.delete_object = lambda **params: {'ResponseMetadata': {'HTTPStatusCode': 204, 'RetryAttempts': 0}, **retained_version}
+    with pytest.raises(StorageFailure): storage(sdk).delete(KEY)

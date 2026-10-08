@@ -1,20 +1,21 @@
 """Bounded admin media commands. SQL transactions never encompass storage I/O."""
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 import tempfile
 from uuid import UUID, uuid4
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import and_, case, exists, func, or_, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from ..contracts import canonical_hash
 from ..models import SocialAuditEvent, SocialMediaAsset, SocialRevisionAsset
 from ..service import SocialError, SocialService, utc, require_positive_version
-from .contracts import MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
+from .contracts import MaintenanceBacklog, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
 from .inspection import InspectionFailure
 from .models import SocialMediaBudget, SocialMediaUpload
 from .storage import ObjectSnapshot, StorageFailure
+from .reconciliation import ReconcileUpload, WriteQuiescenceEvidence, WriteQuiescenceScope
 
 
 class MediaService:
@@ -57,7 +58,9 @@ class MediaService:
     def _dto(self, asset, upload=None):
         return MediaAssetDTO(id=asset.id, version=upload.version if upload else 1, filename=asset.original_filename, state=asset.state, mime_type=asset.mime_type if asset.mime_type in {'image/jpeg', 'image/png', 'video/mp4'} else None, byte_size=asset.byte_size, sha256=asset.sha256, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, default_alt_text=asset.default_alt_text, safe_error=asset.inspection_error, created_at=utc(asset.created_at))
 
-    def initiate(self, actor, key, body, request_id):
+    def initiate(self, actor, key, body, request_id, *, _grant_retries=0):
+        if type(_grant_retries) is not int or not 0 <= _grant_retries <= 2:
+            raise SocialError('INVALID_REQUEST', 'Local grant retries must be bounded.', 422)
         if not isinstance(actor, UUID) or not isinstance(key, UUID):
             raise SocialError('INVALID_REQUEST', 'Valid administrator and command identities are required.', 422)
         body = UploadIntent.model_validate(body)
@@ -78,25 +81,57 @@ class MediaService:
                 asset, upload = self._rows(upload.asset_id)
                 if asset.state != 'pending' or utc(upload.expires_at) <= now:
                     raise SocialError('UPLOAD_NOT_PENDING', 'This upload has completed, failed or expired.')
+                if utc(upload.grant_renewal_deadline) <= now:
+                    raise SocialError('UPLOAD_GRANT_EXPIRED', 'The original upload authorization window has ended.', 410)
             else:
                 reservation = 2 * body.declared_size
                 if budgets[0].bytes_used + reservation > self.config.total_quota_bytes or budgets[1].bytes_used + reservation > self.config.actor_quota_bytes or budgets[1].pending_count >= self.config.max_pending:
                     raise SocialError('MEDIA_QUOTA_EXCEEDED', 'The media budget or pending-upload limit has been reached.', 429)
                 identity = uuid4()
                 asset = SocialMediaAsset(id=identity, storage_provider=storage.provider, bucket=storage.bucket, storage_key=f'ready/{identity}/original', original_filename=body.filename, default_alt_text=body.alt_text, created_by=actor, state='pending', lease_epoch=0, codec_metadata={})
-                upload = SocialMediaUpload(asset_id=identity, actor_id=actor, initiation_key=key, request_hash=digest, quarantine_key=f'quarantine/{actor}/{identity}/source', declared_mime_type=body.declared_mime_type, declared_size=body.declared_size, reserved_bytes=reservation, expires_at=now + timedelta(hours=self.config.orphan_hours), version=1, reservation_released=0, finalization_settled=0)
+                upload = SocialMediaUpload(asset_id=identity, actor_id=actor, initiation_key=key, request_hash=digest, quarantine_key=f'quarantine/{actor}/{identity}/source', declared_mime_type=body.declared_mime_type, declared_size=body.declared_size, reserved_bytes=reservation, expires_at=now + timedelta(hours=self.config.orphan_hours), grant_renewal_deadline=now + timedelta(seconds=self.config.upload_ttl), grant_epoch=0, grant_settled_epoch=0, pending_released=0, version=1, reservation_released=0, finalization_settled=0)
                 self.db.add(asset); self.db.flush(); self.db.add(upload)
                 for budget in budgets:
                     budget.bytes_used += reservation; budget.pending_count += 1
                 self._audit(actor, request_id, asset, 'media.upload_initiated', None)
                 self.db.flush()
-            dto, quarantine, expiry = self._dto(asset, upload), upload.quarantine_key, utc(upload.expires_at)
-            ttl = max(1, min(self.config.upload_ttl, int((expiry - now).total_seconds())))
+            quarantine = upload.quarantine_key
+            ttl = min(self.config.upload_ttl, int((utc(upload.grant_renewal_deadline) - now).total_seconds()))
+            if ttl < 1:
+                raise SocialError('UPLOAD_GRANT_EXPIRED', 'The original upload authorization window has ended.', 410)
+            # Commit uncertainty before signing. A signer crash, or an earlier
+            # bearer used by another browser, cannot silently discard a hazard.
+            upload.grant_epoch += 1
+            upload.grant_expires_at = None
+            upload.write_quiescence_receipt_hash = None
+            identity, epoch, version = asset.id, upload.grant_epoch, upload.version
         try:
             access = storage.authorize_upload(quarantine, body.declared_size, body.declared_mime_type, ttl)
         except StorageFailure:
             raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Storage upload authorization is unavailable. Retry the same command.', 503, retryable=True) from None
-        return UploadAuthorization(asset=dto, method='PUT', url=access.url, headers=access.headers, expires_at=now + timedelta(seconds=ttl))
+        if not isinstance(access.expires_at, datetime) or access.expires_at.tzinfo is None or access.expires_at.utcoffset() is None:
+            raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Storage did not confirm the upload signature expiration.', 503)
+        with self.db.begin():
+            self._budgets(actor)
+            asset, upload = self._rows(identity)
+            now = self.now()
+            if asset.state != 'pending' or upload.version != version:
+                raise SocialError('MEDIA_GRANT_FENCED', 'This authorization changed before it could be returned. Retry the original command.', retryable=True)
+            superseded = upload.grant_epoch != epoch
+            expiry = utc(access.expires_at)
+            if expiry <= now or expiry > utc(upload.grant_renewal_deadline) or utc(upload.grant_renewal_deadline) <= now:
+                raise SocialError('UPLOAD_GRANT_EXPIRED', 'The signed authorization exceeded the original upload window.', 410)
+            if not superseded:
+                upload.grant_expires_at = expiry
+                dto = self._dto(asset, upload)
+        if superseded:
+            # Concurrent same-intent retries may supersede a local signer. Its
+            # unreturned URL never escapes; resubmit the same durable intent a
+            # bounded number of times, without creating a second reservation.
+            if _grant_retries >= 2:
+                raise SocialError('MEDIA_GRANT_FENCED', 'Another authorization is being issued. Retry the original command.', retryable=True)
+            return self.initiate(actor, key, body, request_id, _grant_retries=_grant_retries + 1)
+        return UploadAuthorization(asset=dto, method='PUT', url=access.url, headers=access.headers, expires_at=expiry)
 
     def complete(self, actor, asset_id, key, version, request_id):
         require_positive_version(version)
@@ -171,7 +206,10 @@ class MediaService:
                 asset.codec_metadata = {**inspected.codec_metadata, 'storage_etag': final.etag, 'storage_version': final.version}
                 asset.state, asset.lease_token, asset.lease_expires_at = 'ready', None, None
                 upload.version += 1
-                for budget in budgets: budget.pending_count -= 1
+                # Ready bytes do not prove an earlier browser PUT has stopped.
+                # Pending capacity remains until write quiescence and cleanup.
+                if upload.grant_settled_epoch == upload.grant_epoch:
+                    self._release_pending(upload, budgets)
                 self._audit(actor, request_id, asset, 'media.inspection_ready', 'inspecting')
                 result = self._dto(asset, upload)
             # Quarantine remains until bounded cleanup; its grant cannot address
@@ -190,7 +228,8 @@ class MediaService:
                 asset.lease_token, asset.lease_expires_at = None, None
                 if terminal:
                     upload.version += 1
-                    for budget in budgets: budget.pending_count -= 1
+                    if upload.grant_settled_epoch == upload.grant_epoch:
+                        self._release_pending(upload, budgets)
                 self._audit(actor, request_id, asset, 'media.inspection_failed' if terminal else 'media.storage_retry', 'inspecting')
             raise SocialError('MEDIA_INSPECTION_FAILED' if terminal else 'MEDIA_STORAGE_UNAVAILABLE', 'Uploaded media failed byte, format or resource inspection.' if terminal else 'Storage is unavailable. Retry the same completion command.', 422 if terminal else 503, retryable=not terminal) from None
 
@@ -221,14 +260,125 @@ class MediaService:
             expected = ObjectSnapshot(asset.byte_size, metadata.get('storage_etag'), metadata.get('storage_version'), asset.sha256, asset.mime_type)
             if not expected.etag:
                 raise SocialError('MEDIA_UNAVAILABLE', 'This asset has no verified immutable storage identity.', 503)
-            dto = self._dto(asset, self.db.get(SocialMediaUpload, asset.id)); key = asset.storage_key; now = self.now()
+            dto = self._dto(asset, self.db.get(SocialMediaUpload, asset.id)); key = asset.storage_key
         try:
             if storage.head(key) != expected:
                 raise StorageFailure('Asset identity changed')
             access = storage.preview(key, expected, self.config.preview_ttl)
         except StorageFailure:
             raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Verified private media preview is unavailable.', 503, retryable=True) from None
-        return MediaPreview(asset=dto, url=access.url, expires_at=now + timedelta(seconds=self.config.preview_ttl))
+        if not isinstance(access.expires_at, datetime) or access.expires_at.tzinfo is None or access.expires_at.utcoffset() is None:
+            raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Storage did not confirm the preview signature expiration.', 503)
+        return MediaPreview(asset=dto, url=access.url, expires_at=access.expires_at)
+
+    def _release_pending(self, upload, budgets):
+        if not upload.pending_released:
+            for budget in budgets:
+                budget.pending_count -= 1
+            upload.pending_released = 1
+
+    @staticmethod
+    def _scope(asset, upload):
+        return WriteQuiescenceScope(asset_id=asset.id, storage_provider=asset.storage_provider, bucket=asset.bucket, upload_version=upload.version, grant_epoch=upload.grant_epoch, grant_expires_at=utc(upload.grant_expires_at) if upload.grant_expires_at else None, finalization_epoch=upload.finalization_epoch)
+
+    def _referenced(self, identity):
+        return self.db.scalar(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == identity).limit(1)) is not None
+
+    def reconcile(self, actor, asset_id, body, request_id):
+        """Freeze renewal; accept only an injected verifier's scoped evidence.
+
+        A failed verification leaves renewal frozen and quota reserved. The
+        returned asset/version permits an operator to inspect/retry explicitly;
+        no known outcome is converted into automatic grant renewal or reupload.
+        """
+        if not all(isinstance(value, UUID) for value in (actor, asset_id, request_id)):
+            raise SocialError('INVALID_REQUEST', 'Valid operator and media identities are required.', 422)
+        body = ReconcileUpload.model_validate(body)
+        self._storage()
+        with self.db.begin():
+            self._budgets(self._upload_actor(asset_id))
+            asset, upload = self._rows(asset_id)
+            if upload.version != body.expected_version or upload.grant_epoch != body.expected_grant_epoch or upload.finalization_epoch != body.expected_finalization_epoch:
+                raise SocialError('VERSION_CONFLICT', 'This media upload changed before reconciliation.')
+            now = self.now()
+            if upload.reservation_released or upload.quarantine_cleaned:
+                raise SocialError('UPLOAD_NOT_PENDING', 'This upload has already been cleaned.')
+            if asset.lease_expires_at and utc(asset.lease_expires_at) > now:
+                raise SocialError('MEDIA_INSPECTION_BUSY', 'A media operation is still active.', retryable=True)
+            if asset.state != 'ready' and self._referenced(asset.id):
+                raise SocialError('MEDIA_REFERENCED', 'Historical revision evidence protects this original.')
+            previous = asset.state
+            upload.grant_renewal_deadline = min(utc(upload.grant_renewal_deadline), now)
+            upload.version += 1
+            token = uuid4()
+            asset.lease_token = token
+            asset.lease_epoch += 1
+            asset.lease_expires_at = now + timedelta(seconds=self.config.lease_seconds)
+            scope, epoch, uploader = self._scope(asset, upload), asset.lease_epoch, upload.actor_id
+            self._audit(actor, request_id, asset, 'media.reconciliation_started', previous)
+        try:
+            evidence = self.runtime.write_quiescence_verifier.verify(scope, body.receipt)
+            if not isinstance(evidence, WriteQuiescenceEvidence) or evidence.scope != scope or evidence.receipt != body.receipt:
+                raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted evidence that all outstanding writes stopped is unavailable.', 503)
+            with self.db.begin():
+                self._budgets(uploader)
+                asset, upload = self._rows(asset_id)
+                current = self.now()
+                if self._scope(asset, upload) != scope or asset.state != previous or asset.lease_token != token or asset.lease_epoch != epoch or asset.lease_expires_at is None or utc(asset.lease_expires_at) <= current:
+                    raise SocialError('MEDIA_RECONCILIATION_FENCED', 'This media reconciliation no longer owns the current state.')
+                # SQLite fixtures expose second-precision time; PostgreSQL
+                # production comparisons retain their precise database clock.
+                clock_precision = timedelta(seconds=1) if self.db.bind.dialect.name == 'sqlite' else timedelta(0)
+                if evidence.verified_at < now or evidence.verified_at > current + clock_precision:
+                    raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Write settlement evidence is stale or future dated.', 503)
+                if asset.state != 'ready' and self._referenced(asset.id):
+                    raise SocialError('MEDIA_REFERENCED', 'Historical revision evidence protects this original.')
+                upload.grant_settled_epoch = upload.grant_epoch
+                if upload.finalization_epoch is not None:
+                    upload.finalization_settled = 1
+                upload.write_quiescence_receipt_hash = body.receipt.evidence_hash
+                if asset.state != 'ready':
+                    asset.state = 'archived'
+                asset.lease_token, asset.lease_expires_at = None, None
+                self.db.add(SocialAuditEvent(actor_id=actor, actor_kind='admin', action='media.writes_reconciled', previous_state=previous, new_state=asset.state, details={'asset_id': str(asset.id), 'grant_epoch': scope.grant_epoch, 'finalization_epoch': scope.finalization_epoch, 'receipt_id': str(body.receipt.receipt_id), 'evidence_hash': body.receipt.evidence_hash}, request_id=str(request_id)))
+                return self._dto(asset, upload)
+        except Exception as error:
+            with self.db.begin():
+                self._budgets(uploader)
+                asset, upload = self._rows(asset_id)
+                if asset.lease_token == token and asset.lease_epoch == epoch:
+                    asset.lease_token, asset.lease_expires_at = None, None
+            if isinstance(error, SocialError):
+                raise
+            raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted write settlement verification failed. Quota remains reserved.', 503) from None
+
+    def _upload_actor(self, asset_id):
+        actor = self.db.scalar(select(SocialMediaUpload.actor_id).where(SocialMediaUpload.asset_id == asset_id))
+        if actor is None:
+            raise SocialError('NOT_FOUND', 'This media upload was not found.', 404)
+        return actor
+
+    def _cleanup_conditions(self, now):
+        referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
+        return [SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
+
+    def backlog(self):
+        """One aggregate and one compact ledger read; no keys, grants or bodies."""
+        with self.db.begin():
+            now = self.now()
+            referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
+            storage = self.runtime.storage
+            eligible = self._cleanup_conditions(now) + ([SocialMediaAsset.storage_provider == storage.provider, SocialMediaAsset.bucket == storage.bucket] if self.config.enabled and storage is not None else [False])
+            counts = self.db.execute(select(
+                func.coalesce(func.sum(case((and_(*eligible), 1), else_=0)), 0),
+                func.coalesce(func.sum(case((SocialMediaUpload.grant_settled_epoch < SocialMediaUpload.grant_epoch, 1), else_=0)), 0),
+                func.coalesce(func.sum(case((and_(SocialMediaUpload.finalization_epoch.is_not(None), SocialMediaUpload.finalization_settled == 0), 1), else_=0)), 0),
+                func.coalesce(func.sum(case((SocialMediaAsset.lease_expires_at > now, 1), else_=0)), 0),
+                func.coalesce(func.sum(case((referenced, 1), else_=0)), 0),
+                func.min(case((and_(SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0), SocialMediaUpload.expires_at), else_=None)),
+            ).select_from(SocialMediaUpload).join(SocialMediaAsset, SocialMediaAsset.id == SocialMediaUpload.asset_id)).one()
+            ledger = self.db.get(SocialMediaBudget, 'global')
+            return MaintenanceBacklog(eligible_cleanup=int(counts[0]), unknown_browser_writes=int(counts[1]), unknown_finalizations=int(counts[2]), active_leases=int(counts[3]), protected_references=int(counts[4]), reserved_bytes=ledger.bytes_used if ledger else 0, pending_uploads=ledger.pending_count if ledger else 0, oldest_orphan_at=utc(counts[5]) if counts[5] else None)
 
     def cleanup(self, limit=20):
         """Scheduler port: remove expired quarantine/orphans, never ready originals.
@@ -242,8 +392,7 @@ class MediaService:
         storage = self._storage()
         with self.db.begin():
             now = self.now()
-            referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
-            candidates = self.db.execute(select(SocialMediaUpload.asset_id, SocialMediaUpload.actor_id).join(SocialMediaAsset, SocialMediaAsset.id == SocialMediaUpload.asset_id).where(SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)).order_by(SocialMediaUpload.expires_at).limit(limit)).all()
+            candidates = self.db.execute(select(SocialMediaUpload.asset_id, SocialMediaUpload.actor_id).join(SocialMediaAsset, SocialMediaAsset.id == SocialMediaUpload.asset_id).where(*self._cleanup_conditions(now), SocialMediaAsset.storage_provider == storage.provider, SocialMediaAsset.bucket == storage.bucket).order_by(SocialMediaUpload.expires_at, SocialMediaUpload.asset_id).limit(limit)).all()
         cleaned = 0
         for identity, actor in candidates:
             with self.db.begin():
@@ -253,11 +402,13 @@ class MediaService:
                 # may have settled this reservation before these locks arrived.
                 if upload.reservation_released or upload.quarantine_cleaned or utc(upload.expires_at) > self.now(): continue
                 if upload.finalization_epoch is not None and not upload.finalization_settled: continue
+                if upload.grant_settled_epoch != upload.grant_epoch: continue
+                if asset.storage_provider != storage.provider or asset.bucket != storage.bucket: continue
                 if asset.lease_expires_at and utc(asset.lease_expires_at) > self.now(): continue
                 # Ready originals retain their budget. Only quarantine can be
                 # deleted for ready rows; repeat DELETE is safely idempotent.
                 ready = asset.state == 'ready'
-                if not ready and self.db.scalar(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == identity).limit(1)) is not None: continue
+                if not ready and self._referenced(identity): continue
                 token = uuid4(); asset.lease_token = token; asset.lease_epoch += 1
                 asset.lease_expires_at = self.now() + timedelta(seconds=self.config.lease_seconds)
                 epoch = asset.lease_epoch
@@ -274,10 +425,7 @@ class MediaService:
                 asset.lease_token, asset.lease_expires_at = None, None
                 upload.quarantine_cleaned = 1
                 if not ready:
-                    # pending_count may include crashed inspections; failed rows
-                    # were already released on their terminal inspection.
-                    if upload.version == 1:
-                        for budget in budgets: budget.pending_count -= 1
+                    self._release_pending(upload, budgets)
                     for budget in budgets: budget.bytes_used -= upload.reserved_bytes
                     upload.reserved_bytes = 0
                     upload.reservation_released = 1
@@ -285,6 +433,7 @@ class MediaService:
                 else:
                     for budget in budgets: budget.bytes_used -= upload.declared_size
                     upload.reserved_bytes -= upload.declared_size
+                    self._release_pending(upload, budgets)
                 self._audit(None, uuid4(), asset, 'media.quarantine_cleaned' if ready else 'media.orphan_cleaned', 'ready' if ready else 'archived')
                 cleaned += 1
         return cleaned

@@ -11,7 +11,7 @@ from social.media.runtime import MediaRuntime
 from social.media.service import MediaService
 from social.models import SocialAuditEvent, SocialMediaAsset
 from social.service import SocialError
-from test_media_support import ACTOR, intent, media, media_db, png, upload_ready
+from test_media_support import ACTOR, intent, media, media_db, png, upload_ready, settle_writes
 
 
 def test_actual_upload_replay_library_private_preview_and_audit(media):
@@ -32,7 +32,7 @@ def test_actual_upload_replay_library_private_preview_and_audit(media):
     assert 'preview-secret' in preview.url and 'url' not in result.model_dump()
     assert result.default_alt_text == 'Green field'
     with svc.db.begin():
-        assert svc.db.get(SocialMediaBudget, 'global').pending_count == 0
+        assert svc.db.get(SocialMediaBudget, 'global').pending_count == 1
         events = svc.db.scalars(select(SocialAuditEvent)).all()
         assert [e.action for e in events] == ['media.upload_initiated', 'media.inspection_started', 'media.inspection_ready']
         assert 'secret' not in str([e.details for e in events])
@@ -71,7 +71,7 @@ def test_storage_retry_preserves_key_and_no_database_transaction_during_io(media
     assert svc.complete(ACTOR, grant.asset.id, key, 1, uuid4()).state == 'ready'
 
 
-def test_failed_bytes_are_never_library_ready_and_release_pending_once(media):
+def test_failed_bytes_are_never_library_ready_and_keep_unknown_browser_capacity(media):
     svc, storage = media; bad = b'not actually PNG'
     grant = svc.initiate(ACTOR, uuid4(), intent(bad), uuid4())
     storage.objects[storage.last_key] = (bad, 'image/png', None); key = uuid4()
@@ -79,7 +79,7 @@ def test_failed_bytes_are_never_library_ready_and_release_pending_once(media):
         with pytest.raises(SocialError, match='MEDIA_INSPECTION_FAILED'): svc.complete(ACTOR, grant.asset.id, key, 1, uuid4())
     assert svc.library().total == 0
     with svc.db.begin():
-        assert svc.db.get(SocialMediaBudget, 'global').pending_count == 0
+        assert svc.db.get(SocialMediaBudget, 'global').pending_count == 1
         asset = svc.db.get(SocialMediaAsset, grant.asset.id)
         assert asset.state == 'failed' and asset.sha256 is None
 
@@ -111,6 +111,8 @@ def test_expiry_cleanup_budget_storage_failure_and_ready_retention(media):
     with svc.db.begin():
         for row in svc.db.scalars(select(SocialMediaUpload)): row.expires_at = svc.now() - timedelta(seconds=1)
     with pytest.raises(SocialError, match='UPLOAD_EXPIRED'): svc.complete(ACTOR, pending.id, uuid4(), 1, uuid4())
+    ready = settle_writes(svc, ready.id)
+    settle_writes(svc, pending.id)
     assert svc.cleanup() == 2
     assert svc.library().assets == (ready,)
     assert svc.preview(ready.id).asset.state == 'ready'

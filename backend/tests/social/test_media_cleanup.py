@@ -16,16 +16,17 @@ from social.media.service import MediaService
 from social.media.storage import StorageFailure
 from social.models import Base, SocialMediaAsset
 from social.service import SocialError
-from test_media_support import ACTOR, intent, media, media_db, png, upload_ready
+from test_media_support import ACTOR, intent, media, media_db, png, upload_ready, settle_writes
 
 
 @pytest.fixture
 def media_pg(media):
     # Explicit dedicated local test database; no dotenv/default app DSN.
-    dsn = os.getenv('SOCIAL_WORKER_TEST_DATABASE_URL')
+    dsn = os.getenv('SOCIAL_WORKER_TEST_DATABASE_URL') or os.getenv('SOCIAL_TEST_DATABASE_URL')
     if not dsn:
         pytest.skip('Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane')
-    url = local_postgres_url(dsn, 'social_worker_test')
+    database = 'social_worker_test' if os.getenv('SOCIAL_WORKER_TEST_DATABASE_URL') else 'social_domain_test'
+    url = local_postgres_url(dsn, database)
     schema='media_race_'+uuid4().hex
     admin=create_engine(url,pool_size=1,max_overflow=0,hide_parameters=True)
     with admin.begin() as conn: conn.execute(text('CREATE SCHEMA '+schema))
@@ -54,6 +55,7 @@ def test_late_finalize_remains_reserved_until_settled_then_cleanup_deletes(media
     store.hook=late
     with pytest.raises(SocialError,match='MEDIA_LEASE_LOST'): svc.complete(ACTOR,grant.asset.id,uuid4(),1,uuid4())
     assert key in store.objects
+    settle_writes(svc, grant.asset.id)
     assert svc.cleanup()==1
     assert key not in store.objects
     with svc.db.begin(): assert svc.db.get(SocialMediaBudget,'global').bytes_used==0
@@ -81,6 +83,7 @@ def test_unknown_remote_creation_is_retained_and_reported(media,crash):
 def test_cleanup_failure_keeps_budget_and_can_retry_after_lease(media):
     svc,store=media; grant=svc.initiate(ACTOR,uuid4(),intent(),uuid4())
     with svc.db.begin(): svc.db.get(SocialMediaUpload,grant.asset.id).expires_at=svc.now()-timedelta(seconds=1)
+    settle_writes(svc, grant.asset.id)
     store.fail='delete'; assert svc.cleanup()==0
     with svc.db.begin():
         assert svc.db.get(SocialMediaBudget,'global').bytes_used==2*len(png())
@@ -94,6 +97,7 @@ def test_physical_two_copy_budget_ready_quarantine_release_once(media):
     with svc.db.begin():
         assert svc.db.get(SocialMediaBudget,'global').bytes_used==2*len(png())
         svc.db.get(SocialMediaUpload,ready.id).expires_at=svc.now()-timedelta(seconds=1)
+    settle_writes(svc, ready.id)
     assert svc.cleanup()==1 and svc.cleanup()==0
     with svc.db.begin():
         assert svc.db.get(SocialMediaBudget,'global').bytes_used==len(png())
@@ -107,6 +111,7 @@ def test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota(media_pg)
         svc=MediaService(db,runtime); expired=svc.initiate(ACTOR,uuid4(),intent(),uuid4()).asset
         svc.initiate(ACTOR,uuid4(),intent(),uuid4())
         with db.begin(): db.get(SocialMediaUpload,expired.id).expires_at=svc.now()-timedelta(seconds=1)
+        settle_writes(svc, expired.id)
     selected,release=threading.Event(),threading.Event()
     class Paused(MediaService):
         def _budgets(self,actor):
@@ -149,6 +154,7 @@ def test_unknown_finalization_does_not_starve_later_cleanup_batches(media):
         original.expires_at=svc.now()-timedelta(seconds=10)
         original.finalization_epoch=1; original.finalization_settled=0
         svc.db.get(SocialMediaUpload,second.id).expires_at=svc.now()-timedelta(seconds=1)
+    settle_writes(svc, second.id)
     assert svc.cleanup(limit=1)==1
     with svc.db.begin():
         assert svc.db.get(SocialMediaUpload,first.id).reservation_released==0
@@ -162,12 +168,18 @@ def test_referenced_nonready_asset_is_retained_without_starving_orphans(media):
     svc,_=media
     retained=svc.initiate(ACTOR,uuid4(),intent(),uuid4()).asset
     removable=svc.initiate(ACTOR,uuid4(),intent(),uuid4()).asset
-    body=CreatePost.model_validate({'title':'Retained evidence','content_type':'announcement','document':{'schema_version':1,'master':{'text':'Evidence','link':None,'hashtags':[],'media':[{'asset_id':str(retained.id),'caption_asset_id':None}]},'targets':[]},'references':[]})
+    body=CreatePost.model_validate({'title':'Retained evidence','content_type':'announcement','document':{'schema_version':1,'master':{'text':'Evidence','link':None,'hashtags':[],'media':[]},'targets':[]},'references':[]})
     domain=SocialService(svc.db)
-    domain.command(actor=ACTOR,route='fixture.create',key=uuid4(),body=body.model_dump(mode='json'),request_id=uuid4(),action=lambda:domain.create(body))
+    _, created = domain.command(actor=ACTOR,route='fixture.create',key=uuid4(),body=body.model_dump(mode='json'),request_id=uuid4(),action=lambda:domain.create(body))
+    # Historical references predate the new ready-only reference contract.
+    from social.models import SocialPost, SocialRevisionAsset
+    from uuid import UUID
     with svc.db.begin():
+        post = svc.db.get(SocialPost, UUID(created['id']))
+        svc.db.add(SocialRevisionAsset(revision_id=post.current_revision_id, asset_id=retained.id))
         svc.db.get(SocialMediaUpload,retained.id).expires_at=svc.now()-timedelta(seconds=10)
         svc.db.get(SocialMediaUpload,removable.id).expires_at=svc.now()-timedelta(seconds=1)
+    settle_writes(svc, removable.id)
     assert svc.cleanup(limit=1)==1
     with svc.db.begin():
         assert svc.db.get(SocialMediaUpload,retained.id).reservation_released==0
@@ -209,6 +221,7 @@ def test_live_cleanup_lease_does_not_consume_the_bounded_candidate_batch(media):
         asset=svc.db.get(SocialMediaAsset,first.id)
         asset.state='archived'; asset.lease_token=uuid4(); asset.lease_epoch=1
         asset.lease_expires_at=svc.now()+timedelta(seconds=60)
+    settle_writes(svc, second.id)
     assert svc.cleanup(limit=1)==1
     with svc.db.begin():
         assert svc.db.get(SocialMediaUpload,first.id).reservation_released==0
@@ -221,6 +234,8 @@ def test_r2_put_timeout_with_matching_remote_bytes_retains_finalization_quota(me
     svc,store=media; grant=svc.initiate(ACTOR,uuid4(),intent(),uuid4()); command=uuid4()
     store.objects[store.last_key]=(png(),'image/png',None)
     class AmbiguousSDK:
+        from types import SimpleNamespace
+        meta = SimpleNamespace(config=SimpleNamespace(retries={'total_max_attempts': 1}))
         def put_object(self,**params):
             data=params['Body'].read()
             store.objects[params['Key']]=(data,params['ContentType'],params['Metadata']['sha256'])

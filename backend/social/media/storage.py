@@ -1,5 +1,6 @@
 """One private R2/S3 port. Object bytes stream to/from bounded local files."""
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 import hashlib
 from pathlib import Path
 import re
@@ -27,6 +28,7 @@ class ObjectSnapshot:
 class SignedAccess:
     url: str = field(repr=False)
     headers: dict[str, str] = field(default_factory=dict, repr=False)
+    expires_at: datetime | None = None
 
 
 class MediaStorage(Protocol):
@@ -70,7 +72,7 @@ class R2Storage:
             url = self.client.generate_presigned_url('put_object', Params={'Bucket': self.bucket, 'Key': key, 'ContentLength': size, 'ContentType': mime, 'IfNoneMatch': '*'}, ExpiresIn=ttl, HttpMethod='PUT')
             # Browser File supplies Content-Length. Refuse SDKs that omit it.
             self._signed(url, key, ttl, ('host', 'content-length', 'content-type', 'if-none-match'))
-            return SignedAccess(url, {'Content-Type': mime, 'If-None-Match': '*'})
+            return SignedAccess(url, {'Content-Type': mime, 'If-None-Match': '*'}, self._expiration(url, ttl))
         except StorageFailure:
             raise
         except Exception:
@@ -128,6 +130,7 @@ class R2Storage:
             raise StorageFailure('Object inspection download failed') from None
 
     def finalize(self, path, key, size, mime, sha256):
+        self._single_attempt()
         bounded(size)
         if mime not in MIMES or not isinstance(sha256, str) or not re.fullmatch('[0-9a-f]{64}', sha256):
             raise StorageFailure('Invalid inspected identity')
@@ -171,12 +174,37 @@ class R2Storage:
             params = {'Bucket': self.bucket, 'Key': key, 'ResponseContentType': snapshot.mime_type, 'ResponseContentDisposition': 'inline'}
             if snapshot.version: params['VersionId'] = snapshot.version
             url = self.client.generate_presigned_url('get_object', Params=params, ExpiresIn=ttl, HttpMethod='GET')
-            return SignedAccess(self._signed(url, key, ttl, ('host',)))
+            return SignedAccess(self._signed(url, key, ttl, ('host',)), expires_at=self._expiration(url, ttl))
         except StorageFailure:
             raise
         except Exception:
             raise StorageFailure('Private preview is unavailable') from None
 
     def delete(self, key):
-        try: self.client.delete_object(Bucket=self.bucket, Key=key)
+        self._single_attempt()
+        try:
+            response = self.client.delete_object(Bucket=self.bucket, Key=key)
+            metadata = response.get('ResponseMetadata', {}) if isinstance(response, dict) else {}
+            if type(metadata.get('HTTPStatusCode')) is not int or metadata['HTTPStatusCode'] != 204 or type(metadata.get('RetryAttempts')) is not int or metadata['RetryAttempts'] != 0:
+                raise StorageFailure('Storage delete acknowledgement is unknown')
+            # A versioned-store DELETE can create a marker while retaining the
+            # bytes. This narrow R2 port has no version-removal contract.
+            if 'DeleteMarker' in response or 'VersionId' in response:
+                raise StorageFailure('Versioned storage cleanup is unsupported')
         except Exception: raise StorageFailure('Object cleanup failed') from None
+
+    def _single_attempt(self):
+        try:
+            retries = self.client.meta.config.retries
+            if type(retries.get('total_max_attempts')) is not int or retries['total_max_attempts'] != 1:
+                raise StorageFailure('Storage wire retries must be disabled')
+        except Exception:
+            raise StorageFailure('Storage wire retries must be disabled') from None
+
+    @staticmethod
+    def _expiration(url, ttl):
+        try:
+            date = parse_qs(urlsplit(url).query)['X-Amz-Date'][0]
+            return datetime.strptime(date, '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc) + timedelta(seconds=ttl)
+        except Exception:
+            raise StorageFailure('Storage signature expiration is unavailable') from None
