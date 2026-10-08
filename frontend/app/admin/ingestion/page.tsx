@@ -26,31 +26,9 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback } from 'react';
-
-interface IngestionJob {
-  id: number;
-  domain: string;
-  status: string;
-  dry_run: boolean;
-  started_at: string;
-  finished_at: string | null;
-  duration_seconds: number | null;
-  items_processed: number;
-  items_created: number;
-  items_updated: number;
-  errors: unknown[];
-  metadata: Record<string, unknown>;
-  created_at: string;
-}
-
-interface IngestionJobList {
-  jobs: IngestionJob[];
-  total: number;
-  page: number;
-  page_size: number;
-  has_more: boolean;
-}
+import { Suspense, useCallback, useEffect } from 'react';
+import { activeJob, ingestionFilters, parseIngestionList, type IngestionJobList } from '@/lib/admin/ingestion';
+import { useOperationsAccess } from '@/lib/admin/ingestionPolling';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All statuses' },
@@ -98,34 +76,45 @@ function IngestionJobsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const domain = searchParams.get('domain') ?? '';
-  const status = searchParams.get('status') ?? '';
-  const days = Number(searchParams.get('days') ?? '7');
-  const page = Number(searchParams.get('page') ?? '1');
+  const access = useOperationsAccess(['ingestion-jobs']);
+  const {domain,status,days,page,canonical} = ingestionFilters(new URLSearchParams(searchParams));
+  const canonicalQuery = canonical.toString();
+  const suppliedQuery = searchParams.toString();
+  useEffect(() => {
+    if (canonicalQuery !== suppliedQuery) router.replace(`/admin/ingestion${canonicalQuery ? '?' + canonicalQuery : ''}`);
+  }, [canonicalQuery, suppliedQuery, router]);
 
   const setQuery = useCallback(
     (updates: Record<string, string | number | null>) => {
-      const next = new URLSearchParams(searchParams);
+      const next = new URLSearchParams(canonicalQuery);
       for (const [k, v] of Object.entries(updates)) {
         if (v === null || v === '') next.delete(k);
         else next.set(k, String(v));
       }
       if (!('page' in updates)) next.delete('page');
-      router.replace(`/admin/ingestion${next.size ? '?' + next.toString() : ''}`);
+      router.push(`/admin/ingestion${next.size ? '?' + next.toString() : ''}`);
     },
-    [router, searchParams]
+    [router, canonicalQuery]
   );
 
-  const { data, isLoading, error, refetch, isFetching } = useQuery<IngestionJobList>({
-    queryKey: ['admin', 'ingestion-jobs', { domain, status, days, page }],
+  const jobs = useQuery<IngestionJobList>({
+    queryKey: ['admin', 'ingestion-jobs', access.actorId, { domain, status, days, page }],
     queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE, days };
       if (domain) params.domain = domain;
       if (status) params.status = status;
-      return (await api.get('/admin/ingestion-jobs', { params, signal })).data;
+      return parseIngestionList((await api.get('/admin/ingestion-jobs', { params, signal })).data, {page,page_size:PAGE_SIZE});
     },
+    enabled: access.enabled,
+    retry: false,
     staleTime: 15_000,
+    refetchOnWindowFocus: false,
+    refetchInterval: query => access.enabled && !query.state.error && query.state.data?.jobs.some(activeJob) ? 15_000 : false,
   });
+
+  const {isLoading,error,refetch,isFetching} = jobs;
+  const data = access.isAdmin && !error ? jobs.data : undefined;
+  if (!access.isAdmin) return <PageShell title='Ingestion Jobs'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
 
   return (
     <PageShell
@@ -142,6 +131,8 @@ function IngestionJobsInner() {
           <FilterField label='Domain'>
             <input
               type='text'
+              aria-label='Domain'
+              maxLength={100}
               value={domain}
               onChange={(e) => setQuery({ domain: e.target.value || null })}
               placeholder='e.g. counties_budget'
@@ -150,6 +141,7 @@ function IngestionJobsInner() {
           </FilterField>
           <FilterField label='Status'>
             <select
+              aria-label='Status'
               value={status}
               onChange={(e) => setQuery({ status: e.target.value || null })}
               className='w-52 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'>
@@ -162,9 +154,11 @@ function IngestionJobsInner() {
           </FilterField>
           <FilterField label='Time window'>
             <select
+              aria-label='Time window'
               value={days}
               onChange={(e) => setQuery({ days: e.target.value })}
               className='w-40 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'>
+              {!DAYS_OPTIONS.some(opt => opt.value === days) && <option value={days}>Last {days} days</option>}
               {DAYS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   Last {opt.label}
@@ -175,14 +169,14 @@ function IngestionJobsInner() {
           <div className='ml-auto flex items-center gap-2'>
             {(domain || status || days !== 7) && (
               <button
-                onClick={() => router.replace('/admin/ingestion')}
+                onClick={() => router.push('/admin/ingestion')}
                 className='text-xs text-neutral-muted hover:text-neutral-text underline underline-offset-2 px-2'>
                 Clear filters
               </button>
             )}
             <button
-              onClick={() => refetch()}
-              disabled={isFetching}
+              onClick={() => { if(access.enabled) void refetch(); }}
+              disabled={isFetching || !access.enabled}
               className='inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text rounded-lg text-sm transition-all shadow-surface disabled:opacity-50'>
               <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
               Refresh
@@ -201,7 +195,8 @@ function IngestionJobsInner() {
             <XCircle className='w-8 h-8 text-gov-copper dark:text-red-400' />
             <p className='text-gov-copper dark:text-red-400 text-sm'>Could not load jobs.</p>
             <button
-              onClick={() => refetch()}
+              onClick={() => { if(access.enabled) void refetch(); }}
+              disabled={!access.enabled || isFetching}
               className='px-3 py-1.5 bg-gov-sage/10 hover:bg-gov-sage/20 text-gov-forest dark:text-emerald-200 rounded-lg text-sm transition-colors'>
               Retry
             </button>
@@ -209,7 +204,8 @@ function IngestionJobsInner() {
         ) : !data || data.jobs.length === 0 ? (
           <BodyState>
             <Pause className='w-8 h-8 text-neutral-muted/40' />
-            <p className='text-neutral-muted text-sm'>No jobs match these filters.</p>
+            <p className='text-neutral-muted text-sm'>{page > 1 ? 'No jobs on this page.' : 'No jobs match these filters.'}</p>
+            {page > 1 && data && <Pagination page={page} pageSize={PAGE_SIZE} total={data.total} hasMore={false} onChange={p => setQuery({page:p})} />}
           </BodyState>
         ) : (
           <>
@@ -236,13 +232,12 @@ function IngestionJobsInner() {
                       initial='hidden'
                       animate='show'
                       custom={i}
-                      onClick={() => router.push(`/admin/ingestion/${job.id}`)}
                       className='border-b last:border-0 border-neutral-border/60 hover:bg-gov-cream/60 dark:hover:bg-surface-elevated cursor-pointer transition-colors group'>
                       <td className='px-4 py-3'>
                         <div className='flex items-center gap-2'>
-                          <span className='font-mono text-xs font-semibold text-neutral-text'>
+                          <Link href={`/admin/ingestion/${job.id}`} aria-label={`View job #${job.id}`} className='font-mono text-xs font-semibold text-neutral-text underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-gov-sage'>
                             {job.domain}
-                          </span>
+                          </Link>
                           {job.dry_run && (
                             <span className='text-[11px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
                               dry-run
@@ -254,7 +249,7 @@ function IngestionJobsInner() {
                         <StatusBadge status={job.status} hasErrors={job.errors.length > 0} />
                       </td>
                       <td className='px-4 py-3 text-neutral-muted whitespace-nowrap'>
-                        {timeAgo(job.started_at)}
+                        {job.status === 'pending' ? 'Awaiting execution' : timeAgo(job.started_at)}
                       </td>
                       <td className='px-4 py-3 text-right text-neutral-muted whitespace-nowrap'>
                         {formatDuration(job.duration_seconds)}
@@ -293,9 +288,10 @@ function IngestionJobsInner() {
                           {job.domain}
                         </span>
                         <StatusBadge status={job.status} hasErrors={job.errors.length > 0} />
+                        {job.dry_run && <span className='text-xs text-gov-warning'>dry-run</span>}
                       </div>
                       <div className='flex items-center justify-between text-xs text-neutral-muted'>
-                        <span>{timeAgo(job.started_at)}</span>
+                        <span>{job.status === 'pending' ? 'Awaiting execution' : timeAgo(job.started_at)}</span>
                         <span>{formatDuration(job.duration_seconds)}</span>
                       </div>
                       <div className='flex items-center gap-3 text-xs mt-1'>
@@ -345,7 +341,7 @@ function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean
               bg: 'bg-gov-warning/15',
               text: 'text-gov-warning dark:text-amber-300',
               icon: AlertTriangle,
-              label: 'completed*',
+              label: 'completed w/ errors',
             }
           : {
               bg: 'bg-emerald-100 dark:bg-emerald-900/40',
@@ -424,7 +420,7 @@ function Pagination({
   hasMore: boolean;
   onChange: (page: number) => void;
 }) {
-  const start = (page - 1) * pageSize + 1;
+  const start = Math.min((page - 1) * pageSize + 1, total);
   const end = Math.min(page * pageSize, total);
   return (
     <div className='flex items-center justify-between text-sm flex-wrap gap-3 pt-2'>
@@ -444,7 +440,7 @@ function Pagination({
         <span className='text-neutral-muted text-xs'>Page {page}</span>
         <button
           onClick={() => onChange(page + 1)}
-          disabled={!hasMore}
+          disabled={!hasMore || page >= 10000}
           className='inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text disabled:opacity-40 transition-all shadow-surface'>
           Next
           <ArrowRight className='w-3.5 h-3.5' />
