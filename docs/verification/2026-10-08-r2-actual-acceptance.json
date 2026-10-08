@@ -1,0 +1,510 @@
+{
+  "recorded_at": "2026-10-08T12:51:43.434289+00:00",
+  "status": "PASS",
+  "scope": "bounded actual storage/recovery/hosted producer/deployed reader acceptance; no production SQL correction",
+  "run_url": "https://github.com/Rodgers31/audit_app/actions/runs/37776901856",
+  "app_commit": "420cdc1887502940db32403fe26c6158789f9bc3",
+  "tools_and_deployment_commit": "2d3cd5959df1914bf068cb0381057d1bcbbabf81",
+  "evidence": {
+    "native_worldbank": {
+      "sha256": "89c29e10f6b6030a86ddafba34f00404e3b66bb385cd5d5db21af1b3d37840fe",
+      "receipt": {
+        "account": "6929fa03fad58c2f93c70196ec498c69",
+        "bucket": "audit-source-evidence-v1",
+        "elapsed_seconds": 10.799808057000007,
+        "fresh_os_read_passed": true,
+        "fresh_os_read_peak_bytes": 91103232,
+        "http_cache_enabled": false,
+        "json_receipt": {
+          "acquired_at": "2026-10-08T12:27:29.264421+00:00",
+          "byte_checked_at": "2026-10-08T12:27:31.493619+00:00",
+          "byte_size": 2320,
+          "content_type": "application/json",
+          "digest": "ae0d0e33a4e6238c808e29da5a6b409322438d5cbb5b6290620bf8fbfdf2ddfb",
+          "digest_scope": "response.content",
+          "http_status": 200,
+          "observations": 11,
+          "parser_version": "worldbank-observation-v1",
+          "publisher_http_authority": true,
+          "request_query": {
+            "date": "2015:2026",
+            "format": "json",
+            "per_page": "20"
+          },
+          "request_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+          "source_kind": "api",
+          "storage_key": "ae0d0e33a4e6238c808e29da5a6b409322438d5cbb5b6290620bf8fbfdf2ddfb",
+          "storage_scope": "r2_private"
+        },
+        "jurisdiction": "default",
+        "memory_budget_bytes": 8589934592,
+        "normalized_data_sha256": "de8f0507912686600b95b281f8b6e248e2796f920407240d438422e40c38596d",
+        "parent_plus_child_peak_upper_bound_bytes": 182206464,
+        "parse_cache_enabled": false,
+        "peak_rss_bytes": 119009280,
+        "physical_memory_bytes": 16766410752,
+        "public_object_gets": 0,
+        "public_rows": 11,
+        "publisher_http_attempts": 1,
+        "python": "3.12.14",
+        "qualification_fields_checked": 11,
+        "qualification_reason_counts": {
+          "retained_source_and_observation_matched": 11
+        },
+        "qualification_source_url": "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN",
+        "qualification_status_counts": {
+          "verified": 11
+        },
+        "r2_traffic": {
+          "control_get": 9,
+          "downloaded_object_bytes": 5500,
+          "manifest_get": 3,
+          "manifest_put": 2,
+          "part_get": 3,
+          "part_put": 2,
+          "uploaded_bytes": 2913
+        },
+        "rss_unit": "bytes (Linux ru_maxrss KiB multiplied by1024)",
+        "scope": "actual Linux producer acceptance; disposable SQLite; no production DB",
+        "sqlite_economic_rows": 11,
+        "sqlite_receipt_extractions": 1,
+        "stage": "pilot",
+        "status": "PASS",
+        "storage_scope": "r2_private",
+        "system": "Linux",
+        "target_head": "420cdc1887502940db32403fe26c6158789f9bc3",
+        "target_tree": "093b3c321197943c0a647f1e763212982ee7cef4",
+        "verified_qualification_fields": 11,
+        "versions": {
+          "SQLAlchemy": "2.0.54",
+          "botocore": "1.43.109",
+          "httpx": "0.28.1",
+          "pdfminer.six": "20260107",
+          "pdfplumber": "0.11.10",
+          "pydantic": "2.13.5"
+        },
+        "worldbank_observations": 11
+      }
+    },
+    "native_pdf": {
+      "sha256": "09135f7f5119c85183c1696efdfbae7c347cc079955215dc4964a4d01891177c",
+      "receipt": {
+        "account": "6929fa03fad58c2f93c70196ec498c69",
+        "bucket": "audit-source-evidence-v1",
+        "cell_evidence": 378,
+        "complete_projection_sha256": "cbaa3d98e2aaa96071d90260aff69cd619cf7ffe6794a89f27556cd7b08c33e4",
+        "elapsed_seconds": 320.56613096,
+        "fresh_parse": true,
+        "http_cache_enabled": false,
+        "jurisdiction": "default",
+        "memory_budget_bytes": 8589934592,
+        "parse_cache_enabled": false,
+        "pdf_pages": 935,
+        "peak_rss_bytes": 859840512,
+        "physical_memory_bytes": 16766410752,
+        "provider_and_time_projection_only": true,
+        "public_contract_sha256": "15b9e286a31760cf5643bc18081c0dc3334ba151089a5b786ecd55a244142268",
+        "public_object_gets": 0,
+        "publisher_http_attempts": 0,
+        "publisher_http_authority": false,
+        "python": "3.12.14",
+        "qualification_fields_checked": 1404,
+        "qualification_sha256": "00a31744ac4c2e1730ba78e2404987e6e0137ba56176bf73ea247440170be438",
+        "r2_traffic": {
+          "control_get": 9,
+          "downloaded_object_bytes": 160684785,
+          "manifest_get": 3,
+          "manifest_put": 1,
+          "part_get": 6,
+          "part_put": 2,
+          "uploaded_bytes": 53561595
+        },
+        "records": 468,
+        "rss_unit": "bytes (Linux ru_maxrss KiB multiplied by1024)",
+        "scope": "actual Linux producer acceptance; disposable SQLite; no production DB",
+        "sqlite_budget_rows": 468,
+        "sqlite_receipt_extractions": 1,
+        "stage": "pdf",
+        "status": "PASS",
+        "storage_scope": "r2_private",
+        "system": "Linux",
+        "tables": 1129,
+        "target_head": "420cdc1887502940db32403fe26c6158789f9bc3",
+        "target_tree": "093b3c321197943c0a647f1e763212982ee7cef4",
+        "versions": {
+          "SQLAlchemy": "2.0.54",
+          "botocore": "1.43.109",
+          "httpx": "0.28.1",
+          "pdfminer.six": "20260107",
+          "pdfplumber": "0.11.10",
+          "pydantic": "2.13.5"
+        }
+      }
+    },
+    "native_marker_child": {
+      "sha256": "ee1164b6427ec79ae1a7b32f0c630699f2342f63f17b0727c06476a11b81b30f",
+      "receipt": {
+        "account": "6929fa03fad58c2f93c70196ec498c69",
+        "bucket": "audit-source-evidence-v1",
+        "elapsed_seconds": 1.6774326679999945,
+        "http_cache_enabled": false,
+        "jurisdiction": "default",
+        "marker_bytes": 63,
+        "marker_sha256": "2e436d4949727446ca22dc90d57cc8f189f55184e7bb3fa890b123328177fb3f",
+        "memory_budget_bytes": 8589934592,
+        "parse_cache_enabled": false,
+        "peak_rss_bytes": 91103232,
+        "physical_memory_bytes": 16766410752,
+        "publisher_http_attempts": 0,
+        "python": "3.12.14",
+        "r2_authenticated_read": true,
+        "r2_traffic": {
+          "control_get": 3,
+          "downloaded_object_bytes": 326,
+          "manifest_get": 1,
+          "manifest_put": 0,
+          "part_get": 1,
+          "part_put": 0,
+          "uploaded_bytes": 0
+        },
+        "rss_unit": "bytes (Linux ru_maxrss KiB multiplied by1024)",
+        "scope": "actual Linux producer acceptance; disposable SQLite; no production DB",
+        "stage": "marker-read",
+        "status": "PASS",
+        "storage_scope": "r2_private",
+        "system": "Linux",
+        "target_head": "420cdc1887502940db32403fe26c6158789f9bc3",
+        "target_tree": "093b3c321197943c0a647f1e763212982ee7cef4",
+        "versions": {
+          "SQLAlchemy": "2.0.54",
+          "botocore": "1.43.109",
+          "httpx": "0.28.1",
+          "pdfminer.six": "20260107",
+          "pdfplumber": "0.11.10",
+          "pydantic": "2.13.5"
+        }
+      }
+    },
+    "deployed_reader": {
+      "sha256": "9a947ea4c0e68991060e729454bec72ca099b60e9a675cd2b97c7e2093d93564",
+      "receipt": {
+        "byte_size": 2320,
+        "config": {
+          "account_id": "6929fa03fad58c2f93c70196ec498c69",
+          "auto_seeder_enabled": "false",
+          "backend": "r2",
+          "bucket": "audit-source-evidence-v1",
+          "jurisdiction": "default",
+          "max_bytes": 67108864,
+          "part_max_bytes": 33554432,
+          "timeout_seconds": 120
+        },
+        "digest": "ae0d0e33a4e6238c808e29da5a6b409322438d5cbb5b6290620bf8fbfdf2ddfb",
+        "elapsed_seconds": 4.459,
+        "max_rss_bytes": 85893120,
+        "platform": "Linux",
+        "production_sql_writes": 0,
+        "python": "3.12.15",
+        "r2_puts": 0,
+        "scope": "fresh deployed OS process / configured private R2 read / no production SQL",
+        "source_hashes": {
+          "seeding/domains/economic_indicators/fetcher.py": "10f0d4917e95e2783f1c3e9d9dd5258e72f94de1cf976596f43554d3432caaaa",
+          "services/r2_receipt_store.py": "bac90f05c91218c5eaffccc4cb853d8f8ef880bff9a15cd58f5912887f107237"
+        },
+        "status": "PASS",
+        "utc": "2026-10-08T12:48:04.442387+00:00",
+        "render_deployment_id": "dep-db3oskc9v7es73dtuvc0",
+        "render_commit": "2d3cd5959df1914bf068cb0381057d1bcbbabf81",
+        "render_instance": "44sdb",
+        "observed_via": "Render Web Shell visible terminal"
+      }
+    },
+    "public_consumers": {
+      "sha256": "3e33748e571b85ddfec06db14ad661a6907b281b16ed3a3f87e1ac1f8e4d11c9",
+      "receipt": {
+        "status": "PASS",
+        "utc": "2026-10-08T12:49:43.356843+00:00",
+        "deployment": "dep-db3oskc9v7es73dtuvc0",
+        "commit": "2d3cd5959df1914bf068cb0381057d1bcbbabf81",
+        "requests": [
+          {
+            "route": "/health",
+            "status": 200,
+            "byte_size": 56,
+            "response_sha256": "c292effad6225a0d4dd98c8af220b92ce1324220bc19e3d80e4d3e9c8551d356",
+            "elapsed_seconds": 0.564,
+            "health_status": "ok",
+            "scope": "shallow liveness"
+          },
+          {
+            "route": "/api/v1/economic/indicators?limit=1",
+            "status": 200,
+            "byte_size": 962,
+            "response_sha256": "9b21d327b89ee4386ae57f3428dfb7271ad14560592bcf2d7e1d30b646c39348",
+            "elapsed_seconds": 0.555,
+            "row_count": 1,
+            "qualification_statuses": [
+              "qualified"
+            ],
+            "withheld_count": "0"
+          },
+          {
+            "route": "/api/v1/money-flow/all-counties?year=2024/25",
+            "status": 200,
+            "byte_size": 41808,
+            "response_sha256": "07f3d6cd61c9d998ef523b083a670ee0f90aacd22a2c1e3ce0d5ad4ff385eacc",
+            "elapsed_seconds": 0.557,
+            "json_shape": "list",
+            "county_count": 47
+          }
+        ],
+        "scope": "bounded actual public GET consumers; does not certify all stored values or publisher truth",
+        "production_sql_writes": 0
+      }
+    },
+    "actions_cleanup": {
+      "sha256": "a32e79f502cfd08d370b7e77aee6af8213f8fb67333be55a61ecf6d4e1f46d50",
+      "receipt": {
+        "utc": "2026-10-08T12:33:25.972403+00:00",
+        "run_id": 37776901856,
+        "events": [
+          {
+            "utc": "2026-10-08T12:27:48.939087+00:00",
+            "conclusion": "",
+            "headSha": "2d3cd5959df1914bf068cb0381057d1bcbbabf81",
+            "status": "in_progress",
+            "url": "https://github.com/Rodgers31/audit_app/actions/runs/37776901856"
+          },
+          {
+            "utc": "2026-10-08T12:33:24.600403+00:00",
+            "conclusion": "success",
+            "headSha": "2d3cd5959df1914bf068cb0381057d1bcbbabf81",
+            "status": "completed",
+            "url": "https://github.com/Rodgers31/audit_app/actions/runs/37776901856"
+          }
+        ],
+        "actions_enabled": false,
+        "workflow_state": "disabled_manually",
+        "automatic_cleanup_verified": true
+      }
+    },
+    "archive": {
+      "sha256": "a731b8cad760c058973c4e9797636ca393912793579bf00029a3b43b7f41a4de",
+      "receipt": {
+        "phase": "archive",
+        "status": "local_independent_archive_verified",
+        "objects": 5,
+        "sources": [
+          {
+            "byte_size": 294,
+            "label": "json",
+            "manifest_key": "receipts-v1/manifests/6a/6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+            "sha256": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673"
+          },
+          {
+            "byte_size": 53561211,
+            "label": "pdf",
+            "manifest_key": "receipts-v1/manifests/5f/5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+            "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3"
+          }
+        ],
+        "traffic": {
+          "anonymous_get_attempts": 0,
+          "control_get_attempts": 3,
+          "control_returned_bytes": 436,
+          "object_get_attempts": 5,
+          "object_put_attempts": 0,
+          "object_returned_bytes": 53562154,
+          "submitted_put_body_bytes": 0
+        },
+        "scope": "bounded byte/privacy acceptance; no ongoing backups, WORM, other-provider recovery or deployed runtime claim"
+      },
+      "elapsed_seconds": 5.765353417024016
+    },
+    "restore_dry": {
+      "sha256": "2554d2438905b05c5682f3f0681434aab3a1a549dbab74012792d8f15f3ed0bf",
+      "receipt": {
+        "phase": "restore",
+        "status": "dry_run_validated"
+      },
+      "elapsed_seconds": 0.24029370897915214
+    },
+    "restore": {
+      "sha256": "78692351ad7b359a60bce09112729423383f35c174518e13c0b4cd7ac85c405c",
+      "receipt": {
+        "phase": "restore",
+        "status": "restored_conditional_objects_authenticated_readback_matched",
+        "objects": 5,
+        "sources": [
+          {
+            "byte_size": 294,
+            "label": "json",
+            "manifest_key": "receipts-v1/manifests/6a/6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+            "sha256": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673"
+          },
+          {
+            "byte_size": 53561211,
+            "label": "pdf",
+            "manifest_key": "receipts-v1/manifests/5f/5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+            "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3"
+          }
+        ],
+        "traffic": {
+          "anonymous_get_attempts": 0,
+          "control_get_attempts": 3,
+          "control_returned_bytes": 445,
+          "object_get_attempts": 10,
+          "object_put_attempts": 5,
+          "object_returned_bytes": 53562154,
+          "submitted_put_body_bytes": 53562154
+        },
+        "scope": "bounded byte/privacy acceptance; no ongoing backups, WORM, other-provider recovery or deployed runtime claim"
+      },
+      "elapsed_seconds": 18.873953375034034
+    },
+    "fresh_recovery": {
+      "sha256": "da0f6765f04f70b9a2843c899b6eaceec09733d98b641c4f683d5fd6f4d81ed1",
+      "receipt": {
+        "phase": "read",
+        "status": "recovery_fresh_process_whole_bytes_matched",
+        "objects": 5,
+        "sources": [
+          {
+            "byte_size": 294,
+            "label": "json",
+            "manifest_key": "receipts-v1/manifests/6a/6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+            "sha256": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673"
+          },
+          {
+            "byte_size": 53561211,
+            "label": "pdf",
+            "manifest_key": "receipts-v1/manifests/5f/5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+            "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3"
+          }
+        ],
+        "traffic": {
+          "anonymous_get_attempts": 0,
+          "control_get_attempts": 6,
+          "control_returned_bytes": 890,
+          "object_get_attempts": 5,
+          "object_put_attempts": 0,
+          "object_returned_bytes": 53562154,
+          "submitted_put_body_bytes": 0
+        },
+        "scope": "bounded byte/privacy acceptance; no ongoing backups, WORM, other-provider recovery or deployed runtime claim"
+      },
+      "elapsed_seconds": 7.8319458329933695
+    },
+    "anonymous_source": {
+      "sha256": "9277e19c60390d0be2cbc4390ca51f4b4cce6970f00b338eb532dbd943a3530c",
+      "receipt": {
+        "phase": "anonymous",
+        "status": "known_existing_direct_s3_objects_unauthenticated_auth_parser_rejected",
+        "objects": 5,
+        "sources": [
+          {
+            "byte_size": 294,
+            "label": "json",
+            "manifest_key": "receipts-v1/manifests/6a/6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+            "sha256": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673"
+          },
+          {
+            "byte_size": 53561211,
+            "label": "pdf",
+            "manifest_key": "receipts-v1/manifests/5f/5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+            "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3"
+          }
+        ],
+        "traffic": {
+          "anonymous_error_body_bytes": 226,
+          "anonymous_get_attempts": 2,
+          "control_get_attempts": 3,
+          "control_returned_bytes": 436,
+          "object_get_attempts": 2,
+          "object_put_attempts": 0,
+          "object_returned_bytes": 649,
+          "submitted_put_body_bytes": 0
+        },
+        "scope": "bounded byte/privacy acceptance; no global-public-route, provider ACL/WORM, ongoing-backup, other-provider recovery or deployed runtime guarantee",
+        "anonymous_classifications": [
+          {
+            "body_bytes_read": 113,
+            "classification": "unauthenticated_auth_parser_rejection",
+            "code": "InvalidArgument",
+            "http_status": 400,
+            "message": "Authorization",
+            "source_label": "json"
+          },
+          {
+            "body_bytes_read": 113,
+            "classification": "unauthenticated_auth_parser_rejection",
+            "code": "InvalidArgument",
+            "http_status": 400,
+            "message": "Authorization",
+            "source_label": "pdf"
+          }
+        ]
+      },
+      "elapsed_seconds": 1.8942907089949585
+    },
+    "anonymous_recovery": {
+      "sha256": "606d7b9052ff091ca9997fedaccb10dfdce3199bedfbfda3785ab9f4b70fcddd",
+      "receipt": {
+        "phase": "anonymous",
+        "status": "known_existing_direct_s3_objects_unauthenticated_auth_parser_rejected",
+        "objects": 5,
+        "sources": [
+          {
+            "byte_size": 294,
+            "label": "json",
+            "manifest_key": "receipts-v1/manifests/6a/6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673",
+            "sha256": "6a1c0464245aab0acc4a464a64dea8d93ab92a598259955497367e0039076673"
+          },
+          {
+            "byte_size": 53561211,
+            "label": "pdf",
+            "manifest_key": "receipts-v1/manifests/5f/5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3",
+            "sha256": "5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3"
+          }
+        ],
+        "traffic": {
+          "anonymous_error_body_bytes": 226,
+          "anonymous_get_attempts": 2,
+          "control_get_attempts": 3,
+          "control_returned_bytes": 445,
+          "object_get_attempts": 2,
+          "object_put_attempts": 0,
+          "object_returned_bytes": 649,
+          "submitted_put_body_bytes": 0
+        },
+        "scope": "bounded byte/privacy acceptance; no global-public-route, provider ACL/WORM, ongoing-backup, other-provider recovery or deployed runtime guarantee",
+        "anonymous_classifications": [
+          {
+            "body_bytes_read": 113,
+            "classification": "unauthenticated_auth_parser_rejection",
+            "code": "InvalidArgument",
+            "http_status": 400,
+            "message": "Authorization",
+            "source_label": "json"
+          },
+          {
+            "body_bytes_read": 113,
+            "classification": "unauthenticated_auth_parser_rejection",
+            "code": "InvalidArgument",
+            "http_status": 400,
+            "message": "Authorization",
+            "source_label": "pdf"
+          }
+        ]
+      },
+      "elapsed_seconds": 2.006706000014674
+    }
+  },
+  "limits": [
+    "No publisher HTTP authority added to retained local PDF",
+    "No production SQL writes or blanket historical qualification upgrade",
+    "No 512 MB API-host PDF parsing claim",
+    "Same-account recovery plus independent local archive, not WORM or ongoing backup service",
+    "No immediate Supabase Free downgrade; >=7 representative deployed days required"
+  ]
+}
