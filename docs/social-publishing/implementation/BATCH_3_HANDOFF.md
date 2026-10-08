@@ -14,9 +14,11 @@ Native was retargeted to main after media/schedule merged. Its source matched
 the tested combined social implementation. On that final base the full social
 backend suite passed **1,168 tests, zero skips**, with all four disposable
 PostgreSQL lanes; frontend passed **501 tests across 27 suites**. Two existing
-SQLAlchemy deprecation warnings remain. TypeScript now reports three TS2353
-map-style errors also reproduced on main without the native PR; they are a
-baseline limitation, not a passing check. Hosted required Actions checks remain
+SQLAlchemy deprecation warnings remain. At that base TypeScript reported three
+TS2353 map-style errors also reproduced on main without the native PR. PR #516
+subsequently corrected the map/build compatibility prerequisites; TypeScript
+passes at the Batch 4 review base `8ba731a`. Current delivery/review receipts and
+the next priorities are in `BATCH_4_HANDOFF.md`. Hosted required Actions checks remain
 disabled under the existing repository setup; owner-authorized merges used
 GitHub's admin path with exact reviewed head commits.
 

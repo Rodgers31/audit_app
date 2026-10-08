@@ -106,9 +106,15 @@ leakage. Exercise CLI help/default/error paths without external side effects.
 For confirmed independent findings retain regressions with observed red results.
 Root runs relevant combined suites and reports limits honestly.
 
-Current main has three pre-existing TS2353 map-style errors, reproduced with
-the same dependencies on main and the native branch. Batch 3 final-main backend
+The initial main base had three pre-existing TS2353 map-style errors, reproduced
+with the same dependencies on main and the native branch. PR #516 subsequently
+corrected those map/build compatibility prerequisites; TypeScript passes on the
+review base `8ba731a` with matching dependencies. Batch 3 final-main backend
 social tests passed 1,168 with zero skips and frontend passed 501. New code in
 this batch has no frontend scope. Real bucket/app/host identifiers and deployed
 operational receipts remain unverified; no live activation is authorized by a
 fixture or a candidate report.
+
+Review closeout is recorded in `BATCH_4_HANDOFF.md`. New independently reproduced
+origin serialization and future zero-wire defects were tracked in #520/#521 and
+fixed within #517/#519. The original scope/false-authority boundaries remain.
