@@ -45,10 +45,15 @@ def migrated_engine():
     spec = importlib.util.spec_from_file_location("social_integration_migration", migration_path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
+    connection_path = Path(__file__).parents[2] / 'alembic/versions/c96d13e2f411_social_meta_credentials.py'
+    connection_spec = importlib.util.spec_from_file_location('social_integration_credentials', connection_path)
+    connections = importlib.util.module_from_spec(connection_spec)
+    connection_spec.loader.exec_module(connections)
     try:
         with engine.begin() as conn:
             with Operations.context(MigrationContext.configure(conn)):
                 migration.upgrade()
+                connections.upgrade()
         yield engine
     finally:
         engine.dispose()

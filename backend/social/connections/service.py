@@ -37,9 +37,9 @@ def date(value):
 
 
 class ConnectionService:
-    def __init__(self, db, config, *, provider_factory=MetaProvider):
+    def __init__(self, db, config, *, provider_factory=MetaProvider, available_adapters=frozenset()):
         self.db, self.config, self.provider_factory = db, config, provider_factory
-        self.base = SocialService(db)
+        self.base = SocialService(db, available_adapters=available_adapters)
 
     @property
     def cipher(self):
@@ -253,6 +253,9 @@ class ConnectionService:
                 row.granted_scopes = page['metadata']['scopes']
                 required = PAGE_SCOPES if platform == 'facebook' else IG_SCOPES
                 row.capability_snapshot = CapabilitySet(provider_api_version=self.config.graph_version, eligible=True, supported_formats=(), granted_scopes=tuple(row.granted_scopes), required_scopes=tuple(sorted(required)), price_class='free', verified_at=now, adapter_available=False, feature_states={'publishing':'unsupported','media_upload':'unsupported'}, source_links=('https://developers.facebook.com/docs/pages-api/', 'https://developers.facebook.com/docs/instagram-platform/instagram-api-with-facebook-login/')).model_dump(mode='json')
+                from ..validation import registered_capability
+                if self.base.available_adapters:
+                    row.capability_snapshot = registered_capability(row, self.base.available_adapters).model_dump(mode='json')
                 row.capabilities_checked_at, row.last_api_success_at, row.updated_at = now, now, now
                 self._audit(actor, request_id, 'connection.reconnected' if previous else 'connection.connected', account=row, previous=previous, new='connected', reason=body.reason, details={'flow_id': str(flow.id), 'credential_id': str(credential.id)})
                 accounts.append(row)

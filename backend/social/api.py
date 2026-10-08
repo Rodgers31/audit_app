@@ -125,8 +125,9 @@ class SystemDTO(StrictModel):
     auto_schedule_enabled: Literal[False]
     auto_publish_enabled: Literal[False]
 
-def service(db: Session=Depends(get_db)):
-    return SocialService(db)
+def service(request: Request, db: Session=Depends(get_db)):
+    from .worker.native_runtime import registered_adapters
+    return SocialService(db, available_adapters=registered_adapters(request))
 
 def command(request, svc, admin, key, body, action, status=200):
     try:

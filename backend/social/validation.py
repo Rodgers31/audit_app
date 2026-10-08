@@ -1,6 +1,7 @@
 """Resolve the exact selected accounts and inspected assets; no network fetches."""
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from collections.abc import Mapping
 
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -14,7 +15,43 @@ def issue(code, field, message):
     return ValidationIssue(code=code, field=field, message=message)
 
 
+def registered_capability(account: SocialAccount, available_adapters) -> CapabilitySet:
+    if isinstance(available_adapters, Mapping):
+        adapter = available_adapters.get((account.platform, account.api_product))
+        if adapter is None:
+            return CapabilitySet()
+        try:
+            return CapabilitySet.model_validate(adapter.capabilities({
+                'platform': account.platform, 'api_product': account.api_product,
+                'external_account_id': account.external_account_id, 'connection_state': account.connection_state,
+                'granted_scopes': account.granted_scopes, 'capability_snapshot': account.capability_snapshot,
+            }))
+        except (ValueError, TypeError):
+            return CapabilitySet()
+    return CapabilitySet()
+
+
 def capability_for(account: SocialAccount, available_adapters=frozenset()) -> CapabilitySet:
+    if isinstance(available_adapters, Mapping):
+        caps = registered_capability(account, available_adapters)
+        try:
+            stored = CapabilitySet.model_validate(account.capability_snapshot)
+        except (ValueError, TypeError):
+            return CapabilitySet()
+        # Registry presence cannot silently upgrade a legacy connected account.
+        # A provider-verified reconnect persists the native capability snapshot.
+        if (not stored.eligible or not stored.adapter_available
+                or stored.provider_api_version != caps.provider_api_version
+                or stored.rules_version != caps.rules_version
+                or stored.supported_formats != caps.supported_formats
+                or stored.required_scopes != caps.required_scopes
+                or stored.granted_scopes != caps.granted_scopes
+                or stored.limits != caps.limits
+                or stored.feature_states.get('publishing') != 'supported'
+                or stored.price_class != 'free'):
+            return caps.model_copy(update={'eligible':False,'adapter_available':False,
+                'feature_states':{**caps.feature_states,'publishing':'requires_review'}})
+        return caps
     try:
         caps = CapabilitySet.model_validate(account.capability_snapshot)
     except (ValidationError, TypeError):
@@ -110,6 +147,19 @@ def validate_document(db: Session, document: PostDocument, evidence, available_a
         except ValidationError:
             preview = None
             errors.append(issue("ACCOUNT_UNAVAILABLE", "account_id", "The stored account metadata needs repair."))
+        if preview is not None and isinstance(available_adapters, Mapping):
+            adapter = available_adapters.get((account.platform, account.api_product))
+            if adapter is not None:
+                try:
+                    native = ValidationResult.model_validate(adapter.validate(preview, caps))
+                    native_errors = [*native.errors, *(error for result in native.targets for error in result.errors)]
+                    if (not native.valid or any(not result.valid for result in native.targets)) and not native_errors:
+                        native_errors.append(issue('TARGET_VALIDATION_FAILED', 'format', 'This provider could not validate the selected content.'))
+                    errors.extend(native_errors)
+                    warnings.extend(native.warnings)
+                    warnings.extend(warning for result in native.targets for warning in result.warnings)
+                except (ValueError, TypeError):
+                    errors.append(issue('TARGET_VALIDATION_FAILED', 'format', 'This provider could not validate the selected content.'))
         results.append(TargetValidation(account_id=account.id, platform=account.platform, valid=not errors, errors=tuple(errors), warnings=tuple(warnings), resolved_preview=preview))
     errors = () if account_ids else (issue("NO_TARGETS", "targets", "Select at least one connected account before publication."),)
     return ValidationResult(valid=bool(account_ids) and all(r.valid for r in results), targets=tuple(results), errors=errors)
