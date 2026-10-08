@@ -29,6 +29,7 @@ test('actual audit API, filters, snapshot pagination, back history, payload and 
   await page.goto('/admin/audit-log?days=0');
   await expect(page.getByRole('heading', { name: 'Audit Log', exact: true })).toBeVisible();
   await expect(page.getByText('28 actions recorded.')).toBeVisible();
+  await expect(page.locator('main li').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-desktop.png', fullPage: true });
   await page.getByLabel('Action', { exact: true }).fill('etl.trigger');
   await page.getByLabel('Target id', { exact: true }).fill('cob');
@@ -57,6 +58,7 @@ test('overview cards and mobile keyboard navigation preserve shell and truthful 
   await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
   await expect(page.getByText('Profile records', { exact: true })).toBeVisible();
   await expect(page.getByText('Publishing disabled', { exact: true })).toBeVisible();
+  await expect(page.locator('main section').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-mobile.png', fullPage: true });
   const nav = page.getByRole('navigation', { name: 'Admin navigation' });
   await expect(nav.getByRole('link', { name: 'Overview', exact: true })).toHaveAttribute('aria-current', 'page');
@@ -77,6 +79,21 @@ test('deep empty page recovers and invalid URL numbers stay bounded', async ({ p
   await page.goto('/admin/audit-log?page=NaN&days=-1');
   await expect(page.getByLabel('Time window')).toHaveValue('30');
   await expect(page.getByText('Page 1', { exact: true })).toBeVisible();
+  await page.goto('/admin/audit-log?snapshot_id=NaN&as_of=2026-10-08T00%3A00%3A00Z&visibility_snapshot=3%3A9%3A');
+  await expect(page.getByText('28 actions recorded.')).toBeVisible();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(page).toHaveURL('/admin/audit-log?days=30&page=1');
+  await expect(page.getByText('28 actions recorded.')).toBeVisible();
+});
+
+test('documented Operations health contract keeps available plan distinct from unverified worker', async ({ page }) => {
+  await page.route('**/api/v1/admin/etl/health', route => route.fulfill({ json: {
+    timestamp: new Date().toISOString(), scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified',
+  } }));
+  await page.goto('/admin');
+  await expect(page.getByText('Schedule calculated', { exact: true })).toBeVisible();
+  await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
+  await expect(page.locator('main').getByRole('alert')).toHaveCount(0);
 });
 
 test('anonymous and citizen sessions cannot render or read audit evidence', async ({ page, context, request }) => {

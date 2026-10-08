@@ -17,7 +17,12 @@ export function decodeSchedule(value: unknown) {
 }
 export function decodeHealth(value: unknown) {
   const o = object(value);
-  return { timestamp: text(o.timestamp, 80), scheduler_status: text(o.scheduler_status, 1000) };
+  const scheduler_status = text(o.scheduler_status, 1000);
+  const plan_status = o.plan_status === undefined
+    ? scheduler_status === 'healthy' ? 'available' : scheduler_status.startsWith('error:') ? 'unavailable' : 'unverified'
+    : text(o.plan_status, 80);
+  if (!['available', 'unavailable', 'unverified'].includes(plan_status)) throw new Error('Invalid calendar evidence');
+  return { timestamp: text(o.timestamp, 80), scheduler_status, plan_status };
 }
 export function decodeUsers(value: unknown) {
   const o = object(value);

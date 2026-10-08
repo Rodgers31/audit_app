@@ -24,6 +24,12 @@ test.each(['3:2:', '2:4:', '3:4294967296:', '3:9:8,4', '3:9:4,4', '3:9:2', '3:9:
   expect(() => decodeAudit({ ...audit, visibility_snapshot: value })).toThrow();
 });
 
+test.each(['NaN', '2147483648'])('invalid snapshot ID %s cannot send orphan visibility evidence', value => {
+  expect(auditFilters(new URLSearchParams(`snapshot_id=${value}&as_of=2026-10-08T00%3A00%3A00Z&visibility_snapshot=3%3A9%3A`))).toMatchObject({
+    snapshot_id: undefined, as_of: undefined, visibility_snapshot: undefined,
+  });
+});
+
 test.each([null, true, false, -1, NaN, Infinity, '1', {}, []])('hostile user/ingestion counts are rejected: %s', value => {
   expect(() => decodeUsers({ total_users: value, admin_users: 0, new_last_7_days: 0, new_last_30_days: 0 })).toThrow();
   expect(() => decodeIngestion({ total_jobs: value })).toThrow();

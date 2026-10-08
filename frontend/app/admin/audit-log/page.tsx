@@ -90,6 +90,13 @@ function AuditLogInner() {
     },
     enabled: isAdmin, retry: false, gcTime: 0, staleTime: 15_000,
   });
+  const refreshAudit = () => {
+    if (page !== 1 || ['snapshot_id', 'as_of', 'visibility_snapshot'].some(key => searchParams.has(key))) {
+      setQuery({ page: 1, snapshot_id: null, as_of: null, visibility_snapshot: null });
+    }
+    // Clearing an invalid bookmark leaves the parsed query key unchanged.
+    if (page === 1 && snapshot_id === undefined) void refetch();
+  };
 
   return (
     <PageShell
@@ -104,7 +111,7 @@ function AuditLogInner() {
         <AuditFilters key={searchParams.toString()} filters={filters} apply={setQuery} clear={() => router.push('/admin/audit-log', { scroll: false })} />
         <div className='flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-muted'>
           <p>Audit recording is best-effort. Missing evidence does not prove no activity. Payload fields may be redacted.</p>
-          <button onClick={() => { if (page !== 1 || snapshot_id !== undefined) setQuery({ page: 1, snapshot_id: null, as_of: null, visibility_snapshot: null }); else void refetch(); }} disabled={isFetching} className='inline-flex min-h-11 items-center gap-2 px-3 py-1.5 border border-neutral-border rounded-lg focus-visible:ring-2 focus-visible:ring-gov-sage disabled:opacity-50'>
+          <button onClick={refreshAudit} disabled={isFetching} className='inline-flex min-h-11 items-center gap-2 px-3 py-1.5 border border-neutral-border rounded-lg focus-visible:ring-2 focus-visible:ring-gov-sage disabled:opacity-50'>
             <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} aria-hidden='true' />Refresh
           </button>
           {dataUpdatedAt > 0 && <span>{error ? 'Last successful fetch ' : 'Fetched '}{timeAgo(new Date(dataUpdatedAt).toISOString())}{isFetching ? ' · Refreshing…' : ''}</span>}

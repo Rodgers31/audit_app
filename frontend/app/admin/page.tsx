@@ -106,7 +106,7 @@ export default function AdminOverviewPage() {
   const queries = [ingestion, schedule, health, userStats, recentActions, failedJobs, social];
   const alerts: { kind: 'failed-jobs' | 'unhealthy-etl'; count?: number }[] = [];
   if (!failedJobs.error && failedJobs.data && failedJobs.data.total > 0) alerts.push({ kind: 'failed-jobs', count: failedJobs.data.total });
-  if (!health.error && health.data && health.data.scheduler_status !== 'healthy') alerts.push({ kind: 'unhealthy-etl' });
+  if (!health.error && health.data && health.data.plan_status === 'unavailable') alerts.push({ kind: 'unhealthy-etl' });
 
   return (
     <PageShell
@@ -252,7 +252,7 @@ export default function AdminOverviewPage() {
               href='/admin/etl'
               renderValue={(d) => (
                 <>
-                  <p className='text-lg font-bold text-neutral-text'>{d.scheduler_status === 'healthy' ? 'Schedule calculated' : 'Calculation unavailable'}</p>
+                  <p className='text-lg font-bold text-neutral-text'>{d.plan_status === 'available' ? 'Schedule calculated' : d.plan_status === 'unavailable' ? 'Calculation unavailable' : 'Calculation unverified'}</p>
                   <p className='text-xs text-neutral-muted mt-2'>Worker execution unverified</p>
                   <p className='text-[11px] text-neutral-muted mt-3'>Reported {timeAgo(d.timestamp)}</p>
                 </>

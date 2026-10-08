@@ -32,6 +32,7 @@ const responses: Record<string, any> = {
 
 beforeEach(() => {
   mockSearch = new URLSearchParams(); mockPath = '/admin'; mockPush.mockReset(); mockReplace.mockReset();
+  (api.get as jest.Mock).mockClear();
   (api.get as jest.Mock).mockImplementation(async (path: string) => ({ data: responses[path] }));
 });
 function mount(node: React.ReactNode) {
@@ -45,6 +46,26 @@ test('overview does not certify a running worker from scheduler calculation', as
   expect(screen.queryByText('Healthy')).not.toBeInTheDocument();
   expect(screen.getByText(/Profile records/)).toBeVisible();
   expect(screen.getByRole('link', { name: /Social publishing/ })).toHaveAttribute('href', '/admin/social');
+});
+
+test('available calendar plan with unverified worker does not invent an ETL alert', async () => {
+  (api.get as jest.Mock).mockImplementation(async (path: string) => ({ data: path === '/admin/etl/health' ? {
+    timestamp: '2026-10-08T00:00:00Z', scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified',
+  } : responses[path] }));
+  mount(<Overview />);
+  expect(await screen.findByText('Schedule calculated')).toBeVisible();
+  expect(screen.getByText('Worker execution unverified')).toBeVisible();
+  expect(screen.queryByText('Calculation unavailable')).not.toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('unavailable calendar plan remains actionable with unverified worker', async () => {
+  (api.get as jest.Mock).mockImplementation(async (path: string) => ({ data: path === '/admin/etl/health' ? {
+    timestamp: '2026-10-08T00:00:00Z', scheduler_status: 'unverified', plan_status: 'unavailable', worker_status: 'unverified', data_freshness: 'unverified',
+  } : responses[path] }));
+  mount(<Overview />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Calculation unavailable');
+  expect(screen.getByText('Worker execution unverified')).toBeVisible();
 });
 
 test('overview explicitly reports unavailable audit and failure evidence', async () => {
@@ -86,6 +107,16 @@ test('audit rejects malformed successful data as unavailable evidence', async ()
   mount(<Audit />);
   expect(await screen.findByText(/Could not load audit log/)).toBeVisible();
   expect(screen.queryByText('No actions match these filters.')).not.toBeInTheDocument();
+});
+
+test.each(['NaN', '2147483648'])('Refresh clears malformed snapshot URL with ID %s', async value => {
+  mockSearch = new URLSearchParams(`snapshot_id=${value}&as_of=2026-10-08T00%3A00%3A00Z&visibility_snapshot=3%3A9%3A`);
+  (api.get as jest.Mock).mockResolvedValue({ data: audit });
+  mount(<Audit />);
+  await screen.findByText('No actions match these filters.');
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  expect(mockPush).toHaveBeenCalledWith('/admin/audit-log?days=30&page=1', { scroll: false });
+  await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
 });
 
 test('admin navigation exposes current subsection and named keyboard navigation', () => {

@@ -95,10 +95,16 @@ export function auditFilters(params: URLSearchParams) {
     return raw !== null && /^\d+$/.test(raw) && Number.isSafeInteger(Number(raw)) && Number(raw) >= min && Number(raw) <= max ? Number(raw) : fallback;
   };
   const days = bounded('days', 30, 36500, 0);
+  const snapshotId = bounded('snapshot_id', -1, 2147483647, 0);
+  const asOf = params.get('as_of');
+  const visibility = visibilitySnapshot(params.get('visibility_snapshot'));
+  // A bookmark is one unit of evidence. Never send a valid fragment of an
+  // invalid URL bookmark; SQLite bookmarks can legitimately omit visibility.
+  const validSnapshot = snapshotId >= 0 && timestamp(asOf) !== null && (!params.has('visibility_snapshot') || visibility !== null);
   return { actor_id: (params.get('actor_id') ?? '').slice(0, 64), action: (params.get('action') ?? '').slice(0, 80),
     target_type: (params.get('target_type') ?? '').slice(0, 40), target_id: (params.get('target_id') ?? '').slice(0, 64),
     days: DAYS.includes(days) ? days : 30, page: bounded('page', 1, 10000, 1),
-    snapshot_id: params.has('snapshot_id') && /^\d+$/.test(params.get('snapshot_id')!) && Number(params.get('snapshot_id')) <= 2147483647 && timestamp(params.get('as_of')) !== null ? Number(params.get('snapshot_id')) : undefined,
-    as_of: timestamp(params.get('as_of')) !== null ? params.get('as_of')! : undefined,
-    visibility_snapshot: params.has('snapshot_id') && timestamp(params.get('as_of')) !== null ? visibilitySnapshot(params.get('visibility_snapshot')) ?? undefined : undefined };
+    snapshot_id: validSnapshot ? snapshotId : undefined,
+    as_of: validSnapshot ? asOf! : undefined,
+    visibility_snapshot: validSnapshot ? visibility ?? undefined : undefined };
 }
