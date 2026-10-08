@@ -1,8 +1,8 @@
 # New evidence UI Kiswahili worksheet
 
-These 58 new draft translations need competent human language review: 36 initial evidence UI keys plus 22 caller and county keys. The earlier approved 144 strings are unchanged. Publisher names, source quotations, diagnostic identifiers, units, locators, periods, values and links are not translated.
+The human user in the coordinator chat reviewed and approved all 58 existing translations without corrections: 36 initial evidence UI keys plus 22 caller and county keys. Approval was recorded on 7 October 2026 (America/Chicago); the exact source values are unchanged. The earlier approved 144 strings are unchanged. Publisher names, source quotations, diagnostic identifiers, units, locators, periods, values and links are not translated.
 
-| Key | English meaning | Draft Kiswahili | Plain English |
+| Key | English meaning | Approved Kiswahili | Plain English |
 | --- | --- | --- | --- |
 | `evidence.for` | Evidence for {label} | Ushahidi wa {label} | Evidence for {label} |
 | `evidence.status.verified` | Verified observation | Takwimu iliyothibitishwa | Checked observation |
@@ -41,11 +41,11 @@ These 58 new draft translations need competent human language review: 36 initial
 | `evidence.page.this_observation` | this observation | takwimu hii | this observation |
 | `evidence.page.refresh` | Refresh evidence | Onyesha ushahidi upya | Check evidence again |
 
-## Caller-label supplement — 22 additional draft keys
+## Caller-label supplement — 22 additional approved keys
 
-These descriptive application labels preserve separately supplied raw county/sector names and stable selector labels. Human review remains pending.
+These descriptive application labels preserve separately supplied raw county/sector names and stable selector labels. They are included in the explicit 58-key human approval.
 
-| Key | English meaning | Draft Kiswahili | Plain English |
+| Key | English meaning | Approved Kiswahili | Plain English |
 | --- | --- | --- | --- |
 | `evidence.label.debt_register` | debt register operands | vipengele vya rejesta ya deni | debt register inputs |
 | `evidence.label.gdp_observations` | GDP observations | takwimu za GDP | GDP observations |
@@ -72,6 +72,6 @@ These descriptive application labels preserve separately supplied raw county/sec
 
 ## Review status — 7 October 2026
 
-Human approval remains pending for all 58 new keys. The earlier approval covered 144 strings; it does not extend to these 58. The [human review packet](2026-10-07-evidence-swahili-review.md) records exact scope, technical checks, contextual wording candidates and the reviewer CSV.
+The human user in the coordinator chat stated, “I have reviewed and approve all 58”. All 58 current values are accepted with no corrections. The earlier 144-string approval is separate and unchanged. The [human review packet](2026-10-07-evidence-swahili-review.md) and [approval receipt](2026-10-07-evidence-swahili-approval.json) record exact scope, source hash, timestamps and the completed reviewer CSV. This approval satisfies the language gate only; it does not certify data or providers.
 
 Here, qualification means the limits and status of evidence for an exact measured figure and its individual measures. It does not denote a Kenyan qualified audit opinion. The catalog-only `evidence.page.this_observation` key is included in the 58; the active detail disclosure uses `evidence.label.this_observation`.
