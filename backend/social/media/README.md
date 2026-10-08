@@ -47,6 +47,18 @@ asset removes only its quarantine copy.
 Backlog counts include already-released legacy rows with unknown historical
 grants. `reserved_bytes` and `pending_uploads` are the actual ledger, so they do
 not estimate the storage deficit those legacy hazards could have caused.
+An unreleased ready row with a historical `quarantine_cleaned` marker can be
+reconciled when writes remain unknown or pending capacity remains held. The
+marker and ledger remain unchanged until trusted scoped verification succeeds.
+That confirmation resets the quarantine marker and requires a fresh confirmed
+DELETE; an old DELETE cannot exclude a subsequently completed browser PUT.
+Ready cleanup releases only reserved bytes above the original's declared size,
+so a historical one-copy reservation is never decremented again. Pending
+capacity is released once after that fresh acknowledgement.
+
+Fully released legacy reservations remain an inventory/backlog acceptance
+boundary; the runtime cannot reconstruct their missing accounting or establish
+write quiescence from historical cleanup. No backfill fabricates settlement.
 Enabling storage requires a separate inventory and reconciliation decision;
 never clear uncertainty to admit another upload. The root-owned migration
 backfills pending markers using `version > 1 OR reservation_released = 1`;
