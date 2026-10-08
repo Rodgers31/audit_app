@@ -129,7 +129,8 @@ services:
   frontend:
     image: ${FRONTEND_IMAGE:-${DOCKERHUB_NAMESPACE:?DOCKERHUB_NAMESPACE must be set (never pull from an unowned namespace)}/audit-app-frontend:latest}
     environment:
-      NEXT_PUBLIC_API_URL: https://${BACKEND_HOST}
+      NEXT_PUBLIC_API_URL: https://${BACKEND_HOST:?BACKEND_HOST must match the public API hostname used to build the frontend image}
+      INTERNAL_API_URL: http://backend:8000
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       NODE_ENV: production

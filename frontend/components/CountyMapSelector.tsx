@@ -2,7 +2,8 @@
 
 import { County } from '@/types';
 import { motion } from 'framer-motion';
-import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
+import { ComposableMap, Geographies, Marker } from 'react-simple-maps';
+import Geography from './map/StyledGeography';
 
 interface CountyMapSelectorProps {
   counties: County[];

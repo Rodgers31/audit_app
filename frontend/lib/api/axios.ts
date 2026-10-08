@@ -1,10 +1,8 @@
 /**
  * Axios configuration for API requests
  *
- * In development, requests are proxied through Next.js rewrites:
- *   Browser → localhost:3000/api/v1/* → localhost:8000/api/v1/*
- * This avoids CORS preflight overhead since same-origin requests don't
- * need OPTIONS pre-flight.
+ * Browser requests use the public backend directly. Server prefetches can
+ * use INTERNAL_API_URL when the backend has a separate container address.
  *
  * Auth tokens are obtained from the Supabase session (cookie-based).
  * No manual localStorage management is needed.
@@ -13,14 +11,14 @@
  * failures and backend startup delays.
  */
 import { createClient } from '@/lib/supabase/client';
+import { getApiBase } from './base';
 import axios, { AxiosError, CanceledError, type InternalAxiosRequestConfig } from 'axios';
 
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
 
-// In production, NEXT_PUBLIC_API_URL points to the Render backend directly.
-// In development, it falls back to localhost:8000.
-// We always use the full URL so we don't depend on Next.js rewrites/proxy.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Browser calls retain the direct public API address. Server prefetches can
+// reach the backend over container DNS through a runtime-only internal address.
+const API_BASE = getApiBase();
 const baseURL = `${API_BASE}/api/${API_VERSION}`;
 
 /** Max retries for network errors / timeouts (cold-start recovery) */
