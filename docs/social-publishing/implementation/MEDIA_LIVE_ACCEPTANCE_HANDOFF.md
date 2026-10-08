@@ -171,3 +171,11 @@ passed on the owned empty database with no invented ledger or authority.
 Changed Python sources parse with Python 3.9 grammar; a Python 3.9 runtime was
 not exercised. The owned PostgreSQL container was stopped and removed; no
 volumes were created. Disposable browser servers exited and discarded bytes.
+
+## Coordinator verification and fixes — 2026-10-08
+
+Copilot's global request-cap race was valid and belongs to existing #530. A forced app/storage last-slot interleaving admitted 65 observations against a 64-request cap. Both handlers now share one lock for the admission check and append; the retained race control observes exactly 64 and one HTTP 429. The lock excludes response I/O. Unsupported methods remain counted before dispatch.
+
+Coordinator replay: 69 affected tests passed with zero skips, including the two actual owned PostgreSQL report controls and the forced shared-cap race. The complete browser fixture lane separately passed 14 tests. Two existing SQLAlchemy warnings remain. Independent Spec review exercised unknown-write, ledger drift and ready-original controls. The summary-only concerns were checked: legacy hazards remain explicit, the private PostgreSQL fixture pins its assigned loopback lane, and runtime startup only constructs/signs locally; reports perform no remote storage operation. A configured runtime and local signing are not live bucket readiness evidence.
+
+#522, #523, #529 and #530 are fixed in this PR. #490 remains open for the exact social storage/origin/host and acceptance receipts; production quiescence and original deletion authority remain false.

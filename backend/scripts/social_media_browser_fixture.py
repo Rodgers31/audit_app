@@ -65,6 +65,7 @@ document.getElementById('run').onclick = async () => {
 def browser_fixture():
     png, jpeg = image_bytes('PNG'), image_bytes('JPEG')
     objects, observations = {}, []
+    admission_lock = threading.Lock()
     origins = {}
     grants = {key: (len(jpeg), 'image/jpeg') if key == '/jpeg' else (len(png), 'image/png')
               for key in ('/png', '/jpeg', '/type', '/length', '/guard', '/foreign')}
@@ -94,10 +95,13 @@ def browser_fixture():
         def parse_request(self):
             if not super().parse_request():
                 return False
-            if len(observations) >= MAX_REQUESTS:
+            with admission_lock:
+                admitted = len(observations) < MAX_REQUESTS
+                if admitted:
+                    observations.append({'method': self.command, 'origin_allowed': self.headers.get_all('Origin') == [origins.get('app')]})
+            if not admitted:
                 self.reply(429)
                 return False
-            observations.append({'method': self.command, 'origin_allowed': self.headers.get_all('Origin') == [origins.get('app')]})
             return True
 
         def do_OPTIONS(self):
