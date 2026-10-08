@@ -104,3 +104,16 @@ backend social suite with all four explicit local PostgreSQL lanes enabled:
 SQLAlchemy declarative-base deprecations. Worker tests ran serially against the
 disposable database. The native PR diff still contains only native changes
 relative to the updated media base; the migration graph retains its single head.
+
+Before merging, root incorporated main `3141b00` after #513 and #514 merged,
+including the separately accepted public-query and dependency changes. The
+native diff against main remains scoped to native integration. The resulting
+tree passed **1,168 backend tests with zero skips** and **501 frontend tests**
+across 27 suites using the existing Next 15.5.27 dependency installation.
+
+Whole-frontend TypeScript reported three TS2353 map-style errors in
+`components/CountyMapSelector.tsx`, `components/county/CountyMapSelector.tsx`
+and `components/InteractiveKenyaMap.tsx`. A separate checkout of main
+`3141b00`, without native changes and using the same installation, reproduced
+the identical diagnostics. This is an existing main/dependency typing failure,
+not a passing TypeScript receipt; the native PR changes no frontend files.
