@@ -145,10 +145,10 @@ def _fetch_wb_indicators(client: SeedingHttpClient) -> list[dict[str, Any]]:
                     "date": f"{year}-12-31",
                     "value": value,
                     "unit": meta["unit"],
-                    "source_url": (
-                        f"https://data.worldbank.org/indicator/"
-                        f"{indicator_code}?locations=KE"
-                    ),
+                    # Register the acquisition endpoint, as national GDP does.
+                    # Keep the human landing citation in the existing notes;
+                    # it cannot substitute for the receipt's publisher binding.
+                    "source_url": url,
                     "source": (
                         f"World Bank Development Indicators – "
                         f"{meta['description']} ({year})"
@@ -162,7 +162,9 @@ def _fetch_wb_indicators(client: SeedingHttpClient) -> list[dict[str, Any]]:
                     "data_quality": "official",
                     "notes": (
                         f"Live from World Bank API ({indicator_code}), "
-                        f"year {year}"
+                        f"year {year}; Citation: "
+                        f"https://data.worldbank.org/indicator/"
+                        f"{indicator_code}?locations=KE"
                     ),
                 })
                 fetched_count += 1
