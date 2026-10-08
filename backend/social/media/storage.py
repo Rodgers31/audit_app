@@ -60,7 +60,10 @@ class R2Storage:
         parsed = urlsplit(url); params = parse_qs(parsed.query, keep_blank_values=True)
         if not params.get('X-Amz-Credential', [''])[0] or not re.fullmatch('[0-9]{8}T[0-9]{6}Z', params.get('X-Amz-Date', [''])[0]):
             raise StorageFailure('Storage signing capabilities are unavailable')
-        headers = set(params.get('X-Amz-SignedHeaders', [''])[0].lower().split(';'))
+        header_names = params.get('X-Amz-SignedHeaders', [''])[0].split(';')
+        if len(header_names) > 16 or any(not re.fullmatch('[a-z][a-z0-9-]{0,63}', name) for name in header_names) or header_names != sorted(set(header_names)):
+            raise StorageFailure('Storage signing capabilities are unavailable')
+        headers = set(header_names)
         if parsed.scheme != 'https' or parsed.hostname != self.origin or parsed.port not in {None, 443} or parsed.username or parsed.password or parsed.fragment or parsed.path != '/' + quote(self.bucket, safe='') + '/' + quote(key, safe='/') or any(len(v) != 1 for v in params.values()) or not re.fullmatch('[0-9a-f]{64}', params.get('X-Amz-Signature', [''])[0]) or params.get('X-Amz-Algorithm') != ['AWS4-HMAC-SHA256'] or params.get('X-Amz-Expires') != [str(ttl)] or not set(required) <= headers:
             raise StorageFailure('Storage signing capabilities are unavailable')
         return url

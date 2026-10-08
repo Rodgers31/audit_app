@@ -325,7 +325,10 @@ class MediaService:
             self._audit(actor, request_id, asset, 'media.reconciliation_started', previous)
         try:
             evidence = self.runtime.write_quiescence_verifier.verify(scope, body.receipt)
-            if not isinstance(evidence, WriteQuiescenceEvidence) or evidence.scope != scope or evidence.receipt != body.receipt:
+            if not isinstance(evidence, WriteQuiescenceEvidence):
+                raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted evidence that all outstanding writes stopped is unavailable.', 503)
+            evidence = WriteQuiescenceEvidence.model_validate(evidence)
+            if evidence.scope != scope or evidence.receipt != body.receipt:
                 raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted evidence that all outstanding writes stopped is unavailable.', 503)
             with self.db.begin():
                 self._budgets(uploader)

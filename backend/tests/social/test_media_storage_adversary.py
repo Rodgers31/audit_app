@@ -16,7 +16,7 @@ BAD = b'evil bytes'
 HASH = hashlib.sha256(GOOD).hexdigest()
 
 
-def signed_url(headers='host;content-length;content-type;if-none-match', **changes):
+def signed_url(headers='content-length;content-type;host;if-none-match', **changes):
     query = {
         'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
         'X-Amz-Credential': 'fixture/20261003/auto/s3/aws4_request',
