@@ -1,5 +1,11 @@
 # Meta operational readiness: recovery and deployment evidence (#488)
 
+2026-10-08 follow-up: the later [local Sentry repair](SENTRY_REDACTION_HANDOFF.md)
+verifies event/transaction/breadcrumb detail and frame exclusion through the
+installed SDK with memory transport. The Batch 5 unsafe captures and counts
+below remain historical receipts. Exact deployed SDK/activation/exporter and
+upstream access-log protection remain MISSING/BLOCKED; #525 and #488 stay open.
+
 Prepared 2026-10-08 in the isolated `meta-operational-readiness` worktree,
 branch `codex/meta-operational-readiness`, fetched base
 `bd46832156cb921173fea32d9d9698d696a676dc` (main with #513–#519).

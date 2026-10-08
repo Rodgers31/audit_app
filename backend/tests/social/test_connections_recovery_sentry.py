@@ -1,6 +1,6 @@
-"""Actual frame-local evidence for pending #525; all transport/material inert.
+"""Actual local frame exclusion evidence for #525; all transport/material inert.
 
-Passing observations record a currently unsafe filter, never readiness.
+These captures establish no deployed activation/exporter protection.
 """
 import json
 import os
@@ -13,7 +13,8 @@ import base64,json
 from uuid import UUID
 import sentry_sdk
 from sentry_sdk.transport import Transport
-from monitoring.instrumentation import before_send_filter
+from monitoring.instrumentation import setup_sentry
+from fastapi import FastAPI
 from social.connections.crypto import CredentialCipher
 from social.connections.recovery import parse_keyring, RecoveryKeyring,RecoveryProbe,verify_restoration
 K=base64.urlsafe_b64encode(bytes(range(32))).decode()
@@ -24,7 +25,15 @@ class T(Transport):
     def capture_envelope(self,envelope):
         for item in envelope.items:
             if item.type=='event':sent.append(item.payload.json)
-sentry_sdk.init(dsn='https://fixture@example.test/1',transport=T(),default_integrations=False,auto_enabling_integrations=False,send_default_pii=False,before_send=before_send_filter)
+sentry_sdk.init(dsn='https://fixture@example.invalid/1',transport=T(),default_integrations=False,auto_enabling_integrations=False)
+sentry_sdk.capture_event({'message':'unsafe positive control','extra':{'private':M if 'M' in globals() else K}})
+sentry_sdk.flush();assert len(sent)==1 and (M if 'M' in globals() else K) in json.dumps(sent.pop())
+real_init=sentry_sdk.init
+def memory_init(*args,**kwargs):
+    kwargs.update(transport=T(),default_integrations=False,auto_enabling_integrations=False)
+    return real_init(*args,**kwargs)
+sentry_sdk.init=memory_init
+setup_sentry(FastAPI(),dsn='https://fixture@example.invalid/1')
 def bad_key():CredentialCipher('v1',{'v1':M+'é'})
 def owner_mismatch():
     c=CredentialCipher('v1',{'v1':K});v,data=c.encrypt(O,'facebook_page',{'access_token':M})
@@ -48,6 +57,7 @@ for fn in [bad_key,owner_mismatch,unknown_version,malformed_backup,recovery_owne
     for frame in frames:
         for key,value in frame.get('vars',{}).items():
             if M in json.dumps(value):paths.append(frame['filename']+':'+frame['function']+':vars.'+key)
+    assert M not in json.dumps(event), 'private marker outside owned frames'
     summary.append({'mode':fn.__name__,'crypto_recovery_frame_marker_present':M in encoded,'frame_marker_paths':paths,'event_count':1})
 print(json.dumps(summary))
 """
@@ -57,14 +67,23 @@ import base64,json,pathlib,tempfile
 from unittest.mock import patch
 import sentry_sdk
 from sentry_sdk.transport import Transport
-from monitoring.instrumentation import before_send_filter
+from monitoring.instrumentation import setup_sentry
+from fastapi import FastAPI
 from social.connections.recovery import RecoveryKeyring,encode_keyring,write_keyring_backup
 K=base64.urlsafe_b64encode(bytes(range(32))).decode();sent=[]
 class T(Transport):
     def capture_envelope(self,envelope):
         for item in envelope.items:
             if item.type=='event':sent.append(item.payload.json)
-sentry_sdk.init(dsn='https://fixture@example.test/1',transport=T(),default_integrations=False,auto_enabling_integrations=False,send_default_pii=False,before_send=before_send_filter)
+sentry_sdk.init(dsn='https://fixture@example.invalid/1',transport=T(),default_integrations=False,auto_enabling_integrations=False)
+sentry_sdk.capture_event({'message':'unsafe positive control','extra':{'private':M if 'M' in globals() else K}})
+sentry_sdk.flush();assert len(sent)==1 and (M if 'M' in globals() else K) in json.dumps(sent.pop())
+real_init=sentry_sdk.init
+def memory_init(*args,**kwargs):
+    kwargs.update(transport=T(),default_integrations=False,auto_enabling_integrations=False)
+    return real_init(*args,**kwargs)
+sentry_sdk.init=memory_init
+setup_sentry(FastAPI(),dsn='https://fixture@example.invalid/1')
 summary=[]
 for mode in ['failed-fsync','encode-oversize']:
     try:
@@ -81,6 +100,7 @@ for mode in ['failed-fsync','encode-oversize']:
             if f.get('filename','').endswith('social/connections/recovery.py'):
                 for name,value in f.get('vars',{}).items():
                     if K in json.dumps(value):paths.append(f['filename']+':'+f['function']+':vars.'+name)
+    assert K not in json.dumps(event), 'private key outside owned frames'
     summary.append({'mode':mode,'credential_key_in_capture':bool(paths),'paths':paths,'event_count':1})
 print(json.dumps(summary))
 """
@@ -94,13 +114,13 @@ def capture(source):
     return json.loads(result.stdout)
 
 
-def test_recovery_sentry_frame_locals_remain_pending_redaction_gate():
+def test_recovery_sentry_setup_excludes_owned_and_caller_frame_locals():
     evidence = capture(CAPTURE)
     assert len(evidence) == 5 and all(item['event_count'] == 1 for item in evidence)
-    assert [item['crypto_recovery_frame_marker_present'] for item in evidence] == [True, True, True, True, False]
+    assert [item['crypto_recovery_frame_marker_present'] for item in evidence] == [False, False, False, False, False]
 
 
-def test_recovery_failed_export_sentry_raw_key_locals_remain_pending_redaction_gate():
+def test_recovery_failed_export_sentry_setup_excludes_raw_key_locals():
     evidence = capture(PERSIST_CAPTURE)
     assert len(evidence) == 2 and all(item['event_count'] == 1 for item in evidence)
-    assert [item['credential_key_in_capture'] for item in evidence] == [True, False]
+    assert [item['credential_key_in_capture'] for item in evidence] == [False, False]

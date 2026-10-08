@@ -1,7 +1,7 @@
 """Executed local redaction evidence, with inert values and no remote transport.
 
-The inbound captures deliberately retain the current unsafe result. They are
-evidence of a pending ingress/Sentry gate, never a readiness success verdict.
+The Sentry captures retain an unfixed positive control, then exercise the repaired
+local setup. Deployed ingress/exporter safety remains a separate pending gate.
 The synthetic route exercises SocialRoute; it installs no real callback.
 """
 import json
@@ -180,7 +180,7 @@ from social.connections.config import MetaConfig
 from social.connections.provider import MetaProvider
 from social.http_boundary import SocialRoute
 from social.service import SocialError
-from monitoring.instrumentation import before_send_filter
+from monitoring.instrumentation import setup_sentry
 
 token, code, error = "inert-sentry-token-marker", "inert-sentry-code-marker", "inert-sentry-error-marker"
 sent = []
@@ -192,7 +192,14 @@ class MemoryTransport(Transport):
 sentry_sdk.init(dsn="https://fixture@example.test/1", transport=MemoryTransport(),
     integrations=[HttpxIntegration(), FastApiIntegration(), StarletteIntegration()],
     default_integrations=False, auto_enabling_integrations=False, traces_sample_rate=1.0,
-    send_default_pii=False, before_send=before_send_filter)
+    send_default_pii=False)
+real_init=sentry_sdk.init
+def memory_init(*args, **kwargs):
+    kwargs.update(transport=MemoryTransport(), default_integrations=False, auto_enabling_integrations=False)
+    kwargs["integrations"] += [HttpxIntegration(), StarletteIntegration()]
+    kwargs["traces_sample_rate"] = 1.0
+    return real_init(*args, **kwargs)
+sentry_sdk.init=memory_init
 
 if sys.argv[1] == "outbound":
     config = MetaConfig(enabled=True, app_configuration_validated=True, app_id="123",
@@ -202,6 +209,7 @@ if sys.argv[1] == "outbound":
         with httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200,json={}))) as client:
             client.get("https://graph.facebook.com/v26.0/debug_token",params={"input_token":token})
     assert len(sent) == 1 and token in json.dumps(sent.pop()), "unsafe capture positive control failed"
+    setup_sentry(FastAPI(), dsn="https://fixture@example.invalid/1")
     for mode, expected in (("success", None), ("http_error", "PROVIDER_REJECTED"),
                            ("parse_error", "PROVIDER_RESPONSE_INVALID"), ("transport_error", "PROVIDER_UNAVAILABLE")):
         def fake(request):
@@ -229,7 +237,14 @@ if sys.argv[1] == "outbound":
     assert all(value not in encoded for value in (token,code,error,config.app_secret)), "secret in outbound capture"
     print(json.dumps({"unsafe_control":1,"secret_free_transactions":4,"wire_requests":4}))
 else:
+    # This unfixed event proves the transport captures private data before hooks.
+    sentry_sdk.capture_event({"message":"unsafe positive control", "request":{
+        "url":"https://example.test/callback?code="+code,"query_string":"access_token="+token+"&error="+error}})
+    assert len(sent) == 1, "unsafe event control was not captured"
+    unsafe = sent.pop()
+    assert all(v in json.dumps(unsafe) for v in (code,token,error)), "unsafe event control failed"
     app = FastAPI()
+    setup_sentry(app, dsn="https://fixture@example.invalid/1")
     app.router.route_class = SocialRoute
     @app.get("/fixture/callback/{outcome}")
     def callback(outcome: str):
@@ -246,20 +261,19 @@ else:
     assert len(transactions) == 2, "missing inbound transaction positive control"
     for item in transactions:
         request = item["request"]
-        assert all(value in request["query_string"] for value in (code,token,error)), "pending unsafe query capture changed"
-        assert request["url"].endswith(("/success","/failure")), "missing URL readback"
-    # before_send only filters error events, and leaves query data even there.
-    sentry_sdk.capture_event({"message":"inert capture", "request":{"url":"https://admin.example.test/fixture/callback?code="+code,
+        assert request["method"] == "GET", "operational request metadata missing"
+        assert all(value not in json.dumps(item) for value in (code,token,error)), "private inbound capture"
+    # Explicit events and actual transactions share the final local policy.
+    sentry_sdk.capture_event({"level":"error", "message":"inert capture", "request":{"url":"https://admin.example.test/fixture/callback?code="+code,
         "query_string":"access_token="+token+"&error="+error,"headers":{"Authorization":"inert-header","Cookie":"inert-cookie"}}})
     sentry_sdk.flush()
     events = [item for kind,item in sent if kind == "event"]
     assert len(events) == 1, "missing error-event positive control"
     request = events[0]["request"]
-    assert request["headers"]["Authorization"] == "[Filtered]", "current header filter did not run"
-    assert request["headers"]["Cookie"] == "[Filtered]", "current cookie filter did not run"
-    assert code in request["url"] and token in request["query_string"] and error in request["query_string"], "pending error-event query capture changed"
-    print(json.dumps({"unsafe_inbound_transactions":2,"unsafe_error_events":1,
-                      "retained_fields":["request.url","request.query_string"],"pending_ingress_gate":True}))
+    assert "headers" not in request and "query_string" not in request and "url" not in request
+    assert all(value not in json.dumps(events[0]) for value in (code,token,error)), "private error-event capture"
+    print(json.dumps({"unsafe_control":1,"secret_free_inbound_transactions":2,"secret_free_error_events":1,
+                      "verified_scope":"installed_memory_only","deployed_ingress_gate_pending":True}))
 '''
 
 
@@ -277,8 +291,8 @@ def test_actual_sentry_provider_capture_has_positive_control_and_sanitized_failu
     assert sentry_capture("outbound") == {"unsafe_control": 1, "secret_free_transactions": 4, "wire_requests": 4}
 
 
-def test_actual_sentry_captures_callback_queries_pending_ingress_gate():
+def test_actual_sentry_setup_excludes_callback_queries_with_deployed_gate_pending():
     assert sentry_capture("inbound") == {
-        "unsafe_inbound_transactions": 2, "unsafe_error_events": 1,
-        "retained_fields": ["request.url", "request.query_string"], "pending_ingress_gate": True,
+        "unsafe_control": 1, "secret_free_inbound_transactions": 2, "secret_free_error_events": 1,
+        "verified_scope": "installed_memory_only", "deployed_ingress_gate_pending": True,
     }
