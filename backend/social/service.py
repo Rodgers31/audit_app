@@ -52,7 +52,9 @@ INFLIGHT = frozenset({"dispatching", "processing", "reconciling", "outcome_unkno
 class SocialService:
     def __init__(self, db: Session, *, available_adapters=frozenset()):
         self.db = db
-        self.available_adapters = frozenset(available_adapters)
+        from collections.abc import Mapping
+        from types import MappingProxyType
+        self.available_adapters = MappingProxyType(dict(available_adapters)) if isinstance(available_adapters, Mapping) else frozenset(available_adapters)
         self.actor = None
         self.request_id = None
 
@@ -664,7 +666,8 @@ class SocialService:
         from types import SimpleNamespace
         fields = (SocialAccount.id, SocialAccount.platform, SocialAccount.display_name,
                   SocialAccount.handle, SocialAccount.profile_url, SocialAccount.connection_state,
-                  SocialAccount.publishing_enabled, SocialAccount.capability_snapshot)
+                  SocialAccount.publishing_enabled, SocialAccount.capability_snapshot,
+                  SocialAccount.api_product, SocialAccount.external_account_id, SocialAccount.granted_scopes)
         accounts = (SimpleNamespace(**row._mapping) for row in self.db.execute(
             select(*fields).order_by(SocialAccount.display_name, SocialAccount.id).limit(100)))
         return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters).model_dump(mode="json")} for a in accounts]}
@@ -692,7 +695,8 @@ class SocialService:
             else:
                 worker_state = heart.state
         counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
-        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": sorted(self.available_adapters), "media_upload_available": bool(media_runtime().available_mimes()), "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        available = sorted({key[0] if isinstance(key, tuple) else key for key in self.available_adapters})
+        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": available, "media_upload_available": bool(media_runtime().available_mimes()), "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
 
     def accepted(self, post, publication):
         targets = self._targets(publication)

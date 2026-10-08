@@ -150,7 +150,7 @@ class FakeAdapter:
         if isinstance(result, Exception):
             raise result
         return result
-    async def reconcile(self, payload, checkpoint, attempt):
+    async def reconcile(self, payload, checkpoint, attempt, credential, media_access):
         self.reconciliations += 1
         return self.reconcile_result or ReconciliationResult(outcome="unknown", evidence={"lookup": "incomplete"})
 
@@ -1024,7 +1024,7 @@ def test_verified_complete_original_mutation_absence_proof_allows_bounded_retry(
     ids = seed(engine)
     repo = repository(engine)
     class ProvedAbsentAdapter(FakeAdapter):
-        async def reconcile(self,payload,checkpoint,attempt):
+        async def reconcile(self,payload,checkpoint,attempt,credential,media_access):
             self.reconciliations += 1
             return ReconciliationResult(outcome="definitively_unpublished",absence_proof={
                 "kind":kind,"verified":True,"coverage_complete":True,
@@ -1048,7 +1048,7 @@ def test_absence_proof_for_wrong_account_or_operation_stays_unknown(engine,misma
     ids=seed(engine)
     repo=repository(engine)
     class WrongProofAdapter(FakeAdapter):
-        async def reconcile(self,payload,checkpoint,attempt):
+        async def reconcile(self,payload,checkpoint,attempt,credential,media_access):
             proof={"kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
                    "account_id":payload.account_id,"operation_id":attempt["operation_id"]}
             proof[mismatch]=uuid4()
@@ -1066,7 +1066,7 @@ def test_malformed_absence_proof_completes_read_as_unknown_without_resend(engine
     ids=seed(engine)
     repo=repository(engine)
     class MalformedProofAdapter(FakeAdapter):
-        async def reconcile(self,payload,checkpoint,attempt):
+        async def reconcile(self,payload,checkpoint,attempt,credential,media_access):
             proof={"kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
                    "account_id":str(payload.account_id),"operation_id":str(attempt["operation_id"])}
             proof[field]=value
@@ -1098,7 +1098,7 @@ def test_verified_absence_releases_account_hold_even_when_retry_deadline_exhaust
     ids=seed(engine)
     repo=repository(engine)
     class ProvenAbsent(FakeAdapter):
-        async def reconcile(self,payload,checkpoint,attempt):
+        async def reconcile(self,payload,checkpoint,attempt,credential,media_access):
             return ReconciliationResult(outcome="definitively_unpublished",absence_proof={
                 "kind":"confirmed_not_sent","verified":True,"coverage_complete":True,
                 "account_id":payload.account_id,"operation_id":attempt["operation_id"]})

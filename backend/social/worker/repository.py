@@ -123,13 +123,15 @@ class QueueRepository:
             row = conn.execute(text("""
                 SELECT now() AS database_now, t.*, a.platform, a.api_product, a.connection_state,
                        a.publishing_enabled AS account_enabled, a.capability_snapshot,
-                       a.granted_scopes, p.post_id, p.revision_id, p.approved_hash,
+                       a.granted_scopes, a.credential_id AS admitted_credential_id,
+                       c.version AS admitted_credential_version, p.post_id, p.revision_id, p.approved_hash,
                        p.approved_at, p.authorization_kind, p.approved_by,
                        p.cancel_requested_at, p.revoked_at, p.start_deadline,
                        p.retry_deadline, p.content_valid_until, p.dispatch_requested_at,
                        r.content_hash AS revision_hash
                 FROM social_post_targets t
                 JOIN social_accounts a ON a.id=t.account_id
+                LEFT JOIN social_credentials c ON c.id=a.credential_id
                 JOIN social_publications p ON p.id=t.publication_id
                 JOIN social_post_revisions r ON r.id=p.revision_id
                 WHERE t.id=CAST(:id AS uuid)

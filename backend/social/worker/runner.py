@@ -15,6 +15,7 @@ from ..contracts import (
 from .logging import event
 from .policy import bounded_json, retry_decision, validate_plan
 from .repository import Claim, GateRejected, LeaseLost, QueueRepository
+from .materials import CredentialLoadRequest
 
 logger = logging.getLogger("social.worker")
 
@@ -144,6 +145,12 @@ class SocialWorker:
                         return
                 plan = OperationPlan.model_validate(adapter.next_operation(payload, snapshot["checkpoint"]))
             validate_plan(plan, snapshot["checkpoint"])
+            admission_check = getattr(adapter, "validate_mutation_admission", None)
+            if plan.safe_replay_class != "read_only" and callable(admission_check):
+                admission = ValidationResult.model_validate(admission_check(payload, snapshot))
+                if not admission.valid or admission.errors or any(not target.valid or target.errors for target in admission.targets):
+                    await self.db(self.repository.abandon, claim, state="blocked", code="ACCOUNT_INELIGIBLE")
+                    return
             if not 0 < plan.timeout_seconds < self.config.lease_seconds:
                 raise ValueError("Adapter timeout must be shorter than claim lease")
             intent = await self.db(
@@ -158,16 +165,20 @@ class SocialWorker:
             )
             if intent is None:
                 return
-            # Credentials are requested only after committed permission. Batch-one
-            # runtime has no provider adapters and no credential-loading fallback.
-            credential = await self.credential_loader(payload.account_id) if self.credential_loader else None
+            # Bind ephemeral material to this committed intent and admission
+            # snapshot, including authenticated reads after restart.
+            credential = await self.credential_loader(CredentialLoadRequest(
+                claim, payload, plan.operation_id, snapshot['admitted_credential_id'],
+                snapshot['admitted_credential_version'], plan.safe_replay_class != 'read_only',
+            )) if self.credential_loader else None
+            media_access = self.media_access.for_payload(payload) if self.media_access else None
             try:
                 if reconciling:
                     remote = await asyncio.wait_for(
-                        adapter.reconcile(payload, snapshot["checkpoint"], snapshot["last_attempt"]),
+                        adapter.reconcile(payload, snapshot["checkpoint"], snapshot["last_attempt"], credential, media_access),
                         timeout=plan.timeout_seconds)
                 else:
-                    remote = await asyncio.wait_for(adapter.execute(payload, plan, credential, self.media_access),
+                    remote = await asyncio.wait_for(adapter.execute(payload, plan, credential, media_access),
                                                     timeout=plan.timeout_seconds)
             except Exception:
                 # Adapter exceptions cannot establish that a mutation was unsent.
