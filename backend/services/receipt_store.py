@@ -18,8 +18,38 @@ class ReceiptStore(Protocol):
     def read(self, digest: str) -> bytes: ...
 
 
+def configured_receipt_store(settings) -> ReceiptStore:
+    """One binding for HTTP and PDF paths; selected durable storage never falls back."""
+    backend = getattr(settings, "receipt_storage_backend", "local")
+    max_bytes = getattr(settings, "receipt_max_bytes", None)
+    if backend == "local":
+        return LocalReceiptStore(
+            Path(settings.storage_path) / "response-receipts",
+            max_bytes=64 * 1024 * 1024 if max_bytes is None else max_bytes,
+        )
+    if backend != "supabase":
+        raise ValueError("Unknown receipt storage backend")
+    from config.secrets import get_secret
+    from services.supabase_receipt_store import SupabaseReceiptStore, validate_destination
+
+    if max_bytes is None:
+        raise ValueError("Supabase receipt byte limit must be explicitly configured")
+    validate_destination(settings.receipt_supabase_url, settings.receipt_supabase_bucket)
+    return SupabaseReceiptStore(
+        settings.receipt_supabase_url,
+        settings.receipt_supabase_bucket,
+        get_secret("RECEIPT_SUPABASE_SECRET_KEY"),
+        max_bytes=max_bytes,
+        timeout_seconds=settings.receipt_storage_timeout_seconds,
+    )
+
+
 class LocalReceiptStore:
+    storage_scope = "local"
+
     def __init__(self, root: Path, *, max_bytes: int = 64 * 1024 * 1024):
+        if type(max_bytes) is not int or not 1 <= max_bytes <= 64 * 1024 * 1024:
+            raise ValueError("Receipt byte limit must be an integer within 1..67108864")
         self.root = Path(root)
         self.max_bytes = max_bytes
 

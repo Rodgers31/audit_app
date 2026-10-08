@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Literal, Optional, Tuple
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .utils import parse_rate_limit
@@ -62,6 +62,30 @@ class SeedingSettings(BaseSettings):
         default=Path("data/seeding"),
         description="Base directory for caching downloads and generated assets.",
     )
+    receipt_storage_backend: Literal["local", "supabase"] = "local"
+    receipt_supabase_url: str = ""
+    receipt_supabase_bucket: str = ""
+    # Required for Supabase: owner must choose the account AND bucket cap.
+    # Local storage retains its existing 64MiB default.
+    receipt_max_bytes: Optional[int] = Field(default=None, ge=1, le=64 * 1024 * 1024)
+    receipt_storage_timeout_seconds: float = Field(default=30.0, gt=0, le=120, allow_inf_nan=False)
+
+    @field_validator("receipt_max_bytes", "receipt_storage_timeout_seconds", mode="before")
+    @classmethod
+    def reject_receipt_bool(cls, value):
+        if isinstance(value, bool):
+            raise ValueError("Receipt storage limits cannot be boolean")
+        return value
+
+    @field_validator("receipt_max_bytes", mode="before")
+    @classmethod
+    def empty_optional_receipt_limit(cls, value):
+        # An unset optional GitHub variable resolves to an empty environment
+        # string. Preserve local defaults; the Supabase factory requires a cap.
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     cache_path: Path = Field(
         default=Path("data/seeding/cache"),
         description="Directory dedicated to HTTP/download caches.",

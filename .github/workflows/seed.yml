@@ -471,6 +471,16 @@ jobs:
     needs: [migrate]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Optional receipt storage. Enable only after owner-approved capacity,
+      # private bucket/access, restart/readback and recovery acceptance (#137).
+      # Server credential is deliberately restricted to the actual seeder job.
+      SEED_RECEIPT_STORAGE_BACKEND: ${{ vars.SEED_RECEIPT_STORAGE_BACKEND || 'local' }}
+      SEED_RECEIPT_SUPABASE_URL: ${{ vars.SEED_RECEIPT_SUPABASE_URL }}
+      SEED_RECEIPT_SUPABASE_BUCKET: ${{ vars.SEED_RECEIPT_SUPABASE_BUCKET }}
+      SEED_RECEIPT_MAX_BYTES: ${{ vars.SEED_RECEIPT_MAX_BYTES }}
+      SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS: ${{ vars.SEED_RECEIPT_STORAGE_TIMEOUT_SECONDS || '30' }}
+      RECEIPT_SUPABASE_SECRET_KEY: ${{ secrets.RECEIPT_SUPABASE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

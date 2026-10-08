@@ -25,7 +25,7 @@ from . import tls_chain
 from .config import SeedingSettings
 from .rate_limiter import RateLimiter
 from .storage import SimpleHTTPCache
-from services.receipt_store import LocalReceiptStore, ReceiptStore
+from services.receipt_store import configured_receipt_store, ReceiptStore
 from services.response_receipts import capture_response
 
 logger = logging.getLogger("seeding.http")
@@ -82,8 +82,7 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             tokens=tokens, period_seconds=period
         )
         self._cache = cache
-        # Explicitly local CAS. Production durability requires an approved adapter.
-        self.receipt_store = receipt_store if receipt_store is not None else LocalReceiptStore(settings.storage_path / "response-receipts")
+        self.receipt_store = receipt_store if receipt_store is not None else configured_receipt_store(settings)
         self._client = client or httpx.Client(
             timeout=settings.timeout_seconds,
             headers=settings.default_headers,
@@ -552,13 +551,12 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
             written = _on_disk()
             os.replace(tmp, dest)
             if full_response is not None:
-                from services.receipt_store import LocalReceiptStore
                 from services.response_receipts import capture_response
 
                 status, response_headers, request = full_response
                 store = getattr(self, "receipt_store", None)
                 if store is None:
-                    store = LocalReceiptStore(Path(self._settings.storage_path) / "response-receipts")
+                    store = configured_receipt_store(self._settings)
                 # iter_bytes() already decoded transfer content. Reusing the
                 # encoding header would make httpx decompress these bytes twice.
                 decoded_headers = {k: v for k, v in response_headers.items() if k.lower() not in ("content-encoding", "content-length")}

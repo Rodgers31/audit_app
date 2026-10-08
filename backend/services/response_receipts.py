@@ -130,7 +130,7 @@ def capture_response(
         "content_encoding": response.headers.get("content-encoding"),
         "digest_scope": "response.content", "acquired_at": acquired,
         "digest": digest, "byte_size": len(body), "storage_key": None,
-        "storage_scope": "local", "byte_check": {"status": "missing", "sha256": None, "checked_at": acquired},
+        "storage_scope": getattr(store, "storage_scope", "unspecified"), "byte_check": {"status": "missing", "sha256": None, "checked_at": acquired},
     }
     if acquisition_kind is not None:
         receipt.update(
@@ -142,15 +142,19 @@ def capture_response(
     try:
         if store is None:
             raise ValueError("receipt_store_unconfigured")
-        key = store.put(body)
-        retained = store.read(key)
+        put_and_read = getattr(store, "put_and_read", None)
+        if callable(put_and_read):
+            key, retained = put_and_read(body)
+        else:
+            key = store.put(body)
+            retained = store.read(key)
         if key != digest or retained != body:
             raise ValueError("receipt_readback_mismatch")
         receipt["storage_key"] = key
         receipt["byte_check"] = {"status": "matched", "sha256": digest, "checked_at": now_iso()}
     except Exception as exc:  # Adapter failures retain the observation, with explicit missing-byte evidence.
         receipt["failure_reason"] = f"{type(exc).__name__}: {exc}"
-        logger.error("Receipt bytes not retained; observations remain qualified, restart loses bytes: %s", exc)
+        logger.error("Receipt bytes not retained; observations remain qualified: %s", exc)
     captured = CapturedReceipt(receipt, _capability=_CAPABILITY)
     captured._store = store
     return captured

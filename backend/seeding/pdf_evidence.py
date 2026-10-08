@@ -1,7 +1,7 @@
 """Prospective PDF cell evidence; cached bytes never invent an HTTP acquisition.
 
 PDF hashes here identify source bytes, independently of normalized row hashes.
-The local object store is a local receipt, not a durable production adapter.
+The selected receipt adapter retains bytes independently of download caches.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
 from pathlib import Path
 import hashlib
 
-from services.receipt_store import LocalReceiptStore
+from services.receipt_store import configured_receipt_store
 from services.response_receipts import (
     persist_receipt,
     persist_evidence,
@@ -48,9 +48,7 @@ def receipt_for_response(client, response, parser_version: str) -> dict:
     """Preserve the original acquisition when GET returned cached bytes."""
     store = getattr(client, "receipt_store", None)
     if store is None and hasattr(client, "_settings"):
-        store = LocalReceiptStore(
-            Path(client._settings.storage_path) / "response-receipts"
-        )
+        store = configured_receipt_store(client._settings)
     receipt = response_receipt(response, store, source_kind="pdf")
     return copy_receipt(receipt, parser_version=parser_version)
 
@@ -68,7 +66,7 @@ def receipt_for_pdf(
     claimed = cached_pdf_meta(path.parent, url).get("response_receipt")
     store = getattr(client, "receipt_store", None)
     if store is None and settings is not None:
-        store = LocalReceiptStore(Path(settings.storage_path) / "response-receipts")
+        store = configured_receipt_store(settings)
     if (
         acquisition_is_intact(recorded)
         and recorded.get("digest") == digest
