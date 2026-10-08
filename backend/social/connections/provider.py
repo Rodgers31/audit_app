@@ -1,4 +1,6 @@
 """Read-only Meta discovery and OAuth exchange. No publication endpoints exist here."""
+from dataclasses import dataclass, field
+
 import hashlib
 import hmac
 import logging
@@ -86,6 +88,14 @@ class _SecretQueryTransport(httpx.BaseTransport):
 
     def close(self):
         self.transport.close()
+
+
+@dataclass(frozen=True)
+class InspectedDiscovery:
+    app_id: str
+    subject: str = field(repr=False)
+    page_ids: tuple = field(repr=False)
+    grant: dict = field(repr=False)
 
 
 class MetaProvider:
@@ -189,6 +199,12 @@ class MetaProvider:
                 raise SocialError('PROVIDER_RESPONSE_INVALID', 'Meta returned incomplete or repeated pagination.', 502)
             seen.add(cursor)
         raise SocialError('DISCOVERY_LIMIT_EXCEEDED', 'Meta account discovery exceeded its bounded page limit. Limit the grant and reconnect.')
+
+    def discover_with_ownership(self, code, redirect_uri):
+        # This server port executes the same bounded HTTP inspections as discovery.
+        grant = self.discover(code, redirect_uri)
+        return InspectedDiscovery(self.config.app_id, grant['metadata']['external_user_id'],
+                                  tuple(p['page_id'] for p in grant['choices']), grant)
 
     def discover(self, code, redirect_uri):
         self.config.require_redirect(redirect_uri)

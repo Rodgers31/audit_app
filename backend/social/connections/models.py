@@ -49,6 +49,7 @@ class SocialOAuthFlow(Base):
     status = Column(Text, nullable=False, default='initiated')
     expires_at = Column(TZ, nullable=False)
     consumed_at = Column(TZ)
+    privacy_blocked_at = Column(TZ)
     created_at = created()
     updated_at = updated()
     __table_args__ = (

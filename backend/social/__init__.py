@@ -5,6 +5,7 @@ Importing this package never starts a scheduler or loads credentials.
 from . import models as _domain_models
 from .connections import models as _connection_models
 from .media import models as _media_models
+from .privacy import models as _privacy_models
 
 # Register the complete additive schema before callers capture its table set.
 # Both supported import modes retain their own application's existing Base.
