@@ -13,7 +13,7 @@ if __package__ == "backend.social":
 else:
     from database import get_db
     from supabase_auth import AdminUser, require_admin
-from .contracts import ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
+from .contracts import ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, ScheduleEditCommand, RescheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
 from .service import SocialError, SocialService
 from .http_boundary import IdempotencyKey, NO_STORE, SocialRoute, social_admin
 
@@ -35,6 +35,28 @@ class PublicationDTO(StrictModel):
     scheduled_for: Union[datetime, None]
     version: int
     approved_at: datetime
+    approved_by: UUID
+    schedule_timezone: Union[str, None]
+    requested_local_time: Union[str, None]
+    cancel_requested_at: Union[datetime, None]
+
+class HistoricalTargetDTO(TargetDTO):
+    publication_id: UUID
+    revision_id: UUID
+    approved_at: datetime
+    approved_by: UUID
+    scheduled_for: Union[datetime, None]
+    cancel_requested_at: Union[datetime, None]
+    revoked_at: Union[datetime, None]
+    updated_at: datetime
+
+class DeliveryHistoryDTO(StrictModel):
+    post_id: UUID
+    targets: tuple[HistoricalTargetDTO, ...]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool
 
 class PostSummary(StrictModel):
     id: UUID
@@ -46,8 +68,12 @@ class PostSummary(StrictModel):
     version: int
     revision_id: UUID
     created_at: datetime
+    created_by: Union[UUID, None]
     updated_at: datetime
     targets: tuple[TargetDTO, ...]
+    publication: Union[PublicationDTO, None]
+    historical_targets: tuple[HistoricalTargetDTO, ...]
+    historical_target_count: int
 
 class CancellationDTO(StrictModel):
     in_flight_target_ids: tuple[UUID, ...]
@@ -56,7 +82,6 @@ class CancellationDTO(StrictModel):
 class PostDetail(PostSummary):
     document: PostDocument
     references: tuple[Reference, ...]
-    publication: Union[PublicationDTO, None]
     cancellation: Union[CancellationDTO, None] = None
 
 class PostList(StrictModel):
@@ -140,8 +165,8 @@ Admin = Annotated[AdminUser, Depends(social_admin)]
 Service = Annotated[SocialService, Depends(service)]
 
 @router.get('/posts', response_model=PostList)
-def list_posts(svc: Service, page: int=Query(1, ge=1), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None):
-    return svc.posts(page, page_size, editorial_state)
+def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all'):
+    return svc.posts(page, page_size, editorial_state, delivery_filter)
 
 @router.post('/posts', response_model=PostDetail, status_code=201)
 def create_post(request: Request, body: CreatePost, svc: Service, admin: Admin, key: IdempotencyKey):
@@ -154,6 +179,10 @@ def get_post(post_id: UUID, svc: Service):
 @router.get("/posts/{post_id}/status", response_model=PostSummary)
 def post_status(post_id: UUID, svc: Service):
     return svc.summary(post_id)
+
+@router.get('/posts/{post_id}/history', response_model=DeliveryHistoryDTO)
+def post_history(post_id: UUID, svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=20)):
+    return svc.history(post_id, page, page_size)
 
 @router.patch('/posts/{post_id}', response_model=PostDetail)
 def patch_post(post_id: UUID, request: Request, body: PatchPost, svc: Service, admin: Admin, key: IdempotencyKey):
@@ -182,6 +211,14 @@ def publish_post(post_id: UUID, request: Request, body: PublishCommand, svc: Ser
 @router.post('/posts/{post_id}/schedule', response_model=PublicationAccepted, status_code=202)
 def schedule_post(post_id: UUID, request: Request, body: ScheduleCommand, svc: Service, admin: Admin, key: IdempotencyKey):
     return command(request, svc, admin, key, body, lambda: svc.publish(post_id, body, scheduled=True), 202)
+
+@router.post('/posts/{post_id}/reschedule', response_model=PostDetail)
+def reschedule_post(post_id: UUID, request: Request, body: RescheduleCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: svc.edit_schedule(post_id, body, scheduled=True))
+
+@router.post('/posts/{post_id}/publish-now', response_model=PostDetail, status_code=202)
+def publish_now_post(post_id: UUID, request: Request, body: ScheduleEditCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: svc.edit_schedule(post_id, body), 202)
 
 @router.post('/posts/{post_id}/cancel', response_model=PostDetail)
 def cancel_post(post_id: UUID, request: Request, body: VersionCommand, svc: Service, admin: Admin, key: IdempotencyKey):

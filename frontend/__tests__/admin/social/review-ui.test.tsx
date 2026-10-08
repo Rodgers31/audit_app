@@ -36,7 +36,7 @@ function receipt(p: SocialPost) {
 }
 function approved() {
   const p = post({ editorial_state: 'approved', targets: [target('ready')] });
-  p.publication = { id: '00000000-0000-4000-8000-000000000060', revision_id: p.revision_id, scheduled_for: null, version: 1, approved_at: '2026-10-03T12:00:00Z' };
+  p.publication = { id: '00000000-0000-4000-8000-000000000060', revision_id: p.revision_id, scheduled_for: null, version: 1, approved_at: '2026-10-03T12:00:00Z', approved_by: actorId, schedule_timezone: null, requested_local_time: null, cancel_requested_at: null };
   return p;
 }
 function mount(p: SocialPost) {

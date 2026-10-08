@@ -175,7 +175,9 @@ def test_migrated_manual_cascade_and_retry_never_reposts_success(migrated_engine
     compact = client.get("/api/v1/admin/social/posts/" + post_id + "/status")
     assert compact.status_code == 200
     assert compact.headers["cache-control"] == "private, no-store"
-    assert not {"document", "references", "publication"}.intersection(compact.json())
+    assert not {"document", "references"}.intersection(compact.json())
+    assert compact.json()["publication"]["id"] == accepted["publication_id"]
+    assert compact.json()["historical_target_count"] == 5
     assert all("resolved_payload" not in target for target in compact.json()["targets"])
 
 

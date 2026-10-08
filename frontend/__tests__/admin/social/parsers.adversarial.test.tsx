@@ -21,7 +21,7 @@ function client() {
   clients.push(qc); return qc;
 }
 function summary(p: SocialPost): SocialSummary {
-  const { document: _document, references: _references, publication: _publication, ...compact } = p;
+  const { document: _document, references: _references, ...compact } = p;
   return compact;
 }
 function Observer({ id }: { id: string }) {
