@@ -140,7 +140,20 @@ export function decodeDocument(v: unknown): SocialDocument {
 function decodeTarget(v: unknown): SocialTarget {
   const o = obj(v); return { id: str(o.id), account_id: str(o.account_id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), state: oneOf(o.state, targetStates), remote_url: nullable(o.remote_url), safe_error_message: nullable(o.safe_error_message), next_action_at: nullable(o.next_action_at), published_at: nullable(o.published_at) };
 }
-function timestamp(v: unknown): string { const s = str(v); if (!/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(s) || !Number.isFinite(Date.parse(s))) throw contractError(); return s; }
+function validCivilTimestamp(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,6}))?)?$/.exec(value);
+  if (!match) return false;
+  const [, y, m, d, h, minute, second = '0'] = match;
+  const year = Number(y), month = Number(m), day = Number(d);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return year >= 1 && month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1] && Number(h) <= 23 && Number(minute) <= 59 && Number(second) <= 59;
+}
+function timestamp(v: unknown): string {
+  const s = str(v), match = /^(.*)(?:Z|[+-]\d{2}:\d{2})$/.exec(s);
+  if (!match || !validCivilTimestamp(match[1]) || !Number.isFinite(Date.parse(s))) throw contractError();
+  return s;
+}
 function nullableTimestamp(v: unknown): string | null { return v === null ? null : timestamp(v); }
 function decodeHistoricalTarget(v: unknown): SocialHistoricalTarget {
   const o = exactObject(v, ['id', 'account_id', 'platform', 'state', 'remote_url', 'safe_error_message', 'next_action_at', 'published_at', 'publication_id', 'revision_id', 'approved_at', 'approved_by', 'scheduled_for', 'cancel_requested_at', 'revoked_at', 'updated_at']);
@@ -166,7 +179,7 @@ function decodeSchedule(v: unknown): SocialSchedule | null {
   const o = exactObject(v, ['id', 'revision_id', 'version', 'approved_at', 'approved_by', 'scheduled_for', 'schedule_timezone', 'requested_local_time', 'cancel_requested_at']);
   const zone = nullable(o.schedule_timezone), local = nullable(o.requested_local_time);
   if (zone !== null) { try { new Intl.DateTimeFormat('en', { timeZone: zone }); } catch { throw contractError(); } }
-  if (local !== null && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?$/.test(local) || !Number.isFinite(Date.parse(local)))) throw contractError();
+  if (local !== null && !validCivilTimestamp(local)) throw contractError();
   return { id: uuid(o.id), revision_id: uuid(o.revision_id), version: integer(o.version), approved_at: timestamp(o.approved_at), approved_by: uuid(o.approved_by), scheduled_for: nullableTimestamp(o.scheduled_for), schedule_timezone: zone, requested_local_time: local, cancel_requested_at: nullableTimestamp(o.cancel_requested_at) };
 }
 export function decodeSummary(v: unknown): SocialSummary {

@@ -1,7 +1,7 @@
 'use client';
 import { decodePost, ScheduleEditInput, SocialApiError, SocialPost, SocialSystemStatus } from '@/lib/api/social';
 import { useSocialMutation } from '@/lib/hooks/useSocial';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SocialErrorBanner } from './SocialNotice';
 import { resolveCivilTime } from './socialDocument';
 import styles from './social.module.css';
@@ -16,6 +16,15 @@ export default function SocialScheduleControls({ post, system, disabled, onUpdat
   const [acknowledged, setAcknowledged] = useState<string[]>([]);
   const [message, setMessage] = useState('');
   const running = useRef(false);
+  const previousPublication = useRef({ id: publication.id, version: publication.version });
+  useEffect(() => {
+    if (previousPublication.current.id === publication.id && previousPublication.current.version === publication.version) return;
+    previousPublication.current = { id: publication.id, version: publication.version };
+    setLocalTime(publication.requested_local_time?.slice(0, 16) ?? '');
+    setTimezone(publication.schedule_timezone ?? 'Africa/Nairobi');
+    setOffsetChoice('');
+    setAcknowledged([]);
+  }, [publication.id, publication.version, publication.requested_local_time, publication.schedule_timezone]);
   const civil = useMemo(() => resolveCivilTime(localTime, timezone), [localTime, timezone]);
   const selected = civil.candidates.length === 1 ? civil.candidates[0] : civil.candidates.find(c => c.offset === offsetChoice);
   const blocked = disabled || mutation.isPending || post.editorial_state !== 'approved' || !!publication.cancel_requested_at || system?.publishing_enabled !== true || !reason.trim() || !post.targets.some(t => ['ready', 'queued'].includes(t.state)) || post.targets.some(t => ['claimed', 'dispatching', 'processing', 'reconciling'].includes(t.state));

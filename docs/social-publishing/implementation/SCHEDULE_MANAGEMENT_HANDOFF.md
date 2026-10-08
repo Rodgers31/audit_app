@@ -159,14 +159,16 @@ receipt states at all four widths, and its mobile rendering was inspected.
 
 Reproduce from this worktree with the integrator's explicitly assigned,
 loopback-only `SOCIAL_TEST_DATABASE_URL` (the shared validator rejects remote
-or libpq query overrides):
+or libpq query overrides). Use an existing configured Python environment with
+the repository's backend dependencies; these commands do not install packages.
+From the repository root:
 
 ```sh
-PYTHONPATH=backend PYTHON_DOTENV_DISABLED=1 /Users/roger/Documents/projects/audit_app/venv/bin/python -m pytest backend/tests/social --confcutdir=backend/tests/social -q --tb=short
+PYTHONPATH=backend PYTHON_DOTENV_DISABLED=1 python -m pytest backend/tests/social --confcutdir=backend/tests/social -q --tb=short
 cd frontend
 npm test -- --runInBand __tests__/admin/social __tests__/social-connections
 ./node_modules/.bin/tsc --noEmit --incremental false
-SOCIAL_SCHEDULE_VISUAL_DIR=.social-schedule-preview ./node_modules/.bin/jest __tests__/admin/social/schedules.test.tsx __tests__/admin/social/delivery-history.test.tsx --runInBand
+SOCIAL_SCHEDULE_VISUAL_DIR=.social-schedule-preview ./node_modules/.bin/jest __tests__/admin/social/schedules.test.tsx __tests__/admin/social/delivery-history.test.tsx __tests__/admin/social/pr514-review.test.tsx --runInBand
 ./node_modules/.bin/tailwindcss -i app/globals.css -o .social-schedule-preview/global.css
 node tests/socialSchedulesVisualCheck.mjs
 ```
