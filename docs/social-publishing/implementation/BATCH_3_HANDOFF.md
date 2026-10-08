@@ -38,6 +38,10 @@ After media merges, retarget native against main and verify that final base.
   explicit local PostgreSQL lanes were configured, including the migrated
   API/worker cascade and immutable-history tests. The only warnings were the
   two existing SQLAlchemy declarative-base deprecations.
+- The native branch with its media prerequisite independently passed **1,016
+  backend tests, zero skipped** after branch separation. The schedule branch's
+  independent history/boundary lane passed 52 tests; its migrated cascade and
+  immutable-history lane passed two more.
 - Frontend social/composer suites: **432 passed**; connection suites:
   **42 passed** (474 total across 26 suites).
 - Whole frontend TypeScript check and owned social lint passed.
