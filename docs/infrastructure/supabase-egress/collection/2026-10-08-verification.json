@@ -1,0 +1,102 @@
+{
+  "artifact_authentication": "LOCAL_EXECUTION_TRANSCRIPTION_NOT_SIGNED",
+  "base_sha": "bd46832156cb921173fea32d9d9698d696a676dc",
+  "branch": "codex/social-operating-evidence",
+  "compatibility": [
+    {
+      "full_application_tested": false,
+      "hostile_checks": 190,
+      "preparation_missing_days": 7,
+      "python_version": "3.9.6",
+      "synthetic_evaluator_status": "BLOCKED",
+      "unexpected_accepts": 0
+    },
+    {
+      "full_application_tested": false,
+      "hostile_checks": 190,
+      "preparation_missing_days": 7,
+      "python_version": "3.12.15",
+      "synthetic_evaluator_status": "BLOCKED",
+      "unexpected_accepts": 0
+    }
+  ],
+  "final_suite": {
+    "cases_by_suite": {
+      "author": 85,
+      "independent": 91,
+      "owned_postgresql": 11,
+      "unchanged_evaluator": 163
+    },
+    "command": "SOCIAL_OPERATING_OWNED_PG=61281 PYTHON_DOTENV_DISABLED=1 /Users/roger/Documents/projects/audit_app/venv/bin/python -m pytest --noconftest backend/tests/egress/test_operating_acceptance.py backend/tests/egress/test_social_operating_collection.py backend/tests/egress/test_social_operating_independent.py backend/tests/egress/test_social_operating_owned_postgres.py -q",
+    "full_application_startup_tested": false,
+    "passed": 350,
+    "python_version": "3.13.9",
+    "skipped": 0,
+    "warnings": 0
+  },
+  "hostile_script_sha256": {
+    "adversarial_collect.py": "de01c07e6641eedcfa895ae24d5db2f751fdece3aaf31f6a12d958d60112bc6e",
+    "runtime_compat.py": "28ac98312e1cddbf109daa87eb816e8bdaa94c7f1aa9d7ca82184b96b0a187d8"
+  },
+  "independent_reviews": {
+    "collector_adversarial": {
+      "cases": 91,
+      "hostile_checks": 190,
+      "verdict": "PASS"
+    },
+    "earlier_application_conftest_warnings": "two existing SQLAlchemy deprecation warnings",
+    "spec_review": {
+      "additional_direct_probes": 14,
+      "offline_cases": 176,
+      "verdict": "NO_ACTIONABLE_FINDINGS"
+    },
+    "standards_review": {
+      "actual_sql_cases": 11,
+      "verdict": "PASS_AFTER_REPRODUCED_PRIVILEGE_FIXES"
+    }
+  },
+  "limitations": [
+    "No production SQL or actual social wire/provider-byte measurement",
+    "No portable source authentication",
+    "No seven representative closed deployed days",
+    "No Free/worker-hosting acceptance or authorization"
+  ],
+  "log_sha256": {
+    "collection-green.log": "555f4552375cc535ec7c4e8928257722d442c8dca95789223eb33e6bc1f5a0b3",
+    "final-matrix.log": "13b688564b146385bd04f42c5879f4f62a7c4a3df8cbf18ec751a29f357a8a7b",
+    "final-python312-matrix.log": "13b688564b146385bd04f42c5879f4f62a7c4a3df8cbf18ec751a29f357a8a7b",
+    "final-python312-preparation.log": "6fd4cd16c275d12c2a5f34d0736065b744cab03be866ba64dcd8ea2b3e0d6a0e",
+    "final-python39-matrix.log": "13b688564b146385bd04f42c5879f4f62a7c4a3df8cbf18ec751a29f357a8a7b",
+    "final-python39-preparation.log": "f31dfa09fdbefe04bb5382370f0e70a925591329b9f7d614d811ff93348b773e",
+    "final-tests.log": "70578e8f5847fce0889118ebf1c4798dfe6901e4458dce85e6b57ae3e3fb7f27",
+    "independent-red.log": "cf24f5bfb8a3155dde181a8eccf6e01ab31b726389c681396d88f9a7d4c5f0d3",
+    "offset-red.log": "cccc0925623c3692735491f26adba0433abdf28871854a091265dc12b7bb7cff",
+    "ownership-red.log": "5925969e802c95aeae5d93f1dd0c12aed4ee08724bd1cd8b1ca93d45c0a865d9",
+    "privilege-red.log": "70df04a65ede84fbb0481a88216ab7455187707c3bfb7148f46065901ff0f3bf",
+    "python312-matrix.log": "13b688564b146385bd04f42c5879f4f62a7c4a3df8cbf18ec751a29f357a8a7b",
+    "python39-matrix.log": "13b688564b146385bd04f42c5879f4f62a7c4a3df8cbf18ec751a29f357a8a7b",
+    "workload-red.log": "10489e1a0d58ed6091cd910b24b33dda68929f6157a3e0709e90f28b35279583"
+  },
+  "owned_postgres": {
+    "container": "audit-social-operating-evidence-61281",
+    "exact_name_inventory_empty_after_removal": true,
+    "host": "127.0.0.1",
+    "major_version": 17,
+    "port": 61281,
+    "production_tls_tested": false,
+    "removed": true
+  },
+  "production_authorized": false,
+  "purpose": "local_operating_collection_verification_481",
+  "raw_artifact_folder": "/Users/roger/.codex/visualizations/2026/10/08/01a11d17-d085-7980-b6e5-05b6adab5dee/operating-evidence",
+  "recorded_at": "2026-10-08T20:28:27.429709+00:00",
+  "source_sha256": {
+    "backend/tests/egress/test_operating_acceptance.py": "91dc948ba50bc6bc2e90c10ab5596d7eae37c7c0454629dd0ed84a38fdbb345b",
+    "backend/tests/egress/test_social_operating_collection.py": "157e3cf37ef8f5eb582ad9f7be7a9b68699cdad61e058027a23c4c3c105e8fc5",
+    "backend/tests/egress/test_social_operating_independent.py": "0a853ae7f6fa34c45450f53d1adba2a8bec7231cf4be4787c1961665f0ae2572",
+    "backend/tests/egress/test_social_operating_owned_postgres.py": "8cc32a34286028d6045a7ca9f5433c74a85173118927409c024b16d4572e8eaf",
+    "scripts/verification/evaluate_social_operating_budget.py": "a5b6e68b23bebf434a8f48ab30eb4f4ef74397424402e8f3114cd01206430813",
+    "scripts/verification/social_operating_collect.py": "8025b2faa3c75bd032ad1c727ca0de20ae25303a67fa921242f1b9e76b73c569",
+    "scripts/verification/social_operating_prepare.py": "7ae42ffe5ab48759821bd7ec785bde8e8973302479f8d7753f241665f04ecfa7"
+  }
+}
