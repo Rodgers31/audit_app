@@ -45,7 +45,8 @@ def admin_session(admin: AdminUser = Depends(social_admin)):
 
 def service(request: Request, db: Session = Depends(get_db)):
     from ..worker.native_runtime import registered_adapters
-    return ConnectionService(db, load_config(), available_adapters=registered_adapters(request))
+    from ..privacy.runtime import registered_ownership
+    return ConnectionService(db, load_config(), available_adapters=registered_adapters(request), ownership_recorder=registered_ownership(request))
 
 
 router = APIRouter(prefix='/api/v1/admin/social', tags=['Admin Social Connections'], route_class=SocialRoute, dependencies=[Depends(social_admin)])

@@ -4,17 +4,13 @@ The imported native helpers accept this test's random-schema engine directly.
 The shared worker engine fixture and its TRUNCATE lane are never requested.
 """
 import asyncio
-import importlib.util
-from pathlib import Path
-
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from social.models import SocialPostTarget, SocialPublishAttempt
 from social.worker.runner import SocialWorker
 from test_connections_support import config
+from test_connections_migration_postgres import upgrade
 from test_domain_postgres import pg_engine
 from test_native_meta_adapters import Graph
 from test_native_worker_postgres import prepare, registration
@@ -22,12 +18,7 @@ from test_queue_postgres import repository
 
 
 def test_pg_post_intent_rotation_blocks_send_then_recovery_loads_fresh_material(pg_engine, config, monkeypatch):
-    path = Path(__file__).resolve().parents[2] / 'alembic/versions/c96d13e2f411_social_meta_credentials.py'
-    spec = importlib.util.spec_from_file_location('native_credential_race_migration', path)
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
-    with pg_engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
-        migration.upgrade()
+    upgrade(pg_engine, current=True)
 
     graph = Graph()
     storage, target_id = prepare(pg_engine, config, graph, monkeypatch)

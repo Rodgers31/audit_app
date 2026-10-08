@@ -21,7 +21,7 @@ from ..telemetry import log_event
 from .config import SCOPES, PAGE_SCOPES, IG_SCOPES
 from .crypto import CredentialCipher
 from .models import SocialCredential, SocialOAuthFlow
-from .provider import MetaProvider
+from .provider import InspectedDiscovery, MetaProvider
 
 
 def digest(value):
@@ -37,8 +37,11 @@ def date(value):
 
 
 class ConnectionService:
-    def __init__(self, db, config, *, provider_factory=MetaProvider, available_adapters=frozenset()):
+    def __init__(self, db, config, *, provider_factory=MetaProvider, available_adapters=frozenset(), ownership_recorder=None):
         self.db, self.config, self.provider_factory = db, config, provider_factory
+        self.ownership_recorder = ownership_recorder
+        if ownership_recorder is not None and ownership_recorder.app_id != config.app_id:
+            raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'The privacy namespace differs from the connection app.', 503)
         self.base = SocialService(db, available_adapters=available_adapters)
 
     @property
@@ -70,6 +73,8 @@ class ConnectionService:
         flow = self.db.scalar(select(SocialOAuthFlow).where(SocialOAuthFlow.id == flow_id).with_for_update().execution_options(populate_existing=True))
         if not flow or flow.actor_id != actor or not hmac.compare_digest(flow.binding_hash, binding):
             raise SocialError('OAUTH_STATE_INVALID', 'This connection belongs to another or expired administrator session. Start a new connection.', 409)
+        if flow.privacy_blocked_at is not None:
+            raise SocialError('PRIVACY_FLOW_BLOCKED', 'This grant is blocked by a privacy request. Start a new connection after review.', 409)
         if utc(flow.expires_at) <= self.base.now():
             raise SocialError('OAUTH_STATE_EXPIRED', 'This connection flow expired. Start a new connection.', 409)
         return flow
@@ -130,13 +135,24 @@ class ConnectionService:
         try:
             provider = self.provider_factory(self.config)
             try:
-                grant = provider.discover(body.code, body.redirect_uri)
+                if self.ownership_recorder is None:
+                    grant = provider.discover(body.code, body.redirect_uri)
+                    inspected = None
+                else:
+                    inspected = provider.discover_with_ownership(body.code, body.redirect_uri)
+                    if type(inspected) is not InspectedDiscovery:
+                        raise SocialError('PRIVACY_OWNERSHIP_UNRESOLVED', 'Inspected ownership is unavailable or conflicts with retained history.', 409)
+                    grant = inspected.grant
             finally:
                 provider.close()
             def save():
+                if self.ownership_recorder is not None:
+                    self._controls_lock()
                 current = self._flow(flow_id, actor, binding)
                 if current.status != 'exchanging':
                     raise SocialError('OAUTH_STATE_USED', 'This connection state was already consumed.')
+                if self.ownership_recorder is not None:
+                    self.ownership_recorder.record_discovery(self.db, current, inspected)
                 current.status = 'awaiting_selection'
                 current.key_version, current.encrypted_pending_grant = self.cipher.encrypt(current.id, 'oauth_pending', grant)
                 current.updated_at = self.base.now()
@@ -259,6 +275,9 @@ class ConnectionService:
                 row.capabilities_checked_at, row.last_api_success_at, row.updated_at = now, now, now
                 self._audit(actor, request_id, 'connection.reconnected' if previous else 'connection.connected', account=row, previous=previous, new='connected', reason=body.reason, details={'flow_id': str(flow.id), 'credential_id': str(credential.id)})
                 accounts.append(row)
+            self.db.flush()
+            if self.ownership_recorder is not None:
+                self.ownership_recorder.record_selection(self.db, flow, grant, parent, credential, accounts, page['page_id'])
             # The administrator selected exact identities. Unselected former siblings
             # must reconnect; they cannot keep an obsolete credential silently.
             for sibling in siblings:
@@ -325,7 +344,10 @@ class ConnectionService:
                     if item.refresh_lease_token and utc(item.refresh_lease_expires_at) > now:
                         raise SocialError('CREDENTIAL_BUSY', 'A related credential is being renewed. Try again after renewal completes.')
                     item.key_version, item.encrypted_bundle = self.cipher.rotate(item.id, item.credential_kind, item.key_version, item.encrypted_bundle)
+                    old_version = item.version
                     item.version, item.updated_at = item.version + 1, now
+                    if self.ownership_recorder is not None:
+                        self.ownership_recorder.record_rotation(self.db, item, old_version)
                 self._audit(actor, request_id, 'credential.rotated', account=row, reason=body.reason, details={'credential_version': credential.version, 'key_version': credential.key_version, 'credential_count': len(related)})
             else:
                 credential.revoked_at, credential.version, credential.updated_at = now, credential.version + 1, now

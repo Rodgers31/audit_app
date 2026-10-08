@@ -12,18 +12,33 @@ from sqlalchemy.orm import Session
 from test_domain_postgres import pg_engine
 
 
-def connection_migration():
-    path = Path(__file__).resolve().parents[2] / 'alembic/versions/c96d13e2f411_social_meta_credentials.py'
-    spec = importlib.util.spec_from_file_location('social_connection_migration', path)
+CURRENT_CONNECTION_DESCENDANTS = (
+    'a42b86e1d310_social_private_media_intake.py',
+    'b73e19a4f602_social_media_write_settlement.py',
+    'd8f4a619b203_social_privacy_receipts.py',
+)
+
+
+def _migration(filename):
+    path = Path(__file__).resolve().parents[2] / 'alembic/versions' / filename
+    spec = importlib.util.spec_from_file_location('social_connection_' + filename, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def upgrade(engine):
+def connection_migration():
+    return _migration('c96d13e2f411_social_meta_credentials.py')
+
+
+def upgrade(engine, *, current=False):
+    """Historical DDL by default; current ORM behavior needs its full chain."""
     with engine.begin() as conn:
         with Operations.context(MigrationContext.configure(conn)):
             connection_migration().upgrade()
+            if current:
+                for filename in CURRENT_CONNECTION_DESCENDANTS:
+                    _migration(filename).upgrade()
 
 
 def test_connection_ddl_rls_account_fk_empty_downgrade(pg_engine):
@@ -47,7 +62,7 @@ def test_connection_commands_execute_on_actual_migration_and_history_blocks_down
     from social.models import SocialAccount
     from cryptography.fernet import Fernet
     from uuid import UUID
-    upgrade(pg_engine)
+    upgrade(pg_engine, current=True)
     config = MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fake', redirect_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()})
     with Session(pg_engine, expire_on_commit=False) as db:
         service = svc(db, config, FakeGraph())
@@ -60,6 +75,11 @@ def test_connection_commands_execute_on_actual_migration_and_history_blocks_down
         assert len(credential_ids) == 1
         assert len(list(db.scalars(select(SocialCredential)))) == 2
     with pg_engine.connect() as conn:
+        # Exercise the current model above, then remove only empty descendants
+        # through their real downgrades before testing historical connection DDL.
+        with conn.begin(), Operations.context(MigrationContext.configure(conn)):
+            for filename in reversed(CURRENT_CONNECTION_DESCENDANTS):
+                _migration(filename).downgrade()
         with pytest.raises(RuntimeError, match='history exists'):
             with conn.begin():
                 with Operations.context(MigrationContext.configure(conn)):
