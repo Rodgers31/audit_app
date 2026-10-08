@@ -53,6 +53,6 @@ Author result: **221 passed, 5 skipped, 3 existing warnings in 5.47s**. Five rec
 
 ## Remaining Free-plan acceptance
 
-#481 remains open. Verify the deployed query version, then measure provider egress deltas with ordinary API/ingestion/deployment timestamps over at least seven representative days. The existing 120 MB/day planning target is total uncached traffic, including any private receipt downloads; it is not an additional storage allowance. Storage pilot/recovery readbacks and any social workload need explicit budgets. Retained raw source objects have a separate storage allowance and recovery/retention requirements.
+#481 remains open. Verify the deployed query version, then measure provider egress deltas with ordinary API/ingestion/deployment timestamps over at least seven representative days. The existing 120 MB/day planning target is total Supabase uncached traffic, including receipt downloads hosted by Supabase; R2 object traffic is budgeted separately. It is not an additional storage allowance. Storage pilot/recovery readbacks and any social workload need explicit budgets. Retained raw source objects have a separate storage allowance and recovery/retention requirements.
 
 The original investigation's cumulative query counters cannot identify these paths' current billing share. Reduced selected bytes and a quiet visitor count do not establish that the organization can safely return to Free. No billing downgrade, schedule change, evidence deletion, cache toggle or publication shortcut is part of this implementation.
