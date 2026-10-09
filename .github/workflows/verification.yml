@@ -82,14 +82,12 @@ jobs:
       run: python .github/scripts/prepare_postgres_test_images.py
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
-      run: "cd backend\n# Run unit tests (exclude integration tests that require real DB)\npytest tests/\
-        \ --ignore=tests/integration --verbose --maxfail=5 \\\n  --cov=. --cov-report=xml --cov-report=html\
-        \ --cov-report=term \\\n  -m \"not slow\"\n"
+      run: python .github/scripts/run_backend_tests.py
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/audit_app_test
         REDIS_URL: redis://localhost:6379
         TESTING: true
-        PYTHONPATH: ${{ github.workspace }}/backend
+        PYTHON_DOTENV_DISABLED: '1'
     - name: Report Local Backend Coverage
       id: local_coverage
       continue-on-error: true
@@ -133,6 +131,8 @@ jobs:
     if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
     steps:
     - uses: actions/checkout@v5
       with:
@@ -179,8 +179,9 @@ jobs:
 
         '
     - name: Verify production dependency boundary
-      working-directory: frontend
-      run: npm run test:dependency-boundaries
+      run: |
+        cd frontend
+        npm run test:dependency-boundaries
     - name: Build (REQUIRED)
       run: 'cd frontend
 
@@ -190,9 +191,8 @@ jobs:
 
         '
       env:
-        NEXT_PUBLIC_API_URL: http://localhost:8000
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:8000
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-test-only-anon-key
   test-etl:
     if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest

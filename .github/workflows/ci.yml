@@ -74,19 +74,12 @@ jobs:
 
       - name: Run Core Backend Tests (REQUIRED)
         id: backend_tests
-        run: |
-          cd backend
-          # Run unit tests (exclude integration tests that require real DB)
-          pytest tests/ --ignore=tests/integration --verbose --maxfail=5 \
-            --cov=. --cov-report=xml --cov-report=html --cov-report=term \
-            -m "not slow"
+        run: python .github/scripts/run_backend_tests.py
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/audit_app_test
           REDIS_URL: redis://localhost:6379
           TESTING: true
-          # Use absolute path to backend/ so the repo-root stub seeding/ package
-          # never shadows backend/seeding/ in sys.path.
-          PYTHONPATH: ${{ github.workspace }}/backend
+          PYTHON_DOTENV_DISABLED: '1'
 
       - name: Report Local Backend Coverage
         id: local_coverage
@@ -143,6 +136,8 @@ jobs:
   test-frontend:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:8000
 
     steps:
       - uses: actions/checkout@v5
@@ -188,9 +183,8 @@ jobs:
           # Ensure production build succeeds
           npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:8000
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-test-only-anon-key
 
   test-etl:
     runs-on: ubuntu-latest
