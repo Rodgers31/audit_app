@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel, StrictBool, StrictStr, ValidationError
 
-from routers.admin_operations import DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
+from routers.admin_operations import OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
 from database import get_db
 from sqlalchemy.orm import Session
@@ -32,7 +32,10 @@ router = APIRouter(prefix="/api/v1/admin/etl", tags=["ETL Administration"],
     route_class=OperationsRoute,
     dependencies=[Depends(require_admin)])
 VALID_SOURCES = ["treasury", "cob", "oag", "knbs", "opendata", "cra"]
-MANUAL_TRIGGER = {"available": False, "reason": DISPATCH_REASON}
+MANUAL_TRIGGER = {"available": False, "reason": (
+    "Calendar endpoints do not dispatch work or verify worker readiness. "
+    "Use dedicated dispatch capability and command receipts for execution evidence."
+)}
 
 
 class PlanDecision(BaseModel):
