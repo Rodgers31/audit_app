@@ -15,6 +15,17 @@ class ConfigurationTests(unittest.TestCase):
         for name in ("ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
 
+    def test_services_use_exact_official_ecr_pins_and_preserve_cached_role_fixture(self):
+        postgres = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
+        redis = "public.ecr.aws/docker/library/redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499"
+        for name, workflow in self.workflows():
+            with self.subTest(workflow=name):
+                job = workflow["jobs"]["test-backend"]
+                self.assertEqual(job["services"]["postgres"]["image"], postgres)
+                self.assertEqual(job["services"]["redis"]["image"], redis)
+                preparation = next(step for step in job["steps"] if step.get("name") == "Prepare pinned owned PostgreSQL test images")
+                self.assertEqual(preparation["run"], "python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref " + postgres)
+
     def test_each_frontend_step_can_load_actual_production_configuration(self):
         for name, workflow in self.workflows():
             job = workflow["jobs"]["test-frontend"]

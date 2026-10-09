@@ -241,3 +241,49 @@ Lessons for future batches: derive readiness from actual fixture endpoints,
 inventory case identities before partitioning, exercise real inherited package
 imports, keep build-only auth configuration out of unit tests, and prove fresh
 execution rather than trusting an exit code or an existing receipt.
+
+## Reopened hosted infrastructure gate — #598
+
+The author resumed exclusive ownership at `f63db60d10a3704c311c5f31a870b8cf9dcf165b`
+for the approved registry transport repair. Hosted combined run `37989790306`
+at `1ccc71a56ce7e84a0bfc15a3a406d5f022dba298` failed on unauthenticated Docker
+Hub pulls in backend service setup and original browser fixture setup. The
+earlier complete local main, combined coordinator and generator receipts above
+precede this transport edit. Preserve their actual source bindings; none certify
+the newly edited generator or repair's fresh hosted delivery.
+
+The ordinary fixture retains its exact `67f41722…` index and both architecture
+children, now referenced explicitly through the official DOI ECR repository.
+The seven-job CI/manual contracts use approved pinned DOI PostgreSQL 17 and Redis
+7 services. Optional service preparation accepts only the exact approved PG17
+reference, validates its cached native image, preserves an identical local
+`postgres:17` alias, refuses an existing mismatch and verifies a newly created
+alias's ID. The actual shared local alias was not written during verification;
+the fresh hosted runner must exercise alias creation to retain all role/RLS cases.
+
+`REGISTRY_TRANSPORT_598` retains the pre-edit manifest, red controls, executable
+registry proof with 34 captured byte-identical response files, six actual
+amd64/arm64 Docker pull/readiness/cleanup receipts, and scoped source-bound checks.
+Final current workflow controls pass **71**. Relevant minimum controls pass **42**
+(25 image, five configuration, 12 manual), overlapping the current selection.
+The broader minimum launcher attempt's five missing-coverage setup failures are
+retained, not labelled green. Actual backup/restore/acquisition and role/RLS
+suites pass **92 without skips on each runtime**. The failed first Docker
+receipt generator is preserved separately from its corrected second generator.
+
+Independent review exposed inherited malformed `RepoDigests` acceptance and
+unstructured malformed-architecture refusal. Both preparation-validator repairs
+have actual red/green controls; valid canonical image metadata aliases remain
+supported. Preserve the first review manifest/diff and use the distinct second
+freeze for final review. The transport replay accounted for all **323 browser
+cases: 312 passed and 11 existing skips**, six zero-exit cohorts, with owned
+database cleanup. Browser generator and fixture hashes stayed unchanged while
+helper/control repairs were made; this is not a whole-tree frozen execution.
+
+See `docs/operations/owned-postgres-test-images.md` for the exact approved index
+and architecture manifest identities, receipt limitations and source chronology.
+The inactive Docker deployment workflow's remaining Docker Hub test services
+are a deployment-preflight gate under #545/#598. Production images, product
+models/migrations, Supabase's pin and the coordinator's three #591 packet paths
+are outside this repair. The coordinator still owns immutable integration,
+fresh full hosted verification, any workflow enablement, commit and merge.

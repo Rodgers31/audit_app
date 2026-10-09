@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:17
+        image: public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: audit_app_test
@@ -40,7 +40,7 @@ jobs:
         ports:
         - 5432:5432
       redis:
-        image: redis:7-alpine
+        image: public.ecr.aws/docker/library/redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries
           5
         ports:
@@ -79,7 +79,7 @@ jobs:
         '
     - name: Prepare pinned owned PostgreSQL test images
       timeout-minutes: 5
-      run: python .github/scripts/prepare_postgres_test_images.py
+      run: python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: python .github/scripts/run_backend_tests.py
