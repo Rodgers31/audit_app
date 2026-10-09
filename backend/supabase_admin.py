@@ -21,22 +21,32 @@ on first use and cached in a module-level variable.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any, List, Optional
 from urllib.parse import quote
+from uuid import UUID
 
 import httpx
 
 _ENV_URL = "SUPABASE_URL"
 _ENV_SERVICE_KEY = "SUPABASE_SERVICE_ROLE_KEY"
+_UUID_TEXT = re.compile(r"(?:[0-9a-f]{32}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})", re.I)
 
 
 class SupabaseAdminError(RuntimeError):
-    """Wraps non-2xx responses from the Supabase Auth Admin API."""
+    """Safe status-only diagnostic shared by legacy and active providers.
+
+    The second argument remains accepted for import/caller compatibility, but
+    is never rendered or retained. ``body`` is always None; no trusted consumer
+    of raw provider diagnostics exists in the repository.
+    """
 
     def __init__(self, status_code: int, body: Any):
-        super().__init__(f"Supabase admin API returned {status_code}: {body}")
+        if type(status_code) is not int or not 100 <= status_code <= 599:
+            status_code = 502
+        super().__init__(f"Supabase admin API returned {status_code}")
         self.status_code = status_code
-        self.body = body
+        self.body = None
 
 
 def _config() -> tuple[str, str]:
@@ -47,6 +57,11 @@ def _config() -> tuple[str, str]:
             500,
             f"{_ENV_URL} and {_ENV_SERVICE_KEY} must both be set",
         )
+    try:
+        httpx.URL(url)
+        key.encode("ascii")
+    except (httpx.InvalidURL, UnicodeError):
+        raise SupabaseAdminError(500, None) from None
     return url.rstrip("/"), key
 
 
@@ -85,23 +100,30 @@ def _raw_request(method: str, url: str, *, headers=None, **kwargs):
     if "auth" in kwargs:
         # HTTPX applies auth after headers and could replace Authorization.
         raise SupabaseAdminError(400, "Per-call authentication is not supported")
-    request_headers = httpx.Headers()
-    for name, value in httpx.Headers(headers).multi_items():
-        # Assignment collapses case variants into one header (including Prefer).
-        request_headers[name] = value
+    try:
+        request_headers = httpx.Headers()
+        for name, value in httpx.Headers(headers).multi_items():
+            # Assignment collapses case variants into one header (including Prefer).
+            request_headers[name] = value
+    except (ValueError, TypeError):
+        raise SupabaseAdminError(400, None) from None
     # Per-call options must never replace the service-role credentials.
     request_headers.update(_headers())
-    with httpx.Client(timeout=15.0) as client:
-        resp = client.request(method, url, headers=request_headers, **kwargs)
-        if not 200 <= resp.status_code < 300:
-            try:
-                body = resp.json()
-            except Exception:
-                body = resp.text
-            raise SupabaseAdminError(resp.status_code, body)
-        if resp.status_code == 204 or not resp.content:
-            return {}
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.request(method, url, headers=request_headers, **kwargs)
+    except httpx.HTTPError:
+        raise SupabaseAdminError(503, None) from None
+    except httpx.InvalidURL:
+        raise SupabaseAdminError(500, None) from None
+    if not 200 <= resp.status_code < 300:
+        raise SupabaseAdminError(resp.status_code, None)
+    if resp.status_code == 204 or not resp.content:
+        return {}
+    try:
         return resp.json()
+    except (ValueError, RecursionError):
+        raise SupabaseAdminError(502, None) from None
 
 
 # ── Public API ──────────────────────────────────────────────────────────
@@ -159,27 +181,59 @@ def generate_recovery_link(email: str, redirect_to: Optional[str] = None) -> dic
 
 
 def get_profile(user_id: str) -> Optional[dict]:
-    """Fetch a single profile row by id, or return None."""
-    rows = _raw_request(
-        "GET",
-        _rest_url(f"/profiles?select=id,email,display_name,roles,created_at&id=eq.{user_id}"),
-    )
-    if isinstance(rows, list) and rows:
-        return rows[0]
-    return None
+    """Fetch a matching UUID profile; only an empty row array means missing."""
+    identity = _profile_identity(user_id, status_code=400)
+    rows = _read_profiles({identity}, f"eq.{identity}")
+    return rows[0] if rows else None
 
 
 def get_profiles(user_ids: List[str]) -> List[dict]:
-    """Bulk-fetch profile rows for a list of user IDs."""
-    if not user_ids:
+    """Read UUID profiles, preserving provider order and allowing missing IDs.
+
+    Duplicate requested UUIDs are queried once. Duplicate, unrequested or
+    invalid provider identities reject the entire response, never a subset.
+    """
+    if not isinstance(user_ids, list):
+        raise SupabaseAdminError(400, None)
+    identities = list(dict.fromkeys(_profile_identity(uid, status_code=400) for uid in user_ids))
+    if not identities:
         return []
-    # Supabase PostgREST ``in`` syntax: id=in.(uuid1,uuid2,...)
-    joined = ",".join(user_ids)
+    return _read_profiles(set(identities), f"in.({','.join(identities)})")
+
+
+def _profile_identity(value: str, *, status_code: int) -> str:
+    if not isinstance(value, str) or len(value) > 45:
+        raise SupabaseAdminError(status_code, None)
+    # UUID() alone also strips unmatched braces and misplaced urn/uuid tags.
+    if value.lower().startswith("urn:uuid:"):
+        value = value[9:]
+    elif value.startswith("{") and value.endswith("}"):
+        value = value[1:-1]
+    if not _UUID_TEXT.fullmatch(value):
+        raise SupabaseAdminError(status_code, None)
+    return str(UUID(value))
+
+
+def _read_profiles(identities: set[str], id_filter: str) -> List[dict]:
     rows = _raw_request(
-        "GET",
-        _rest_url(f"/profiles?select=id,email,display_name,roles,created_at&id=in.({joined})"),
+        "GET", _rest_url("/profiles"),
+        params={"select": "id,email,display_name,roles,created_at", "id": id_filter},
     )
-    return rows if isinstance(rows, list) else []
+    if not isinstance(rows, list):
+        raise SupabaseAdminError(502, None)
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise SupabaseAdminError(502, None)
+        identity = _profile_identity(row.get("id"), status_code=502)
+        if identity not in identities or identity in seen:
+            raise SupabaseAdminError(502, None)
+        if any(key in row for key in ("error", "errors", "error_code")) or any(
+            key in row and row[key] is not True for key in ("ok", "success")
+        ):
+            raise SupabaseAdminError(502, None)
+        seen.add(identity)
+    return rows
 
 
 def update_profile_roles(user_id: str, roles: List[str]) -> dict:
@@ -245,18 +299,17 @@ def count_profiles(
         "Prefer": "count=exact",
         "Range": "0-0",
     }
-    with httpx.Client(timeout=15.0) as client:
-        resp = client.get(url, headers=request_headers)
-        if resp.status_code >= 400:
-            try:
-                body = resp.json()
-            except Exception:
-                body = resp.text
-            raise SupabaseAdminError(resp.status_code, body)
-        cr = resp.headers.get("content-range") or ""
-        if "/" in cr:
-            try:
-                return int(cr.split("/", 1)[1])
-            except ValueError:
-                pass
-        return 0
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.get(url, headers=request_headers)
+    except httpx.HTTPError:
+        raise SupabaseAdminError(503, None) from None
+    if not 200 <= resp.status_code < 300:
+        raise SupabaseAdminError(resp.status_code, None)
+    cr = resp.headers.get("content-range") or ""
+    if "/" in cr:
+        try:
+            return int(cr.split("/", 1)[1])
+        except ValueError:
+            pass
+    return 0

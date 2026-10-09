@@ -1,0 +1,17 @@
+{
+  "httpx_version": "0.25.2",
+  "httpx_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_8_REVIEW/helper-producer-runtime/httpx-min/httpx/__init__.py",
+  "invalid_url_mro": [
+    "InvalidURL",
+    "Exception",
+    "BaseException",
+    "object"
+  ],
+  "invalid_url_is_http_error": false,
+  "real_malformed_url_status": 500,
+  "real_malformed_url_memory_calls": 0,
+  "valid_profile_read": "PASS",
+  "transport_error_status": 503,
+  "socket_transport": "REFUSED",
+  "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1"
+}

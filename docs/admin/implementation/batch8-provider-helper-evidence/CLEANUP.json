@@ -1,0 +1,30 @@
+{
+  "removed_owned_paths": [
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/lint-venv",
+      "existed": true,
+      "absent_after": true
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pip-cache",
+      "existed": true,
+      "absent_after": true
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "existed": true,
+      "absent_after": true
+    }
+  ],
+  "created_servers": [],
+  "created_worker_groups": [],
+  "created_containers": [],
+  "created_ports": [],
+  "retained": [
+    "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence",
+    "/Users/roger/.codex/worktrees/2262/audit_app"
+  ],
+  "all_recorded_child_commands": "Completed with exit statuses in run/reviewer receipts; no persistent owned process was launched",
+  "shared_runtime": "Read only; no installation/change",
+  "cleanup_scope": "Only author-owned disposable paths; reviewer disposable paths have independent cleanup receipts"
+}
