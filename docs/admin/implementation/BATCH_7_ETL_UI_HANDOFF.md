@@ -206,3 +206,26 @@ the hash construction, entrypoint inventory, executed commands, original/final
 receipts and limits. Owned ports 3162/8162 were stopped after replay. No new
 out-of-scope defect was confirmed: #568 covers this repair; the coordinator
 retains GitHub issue accounting, replies, push, final review and merge ownership.
+
+## Calendar notice scope after actual integration review
+
+The coordinator's actual-worker-ready screenshot showed enabled dedicated
+worker controls above a legacy health notice claiming no worker was connected.
+The page now identifies the calendar controls below as disconnected and directs
+users to the dedicated controls and command receipts above when available.
+It no longer presents the legacy `manual_trigger.reason` as a page-wide claim;
+the scoped notice also covers pending or failed health reads. Calendar buttons
+remain disabled, with scoped tooltips, and the existing unverified evidence is
+preserved. The rendered and older operations browser assertions were adjusted.
+
+Five relevant rendered suites pass 161 tests; scoped ESLint passes with zero
+warnings/errors. No redundant copy-only fixture was added. The coordinator will
+rebuild and replay actual worker integration; the older operations browser suite
+was not rerun for this copy change. This remains inside #568 scope.
+
+The current ETL product SHA256 is
+`54b5692f0a5d841e110ae29143ed43b612ad3f4c0c8ad8cfa5df8439c3b7f792`.
+The earlier product hash and full-suite/browser results above identify the prior
+authorization repair snapshot. External `UI_CALENDAR_NOTICE_REPAIR.md` and its
+receipt manifest retain the original screenshot/source, current diff and exact
+commands/results in the same coordinator artifact directory.

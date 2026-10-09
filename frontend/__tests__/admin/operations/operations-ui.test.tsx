@@ -117,7 +117,7 @@ test('calendar planning never renders running or healthy worker claims and unava
   expect(screen.getAllByRole('button',{name:'Dry-run'})).toHaveLength(6);
   screen.getAllByRole('button',{name:'Trigger'}).forEach(button=>expect(button).toBeDisabled());
   screen.getAllByRole('button',{name:'Dry-run'}).forEach(button=>expect(button).toBeDisabled());
-  expect(screen.getByText(/No job was accepted/)).toBeInTheDocument();
+  expect(screen.getByText(/The calendar controls below are not connected to worker dispatch/)).toBeInTheDocument();
   expect(post).not.toHaveBeenCalled();
 });
 

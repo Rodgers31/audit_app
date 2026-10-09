@@ -87,3 +87,27 @@ Copilot's body-only integration/gate observations describe these real remaining
 limits. No new out-of-scope finding was confirmed; #568 covers the repair.
 The coordinator owns actual worker integration, independent final replay,
 GitHub deduplication/accounting, push, in-thread response/resolution and merge.
+
+## Calendar notice correction
+
+At prior reviewed commit `8365eae5d5e3824d9c465df0b32c56fe886984c9`, the
+coordinator's actual-worker-ready screenshot exposed a blanket no-worker notice
+below the connected dedicated dispatch panel. The calendar notice now scopes
+the disconnected controls and points to the dedicated panel/receipts. Its copy
+does not depend on legacy health availability. Calendar tooltips use the same
+scope; the existing disabled controls and unverified evidence remain intact.
+
+`UI_CALENDAR_NOTICE_RENDERED.txt`: five relevant suites / 161 passed, exit 0.
+`UI_CALENDAR_NOTICE_LINT.txt`: scoped page/rendered/browser files, zero warnings
+or errors, exit 0. The initial lint invocation omitted required
+`NEXT_PUBLIC_API_URL` and failed before lint; that diagnostic is retained in
+`UI_CALENDAR_NOTICE_LINT_INITIAL_ENV_FAILURE.txt`. The corrected invocation used
+the inert loopback URL. Original screenshot/source hashes, diff and commands are
+in external `UI_CALENDAR_NOTICE_REPAIR.md` and its receipt manifest. The runtime
+symlink resolves to the read-only money-review installation, whose manifest and
+lockfile still match this author tree; no dependency install occurred.
+
+Current ETL product SHA256:
+`54b5692f0a5d841e110ae29143ed43b612ad3f4c0c8ad8cfa5df8439c3b7f792`.
+The coordinator owns the subsequent production rebuild and actual-worker browser
+replay. #568 covers the bounded copy repair; no new issue is needed.
