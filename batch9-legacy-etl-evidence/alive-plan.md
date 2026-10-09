@@ -1,0 +1,3 @@
+# Pre-comparison alive plan
+Pinned base: 9e97ca3f1ca43f103a8655447a86d889456a218a; main: 672c5c011ce57dc41551f5fbc642bc4e69134c43.
+Expect: real legacy loader commits an inert Audit and SourceDocument; real native CLI/dispatch handler emits a distinct native marker and commits an inert Audit; control mode forces pause before/after actual commit; refusal emits nonzero exit plus no extra audit; release is observable in claim rows. External sockets forbidden; PostgreSQL only at 127.0.0.1:55491, database batch9-legacy-etl-af79. Schema initialized by actual Alembic, not production. No claim about deployed configuration.

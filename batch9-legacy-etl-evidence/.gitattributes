@@ -1,0 +1,2 @@
+# Preserve the original SQLAlchemy diagnostic bytes in this raw failure log.
+behavior-review-missing-seam-minimum.txt -whitespace

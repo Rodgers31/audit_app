@@ -1,0 +1,241 @@
+"""Legacy loader authority using the reviewed native domain claim protocol.
+
+Reference rows are shared by thirteen native domains. Acquire that conservative
+set in lexical order before any loader effect, regardless of the document kind.
+Learning hub and IMF WEO write independent tables and remain concurrent.
+"""
+import asyncio
+from contextlib import contextmanager
+from contextvars import ContextVar
+from datetime import datetime, timezone
+from functools import wraps
+import logging
+import sys
+from threading import get_ident
+
+from sqlalchemy import event, select
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
+
+from models import IngestionJob, IngestionStatus, SeedingDomainClaim
+from seeding.exclusion import DomainOwnershipError, enter_domain
+
+logger = logging.getLogger(__name__)
+LEGACY_DOMAINS = (
+    "audits", "counties_budget", "county_officials", "debt_timeline",
+    "economic_indicators", "fiscal_summary", "national_budget", "national_debt",
+    "national_gdp", "pending_bills", "population", "revenue_by_source", "stalled_projects",
+)
+_scope = ContextVar("legacy_loader_writer", default=None)
+
+
+def caller():
+    try:
+        task = asyncio.current_task()
+    except RuntimeError:
+        task = None
+    return get_ident(), task
+
+
+def engine_for(bind):
+    engine = getattr(bind, "engine", bind)
+    if engine is None or engine.dialect.name not in ("postgresql", "sqlite"):
+        raise DomainOwnershipError("Legacy writer ownership storage unavailable")
+    return engine
+
+
+def check_ready(engine):
+    """Read-only startup check. A missing migration never selects an unlocked path."""
+    factory = sessionmaker(bind=engine_for(engine))
+    try:
+        with factory() as db:
+            db.execute(select(SeedingDomainClaim).limit(0))
+            db.execute(select(IngestionJob).limit(0))
+    except SQLAlchemyError:
+        raise DomainOwnershipError("Legacy writer requires the shared ownership migration") from None
+
+
+class WriterScope:
+    def __init__(self, engine):
+        self.engine = engine_for(engine)
+        self.factory = sessionmaker(bind=self.engine)
+        self.owner = caller()
+        self.executions = []
+        self.jobs = {}
+        self.sessions = set()
+        self.failed = False
+        self.uncertain = False
+
+    def validate(self, engine):
+        if self.owner != caller() or self.engine is not engine_for(engine):
+            raise DomainOwnershipError("Legacy ownership cannot be inherited by another caller")
+
+    def acquire(self):
+        for domain in LEGACY_DOMAINS:
+            execution = enter_domain(self.factory, domain, False)
+            self.executions.append(execution)
+            with self.factory.begin() as db:
+                job = IngestionJob(domain=domain, status=IngestionStatus.RUNNING,
+                    dry_run=False, started_at=datetime.now(timezone.utc),
+                    items_processed=0, items_created=0, items_updated=0, errors=[],
+                    meta={"seeding_claim_id": str(execution.identity), "writer": "legacy_etl",
+                          "counts_scope": "ownership_only"})
+                db.add(job)
+                db.flush()
+                self.jobs[domain] = job.id
+
+    def finish(self):
+        if self.sessions or self.uncertain:
+            raise DomainOwnershipError("Legacy writer return uncertain; ownership retained")
+        if not all(execution.continuous() for execution in self.executions):
+            raise DomainOwnershipError("Legacy continuity lost; ownership retained")
+        # These are ownership observations, never a fabricated financial census.
+        # Only a synchronous caller return, after all sessions close, reaches here.
+        with self.factory.begin() as db:
+            for execution in self.executions:
+                job = db.get(IngestionJob, self.jobs[execution.domain])
+                job.status = IngestionStatus.FAILED if self.failed else IngestionStatus.COMPLETED
+                job.finished_at = datetime.now(timezone.utc)
+                job.errors = ["legacy loader call failed"] if self.failed else []
+        for execution in reversed(self.executions):
+            # Shared API proves and commits each release on its lock backend.
+            execution.acknowledge(self.jobs[execution.domain])
+
+    def close(self):
+        for execution in reversed(self.executions):
+            try:
+                execution.close()
+            except SQLAlchemyError:
+                logger.error("Legacy continuity connection lost; durable ownership retained")
+
+
+@contextmanager
+def writer_scope(engine):
+    active = _scope.get()
+    if active is not None:
+        active.validate(engine)
+        try:
+            yield active
+        except Exception as exc:
+            active.failed = True
+            active.uncertain |= isinstance(exc, SQLAlchemyError)
+            raise
+        return
+    active = WriterScope(engine)
+    try:
+        try:
+            active.acquire()
+        except DomainOwnershipError:
+            # No writer was called. Release only entries with honest receipts.
+            active.failed = True
+            active.finish()
+            logger.error("Legacy writer ownership refused; no loader work started")
+            raise
+        token = _scope.set(active)
+        returned = False
+        try:
+            try:
+                yield active
+                returned = True
+            except Exception as exc:
+                active.failed = True
+                active.uncertain |= isinstance(exc, SQLAlchemyError)
+                returned = True
+                raise
+        finally:
+            _scope.reset(token)
+            if returned:
+                active.finish()
+            else:
+                logger.error("Legacy writer interrupted; ownership retained across restart")
+    finally:
+        active.close()
+
+
+def owned_write(method):
+    @wraps(method)
+    async def wrapped(self, *args, **kwargs):
+        with writer_scope(self.engine):
+            return await method(self, *args, **kwargs)
+    return wrapped
+
+
+class OwnedSession(Session):
+    """Manual loader sessions own writes until close; closed sessions cannot reopen."""
+    def __init__(self, *args, **kwargs):
+        kwargs["close_resets_only"] = False
+        super().__init__(*args, **kwargs)
+        self._ownership_context = writer_scope(self.get_bind())
+        self._ownership = self._ownership_context.__enter__()
+        self._ownership.sessions.add(self)
+        self._ownership_closed = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None:
+            self._ownership.failed = True
+            self._ownership.uncertain |= not issubclass(exc_type, Exception) or issubclass(exc_type, SQLAlchemyError)
+        self.close()
+
+    def close(self):
+        if self._ownership_closed:
+            return
+        self._ownership.validate(self.get_bind())
+        exc_type = sys.exc_info()[0]
+        if exc_type is not None:
+            self._ownership.failed = True
+            self._ownership.uncertain |= not issubclass(exc_type, Exception) or issubclass(exc_type, SQLAlchemyError)
+        self._ownership.uncertain |= self.info.get("legacy_commit_in_progress", False)
+        try:
+            super().close()
+        except BaseException:
+            self._ownership.uncertain = True
+            raise
+        finally:
+            self._ownership_closed = True
+            self._ownership.sessions.discard(self)
+            self._ownership_context.__exit__(None, None, None)
+
+    def commit(self):
+        self._ownership.validate(self.get_bind())
+        try:
+            return super().commit()
+        except BaseException:
+            self._ownership.uncertain = True
+            raise
+
+    def execute(self, *args, **kwargs):
+        self._ownership.validate(self.get_bind())
+        try:
+            return super().execute(*args, **kwargs)
+        except SQLAlchemyError:
+            self._ownership.uncertain = True
+            raise
+
+    def flush(self, *args, **kwargs):
+        self._ownership.validate(self.get_bind())
+        try:
+            return super().flush(*args, **kwargs)
+        except SQLAlchemyError:
+            self._ownership.uncertain = True
+            raise
+
+
+@event.listens_for(OwnedSession, "before_commit")
+def _before_commit(session):
+    session._ownership.validate(session.get_bind())
+    session.info["legacy_commit_in_progress"] = True
+
+
+@event.listens_for(OwnedSession, "after_commit")
+def _after_commit(session):
+    session.info["legacy_commit_in_progress"] = False
+
+
+@event.listens_for(OwnedSession, "before_flush")
+def _before_flush(session, flush_context, instances):
+    session._ownership.validate(session.get_bind())
+
+
+@event.listens_for(OwnedSession, "do_orm_execute")
+def _before_execute(state):
+    state.session._ownership.validate(state.session.get_bind())

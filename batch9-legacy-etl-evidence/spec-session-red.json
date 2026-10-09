@@ -1,0 +1,18 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/spec_session_control.py",
+  "generator_sha256": "413acb50dead73073c41633b772bfdd7ff48864c3d3521e367ee8fe74ad274e0",
+  "generated_at": "2026-10-09T19:21:55.137035+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/writer_ownership.py": "c5f7d541364b208768086bd195720548ae55e712456f858f846ad2da4db78852"
+  },
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "command": [
+    "batch9-legacy-etl-evidence/spec_session_control.py",
+    "batch9-legacy-etl-evidence/spec-session-red.json"
+  ],
+  "verdict": "FAILED",
+  "active_claims_after_close": 0,
+  "external_transaction_still_active": true
+}

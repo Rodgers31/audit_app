@@ -1,0 +1,18 @@
+Manually recorded reviewer tooling output; this is an unsuccessful source-binding
+check, not an acceptance receipt or product failure.
+
+Command: PYTHONDONTWRITEBYTECODE=1 /Users/roger/Documents/projects/audit_app/venv/bin/python - (inline Python read-back check)
+Compared each successful standards replay receipt's writer_ownership source hash
+to hashlib.sha256(Path('etl/writer_ownership.py').read_bytes()).hexdigest().
+
+Observed exit: 1
+Observed output:
+Traceback (most recent call last):
+  File "<stdin>", line 11, in <module>
+AssertionError
+
+Replay receipts were bound to 37ef1e216ead1e53a3329746ccfcc6cb6929e7c4dcd0d4abc0fde77b5d1e2ae1.
+The author had added the EtlDispatchDomain readiness read and bounded SQL error
+diagnostics, moving the current source to
+c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054.
+The four independent controls were subsequently rerun with final-* receipt names.

@@ -1,0 +1,54 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/behavior_review_refusal_storage_v1.py",
+  "generator_sha256": "cc20583ff843ec3260d165dfaa93499e730e8516b4c3525220f474915163e5cb",
+  "generated_at": "2026-10-09T19:40:14.648835+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "start_source_sha256": {
+    "etl/writer_ownership.py": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8",
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4"
+  },
+  "source_sha256": {
+    "etl/writer_ownership.py": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8",
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4"
+  },
+  "command": [
+    "batch9-legacy-etl-evidence/behavior_review_refusal_storage_v1.py",
+    "batch9-legacy-etl-evidence/behavior-review-recheck-refusal-storage-current.json"
+  ],
+  "executable": "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/behavior-current/bin/python",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "sqlalchemy": "2.0.46",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "results": [
+    {
+      "control": "direct_loader_refusal_recording_failure",
+      "outcome": {
+        "returned": false,
+        "error": "DomainOwnershipError",
+        "diagnostic": "Domain ownership unavailable; reconcile retained execution"
+      }
+    },
+    {
+      "control": "full_pipeline_refusal_recording_failure",
+      "outcome": {
+        "returned": false,
+        "error": "DomainOwnershipError",
+        "diagnostic": "Domain ownership unavailable; reconcile retained execution",
+        "monitor_success": false
+      }
+    }
+  ],
+  "state": {
+    "countries": 0,
+    "documents": 0,
+    "audits": 0,
+    "retained": 1,
+    "jobs": 0
+  },
+  "verdict": "PASSED",
+  "limitation": "Owned SQLite storage fault only; PostgreSQL transaction/process and production acceptance remain separate gates."
+}
