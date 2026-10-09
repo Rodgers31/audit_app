@@ -1,0 +1,240 @@
+{
+  "axis": "Standards evidence-format follow-up",
+  "productCommit": "dc4cea26d9c0570a06bdedd2b0e71cdeccd4c1f7",
+  "productTree": "378f52d4b8092e1e75e14c9819aa02e0103e8c09",
+  "node": "v22.19.0",
+  "envelopes": [
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/adversarial-malformed-fixed.log.json",
+      "sha256": "16e2e664a085d6ada1330fbf7ab2c8d9d03a0ee15d2ef4ce22cce8518ea5f3fe",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-fixed.log",
+      "rawSha256": "cfbeb6edf285ca8cba23f6b7fe5d3e280d7c8508460dfb8e0bff3aa85df7719b",
+      "bytes": 1008,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/adversarial-malformed-reproduced.log.json",
+      "sha256": "70f7914a715f2fa16ba5b78d28ac48eb5d9d92c68cb785d08cec4f82a6f496ad",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-reproduced.log",
+      "rawSha256": "9d1a620b040c50fdb698381dcaa4c7f482025a1604515223cfcbe73c9dcc1552",
+      "bytes": 329,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/baseline-bounded-probes.log.json",
+      "sha256": "b0722eace5e001e8debcb1f7682608df6601a0e652216221b81f67d5cf80e075",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-bounded-probes.log",
+      "rawSha256": "01ebc08d6402dfd6e3481274d7dd5086cfcbf34574b7b8fc0b0bd326dac7aa58",
+      "bytes": 265,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/baseline-jest-boundary-red.log.json",
+      "sha256": "1927395017e191821fdfed512a5f0e0dcefdcec964691a17e376fffc1a9e783e",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-boundary-red.log",
+      "rawSha256": "803f8bab3eab4222aeae27ad2f57b6b88bee0556934c02b163655d19f6021c31",
+      "bytes": 1563,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/baseline-jest-discovery-probe.log.json",
+      "sha256": "bbe67979485464c478bb77338d8695a6ab2bfae2db796520ceba3f64194c4898",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-discovery-probe.log",
+      "rawSha256": "5f01c328821b1c6b45d302049b36d5a8e48518b807e85f7decdfd116e146ed65",
+      "bytes": 239,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/docker-cleanup.log.json",
+      "sha256": "ebbf4988ed9f558463057e4c83e53df50ccb5c358a3b8e21c3edd66194f2f944",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/docker-cleanup.log",
+      "rawSha256": "d549177a930ed8e5061e7a34029747ba5d8869f558976b9071e9a4c58965d9b3",
+      "bytes": 26,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-boundaries-corrected.log.json",
+      "sha256": "1ff582c23a98f7bf7401b36a5930a6d96977a9262ff6dd13c90c6b6c53c88858",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-boundaries-corrected.log",
+      "rawSha256": "3062fb15c62c9a15f026482f05f2a9fdbbefb008e3927fe289557954dd78f5a6",
+      "bytes": 6654,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-browser.log.json",
+      "sha256": "66f4f516ea682b167d41ff87160b70bc4168c37e975889e21e091b72b825e479",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-browser.log",
+      "rawSha256": "b130844e43f88025de07a4c95606a4b18c947a678f3b4ceb6f98eee6ef12d825",
+      "bytes": 7338,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-builder.log.json",
+      "sha256": "5cb733a77201a75dd7922a1330be6b52b611743ca1885b9b0cfd11d15d0b3d66",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-builder.log",
+      "rawSha256": "f8c25d2d76f4ba873000afc9c87300118e68cd20c5a3473b43d1b1f7fabfd087",
+      "bytes": 674,
+      "containsCarriageReturn": true
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-lint-corrected.log.json",
+      "sha256": "57ab0739a219b92ca71da394aaab6b7592c9867abb90806f224a8248f7b50050",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-lint-corrected.log",
+      "rawSha256": "02111bf2b93c7ac7933fb7e06922585671789ce558acde6308d00dac2a2dd7f6",
+      "bytes": 330,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-native.log.json",
+      "sha256": "5487da95ebd70987d23e7e6b39a452abaf88bcb21e2462e86f6bddbf49e85b51",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-native.log",
+      "rawSha256": "eea44f774ab4666ff4c539149245111f8c0a435956f59d653fe46ca23d67d3f9",
+      "bytes": 1449,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/final-tooling.log.json",
+      "sha256": "70bdee53ee6c3fc5892105acf2de9c10863813017216a0ee390984ee707435a7",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-tooling.log",
+      "rawSha256": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "bytes": 240,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/graph-regression-green.log.json",
+      "sha256": "1fa97d70ef7ded20fd0d1051193a714c3bb35b123a5e0e61f5f532328d5dd314",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-green.log",
+      "rawSha256": "03f1603734f06164ed5f56b3cd1e8bd0d4c08ff30c0293451bdb7c089adfb2b8",
+      "bytes": 314,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/graph-regression-red-corrected.log.json",
+      "sha256": "13da5685017b7cee6db10a2f3fa495e05ce5dafec732bb4105e24b6f696874a9",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-red-corrected.log",
+      "rawSha256": "01bb0cd7dd3cad40a73c9eb8214c22977c9d3d5ea38531b5ef5867bbbaf4494d",
+      "bytes": 975,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-boundaries.log.json",
+      "sha256": "5dfbd069c585b53a3d8869f0927a7fcce358b7fd57b106c11a41b9c4c118cd54",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-boundaries.log",
+      "rawSha256": "b90b906da8ac2b76b14ced58d86d070c7fbc2dfabc9f7edf338157932a2bd6b1",
+      "bytes": 6665,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-builder.log.json",
+      "sha256": "42f7b5cccaf813b7438a24e6c524028fe3f51ad891cda7217ee5bd041bdb7c07",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-builder.log",
+      "rawSha256": "db0de3152cd17190a0d71dcad7410cab9f0d15e894a5cb91145285e9a385fd66",
+      "bytes": 563,
+      "containsCarriageReturn": true
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-image-amd64-identity.log.json",
+      "sha256": "087776f7f5ba7cf8e9732effec743f54814666fccbcd80d9851fe546c71df1df",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-image-amd64-identity.log",
+      "rawSha256": "2a8383ef7c20950158f76e7c5c75f76fbe71918c72b646410d16956f41af5a06",
+      "bytes": 2803,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-native.log.json",
+      "sha256": "89842ba54048281cb9b88c564f9cd4ab016540fa249c0388d7c5a3547f621265",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-native.log",
+      "rawSha256": "3a46dac65fb996e2aea633fec627e8c8c60adcf226d7bf6e9702813f2f5e1ec6",
+      "bytes": 1353,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-runtime-http-corrected.log.json",
+      "sha256": "5ba92762dfc9bd9afa7abf7a7348250b0cee049d3d791b93f7dd34518d93d0c7",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http-corrected.log",
+      "rawSha256": "9f0cbcc6eca5a0a67796a10946d21f348efd26db3b76f0f5bebb4e210e3742bb",
+      "bytes": 217,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-runtime-http.log.json",
+      "sha256": "df8097ec42283c0e13ab7db1a0230f192e5852e516b83c86850111ca82ba5ac6",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http.log",
+      "rawSha256": "317c0ec496dee87cefee39950f647a425acc420710c779369a1d72bdd7579299",
+      "bytes": 237,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-runtime-verify.log.json",
+      "sha256": "527517fdb904339da3fe67480de3130023019d2f9abbd804bfb7feaeeb701207",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-verify.log",
+      "rawSha256": "4e274cb53ee7379a8b93a1711e0a4874ee5f332edd1a1acf9898e0e789380874",
+      "bytes": 510,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-tooling.log.json",
+      "sha256": "e958e5ea4105f96527c17d031416fec56b1824088c288d1257da11b30b064e83",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-tooling.log",
+      "rawSha256": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "bytes": 240,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/linux-watch.log.json",
+      "sha256": "99974c26a5f59cfbac667af784ac65ae81694531a8ab87eeca23af311c9595c8",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-watch.log",
+      "rawSha256": "4d27ad2117962ee44426fc5e4a1ea385f87c579e1c138b71553c6ac8f3e19b80",
+      "bytes": 1649,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/runtime-http-corrected.log.json",
+      "sha256": "6dc0a353af942fdaec8e66fc7a5b22efc61f8b5b8ae5ee16272abcac5d6a957e",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http-corrected.log",
+      "rawSha256": "b258e13a55197ddcf137558130c2f53e0174af25c2f9349070c4549aac0d71c5",
+      "bytes": 643,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/runtime-http.log.json",
+      "sha256": "7581b269f66cbf25115a760c57d93a934379e7d59430b6e8ea00ef1613eafdcb",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http.log",
+      "rawSha256": "4f6e6dcb8aecbd2a179493e45aea6ef53bd219fc3aa65704b77db6ccb07fde07",
+      "bytes": 400,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/runtime-trace-image.log.json",
+      "sha256": "2a2823072a611e9c50ee189d39ff53ce26107b1bd252d09a6adfbdb9508f7cc1",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-trace-image.log",
+      "rawSha256": "7dc0a6ac8e323d30aada9ba9739af8fc36877fed926da4f8b46c36ce78dba5be",
+      "bytes": 453,
+      "containsCarriageReturn": false
+    },
+    {
+      "file": "docs/admin/implementation/batch8-dependencies-evidence/runtime-verify.log.json",
+      "sha256": "7849e6574623e9bd558dff08bc6806d26dacdda68be173cd6364f3bcb6bc55a3",
+      "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-verify.log",
+      "rawSha256": "e6285b573c30fc5c8cbaeb4c010735dc90bce355c24b12df38b464a3ffdc8355",
+      "bytes": 625,
+      "containsCarriageReturn": false
+    }
+  ],
+  "verifiedEnvelopeCount": 27,
+  "rawPublisherExtractSHA256": "d407e9f396cb9afcbf23a8ee5fed93cc6cedd5045c5aae9e65b72a45cdfc7aa3",
+  "rawPublisherExtractIndexed": true,
+  "summarySHA256": "3c2a60677de05b116cc4eabdfc7dfdf26b8b1ae5e0b58590bd7690506f5b2cc3",
+  "summaryWords": 160,
+  "formatDocSHA256": "6546ccde9948f1b6b24bf350ee0179f061ff4774bf1eec9acedd8ea2270d05bf",
+  "handoffSHA256": "6cd43a1923c1375db39d14627b4c57abe0f0cc39bde7646ac9fed1779bd64e12",
+  "updatedImageEnvelopeLinkExists": true,
+  "productWorkingAndCommittedHashesUnchanged": true,
+  "cachedDiffCheck": {
+    "command": "git diff --cached --check",
+    "status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "findings": 0
+}

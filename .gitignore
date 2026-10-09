@@ -20,6 +20,7 @@ __pycache__/
 .coverage
 .coverage.*
 htmlcov/
+backend/.ci-test-results/
 .pytype/
 .cache/
 
@@ -117,6 +118,8 @@ nul
 # Playwright test artifacts
 frontend/test-results/
 frontend/playwright-report/
+frontend/legacy-results/
+frontend/legacy-report/
 
 
 frontend/acceptance-results/

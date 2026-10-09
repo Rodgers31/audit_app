@@ -3,9 +3,13 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from tests.ci_browser_database import browser_database_port
+DATABASE_PORT=browser_database_port(55471)
+URL=f'postgresql+psycopg2://fixture:fixture@127.0.0.1:{DATABASE_PORT}/fixture'
 allowed = {k:os.environ[k] for k in ('PATH','TMPDIR') if k in os.environ}
 os.environ.clear(); os.environ.update(allowed)
-os.environ.update(PYTHON_DOTENV_DISABLED='1',DATABASE_URL='postgresql+psycopg2://fixture:fixture@127.0.0.1:55471/fixture')
+os.environ.update(PYTHON_DOTENV_DISABLED='1',DATABASE_URL=URL)
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import httpx
 from fastapi import FastAPI
@@ -45,7 +49,7 @@ subject.supabase_admin.count_profiles=lambda **k:len(profiles) if not k else sum
 supabase_auth._decode_supabase_jwt=lambda token:{'sub':ACTOR,'email':'admin@example.invalid'} if token=='fixture-token' else (_ for _ in ()).throw(Exception('fixture invalid token'))
 supabase_auth._fetch_roles=lambda uid:('admin@example.invalid',['admin'])
 root=Path(tempfile.mkdtemp(prefix='batch6-users-browser-'))
-engine=create_engine('postgresql+psycopg2://fixture:fixture@127.0.0.1:55471/fixture')
+engine=create_engine(URL)
 AdminAuditLog.__table__.create(engine)
 database.SessionLocal=sessionmaker(bind=engine)
 app=FastAPI();app.include_router(subject.router)

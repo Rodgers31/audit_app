@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-builder.log",
+  "sha256": "db0de3152cd17190a0d71dcad7410cab9f0d15e894a5cb91145285e9a385fd66",
+  "encoding": "utf-8",
+  "text": "Loading chapters from /work/frontend/.batch8-builder/public/data/constitution\u2026\nEncoding 264 articles with Xenova/all-MiniLM-L6-v2\u2026\n  20/264  (1.6s)\r  40/264  (2.7s)\r  60/264  (3.7s)\r  80/264  (4.6s)\r  100/264  (6.0s)\r  120/264  (7.0s)\r  140/264  (7.9s)\r  160/264  (9.0s)\r  180/264  (10.4s)\r  200/264  (11.8s)\r  220/264  (13.0s)\r  240/264  (14.5s)\r  260/264  (15.7s)\r  264/264  (15.9s)\r\nWrote /work/frontend/.batch8-builder/public/data/constitution/embeddings.bin  (396.0 KB)\nWrote /work/frontend/.batch8-builder/public/data/constitution/embeddings-index.json\n"
+}
