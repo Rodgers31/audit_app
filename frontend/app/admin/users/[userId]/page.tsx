@@ -60,7 +60,7 @@ function UserDetailInner({ userId }: { userId: string }) {
   const { isAdmin: allowed } = useAdmin();
   const actorId = authUser?.id;
   const active = useRef(true);
-  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  useEffect(() => { active.current = allowed; return () => { active.current = false; }; }, [allowed]);
   const router = useRouter();
   const qc = useQueryClient();
   const isSelf = authUser?.id?.toLowerCase() === userId.toLowerCase();

@@ -74,9 +74,11 @@ def send_password_reset(email, redirect_to: Optional[str] = None):
 def record_admin_action(db, *, actor, action, target_type=None, target_id=None, payload=None) -> bool:
     """Report audit commit separately from an already accepted provider mutation."""
     if __package__:
+        from .utils.audit_policy import safe_audit_payload
         from .database import SessionLocal
         from .models import AdminAuditLog
     else:
+        from utils.audit_policy import safe_audit_payload
         from database import SessionLocal
         from models import AdminAuditLog
     del db
@@ -85,7 +87,7 @@ def record_admin_action(db, *, actor, action, target_type=None, target_id=None, 
         session = SessionLocal()
         session.add(AdminAuditLog(actor_id=actor.id, actor_email=actor.email,
                                  action=action, target_type=target_type,
-                                 target_id=target_id, payload=dict(payload or {})))
+                                 target_id=target_id, payload=safe_audit_payload(action, payload) if payload is not None else {}))
         session.commit()
         return True
     except Exception:

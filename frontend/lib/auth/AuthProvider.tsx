@@ -15,7 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getBaseUrl } from '@/lib/utils/getBaseUrl';
 import { profileMatchesIdentity } from '@/lib/auth/roles';
 import type { User } from '@supabase/supabase-js';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 /* ───── Public profile shape (from profiles table) ───── */
 export interface UserProfile {
@@ -68,54 +68,105 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Suppress onAuthStateChange profile fetch while register() is handling it
-  const [registering, setRegistering] = useState(false);
+  const mounted = useRef(false);
+  const generation = useRef(0);
+  const identity = useRef<string | null>(null);
+  const identityLifetime = useRef(0);
+
+  const isCurrent = useCallback((ticket: number, id: string) =>
+    mounted.current && generation.current === ticket && identity.current === id, []);
+
+  const changeSession = useCallback((next: User | null) => {
+    const ticket = ++generation.current;
+    if (identity.current !== (next?.id ?? null)) ++identityLifetime.current;
+    identity.current = next?.id ?? null;
+    if (mounted.current) {
+      setAuthUser(next);
+      setUser(null);
+      setIsLoading(!!next);
+    }
+    return ticket;
+  }, []);
+
+  const loadSessionProfile = useCallback(async (next: User, ticket: number) => {
+    let profile: UserProfile | null = null;
+    try {
+      profile = await fetchProfile(next.id);
+    } catch {
+      // Failed profile evidence never retains a previous privileged profile.
+    }
+    if (isCurrent(ticket, next.id)) {
+      setUser(profile);
+      setIsLoading(false);
+    }
+  }, [isCurrent]);
 
   // On mount, restore session + subscribe to auth changes
   useEffect(() => {
-    // 1. Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setAuthUser(session.user);
-        const profile = await fetchProfile(session.user.id);
-        setUser(profile);
-      }
-      setIsLoading(false);
-    });
+    mounted.current = true;
+    setUser(null);
+    setIsLoading(true);
+    const initialGeneration = ++generation.current;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
 
-    // 2. Listen for future auth events (sign-in, sign-out, token refresh)
+    // GoTrue awaits subscribers while holding its auth lock. Profile requests
+    // obtain a token through getSession(), so start them after this callback
+    // returns and the SDK releases that lock.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        setAuthUser(session.user);
-        // Skip profile fetch during registration — register() handles it
-        if (!registering) {
-          const profile = await fetchProfile(session.user.id);
-          setUser(profile);
-        }
-      } else {
-        setAuthUser(null);
-        setUser(null);
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted.current) return;
+      const next = session?.user ?? null;
+      const ticket = changeSession(next);
+      if (next) {
+        const timer = setTimeout(() => {
+          timers.delete(timer);
+          if (isCurrent(ticket, next.id)) void loadSessionProfile(next, ticket);
+        }, 0);
+        timers.add(timer);
       }
     });
 
-    return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // A newer auth event owns state even if the initial read finishes later.
+    void supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted.current || generation.current !== initialGeneration) return;
+      const next = error ? null : data.session?.user ?? null;
+      const ticket = changeSession(next);
+      if (next) void loadSessionProfile(next, ticket);
+    }).catch(() => {
+      if (mounted.current && generation.current === initialGeneration) changeSession(null);
+    });
+
+    return () => {
+      mounted.current = false;
+      ++generation.current;
+      ++identityLifetime.current;
+      timers.forEach(timer => clearTimeout(timer));
+      subscription.unsubscribe();
+    };
+  }, [changeSession, isCurrent, loadSessionProfile]);
 
   const login = useCallback(async (email: string, password: string): Promise<UserProfile> => {
+    const started = generation.current;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    const profile = await fetchProfile(data.user.id);
-    if (!profile) throw new Error('Profile not found');
-    return profile;
-  }, []);
+    const ticket = generation.current === started || identity.current === data.user.id
+      ? changeSession(data.user) : null;
+    try {
+      const profile = await fetchProfile(data.user.id);
+      if (ticket !== null && isCurrent(ticket, data.user.id)) setUser(profile);
+      if (!profile) throw new Error('Profile not found');
+      return profile;
+    } finally {
+      if (ticket !== null && isCurrent(ticket, data.user.id)) setIsLoading(false);
+    }
+  }, [changeSession, isCurrent]);
 
   const register = useCallback(
     async (email: string, password: string, displayName?: string): Promise<UserProfile> => {
-      // Prevent onAuthStateChange from racing with our profile creation
-      setRegistering(true);
+      const started = generation.current;
+      let ticket: number | null = null;
+      let registeringId: string | null = null;
 
       try {
         const { data, error } = await supabase.auth.signUp({
@@ -128,6 +179,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         if (error) throw error;
         if (!data.user) throw new Error('Registration failed');
+        const registeredUser = data.user;
+        registeringId = data.user.id;
+        ticket = generation.current === started || identity.current === data.user.id
+          ? changeSession(data.user) : null;
+        const lifetime = identityLifetime.current;
+        const readRegistrationProfile = () => {
+          // A retry after a same-identity refresh is a fresh observation, but
+          // cannot rejoin a session that signed out or changed actors meanwhile.
+          if (ticket !== null && mounted.current && identity.current === registeredUser.id && identityLifetime.current === lifetime) {
+            ticket = ++generation.current;
+            setUser(null);
+            setIsLoading(true);
+          } else {
+            ticket = null;
+          }
+          return fetchProfile(registeredUser.id);
+        };
 
         // Wait for the DB trigger to create the profile
         // Short initial delay then quick retries — the trigger usually completes within 200-500ms
@@ -136,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         for (const ms of delays) {
           await new Promise((r) => setTimeout(r, ms));
-          profile = await fetchProfile(data.user.id);
+          profile = await readRegistrationProfile();
           if (profile) break;
         }
 
@@ -149,7 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             roles: ['citizen'],
           });
           if (!insertErr) {
-            profile = await fetchProfile(data.user.id);
+            profile = await readRegistrationProfile();
           }
         }
 
@@ -161,37 +229,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           roles: ['citizen'],
         };
 
-        // Set auth state so the rest of the app (WatchlistProvider etc.) sees a signed-in user
-        setAuthUser(data.user);
-        setUser(finalProfile);
+        // Registration completion cannot resurrect an identity after a newer
+        // sign-out/sign-in event, or overwrite a newer profile observation.
+        if (ticket !== null && isCurrent(ticket, data.user.id)) setUser(finalProfile);
 
         return finalProfile;
       } finally {
-        setRegistering(false);
+        if (ticket !== null && registeringId !== null && isCurrent(ticket, registeringId)) setIsLoading(false);
       }
     },
-    []
+    [changeSession, isCurrent]
   );
 
   const logout = useCallback(async () => {
+    changeSession(null);
     await supabase.auth.signOut();
-    setAuthUser(null);
-    setUser(null);
-  }, []);
+  }, [changeSession]);
 
   const refreshUser = useCallback(async () => {
-    const {
-      data: { user: currentUser },
-    } = await supabase.auth.getUser();
-    if (currentUser) {
-      setAuthUser(currentUser);
-      const profile = await fetchProfile(currentUser.id);
-      setUser(profile);
-    } else {
-      setAuthUser(null);
+    let ticket = ++generation.current;
+    if (mounted.current) {
       setUser(null);
+      setIsLoading(true);
     }
-  }, []);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (error) throw error;
+      if (!mounted.current || generation.current !== ticket) return;
+      const next = data.user ?? null;
+      ticket = changeSession(next);
+      if (next) {
+        const profile = await fetchProfile(next.id);
+        if (isCurrent(ticket, next.id)) setUser(profile);
+      }
+    } finally {
+      if (mounted.current && generation.current === ticket) setIsLoading(false);
+    }
+  }, [changeSession, isCurrent]);
 
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
