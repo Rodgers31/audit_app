@@ -67,6 +67,8 @@ Accepted controls require the exact named graph test/count/assertion or a guard
 contract diagnostic, in addition to the expected exit. Startup errors do not
 count as rejections. npm and its package-name validator resolve from the current
 owned installation. Baseline replay includes the manifest and installed modules.
+Its original producer/graph are copied from hash-verified frozen source files,
+so a shallow checkout does not need historical Git objects to reproduce the red.
 
 New command and accepted-control receipts bind source/generator identities before
 execution and compare them afterward. Use a fresh receipt name; original files

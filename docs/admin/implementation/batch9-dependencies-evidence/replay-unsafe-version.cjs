@@ -12,9 +12,11 @@ try {
   fs.mkdirSync(path.join(root, 'scripts'));
   fs.symlinkSync(path.join(repo, 'frontend/node_modules'), path.join(root, 'node_modules'), 'dir');
   const source = process.argv[2] === 'baseline'
-    ? spawnSync('git', ['show', '672c5c011ce57dc41551f5fbc642bc4e69134c43:frontend/scripts/jest-dependency-boundary.test.cjs'], { cwd: repo, encoding: 'utf8' }).stdout
+    ? fs.readFileSync(path.join(__dirname, 'historical-generators/baseline-672c5c0-jest-dependency-boundary.test.cjs'), 'utf8')
     : fs.readFileSync(path.join(repo, 'frontend/scripts/jest-dependency-boundary.test.cjs'), 'utf8');
   assert.ok(source);
+  if (process.argv[2] === 'baseline') assert.equal(crypto.createHash('sha256').update(source).digest('hex'),
+    'a3988b46b0ba8b091c0081db9626d94e14e5e6aa93fb1e066f2861cea97eb3c7', 'Historical baseline graph hash differs');
   const target = path.join(root, 'scripts/jest-dependency-boundary.test.cjs');
   fs.writeFileSync(target, source);
   const callers = ['@jest/core', 'jest-cli', 'jest-config', 'jest-message-util'].map(name => ({ name, version: '30.5.2' }));
