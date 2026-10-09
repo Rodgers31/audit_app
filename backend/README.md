@@ -66,7 +66,9 @@ Copy `.env.example` to `.env` and configure:
 | Variable                  | Default                  | Description                          |
 | ------------------------- | ------------------------ | ------------------------------------ |
 | `REDIS_URL`               | `redis://localhost:6379` | Redis connection (optional)          |
-| `SENTRY_DSN`              | —                        | Sentry error tracking DSN (optional) |
+| `SENTRY_ENABLED`          | `false`                  | Exact lowercase `true` enables Sentry; `false` disables it |
+| `SENTRY_DSN`              | —                        | Valid nonempty DSN required when enabled; ignored when disabled |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.1`                  | Finite number from 0 to 1, inclusive; used only when enabled |
 | `ADMIN_API_AUTH_REQUIRED` | `false`                  | Require auth for admin endpoints     |
 
 ### AWS S3 (Document Storage)
@@ -353,7 +355,16 @@ Set the backend in `config/settings.py` or via environment variables.
 ## Monitoring
 
 - **Prometheus metrics** — Exposed via `prometheus-fastapi-instrumentator` at `/metrics`
-- **Sentry** — Error tracking (configure `SENTRY_DSN`)
+- **Sentry** — Opt in with `SENTRY_ENABLED=true` and a valid `SENTRY_DSN`.
+  Missing `SENTRY_ENABLED` or exact lowercase `false` keeps monitoring dormant,
+  ignoring the DSN and its secret lookup. Only exact lowercase `true` and
+  `false` are accepted; other values (including empty, `TRUE`, and `1`) stop
+  app construction with `Sentry startup configuration is invalid.` Enabled
+  monitoring also stops startup for missing/invalid DSNs, nonfinite or
+  out-of-range sampling, or SDK initialization failure. No configuration values
+  or underlying exception text appear in that message. Traces default to 0.1
+  only after opt-in; profiles stay disabled. Deployed capture/privacy acceptance
+  remains tracked in #525.
 - **Structured logging** — JSON logs via `python-json-logger` (output to `main_backend.log`)
 
 ## Troubleshooting
