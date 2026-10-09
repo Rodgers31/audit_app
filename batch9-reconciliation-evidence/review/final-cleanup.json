@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-09T23:44:08.987025+00:00",
+  "container_id": "d8af0c115424bb37769520ddaebcc4dd1fbb2af13194d74474a806b23bb674cf",
+  "container_name": "batch9-review-592-db",
+  "network_id": "094f9d73e190729f94acc7d825b6089af08f6f5313b3bd5a8a7ae1cda46f12b8",
+  "network_name": "batch9-review-592-net",
+  "verified_owner_labels": {
+    "audit.review": "592"
+  },
+  "loopback_port": 55496,
+  "before_cleanup": {
+    "owned_databases": [
+      "batch9-review-592-template"
+    ],
+    "other_clients": 0
+  },
+  "after_cleanup": {
+    "labelled_containers": [],
+    "owned_adapter_operator_processes": [],
+    "container_removed": true,
+    "network_removed": true
+  },
+  "cli_prepare_cleanup_state": [
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/ci-final-state.json",
+      "sha256": "554231f22a32598025f9f05dfd49d0fea229293f470f6a5ebada1743274dcdfb",
+      "state": {
+        "version": 1,
+        "nonce": "898705bdc6ff40d88fb57fda6bf6bd26",
+        "container_name": "batch9-review-592-898705bdc6ff40d88fb57fda6bf6bd26-db",
+        "network_name": "batch9-review-592-898705bdc6ff40d88fb57fda6bf6bd26-net",
+        "database": "batch9-review-592-898705bdc6ff40d88fb57fda6bf6bd26",
+        "port": 55507,
+        "image": "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+        "container_id": "bcdc4f363aa3664c181b9bd66eff3414bd730988ccea66688d5fa271f765b8cf",
+        "network_id": "d75bdec47308a7ef08be610a9a76445c420783e157b1828d4ed5b92646da9f97",
+        "ready": false,
+        "cleaned": true
+      }
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/ci-fixture-state.json",
+      "sha256": "c35cb12d84fa65df018d1a8dce2313cd7bf1e996f73d51ef4f730569355f4af2",
+      "state": {
+        "version": 1,
+        "nonce": "2f21efc77bf4468d8ac5328c01ed80f4",
+        "container_name": "batch9-review-592-2f21efc77bf4468d8ac5328c01ed80f4-db",
+        "network_name": "batch9-review-592-2f21efc77bf4468d8ac5328c01ed80f4-net",
+        "database": "batch9-review-592-2f21efc77bf4468d8ac5328c01ed80f4",
+        "port": 55497,
+        "image": "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675",
+        "container_id": "24cdfe950caec8ee1d1b380453e9b48192bcbfd652402c2b24f99c1bb5c08bb9",
+        "network_id": "64334ca32bd92f1c6d92905ee103fc32f504171b46a76022a3473b0acf441f1b",
+        "ready": false,
+        "cleaned": true
+      }
+    }
+  ]
+}

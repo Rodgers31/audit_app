@@ -51,6 +51,19 @@ def start(db, tmp_path, module="seeding.cli", args=("seed", "--domain", "audits"
 
 
 def stop(process):
+    if process.poll() is not None:
+        # The supervisor can be dead while its stopped adapter remains alive.
+        # Do not signal a disappeared/reused group, but retain genuine orphan
+        # cleanup. Verify UID and the actual child command before signalling.
+        members = []
+        for line in subprocess.check_output(["ps", "-axo", "uid=,pid=,pgid=,command="], text=True).splitlines():
+            parts = line.split(None, 3)
+            if len(parts) == 4 and int(parts[2]) == process.pid:
+                members.append(parts)
+        if not members:
+            return
+        assert all(int(parts[0]) == os.getuid() and "admin_etl_dispatch_adapter" in parts[3]
+                   for parts in members), "Refuse cleanup of an unverified process group"
     try:
         os.killpg(process.pid, signal.SIGKILL)
     except ProcessLookupError:

@@ -10,6 +10,8 @@ import subprocess
 import sys
 import traceback
 from uuid import UUID, uuid4
+from urllib.parse import urlsplit
+from receipt_safety import owned_environment, public_environment, redact, safety_hash
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -24,12 +26,12 @@ from models import (AdminAuditLog, EtlDispatchCommand, EtlDispatchDomain,
 from seeding import reconciliation as subject
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORT = Path(__file__).with_name("standards-review.md")
+REPORT = Path(os.environ.get("BATCH9_STANDARDS_RECEIPT_PATH", Path(__file__).with_name("standards-review-current.md")))
 SOURCE_PATHS = [
     "backend/seeding/reconciliation.py", "backend/seeding/reconcile_operator.py",
     "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py", "backend/models.py",
     "batch9-reconciliation-evidence/operator-procedure.md", "batch9-reconciliation-evidence/read_only_census.sql",
-    "batch9-reconciliation-evidence/writer-census.json", "batch9-reconciliation-evidence/inventory_receipt.py",
+    "batch9-reconciliation-evidence/writer-census-review.json", "batch9-reconciliation-evidence/inventory_receipt.py",
 ]
 
 
@@ -146,7 +148,7 @@ def expiry_control():
     from seeding.exclusion import reserve
 
     database = "batch9-reconciliation-standards-expiry-a46a"
-    admin_url = "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/postgres"
+    admin_url = owned_environment(ROOT)["DATABASE_URL"].rsplit("/", 1)[0] + "/postgres"
     url = admin_url.rsplit("/", 1)[0] + "/" + database
     admin = create_engine(admin_url, isolation_level="AUTOCOMMIT", poolclass=sqlalchemy.pool.NullPool)
     engine = connection = None
@@ -232,7 +234,7 @@ def adapter_child():
     original_connect = socket.socket.connect
 
     def loopback_only(sock, address):
-        if type(address) is not tuple or address[0] not in ("127.0.0.1", "localhost") or address[1] != 55493:
+        if type(address) is not tuple or address[0] != "127.0.0.1" or address[1] != urlsplit(os.environ["DATABASE_URL"]).port:
             raise RuntimeError("Standards fixture forbids non-owned network connections")
         return original_connect(sock, address)
 
@@ -260,7 +262,7 @@ def postgres_refusal_control():
     from supabase_auth import AdminUser
 
     database = "batch9-reconciliation-standards-a46a"
-    admin_url = "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/postgres"
+    admin_url = owned_environment(ROOT)["DATABASE_URL"].rsplit("/", 1)[0] + "/postgres"
     url = admin_url.rsplit("/", 1)[0] + "/" + database
     admin = create_engine(admin_url, isolation_level="AUTOCOMMIT", poolclass=sqlalchemy.pool.NullPool)
     engine = None
@@ -328,7 +330,7 @@ def postgres_refusal_control():
 
 def procedure_controls():
     """Readback/provenance checks supplement the manual procedure review."""
-    census = json.loads((ROOT / "batch9-reconciliation-evidence/writer-census.json").read_text())
+    census = json.loads((ROOT / "batch9-reconciliation-evidence/writer-census-review.json").read_text())
     generator = ROOT / census["generated_by"]
     mismatches = [name for name, expected in census["source_sha256"].items()
                   if sha256((ROOT / name).read_bytes()).hexdigest() != expected]
@@ -375,14 +377,18 @@ def main():
                "runtime": {"python": sys.version, "sqlalchemy": sqlalchemy.__version__, "platform": platform.platform()},
                "controls": results, "failure": failure,
                "verdict": "unsuccessful setup/control; no acceptance proven" if failure else "executed controls recorded"}
+    env = owned_environment(ROOT)
+    receipt["environment"] = public_environment(env)
+    receipt["receipt_safety_sha256"] = safety_hash()
+    receipt = redact(receipt, env)
     section = "\n## Independent boundary receipt\n\n```json\n" + json.dumps(receipt, indent=2) + "\n```\n"
     with REPORT.open("a") as output:
         output.write(section)
     readback = REPORT.read_text()
     assert section in readback and receipt["generator_sha256"] in readback
-    print(json.dumps({"receipt_written": str(REPORT), "readback_verified": True, "controls": results}, indent=2))
+    print(json.dumps(redact({"receipt_written": str(REPORT), "readback_verified": True, "controls": results}, env), indent=2))
     if failure:
-        print(failure, file=sys.stderr)
+        print(redact(failure, env), file=sys.stderr)
         return 1
     return 0
 

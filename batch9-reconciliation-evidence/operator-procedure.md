@@ -36,8 +36,17 @@ backends, elapsed lease age, and unverifiable effects remain uncertainty.
 
 ## Writer and launcher inventory
 
-`writer-census.json` records source/line and SHA256 receipts for a whole-repository
-source scan. Source candidates are evidence for investigation, not a claim that
+The original `writer-census.json` is a historical subset scan, superseded for
+current coverage by `writer-census-review.json`. The generator examines tracked
+Python/YAML in `backend`, `etl`, `scripts` and `.github/workflows`, excluding
+tests and `__pycache__`, plus root `docker-compose*.yml` files. It records exact
+selected hashes and a complete list of tracked files omitted from that scan.
+It is **not whole-repository writer coverage**. Before provisioning trusted
+policy, independent operators must review every omitted scope for writers and
+launch configuration, including `admin`, `infra`, `frontend`, Dockerfiles,
+shell scripts and other configuration formats, and retain that separate source
+inventory. Untracked deployment configuration must also be inspected on each
+host. Source candidates are evidence for investigation, not a claim that
 all deployed hosts are known. `batch8-exclusion-evidence/writer-inventory.md`
 supplies the earlier reviewed semantics. The following categories must be
 attested by **every configured host and scheduler scope**, including explicit

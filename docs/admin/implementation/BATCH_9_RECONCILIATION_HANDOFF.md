@@ -1,5 +1,19 @@
 # Batch 9 — audited reconciliation handoff
 
+## Coordinator review addendum — 2026-10-09
+
+The author delivery below is preserved as historical context. PR #584 is now
+merged into main `b0ec603ccbf29d5ae7f6540faa3d484964334fb1`. PR #592's review repairs,
+complete comment triage, current scoped writer census, final frozen verification
+and owned CI fixture interface are in
+`batch9-reconciliation-evidence/review-repairs.md`. All original historical
+receipts remain byte-identical; `publication-supersessions.json` declares their
+publication/source/scope claims superseded for current acceptance. The current
+local cohort passes 111 cases on each supported SQLAlchemy runtime; counts overlap
+with the separate 91-control behavior reviews. Production/operator acceptance
+for #583 remains pending. The original dependency/head/receipt identities below
+have not been rewritten to portray a later execution.
+
 ## Delivery identity and acceptance
 
 This is the scoped implementation/procedure delivery for [#583](https://github.com/Rodgers31/audit_app/issues/583).

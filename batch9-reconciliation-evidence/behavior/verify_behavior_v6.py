@@ -21,6 +21,8 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import DBAPIError
 import sqlalchemy
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from receipt_safety import owned_environment, public_environment, redact, safety_hash
 from seeding.reconciliation import inspect_context, ReconciliationRefused, apply_plan, make_plan, verify_evidence, canonical, digest, target_identity
 from seeding.reconcile_operator import request, load_policy
 
@@ -28,7 +30,9 @@ ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('author_helpers', ROOT/'backend/tests/test_batch9_reconciliation.py')
 helpers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(helpers)
-BASE = 'postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/'
+FIXTURE_ENV = owned_environment(ROOT)
+TEMPLATE = FIXTURE_ENV['DATABASE_URL'].rsplit('/', 1)[1]
+BASE = FIXTURE_ENV['DATABASE_URL'].rsplit('/', 1)[0] + '/'
 checks = []
 failures = []
 processes = []
@@ -36,7 +40,7 @@ processes = []
 
 def record(name, **detail):
     checks.append({'name':name, **detail})
-    print(json.dumps(checks[-1], default=str), flush=True)
+    print(json.dumps(redact(checks[-1], FIXTURE_ENV), default=str), flush=True)
 
 
 @contextlib.contextmanager
@@ -44,7 +48,7 @@ def owned(label):
     name = 'batch9-reconciliation-behavior-' + label + '-' + uuid4().hex[:12]
     admin = create_engine(BASE+'postgres', poolclass=NullPool, isolation_level='AUTOCOMMIT')
     with admin.connect() as c:
-        c.execute(text(f'CREATE DATABASE "{name}" TEMPLATE "batch9-reconciliation-a46a"'))
+        c.execute(text(f'CREATE DATABASE "{name}" TEMPLATE "{TEMPLATE}"'))
     engine = create_engine(BASE+name, poolclass=NullPool)
     connection=engine.connect()
     connection.execute(text('SET search_path = public')); connection.execute(text("SET TimeZone = 'UTC'")); connection.commit()
@@ -334,12 +338,15 @@ def main():
     except Exception as exc:
         import traceback
         setup={'exception':type(exc).__name__,'traceback':traceback.format_exc()}
-        print(setup['traceback'],flush=True)
+        print(redact(setup['traceback'], FIXTURE_ENV),flush=True)
     for process in processes:
         if process.poll() is None:
             process.kill();process.wait(10)
     after={s:hashlib.sha256((ROOT/s).read_bytes()).hexdigest() for s in sources}
     receipt={'generated_by':str(Path(__file__).relative_to(ROOT)),'generator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'generated_at':datetime.now(timezone.utc).isoformat(),'target_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'source_sha256_before':before,'source_sha256_after':after,'source_changed_during_run':before!=after,'runtime':sys.version,'sqlalchemy':sqlalchemy.__version__,'platform':platform.platform(),'exact_command':[sys.executable,*sys.argv],'environment':{k:os.environ.get(k) for k in ['PYTHONPATH','DATABASE_URL','PYTHON_DOTENV_DISABLED','PYTHONDONTWRITEBYTECODE']},'checks':checks,'failures':failures,'setup_or_unexpected_exception':setup,'verdict':'FAILED' if failures or setup or before!=after else 'PASSED'}
+    receipt['environment'] = public_environment(FIXTURE_ENV)
+    receipt['receipt_safety_sha256'] = safety_hash()
+    receipt = redact(receipt, FIXTURE_ENV)
     path=Path(__file__).parent/(label+'.json');assert not path.exists();path.write_text(json.dumps(receipt,indent=2,default=str)+'\n')
     readback=json.loads(path.read_text());assert readback['generator_sha256']==receipt['generator_sha256'];assert readback['verdict']==receipt['verdict']
     print('RECEIPT',path,'CHECKS',len(checks),'VERDICT',receipt['verdict'],flush=True)

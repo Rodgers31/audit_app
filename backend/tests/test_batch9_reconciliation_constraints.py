@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 import os
 from uuid import uuid4
+from urllib.parse import urlsplit
 
 import pytest
 from sqlalchemy import create_engine
@@ -30,7 +31,10 @@ def storage(request):
             model.__table__.create(engine)
     else:
         url = os.environ["BATCH9_RECONCILIATION_DATABASE_URL"]
-        assert "@127.0.0.1:55493/batch9-reconciliation-" in url
+        parsed = urlsplit(url)
+        assert (parsed.hostname == "127.0.0.1" and parsed.port is not None and
+                parsed.path.startswith(("/batch9-reconciliation-", "/batch9-review-592-"))
+                and not parsed.query and not parsed.fragment), "Explicit owned target required"
         engine = create_engine(url, poolclass=NullPool)
     yield engine
     engine.dispose()

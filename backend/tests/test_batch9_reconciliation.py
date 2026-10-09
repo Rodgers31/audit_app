@@ -5,6 +5,7 @@ from pathlib import Path
 import os
 from types import SimpleNamespace
 from uuid import uuid4
+from urllib.parse import urlsplit
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
@@ -25,7 +26,10 @@ URL = os.environ.get("BATCH9_RECONCILIATION_DATABASE_URL")
 
 @pytest.fixture
 def owned(request):
-    assert URL and "@127.0.0.1:55493/batch9-reconciliation-" in URL, "Explicit owned database required; no skips"
+    parsed = urlsplit(URL or "")
+    assert (parsed.hostname == "127.0.0.1" and parsed.port is not None and
+            parsed.path.startswith(("/batch9-reconciliation-", "/batch9-review-592-"))
+            and not parsed.query and not parsed.fragment), "Explicit owned database required; no skips"
     admin = create_engine(URL.rsplit("/", 1)[0] + "/postgres", poolclass=NullPool, isolation_level="AUTOCOMMIT")
     name = "batch9-reconciliation-" + uuid4().hex
     template = URL.rsplit("/", 1)[1]
