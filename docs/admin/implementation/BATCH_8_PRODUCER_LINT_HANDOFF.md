@@ -187,3 +187,35 @@ Next action: coordinator review the attached scoped draft, manually request
 Copilot if desired, integrate it under existing policy, then close #569 after
 accepted merge. Any workflow-pin rebind/full retained replay belongs to a
 separately reviewed follow-up. #545 and the operational gates remain open.
+
+## Published delivery addendum
+
+Draft PR: [#578](https://github.com/Rodgers31/audit_app/pull/578), opened and
+attached to this author chat. The reviewed implementation commit is
+`2a26a74b5937ba1016b23b0dfc000db645988972`, tree
+`5658d69acbc787b5b93733b17c0005ab9f204cee`. Its checkout was clean immediately
+after commit and before the normal branch push. The production source is
+identical to the executed/reviewed final SHA256 above. This final addendum is
+documentation only; exact resulting tip/tree and remote-head equality are
+written after commit to the owned raw `delivery.json`.
+
+The final local selection includes the evidence guard: **286 passed, 3 skipped**,
+exit 0; final broad flake8 critical gate returned `0`, exit 0. Standards and
+Spec final rechecks found no blocking findings, and independent adversarial
+execution retained 56 cases. The final reports are copied with original
+content hashes into `batch8-producer-evidence/INDEPENDENT_REVIEWS.md`.
+
+The owned external flake8 installation and this checkout's pytest cache were
+removed after verification. Independent reviewer temporary source/storage/SQL
+fixtures were removed; their exact scripts and receipts remain. No owned
+server, worker, listener or container was started. The shared Python runtime
+and other checkouts remain untouched. The managed worktree remains available
+for coordinator review.
+
+PR creation was verified `OPEN`, `isDraft=true`, no requested reviewer. No paid
+review was requested. An automatic Vercel integration context appeared on GitHub;
+it is not backend/ETL/security Actions evidence and is not counted in acceptance.
+Actions was read back disabled. No merge, workflow invocation, manual deployment,
+provider/source acquisition, production SQL/storage write or issue closure
+occurred. Scoped local #569 acceptance is complete; the retained-PDF replay,
+future workflow pin rebind and broader operational gates remain separate.
