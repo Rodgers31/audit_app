@@ -1,0 +1,33 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_receipt_runner_does_not_certify_source_changes_during_execution[generator] _
+
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-429/test_receipt_runner_does_not_c0')
+mutates = 'generator'
+
+    @pytest.mark.parametrize("mutates", [False, True, "generator"])
+    def test_receipt_runner_does_not_certify_source_changes_during_execution(tmp_path, mutates):
+        root = tmp_path / "app"
+        evidence = root / "batch9-legacy-etl-evidence"
+        evidence.mkdir(parents=True)
+        shutil.copyfile(EVIDENCE / "run_receipt.py", evidence / "run_receipt.py")
+        (root / "etl").mkdir()
+        (root / "etl/inert.py").write_text("VALUE = 'before'\n")
+        for args in (["init", "-q"], ["add", "."],
+                     ["-c", "user.name=Owned receipt fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "fixture"]):
+            subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+        target = "batch9-legacy-etl-evidence/run_receipt.py" if mutates == "generator" else "etl/inert.py"
+        code = f"from pathlib import Path; p=Path({target!r}); p.write_text(p.read_text()+'\\n# inert changed bytes\\n')" if mutates else "print('inert check completed')"
+        result = subprocess.run([sys.executable, str(evidence / "run_receipt.py"), "owned.json", sys.executable, "-c", code],
+                                cwd=root, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
+                                capture_output=True, text=True)
+        receipt = json.loads((evidence / "owned.json").read_text())
+        if mutates:
+>           assert result.returncode != 0
+E           AssertionError: assert 0 != 0
+E            +  where 0 = CompletedProcess(args=['/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python', '/private/var/fol...\nReceipt owned.json: exit=0, generator=5710c91e896d8dcf7d66eda3449ca13566e95c670b84018030dd6c112695b2d4\n', stderr='').returncode
+
+backend/tests/test_batch9_legacy_receipt_integrity.py:83: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_receipt_integrity.py::test_receipt_runner_does_not_certify_source_changes_during_execution[generator]
+1 failed, 28 deselected in 0.17s

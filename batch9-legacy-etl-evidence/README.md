@@ -1,3 +1,8 @@
+> The author delivery and statuses below are historical. Current PR596 review
+> repairs and fresh source-bound verification are recorded in
+> `docs/admin/implementation/BATCH_9_PR596_REVIEW_HANDOFF.md` and
+> `review-verification-manifest.json`.
+
 # Batch 9 legacy ETL evidence (#581)
 
 Author delivery only; coordinator and production acceptance remain pending.

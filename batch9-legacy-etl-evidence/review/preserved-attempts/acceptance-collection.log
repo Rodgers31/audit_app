@@ -1,0 +1,20 @@
+ImportError while loading conftest '/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/conftest.py'.
+conftest.py:151: in <module>
+    from database import get_db
+database.py:54: in <module>
+    engine = create_engine(
+../../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/sqlalchemy/util/deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+../../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/sqlalchemy/engine/create.py:721: in create_engine
+    raise TypeError(
+E   TypeError: Invalid argument(s) 'max_overflow','pool_timeout' sent to create_engine(), using configuration SQLiteDialect_pysqlite/SingletonThreadPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.
+ImportError while loading conftest '/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/conftest.py'.
+conftest.py:151: in <module>
+    from database import get_db
+database.py:54: in <module>
+    engine = create_engine(
+../../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/sqlalchemy/util/deprecations.py:281: in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+../../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/sqlalchemy/engine/create.py:721: in create_engine
+    raise TypeError(
+E   TypeError: Invalid argument(s) 'max_overflow','pool_timeout' sent to create_engine(), using configuration SQLiteDialect_pysqlite/SingletonThreadPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.

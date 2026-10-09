@@ -19,6 +19,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
+from sqlalchemy.engine import make_url
 
 # Add backend to path to import models
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend"))
@@ -97,9 +98,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 if __package__:
-    from .writer_ownership import OwnedSession, check_ready, owned_write
+    from .writer_ownership import OwnedSessionFactory, check_ready, owned_write
 else:
-    from writer_ownership import OwnedSession, check_ready, owned_write
+    from writer_ownership import OwnedSessionFactory, check_ready, owned_write
 
 
 class DatabaseLoader:
@@ -132,9 +133,10 @@ class DatabaseLoader:
         try:
             # Thirteen continuity transactions must stay pinned simultaneously.
             # A small shared/default pool would starve writer/receipt sessions.
-            self.engine = create_engine(self.database_url, pool_pre_ping=True, poolclass=NullPool)
-            self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine, class_=OwnedSession
+            pool_options = {"poolclass": NullPool} if make_url(self.database_url).get_backend_name() == "postgresql" else {}
+            self.engine = create_engine(self.database_url, pool_pre_ping=True, **pool_options)
+            self.SessionLocal = OwnedSessionFactory(
+                self.engine, autocommit=False, autoflush=False
             )
         except Exception as e:
             logger.error(f"Could not connect to database: {e}")

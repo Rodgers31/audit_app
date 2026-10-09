@@ -101,6 +101,73 @@ def test_alternate_bind_arguments_cannot_escape_owned_engine(loader, tmp_path):
         other.dispose()
 
 
+@pytest.mark.parametrize("method", ["call", "configure", "mutated-default"])
+def test_session_factory_refuses_another_engine_before_acquisition(loader, tmp_path, method):
+    other = create_engine("sqlite:///" + str(tmp_path / "other.sqlite"))
+    Base.metadata.create_all(other)
+    try:
+        with pytest.raises(DomainOwnershipError):
+            if method == "call":
+                with loader.SessionLocal(bind=other):
+                    pass
+            elif method == "configure":
+                loader.SessionLocal.configure(bind=other)
+            else:
+                loader.SessionLocal.kw["bind"] = other
+                with loader.SessionLocal():
+                    pass
+        with other.connect() as conn:
+            assert conn.scalar(text("SELECT count(*) FROM seeding_domain_claims")) == 0
+        assert counts(loader) == (0, 0)
+    finally:
+        other.dispose()
+
+
+def test_same_engine_factory_override_remains_supported(loader):
+    with loader.SessionLocal(bind=loader.engine) as session:
+        session.execute(text("INSERT INTO inert_effects VALUES(1)"))
+        session.commit()
+    assert counts(loader) == (1, 0)
+
+
+def test_in_memory_sqlite_retains_schema_across_owned_sessions():
+    owned = DatabaseLoader("sqlite:///:memory:")
+    try:
+        Base.metadata.create_all(owned.engine)
+        with owned.engine.begin() as conn:
+            conn.execute(text("CREATE TABLE inert_effects(n integer)"))
+        with owned.get_db_session() as session:
+            session.execute(text("INSERT INTO inert_effects VALUES(1)"))
+            session.commit()
+        assert counts(owned) == (1, 0)
+    finally:
+        owned.engine.dispose()
+
+
+def test_worker_child_failure_reaches_scheduler_without_launching_next_job(monkeypatch):
+    from etl import worker
+    from subprocess import CalledProcessError
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.setenv("ETL_RUN_ON_START", "true")
+    monkeypatch.setattr(DatabaseLoader, "check_ownership_ready", lambda self: None)
+    monkeypatch.setattr(worker, "load_config", lambda path: {"countries": {"KE": {"sources": {"oag": {}, "treasury": {}}}}})
+    connection = SimpleNamespace(close=lambda: None)
+    monkeypatch.setattr(worker.psycopg2, "connect", lambda url: connection)
+    monkeypatch.setattr(worker, "pg_advisory_lock", lambda conn: True)
+    unlocked = []
+    monkeypatch.setattr(worker, "pg_advisory_unlock", lambda conn: unlocked.append(True))
+    calls = []
+    def failed(env):
+        calls.append(env["BACKFILL_SOURCES"])
+        raise CalledProcessError(1, ["inert-backfill"])
+    monkeypatch.setattr(worker, "run_once", failed)
+    monkeypatch.setattr(worker.time, "sleep", lambda delay: (_ for _ in ()).throw(RuntimeError("Scheduler continued after child failure")))
+    with pytest.raises(CalledProcessError):
+        worker.schedule_worker()
+    assert calls == ["oag"]
+    assert unlocked == [True]
+
+
 def test_closed_session_cannot_commit_another_effect(loader):
     session = loader.get_db_session()
     session.close()

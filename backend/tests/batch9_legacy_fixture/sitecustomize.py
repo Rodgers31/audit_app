@@ -3,6 +3,8 @@ import os
 
 if os.getenv("BATCH9_LEGACY_INERT") == "true":
     try:
+        from batch9_legacy_target import validate_target, OWNED_PORT
+        validate_target(os.environ.get("DATABASE_URL"))
         import socket
         import time
         from pathlib import Path
@@ -14,10 +16,9 @@ if os.getenv("BATCH9_LEGACY_INERT") == "true":
         from seeding.registries import REGISTRY, load_builtin_domains
         from seeding.types import DomainRunResult
 
-        assert os.environ["DATABASE_URL"].replace("postgresql://", "postgresql+psycopg2://") == "postgresql+psycopg2://batch9_legacy:batch9-inert-local@127.0.0.1:55491/batch9-legacy-etl-af79"
         original_connect = socket.socket.connect
         def loopback_only(sock, address):
-            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55491):
+            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", OWNED_PORT):
                 raise RuntimeError("External transport forbidden by owned fixture")
             return original_connect(sock, address)
         socket.socket.connect = loopback_only
@@ -86,8 +87,8 @@ if os.getenv("BATCH9_LEGACY_INERT") == "true":
             if not args and not kwargs.get("storage_path"):
                 kwargs["storage_path"] = os.environ["BACKFILL_STORAGE"]
             original_init(self, *args, **kwargs)
-            self.discover_budget_documents = lambda source: [dict(doc)]
-            self.http.get = lambda *a, **kw: SimpleNamespace(content=b"%PDF-owned-inert-batch9", headers={"content-type": "application/pdf"}, raise_for_status=lambda: None)
+            self.discover_budget_documents = lambda source: [dict(doc, url=f"https://fixture.invalid/report-{n}.pdf") for n in range(int(os.getenv("BATCH9_DOCUMENT_COUNT", "1")))]
+            self.http.get = lambda url, *a, **kw: SimpleNamespace(content=b"%PDF-owned-inert-batch9" + url.encode(), headers={"content-type": "application/pdf"}, raise_for_status=lambda: None)
             self.extractor.extract_with_fallback = lambda path: {"confidence": 1., "tables": []}
             self.audit_parser.parse = lambda *a: [dict(finding)]
             self.data_validator.validate_audit_data = lambda item: SimpleNamespace(is_valid=True, confidence=1., warnings=[])

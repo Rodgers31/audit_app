@@ -11,10 +11,12 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-URL = os.getenv("BATCH9_LEGACY_DATABASE_URL")
+URL_OVERRIDE = os.getenv("BATCH9_LEGACY_DATABASE_URL")
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "backend/tests/batch9_legacy_fixture"
-pytestmark = pytest.mark.skipif(not URL, reason="Owned Batch 9 legacy PostgreSQL required")
+sys.path.insert(0, str(FIXTURE))
+from batch9_legacy_target import validate_target, connect_args, DEFAULT_URL, OWNED_PORT, owned_postgres_fixture
+URL = URL_OVERRIDE or DEFAULT_URL
 
 def wait_for(read, predicate, timeout=20):
     deadline = time.monotonic() + timeout
@@ -26,9 +28,8 @@ def wait_for(read, predicate, timeout=20):
     raise AssertionError(f"Owned control timeout: last={value}")
 
 @pytest.fixture
-def db():
-    assert URL == "postgresql+psycopg2://batch9_legacy:batch9-inert-local@127.0.0.1:55491/batch9-legacy-etl-af79"
-    engine = create_engine(URL)
+def db(owned_database):
+    engine = create_engine(validate_target(URL), connect_args=connect_args())
     factory = sessionmaker(bind=engine)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE countries,seeding_domain_claims,etl_dispatch_worker,etl_dispatch_commands,ingestion_jobs,admin_audit_log RESTART IDENTITY CASCADE"))
@@ -45,12 +46,19 @@ def db():
     yield engine, factory
     engine.dispose()
 
+
+@pytest.fixture(scope="session")
+def owned_database(tmp_path_factory):
+    with owned_postgres_fixture(URL_OVERRIDE, ROOT, tmp_path_factory.mktemp("batch9-review-596-resources")) as url:
+        yield url
+
 def env(tmp_path, domain="audits", dispatch=True):
     storage = tmp_path / "storage"
     storage.mkdir(exist_ok=True)
     return {"PATH": str(Path(sys.executable).parent) + ":/usr/bin:/bin", "PYTHON_DOTENV_DISABLED": "1", "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONPATH": str(FIXTURE) + os.pathsep + str(ROOT / "backend") + os.pathsep + str(ROOT),
             "DATABASE_URL": URL, "BATCH9_LEGACY_INERT": "true", "BATCH9_NATIVE_DOMAIN": domain,
+            "BATCH9_LEGACY_FIXTURE_PORT": str(OWNED_PORT),
             "ADMIN_ETL_DISPATCH_ENABLED": "true" if dispatch else "false", "BACKFILL_STORAGE": str(storage),
             "SEED_STORAGE_PATH": str(storage), "SEED_CACHE_PATH": str(storage / "cache"), "SEED_LOG_PATH": str(tmp_path / "seed.jsonl")}
 
@@ -140,6 +148,21 @@ def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, nati
         stop(legacy)
         if other:
             stop(other)
+
+
+def test_real_backfill_default_concurrency_completes_two_documents(db, tmp_path):
+    engine, factory = db
+    proc = start(tmp_path, "backfill", extra={"BATCH9_DOCUMENT_COUNT": "2", "BACKFILL_SOURCES": "oag", "BACKFILL_CONCURRENCY": "3"})
+    try:
+        assert proc.wait(timeout=30) == 0
+        assert effects(engine) == 2
+        assert retained(engine) == 0
+        import json
+        summary = json.loads((tmp_path / "storage/backfill_summary.json").read_text())
+        assert summary["queued_unique"] == summary["succeeded"] == 2
+        assert summary["failed"] == 0
+    finally:
+        stop(proc)
 
 @pytest.mark.parametrize("native_kind", ["native", "dispatch"])
 @pytest.mark.parametrize("legacy_entry", ["document", "pipeline", "backfill", "worker-once", "scheduler-once", "session", "country", "entity", "period"])

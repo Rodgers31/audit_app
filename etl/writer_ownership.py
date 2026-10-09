@@ -299,6 +299,26 @@ class OwnedSession(Session):
             raise
 
 
+class OwnedSessionFactory(sessionmaker):
+    """Keep loader sessions on the engine whose writers they coordinate."""
+    def __init__(self, engine, **kwargs):
+        self._owned_engine = engine_for(engine)
+        super().__init__(bind=engine, class_=OwnedSession, **kwargs)
+
+    def _validate_bind(self, kwargs):
+        if kwargs.get("bind", self._owned_engine) is not self._owned_engine or kwargs.get("binds") is not None:
+            raise DomainOwnershipError("Legacy sessions require the configured loader engine")
+
+    def __call__(self, **kwargs):
+        self._validate_bind(self.kw)
+        self._validate_bind(kwargs)
+        return super().__call__(**kwargs)
+
+    def configure(self, **kwargs):
+        self._validate_bind(kwargs)
+        return super().configure(**kwargs)
+
+
 @event.listens_for(OwnedSession, "before_commit")
 def _before_commit(session):
     session._ownership.validate(session.get_bind())

@@ -1,3 +1,7 @@
+> Historical author handoff. See `BATCH_9_PR596_REVIEW_HANDOFF.md` for current
+> coordinator-owned repairs, accepted-main integration, fixture replay and
+> remaining review/production ownership. Original receipts remain unchanged.
+
 # Batch 9 legacy ETL writer ownership — #581
 
 **Author delivery for coordinator review; not deployment acceptance.** This lane

@@ -1,10 +1,10 @@
 import os
 import random
 import sys
-import threading
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict
+from subprocess import CalledProcessError
 
 import psycopg2
 import yaml
@@ -107,18 +107,15 @@ def schedule_worker():
                         print(
                             f"[worker] running {country}/{source} at {now.isoformat()}Z"
                         )
-                        # Run job in a short-lived thread to not block scheduling loop
-                        t = threading.Thread(
-                            target=run_once,
-                            kwargs={"env": item["env"]},
-                        )
-                        t.start()
+                        run_once(item["env"])
                         # schedule next
                         item["next"] = now + item["interval"]
                 time.sleep(30)
             finally:
                 pg_advisory_unlock(conn)
                 conn.close()
+        except CalledProcessError:
+            raise
         except Exception as e:
             print("[worker] error:", e)
             time.sleep(10)

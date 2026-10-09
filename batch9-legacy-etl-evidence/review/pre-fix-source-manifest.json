@@ -1,0 +1,30 @@
+{
+  "archive": "batch9-legacy-etl-evidence/review/pre-fix-source.tar.gz",
+  "archive_sha256": "2cc668eb993fc059b714f957047bb7215abafec51d36e5be5594375ae3477dec",
+  "verified_actual_git_objects": {
+    ".github/scripts/run_backend_tests.py": {
+      "actual_commit": "b0ec603ccbf29d5ae7f6540faa3d484964334fb1",
+      "sha256": "468cee6a65b44fb1ea014dcf6fa0e47f55fb8510e05f2aeff4d8d095f79c6150"
+    },
+    "batch9-legacy-etl-evidence/run_receipt.py": {
+      "actual_commit": "b4128f7012951d79e0fc4c58305a60a3baafd7aa",
+      "sha256": "519b548f3760f324c3a44fa2616a2e56ff4819d6fa9f5909a94e0d14868011bd"
+    },
+    "batch9-legacy-etl-evidence/verify_delivery.py": {
+      "actual_commit": "b4128f7012951d79e0fc4c58305a60a3baafd7aa",
+      "sha256": "0c7ed42dd00e0003998ccbd49cc45845ae3b873a87e78c6e353f9d2e6a386501"
+    },
+    "etl/database_loader.py": {
+      "actual_commit": "b4128f7012951d79e0fc4c58305a60a3baafd7aa",
+      "sha256": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043"
+    },
+    "etl/worker.py": {
+      "actual_commit": "b4128f7012951d79e0fc4c58305a60a3baafd7aa",
+      "sha256": "9afc16b82e4dd7d85a842afb4fb10d730e7833b37d76d46851e649584d543934"
+    },
+    "etl/writer_ownership.py": {
+      "actual_commit": "b4128f7012951d79e0fc4c58305a60a3baafd7aa",
+      "sha256": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8"
+    }
+  }
+}
