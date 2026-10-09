@@ -9,17 +9,16 @@ attempted-but-failed mutations and forces every endpoint to either
 add a "rollback this audit row" path on failure or accept the
 inaccuracy.
 
-Calling ``record_admin_action`` explicitly *after* the action
-succeeds keeps the log honest: every row in ``admin_audit_log``
-represents a mutation that actually committed.
+Callers decide when their action succeeded. This helper preserves their
+independent audit transaction; a row does not prove a later worker executed.
 
 Failures are swallowed
 ----------------------
 A failure to write the audit log must never roll back the
 underlying admin action. The action already happened — failing the
-request would be a worse outcome than a missing log row. We log the
-exception to the application logger so a missing-audit incident is
-still investigable.
+request would be a worse outcome than a missing log row. We log a fixed
+failure message so a missing-audit incident remains observable without
+exposing exception text, SQL parameters or caller payloads.
 """
 
 from __future__ import annotations
@@ -31,9 +30,9 @@ from models import AdminAuditLog
 from sqlalchemy.orm import Session
 
 from supabase_auth import AdminUser
+from .audit_policy import safe_audit_payload
 
 logger = logging.getLogger(__name__)
-
 
 def record_admin_action(
     db: Session,
@@ -54,8 +53,8 @@ def record_admin_action(
         still persists. We want a record that the admin attempted /
         completed the action.
       * Conversely, a failure here can't poison the caller's pending
-        work. The exception is swallowed and logged rather than
-        re-raised; the underlying admin action already happened, and
+        work. The failure is swallowed and logged with a fixed message rather
+        than exception details; the underlying admin action already happened, and
         failing the request because we couldn't audit it would be a
         worse outcome than a missing log row.
 
@@ -78,20 +77,14 @@ def record_admin_action(
             action=action,
             target_type=target_type,
             target_id=target_id,
-            payload=dict(payload) if payload else {},
+            payload=safe_audit_payload(action, payload) if payload is not None else {},
         )
         audit_db.add(row)
         audit_db.commit()
     except Exception:
-        logger.exception(
-            "Failed to write admin_audit_log row",
-            extra={
-                "actor_id": actor.id,
-                "action": action,
-                "target_type": target_type,
-                "target_id": target_id,
-            },
-        )
+        # SQLAlchemy exceptions can include the full INSERT parameters. Keep
+        # failure evidence without attaching exception text, traceback or PII.
+        logger.error("Failed to write admin_audit_log row")
         # Do not re-raise; see module docstring.
         if audit_db is not None:
             try:
