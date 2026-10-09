@@ -1,0 +1,242 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:13:57.679048+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_bootstrap_ownership.py",
+    "-q",
+    "-s",
+    "-k",
+    "native_first and not force"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  }
+}
+
+2026-10-09 14:13:58,286 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:13:58,288 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:13:58,294 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:13:58,294 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:13:58,333 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:13:58,333 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:13:58,333 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:13:58,530 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:13:58,546 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:13:58,568 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:13:58,574 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:13:58,584 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:13:58,590 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:13:58,600 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:13:58,612 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:13:58,613 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:13:58,618 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:13:58,621 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:13:58,624 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:13:58,625 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:13:58,635 - main - INFO - Data provenance router registered at /api/v1/provenance
+FPROCESS OUTPUT 0-native.txt
+
+PROCESS OUTPUT 1-weekly.txt
+bootstrap: deferring — the 'national_budget' seeding domain is writing now, and both write `audits`. The weekly bootstrap job owns this refresh; nothing here is time-critical.
+
+FPROCESS OUTPUT 0-native.txt
+
+PROCESS OUTPUT 1-weekly.txt
+bootstrap: deferring — the 'national_budget' seeding domain is writing now, and both write `audits`. The weekly bootstrap job owns this refresh; nothing here is time-critical.
+
+FPROCESS OUTPUT 0-native.txt
+
+PROCESS OUTPUT 1-startup.txt
+2026-10-09 14:14:03,388 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:14:03,390 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:03,396 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:03,396 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:14:03,430 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:14:03,430 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:14:03,430 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:14:03,623 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:14:03,637 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:14:03,657 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:14:03,663 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:14:03,674 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:14:03,679 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:14:03,687 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:14:03,697 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:14:03,698 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:14:03,701 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:03,704 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:14:03,706 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:14:03,707 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:14:03,717 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 14:14:03,729 - main - INFO - Main Backend API starting up...
+2026-10-09 14:14:03,729 - main - INFO - Working directory: /Users/roger/.codex/worktrees/1183/audit_app/backend
+2026-10-09 14:14:03,750 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 14:14:03,782 - bootstrap - WARNING - bootstrap: deferring — the 'national_budget' seeding domain is writing now, and both write `audits`. The weekly bootstrap job owns this refresh; nothing here is time-critical.
+2026-10-09 14:14:03,782 - main - INFO - Main Backend API startup complete!
+2026-10-09 14:14:03,782 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 14:14:03,800 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 14:14:03,800 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 14:14:03,800 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 14:14:03,800 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 14:14:03,800 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+FPROCESS OUTPUT 0-native.txt
+
+PROCESS OUTPUT 1-startup.txt
+2026-10-09 14:14:05,745 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:14:05,746 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:05,753 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:05,753 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:14:05,786 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:14:05,786 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:14:05,786 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:14:05,983 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:14:05,998 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:14:06,019 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:14:06,024 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:14:06,036 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:14:06,041 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:14:06,051 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:14:06,062 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:14:06,063 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:14:06,067 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:14:06,070 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:14:06,073 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:14:06,074 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:14:06,084 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 14:14:06,097 - main - INFO - Main Backend API starting up...
+2026-10-09 14:14:06,097 - main - INFO - Working directory: /Users/roger/.codex/worktrees/1183/audit_app/backend
+2026-10-09 14:14:06,117 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 14:14:06,149 - bootstrap - WARNING - bootstrap: deferring — the 'national_budget' seeding domain is writing now, and both write `audits`. The weekly bootstrap job owns this refresh; nothing here is time-critical.
+2026-10-09 14:14:06,149 - main - INFO - Main Backend API startup complete!
+2026-10-09 14:14:06,149 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 14:14:06,161 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 14:14:06,161 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 14:14:06,161 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 14:14:06,162 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 14:14:06,162 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+
+=================================== FAILURES ===================================
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments0] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x10dfbf560>, PosixPath('/private/tmp/pytest-of-roger/pytest-202/test_native_first_bootstrap_sk0'))
+arguments = ('--domain', 'national_budget', '--no-dry-run'), kind = 'weekly'
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    @pytest.mark.parametrize("kind", ["force", "weekly", "startup"])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments, kind):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch(kind)
+        assert bootstrap.wait(timeout=15) == 0
+        assert scalar(engine, "SELECT count(*) FROM batch9_markers WHERE stage='entered'") == 1
+        assert scalar(engine, "SELECT count(*) FROM batch9_effects") == 0
+>       assert scalar(engine, "SELECT count(*) FROM entities WHERE type='COUNTY'") == 47
+E       assert 0 == 47
+E        +  where 0 = scalar(Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dbootstrap_42fa22c3c1c443c5bafab954779ebbf9), "SELECT count(*) FROM entities WHERE type='COUNTY'")
+
+backend/tests/test_batch9_bootstrap_ownership.py:122: AssertionError
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments1] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x10e07afc0>, PosixPath('/private/tmp/pytest-of-roger/pytest-202/test_native_first_bootstrap_sk1'))
+arguments = ('--all', '--no-dry-run'), kind = 'weekly'
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    @pytest.mark.parametrize("kind", ["force", "weekly", "startup"])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments, kind):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch(kind)
+        assert bootstrap.wait(timeout=15) == 0
+        assert scalar(engine, "SELECT count(*) FROM batch9_markers WHERE stage='entered'") == 1
+        assert scalar(engine, "SELECT count(*) FROM batch9_effects") == 0
+>       assert scalar(engine, "SELECT count(*) FROM entities WHERE type='COUNTY'") == 47
+E       assert 0 == 47
+E        +  where 0 = scalar(Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dbootstrap_c91fb70a77954454a60656bc72837b2f), "SELECT count(*) FROM entities WHERE type='COUNTY'")
+
+backend/tests/test_batch9_bootstrap_ownership.py:122: AssertionError
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments0] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x10e0a3380>, PosixPath('/private/tmp/pytest-of-roger/pytest-202/test_native_first_bootstrap_sk2'))
+arguments = ('--domain', 'national_budget', '--no-dry-run'), kind = 'startup'
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    @pytest.mark.parametrize("kind", ["force", "weekly", "startup"])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments, kind):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch(kind)
+        assert bootstrap.wait(timeout=15) == 0
+        assert scalar(engine, "SELECT count(*) FROM batch9_markers WHERE stage='entered'") == 1
+        assert scalar(engine, "SELECT count(*) FROM batch9_effects") == 0
+>       assert scalar(engine, "SELECT count(*) FROM entities WHERE type='COUNTY'") == 47
+E       assert 0 == 47
+E        +  where 0 = scalar(Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dbootstrap_95d32e9123c744308969adbf3c81ed31), "SELECT count(*) FROM entities WHERE type='COUNTY'")
+
+backend/tests/test_batch9_bootstrap_ownership.py:122: AssertionError
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments1] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x10e07be20>, PosixPath('/private/tmp/pytest-of-roger/pytest-202/test_native_first_bootstrap_sk3'))
+arguments = ('--all', '--no-dry-run'), kind = 'startup'
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    @pytest.mark.parametrize("kind", ["force", "weekly", "startup"])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments, kind):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch(kind)
+        assert bootstrap.wait(timeout=15) == 0
+        assert scalar(engine, "SELECT count(*) FROM batch9_markers WHERE stage='entered'") == 1
+        assert scalar(engine, "SELECT count(*) FROM batch9_effects") == 0
+>       assert scalar(engine, "SELECT count(*) FROM entities WHERE type='COUNTY'") == 47
+E       assert 0 == 47
+E        +  where 0 = scalar(Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dbootstrap_03f4a5b60159484b81b94ae370dc56d2), "SELECT count(*) FROM entities WHERE type='COUNTY'")
+
+backend/tests/test_batch9_bootstrap_ownership.py:122: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments0]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments1]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments0]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments1]
+4 failed, 15 deselected, 2 warnings in 7.82s

@@ -1,0 +1,480 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:09:31.824712+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_bootstrap_ownership.py",
+    "-q",
+    "-s",
+    "-k",
+    "native_first or bootstrap_first"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "712956d5f37a9c5d320f09681be7e2c1e5cac50938f5c3f8e6b5858b08add079",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "5b9a97085ed57f2e5410697a91b704b31c0489d4ed6537ee91a6c2f478cd51be",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  }
+}
+
+2026-10-09 14:09:32,325 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:09:32,327 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:09:32,330 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:09:32,331 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:09:32,363 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:09:32,363 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:09:32,363 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:09:32,534 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:09:32,547 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:09:32,566 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:09:32,571 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:09:32,580 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:09:32,584 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:09:32,592 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:09:32,602 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:09:32,602 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:09:32,606 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:09:32,608 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:09:32,610 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:09:32,611 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:09:32,620 - main - INFO - Data provenance router registered at /api/v1/provenance
+FPROCESS OUTPUT 1-force.txt
+
+PROCESS OUTPUT 0-native.txt
+
+FPROCESS OUTPUT 1-force.txt
+
+PROCESS OUTPUT 0-native.txt
+
+FPROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+
+FPROCESS OUTPUT 0-startup.txt
+2026-10-09 14:10:22,220 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:10:22,222 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:22,226 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:22,226 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:10:22,262 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:10:22,262 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:10:22,262 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:10:22,453 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:10:22,468 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:10:22,492 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:10:22,499 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:10:22,512 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:10:22,520 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:10:22,530 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:10:22,541 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:10:22,542 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:10:22,546 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:22,549 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:10:22,553 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:10:22,555 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:10:22,565 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 14:10:22,576 - main - INFO - Main Backend API starting up...
+2026-10-09 14:10:22,577 - main - INFO - Working directory: /Users/roger/.codex/worktrees/1183/audit_app/backend
+2026-10-09 14:10:22,596 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 14:10:22,636 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 14:10:22,639 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 14:10:22,690 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 14:10:22,690 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 14:10:22,690 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+
+PROCESS OUTPUT 1-native.txt
+
+FPROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+
+FPROCESS OUTPUT 0-startup.txt
+2026-10-09 14:10:55,219 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 14:10:55,221 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:55,224 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:55,224 - main - INFO - Redis cache initialized successfully
+2026-10-09 14:10:55,272 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 14:10:55,272 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 14:10:55,272 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 14:10:55,449 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 14:10:55,462 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 14:10:55,482 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 14:10:55,487 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 14:10:55,497 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 14:10:55,502 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 14:10:55,509 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 14:10:55,520 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 14:10:55,521 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 14:10:55,525 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 14:10:55,527 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 14:10:55,530 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 14:10:55,531 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 14:10:55,540 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 14:10:55,551 - main - INFO - Main Backend API starting up...
+2026-10-09 14:10:55,551 - main - INFO - Working directory: /Users/roger/.codex/worktrees/1183/audit_app/backend
+2026-10-09 14:10:55,571 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 14:10:55,613 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 14:10:55,618 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 14:10:55,673 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 14:10:55,673 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 14:10:55,673 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+
+PROCESS OUTPUT 1-native.txt
+
+
+=================================== FAILURES ===================================
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[arguments0] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x1101a25c0>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_native_first_bootstrap_sk0'))
+arguments = ('--domain', 'national_budget', '--no-dry-run')
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch("force")
+>       assert bootstrap.wait(timeout=15) == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-c', 'from bootstrap import initialize_reference_data; initialize_reference_data(force=True)']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+_ test_native_first_bootstrap_skips_budget_and_preserves_reference_work[arguments1] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x110287ba0>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_native_first_bootstrap_sk1'))
+arguments = ('--all', '--no-dry-run')
+
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_native_first_bootstrap_skips_budget_and_preserves_reference_work(owned_pg, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        native = launch("native", *arguments)
+        entered(engine)
+        bootstrap = launch("force")
+>       assert bootstrap.wait(timeout=15) == 0
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-c', 'from bootstrap import initialize_reference_data; initialize_reference_data(force=True)']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+_ test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-weekly] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x1101a09a0>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_bootstrap_first_blocks_na0'))
+kind = 'weekly', arguments = ('--domain', 'national_budget', '--no-dry-run')
+
+    @pytest.mark.parametrize("kind", ["weekly", "startup"])
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_bootstrap_first_blocks_native_then_completion_allows_next(owned_pg, kind, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        bootstrap = launch(kind)
+        entered(engine)
+        native = launch("native", *arguments)
+>       assert native.wait(timeout=15) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-m', 'seeding.cli', 'seed', '--domain', 'national_budget', '--no-dry-run']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+_ test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-startup] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x110286e80>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_bootstrap_first_blocks_na1'))
+kind = 'startup', arguments = ('--domain', 'national_budget', '--no-dry-run')
+
+    @pytest.mark.parametrize("kind", ["weekly", "startup"])
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_bootstrap_first_blocks_native_then_completion_allows_next(owned_pg, kind, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        bootstrap = launch(kind)
+        entered(engine)
+        native = launch("native", *arguments)
+>       assert native.wait(timeout=15) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-m', 'seeding.cli', 'seed', '--domain', 'national_budget', '--no-dry-run']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+_ test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-weekly] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x1102a6020>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_bootstrap_first_blocks_na2'))
+kind = 'weekly', arguments = ('--all', '--no-dry-run')
+
+    @pytest.mark.parametrize("kind", ["weekly", "startup"])
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_bootstrap_first_blocks_native_then_completion_allows_next(owned_pg, kind, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        bootstrap = launch(kind)
+        entered(engine)
+        native = launch("native", *arguments)
+>       assert native.wait(timeout=15) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-m', 'seeding.cli', 'seed', '--all', '--no-dry-run']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+_ test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-startup] _
+
+owned_pg = (Engine(postgresql+psycopg2://batch9_bootstrap:***@127.0.0.1:55492/batch9-bootstrap-1183?options=-csearch_path%3Dboots....<locals>.launch at 0x1103904a0>, PosixPath('/private/tmp/pytest-of-roger/pytest-198/test_bootstrap_first_blocks_na3'))
+kind = 'startup', arguments = ('--all', '--no-dry-run')
+
+    @pytest.mark.parametrize("kind", ["weekly", "startup"])
+    @pytest.mark.parametrize("arguments", [("--domain", "national_budget", "--no-dry-run"), ("--all", "--no-dry-run")])
+    def test_bootstrap_first_blocks_native_then_completion_allows_next(owned_pg, kind, arguments):
+        engine, launch, _ = owned_pg
+        set_mode(engine, "before")
+        bootstrap = launch(kind)
+        entered(engine)
+        native = launch("native", *arguments)
+>       assert native.wait(timeout=15) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:136: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:1280: in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: None args: ['/Users/roger/Documents/projects/audit_app/v...>
+timeout = 15
+
+    def _wait(self, timeout):
+        """Internal implementation of wait() on POSIX."""
+        if self.returncode is not None:
+            return self.returncode
+    
+        if timeout is not None:
+            endtime = _time() + timeout
+            # Enter a busy loop if we have a timeout.  This busy loop was
+            # cribbed from Lib/threading.py in Thread.wait() at r71065.
+            delay = 0.0005 # 500 us -> initial delay of 1 ms
+            while True:
+                if self._waitpid_lock.acquire(False):
+                    try:
+                        if self.returncode is not None:
+                            break  # Another thread waited.
+                        (pid, sts) = self._try_wait(os.WNOHANG)
+                        assert pid == self.pid or pid == 0
+                        if pid == self.pid:
+                            self._handle_exitstatus(sts)
+                            break
+                    finally:
+                        self._waitpid_lock.release()
+                remaining = self._remaining_time(endtime)
+                if remaining <= 0:
+>                   raise TimeoutExpired(self.args, timeout)
+E                   subprocess.TimeoutExpired: Command '['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-m', 'seeding.cli', 'seed', '--all', '--no-dry-run']' timed out after 15 seconds
+
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py:2058: TimeoutExpired
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[arguments0]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[arguments1]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-weekly]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-startup]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-weekly]
+FAILED backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-startup]
+6 failed, 7 deselected, 2 warnings in 98.23s (0:01:38)
