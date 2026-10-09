@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import {parseSchedule,parseEtlHealth,type ScheduleSourceDecision} from '@/lib/admin/etl';
 import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
+import { Suspense } from 'react';
+import DispatchPanel from './DispatchPanel';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -62,8 +64,9 @@ export default function AdminEtlPage() {
       subtitle='Calendar planning for source checks. Execution requires the dedicated runner.'
       back={{ href: '/admin', label: 'Back to overview' }}>
       <div className='space-y-5'>
+        <Suspense fallback={<p role='status'>Loading worker dispatch…</p>}><DispatchPanel /></Suspense>
         <p className='text-sm text-neutral-muted'>A calendar calculation does not establish scheduler activity, job execution or financial data freshness.</p>
-        <p role='status' className='text-sm text-neutral-muted'>{healthData?.manual_trigger.reason ?? 'Manual execution is unavailable. No job was accepted.'}</p>
+        <p role='status' className='text-sm text-neutral-muted'>The calendar controls below are not connected to worker dispatch. Use the dedicated worker controls and command receipts above when available.</p>
         {health.isError && <p role='alert' className='text-sm text-gov-copper'>Could not load execution evidence.</p>}
         {schedule.isError && <p role='alert' className='text-sm text-gov-copper'>Calendar plan unavailable. Refresh to retry.</p>}
         <div className='flex items-center justify-end'>
@@ -238,8 +241,8 @@ function SourceRow({
       </div>
 
       <div className='flex flex-wrap items-center gap-2 ml-auto'>
-        <button disabled title='Dedicated worker dispatch unavailable' className='px-3 py-1.5 text-xs font-semibold rounded-full border border-neutral-border text-neutral-muted disabled:opacity-50'>Dry-run</button>
-        <button disabled title='Dedicated worker dispatch unavailable' className='px-3 py-1.5 text-xs font-semibold rounded-full bg-gov-forest text-white disabled:opacity-50'>Trigger</button>
+        <button disabled title='Calendar controls are not connected to worker dispatch' className='px-3 py-1.5 text-xs font-semibold rounded-full border border-neutral-border text-neutral-muted disabled:opacity-50'>Dry-run</button>
+        <button disabled title='Calendar controls are not connected to worker dispatch' className='px-3 py-1.5 text-xs font-semibold rounded-full bg-gov-forest text-white disabled:opacity-50'>Trigger</button>
       </div>
     </motion.li>
   );

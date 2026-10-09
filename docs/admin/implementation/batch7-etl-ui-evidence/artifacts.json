@@ -1,0 +1,8 @@
+{
+  "external_manifest": "/Users/roger/.codex/visualizations/2026/10/09/01a11f2c-fa93-7441-9107-010ba2a08dd8/batch7-etl-ui/manifest.json",
+  "sha256": "f693f8c2202ab5146e060eddb57d1c47e9dabbf4c9f3e21eeae90949216fa4b9",
+  "product_source": "6087347edf1412d232302f986166c889403d17da",
+  "accepted_test_source": "dba511b9fec01ce63843fe576ef20f6e2539375a",
+  "file_count": 82,
+  "retention": "Raw outputs, traces, and screenshots are local artifacts outside git. The manifest hashes every retained file."
+}

@@ -71,7 +71,7 @@ test('calendar plan and disabled execution controls agree with real rejection',a
   await page.goto('/admin/etl');
   await expect(page.getByText('Planned today',{exact:true})).toBeVisible();
   await expect(page.getByText(/^unverified$/i)).toBeVisible();
-  await expect(page.getByText(/No job was accepted\./)).toBeVisible();
+  await expect(page.getByText(/The calendar controls below are not connected to worker dispatch\./)).toBeVisible();
   for(const control of ['Trigger','Dry-run']) {
     const buttons=page.getByRole('button',{name:control,exact:true});
     await expect(buttons).toHaveCount(6);

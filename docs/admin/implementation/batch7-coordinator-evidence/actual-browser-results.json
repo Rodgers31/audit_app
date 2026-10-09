@@ -1,0 +1,556 @@
+{
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_REVIEW/COORDINATOR_INTEGRATION/batch7_coordinator_integration_manifest.py",
+  "generator_sha256": "e32e72a78ae770a63f1ca26c94e9953f9ca009996df8068da5de12dfa5d5f5e7",
+  "generated_at": "2026-10-09T07:31:06.274938+00:00",
+  "target_commit": "cd9704d5de5af9833d38c408b60baedc8dfe7671",
+  "next_build_id": "c9cQFH6VWaek0J8v8GJsT",
+  "verdict": "PASSED",
+  "tests": 11,
+  "passed": 11,
+  "unexpected_browser_transport_requests": 0,
+  "post_run_all_frozen_source_hashes_match": true,
+  "observations": [
+    {
+      "test": "actual persisted command history filters, pagination, detail and safe back links agree",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 3,
+        "audits": 3,
+        "jobs": 3,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "6ddd3b9c-0545-4b9b-b7db-c05005aeb087",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "69864138-b8c8-475c-8d9d-fcbfa01a6645",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "e75ac958-f5a4-406d-8508-405c22877cd6",
+          "claim_token": "c05d0cb7-557e-4471-9d4d-53c54a386b21",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        },
+        {
+          "id": "580821b1-5b77-4bde-9c2c-f1143c223915",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "2272c7ee-7b1c-4422-808c-1cdb48a2246b",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "e75ac958-f5a4-406d-8508-405c22877cd6",
+          "claim_token": "ddb71190-65d2-4170-b3da-737949496720",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 2,
+          "audit_id": 2,
+          "outcome": "completed"
+        },
+        {
+          "id": "b342a4a1-4051-4409-a70b-8224b1924016",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "7d7b7fec-8ba5-466c-bd5d-b29f32950fea",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "e75ac958-f5a4-406d-8508-405c22877cd6",
+          "claim_token": "e6c99650-389e-4f7c-a2e9-7f70ea0cc558",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 3,
+          "audit_id": 3,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-1947e-l-and-safe-back-links-agree-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual dry-run enters native runner and rolls back the inert effect",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "dfdf9b09-1af8-4a67-aae2-dfa0b67dc21c",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "1668f7e9-e991-4239-bd09-76b6a2e3a7e0",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "4b7d2c28-1b8c-43e2-b841-1625f245593c",
+          "claim_token": "005b0290-a887-4f22-958e-560561f9a25d",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-2cfe7-rolls-back-the-inert-effect-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual initial 401 refusal cannot recover the rejected intent after renewal",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "5139db67-2d94-43a9-b718-8ac9dc55dc42",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "21cab8fa-a416-445c-aa0e-3439259525d9",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "e0f750ef-a041-4e2d-981a-120387c4f356",
+          "claim_token": "a36efecf-0180-40d3-8210-0802d786867e",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-611e1-jected-intent-after-renewal-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual restarted generation rejects a stale UI intent before acceptance",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "bce1cf10-fcff-4896-97f9-6c7aed2fe1b7",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "bd2eed42-f692-41ca-b501-bbcf52eaf7ee",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "a785318f-72bf-4c15-82f5-2222c10ef53f",
+          "claim_token": "3d68bd43-632c-4e72-b7fc-318cf6122216",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-7934a-UI-intent-before-acceptance-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "mobile keyboard confirmation and actual completion stay within viewport",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 1
+      },
+      "commands": [
+        {
+          "id": "fc0ca720-2edc-42e7-be87-f79fcbe96f93",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "171d305b-7935-4942-b08d-7edf202b7446",
+          "source": "oag",
+          "dry_run": false,
+          "generation": "56583a40-7adb-4266-b018-0cb252542780",
+          "claim_token": "e1c68678-95e3-434f-b8a0-c22ff5936289",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "lost actual acceptance acknowledgment recovers same key after lease expiry without replay",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "c8fde8a2-2018-4a2e-bdb8-b5d51c9f7af7",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "ec8e0d43-123c-4326-9670-6f69ad28f1e8",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "7562f5eb-4c37-451f-bd54-ebc75a4c2c7a",
+          "claim_token": "4fec5281-e3a6-4d2f-8869-6a9a07ec2fe6",
+          "execution_started": true,
+          "status": "interrupted",
+          "version": 3,
+          "job_id": null,
+          "audit_id": 1,
+          "outcome": "execution_unverified"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-b6dfa-lease-expiry-without-replay-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual confirmed real run completes with persisted actor audit and ingestion receipt",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 1
+      },
+      "commands": [
+        {
+          "id": "3948cf8d-e177-444c-9c77-b0a5b4fc3e37",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "d8b50401-0a8b-4789-a4c1-a5a5ae231f4a",
+          "source": "oag",
+          "dry_run": false,
+          "generation": "c0994d60-2ae2-4d9f-8168-75f72cae1cea",
+          "claim_token": "ec6b0b70-5ef8-4010-aba5-327c4b612a70",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual orphaned execution is interrupted while durable domain exclusion stays occupied",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 1
+      },
+      "commands": [
+        {
+          "id": "b5549a9d-7c42-4102-83f0-93619cfd67ad",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "d2d2bd14-e297-43bc-bb76-b78b444cc4b6",
+          "source": "oag",
+          "dry_run": false,
+          "generation": "d59c8b74-aa72-40e0-b340-1a7e3660121f",
+          "claim_token": "1a5f5e2a-1b12-4aae-8f7d-6d312d06c608",
+          "execution_started": true,
+          "status": "interrupted",
+          "version": 3,
+          "job_id": null,
+          "audit_id": 1,
+          "outcome": "execution_unverified"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual failed runner observation is shown without raw diagnostics",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "2969e1db-11a1-43f1-9dd4-d20a15a290bb",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "50b7e2c2-70e9-4181-83ac-87ac3d46027b",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "d2a43f6f-fe12-40db-9574-0df9cccd0e1b",
+          "claim_token": "2f15b743-ed27-4d61-99d3-4a12b023b711",
+          "execution_started": true,
+          "status": "failed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "failed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-bf281-own-without-raw-diagnostics-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual initial 403 refusal cannot recover the rejected intent after renewal",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 1,
+        "audits": 1,
+        "jobs": 1,
+        "effects": 0
+      },
+      "commands": [
+        {
+          "id": "51289ede-a4d3-49b9-8215-3c181777f56a",
+          "actor_id": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          "idempotency_key": "f62a6860-7a6c-4d22-b05f-5e097e2943e7",
+          "source": "oag",
+          "dry_run": true,
+          "generation": "28d61c03-d233-4618-a55a-bf63c18ef170",
+          "claim_token": "3876a359-470e-4807-b2f0-eaedd6d31b6c",
+          "execution_started": true,
+          "status": "completed",
+          "version": 3,
+          "job_id": 1,
+          "audit_id": 1,
+          "outcome": "completed"
+        }
+      ],
+      "artifact": "browser-final/batch7_coordinator_integra-d7502-jected-intent-after-renewal-chromium/actual-postgresql-observations.json"
+    },
+    {
+      "test": "actual default-off UI and keyed backend reject without jobs or audits",
+      "verdict": "passed",
+      "database_counts": {
+        "commands": 0,
+        "audits": 0,
+        "jobs": 0,
+        "effects": 0
+      },
+      "commands": [],
+      "artifact": "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/actual-postgresql-observations.json"
+    }
+  ],
+  "artifacts": {
+    "browser-final/.last-run.json": {
+      "sha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+      "bytes": 45
+    },
+    "browser-final/batch7_coordinator_integra-1947e-l-and-safe-back-links-agree-chromium/actual-postgresql-observations.json": {
+      "sha256": "4291a5c0f0f0a4a00ffe4b626027be30c8da355efa80997e28b1768ed0cac394",
+      "bytes": 3877
+    },
+    "browser-final/batch7_coordinator_integra-1947e-l-and-safe-back-links-agree-chromium/attachments/actual-postgresql-observations-1995c894088bc4b2415a37c666b2a4141161155a.json": {
+      "sha256": "4291a5c0f0f0a4a00ffe4b626027be30c8da355efa80997e28b1768ed0cac394",
+      "bytes": 3877
+    },
+    "browser-final/batch7_coordinator_integra-1947e-l-and-safe-back-links-agree-chromium/attachments/unexpected-browser-transport-c5f3a84912acad8b677d8af920b7207786d955a7.json": {
+      "sha256": "816049d59cc532324b18c8a430bb055772fdaed04164a41028fff160047a8c5b",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-1947e-l-and-safe-back-links-agree-chromium/unexpected-browser-transport.json": {
+      "sha256": "816049d59cc532324b18c8a430bb055772fdaed04164a41028fff160047a8c5b",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-2cfe7-rolls-back-the-inert-effect-chromium/actual-postgresql-observations.json": {
+      "sha256": "d1d88971fafc85ce829b26c3cd25c33bf1e46b04d98102f3ff729546e3d161bc",
+      "bytes": 1842
+    },
+    "browser-final/batch7_coordinator_integra-2cfe7-rolls-back-the-inert-effect-chromium/attachments/actual-postgresql-observations-488af68f31efd09b789d33b66ca5a3e3c3ad310b.json": {
+      "sha256": "d1d88971fafc85ce829b26c3cd25c33bf1e46b04d98102f3ff729546e3d161bc",
+      "bytes": 1842
+    },
+    "browser-final/batch7_coordinator_integra-2cfe7-rolls-back-the-inert-effect-chromium/attachments/unexpected-browser-transport-5456745a45303f63d7308080679f71745155364f.json": {
+      "sha256": "ae512670ca6bdf96add2248f681c8af19094e7af62014394c3f03ae98f26704f",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-2cfe7-rolls-back-the-inert-effect-chromium/unexpected-browser-transport.json": {
+      "sha256": "ae512670ca6bdf96add2248f681c8af19094e7af62014394c3f03ae98f26704f",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-611e1-jected-intent-after-renewal-chromium/actual-postgresql-observations.json": {
+      "sha256": "3fcf1df92cb9ad28c9b4f9c0743086bb28e56fe873282360e96bad244cf6c026",
+      "bytes": 1850
+    },
+    "browser-final/batch7_coordinator_integra-611e1-jected-intent-after-renewal-chromium/attachments/actual-postgresql-observations-2c0535a12fa596e6e1b3d2ff48bb105a237e9f23.json": {
+      "sha256": "3fcf1df92cb9ad28c9b4f9c0743086bb28e56fe873282360e96bad244cf6c026",
+      "bytes": 1850
+    },
+    "browser-final/batch7_coordinator_integra-611e1-jected-intent-after-renewal-chromium/attachments/unexpected-browser-transport-7e2fe09444c49e72deb490501cbbca0961a6f531.json": {
+      "sha256": "a65eeaf91aec1464b26fdde4f7c6aa66675f55d1c0b9c9a55c74056f5a7421ff",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-611e1-jected-intent-after-renewal-chromium/unexpected-browser-transport.json": {
+      "sha256": "a65eeaf91aec1464b26fdde4f7c6aa66675f55d1c0b9c9a55c74056f5a7421ff",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-7934a-UI-intent-before-acceptance-chromium/actual-postgresql-observations.json": {
+      "sha256": "15abfd2905c4ebc97b64eb28243b0d710bf85f5c43d02d1027fccfdbf74267ae",
+      "bytes": 1846
+    },
+    "browser-final/batch7_coordinator_integra-7934a-UI-intent-before-acceptance-chromium/attachments/actual-postgresql-observations-48d493a1cfcdb000d5236672e8d76b4be7b57d78.json": {
+      "sha256": "15abfd2905c4ebc97b64eb28243b0d710bf85f5c43d02d1027fccfdbf74267ae",
+      "bytes": 1846
+    },
+    "browser-final/batch7_coordinator_integra-7934a-UI-intent-before-acceptance-chromium/attachments/unexpected-browser-transport-36e2d279831f5308f248d5794f074e6c9c4f0063.json": {
+      "sha256": "6e5c580ca23db39854ec72abbcb97fc34f9ef81deefc187822d32fa4bb18d36d",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-7934a-UI-intent-before-acceptance-chromium/unexpected-browser-transport.json": {
+      "sha256": "6e5c580ca23db39854ec72abbcb97fc34f9ef81deefc187822d32fa4bb18d36d",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/actual-mobile-completed.png": {
+      "sha256": "848f659dd5828f0b396ae8c51f6a290ed985660075ca6d5cf095d8d8b23ba65a",
+      "bytes": 134397
+    },
+    "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/actual-postgresql-observations.json": {
+      "sha256": "5b5eec97c81e39c2901e8b317e841501a324100c272d195ca465a9fdc638ac0e",
+      "bytes": 1849
+    },
+    "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/attachments/actual-postgresql-observations-fa7c5789ca0eb97d2b7c6aaf58756bcfd607a89f.json": {
+      "sha256": "5b5eec97c81e39c2901e8b317e841501a324100c272d195ca465a9fdc638ac0e",
+      "bytes": 1849
+    },
+    "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/attachments/unexpected-browser-transport-ed148cf3fe1eeb76aca7e621a6ab92b1eae27a44.json": {
+      "sha256": "c279776740e02704dfcc6a245ad7c96afa563d00fc1e3f766aac506716aa8c69",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-a263a-letion-stay-within-viewport-chromium/unexpected-browser-transport.json": {
+      "sha256": "c279776740e02704dfcc6a245ad7c96afa563d00fc1e3f766aac506716aa8c69",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-b6dfa-lease-expiry-without-replay-chromium/actual-postgresql-observations.json": {
+      "sha256": "2cf0ea2b46b5601e319460fcc65376404845c3d2d83ae6ebbc51c10422c18ff2",
+      "bytes": 1946
+    },
+    "browser-final/batch7_coordinator_integra-b6dfa-lease-expiry-without-replay-chromium/attachments/actual-postgresql-observations-276e4d21d349e16ccdcb0c4a33273bb4e15f37c1.json": {
+      "sha256": "2cf0ea2b46b5601e319460fcc65376404845c3d2d83ae6ebbc51c10422c18ff2",
+      "bytes": 1946
+    },
+    "browser-final/batch7_coordinator_integra-b6dfa-lease-expiry-without-replay-chromium/attachments/unexpected-browser-transport-9523f42fbf85288e0c8a4069b6f387796b22fc31.json": {
+      "sha256": "f8df75b8db65690e0c99170a1f99874d85fbbb07390e354b9e6422be93f11c82",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-b6dfa-lease-expiry-without-replay-chromium/unexpected-browser-transport.json": {
+      "sha256": "f8df75b8db65690e0c99170a1f99874d85fbbb07390e354b9e6422be93f11c82",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/actual-completed.png": {
+      "sha256": "1f74bf4edc88194b8c734036bafed89b4d20aff264b34b0ef169e5ca0a13c89a",
+      "bytes": 163322
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/actual-postgresql-observations.json": {
+      "sha256": "0f7723967e424beb34192b5c831af11ccf20774bf6456167b80ccd5938a9ddb2",
+      "bytes": 1862
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/actual-worker-ready.png": {
+      "sha256": "73af7f23a87cb7ebea5a17cc4251aaddfa3da20662d8c4747cb328dfd457cef1",
+      "bytes": 356618
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/attachments/actual-postgresql-observations-f6ecd5b2779cd2902ac81d9bfa427e29ac5ee224.json": {
+      "sha256": "0f7723967e424beb34192b5c831af11ccf20774bf6456167b80ccd5938a9ddb2",
+      "bytes": 1862
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/attachments/unexpected-browser-transport-5abf99321e3685c97814b545fb4fcc022567d12a.json": {
+      "sha256": "c6bc1ed84eaa83e3d81d0777c412c84092ac879b5d94b44e18f47fc9247df482",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-b6e3a-audit-and-ingestion-receipt-chromium/unexpected-browser-transport.json": {
+      "sha256": "c6bc1ed84eaa83e3d81d0777c412c84092ac879b5d94b44e18f47fc9247df482",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/actual-interrupted-after-effect.png": {
+      "sha256": "2ffdff9cab7fff79be8408c3caeb998d2af72b6ba7b116171663236a9bc2fd84",
+      "bytes": 162152
+    },
+    "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/actual-postgresql-observations.json": {
+      "sha256": "7831bf1f1994208267ec083e33ffe61cbde930749fc630b741ea65e06e7ef1a5",
+      "bytes": 2013
+    },
+    "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/attachments/actual-postgresql-observations-46e1c9300bd23bdafb230a996af75b9b18acd143.json": {
+      "sha256": "7831bf1f1994208267ec083e33ffe61cbde930749fc630b741ea65e06e7ef1a5",
+      "bytes": 2013
+    },
+    "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/attachments/unexpected-browser-transport-0b504720d9932556e74aaf14c01ee2c961f24e1a.json": {
+      "sha256": "25cbad2d86a5b54c11ff8f027aafe3bafdadc0d36edf59e90f8aecb47d6579a5",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-bbc43-in-exclusion-stays-occupied-chromium/unexpected-browser-transport.json": {
+      "sha256": "25cbad2d86a5b54c11ff8f027aafe3bafdadc0d36edf59e90f8aecb47d6579a5",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-bf281-own-without-raw-diagnostics-chromium/actual-postgresql-observations.json": {
+      "sha256": "8fac60112b71a6fa55e18950ba4c5c430a90c4880b9e3296da9d5b914438094b",
+      "bytes": 1831
+    },
+    "browser-final/batch7_coordinator_integra-bf281-own-without-raw-diagnostics-chromium/attachments/actual-postgresql-observations-d61245fb11ef1289557bb0900ccc91d34210db69.json": {
+      "sha256": "8fac60112b71a6fa55e18950ba4c5c430a90c4880b9e3296da9d5b914438094b",
+      "bytes": 1831
+    },
+    "browser-final/batch7_coordinator_integra-bf281-own-without-raw-diagnostics-chromium/attachments/unexpected-browser-transport-6e27ddf6f6c78fad41a65c3267acc8c2c28d639a.json": {
+      "sha256": "215bf51009534dc9d378e74dbf11e9a4ff37519da6cc23a4ef097491425c256c",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-bf281-own-without-raw-diagnostics-chromium/unexpected-browser-transport.json": {
+      "sha256": "215bf51009534dc9d378e74dbf11e9a4ff37519da6cc23a4ef097491425c256c",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-d7502-jected-intent-after-renewal-chromium/actual-postgresql-observations.json": {
+      "sha256": "3635a5c694e5c99dc9cc83819e504763018b81d9cb56fc4b46027399c64636d9",
+      "bytes": 1850
+    },
+    "browser-final/batch7_coordinator_integra-d7502-jected-intent-after-renewal-chromium/attachments/actual-postgresql-observations-9e64c2cf67ebddf40cf00be2748b4e7a61e56a82.json": {
+      "sha256": "3635a5c694e5c99dc9cc83819e504763018b81d9cb56fc4b46027399c64636d9",
+      "bytes": 1850
+    },
+    "browser-final/batch7_coordinator_integra-d7502-jected-intent-after-renewal-chromium/attachments/unexpected-browser-transport-fa5e0571cd797658df13e54b575332996415771f.json": {
+      "sha256": "a71ed07dac3261a64c11ead6b71236e09d77708bc7e76aad77022b271f604337",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-d7502-jected-intent-after-renewal-chromium/unexpected-browser-transport.json": {
+      "sha256": "a71ed07dac3261a64c11ead6b71236e09d77708bc7e76aad77022b271f604337",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/actual-default-off.png": {
+      "sha256": "e4f1bfac1d58c2b9a84f01b003473731bb4e76c96e76f23c9cb4489c0d5e2159",
+      "bytes": 348097
+    },
+    "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/actual-postgresql-observations.json": {
+      "sha256": "95813f1efc8ce7667cfe3e85b0f17c356cbcb59a02db48d2759ed300347519e2",
+      "bytes": 647
+    },
+    "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/attachments/actual-postgresql-observations-11f783d16ede7f407d41acc136c482d3af74d87b.json": {
+      "sha256": "95813f1efc8ce7667cfe3e85b0f17c356cbcb59a02db48d2759ed300347519e2",
+      "bytes": 647
+    },
+    "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/attachments/unexpected-browser-transport-db7353c9e542942236c02d9b2808063f284c3ade.json": {
+      "sha256": "ba7d9291cc3b818e5ffa1628006f18a51af0e600b84d535bb99303ee7822a23c",
+      "bytes": 305
+    },
+    "browser-final/batch7_coordinator_integra-febb7-ject-without-jobs-or-audits-chromium/unexpected-browser-transport.json": {
+      "sha256": "ba7d9291cc3b818e5ffa1628006f18a51af0e600b84d535bb99303ee7822a23c",
+      "bytes": 305
+    },
+    "BROWSER_FINAL.log": {
+      "sha256": "45ec87e845658ba05c92ea6577c198dc76964ddf0f626d37ed908525dd75f1ae",
+      "bytes": 2180
+    },
+    "API_FINAL.log": {
+      "sha256": "0e5d3d9cd183267b66c2460dd9e707274bad4cd6e68f5458df4445d7239cbc00",
+      "bytes": 89126
+    },
+    "NEXT_FINAL.log": {
+      "sha256": "7ffaa7660be6661fbd0a4c43010078230adec4314e0ff1e42894860bf423c052",
+      "bytes": 143
+    },
+    "SOURCE_IDENTITY.json": {
+      "sha256": "b391a6029a9698f9b4eb60100c0796db93634d61acfc661c846e48c4d4a7ce52",
+      "bytes": 5745
+    }
+  },
+  "historical_run": "PRE_COPY_REPAIR_SUPERSESSION.json: 9 passed, 2 harness failures; product calendar copy repair confirmed independently and included in final target.",
+  "scope": "Inert identity/provider endpoints and native registered domain; no product lifespan, financial fetch/publication, hosted CI, deployed schema or independent-CLI exclusion certification."
+}
