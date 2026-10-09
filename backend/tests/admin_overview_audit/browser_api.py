@@ -25,6 +25,7 @@ def jsonb_sqlite(element, compiler, **kw):
 
 import database
 import supabase_admin
+import admin_users_provider
 from dev_fixtures import block_external_http
 from models import AdminAuditLog, IngestionJob
 from routers import admin, admin_audit_log, admin_users, etl_admin
@@ -35,6 +36,7 @@ AdminAuditLog.__table__.create(database.engine)
 IngestionJob.__table__.create(database.engine)
 ACTOR = "00000000-0000-4000-8000-000000000001"
 CITIZEN = "00000000-0000-4000-8000-000000000002"
+UNPROFILED = "00000000-0000-4000-8000-000000000003"
 NOW = datetime.now(timezone.utc)
 with database.SessionLocal() as db:
     for i in range(1, 29):
@@ -45,6 +47,12 @@ def profile(uid):
     return {"id": uid, "email": "admin@example.invalid", "display_name": "Inert fixture", "roles": ["admin"] if uid == ACTOR else ["citizen"]}
 supabase_admin.get_profile = profile
 supabase_admin.count_profiles = lambda **kwargs: 1 if kwargs.get("column") == "roles" else 2
+# The users router enumerates Auth identities rather than profile counts. Keep
+# one unprofiled identity so the real combined producer tests that distinction.
+AUTH_USERS = [{"id": uid, "email": "inert@example.invalid", "created_at": NOW.isoformat(),
+               "app_metadata": {}, "user_metadata": {}} for uid in (ACTOR, CITIZEN, UNPROFILED)]
+admin_users_provider.list_users = lambda *, page=1, per_page=100: {"users": AUTH_USERS[(page - 1) * per_page:page * per_page]}
+admin_users_provider.get_profiles = lambda ids: [profile(uid) for uid in ids if uid in {ACTOR, CITIZEN}]
 # The real calendar scheduler reads no deployment state for schedule summaries.
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["http://127.0.0.1:3153"], allow_methods=["GET", "POST"], allow_headers=["*"])

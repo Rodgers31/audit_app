@@ -9,7 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import database
-import supabase_admin
+import admin_users_provider
 from database import get_db
 from models import AdminAuditLog, IngestionJob
 from routers import admin_audit_log, admin_users, etl_admin
@@ -17,6 +17,12 @@ from supabase_auth import AdminUser, get_current_user
 from utils.audit import record_admin_action
 
 ACTOR = AdminUser(id="00000000-0000-4000-8000-000000000001", email="admin@example.invalid", roles=["admin"])
+TARGET = "00000000-0000-4000-8000-000000000002"
+
+
+def identity(email="inert@example.invalid"):
+    return {"id": TARGET, "email": email, "created_at": "2026-01-01T00:00:00Z",
+            "app_metadata": {}, "user_metadata": {}}
 
 
 @pytest.fixture()
@@ -35,7 +41,6 @@ def audit_env(tmp_path, monkeypatch):
         with factory() as session:
             yield session
     app.dependency_overrides[get_db] = sessions
-    app.dependency_overrides[etl_admin._db_dep] = sessions
     with TestClient(app, raise_server_exceptions=False) as client:
         yield client, factory, app
     engine.dispose()
@@ -109,12 +114,13 @@ def test_legacy_payload_is_redacted_on_read(audit_env):
 
 def test_actual_reset_caller_persists_safe_payload(audit_env, monkeypatch):
     client, factory, _ = audit_env
-    monkeypatch.setattr(supabase_admin, "get_user", lambda _: {"email": "inert@example.invalid"})
-    provider = Mock()
-    monkeypatch.setattr(supabase_admin, "generate_recovery_link", provider)
+    monkeypatch.setattr(admin_users_provider, "get_user", lambda _: identity())
+    provider = Mock(return_value={})
+    monkeypatch.setattr(admin_users_provider, "send_password_reset", provider)
     response = client.post("/api/v1/admin/users/00000000-0000-4000-8000-000000000002/send-reset", json={"redirect_to": "https://example.invalid/reset?token=INERT_SECRET#INERT_SECRET"})
     assert response.status_code == 200
-    provider.assert_called_once()
+    assert response.json()["ok"] is True and response.json()["audit_recorded"] is True
+    provider.assert_called_once_with("inert@example.invalid", redirect_to="https://example.invalid/reset?token=INERT_SECRET#INERT_SECRET")
     with factory() as session:
         row = session.query(AdminAuditLog).one()
         assert "INERT_SECRET" not in str(row.payload)
@@ -125,10 +131,14 @@ def test_recording_failure_never_logs_parameters_or_poison_caller(audit_env, mon
     audit_db = Mock()
     audit_db.commit.side_effect = RuntimeError("SQL parameters: INERT_SECRET")
     monkeypatch.setattr(database, "SessionLocal", lambda: audit_db)
-    monkeypatch.setattr(supabase_admin, "get_user", lambda _: {"email": "inert@example.invalid"})
-    monkeypatch.setattr(supabase_admin, "generate_recovery_link", Mock())
-    assert client.post("/api/v1/admin/users/inert/send-reset", json={}).status_code == 200
-    assert "Failed to write admin_audit_log row" in caplog.text
+    monkeypatch.setattr(admin_users_provider, "get_user", lambda _: identity())
+    provider = Mock(return_value={})
+    monkeypatch.setattr(admin_users_provider, "send_password_reset", provider)
+    response = client.post(f"/api/v1/admin/users/{TARGET}/send-reset", json={})
+    assert response.status_code == 200
+    assert response.json()["ok"] is True and response.json()["audit_recorded"] is False
+    provider.assert_called_once_with("inert@example.invalid", redirect_to=None)
+    assert "Users audit persistence failed" in caplog.text
     assert "INERT_SECRET" not in caplog.text
     audit_db.rollback.assert_called_once()
     audit_db.close.assert_called_once()
@@ -146,28 +156,50 @@ def test_independent_transaction_and_unknown_payload(audit_env):
 
 def test_actual_role_delete_and_etl_callers(audit_env, monkeypatch):
     client, factory, _ = audit_env
-    target = "00000000-0000-4000-8000-000000000002"
-    monkeypatch.setattr(supabase_admin, "get_profile", lambda _: {"roles": ["citizen"]})
-    monkeypatch.setattr(supabase_admin, "get_profiles", lambda _: [{"id": target, "roles": ["admin"]}])
-    monkeypatch.setattr(supabase_admin, "get_user", lambda _: {"id": target, "email": "inert@example.invalid", "created_at": "2026-01-01T00:00:00Z"})
-    roles, deletion = Mock(), Mock()
-    monkeypatch.setattr(supabase_admin, "update_profile_roles", roles)
-    monkeypatch.setattr(supabase_admin, "delete_user", deletion)
-    assert client.patch(f"/api/v1/admin/users/{target}/roles", json={"roles": ["admin"]}).status_code == 200
-    assert client.delete(f"/api/v1/admin/users/{target}").status_code == 200
-    assert client.post("/api/v1/admin/etl/trigger/cob", json={"dry_run": True}).status_code == 200
-    roles.assert_called_once()
-    deletion.assert_called_once()
+    monkeypatch.setattr(admin_users_provider, "get_profile", lambda _: {"id": TARGET, "roles": ["citizen"]})
+    monkeypatch.setattr(admin_users_provider, "get_user", lambda _: identity())
+    roles = Mock(return_value={"id": TARGET, "roles": ["admin"]})
+    deletion = Mock(return_value={})
+    monkeypatch.setattr(admin_users_provider, "update_profile_roles", roles)
+    monkeypatch.setattr(admin_users_provider, "delete_user", deletion)
+    role_response = client.patch(f"/api/v1/admin/users/{TARGET}/roles", json={"roles": ["admin"]})
+    assert role_response.status_code == 200
+    assert role_response.json()["ok"] is True and role_response.json()["audit_recorded"] is True
+    delete_response = client.delete(f"/api/v1/admin/users/{TARGET}")
+    assert delete_response.status_code == 200
+    assert delete_response.json() == {"ok": True, "audit_recorded": True}
+    # Repeated real and dry-run commands remain rejected, without phantom rows
+    # or success audit entries. These observations are not a dispatch queue.
+    for dry_run in (False, True):
+        for _ in range(2):
+            response = client.post("/api/v1/admin/etl/trigger/cob", json={"dry_run": dry_run})
+            assert response.status_code == 503
+            assert response.json()["detail"]["code"] == "manual_dispatch_unavailable"
+    roles.assert_called_once_with(TARGET, ["admin"])
+    deletion.assert_called_once_with(TARGET)
     with factory() as db:
         rows = {r.action: r for r in db.query(AdminAuditLog).all()}
         assert rows["users.update_roles"].payload == {"old": ["citizen"], "new": ["admin"]}
         assert rows["users.delete"].payload["deleted_email"] == "inert@example.invalid"
-        assert rows["etl.trigger"].payload == {"job_id": 1, "dry_run": True}
-        assert db.query(IngestionJob).one().status.value == "pending"
+        assert "etl.trigger" not in rows
+        assert db.query(IngestionJob).count() == 0
     assert client.delete(f"/api/v1/admin/users/{ACTOR.id}").status_code == 400
     assert client.post("/api/v1/admin/etl/trigger/unknown").status_code == 404
     with factory() as db:
-        assert db.query(AdminAuditLog).count() == 3
+        assert db.query(AdminAuditLog).count() == 2
+
+
+def test_actual_role_caller_redacts_legacy_unknown_roles_before_persistence(audit_env, monkeypatch):
+    client, factory, _ = audit_env
+    monkeypatch.setattr(admin_users_provider, "get_user", lambda _: identity())
+    monkeypatch.setattr(admin_users_provider, "get_profile", lambda _: {"id": TARGET, "roles": ["citizen", "PRIVATE_ROLE_MARKER"]})
+    monkeypatch.setattr(admin_users_provider, "update_profile_roles", lambda _, roles: {"id": TARGET, "roles": roles})
+    response = client.patch(f"/api/v1/admin/users/{TARGET}/roles", json={"roles": ["admin"]})
+    assert response.status_code == 200 and response.json()["audit_recorded"] is True
+    with factory() as session:
+        row = session.query(AdminAuditLog).one()
+        assert row.payload == {"old": ["citizen", "[redacted role]"], "new": ["admin"]}
+        assert "PRIVATE_ROLE_MARKER" not in str(row.payload)
 
 
 def test_exact_filters_date_ranges_and_snapshot_pairs(audit_env):
@@ -190,8 +222,9 @@ def test_timezone_overflow_is_invalid_filter_not_storage_outage(audit_env, field
 
 def test_actual_caller_drops_malformed_email_evidence(audit_env, monkeypatch):
     client, factory, _ = audit_env
-    monkeypatch.setattr(supabase_admin, "get_user", lambda _: {"email": "inert@example.invalid\0INERT_SECRET"})
-    monkeypatch.setattr(supabase_admin, "generate_recovery_link", Mock())
-    assert client.post('/api/v1/admin/users/inert/send-reset', json={}).status_code == 200
+    monkeypatch.setattr(admin_users_provider, "get_user", lambda _: identity("inert@example.invalid\0INERT_SECRET"))
+    monkeypatch.setattr(admin_users_provider, "send_password_reset", Mock(return_value={}))
+    response = client.post(f'/api/v1/admin/users/{TARGET}/send-reset', json={})
+    assert response.status_code == 200 and response.json()["audit_recorded"] is True
     with factory() as db:
         assert 'INERT_SECRET' not in str(db.query(AdminAuditLog).one().payload)
