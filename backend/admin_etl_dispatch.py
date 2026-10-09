@@ -198,8 +198,9 @@ def accept(db, actor, source, body, key):
     # a replay, and model_construct can bypass normal Pydantic validation.
     if not isinstance(body, TriggerBody) or type(body.dry_run) is not bool or body.dispatch_generation is not None and not isinstance(body.dispatch_generation, UUID):
         raise HTTPException(422, "Invalid operations parameters")
-    # Preserve valid legacy default-off calls without connecting to storage.
-    if not enabled() and key is None:
+    # Disabled acceptance must not connect, retire receipts or replay old work,
+    # regardless of whether the request supplies an idempotency key.
+    if not enabled():
         unavailable()
     try:
         intent_key = canonical_uuid(key)

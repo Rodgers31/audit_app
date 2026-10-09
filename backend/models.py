@@ -17,9 +17,10 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.sql import false as sa_false
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -39,14 +40,14 @@ class EtlDispatchCommand(Base):
         Index("ix_etl_dispatch_history", "created_at", "id"),
         Index("ix_etl_dispatch_queue", "status", "created_at"),
     )
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(Uuid(as_uuid=True), primary_key=True)
     actor_id = Column(String(64), nullable=False)
-    idempotency_key = Column(UUID(as_uuid=True), nullable=False)
+    idempotency_key = Column(Uuid(as_uuid=True), nullable=False)
     source = Column(String(20), nullable=False)
     domain = Column(String(100), nullable=False)
     dry_run = Column(Boolean, nullable=False)
-    generation = Column(UUID(as_uuid=True), nullable=False)
-    claim_token = Column(UUID(as_uuid=True))
+    generation = Column(Uuid(as_uuid=True), nullable=False)
+    claim_token = Column(Uuid(as_uuid=True))
     execution_started = Column(Boolean, nullable=False, server_default=sa_false())
     status = Column(String(20), nullable=False)
     version = Column(BigInteger, nullable=False)
@@ -66,7 +67,7 @@ class EtlDispatchWorker(Base):
         CheckConstraint("last_seen_at < expires_at", name="ck_etl_dispatch_lease_times"),
     )
     id = Column(Integer, primary_key=True)
-    generation = Column(UUID(as_uuid=True), nullable=False)
+    generation = Column(Uuid(as_uuid=True), nullable=False)
     last_seen_at = Column(DateTime(timezone=True), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     ready = Column(Boolean, nullable=False)
@@ -81,8 +82,8 @@ class EtlDispatchDomain(Base):
         CheckConstraint("(command_id IS NULL) = (claim_token IS NULL)", name="ck_etl_dispatch_domain_claim"),
     )
     domain = Column(String(100), primary_key=True)
-    command_id = Column(UUID(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
-    claim_token = Column(UUID(as_uuid=True))
+    command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
+    claim_token = Column(Uuid(as_uuid=True))
 
 
 class EntityType(enum.Enum):
