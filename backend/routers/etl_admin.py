@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
-from pydantic import BaseModel, StrictBool, StrictStr
+from pydantic import BaseModel, StrictBool, StrictStr, ValidationError
 
 from routers.admin_operations import DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
@@ -121,7 +121,14 @@ def trigger_etl_run(source: str, body: TriggerBody | None = None,
     actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db),
     idempotency_key: str | None = Header(None)):
     _known_source(source)
-    return accept(db, actor, source, body or TriggerBody(), idempotency_key)
+    # Preserve valid legacy direct calls as well as FastAPI's parsed body while
+    # applying the same strict shape to either entry point.
+    if isinstance(body, dict):
+        try:
+            body = TriggerBody.model_validate(body)
+        except ValidationError:
+            raise HTTPException(422, "Invalid operations parameters") from None
+    return accept(db, actor, source, TriggerBody() if body is None else body, idempotency_key)
 
 
 @router.get("/dispatch", response_model=DispatchCapability)

@@ -3,12 +3,12 @@
 Database transactions are authoritative. The API never imports the worker/runner.
 """
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID, uuid4
 import os
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, field_validator, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, StrictBool, StrictInt, field_validator, model_validator
 from sqlalchemy import func, select, text, update
 
 from models import AdminAuditLog, EtlDispatchCommand, EtlDispatchWorker
@@ -21,6 +21,15 @@ Source = Literal["treasury", "cob", "oag", "knbs", "opendata", "cra"]
 Status = Literal["queued", "running", "completed", "failed", "interrupted"]
 UNAVAILABLE = "Dedicated worker dispatch is unavailable."
 UNSUPPORTED = "This source has no approved dispatch mapping."
+
+
+def utc_datetime(value):
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("UTC-aware timestamp required")
+    return value.astimezone(timezone.utc)
+
+
+UtcDatetime = Annotated[datetime, AfterValidator(utc_datetime)]
 
 
 def enabled():
@@ -54,18 +63,15 @@ class Command(BaseModel):
     dry_run: StrictBool
     status: Status
     version: StrictInt
-    created_at: datetime
-    updated_at: datetime
-    started_at: datetime | None
-    finished_at: datetime | None
+    created_at: UtcDatetime
+    updated_at: UtcDatetime
+    started_at: UtcDatetime | None
+    finished_at: UtcDatetime | None
     job_id: StrictInt | None
     outcome: Literal["completed", "failed", "execution_unverified"] | None
 
     @model_validator(mode="after")
     def coherent_receipt(self):
-        times = (self.created_at, self.updated_at, self.started_at, self.finished_at)
-        if any(t is not None and (t.tzinfo is None or t.utcoffset() is None) for t in times):
-            raise ValueError("UTC-aware receipt required")
         if not 1 <= self.version <= 9007199254740991 or self.updated_at < self.created_at:
             raise ValueError("Invalid receipt ordering")
         if self.started_at and not self.created_at <= self.started_at <= self.updated_at:
@@ -91,8 +97,8 @@ class Command(BaseModel):
 
 class WorkerCapability(BaseModel):
     status: Literal["ready", "unavailable"]
-    last_seen_at: datetime | None
-    expires_at: datetime | None
+    last_seen_at: UtcDatetime | None
+    expires_at: UtcDatetime | None
 
 
 class SourceCapability(BaseModel):
@@ -101,7 +107,7 @@ class SourceCapability(BaseModel):
 
 
 class DispatchCapability(BaseModel):
-    timestamp: datetime
+    timestamp: UtcDatetime
     evidence: Literal["worker_dispatch"]
     available: StrictBool
     reason: str
@@ -173,6 +179,8 @@ def capability(db):
         except Exception:
             db.rollback()
             worker = None
+            available = False
+            generation = last_seen_at = expires_at = None
     reason = "Dedicated worker is ready for supported sources." if available else UNAVAILABLE
     return DispatchCapability(timestamp=now, evidence="worker_dispatch", available=available, reason=reason,
         generation=generation if available else None,
@@ -185,6 +193,11 @@ def capability(db):
 def accept(db, actor, source, body, key):
     if source not in SOURCES:
         raise HTTPException(404, "Unknown ETL source")
+    # Embedded/direct callers must uphold the same strict intent boundary as
+    # FastAPI. Python equality would otherwise let 0/1 impersonate booleans on
+    # a replay, and model_construct can bypass normal Pydantic validation.
+    if not isinstance(body, TriggerBody) or type(body.dry_run) is not bool or body.dispatch_generation is not None and not isinstance(body.dispatch_generation, UUID):
+        raise HTTPException(422, "Invalid operations parameters")
     # Preserve valid legacy default-off calls without connecting to storage.
     if not enabled() and key is None:
         unavailable()

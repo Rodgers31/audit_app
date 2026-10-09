@@ -225,3 +225,54 @@ def test_empty_registry_cannot_run_native_adapter(pg, monkeypatch):
     assert execute(factory, engine, *claimed, generation) == 1
     with factory() as db:
         assert db.query(IngestionJob).count() == 0
+
+
+def test_capability_transaction_failure_cannot_certify_ready(pg, monkeypatch):
+    from sqlalchemy.orm import Session
+    client, factory, engine = pg
+    register_worker(factory)
+    class FailingCommit(Session):
+        def commit(self):
+            raise RuntimeError("Inert commit failure")
+    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=engine, class_=FailingCommit))
+    result = client.get("/api/v1/admin/etl/dispatch", headers=AUTH)
+    assert result.status_code == 200
+    body = result.json()
+    assert body["available"] is False and body["generation"] is None
+    assert body["worker"]["status"] == "unavailable"
+    assert all(source["available"] is False for source in body["sources"].values())
+
+
+def test_post_commit_acknowledgment_failure_recovers_original_acceptance(pg, monkeypatch):
+    from sqlalchemy.orm import Session
+    client, factory, engine = pg
+    generation, key = register_worker(factory), uuid4()
+    class LostAcknowledgment(Session):
+        def commit(self):
+            super().commit()
+            raise RuntimeError("Inert lost acknowledgment after durable commit")
+    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=engine, class_=LostAcknowledgment))
+    first = post(client, generation, key)
+    assert first.status_code == 503
+    monkeypatch.setattr(database, "SessionLocal", factory)
+    expire(factory)
+    recovered = post(client, uuid4(), key)
+    assert recovered.status_code == 202 and recovered.json()["replayed"] is True
+    with factory() as db:
+        assert db.query(EtlDispatchCommand).count() == db.query(AdminAuditLog).count() == 1
+        assert str(db.query(EtlDispatchCommand).one().id) == recovered.json()["command"]["id"]
+
+
+def test_postgres_non_utc_session_returns_only_utc_wire_timestamps(pg, monkeypatch):
+    client, factory, _ = pg
+    generation = register_worker(factory)
+    offset_engine = create_engine(URL, connect_args={"options": "-c timezone=America/Chicago"})
+    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=offset_engine))
+    try:
+        ready = client.get("/api/v1/admin/etl/dispatch", headers=AUTH).json()
+        assert ready["timestamp"].endswith("Z") and ready["worker"]["last_seen_at"].endswith("Z")
+        assert ready["worker"]["expires_at"].endswith("Z")
+        accepted = post(client, generation).json()["command"]
+        assert accepted["created_at"].endswith("Z") and accepted["updated_at"].endswith("Z")
+    finally:
+        offset_engine.dispose()

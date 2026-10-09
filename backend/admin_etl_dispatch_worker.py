@@ -11,7 +11,7 @@ import threading
 from datetime import timedelta
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from admin_etl_dispatch import db_clock, enabled, fresh
@@ -19,6 +19,7 @@ from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, Ing
 
 LEASE_SECONDS = 30
 HEARTBEAT_SECONDS = 5
+OBSERVATION_CLOCK_SKEW_SECONDS = 5
 
 
 def register_worker(factory):
@@ -102,11 +103,28 @@ def finish(factory, generation, command_id, token, exit_code):
             return False
         # Correlation comes from the adapter's actual CLI session insertion, never
         # a latest-ID guess or the child's exit code alone. Reads are bounded.
-        jobs = db.scalars(select(IngestionJob).where(IngestionJob.meta["dispatch_command_id"].astext == str(command_id), IngestionJob.meta["dispatch_claim_token"].astext == str(token)).limit(2)).all()
-        if not command.execution_started or len(jobs) != 1 or jobs[0].domain != command.domain or jobs[0].dry_run != command.dry_run or jobs[0].finished_at is None or jobs[0].finished_at < jobs[0].started_at or jobs[0].status not in (IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS, IngestionStatus.FAILED):
+        # Native observations have timestamp-without-time-zone columns. Their
+        # aware CLI values were cast using this database session's TimeZone;
+        # let PostgreSQL recover that offset rather than guessing UTC in Python.
+        observations = db.execute(select(IngestionJob,
+            func.timezone(func.current_setting("TimeZone"), IngestionJob.started_at),
+            func.timezone(func.current_setting("TimeZone"), IngestionJob.finished_at))
+            .where(IngestionJob.meta["dispatch_command_id"].astext == str(command_id),
+                IngestionJob.meta["dispatch_claim_token"].astext == str(token)).limit(2)).all()
+        if not command.execution_started or len(observations) != 1 or type(exit_code) is not int:
             interrupt(command, now)
             return False
-        job = jobs[0]
+        job, observed_start, observed_finish = observations[0]
+        tolerance = timedelta(seconds=OBSERVATION_CLOCK_SKEW_SECONDS)
+        coherent = (job.domain == command.domain and job.dry_run == command.dry_run
+            and observed_start is not None and observed_finish is not None
+            and command.started_at - tolerance <= observed_start <= observed_finish <= now + tolerance
+            and all(type(value) is int and 0 <= value <= 2147483647 for value in (job.items_processed, job.items_created, job.items_updated))
+            and job.status in (IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS, IngestionStatus.FAILED)
+            and (job.status != IngestionStatus.COMPLETED or type(job.errors) is list and len(job.errors) == 0))
+        if not coherent:
+            interrupt(command, now)
+            return False
         command.job_id = job.id
         completed = type(exit_code) is int and exit_code == 0 and job.status == IngestionStatus.COMPLETED
         command.status = command.outcome = "completed" if completed else "failed"
@@ -114,6 +132,17 @@ def finish(factory, generation, command_id, token, exit_code):
         command.version += 1
         domain.command_id = domain.claim_token = None
         return True
+
+
+def stop_child(child):
+    if child.poll() is not None:
+        return
+    child.terminate()
+    try:
+        child.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
 
 
 def serve(factory):
@@ -150,23 +179,13 @@ def serve(factory):
             while child.poll() is None and not stopped.wait(0.1):
                 pass
             if stopped.is_set() and child.poll() is None:
-                child.terminate()
-                try:
-                    child.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    child.kill()
-                    child.wait()
+                stop_child(child)
             finish(factory, generation, command_id, token, child.returncode)
             child = None
     finally:
         stopped.set()
         if child is not None and child.poll() is None:
-            child.terminate()
-            try:
-                child.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                child.kill()
-                child.wait()
+            stop_child(child)
         keeper.join(timeout=6)
         with factory.begin() as db:
             worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
