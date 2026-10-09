@@ -4,8 +4,10 @@ Author checkout: `/Users/roger/.codex/worktrees/batch7-etl-worker/audit_app`.
 Branch `codex/batch7-etl-worker`, pinned base
 `f0ea1bbd41f33e7666cf2b7fbc4cc4abcfe60b0d` / tree
 `712b43650b1203ffd84583b67d07d30775669b1e`.
-Final tested implementation source: `c8cfc5931f22a4cc121005e3f5285845a9480336`;
-subsequent delivery commits contain handoff/review/resource receipts only.
+Author-tested implementation source: `c8cfc5931f22a4cc121005e3f5285845a9480336`.
+Coordinator review-tested implementation source:
+`040ecc2a3f65aaaf12e6560461f8ad298429d92b`; subsequent delivery commits
+contain handoff/review/resource receipts only.
 Frozen v1 contract and examples were read from the shared Batch 7 directory.
 The dirty primary checkout remained read-only. No AGENTS.md/CLAUDE.md was found
 in this checkout or its applicable ancestors. Current #554/#545 bodies and the
@@ -175,3 +177,31 @@ Hosted security/quality/coverage gates and the broad full-repository suite were
 not executed. GitHub Actions remains disabled. Local PostgreSQL fixtures and
 native CLI receipts do not certify deployed worker readiness or financial
 publication/dry-run correctness of every real domain handler.
+
+## PR #575 review corrections
+
+Both inline findings were evaluated against source and executed controls.
+Disabled keyed acceptance was valid: the old guard reached storage and could
+retire/replay a running command. The shared acceptance boundary now rejects all
+valid disabled intents before storage, with zero SQL/checkouts and unchanged
+command/audit snapshots. Enabled recovery after worker expiry still returns the
+original intent. Strict malformed-body and unknown-source contracts remain.
+
+The UUID finding is valid at the declared minimum SQLAlchemy 2.0.23, which
+cannot compile the former PostgreSQL-specific type on SQLite. Current 2.0.46
+already passes; this narrower version distinction was reproduced separately.
+All seven new columns now use generic `Uuid(as_uuid=True)`. Both versions create
+32 SQLite tables, roundtrip UUID objects and retain native PostgreSQL UUID DDL.
+
+Scoped review acceptance: **21 passed**. Actual worker/process/migration/
+adversarial plus existing operations/native controls: **302 passed, 1 strict
+xfailed (#572), 3 existing deprecation warnings**. Actual native adapter runs
+completed correlated real/dry-run observations under UTC and Africa/Nairobi;
+the body-only session concern had no additional reproducible mechanism.
+Critical lint output 0, diff/secret checks clean. Owned PostgreSQL 55484 was
+removed after observing zero other connections and zero reviewer schemas.
+
+See [review disposition and receipts](../../../batch7-etl-worker-evidence/copilot-review.md).
+No GitHub reply, resolution, push or merge was performed by the repair session;
+coordinator owns those steps and cross-lane integration. #572 remains open and
+dispatch remains default-off.
