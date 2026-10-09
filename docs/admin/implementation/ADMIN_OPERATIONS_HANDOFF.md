@@ -27,6 +27,58 @@ read-only. Existing auth and `record_admin_action` signature are preserved.
 coordinator runtime after byte comparison of both lockfiles. Runtime: Python
 3.13.9, Node 22.19.0, Next 15.5.27, React 19.2.4, Jest 29.7.0, Playwright 1.58.2.
 
+## PR #560 review repairs — 9 October 2026 UTC
+
+The complete Copilot review included two inline findings and two additional
+body-only hypotheses. All four were reproduced against delivery head
+`ac493422f1aa5138e5469f1ed7f67bdf3837cdb2`. The coordinator's independent Spec
+review also reproduced impossible timestamp acceptance. These repairs and their
+retained fixtures are included in the current revision:
+
+- **Valid packaging finding:** a fresh backend-only copy, matching the production
+  Docker build context, could not serve the three calendar reads and reported an
+  unavailable plan. The unchanged planner now lives in
+  `backend/etl/smart_scheduler.py`, and the router loads that packaged file.
+  The coordinator authorized this narrow packaging exception. Root
+  `etl/smart_scheduler.py` forwards the public class/helper and standalone demo;
+  fresh repository imports and direct execution from outside the repository pass.
+  The moved payload is byte-identical to the delivery version, SHA256
+  `818139e0b1cb425caa1d2d26a80fd8afca127363b779f6d262ebadb4720af169`.
+  This is a filesystem/build-context replay, not an image build or deployment.
+- **Understated calendar validation finding:** any internally consistent subset
+  of the six sources was accepted, and skipped summaries also accepted inherited
+  object names (`toString`, `constructor`, `__proto__`, `hasOwnProperty`) in place
+  of real sources. The parser now requires the complete key set and explicit
+  source membership in both summary collections. Existing rendered tests now
+  use complete six-source fixtures and verify all twelve disabled dispatch
+  controls, instead of accepting a fabricated one-source calendar.
+- **Understated authentication diagnostic finding:** actual JWT decoding exposed
+  an attacker-supplied unknown key identifier in 401 bodies; arbitrary dependency
+  diagnostics were also returned for 401/403. `OperationsRoute` now returns static
+  authentication/authorization bodies across all eight Operations routes while
+  retaining status, Bearer challenge and private no-store headers. Shared auth
+  source remains coordinator-owned; this does not certify other routers. Tracked
+  in [#564](https://github.com/Rodgers31/audit_app/issues/564).
+- **Independent timestamp finding:** JavaScript normalized nonexistent days,
+  non-leap February 29 and 24:00 into accepted instants. The shared Operations
+  date parser now validates Gregorian calendar, clock and timezone components
+  before parsing. It protects ETL schedule/health timestamps, planned next checks,
+  all ingestion timestamps and `metadata.since`. Leap-year, bounded timezone
+  offsets, six-digit fractional seconds and existing naive timestamps remain
+  supported. Every impossible input is rejected before it can certify evidence.
+
+Observed review red: **25 backend failures**, **16 frontend source-set/membership
+failures (7 controls passed)**, then **8 timestamp failures (33 controls passed)**.
+Final review replay: **160 backend tests passed** (original 134 plus 26 retained
+review/compatibility cases; two existing SQLAlchemy warnings), and **79 frontend
+tests passed** (original 38 plus 41 review cases). TypeScript returned exit 0;
+scoped lint returned no warnings or errors. Exact commands, caller inventory and
+compact receipts are in [review-repairs.md](operations-evidence/review-repairs.md).
+Earlier PostgreSQL, browser and production-build results below are historical
+author receipts; the coordinator owns final combined-tree replay and acceptance.
+No fixture servers, Docker resources or external mutations were started by this
+review repair.
+
 ## Behavior and acceptance matrix
 
 All API paths below are relative to `/api/v1/admin`. All mounted Operations

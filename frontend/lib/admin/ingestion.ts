@@ -22,7 +22,18 @@ export function text(value: unknown): string {
 }
 export function date(value: unknown): string {
   const raw = text(value);
-  if (!/^\d{4}-\d{2}-\d{2}T/.test(raw) || !Number.isFinite(Date.parse(raw))) throw new Error('Invalid operations date');
+  const components = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(?:Z|[+-](\d{2}):(\d{2}))?$/.exec(raw);
+  if (!components) throw new Error('Invalid operations date');
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, offsetHour, offsetMinute] = components;
+  const year = Number(yearText), month = Number(monthText), day = Number(dayText);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  // Date.parse normalizes nonexistent dates and 24:00; reject those components
+  // before accepting an instant. Match the API's second precision and offsets.
+  if (year < 1 || month < 1 || month > 12 || day < 1 || day > days[month - 1] ||
+      Number(hourText) > 23 || Number(minuteText) > 59 || Number(secondText) > 59 ||
+      (offsetHour !== undefined && (Number(offsetHour) > 23 || Number(offsetMinute) > 59)) ||
+      !Number.isFinite(Date.parse(raw))) throw new Error('Invalid operations date');
   return raw;
 }
 export function boolean(value: unknown): boolean {

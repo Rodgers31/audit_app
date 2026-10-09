@@ -30,7 +30,11 @@ class OperationsRoute(APIRoute):
                 response = JSONResponse(status_code=422, content={"detail": "Invalid operations parameters"})
             except HTTPException as exc:
                 detail = exc.detail
-                if exc.status_code >= 500 and detail != DISPATCH_ERROR:
+                if exc.status_code == 401:
+                    detail = "Authentication required"
+                elif exc.status_code == 403:
+                    detail = "Admin access required"
+                elif exc.status_code >= 500 and detail != DISPATCH_ERROR:
                     detail = "Operations data unavailable"
                 response = JSONResponse(status_code=exc.status_code, content={"detail": detail}, headers=exc.headers)
             except Exception:

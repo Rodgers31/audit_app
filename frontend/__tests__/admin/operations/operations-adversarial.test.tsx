@@ -6,7 +6,7 @@ import Ingestion from '@/app/admin/ingestion/page';
 import Detail from '@/app/admin/ingestion/[jobId]/page';
 import Etl from '@/app/admin/etl/page';
 import { ingestionFilters, integer, parseIngestionJob, parseIngestionList } from '@/lib/admin/ingestion';
-import { parseEtlHealth, parseSchedule } from '@/lib/admin/etl';
+import { ETL_SOURCES, parseEtlHealth, parseSchedule } from '@/lib/admin/etl';
 
 let mockQuery = '';
 let mockAdmin = true;
@@ -28,9 +28,10 @@ const job = { id: 1, domain: 'audits', status: 'completed', dry_run: true, start
 const list = { jobs: [job], total: 1, page: 1, page_size: 20, has_more: false };
 const manual = { available: false, reason: 'Dedicated dispatch unavailable. No job was accepted.' };
 const plan = { timestamp, evidence: 'calendar_plan', manual_trigger: manual, summary: { sources_running_today: 1,
-  sources_skipping_today: 0, total_sources: 1, skip_percentage: 0, efficiency_vs_fixed_schedule: '50% fewer planned checks',
-  sources_to_run: [{ source: 'oag', reason: 'Synthetic plan' }], sources_not_running: [] },
-  sources: { oag: { should_run: true, should_run_now: true, reason: 'Synthetic plan', next_run: null, next_reason: 'Next', current_period: 'default' } } };
+  sources_skipping_today: 5, total_sources: 6, skip_percentage: 83.3, efficiency_vs_fixed_schedule: '92% fewer planned checks',
+  sources_to_run: [{ source: 'oag', reason: 'Synthetic plan' }], sources_not_running: ETL_SOURCES.filter(source=>source!=='oag') },
+  sources: Object.fromEntries(ETL_SOURCES.map(source=>[source,{should_run:source==='oag', should_run_now:source==='oag',
+    reason:source==='oag'?'Synthetic plan':`${source} deferred`, next_run:null, next_reason:'Next', current_period:'default'}])) };
 const health = { timestamp, scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified', manual_trigger: manual };
 
 function mount(node: React.ReactNode) {
@@ -281,8 +282,10 @@ test('malformed calendar responses recover through the rendered Refresh action',
   malformed = false; fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
   await screen.findByText('Synthetic plan');
   expect(screen.queryByText('Could not load execution evidence.')).not.toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Trigger' })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Dry-run' })).toBeDisabled();
+  expect(screen.getAllByRole('button', { name: 'Trigger' })).toHaveLength(6);
+  expect(screen.getAllByRole('button', { name: 'Dry-run' })).toHaveLength(6);
+  screen.getAllByRole('button', { name: 'Trigger' }).forEach(button=>expect(button).toBeDisabled());
+  screen.getAllByRole('button', { name: 'Dry-run' }).forEach(button=>expect(button).toBeDisabled());
   expect(post).not.toHaveBeenCalled();
 });
 
@@ -296,7 +299,7 @@ test('calendar refresh failures hide old planned counts and never acknowledge ex
   failed = true; fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
   await screen.findByText('Could not load schedule.');
   expect(screen.queryByText('Synthetic plan')).not.toBeInTheDocument();
-  expect(screen.queryByText('1/1')).not.toBeInTheDocument();
+  expect(screen.queryByText('1/6')).not.toBeInTheDocument();
   expect(screen.queryByText('PRIVATE_ERROR')).not.toBeInTheDocument();
   expect(post).not.toHaveBeenCalled();
 });

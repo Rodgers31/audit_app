@@ -13,7 +13,7 @@ export interface EtlHealth {timestamp:string; scheduler_status:'unverified'; pla
 function manual(raw:unknown):ManualTrigger { const v=record(raw); return {available:boolean(v.available),reason:text(v.reason)}; }
 export function parseSchedule(raw:unknown):ScheduleResponse {
   const v=record(raw), summary=record(v.summary), entries=Object.entries(record(v.sources));
-  if(v.evidence!=='calendar_plan' || !entries.length || entries.some(([name])=>!ETL_SOURCES.includes(name))) throw new Error('Unsupported calendar plan');
+  if(v.evidence!=='calendar_plan' || entries.length!==ETL_SOURCES.length || entries.some(([name])=>!ETL_SOURCES.includes(name))) throw new Error('Unsupported calendar plan');
   const sources:Record<string,ScheduleSourceDecision>={};
   for(const [name,rawDecision] of entries) {
     const d=record(rawDecision);
@@ -30,8 +30,8 @@ export function parseSchedule(raw:unknown):ScheduleResponse {
   const planned=summary.sources_to_run.map(rawItem=>{const item=record(rawItem);return {source:text(item.source),reason:text(item.reason)};});
   const skipped=summary.sources_not_running.map(text);
   if(planned.length!==running || skipped.length!==skipping || new Set([...planned.map(p=>p.source),...skipped]).size!==total ||
-    planned.some(p=>!sources[p.source]?.should_run || p.reason!==sources[p.source].reason) ||
-    skipped.some(n=>!sources[n] || sources[n].should_run)) throw new Error('Inconsistent plan sources');
+    planned.some(p=>!ETL_SOURCES.includes(p.source) || !sources[p.source].should_run || p.reason!==sources[p.source].reason) ||
+    skipped.some(n=>!ETL_SOURCES.includes(n) || sources[n].should_run)) throw new Error('Inconsistent plan sources');
   return {timestamp:date(v.timestamp),evidence:'calendar_plan',manual_trigger:manual(v.manual_trigger),sources,
     summary:{sources_running_today:running,sources_skipping_today:skipping,total_sources:total,skip_percentage:summary.skip_percentage,
       efficiency_vs_fixed_schedule:text(summary.efficiency_vs_fixed_schedule),sources_to_run:planned,sources_not_running:skipped}};

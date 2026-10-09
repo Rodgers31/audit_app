@@ -11,10 +11,10 @@ from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from routers.admin_operations import DISPATCH_ERROR, DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
 
-# The root and backend both have an etl package. Load the standalone calendar
-# module without changing global package precedence (especially seeding).
+# Both Docker backend-only contexts and repository imports load the same packaged
+# planner without changing global package precedence (especially seeding).
 try:
-    _planner_spec = spec_from_file_location("admin_operations_calendar", Path(__file__).resolve().parents[2] / "etl/smart_scheduler.py")
+    _planner_spec = spec_from_file_location("admin_operations_calendar", Path(__file__).resolve().parents[1] / "etl/smart_scheduler.py")
     if _planner_spec is None or _planner_spec.loader is None:
         raise ImportError("Calendar module unavailable")
     _planner_module = module_from_spec(_planner_spec)
