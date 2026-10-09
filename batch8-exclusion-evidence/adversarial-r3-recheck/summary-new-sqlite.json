@@ -1,0 +1,7 @@
+{
+  "label": "new-sqlite",
+  "checks": 19,
+  "passed": 16,
+  "failed": 3,
+  "harness_errors": 0
+}

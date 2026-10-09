@@ -1,0 +1,775 @@
+{
+  "schemas": [
+    "batch8_adversarial_474a9e78d077436a80ab4db7cc23dc70",
+    "batch8_adversarial_finish_08d6f230022a451d8220b5410ce1ee43",
+    "batch8_adversarial_adapter_58b8b50d655d42238733b0bda93a211f"
+  ],
+  "checks": 91,
+  "passed": 89,
+  "failed": 2,
+  "results": [
+    {
+      "name": "actual_native_positive",
+      "expected": [
+        0,
+        1
+      ],
+      "actual": [
+        0,
+        1
+      ],
+      "passed": true
+    },
+    {
+      "name": "actual_native_dry_run_rolls_back",
+      "expected": [
+        0,
+        1
+      ],
+      "actual": [
+        0,
+        1
+      ],
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_None",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_True",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_False",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_0",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_-1",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_nan",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_inf",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_[]",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_{}",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_''",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_domain_'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_None",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_True",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_False",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_0",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_-1",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_nan",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_inf",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_[]",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_{}",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_''",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "reserve_identity_'00000000-0000-0000-0000-000000000000'",
+      "expected": "DomainOwnershipError",
+      "actual": "DomainOwnershipError",
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_None",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_True",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_False",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_0",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_-1",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_nan",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_inf",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_[]",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_{}",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_''",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_'1'",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_job_id_2147483647",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_valid_positive",
+      "expected": true,
+      "actual": true,
+      "passed": true
+    },
+    {
+      "name": "terminal_completed_errors_None",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_completed_errors_{}",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_completed_errors_''",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_completed_errors_True",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_completed_errors_['unexpected']",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_metadata_None",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_metadata_{}",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_metadata_[]",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_metadata_{'seeding_claim_id': '04e951ef-7924-4e5b-9f80-9069e24c775b'}",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_None",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_True",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_False",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_nan",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_inf",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_-1",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_2147483648",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_[]",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_{}",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "terminal_items_processed_'1'",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "flags_cannot_impersonate_retained_claim",
+      "expected": [
+        1,
+        1,
+        true
+      ],
+      "actual": [
+        1,
+        1,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "duplicate_reserve_rejected",
+      "expected": false,
+      "actual": false,
+      "passed": true
+    },
+    {
+      "name": "uncorrelated_native_scope_cannot_run",
+      "expected": [
+        1,
+        1,
+        true
+      ],
+      "actual": [
+        0,
+        2,
+        false
+      ],
+      "passed": false,
+      "call": "DomainExecution(factory,'audits',retained_native_id).open(); with dispatch_scope(execution): cli.run_seed_command(args, settings)"
+    },
+    {
+      "name": "malformed_scope_True",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    {
+      "name": "malformed_scope_{}",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    {
+      "name": "malformed_scope_[]",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    {
+      "name": "malformed_scope_namespace(engine=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker), domain='audits', entered=False)",
+      "expected": [
+        1,
+        2
+      ],
+      "actual": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    {
+      "name": "wrong_domain_acknowledge_cannot_release",
+      "expected": [
+        "DomainOwnershipError",
+        true
+      ],
+      "actual": [
+        "accepted",
+        false
+      ],
+      "passed": false,
+      "entered": false,
+      "call": "DomainExecution(factory,'unrelated_domain_b',retained_A_id).open(); execution.acknowledge(A_terminal_job_id)"
+    },
+    {
+      "name": "fake_terminal_without_return_rejected",
+      "expected": [
+        false,
+        "interrupted",
+        true
+      ],
+      "actual": [
+        false,
+        "interrupted",
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_None",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_True",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_False",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_nan",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_inf",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_'0'",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_{}",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_bad_exit_code_[]",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_stale_correlation",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_stale_correlation",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "finish_stale_correlation",
+      "expected": [
+        false,
+        true
+      ],
+      "actual": [
+        false,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_None",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_True",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_''",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_'e948e9d0-3289-4c14-ba23-684c804c284e'",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_nan",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_inf",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_{}",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_bad_command_id_[]",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_wrong_correlation",
+      "expected": [
+        1,
+        0
+      ],
+      "actual": [
+        1,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "name": "adapter_positive",
+      "expected": [
+        0,
+        1,
+        true
+      ],
+      "actual": [
+        0,
+        1,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "duplicate_adapter_rejected",
+      "expected": [
+        1,
+        1,
+        true
+      ],
+      "actual": [
+        1,
+        1,
+        true
+      ],
+      "passed": true
+    },
+    {
+      "name": "supervisor_positive_finish",
+      "expected": [
+        true,
+        false
+      ],
+      "actual": [
+        true,
+        false
+      ],
+      "passed": true
+    },
+    {
+      "name": "next_native_after_dispatch_normal_return",
+      "expected": [
+        0,
+        2
+      ],
+      "actual": [
+        0,
+        2
+      ],
+      "passed": true
+    }
+  ]
+}

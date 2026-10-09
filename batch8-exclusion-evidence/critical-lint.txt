@@ -1,0 +1,10 @@
+# command (cwd backend): flake8 6.1.0 (owned scratch venv) . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,__pycache__,.git
+# working-tree patch sha256 4a664191eb35d6300fb0ac38d1004f05c0e9b33d1258497937c1667cedd107c7
+./scripts/r2_producer_acceptance.py:440:9: F821 undefined name 'captured'
+        captured.update(tables=[dataclasses.asdict(t) for t in parser.tables],
+        ^
+1     F821 undefined name 'captured'
+1
+# exit: 1
+# scoped F-class on changed non-test modules
+# exit: 0

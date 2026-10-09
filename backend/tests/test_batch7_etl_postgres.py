@@ -24,11 +24,11 @@ AUTH = {"Authorization": "Bearer admin"}
 
 @pytest.fixture
 def pg(monkeypatch):
-    assert URL == "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55481/batch7_etl_worker"
+    assert URL == "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
     engine = create_engine(URL)
     factory = sessionmaker(bind=engine)
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
+        connection.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
     monkeypatch.setattr(database, "SessionLocal", factory)
     monkeypatch.setattr(supabase_auth, "_decode_supabase_jwt", lambda token: {"sub": token})
@@ -194,14 +194,41 @@ def test_lease_expiry_polling_interrupts_without_clearing_exclusion(pg):
 
 
 def test_exit_zero_without_matching_runner_observation_is_uncertain(pg):
+    # Batch 8: once the CLI has durably entered the shared claim, a missing
+    # observation is uncertainty and the domain stays occupied.
     client, factory, _ = pg
     generation = register_worker(factory)
     identity = post(client, generation).json()["command"]["id"]
     claimed = claim(factory, generation)
+    with factory.begin() as db:
+        db.execute(text("UPDATE etl_dispatch_commands SET execution_started=true WHERE id=:id"), {"id": claimed[0]})
+        db.execute(text("UPDATE seeding_domain_claims SET entered_at=clock_timestamp(), entry_id=:entry WHERE id=:id"),
+            {"entry": uuid4(), "id": claimed[1]})
     assert finish(factory, generation, *claimed, 0) is False
     final = client.get("/api/v1/admin/etl/commands/" + identity, headers=AUTH).json()
     assert final["status"] == "interrupted" and final["job_id"] is None
+    post(client, generation)
     assert claim(factory, generation) is None
+
+
+@pytest.mark.parametrize("started", [False, True])
+def test_command_that_never_entered_the_runner_fails_and_frees_the_domain(pg, started):
+    # No durable entry means no handler ran; entry re-proves the running command
+    # and unreleased claim under the locks finish() holds, so none can follow.
+    client, factory, _ = pg
+    generation = register_worker(factory)
+    identity = post(client, generation).json()["command"]["id"]
+    claimed = claim(factory, generation)
+    with factory.begin() as db:
+        db.execute(text("UPDATE etl_dispatch_commands SET execution_started=:started WHERE id=:id"),
+            {"started": started, "id": claimed[0]})
+    assert finish(factory, generation, *claimed, 0) is True
+    final = client.get("/api/v1/admin/etl/commands/" + identity, headers=AUTH).json()
+    assert final["status"] == final["outcome"] == "failed" and final["job_id"] is None
+    with factory() as db:
+        assert db.scalar(text("SELECT released_at IS NOT NULL AND entered_at IS NULL FROM seeding_domain_claims")) is True
+    following = post(client, generation).json()["command"]["id"]
+    assert str(claim(factory, generation)[0]) == following
 
 
 @pytest.mark.parametrize("page,size", [(True, 20), (1, False), (1, 51), (0, 20), (float('nan'), 20), (float('inf'), 20), (None, 20)])

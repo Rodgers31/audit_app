@@ -1,0 +1,28 @@
+{
+  "generated_by": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/batch9-native-readiness-evidence/run_receipt.py",
+  "generator_sha256": "eb16160462ef2d6ff1adbc7dd0b8b59e381449ce72b93e1833eeebe52004bf4c",
+  "generated_at": "2026-10-09T20:09:31.953405+00:00",
+  "target_commit": "5c68fb1b4454bad60db9bf12f9b7c68ce4549168",
+  "source_hashes": {
+    "backend/seeding/exclusion.py": "5b8963f6d82397bf6bdec43c10de3b487c18f922017ce121dd47f40613920e6f",
+    "backend/tests/test_batch9_native_schema_readiness.py": "2595f7dd9346fcc3005a8c745476fdd5e1a7bbe176af12d86fff50a202d1a57e",
+    "backend/tests/batch9_native_readiness_fixture/sitecustomize.py": "8dba2c966e2821829ea16e60518defda86770243f485f82320c1b628701504be"
+  },
+  "command": [
+    "/Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/bin/python",
+    "-c",
+    "import json,sys,sqlalchemy; print(json.dumps({\"python\":sys.version.split()[0],\"sqlalchemy\":sqlalchemy.__version__}))"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+    "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/NATIVE_SCHEMA_READINESS/owned-import.sqlite",
+    "JWT_SECRET_KEY": "batch9-readiness-inert-jwt-key",
+    "BATCH9_NATIVE_READINESS_DATABASE_URL": "postgresql+psycopg2://batch9_readiness:batch9-inert-local@127.0.0.1:55495/batch9_native_readiness"
+  },
+  "exit_code": 0,
+  "verdict": "PASSED",
+  "output": "{\"python\": \"3.12.15\", \"sqlalchemy\": \"2.0.23\"}\n"
+}

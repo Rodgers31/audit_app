@@ -19,11 +19,18 @@ backend = Path(sys.argv[1])
 for name, directory in [('social', backend / 'social'), ('social.connections', backend / 'social' / 'connections'), ('scripts', backend / 'scripts')]:
     module = types.ModuleType(name); module.__path__ = [str(directory)]; sys.modules[name] = module
 for name, file, target in [('social.service', 'service.py', 'SocialError'), ('social.contracts', 'contracts.py', 'canonical_json')]:
-    source = ast.parse((backend / 'social' / file).read_text())
+    source_path = (backend / 'social' / file).resolve()
+    assert source_path.is_file() and source_path.parent == (backend / 'social').resolve()
+    source = ast.parse(source_path.read_text(), filename=str(source_path))
     definition = next(n for n in source.body if isinstance(n, (ast.ClassDef, ast.FunctionDef)) and n.name == target)
     module = types.ModuleType(name)
     module.__dict__.update(json=json, Any=object, BaseModel=type('UnusedModel', (), {}))
-    exec(compile(ast.Module(body=[definition], type_ignores=[]), file, 'exec'), module.__dict__)
+    compiled = compile(ast.Module(body=[definition], type_ignores=[]), str(source_path), 'exec')
+    assert compiled.co_filename == str(source_path)
+    exec(compiled, module.__dict__)
+    extracted = module.__dict__[target]
+    code = extracted.__init__.__code__ if isinstance(extracted, type) else extracted.__code__
+    assert code.co_filename == str(source_path)
     sys.modules[name] = module
 recovery = importlib.import_module('social.connections.recovery')
 script = importlib.import_module('scripts.social_meta_recovery')
@@ -48,3 +55,16 @@ def test_recovery_sources_execute_on_selected_interpreter_without_orm():
     assert result.returncode == 0, result.stderr
     assert result.stdout == 'recovery-runtime-ok\n'
     assert result.stderr == ''
+
+
+def test_recovery_runtime_refuses_a_synthetic_source_filename():
+    backend = Path(__file__).resolve().parents[2]
+    # Execute the same extracted real definitions with the historical coverage
+    # attribution defect. The identity guard must fail before recovery runs.
+    incorrect = PROBE.replace("str(source_path), 'exec')", "'contracts.py', 'exec')")
+    assert incorrect != PROBE
+    result = subprocess.run([sys.executable, '-B', '-c', incorrect, str(backend)],
+                            capture_output=True, text=True, timeout=10)
+    assert result.returncode != 0
+    assert 'AssertionError' in result.stderr
+    assert 'recovery-runtime-ok' not in result.stdout

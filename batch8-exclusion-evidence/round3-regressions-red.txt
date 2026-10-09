@@ -1,0 +1,10 @@
+# round-2 code (scratch copy of backend before round-3 hardening; exclusion.py sha256 67b4888ed8ad6b11c9fbf76340bf280cd3ea2d1e73b78ee7e7834380e43b72ac), round-3 tests, schema from round-2 migration
+FAILED backend/tests/test_batch8_exclusion_scope.py::test_entry_copied_from_the_claim_row_cannot_acknowledge
+FAILED backend/tests/test_batch8_exclusion_scope.py::test_only_running_rows_outside_the_seam_refuse_native_entry[True]
+FAILED backend/tests/test_batch8_exclusion_scope.py::test_autocommit_engine_cannot_hold_the_continuity_lock
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_migrated_batch7_claim_that_started_is_never_treated_as_unentered[True]
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_unentered_claim_with_a_correlated_run_observation_stays_uncertain
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_blank_reconciliation_is_rejected[ -evidence]
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_blank_reconciliation_is_rejected[operator-   ]
+7 failed, 3 passed, 25 deselected, 3 warnings in 1.86s
+# pytest exit: 1

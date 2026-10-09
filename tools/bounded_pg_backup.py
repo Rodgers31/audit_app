@@ -19,7 +19,7 @@ import tempfile
 import time
 import uuid
 
-IMAGE = 'postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675'
+IMAGE = 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675'
 SUPABASE_IMAGE = 'public.ecr.aws/supabase/postgres@sha256:21ab971149317ea9cd12a8126fe4ebb34def08c8972956b0958cba0924409dab'
 PREFIX = 'round19_s1_'
 MAX_WALL = 300
