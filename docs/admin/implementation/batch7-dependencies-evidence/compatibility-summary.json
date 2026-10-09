@@ -1,0 +1,26 @@
+{
+  "versionDelta": [],
+  "cssHashes": [
+    "03dd4d5d68943eb71a5e38b7581fd8fe2da364dff704feb07c832a57009d2ca6",
+    "54a87594088c1caa486e574267693fcedf65682e9634f5dc00f961a5de985698",
+    "5c124dbc43e992030c04849dab65e1c082d85dda950d55976d551275ea1f1a5d",
+    "cdbcf3f4a265ba9bc7fe130e89db58ddf5fc5bb6d558eac9c0636933dca1dffd"
+  ],
+  "browserResultsIdentical": true,
+  "productionAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "fullAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 5,
+    "high": 33,
+    "critical": 0,
+    "total": 38
+  }
+}

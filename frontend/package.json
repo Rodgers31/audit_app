@@ -15,11 +15,13 @@
     "e2e:install": "playwright install --with-deps",
     "test:e2e:legacy": "node scripts/run-legacy-e2e.mjs",
     "verify:native": "node scripts/verify-native-dependencies.mjs",
-    "verify:dependency-tooling": "node scripts/verify-dependency-tooling.cjs"
+    "verify:dependency-tooling": "node scripts/verify-dependency-tooling.cjs",
+    "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
+    "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
+    "test:dependency-boundaries": "node --test scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
-    "@huggingface/transformers": "^4.3.1",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tanstack/react-query": "^5.85.5",
@@ -30,7 +32,6 @@
     "@types/react-dom": "^19.2.3",
     "@vercel/analytics": "^1.6.1",
     "@vercel/speed-insights": "^2.0.0",
-    "autoprefixer": "^10.4.0",
     "axios": "^1.20.0",
     "clsx": "^2.0.0",
     "d3-geo": "^3.1.1",
@@ -44,25 +45,28 @@
     "react-dom": "^19.2.4",
     "react-simple-maps": "5.0.5",
     "recharts": "^2.8.0",
+    "sharp": "0.35.5",
     "stemmer": "^2.0.1",
     "tailwind-merge": "^2.0.0",
-    "tailwindcss": "^3.3.0",
     "topojson-client": "^3.1.0",
     "typescript": "^5.0.0"
   },
   "devDependencies": {
+    "@huggingface/transformers": "^4.3.1",
     "@playwright/test": "^1.48.0",
     "@tailwindcss/typography": "^0.5.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",
+    "autoprefixer": "^10.4.0",
     "eslint": "^8.0.0",
     "eslint-config-next": "15.5.27",
+    "eslint-plugin-local": "file:./eslint-rules",
     "jest": "^29.0.0",
     "jest-environment-jsdom": "^30.3.0",
     "picomatch": "4.0.7",
-    "eslint-plugin-local": "file:./eslint-rules"
+    "tailwindcss": "^3.3.0"
   },
   "engines": {
     "node": ">=20.9.0"

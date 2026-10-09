@@ -178,6 +178,9 @@ jobs:
         npm test -- --ci --coverage --passWithNoTests
 
         '
+    - name: Verify production dependency boundary
+      working-directory: frontend
+      run: npm run test:dependency-boundaries
     - name: Build (REQUIRED)
       run: 'cd frontend
 

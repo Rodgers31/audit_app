@@ -177,6 +177,11 @@ jobs:
           # Run Jest/Vitest unit tests
           npm test -- --ci --coverage --passWithNoTests
 
+      - name: Verify production dependency boundary
+        run: |
+          cd frontend
+          npm run test:dependency-boundaries
+
       - name: Build (REQUIRED)
         run: |
           cd frontend

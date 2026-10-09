@@ -131,6 +131,10 @@ jobs:
         working-directory: frontend
         run: npm test -- --ci --passWithNoTests
 
+      - name: Verify production dependency boundary
+        working-directory: frontend
+        run: npm run test:dependency-boundaries
+
       - name: Verify frontend build and runtime configuration (REQUIRED)
         working-directory: frontend
         run: node --test scripts/container-config.test.cjs scripts/api-base.test.cjs
