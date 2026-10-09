@@ -23,9 +23,10 @@ test.beforeEach(async ({context,page,request}) => {
   await context.addCookies([{name:'sb-127-auth-token',value:'base64-'+encode(session),domain:'127.0.0.1',path:'/'}]);
   await page.route(/https:\/\//, route=>route.abort());
 });
-test('supported source confirmation accepts a queued receipt and opens detail', async ({page}) => {
+test('supported source confirmation accepts a queued receipt and opens detail', async ({page},info) => {
   await page.goto('/admin/etl');
   await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeEnabled();
+  await page.screenshot({path:info.outputPath('desktop-ready.png'),fullPage:true});
   await page.getByRole('button',{name:'Run Now · oag'}).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button',{name:'Confirm Run Now'}).click();
@@ -33,6 +34,7 @@ test('supported source confirmation accepts a queued receipt and opens detail', 
   await page.getByRole('link',{name:'View accepted command'}).click();
   await expect(page.getByRole('heading',{name:'Command receipt'})).toBeVisible();
   await expect(page.getByText('Queued — accepted, awaiting execution.')).toBeVisible();
+  await page.screenshot({path:info.outputPath('desktop-queued.png'),fullPage:true});
 });
 for(const mode of ['unavailable','stale','malformed']) {
   test(mode+' capability is disabled and refresh recovers',async({page,request},info)=>{
@@ -63,7 +65,7 @@ test('dry run lost response commits once, recovery retains key after worker expi
   await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
   await page.getByRole('button',{name:'Recover same intent'}).click();
   await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
-  await expect(page.getByText('Dry Run — no publication',{exact:true})).toBeVisible();
+  await expect(page.getByText('oag · Dry Run — no publication',{exact:true})).toBeVisible();
   requests=await (await request.get(fixture+'/fixture/requests')).json();
   expect(requests).toHaveLength(2);
   expect(requests[1].key).toBe(requests[0].key);
@@ -130,6 +132,7 @@ for(const status of ['failed','interrupted']) {
 test('visible active detail polls, pauses hidden, stops terminal and hides stale result on error',async({page,request})=>{
   await page.goto('/admin/etl');await page.getByRole('button',{name:'Dry Run · oag'}).click();
   await page.getByRole('link',{name:'View accepted command'}).click();
+  await expect(page).toHaveURL(/\/admin\/etl\/commands\/[0-9a-f-]+$/);
   const id=page.url().split('/').pop()!;
   let reads=0;page.on('request',r=>{if(r.url().endsWith('/commands/'+id)) reads++;});
   await expect.poll(()=>reads,{timeout:8000}).toBeGreaterThan(0);
@@ -172,6 +175,38 @@ for(const status of [401,403]) {
     await expect(page.getByText('Administrator access expired. Renew your session to verify access.')).toBeVisible();
     await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
     expect(await page.getByRole('link',{name:/View command /}).count()).toBe(0);
+  });
+}
+for(const transition of ['actor','renewal','role','hidden','unmount']) {
+  test('committed in-flight acceptance cannot expose stale success after '+transition,async({page,request})=>{
+    let release!:()=>void, committed!:()=>void;
+    const gate=new Promise<void>(done=>release=done), acceptance=new Promise<void>(done=>committed=done);
+    let hold=true;
+    await page.route('**/api/v1/admin/etl/trigger/oag',async route=>{
+      if(!hold) {await route.continue();return;}
+      hold=false;const response=await route.fetch();committed();await gate;
+      try {await route.fulfill({response});} catch {/* The originating lifetime cancelled transport. */}
+    });
+    await page.goto('/admin/etl');await page.getByRole('button',{name:'Dry Run · oag'}).click();
+    await acceptance;
+    const original=await (await request.get(fixture+'/fixture/requests')).json();
+    expect(original).toHaveLength(1);
+    if(transition==='actor') await renew(page,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    if(transition==='renewal') await renew(page);
+    if(transition==='role') {await request.post(fixture+'/fixture/config',{data:{role:'citizen'}});await renew(page);await expect(page).toHaveURL(/\/$/);}
+    if(transition==='hidden') await visibility(page,false);
+    if(transition==='unmount') {await page.getByRole('link',{name:'Ingestion',exact:true}).click();await expect(page).toHaveURL(/\/admin\/ingestion$/);await expect(page.getByRole('button',{name:'Run Now · oag'})).toHaveCount(0);}
+    release();
+    await expect(page.getByText('Command accepted. Queued acceptance is not completed work.')).toHaveCount(0);
+    expect(await (await request.get(fixture+'/fixture/requests')).json()).toHaveLength(1);
+    if(transition==='hidden') await visibility(page,true);
+    if(transition==='unmount') await page.getByRole('link',{name:'ETL Schedule',exact:true}).click();
+    if(['renewal','hidden','unmount'].includes(transition)) {
+      await page.getByRole('button',{name:'Recover same intent'}).click();
+      await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
+      const recovered=await (await request.get(fixture+'/fixture/requests')).json();
+      expect(recovered).toHaveLength(2);expect(recovered[1].key).toBe(original[0].key);
+    } else expect(await page.getByRole('button',{name:'Recover same intent'}).count()).toBe(0);
   });
 }
 test('mobile keyboard confirmation traps focus, Escape returns focus, and pages do not overflow',async({page},info)=>{

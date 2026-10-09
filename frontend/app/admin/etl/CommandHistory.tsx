@@ -11,17 +11,25 @@ export function CommandHistory({access}: {access:EtlAccess}) {
   const router=useRouter(), search=useSearchParams();
   const {canonical,...filters}=commandFilters(new URLSearchParams(search));
   const canonicalQuery=canonical.toString(), supplied=search.toString();
+  const pendingQuery=useRef<string|null>(null);
+  if(pendingQuery.current===canonicalQuery) pendingQuery.current=null;
   const scope=JSON.stringify([access.lifetime,filters]);
   const previous=useRef<{scope:string;entries:Map<string,EtlCommand>}>({scope,entries:new Map()});
   if(previous.current.scope!==scope) previous.current={scope,entries:new Map()};
   useEffect(()=>{
     if(canonicalQuery!==supplied) router.replace('/admin/etl'+(canonicalQuery?'?'+canonicalQuery:''));
   },[canonicalQuery,supplied,router]);
+  useEffect(()=>{
+    const back=()=>{pendingQuery.current=null;};
+    window.addEventListener('popstate',back);
+    return ()=>window.removeEventListener('popstate',back);
+  },[]);
   const setQuery=(updates:Record<string,string|number>)=>{
-    const next=new URLSearchParams(canonicalQuery);
+    const next=new URLSearchParams(pendingQuery.current ?? canonicalQuery);
     for(const [key,value] of Object.entries(updates)) value==='' ? next.delete(key) : next.set(key,String(value));
     if(!('page' in updates)) next.delete('page');
-    router.push('/admin/etl'+(next.size?'?'+next.toString():''));
+    pendingQuery.current=commandFilters(next).canonical.toString();
+    router.push('/admin/etl'+(pendingQuery.current?'?'+pendingQuery.current:''));
   };
   const history=useQuery({
     queryKey:['admin','etl-commands',access.actorId,access.lifetime,filters],
@@ -42,10 +50,10 @@ export function CommandHistory({access}: {access:EtlAccess}) {
     </div>
     <p className='my-3 text-sm text-neutral-muted'>Durable acceptance and recorded execution are separate. Active receipts update every five seconds while this page is visible.</p>
     <div className='mb-4 flex flex-wrap gap-3'>
-      <label className='text-sm text-neutral-text'>Command source<select className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.source} onChange={e=>setQuery({source:e.target.value})}><option value=''>All sources</option>{DISPATCH_SOURCES.map(s=><option key={s}>{s}</option>)}</select></label>
-      <label className='text-sm text-neutral-text'>Command status<select className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.status} onChange={e=>setQuery({status:e.target.value})}><option value=''>All statuses</option>{COMMAND_STATUSES.map(s=><option key={s}>{s}</option>)}</select></label>
-      <label className='text-sm text-neutral-text'>Commands per page<select className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.page_size} onChange={e=>setQuery({page_size:e.target.value})}>{Array.from(new Set([10,20,50,filters.page_size])).sort((a,b)=>a-b).map(n=><option key={n}>{n}</option>)}</select></label>
-      {(filters.source || filters.status || filters.page_size!==20) && <button className={etlButton} onClick={()=>router.push('/admin/etl')}>Clear command filters</button>}
+      <label className='text-sm text-neutral-text'>Command source<select aria-label='Command source' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.source} onChange={e=>setQuery({source:e.target.value})}><option value=''>All sources</option>{DISPATCH_SOURCES.map(s=><option key={s}>{s}</option>)}</select></label>
+      <label className='text-sm text-neutral-text'>Command status<select aria-label='Command status' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.status} onChange={e=>setQuery({status:e.target.value})}><option value=''>All statuses</option>{COMMAND_STATUSES.map(s=><option key={s}>{s}</option>)}</select></label>
+      <label className='text-sm text-neutral-text'>Commands per page<select aria-label='Commands per page' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.page_size} onChange={e=>setQuery({page_size:e.target.value})}>{Array.from(new Set([10,20,50,filters.page_size])).sort((a,b)=>a-b).map(n=><option key={n}>{n}</option>)}</select></label>
+      {(filters.source || filters.status || filters.page_size!==20) && <button className={etlButton} onClick={()=>{pendingQuery.current='';router.push('/admin/etl');}}>Clear command filters</button>}
     </div>
     {!access.enabled ? <p role='status' className='text-sm'>{access.denied?'Command history hidden until access is renewed.':'Command reads paused.'}</p> :
       history.isError ? <p role='alert' className='text-sm'>Could not load command history. Refresh to retry.</p> :

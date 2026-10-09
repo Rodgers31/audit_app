@@ -8,6 +8,7 @@ import { useEtlAccess, type EtlAccess } from './useEtlAccess';
 import { CommandReceipt, etlButton } from './CommandReceipt';
 import { CommandHistory } from './CommandHistory';
 import { useCommandReceipt } from './useCommandReceipt';
+import { clearSubmittedIntent, rememberSubmittedIntent, submittedIntent } from './submittedIntent';
 
 interface Intent {source:DispatchSource;dry_run:boolean;key:string;lifetime:number;generation:string;ambiguous:boolean}
 export default function DispatchPanel() {
@@ -25,7 +26,6 @@ export default function DispatchPanel() {
   const [error,setError]=useState<{lifetime:number;ambiguous:boolean}|null>(null);
   const [busy,setBusy]=useState(false);
   const lock=useRef(false);
-  const journal=useRef<{actorId:string|null;intent:Intent;submitted:boolean}|null>(null);
   const dialog=useRef<HTMLDialogElement>(null);
   const opener=useRef<HTMLButtonElement|null>(null);
   const validIntent=intent?.lifetime===access.lifetime ? intent : null;
@@ -36,11 +36,11 @@ export default function DispatchPanel() {
     return ()=>clearInterval(timer);
   },[]);
   useEffect(() => {
-    const pending=journal.current;
-    if(pending?.actorId===access.actorId && pending.submitted) {
-      const recovery={...pending.intent,lifetime:access.lifetime,ambiguous:true};
+    const pending=submittedIntent(access.authActorId);
+    if(pending) {
+      const recovery={...pending,lifetime:access.lifetime,ambiguous:true};
       setIntent(recovery);setError({lifetime:access.lifetime,ambiguous:true});
-    } else {journal.current=null;setIntent(null);setError(null);}
+    } else {setIntent(null);setError(null);}
     setResult(null);setBusy(false);lock.current=false;setConfirmation(false);
   },[access.lifetime]);
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function DispatchPanel() {
   const execute=async (selected:Intent, recovery=false) => {
     if (!access.current(selected.lifetime) || lock.current || (!recovery && (!dispatchCurrent(data) || !data?.sources[selected.source].available))) return;
     lock.current=true;setBusy(true);setResult(null);setError(null);setConfirmation(false);
-    journal.current={actorId:access.actorId,intent:selected,submitted:true};
+    rememberSubmittedIntent(access.authActorId!,selected);
     const controller=access.controller();
     try {
       const response=await api.post('/admin/etl/trigger/'+selected.source,
@@ -62,7 +62,7 @@ export default function DispatchPanel() {
         {signal:controller.signal,headers:{'Idempotency-Key':selected.key}});
       if (!access.current(selected.lifetime) || controller.signal.aborted) return;
       const accepted=parseCommandAcceptance(response.data,selected,response.status);
-      journal.current=null;
+      clearSubmittedIntent(access.authActorId,selected.key);
       setResult({lifetime:selected.lifetime,value:accepted});setIntent(null);
       void qc.invalidateQueries({queryKey:['admin','etl-commands',access.actorId,access.lifetime]});
     } catch (failure) {
@@ -73,7 +73,7 @@ export default function DispatchPanel() {
       // An explicit same-key recovery is the only resend offered.
       const status=dispatchHttpStatus(failure);
       const ambiguous=status===undefined || status>=500;
-      journal.current=ambiguous ? {actorId:access.actorId,intent:selected,submitted:true} : null;
+      if(!ambiguous) clearSubmittedIntent(access.authActorId,selected.key);
       setIntent(ambiguous ? {...selected,ambiguous:true} : null);
       setError({lifetime:selected.lifetime,ambiguous});
       void qc.resetQueries({queryKey:['admin','etl-dispatch',access.actorId,access.lifetime]});
@@ -88,7 +88,6 @@ export default function DispatchPanel() {
     const same=validIntent?.ambiguous && validIntent.source===source && validIntent.dry_run===dry_run;
     const selected:Intent=same ? validIntent : {source,dry_run,key:crypto.randomUUID(),lifetime:access.lifetime,generation:data.generation!,ambiguous:false};
     setIntent(selected);setResult(null);setError(null);
-    journal.current={actorId:access.actorId,intent:selected,submitted:!!same};
     if(dry_run) void execute(selected,!!same);
     else setConfirmation(true);
   };
@@ -118,7 +117,13 @@ export default function DispatchPanel() {
           </div>
         </li>)}
       </ul>
-      <dialog ref={dialog} aria-labelledby='run-confirm-title' onCancel={cancel} className='m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-neutral-border bg-white p-6 text-neutral-text backdrop:bg-black/50 dark:bg-surface-base'>
+      <dialog ref={dialog} aria-labelledby='run-confirm-title' onCancel={cancel} onKeyDown={event=>{
+        if(event.key!=='Tab') return;
+        const buttons=event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+        const first=buttons[0],last=buttons[buttons.length-1];
+        if(event.shiftKey && document.activeElement===first) {event.preventDefault();last?.focus();}
+        else if(!event.shiftKey && document.activeElement===last) {event.preventDefault();first?.focus();}
+      }} className='m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-neutral-border bg-white p-6 text-neutral-text backdrop:bg-black/50 dark:bg-surface-base'>
         <h3 id='run-confirm-title' className='font-display text-xl'>Confirm Run Now</h3>
         <p className='my-4 text-sm'>Run {validIntent?.source} now? This permits publication under the dedicated runner. Acceptance queues work; it does not confirm completion.</p>
         <div className='flex flex-wrap gap-3'><button autoFocus className={etlButton} onClick={cancel}>Cancel</button><button className={etlButton+' bg-gov-forest !text-white'} disabled={!ready || !access.enabled || busy} onClick={()=>{if(validIntent) void execute(validIntent,validIntent.ambiguous);}}>Confirm Run Now</button></div>

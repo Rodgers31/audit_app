@@ -33,6 +33,11 @@ function timestamp(value: unknown) {
   return date(value);
 }
 const optionalTimestamp = (value: unknown) => value === null ? null : timestamp(value);
+/** Date.parse truncates API microseconds; preserve chronology within that millisecond. */
+function compareTimestamp(left:string, right:string) {
+  const remainder=(value:string)=>Number((/\.(\d{1,6})/.exec(value)?.[1] ?? '').padEnd(6,'0')) % 1000;
+  return Date.parse(left)-Date.parse(right) || remainder(left)-remainder(right);
+}
 function reason(value: unknown) {
   if (typeof value !== 'string' || !value.trim() || value.length > 240 ||
       /[\x00-\x1f\x7f]|https?:\/\/|bearer\s|[\w.+-]+@[\w.-]+|(?:token|password|secret)\s*[:=]/i.test(value)) invalid();
@@ -54,10 +59,10 @@ export function parseDispatchCapability(raw: unknown, now = Date.now()): Dispatc
   if (!Number.isFinite(now) || v.evidence !== 'worker_dispatch' ||
       worker.status !== (available ? 'ready' : 'unavailable') ||
       (last_seen_at === null) !== (expires_at === null) ||
-      (last_seen_at && expires_at && (Date.parse(last_seen_at) > Date.parse(seen) || Date.parse(last_seen_at) >= Date.parse(expires_at)))) invalid();
+      (last_seen_at && expires_at && (compareTimestamp(last_seen_at,seen) > 0 || compareTimestamp(last_seen_at,expires_at) >= 0))) invalid();
   const generation = available ? uuid(v.generation) : null;
   if (!available && v.generation !== null) invalid();
-  if (available && (!last_seen_at || !expires_at || Date.parse(seen) >= Date.parse(expires_at) ||
+  if (available && (!last_seen_at || !expires_at || compareTimestamp(seen,expires_at) >= 0 ||
       Date.parse(expires_at) <= now || Date.parse(seen) > now + 5000 || now - Date.parse(seen) > 30000)) invalid();
   const rawSources = exact(v.sources, [...DISPATCH_SOURCES]);
   const sources = {} as DispatchCapability['sources'];
@@ -80,10 +85,9 @@ export function parseCommand(raw: unknown, expectedId?: string): EtlCommand {
   const id = uuid(v.id), commandStatus = status(v.status), created_at = timestamp(v.created_at), updated_at = timestamp(v.updated_at);
   const started_at = optionalTimestamp(v.started_at), finished_at = optionalTimestamp(v.finished_at);
   const job_id = v.job_id === null ? null : integer(v.job_id, 1, 2147483647);
-  const created = Date.parse(created_at), updated = Date.parse(updated_at);
   if (expectedId !== undefined && (!validCommandId(expectedId) || id !== expectedId) ||
-      updated < created || started_at && (Date.parse(started_at) < created || Date.parse(started_at) > updated) ||
-      finished_at && (Date.parse(finished_at) < (started_at ? Date.parse(started_at) : created) || Date.parse(finished_at) > updated)) invalid();
+      compareTimestamp(updated_at,created_at) < 0 || started_at && (compareTimestamp(started_at,created_at) < 0 || compareTimestamp(started_at,updated_at) > 0) ||
+      finished_at && (compareTimestamp(finished_at,started_at ?? created_at) < 0 || compareTimestamp(finished_at,updated_at) > 0)) invalid();
   if (commandStatus === 'queued' && (started_at !== null || finished_at !== null || job_id !== null || v.outcome !== null) ||
       commandStatus === 'running' && (!started_at || finished_at !== null || v.outcome !== null) ||
       commandStatus === 'completed' && (!started_at || !finished_at || !job_id || v.outcome !== 'completed') ||
@@ -96,8 +100,9 @@ export function parseCommand(raw: unknown, expectedId?: string): EtlCommand {
 export function commandProgress(next: EtlCommand, previous?: EtlCommand) {
   if (previous && (next.id !== previous.id || next.source !== previous.source || next.dry_run !== previous.dry_run ||
       next.created_at !== previous.created_at || next.version < previous.version ||
-      Date.parse(next.updated_at) < Date.parse(previous.updated_at) ||
+      compareTimestamp(next.updated_at,previous.updated_at) < 0 ||
       previous.started_at !== null && next.started_at !== previous.started_at ||
+      previous.finished_at !== null && next.finished_at !== previous.finished_at ||
       previous.job_id !== null && next.job_id !== previous.job_id ||
       !activeCommand(previous) && next.status !== previous.status ||
       previous.status === 'running' && next.status === 'queued' ||
@@ -122,8 +127,8 @@ export function parseCommandList(raw: unknown, expected: CommandFilters): Comman
   if (entries.length !== Math.min(page_size, Math.max(0,total - (page - 1) * page_size)) ||
       new Set(entries.map(entry=>entry.id)).size !== entries.length || has_more !== (page * page_size < total) ||
       entries.some(entry => expected.source && entry.source !== expected.source || expected.status && entry.status !== expected.status) ||
-      entries.some((entry,index) => index > 0 && (Date.parse(entry.created_at) > Date.parse(entries[index-1].created_at) ||
-        Date.parse(entry.created_at) === Date.parse(entries[index-1].created_at) && entry.id >= entries[index-1].id))) invalid();
+      entries.some((entry,index) => index > 0 && (compareTimestamp(entry.created_at,entries[index-1].created_at) > 0 ||
+        compareTimestamp(entry.created_at,entries[index-1].created_at) === 0 && entry.id >= entries[index-1].id))) invalid();
   return {entries,page,page_size,total,has_more};
 }
 export function commandFilters(params: URLSearchParams): CommandFilters & {canonical: URLSearchParams} {

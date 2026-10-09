@@ -85,6 +85,6 @@ export function useEtlAccess() {
   };
   const controller = () => { const value = new AbortController(); controllers.current.add(value); return value; };
   const release = (value:AbortController) => controllers.current.delete(value);
-  return {...access,enabled,denied:denied.current,lifetime,current,read,rejectAccess,controller,release};
+  return {...access,authActorId:authUser?.id ?? access.actorId,enabled,denied:denied.current,lifetime,current,read,rejectAccess,controller,release};
 }
 export type EtlAccess = ReturnType<typeof useEtlAccess>;

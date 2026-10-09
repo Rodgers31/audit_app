@@ -53,7 +53,7 @@ async def privacy(request, call_next):
     if request.url.path.startswith("/api/v1/admin/"):
         if state["deny"]:
             return JSONResponse({"detail": "Administrator access unavailable."}, state["deny"],
-                                headers={"Cache-Control": "private, no-store", "Vary": "Authorization"})
+                                headers={"Cache-Control": "private, no-store", "Vary": "Authorization", "Access-Control-Allow-Origin": "http://127.0.0.1:3162"})
         try:
             actor(request)
         except HTTPException:
@@ -83,9 +83,10 @@ def requests():
 @app.post("/fixture/command/{command_id}/{status}")
 def change_command(command_id: str, status: str):
     row = next(row for row in state["entries"] if row["id"] == command_id)
-    row.update(status=status, version=row["version"] + 1, updated_at=stamp(),
-               started_at=row["started_at"] or stamp(),
-               finished_at=stamp() if status in ("completed", "failed", "interrupted") else None,
+    now = stamp()
+    row.update(status=status, version=row["version"] + 1, updated_at=now,
+               started_at=row["started_at"] or now,
+               finished_at=now if status in ("completed", "failed", "interrupted") else None,
                outcome={"completed": "completed", "failed": "failed", "interrupted": "execution_unverified"}.get(status),
                job_id=100 if status == "completed" else None)
     return {"fixture": True}

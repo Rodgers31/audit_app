@@ -9,12 +9,14 @@ import { CommandDetail } from '@/app/admin/etl/commands/[commandId]/CommandDetai
 let mockQuery = '';
 let mockAllowed = true;
 let mockActor = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' };
+let mockProfile: {id:string}|null = mockActor;
+let mockCounter=0;
 let mockAuthEvent: (() => void) | undefined;
 const mockPush = jest.fn(), mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({ useRouter: () => ({ push: mockPush, replace: mockReplace }), useSearchParams: () => new URLSearchParams(mockQuery) }));
 jest.mock('@/components/layout/PageShell', () => ({ __esModule: true, default: ({ title, children }: {title:string;children:React.ReactNode}) => <main><h1>{title}</h1>{children}</main> }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: mockAllowed, isLoading: false }) }));
-jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ authUser: mockActor, user: mockActor }) }));
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ authUser: mockActor, user: mockProfile }) }));
 jest.mock('@/lib/supabase/client', () => ({ createClient: () => ({ auth: { onAuthStateChange: (fn: () => void) => {mockAuthEvent=fn; return {data:{subscription:{unsubscribe:jest.fn()}}};} } }) }));
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }));
 const get = api.get as jest.Mock, post = api.post as jest.Mock;
@@ -30,7 +32,7 @@ export function batch7Mount(node:React.ReactNode=<Etl />) { const qc=new QueryCl
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal=function(){this.open=true;};
   HTMLDialogElement.prototype.close=function(){this.open=false;};
-  jest.clearAllMocks(); mockQuery='';mockAllowed=true;mockActor={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'};capability=batch7Capability();
+  jest.clearAllMocks(); mockQuery='';mockAllowed=true;mockActor={id:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(++mockCounter).padStart(12,'0')};mockProfile=mockActor;capability=batch7Capability();
   Object.defineProperty(document,'visibilityState',{configurable:true,value:'visible'});
   get.mockImplementation(async (path:string) => ({data:path.endsWith('/schedule')?plan:path.endsWith('/health')?health:path.endsWith('/dispatch')?capability:path.endsWith('/commands')?{entries:[],page:1,page_size:20,total:0,has_more:false}:batch7Command}));
   post.mockResolvedValue({status:202,data:{ok:true,accepted:true,replayed:false,audit_recorded:true,command:batch7Command}});
@@ -81,7 +83,7 @@ test('a changed intent rotates the key and keeps real-run confirmation explicit'
 test.each(['actor','role','renewal','hidden'])('deferred confirmation cannot cross %s lifetime change',async change=>{
   const view=batch7Mount();fireEvent.click(await readyButton());
   const confirm=within(screen.getByRole('dialog')).getByRole('button',{name:'Confirm Run Now'});
-  if(change==='actor') {mockActor={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};view.refresh();}
+  if(change==='actor') {mockActor={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};mockProfile=mockActor;view.refresh();}
   if(change==='role') {mockAllowed=false;view.refresh();mockAllowed=true;view.refresh();}
   if(change==='renewal') act(()=>mockAuthEvent?.());
   if(change==='hidden') {hidden();hidden(false);}
@@ -94,7 +96,7 @@ test.each(['actor','role','renewal','hidden','unmount'])('in-flight acceptance c
   const view=batch7Mount();fireEvent.click(await readyButton('Dry Run · oag'));
   await screen.findByText('Requesting durable acceptance…');
   const signal=post.mock.calls[0][2].signal;
-  if(change==='actor') {mockActor={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};view.refresh();}
+  if(change==='actor') {mockActor={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'};mockProfile=mockActor;view.refresh();}
   if(change==='role') {mockAllowed=false;view.refresh();mockAllowed=true;view.refresh();}
   if(change==='renewal') act(()=>mockAuthEvent?.());
   if(change==='hidden') hidden();
@@ -134,6 +136,13 @@ test('hostile command query is bounded and replaced before it reaches transport'
   const call=get.mock.calls.find(([path])=>path.endsWith('/commands'));
   expect(call[1].params).toEqual({page:1,page_size:20});
   expect(mockReplace).toHaveBeenCalledWith('/admin/etl');
+});
+test('successive filter changes retain the prior intent while router navigation is pending',async()=>{
+  batch7Mount();await screen.findByText('No commands match this page.');
+  fireEvent.change(screen.getByLabelText('Command source',{exact:true}),{target:{value:'oag'}});
+  fireEvent.change(screen.getByLabelText('Command status',{exact:true}),{target:{value:'completed'}});
+  fireEvent.change(screen.getByLabelText('Commands per page',{exact:true}),{target:{value:'10'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=oag&status=completed&page_size=10');
 });
 test.each(['mismatch','failed','interrupted'])('detail %s is truthful and offers receipt reads only',async state=>{
   const terminal={...batch7Command,status:state,version:3,started_at:timestamp,finished_at:timestamp,outcome:state==='failed'?'failed':'execution_unverified'};
@@ -177,4 +186,21 @@ test('fresh supported worker offers an explicit real-run confirmation and durabl
   expect(post.mock.calls[0][1]).toEqual({dry_run:false,dispatch_generation:'11111111-1111-4111-8111-111111111111'});
   expect(post.mock.calls[0][2].headers['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
   expect(screen.getByRole('link',{name:'View accepted command'})).toHaveAttribute('href',expect.stringContaining(batch7Command.id));
+});
+
+
+test('same actor profile revalidation and remount preserve a submitted ambiguous intent',async()=>{
+  const pending=deferred<unknown>();post.mockReturnValueOnce(pending.promise);
+  const view=batch7Mount();fireEvent.click(await readyButton('Dry Run · oag'));
+  const key=post.mock.calls[0][2].headers['Idempotency-Key'];
+  act(()=>mockAuthEvent?.());
+  mockProfile=null;mockAllowed=false;view.refresh();
+  mockProfile=mockActor;mockAllowed=true;view.refresh();
+  await readyButton('Dry Run · oag');
+  const recover=screen.queryByRole('button',{name:'Recover same intent'});
+  expect(recover).toBeInTheDocument();
+  post.mockResolvedValueOnce({status:202,data:{ok:true,accepted:true,replayed:true,audit_recorded:true,command:{...batch7Command,dry_run:true}}});
+  fireEvent.click(recover!);
+  await screen.findByText('Original receipt recovered. No second command was accepted.');
+  expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(key);
 });
