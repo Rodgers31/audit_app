@@ -1,0 +1,592 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py",
+  "generator_sha256": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+  "generated_at": "2026-10-09T23:45:03.651955+00:00",
+  "command": [
+    "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+    "-c",
+    "import os,pytest; os.environ.pop('BATCH9_BOOTSTRAP_POSTGRES_URL',None); raise SystemExit(pytest.main(['backend/tests/test_batch9_bootstrap_ownership.py','-q','-s']))"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app",
+  "environment": {
+    "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "ENABLE_ETL_SCHEDULER": "false",
+    "JWT_SECRET_KEY": "batch9-review-590-inert"
+  },
+  "target_commit": "cfc77b7615c3c0bb8af110edf22beca8cc15abe8",
+  "source_state": "working_tree_bound_by_source_sha256",
+  "source_sha256": {
+    "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+    "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "a665b454b11fcb82f68714dd9f0158be4da7e9cd627db83f61efc2447b482751",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+    "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+    "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+    "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+    "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "c67dc39225944d64da0b5f89b0e55d9dac1ad096fce09a62eac8e351b7bcf996",
+    "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+    "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+    "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+    "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+    "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+    "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+  }
+}
+
+2026-10-09 18:45:04,309 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:04,311 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:04,316 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:04,316 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:04,383 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:04,383 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:04,383 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:04,514 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:04,523 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:04,537 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:04,541 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:04,546 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:04,549 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:04,554 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:04,562 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:04,562 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:04,566 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:04,568 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:04,570 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:04,571 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:04,579 - main - INFO - Data provenance router registered at /api/v1/provenance
+OWNED_BOOTSTRAP_DEFAULT_FIXTURE {"image": "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675", "image_id": "sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675", "container": "batch9-review-590-auto-d6e4de2b1f234ba9", "container_id": "c92ce0d3220dd34c0826099b84b25e1e1feea6c7062e50b95434bce8e15fb6b6", "network": "batch9-review-590-auto-network-d6e4de2b1f234ba9", "database": "batch9-bootstrap-auto-d6e4de2b1f234ba9", "port": 55492}
+.PROCESS OUTPUT 1-force.txt
+national_budget bootstrap skipped: Domain execution is already owned
+
+PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:06,842", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:06,847", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:06.839386+00:00", "finished_at": "2026-10-09T23:45:06.847754+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+.PROCESS OUTPUT 1-force.txt
+national_budget bootstrap skipped: Domain execution is already owned
+
+PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:08,247", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:08,258", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:08.243264+00:00", "finished_at": "2026-10-09T23:45:08.258004+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+.PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:09,623", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:09,631", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:09.619386+00:00", "finished_at": "2026-10-09T23:45:09.631235+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 1-weekly.txt
+national_budget bootstrap skipped: Domain execution is already owned
+
+.PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:10,899", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:10,905", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:10.896897+00:00", "finished_at": "2026-10-09T23:45:10.905194+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 1-weekly.txt
+national_budget bootstrap skipped: Domain execution is already owned
+
+.PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:12,752", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:12,759", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:12.747986+00:00", "finished_at": "2026-10-09T23:45:12.759918+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 1-startup.txt
+2026-10-09 18:45:12,180 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:12,182 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:12,187 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:12,187 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:12,220 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:12,220 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:12,220 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:12,342 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:12,351 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:12,364 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:12,367 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:12,372 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:12,375 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:12,380 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:12,386 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:12,386 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:12,390 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:12,392 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:12,394 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:12,395 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:12,402 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:12,411 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:12,411 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:12,424 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:12,459 - bootstrap - WARNING - national_budget bootstrap skipped: Domain execution is already owned
+2026-10-09 18:45:12,520 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:12,520 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:12,520 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:12,539 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:12,539 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:12,539 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:12,555 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:12,555 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:12,555 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:12,555 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:12,555 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+.PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:14,607", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 1}
+{"asctime": "2026-10-09 18:45:14,614", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:14.603939+00:00", "finished_at": "2026-10-09T23:45:14.614006+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 1-startup.txt
+2026-10-09 18:45:14,042 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:14,044 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:14,049 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:14,049 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:14,081 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:14,081 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:14,081 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:14,198 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:14,208 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:14,220 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:14,223 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:14,229 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:14,231 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:14,235 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:14,242 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:14,242 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:14,246 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:14,248 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:14,249 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:14,250 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:14,257 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:14,266 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:14,266 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:14,279 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:14,315 - bootstrap - WARNING - national_budget bootstrap skipped: Domain execution is already owned
+2026-10-09 18:45:14,375 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:14,375 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:14,375 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:14,394 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:14,394 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:14,394 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:14,407 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:14,407 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:14,407 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:14,407 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:14,407 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+.PROCESS OUTPUT 2-native.txt
+{"asctime": "2026-10-09 18:45:16,412", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 4}
+{"asctime": "2026-10-09 18:45:16,418", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:16.409834+00:00", "finished_at": "2026-10-09T23:45:16.418390+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:15,733", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 2-native.txt
+{"asctime": "2026-10-09 18:45:18,847", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 4}
+{"asctime": "2026-10-09 18:45:18,852", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:18.844845+00:00", "finished_at": "2026-10-09T23:45:18.852485+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 0-startup.txt
+2026-10-09 18:45:17,263 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:17,264 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:17,269 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:17,269 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:17,302 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:17,302 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:17,302 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:17,427 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:17,436 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:17,449 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:17,452 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:17,458 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:17,460 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:17,465 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:17,471 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:17,472 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:17,476 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:17,478 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:17,480 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:17,481 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:17,488 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:17,497 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:17,498 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:17,511 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:17,563 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 18:45:17,566 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 18:45:17,615 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:17,615 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:17,615 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:18,164 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:18,201 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:18,202 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:18,202 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:18,215 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:18,215 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:18,215 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:18,215 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:18,215 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:18,037", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 2-native.txt
+{"asctime": "2026-10-09 18:45:20,695", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 4}
+{"asctime": "2026-10-09 18:45:20,700", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:20.693836+00:00", "finished_at": "2026-10-09T23:45:20.700486+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:20,006", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 2-native.txt
+{"asctime": "2026-10-09 18:45:23,097", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "national_budget", "job_id": 4}
+{"asctime": "2026-10-09 18:45:23,102", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:23.094801+00:00", "finished_at": "2026-10-09T23:45:23.102516+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {"owned_fixture": true}}
+
+PROCESS OUTPUT 0-startup.txt
+2026-10-09 18:45:21,543 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:21,545 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:21,550 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:21,550 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:21,584 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:21,584 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:21,584 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:21,706 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:21,715 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:21,728 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:21,731 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:21,737 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:21,740 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:21,744 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:21,750 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:21,751 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:21,755 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:21,757 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:21,759 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:21,760 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:21,768 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:21,777 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:21,777 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:21,788 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:21,840 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 18:45:21,843 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 18:45:21,894 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:21,894 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:21,895 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:22,474 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:22,504 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:22,505 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:22,505 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:22,519 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:22,519 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:22,519 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:22,519 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:22,519 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:22,309", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 0-startup.txt
+2026-10-09 18:45:23,909 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:23,911 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:23,916 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:23,916 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:23,949 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:23,949 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:23,949 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:24,068 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:24,076 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:24,088 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:24,091 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:24,097 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:24,099 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:24,103 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:24,109 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:24,110 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:24,114 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:24,116 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:24,117 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:24,118 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:24,125 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:24,134 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:24,134 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:24,149 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:24,197 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 18:45:24,200 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 18:45:24,249 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:24,249 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:24,249 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:24,259 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:24,285 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:24,285 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:24,285 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:24,298 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:24,298 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:24,298 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:24,298 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:24,298 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+.PROCESS OUTPUT 0-startup.txt
+2026-10-09 18:45:25,219 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:25,221 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:25,227 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:25,227 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:25,264 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:25,264 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:25,264 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:25,390 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:25,399 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:25,412 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:25,415 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:25,420 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:25,423 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:25,428 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:25,434 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:25,434 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:25,438 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:25,440 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:25,442 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:25,443 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:25,450 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:25,459 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:25,459 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:25,473 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:25,523 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 18:45:25,526 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 18:45:25,577 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:25,577 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:25,577 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:25,588 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:25,613 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:25,614 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:25,614 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:25,626 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:25,627 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:25,627 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:25,627 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:25,627 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+.PROCESS OUTPUT 0-startup.txt
+2026-10-09 18:45:26,486 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:26,487 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:26,492 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:26,492 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:26,524 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:26,524 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:26,524 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:26,645 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:26,654 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:26,666 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:26,669 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:26,674 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:26,677 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:26,681 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:26,687 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:26,688 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:26,691 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:26,693 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:26,695 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:26,696 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:26,703 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:26,712 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:26,712 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:26,726 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:26,771 - bootstrap - INFO - Created base country record for Kenya
+2026-10-09 18:45:26,773 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 18:45:26,822 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:26,822 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:26,822 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:26,832 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:26,857 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 18:45:26,857 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:26,857 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:26,870 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:26,870 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:26,870 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:26,870 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:26,870 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+PROCESS OUTPUT 1-startup.txt
+2026-10-09 18:45:27,604 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:45:27,606 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:27,611 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:27,611 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:45:27,644 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:45:27,644 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:45:27,644 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:45:27,767 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:45:27,776 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:45:27,788 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:45:27,791 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:45:27,797 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:45:27,800 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:45:27,805 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:45:27,811 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:45:27,812 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:45:27,815 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:45:27,818 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:45:27,819 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:45:27,820 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:45:27,828 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-09 18:45:27,837 - main - INFO - Main Backend API starting up...
+2026-10-09 18:45:27,837 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend
+2026-10-09 18:45:27,850 - main - INFO - Database connection pool warmed up successfully
+2026-10-09 18:45:27,882 - bootstrap - INFO - County data present (47 counties) — skipping county loop; still refreshing national-level data
+2026-10-09 18:45:27,917 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain
+2026-10-09 18:45:27,917 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain
+2026-10-09 18:45:27,917 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.
+2026-10-09 18:45:27,930 - bootstrap - INFO - National budget execution seeded (processed=1, created=1, updated=0)
+2026-10-09 18:45:27,971 - bootstrap - INFO - National-level data refreshed (GDP, economic indicators, national budget)
+2026-10-09 18:45:27,971 - main - INFO - Main Backend API startup complete!
+2026-10-09 18:45:27,971 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false
+2026-10-09 18:45:27,985 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.
+2026-10-09 18:45:27,985 - apscheduler.scheduler - INFO - Scheduler started
+2026-10-09 18:45:27,985 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)
+2026-10-09 18:45:27,986 - apscheduler.scheduler - INFO - Added job "_setup_etl_scheduler.<locals>._digest_wrapper" to job store "default"
+2026-10-09 18:45:27,986 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false
+BOOTSTRAP_READY True
+
+.PROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:29,329", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+PROCESS OUTPUT 2-force.txt
+national_budget bootstrap skipped: Domain ownership unavailable; reconcile retained execution
+
+.PROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:31,083", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+PROCESS OUTPUT 2-force.txt
+national_budget bootstrap skipped: Domain ownership unavailable; reconcile retained execution
+
+.PROCESS OUTPUT 0-weekly.txt
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:32,892", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+PROCESS OUTPUT 2-force.txt
+national_budget bootstrap skipped: Domain ownership unavailable; reconcile retained execution
+
+.PROCESS OUTPUT 2-native.txt
+{"asctime": "2026-10-09 18:45:35,289", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+PROCESS OUTPUT 0-weekly.txt
+Failed to initialize reference data: (psycopg2.OperationalError) server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+[SQL: SELECT pg_backend_pid()=%(pid)s AND EXISTS (
+            SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=%(pid)s AND granted
+            AND classid=%(high)s AND objid=%(low)s AND objsubid=1)]
+[parameters: {'pid': 178, 'high': 202077395, 'low': 734715756}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.OperationalError: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/bootstrap.py", line 1173, in initialize_reference_data
+    budget_ownership.acknowledge(budget_job.id)
+  File "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/seeding/exclusion.py", line 211, in acknowledge
+    if not self.entered or not isinstance(self.entry, UUID) or not self.continuous():
+                                                                   ^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/seeding/exclusion.py", line 205, in continuous
+    return self.connection.scalar(text("""SELECT pg_backend_pid()=:pid AND EXISTS (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1301, in scalar
+    return meth(
+           ^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 534, in _execute_on_scalar
+    return self._execute_on_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1639, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2343, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+[SQL: SELECT pg_backend_pid()=%(pid)s AND EXISTS (
+            SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=%(pid)s AND granted
+            AND classid=%(high)s AND objid=%(low)s AND objsubid=1)]
+[parameters: {'pid': 178, 'high': 202077395, 'low': 734715756}]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:34,652", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 0-weekly.txt
+national_budget bootstrap failed; ownership retained: Owned budget handler failed after destructive write
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:36,494", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 0-weekly.txt
+national_budget bootstrap failed; ownership retained: Owned returned error
+
+PROCESS OUTPUT 1-native.txt
+{"asctime": "2026-10-09 18:45:37,689", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "national_budget"}
+
+.PROCESS OUTPUT 1-force.txt
+national_budget bootstrap skipped: Domain execution is already owned
+
+PROCESS OUTPUT 2-weekly.txt
+
+PROCESS OUTPUT 0-native.txt
+{"asctime": "2026-10-09 18:45:39,017", "levelname": "INFO", "name": "seeding", "message": "Dry run - rolled back all changes", "domain": "national_budget"}
+{"asctime": "2026-10-09 18:45:39,026", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "national_budget", "started_at": "2026-10-09T23:45:39.015197+00:00", "finished_at": "2026-10-09T23:45:39.026358+00:00", "items_processed": 1, "items_created": 1, "items_updated": 0, "dry_run": true, "errors": [], "metadata": {"owned_fixture": true}}
+
+OWNED_BOOTSTRAP_DEFAULT_FIXTURE_REMOVED batch9-review-590-auto-d6e4de2b1f234ba9 batch9-review-590-auto-network-d6e4de2b1f234ba9 port_free 55492
+
+=============================== warnings summary ===============================
+../../1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+20 passed, 3 warnings in 35.42s

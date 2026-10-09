@@ -11,21 +11,24 @@ import tempfile
 import time
 from uuid import uuid4
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import make_url
+from sqlalchemy import text
 import sqlalchemy
 from models import Base
 
 ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "backend/tests/batch9_bootstrap_fixture"))
+from owned_database import owned_engine, owned_url, schema_url
+
+ROOT = Path(__file__).resolve().parents[4]
 URL = os.environ["BATCH9_BOOTSTRAP_POSTGRES_URL"]
-assert "@127.0.0.1:55492/batch9-bootstrap-" in URL
+owned_url(URL)
 schema = "spec_" + uuid4().hex
-admin = create_engine(URL)
-owned_database = "batch9-bootstrap-spec-" + uuid4().hex
+admin = owned_engine(URL)
+owned_database = owned_url(URL).database + "-s-" + uuid4().hex[:12]
 with admin.connect().execution_options(isolation_level="AUTOCOMMIT") as db:
     db.execute(text(f'CREATE DATABASE "{owned_database}"'))
-owned_url = make_url(URL).set(database=owned_database)
-owned_admin = create_engine(owned_url)
+database_url = owned_url(URL).set(database=owned_database)
+owned_admin = owned_engine(database_url)
 processes = []
 report = {
     "python": platform.python_version(), "sqlalchemy": sqlalchemy.__version__,
@@ -35,7 +38,7 @@ report = {
 }
 with owned_admin.begin() as db:
     db.execute(text(f'CREATE SCHEMA "{schema}"'))
-engine = create_engine(owned_url.update_query_dict({"options": f"-csearch_path={schema}"}))
+engine = owned_engine(schema_url(database_url, schema), allow_schema=True)
 Base.metadata.create_all(engine)
 
 def scalar(sql):

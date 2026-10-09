@@ -1,3 +1,13 @@
+# Current review acceptance
+
+The 2026-10-09 review corrections and fresh acceptance evidence are indexed in
+[PR590_REVIEW_ACCEPTANCE.md](PR590_REVIEW_ACCEPTANCE.md). The report below is
+the preserved author history at `813acb0b75c6eccadf514dbbaffbc6439fd7fb63`; its
+source hashes, dependency state, default-skip setup and previous acceptance
+claims describe that earlier candidate. They do not certify the repaired source.
+
+---
+
 # Batch 9 bootstrap ownership evidence (#582)
 
 All verification is local against the held #584 seam

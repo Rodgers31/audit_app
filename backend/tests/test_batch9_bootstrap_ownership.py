@@ -9,7 +9,8 @@ from uuid import uuid4
 from datetime import datetime, timezone
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
+from batch9_bootstrap_fixture.owned_database import owned_engine, owned_url, schema_url
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = Path(__file__).with_name("batch9_bootstrap_fixture")
@@ -26,18 +27,28 @@ def wait_for(probe, predicate, timeout=15):
     raise AssertionError(f"Process control did not arrive; last value: {value}")
 
 
+@pytest.fixture(scope="module")
+def bootstrap_postgres_url():
+    if URL:
+        owned_url(URL)
+        yield URL
+    else:
+        from batch9_bootstrap_fixture.owned_postgres import postgres
+        with postgres() as url:
+            yield url
+
+
 @pytest.fixture
-def owned_pg(tmp_path):
-    if not URL:
-        pytest.skip("Explicit owned Batch 9 bootstrap PostgreSQL URL required")
-    assert "@127.0.0.1:55492/batch9-bootstrap-" in URL
+def owned_pg(tmp_path, bootstrap_postgres_url):
+    url = bootstrap_postgres_url
+    owned_url(url)
     from models import Base
-    admin = create_engine(URL)
+    admin = owned_engine(url)
     schema = "bootstrap_" + uuid4().hex
     with admin.begin() as db:
         db.execute(text(f'CREATE SCHEMA "{schema}"'))
-    scoped_url = URL + f"?options=-csearch_path%3D{schema}"
-    engine = create_engine(scoped_url)
+    scoped_url = schema_url(url, schema).render_as_string(hide_password=False)
+    engine = owned_engine(scoped_url, allow_schema=True)
     Base.metadata.create_all(engine)
     with engine.begin() as db:
         db.execute(text("CREATE TABLE batch9_control(mode text NOT NULL)"))

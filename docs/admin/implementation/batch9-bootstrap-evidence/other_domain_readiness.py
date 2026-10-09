@@ -7,32 +7,36 @@ import subprocess
 import sys
 from uuid import uuid4
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import make_url
+from sqlalchemy import text
 from models import Base
 
 root = Path(__file__).resolve().parents[4]
+ROOT = Path(__file__).resolve().parents[4]
+sys.path.insert(0, str(ROOT / "backend/tests/batch9_bootstrap_fixture"))
+from owned_database import owned_engine, owned_url
+
 url = os.environ["DATABASE_URL"]
-assert "@127.0.0.1:55492/batch9-bootstrap-" in url
-name = "batch9-bootstrap-other-ready-" + uuid4().hex
-admin = create_engine(url)
+owned_url(url)
+name = owned_url(url).database + "-o-" + uuid4().hex[:12]
+admin = owned_engine(url)
 with admin.connect().execution_options(isolation_level="AUTOCOMMIT") as db:
     db.execute(text(f'CREATE DATABASE "{name}"'))
-owned_url = make_url(url).set(database=name).render_as_string(hide_password=False)
-engine = create_engine(owned_url)
+database_url = owned_url(url).set(database=name).render_as_string(hide_password=False)
+engine = owned_engine(database_url)
 try:
     Base.metadata.create_all(engine)
     with engine.begin() as db:
         db.execute(text("INSERT INTO ingestion_jobs(domain,status,dry_run,started_at,items_processed,items_created,items_updated) "
                         "VALUES ('audits','RUNNING',false,clock_timestamp(),0,0,0)"))
-    env = {"PATH": os.environ["PATH"], "DATABASE_URL": owned_url,
+    env = {"PATH": os.environ["PATH"], "DATABASE_URL": database_url,
+           "BATCH9_BOOTSTRAP_OWNED_PORT": str(owned_url(url).port),
            "PYTHONPATH": str(root / "backend"), "PYTHON_DOTENV_DISABLED": "1",
            "PYTHONDONTWRITEBYTECODE": "1", "JWT_SECRET_KEY": "batch9-other-ready-inert",
            "AUTO_SEEDER_ENABLED": "false", "AUTO_WARMUP_ENABLED": "false"}
-    code = """import socket
+    code = """import os,socket
 connect = socket.socket.connect
 def loopback(sock, address):
-    assert isinstance(address,tuple) and address[:2]==('127.0.0.1',55492)
+    assert isinstance(address,tuple) and address[:2]==('127.0.0.1',int(os.environ['BATCH9_BOOTSTRAP_OWNED_PORT']))
     return connect(sock,address)
 socket.socket.connect=loopback
 import asyncio,main

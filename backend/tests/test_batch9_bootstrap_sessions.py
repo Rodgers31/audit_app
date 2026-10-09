@@ -1,10 +1,52 @@
 """Supplied SQLite sessions are test transactions, not PostgreSQL authority."""
 import pytest
-from sqlalchemy import select
+from sqlalchemy import create_engine, select, text
+from sqlalchemy.orm import Session
 
 import bootstrap
 from models import Entity, EntityType, IngestionJob, IngestionStatus
 from seeding.registries import REGISTRY, load_builtin_domains
+
+
+@pytest.mark.parametrize("force", [False, True])
+@pytest.mark.parametrize("binding", ["session", "connection"])
+def test_refusal_cannot_commit_or_rollback_caller_transaction(
+    tmp_path, monkeypatch, force, binding
+):
+    engine = create_engine(f"sqlite:///{tmp_path / 'caller.sqlite'}")
+    from models import Base
+    Base.metadata.create_all(engine)
+    with engine.begin() as db:
+        db.execute(text("CREATE TABLE unrelated_effects(value text)"))
+    if binding == "session":
+        caller = Session(bind=engine)
+        connection = caller.connection()
+        outer = caller.get_transaction()
+    else:
+        connection = engine.connect()
+        outer = connection.begin()
+        caller = Session(bind=connection, join_transaction_mode="control_fully")
+    # Force SQLite's deferred BEGIN before any savepoint can be released.
+    connection.execute(text("INSERT INTO unrelated_effects VALUES ('caller-pending')"))
+    monkeypatch.setattr(bootstrap, "SessionLocal", lambda: caller)
+    monkeypatch.setattr(bootstrap, "_seed_national_data", lambda *a, **k: None)
+    monkeypatch.setattr(bootstrap, "enter_domain", lambda *a, **k: (_ for _ in ()).throw(
+        bootstrap.DomainOwnershipError("inert competing owner")))
+    try:
+        bootstrap.initialize_reference_data(force=force)
+        assert outer.is_active and connection.in_transaction()
+        assert connection.scalar(text("SELECT json_extract(metadata, '$.source_mode') FROM ingestion_jobs WHERE domain='national_budget'")) == "unknown"
+        assert connection.scalar(text("SELECT count(*) FROM unrelated_effects")) == 1
+        with engine.connect() as other:
+            assert other.scalar(text("SELECT count(*) FROM unrelated_effects")) == 0
+        outer.rollback()
+        with engine.connect() as other:
+            assert other.scalar(text("SELECT count(*) FROM unrelated_effects")) == 0
+            assert other.scalar(text("SELECT count(*) FROM entities")) == 0
+    finally:
+        caller.close()
+        connection.close()
+        engine.dispose()
 
 
 def test_refused_second_bootstrap_preserves_supplied_connection_reference_rows(
@@ -63,4 +105,5 @@ def test_current_reference_database_records_truthful_budget_status(
     assert row.status == (IngestionStatus.FAILED if fault else IngestionStatus.COMPLETED)
     reference = db_session.scalars(select(IngestionJob).where(IngestionJob.domain == bootstrap.BOOTSTRAP_DOMAIN)).one()
     assert reference.meta["national_budget"]["status"] == row.status.value
-    assert reference.meta["national_budget"]["ownership_retained"] is bool(fault)
+    assert reference.meta["national_budget"]["ownership_retained"] is True
+    assert row.meta["outer_commit_pending"] is True

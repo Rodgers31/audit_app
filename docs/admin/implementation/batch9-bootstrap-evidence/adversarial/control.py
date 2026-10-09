@@ -16,7 +16,10 @@ from uuid import uuid4
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[4]
-BASE_URL = "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+sys.path.insert(0, str(ROOT / "backend/tests/batch9_bootstrap_fixture"))
+from owned_database import owned_engine, owned_url, schema_url
+
+BASE_URL = os.environ.get("BATCH9_BOOTSTRAP_POSTGRES_URL", "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183")
 
 
 def inert_env(url):
@@ -30,16 +33,18 @@ def inert_env(url):
 def child(mode):
     # Guard before importing any product entry point. Psycopg2 uses its own
     # transport; its URL is separately checked and supplied by this driver.
-    assert "@127.0.0.1:55492/batch9-bootstrap-adversarial-" in os.environ["DATABASE_URL"]
+    target = owned_url(os.environ["DATABASE_URL"], allow_schema=True)
     original = socket.socket.connect
 
     def local_only(sock, address):
-        if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55492):
+        if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", target.port):
             raise RuntimeError("Adversarial fixture forbids external transport")
         return original(sock, address)
 
     socket.socket.connect = local_only
-    from sqlalchemy import create_engine, event, text
+    import sqlalchemy
+    sqlalchemy.create_engine = lambda url, **kwargs: owned_engine(url, allow_schema=True, **kwargs)
+    from sqlalchemy import event, text
     from sqlalchemy.orm import sessionmaker
     import bootstrap
     import database
@@ -115,7 +120,7 @@ def child(mode):
         DomainExecution.acknowledge = acknowledge
 
     def terminate_owned(pid):
-        admin = create_engine(os.environ["DATABASE_URL"])
+        admin = owned_engine(os.environ["DATABASE_URL"], allow_schema=True)
         with admin.begin() as db:
             assert db.scalar(text("SELECT count(*) FROM pg_stat_activity "
                                   "WHERE pid=:pid AND datname=current_database()"), {"pid": pid}) == 1
@@ -207,8 +212,7 @@ def run(name):
     sys.path.insert(0, str(ROOT / "backend"))
     import pydantic
     import sqlalchemy
-    from sqlalchemy import create_engine, text
-    from sqlalchemy.engine import make_url
+    from sqlalchemy import text
 
     info = {
         "generated_by": str(Path(__file__).relative_to(ROOT)),
@@ -223,8 +227,8 @@ def run(name):
                                     ROOT / "backend/seeding/types.py"]},
         "cases": [], "limitations": ["Local owned PostgreSQL only; no hosted CI or production claim.",
             "Registry handler is intentionally inert; bootstrap and claim/release paths are actual product code."]}
-    admin = create_engine(BASE_URL, isolation_level="AUTOCOMMIT")
-    owned_name = "batch9-bootstrap-adversarial-" + uuid4().hex
+    admin = owned_engine(BASE_URL, isolation_level="AUTOCOMMIT")
+    owned_name = owned_url(BASE_URL).database + "-a-" + uuid4().hex[:12]
     db_created = False
     failure = None
     with output_path.open("w") as log:
@@ -234,7 +238,7 @@ def run(name):
             with admin.connect() as db:
                 db.execute(text(f'CREATE DATABASE "{owned_name}"'))
             db_created = True
-            owned_url = str(make_url(BASE_URL).set(database=owned_name).render_as_string(hide_password=False))
+            database_url = str(owned_url(BASE_URL).set(database=owned_name).render_as_string(hide_password=False))
             info["owned_database"] = owned_name
             modes = ["normal", "none", "empty_dict", "truthy_failure", "exception", "bool_count",
                      "negative_count", "overflow_count", "nan_count", "inf_count", "wrong_domain",
@@ -243,11 +247,11 @@ def run(name):
                      "loss_after_proof", "loss_during_release"]
             for mode in modes:
                 schema = "adversarial_" + uuid4().hex
-                owner = create_engine(owned_url)
+                owner = owned_engine(database_url)
                 with owner.begin() as db:
                     db.execute(text(f'CREATE SCHEMA "{schema}"'))
-                url = owned_url + f"?options=-csearch_path%3D{schema}"
-                engine = create_engine(url)
+                url = schema_url(database_url, schema).render_as_string(hide_password=False)
+                engine = owned_engine(url, allow_schema=True)
                 try:
                     provision(engine, mode)
                     command = [sys.executable, str(Path(__file__)), "--child", mode]

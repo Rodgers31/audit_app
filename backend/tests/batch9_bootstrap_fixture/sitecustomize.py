@@ -8,15 +8,22 @@ if os.environ.get("BATCH9_BOOTSTRAP_INERT") == "true":
         from datetime import datetime, timezone
 
         url = os.environ["DATABASE_URL"]
-        assert "@127.0.0.1:55492/batch9-bootstrap-" in url
+        from owned_database import owned_engine, owned_url
+        target = owned_url(url, allow_schema=True)
         original_connect = socket.socket.connect
 
         def local_only(sock, address):
-            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55492):
+            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", target.port):
                 raise RuntimeError("External transport blocked by bootstrap fixture")
             return original_connect(sock, address)
 
         socket.socket.connect = local_only
+        import sqlalchemy
+
+        def pinned_engine(url, **kwargs):
+            return owned_engine(url, allow_schema=True, **kwargs)
+
+        sqlalchemy.create_engine = pinned_engine
         from sqlalchemy import text
         from database import SessionLocal
         from seeding.registries import REGISTRY, load_builtin_domains

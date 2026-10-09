@@ -35,6 +35,7 @@ from county_metrics_purge import (  # noqa: F401 - re-exported
     purge_modelled_county_metrics,
 )
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import Connection
 from seeding.exclusion import DomainExecution, DomainOwnershipError, enter_domain
 
 logger = logging.getLogger(__name__)
@@ -952,6 +953,18 @@ def _seed_run_in_flight(session: Session) -> Optional[str]:
     return row.domain if row else None
 
 
+def _bootstrap_session() -> Tuple[Session, bool]:
+    """Keep an existing caller transaction authoritative over bootstrap writes."""
+    candidate = SessionLocal()
+    bind = candidate.get_bind()
+    if candidate.in_transaction() or (
+        isinstance(bind, Connection) and bind.in_transaction()
+    ):
+        connection = candidate.connection() if candidate.in_transaction() else bind
+        return Session(bind=connection, join_transaction_mode="create_savepoint"), False
+    return candidate, True
+
+
 def initialize_reference_data(
     code_lookup: Optional[Dict[str, str]] = None, *, force: bool = False
 ) -> None:
@@ -973,7 +986,7 @@ def initialize_reference_data(
     # row saying otherwise would be read by check_ingestion_freshness as a
     # bootstrap that served a fixture.
     if not force:
-        probe = SessionLocal()
+        probe, _ = _bootstrap_session()
         try:
             busy = _seed_run_in_flight(probe)
         except Exception:  # noqa: BLE001 - a probe must never be the failure
@@ -994,7 +1007,7 @@ def initialize_reference_data(
     # up even when the county entities are already in place.
     skip_county_loop = False
     if not force:
-        quick_session = SessionLocal()
+        quick_session, _ = _bootstrap_session()
         try:
             county_count = (
                 quick_session.query(Entity)
@@ -1023,7 +1036,7 @@ def initialize_reference_data(
 
 
     started_at = datetime.now(timezone.utc)
-    session = SessionLocal()
+    session, owns_transaction = _bootstrap_session()
     budget_ownership = None
     budget_job = None
     try:
@@ -1047,7 +1060,7 @@ def initialize_reference_data(
                 domain="national_budget", status=IngestionStatus.FAILED, dry_run=False,
                 started_at=datetime.now(timezone.utc), finished_at=datetime.now(timezone.utc),
                 errors=[str(exc)], meta={"bootstrap": True, "ownership_refused": True,
-                                       "source_mode": "not_run"},
+                                       "source_mode": "unknown"},
             )
             session.add(budget_job)
 
@@ -1129,6 +1142,9 @@ def initialize_reference_data(
         # Before this the weekly job was invisible: no IngestionJob, no
         # freshness mark, so a fixture could freeze for a year — and one had —
         # while every gate stayed green because none of them was looking.
+        if not owns_transaction and budget_job is not None and budget_ownership is not None:
+            budget_job.meta = {**budget_job.meta, "ownership_retained": True,
+                               "outer_commit_pending": True}
         provenance = bootstrap_provenance(session)
         if budget_job is not None:
             session.flush()
@@ -1152,7 +1168,7 @@ def initialize_reference_data(
         # Only a successful, persisted budget receipt permits release. The
         # shared seam proves continuity and mutates on its lock-holding backend.
         # Any failure (including an ambiguous commit) retains the durable claim.
-        if (budget_ownership is not None and budget_job is not None
+        if (owns_transaction and budget_ownership is not None and budget_job is not None
                 and budget_job.status == IngestionStatus.COMPLETED):
             budget_ownership.acknowledge(budget_job.id)
 

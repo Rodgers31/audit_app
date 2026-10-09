@@ -1,3 +1,17 @@
+# Review correction handoff — 2026-10-09
+
+Current local acceptance, all seven inline classifications, both body-only
+findings, caller-owned transaction bounds and fresh default-fixture execution
+are recorded in [PR590_REVIEW_ACCEPTANCE.md](batch9-bootstrap-evidence/PR590_REVIEW_ACCEPTANCE.md).
+Actual main `b0ec603ccbf29d5ae7f6540faa3d484964334fb1` has been merged into the
+review candidate without source conflicts. The historical author handoff below
+remains preserved; its draft/dependency state, source hash, `not_run` metadata
+and default skipping behavior have been superseded by the dated review report.
+Final published head, GitHub replies and hosted/merge acceptance belong to the
+coordinator.
+
+---
+
 # Batch 9 — bootstrap budget ownership (#582)
 
 Author delivery for coordinator acceptance. **Dependent draft: target
