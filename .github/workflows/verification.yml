@@ -80,6 +80,9 @@ jobs:
     - name: Prepare pinned owned PostgreSQL test images
       timeout-minutes: 5
       run: python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+    - name: Prepare owned reconciliation test fixture
+      timeout-minutes: 5
+      run: python .github/scripts/prepare_reconciliation_test_fixture.py prepare --state "$RUNNER_TEMP/reconciliation-fixture-state.json" --port 55496
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: python .github/scripts/run_backend_tests.py
@@ -88,6 +91,13 @@ jobs:
         REDIS_URL: redis://localhost:6379
         TESTING: true
         PYTHON_DOTENV_DISABLED: '1'
+    - name: Remove owned reconciliation test fixture
+      if: always()
+      timeout-minutes: 5
+      run: |
+        if [ -f "$RUNNER_TEMP/reconciliation-fixture-state.json" ]; then
+          python .github/scripts/prepare_reconciliation_test_fixture.py cleanup --state "$RUNNER_TEMP/reconciliation-fixture-state.json"
+        fi
     - name: Report Local Backend Coverage
       id: local_coverage
       continue-on-error: true

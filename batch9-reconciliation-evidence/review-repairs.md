@@ -100,6 +100,15 @@ state binds their exact resource IDs. The coordinator will add preparation and
 always-cleanup steps to both CI workflows after taking this checkout; those
 workflow files were deliberately outside this repair lane.
 
+Coordinator wiring now prepares this owned fixture after immutable image
+preparation and before the required backend launcher in both `ci.yml` and
+`verification.yml`. An `always()` step cleans only the bound state after tests,
+including a failed preparation/test path. The inherited shared `DATABASE_URL`
+is preserved; only the separate reconciliation input is exported. The missing
+wiring was first observed by an executable workflow contract; the repaired
+complete workflow-control selection passes 85 tests. Frozen hosted acceptance
+remains separately required and is not inferred from these offline controls.
+
 ## Remaining operator gates and uncovered-issue disposition
 
 #583 remains open: independent production scheduler/host/operator evidence,
