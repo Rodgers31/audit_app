@@ -7,6 +7,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { test } = require('node:test');
+const { copyRuntimeFixture } = require('./runtime-fixture-copy.cjs');
 
 test('runtime verification rejects nested tooling and malformed manifests', async t => {
   const source = process.env.RUNTIME_VERIFY_ROOT;
@@ -16,7 +17,7 @@ test('runtime verification rejects nested tooling and malformed manifests', asyn
   const manifest = fs.readFileSync(path.join(source, 'package.json'), 'utf8');
   try {
     fs.writeFileSync(path.join(fixture, 'package.json'), manifest);
-    fs.cpSync(path.join(source, 'node_modules'), path.join(fixture, 'node_modules'), { recursive: true });
+    copyRuntimeFixture(path.join(source, 'node_modules'), path.join(fixture, 'node_modules'));
     const run = () => spawnSync(process.execPath, [script, fixture], {
       env: { PATH: process.env.PATH }, encoding: 'utf8', timeout: 30000,
     });

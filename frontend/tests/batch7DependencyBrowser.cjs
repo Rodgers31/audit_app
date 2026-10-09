@@ -7,6 +7,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const { chromium } = require('@playwright/test');
+const { selectFixture } = require('../scripts/dependency-browser-fixtures.cjs');
 
 /**
  * Drive two isolated Learn contexts: BM25 fallback and actual WASM inference.
@@ -22,6 +23,7 @@ async function main() {
   const revision = '751bff37182d3f1213fa05d7196b954e230abad9';
   const transformersRequire = createRequire(require.resolve('@huggingface/transformers'));
   const wasmDir = path.dirname(transformersRequire.resolve('onnxruntime-web'));
+  const runtimeVersion = require(path.join(wasmDir, '../package.json')).version;
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
@@ -30,6 +32,7 @@ async function main() {
       const unexpected = [];
       const errors = [];
       const fixtures = [];
+      const fixtureUrls = [];
       await context.addInitScript(() => {
         window.__dependencyWasmCalls = 0;
         for (const method of ['instantiate', 'instantiateStreaming']) {
@@ -43,23 +46,21 @@ async function main() {
       await context.route('**/*', async route => {
         const url = new URL(route.request().url());
         if (url.origin === base) return route.continue();
-        if (url.hostname === 'huggingface.co') {
+        const fixture = selectFixture(url.href, runtimeVersion);
+        if (fixture?.kind === 'model') {
           if (!allowModel) return route.abort();
-          const prefix = '/Xenova/all-MiniLM-L6-v2/resolve/main/';
-          assert.ok(url.pathname.startsWith(prefix), 'Unexpected model request');
-          const relative = url.pathname.slice(prefix.length);
-          assert.ok(['config.json', 'tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx'].includes(relative));
+          const { relative, contentType } = fixture;
           fixtures.push(relative);
+          fixtureUrls.push(url.href);
           return route.fulfill({ body: await fs.readFile(path.join(cache, 'Xenova/all-MiniLM-L6-v2', revision, relative)),
-            contentType: relative.endsWith('.json') ? 'application/json' : 'application/octet-stream' });
+            contentType });
         }
-        if (['cdn.jsdelivr.net', 'unpkg.com'].includes(url.hostname) && /ort.*\.(wasm|mjs)$/.test(url.pathname)) {
-          const name = path.basename(url.pathname);
-          fixtures.push(name);
-          return route.fulfill({ body: await fs.readFile(path.join(wasmDir, name)),
-            contentType: name.endsWith('.wasm') ? 'application/wasm' : 'text/javascript' });
+        if (fixture?.kind === 'runtime') {
+          fixtures.push(fixture.relative);
+          fixtureUrls.push(url.href);
+          return route.fulfill({ body: await fs.readFile(path.join(wasmDir, fixture.relative)), contentType: fixture.contentType });
         }
-        unexpected.push(url.origin + url.pathname);
+        unexpected.push(url.href);
         return route.abort();
       });
       const page = await context.newPage();
@@ -86,13 +87,13 @@ async function main() {
       assert.equal(errors.length, 0, JSON.stringify(errors));
       assert.equal(unexpected.length, 0, JSON.stringify(unexpected));
       assert.equal(wasmCalls > 0, allowModel);
-      results.push({ allowModel, wasmCalls, fixtures, rankings, errors, unexpected });
+      results.push({ allowModel, wasmCalls, fixtures, fixtureUrls, rankings, errors, unexpected });
       await context.close();
     }
     assert.notEqual(results[0].rankings[0].text, results[1].rankings[0].text, 'Semantic search must change the fallback ranking');
     assert.match(results[1].rankings[0].text.split('\n')[0], /142/);
     assert.match(results[1].rankings[1].text.split('\n')[0], /43/);
-    console.log(JSON.stringify({ check: 'actual-packaged-browser-search', revision, results }, null, 2));
+    console.log(JSON.stringify({ check: 'actual-packaged-browser-search', revision, runtimeVersion, results }, null, 2));
   } finally { await browser.close(); }
 }
 

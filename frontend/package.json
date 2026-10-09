@@ -17,7 +17,8 @@
     "verify:native": "node scripts/verify-native-dependencies.mjs",
     "verify:dependency-tooling": "node scripts/verify-dependency-tooling.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
-    "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs"
+    "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
+    "test:dependency-boundaries": "node --test scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
