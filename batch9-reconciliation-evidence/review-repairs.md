@@ -122,3 +122,28 @@ The owned CI fixture gap is addressed by this helper and the coordinator's workf
 wiring. The existing #583 covers the remaining operational gates; no duplicate
 GitHub issue was opened from this lane. Final push, review replies/resolutions,
 independent cross-review and merge remain with the coordinator.
+
+## Independent source-attribution repair
+
+The independent Standards reviewer reproduced an additional defect in the active
+public `run_receipt.py`: a successful child could modify reconciliation source
+and the recorder would attribute that run to hashes collected afterward. The
+coordinator reproduced nine failing recorder controls, then bound HEAD, tree,
+tracked status, exact source inventory, generator and publishing-helper bytes
+before execution and compared them afterward. Source deletion, generator/helper
+mutation, an empty commit and a newly added source all produce a failed verification
+receipt even when the child succeeds. Child and verification exit codes remain
+separate. Required sources and a fresh safe destination are checked before launch;
+readback uses an explicit equality check rather than removable assertions.
+
+The previous active generator is retained byte-for-byte in `historical-generators/`
+with SHA256 `d83ceab3234b52e5a26f9aec186ddc2f2464488b0a1b5acd48c840c1a0854b6e`.
+Its earlier publication controls do not certify this later repair. The new real
+subprocess/Git controls and existing publication selection each pass 18 cases
+on Python 3.13.9 / SQLAlchemy 2.0.46 and Python 3.12.15 / SQLAlchemy 2.0.23,
+without skips. Raw red, green, minimum-runtime and two intermediate fixture/setup
+results are preserved in the coordinator's external `BATCH_9_PR_REVIEW` packet.
+The initial in-memory SQLite setup refusal was not a behavioral red; the corrected
+owned-file baseline supplied the nine failures. The initial repaired publication
+fixture lacked its newly required helper; adding the real helper fixed that
+fixture. Independent final-source review and combined hosted execution follow.

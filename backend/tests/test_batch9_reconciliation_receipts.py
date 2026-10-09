@@ -27,6 +27,7 @@ def fixture(module, tmp_path, monkeypatch, output):
     folder.mkdir()
     copied = folder / Path(module.__file__).name
     copied.write_bytes(Path(module.__file__).read_bytes())
+    (folder / "receipt_safety.py").write_bytes((EVIDENCE / "receipt_safety.py").read_bytes())
     for source in ("backend/seeding/reconciliation.py", "backend/seeding/reconcile_operator.py",
                    "backend/models.py", "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py"):
         target = tmp_path / source
