@@ -14,6 +14,15 @@ const semver = createRequire(require.resolve('sharp'))('semver');
 const frontend = path.resolve(__dirname, '..');
 const jestCli = require.resolve('jest/bin/jest');
 
+function exactVersion(value) {
+  if (typeof value !== 'string') return false;
+  const parsed = semver.parse(value);
+  if (!parsed) return false;
+  const canonical = parsed.version + (parsed.build.length ? `+${parsed.build.join('.')}` : '');
+  return canonical === value && parsed.prerelease.every(identifier =>
+    !/^\d+$/.test(String(identifier)) || Number.isSafeInteger(Number(identifier)));
+}
+
 function jest(args) {
   return spawnSync(process.execPath, [jestCli, ...args], {
     cwd: frontend, encoding: 'utf8', timeout: 15000,
@@ -48,12 +57,29 @@ test('installed Jest dependency graph excludes the vulnerable brace compiler', (
   assert.ok(Array.isArray(packages) && packages.length > 0, 'Jest graph must be measured');
   assert.ok(packages.every(pkg => pkg && typeof pkg === 'object' && !Array.isArray(pkg)
     && typeof pkg.name === 'string' && pkg.name.trim()
-    && typeof pkg.version === 'string' && semver.valid(pkg.version)), 'npm graph rows must identify packages');
+    && exactVersion(pkg.version)), 'npm graph rows must identify packages');
   for (const caller of ['@jest/core', 'jest-cli', 'jest-config', 'jest-message-util']) {
     assert.ok(packages.some(pkg => pkg.name === caller), `npm graph must include ${caller}`);
   }
   assert.deepEqual(packages.filter(pkg => ['braces', 'micromatch'].includes(pkg.name))
     .map(pkg => `${pkg.name}@${pkg.version}`), []);
+});
+
+test('graph gate accepts exact prerelease and build versions without normalization', () => {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'batch9-dependencies-version-'));
+  try {
+    const callers = ['@jest/core', 'jest-cli', 'jest-config', 'jest-message-util']
+      .map(name => ({ name, version: '30.5.2' }));
+    for (const version of ['1.2.3-rc.1', '1.2.3+build.001', '1.2.3-rc.1+build.001']) {
+      const npmCli = path.join(fixture, 'npm-report.cjs');
+      fs.writeFileSync(npmCli, `process.stdout.write(${JSON.stringify(JSON.stringify([...callers, { name: 'ordinary-dependency', version }]))});\n`);
+      const result = spawnSync(process.execPath, ['--test', '--test-name-pattern=^installed Jest', __filename], {
+        cwd: frontend, encoding: 'utf8', timeout: 15000,
+        env: { PATH: process.env.PATH, npm_execpath: npmCli },
+      });
+      assert.equal(result.status, 0, result.stdout || result.stderr || String(result.error));
+    }
+  } finally { fs.rmSync(fixture, { recursive: true, force: true }); }
 });
 
 test('graph gate rejects malformed rows and incomplete measurements', () => {
@@ -63,7 +89,8 @@ test('graph gate rejects malformed rows and incomplete measurements', () => {
       .map(name => ({ name, version: '30.5.2' }));
     const core = callers[0];
     const cases = [[core], [core, {}], [core, { version: '3.0.3' }], [core, null],
-      ...['not-a-version', '>=30', '30.x', '30.5', '30.5.2.1', '01.5.2']
+      ...['not-a-version', '>=30', '30.x', '30.5', '30.5.2.1', '01.5.2',
+        'v30.5.2', ' 30.5.2 ', '30.5.2-9007199254740992', '9007199254740992.0.0']
         .map(version => [...callers, { name: 'ordinary-dependency', version }])];
     for (const rows of cases) {
       const npmCli = path.join(fixture, 'npm-stub.cjs');

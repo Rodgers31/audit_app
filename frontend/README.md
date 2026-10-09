@@ -156,6 +156,23 @@ npm test            # Run Jest tests
 npm run test:watch  # Run tests in watch mode
 ```
 
+The standard `dev`, `build`, and `lint` scripts check the retained dependency
+inputs before starting Next. Tailwind scanning retains the four reviewed
+`pages`, `components`, `app`, and `src` patterns, each with one five-extension
+brace group. Next lint uses its default literal working directory; custom
+`settings.next.rootDir` globs require a separate caller review. The same check
+runs before `verify:dependency-tooling` can report CSS compatibility. Run
+`npm run test:dependency-boundaries` to exercise the rejected-input controls.
+
+These checks bound the repository's standard configured callers. They do not
+sandbox executable configuration, protect direct tool invocations or custom CLI
+configuration, or monitor changes during a running development watcher.
+`braces` and `sprintf-js` still have no published patched release in the
+2026-10-09 inventory. Full audits remain nonzero; production audit zero is a
+separate measurement, not acceptance of build-tool risk. See the
+[Batch 9 dependency handoff](../docs/admin/implementation/BATCH_9_DEPENDENCIES_HANDOFF.md)
+for caller scope, platform evidence, and the remaining #494 work.
+
 ### Adding New Components
 
 1. Create component in `components/` directory
