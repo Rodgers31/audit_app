@@ -1,0 +1,18 @@
+........................................................................ [ 34%]
+........................................................................ [ 69%]
+...............................................................          [100%]
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:26
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/models.py:26: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+207 passed, 3 warnings in 21.61s

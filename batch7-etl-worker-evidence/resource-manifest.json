@@ -1,0 +1,106 @@
+{
+  "base_sha": "f0ea1bbd41f33e7666cf2b7fbc4cc4abcfe60b0d",
+  "tested_source_sha": "c8cfc5931f22a4cc121005e3f5285845a9480336",
+  "worktree": "/Users/roger/.codex/worktrees/batch7-etl-worker/audit_app",
+  "branch": "codex/batch7-etl-worker",
+  "runtime": {
+    "python": "3.13.9",
+    "python_path": "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "reuse": "read-only; PYTHONDONTWRITEBYTECODE=1",
+    "dotenv": "disabled; clean env",
+    "lint_tool": "flake8==6.1.0",
+    "owned_tool_venv": "/Users/roger/.codex/visualizations/2026/10/09/01a11f2c-f84e-7d93-a1cf-5af62229884a/etl-worker/tools"
+  },
+  "postgresql": {
+    "server": "16.15 aarch64 Alpine",
+    "image": "postgres:16-alpine",
+    "image_id": "sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea",
+    "container": "audit-batch7-etl-worker-db",
+    "database": "batch7_etl_worker",
+    "host": "127.0.0.1",
+    "port": 55481,
+    "removed": true,
+    "other_db_connections_before_removal": 0,
+    "reviewer_schemas_after_teardown": 0
+  },
+  "cleanup": {
+    "owned_worker_adapter_processes": "none observed by anchored pgrep",
+    "port_55481_listener": "none observed by lsof",
+    "api_server": "not launched; mounted router only",
+    "frontend_resources": "none used",
+    "other_lane_resources": "untouched",
+    "worktree": "retained attached for PR review",
+    "external_artifacts": "pinned source and owned lint-tool venv retained outside Git",
+    "initdb_attempt": "failed: libpq lacks server binary; no cluster launched"
+  },
+  "artifacts": [
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/09/01a11f2c-f84e-7d93-a1cf-5af62229884a/etl-worker/pinned_etl_admin.py",
+      "bytes": 6439,
+      "sha256": "9b5b936f3b4979b535c71ccbc2efff5a1544efa79cd507300fc72df9e1703250"
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_SESSIONS/SPEC.md",
+      "bytes": 13526,
+      "sha256": "ea75cf512600bb7d270edf0ee7ee9eb01b4e42fd676e2d01a0b4f56b0bb62307"
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_SESSIONS/dispatch-contract-examples.json",
+      "bytes": 4375,
+      "sha256": "16f18e70d4e28a1547858197ea0364ed19ad06209276b7ef4d8ef6925ecfb890"
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_SESSIONS/CONTRACT_CHANGE_REQUEST_BATCH7_ETL_WORKER.md",
+      "bytes": 1722,
+      "sha256": "37b79280ca53fb622b24c42f9298829664d475f869f758161747c6426a32ab2b"
+    }
+  ],
+  "skips": [
+    "full repository suite/coverage threshold",
+    "frontend build/browser integration against actual backend (coordinator #568)",
+    "hosted GitHub Actions security/quality checks disabled",
+    "production migration/activation/financial source fetch/publication"
+  ],
+  "issues": {
+    "554": "open, coordinator acceptance pending",
+    "545": "open, broad parent",
+    "572": "open, deduplicated shared native CLI exclusion gate"
+  },
+  "tested_files": [
+    {
+      "path": "backend/admin_etl_dispatch.py",
+      "git_blob": "3ba242157bd88e65e5d82647d777cc4d7457e48a",
+      "sha256": "99f932555be6c13d58af987acf784cff48b6b04d847d3e0fdcfc04708aec1550"
+    },
+    {
+      "path": "backend/admin_etl_dispatch_worker.py",
+      "git_blob": "a5fc5e8c0c99039f1099829872f263eca87ebae6",
+      "sha256": "b2366dc63a02ab21b516083bc570c63bef1f1f135889fa1df04f4341a852b384"
+    },
+    {
+      "path": "backend/admin_etl_dispatch_adapter.py",
+      "git_blob": "2ea040c52770dae16166b7868022c7961008604f",
+      "sha256": "64094148d82155cc400e6afe00543704fbc6113616e50983f9f748e59f05688a"
+    },
+    {
+      "path": "backend/routers/etl_admin.py",
+      "git_blob": "27b604e2c6b9eaba1364822d7aa6bafd172cda35",
+      "sha256": "f4286680982572a0d148a4fba458e95bd6a0fa3267ff97fe406b1c08872ab79b"
+    },
+    {
+      "path": "backend/models.py",
+      "git_blob": "c57a50a09bb67be0da803c610451a7c3312f5e4b",
+      "sha256": "98675df04f785ba1b18aafedaabc7d8f0f3409b23593c3c2016725aa9380d837"
+    },
+    {
+      "path": "backend/alembic/versions/e554d7c9a001_etl_dedicated_dispatch.py",
+      "git_blob": "70e4a67b38faafe3ccf47dba2f490ea2f7f36f98",
+      "sha256": "9fb9358a1d63d6e6431482ea5a096a2028468e128ba9f19bc30f902e32493ee1"
+    },
+    {
+      "path": "backend/tests/test_batch7_etl_adversarial.py",
+      "git_blob": "c85513553e45be4016ddb63153eef03987d505f2",
+      "sha256": "5b176aad19f84abc3dad4ff6d838f3da76e28830888d28ba59e4013c484cb6e9"
+    }
+  ]
+}

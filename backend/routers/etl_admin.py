@@ -5,11 +5,15 @@ from importlib.util import module_from_spec, spec_from_file_location
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from fastapi import APIRouter, Depends, HTTPException, Header, Query
+from pydantic import BaseModel, StrictBool, StrictStr, ValidationError
 
-from routers.admin_operations import DISPATCH_ERROR, DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
+from routers.admin_operations import OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
+from database import get_db
+from sqlalchemy.orm import Session
+from admin_etl_dispatch import (TriggerBody, DispatchCapability, Accepted, Command, CommandPage,
+    Source, Status, capability, accept, command_detail, command_history)
 
 # Both Docker backend-only contexts and repository imports load the same packaged
 # planner without changing global package precedence (especially seeding).
@@ -28,7 +32,10 @@ router = APIRouter(prefix="/api/v1/admin/etl", tags=["ETL Administration"],
     route_class=OperationsRoute,
     dependencies=[Depends(require_admin)])
 VALID_SOURCES = ["treasury", "cob", "oag", "knbs", "opendata", "cra"]
-MANUAL_TRIGGER = {"available": False, "reason": DISPATCH_REASON}
+MANUAL_TRIGGER = {"available": False, "reason": (
+    "Calendar endpoints do not dispatch work or verify worker readiness. "
+    "Use dedicated dispatch capability and command receipts for execution evidence."
+)}
 
 
 class PlanDecision(BaseModel):
@@ -112,20 +119,32 @@ async def get_etl_health():
         "note": "A calendar calculation does not establish scheduler activity, job execution or data freshness."}
 
 
-class TriggerBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    dry_run: StrictBool = False
-
-
-@router.post("/trigger/{source}", response_model=dict, summary="Manual execution unavailable")
-async def trigger_etl_run(source: str, body: TriggerBody | None = None,
-    actor: AdminUser = Depends(require_admin)):
-    """Reject both real and dry-run execution until a worker can accept commands.
-
-    Ingestion jobs are runner observations, not a queue consumed by the seeder.
-    Repeated/stale requests make no writes and do not create success audit entries.
-    This route deliberately has no database/runner dependency.
-    """
+@router.post("/trigger/{source}", response_model=Accepted, status_code=202, summary="Accept dedicated worker intent")
+def trigger_etl_run(source: str, body: TriggerBody | None = None,
+    actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db),
+    idempotency_key: str | None = Header(None)):
     _known_source(source)
-    raise HTTPException(status_code=503,
-        detail=dict(DISPATCH_ERROR), headers=PRIVATE_HEADERS)
+    # Preserve valid legacy direct calls as well as FastAPI's parsed body while
+    # applying the same strict shape to either entry point.
+    if isinstance(body, dict):
+        try:
+            body = TriggerBody.model_validate(body)
+        except ValidationError:
+            raise HTTPException(422, "Invalid operations parameters") from None
+    return accept(db, actor, source, TriggerBody() if body is None else body, idempotency_key)
+
+
+@router.get("/dispatch", response_model=DispatchCapability)
+def get_dispatch(db: Session = Depends(get_db)):
+    return capability(db)
+
+
+@router.get("/commands", response_model=CommandPage)
+def get_commands(page: int = Query(1, ge=1, le=10000), page_size: int = Query(20, ge=1, le=50),
+    source: Source | None = None, status: Status | None = None, db: Session = Depends(get_db)):
+    return command_history(db, page, page_size, source, status)
+
+
+@router.get("/commands/{command_id}", response_model=Command)
+def get_command(command_id: str, db: Session = Depends(get_db)):
+    return command_detail(db, command_id)

@@ -1,0 +1,53 @@
+........................x............................................... [ 25%]
+........................................................................ [ 51%]
+...........................................................FF........... [ 76%]
+..................................................................       [100%]
+=================================== FAILURES ===================================
+_____ test_direct_duplicate_trigger_never_accepts_without_dispatch[body2] ______
+
+body = {'dry_run': False}
+
+    @pytest.mark.parametrize("body", [None, {}, {"dry_run": False}, {"dry_run": True}])
+    def test_direct_duplicate_trigger_never_accepts_without_dispatch(body):
+        for _ in range(2):
+            with pytest.raises(HTTPException) as rejected:
+                asyncio.run(etl_admin.trigger_etl_run("oag", body=body, actor=None))
+>           assert rejected.value.status_code == 503
+E           AssertionError: assert 422 == 503
+E            +  where 422 = HTTPException(status_code=422, detail='Invalid operations parameters').status_code
+E            +    where HTTPException(status_code=422, detail='Invalid operations parameters') = <ExceptionInfo HTTPException(status_code=422, detail='Invalid operations parameters') tblen=3>.value
+
+backend/tests/test_admin_operations_adversarial.py:129: AssertionError
+_____ test_direct_duplicate_trigger_never_accepts_without_dispatch[body3] ______
+
+body = {'dry_run': True}
+
+    @pytest.mark.parametrize("body", [None, {}, {"dry_run": False}, {"dry_run": True}])
+    def test_direct_duplicate_trigger_never_accepts_without_dispatch(body):
+        for _ in range(2):
+            with pytest.raises(HTTPException) as rejected:
+                asyncio.run(etl_admin.trigger_etl_run("oag", body=body, actor=None))
+>           assert rejected.value.status_code == 503
+E           AssertionError: assert 422 == 503
+E            +  where 422 = HTTPException(status_code=422, detail='Invalid operations parameters').status_code
+E            +    where HTTPException(status_code=422, detail='Invalid operations parameters') = <ExceptionInfo HTTPException(status_code=422, detail='Invalid operations parameters') tblen=3>.value
+
+backend/tests/test_admin_operations_adversarial.py:129: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:26
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/models.py:26: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_admin_operations_adversarial.py::test_direct_duplicate_trigger_never_accepts_without_dispatch[body2]
+FAILED backend/tests/test_admin_operations_adversarial.py::test_direct_duplicate_trigger_never_accepts_without_dispatch[body3]
+2 failed, 279 passed, 1 xfailed, 3 warnings in 33.99s

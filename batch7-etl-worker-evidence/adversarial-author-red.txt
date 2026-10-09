@@ -1,0 +1,178 @@
+FFFFFFFF                                                                 [100%]
+=================================== FAILURES ===================================
+________ test_direct_replay_rejects_nonboolean_semantic_intent[False-0] ________
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+dry_run = False, bad = 0
+
+    @pytest.mark.parametrize("dry_run,bad", [(False, 0), (False, 0.0), (True, 1), (True, 1.0)])
+    def test_direct_replay_rejects_nonboolean_semantic_intent(pg, dry_run, bad):
+        factory, _ = pg
+        generation = register_worker(factory)
+        _, key = accepted(factory, generation, dry_run=dry_run)
+        with factory() as db:
+>           with pytest.raises((ValidationError, HTTPException, ValueError, TypeError)):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE any of (<class 'pydantic_core._pydantic_core.ValidationError'>, <class 'fastapi.exceptions.HTTPException'>, <class 'ValueError'>, <class 'TypeError'>)
+
+backend/tests/test_batch7_etl_adversarial.py:100: Failed
+_______ test_direct_replay_rejects_nonboolean_semantic_intent[False-0.0] _______
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+dry_run = False, bad = 0.0
+
+    @pytest.mark.parametrize("dry_run,bad", [(False, 0), (False, 0.0), (True, 1), (True, 1.0)])
+    def test_direct_replay_rejects_nonboolean_semantic_intent(pg, dry_run, bad):
+        factory, _ = pg
+        generation = register_worker(factory)
+        _, key = accepted(factory, generation, dry_run=dry_run)
+        with factory() as db:
+>           with pytest.raises((ValidationError, HTTPException, ValueError, TypeError)):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE any of (<class 'pydantic_core._pydantic_core.ValidationError'>, <class 'fastapi.exceptions.HTTPException'>, <class 'ValueError'>, <class 'TypeError'>)
+
+backend/tests/test_batch7_etl_adversarial.py:100: Failed
+________ test_direct_replay_rejects_nonboolean_semantic_intent[True-1] _________
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+dry_run = True, bad = 1
+
+    @pytest.mark.parametrize("dry_run,bad", [(False, 0), (False, 0.0), (True, 1), (True, 1.0)])
+    def test_direct_replay_rejects_nonboolean_semantic_intent(pg, dry_run, bad):
+        factory, _ = pg
+        generation = register_worker(factory)
+        _, key = accepted(factory, generation, dry_run=dry_run)
+        with factory() as db:
+>           with pytest.raises((ValidationError, HTTPException, ValueError, TypeError)):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE any of (<class 'pydantic_core._pydantic_core.ValidationError'>, <class 'fastapi.exceptions.HTTPException'>, <class 'ValueError'>, <class 'TypeError'>)
+
+backend/tests/test_batch7_etl_adversarial.py:100: Failed
+_______ test_direct_replay_rejects_nonboolean_semantic_intent[True-1.0] ________
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+dry_run = True, bad = 1.0
+
+    @pytest.mark.parametrize("dry_run,bad", [(False, 0), (False, 0.0), (True, 1), (True, 1.0)])
+    def test_direct_replay_rejects_nonboolean_semantic_intent(pg, dry_run, bad):
+        factory, _ = pg
+        generation = register_worker(factory)
+        _, key = accepted(factory, generation, dry_run=dry_run)
+        with factory() as db:
+>           with pytest.raises((ValidationError, HTTPException, ValueError, TypeError)):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE any of (<class 'pydantic_core._pydantic_core.ValidationError'>, <class 'fastapi.exceptions.HTTPException'>, <class 'ValueError'>, <class 'TypeError'>)
+
+backend/tests/test_batch7_etl_adversarial.py:100: Failed
+___ test_finish_rejects_incoherent_correlated_completed_observation[change0] ___
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+change = {'finished_at': datetime.datetime(2100, 1, 2, 0, 0), 'started_at': datetime.datetime(2100, 1, 1, 0, 0)}
+
+    @pytest.mark.parametrize("change", [
+        {"started_at": datetime(2100, 1, 1), "finished_at": datetime(2100, 1, 2)},
+        {"started_at": datetime(2000, 1, 1), "finished_at": datetime(2000, 1, 2)},
+        {"errors": ["INERT_PRIVATE_FAILURE"]}, {"items_processed": -1},
+    ])
+    def test_finish_rejects_incoherent_correlated_completed_observation(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        observation(factory, identity, token, **change)
+        result = finish(factory, generation, identity, token, 0)
+        with factory() as db:
+            command = db.get(EtlDispatchCommand, identity)
+>           assert result is False or command.status != "completed", {
+                "finish_result": result, "command_status": command.status, "job_id": command.job_id, "input": change}
+E           AssertionError: {'command_status': 'completed', 'finish_result': True, 'input': {'finished_at': datetime.datetime(2100, 1, 2, 0, 0), 'started_at': datetime.datetime(2100, 1, 1, 0, 0)}, 'job_id': 1}
+E           assert (True is False or 'completed' != 'completed')
+E            +  where 'completed' = <models.EtlDispatchCommand object at 0x10c1848c0>.status
+
+backend/tests/test_batch7_etl_adversarial.py:142: AssertionError
+___ test_finish_rejects_incoherent_correlated_completed_observation[change1] ___
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+change = {'finished_at': datetime.datetime(2000, 1, 2, 0, 0), 'started_at': datetime.datetime(2000, 1, 1, 0, 0)}
+
+    @pytest.mark.parametrize("change", [
+        {"started_at": datetime(2100, 1, 1), "finished_at": datetime(2100, 1, 2)},
+        {"started_at": datetime(2000, 1, 1), "finished_at": datetime(2000, 1, 2)},
+        {"errors": ["INERT_PRIVATE_FAILURE"]}, {"items_processed": -1},
+    ])
+    def test_finish_rejects_incoherent_correlated_completed_observation(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        observation(factory, identity, token, **change)
+        result = finish(factory, generation, identity, token, 0)
+        with factory() as db:
+            command = db.get(EtlDispatchCommand, identity)
+>           assert result is False or command.status != "completed", {
+                "finish_result": result, "command_status": command.status, "job_id": command.job_id, "input": change}
+E           AssertionError: {'command_status': 'completed', 'finish_result': True, 'input': {'finished_at': datetime.datetime(2000, 1, 2, 0, 0), 'started_at': datetime.datetime(2000, 1, 1, 0, 0)}, 'job_id': 1}
+E           assert (True is False or 'completed' != 'completed')
+E            +  where 'completed' = <models.EtlDispatchCommand object at 0x10c05eb70>.status
+
+backend/tests/test_batch7_etl_adversarial.py:142: AssertionError
+___ test_finish_rejects_incoherent_correlated_completed_observation[change2] ___
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+change = {'errors': ['INERT_PRIVATE_FAILURE']}
+
+    @pytest.mark.parametrize("change", [
+        {"started_at": datetime(2100, 1, 1), "finished_at": datetime(2100, 1, 2)},
+        {"started_at": datetime(2000, 1, 1), "finished_at": datetime(2000, 1, 2)},
+        {"errors": ["INERT_PRIVATE_FAILURE"]}, {"items_processed": -1},
+    ])
+    def test_finish_rejects_incoherent_correlated_completed_observation(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        observation(factory, identity, token, **change)
+        result = finish(factory, generation, identity, token, 0)
+        with factory() as db:
+            command = db.get(EtlDispatchCommand, identity)
+>           assert result is False or command.status != "completed", {
+                "finish_result": result, "command_status": command.status, "job_id": command.job_id, "input": change}
+E           AssertionError: {'command_status': 'completed', 'finish_result': True, 'input': {'errors': ['INERT_PRIVATE_FAILURE']}, 'job_id': 1}
+E           assert (True is False or 'completed' != 'completed')
+E            +  where 'completed' = <models.EtlDispatchCommand object at 0x10c19e210>.status
+
+backend/tests/test_batch7_etl_adversarial.py:142: AssertionError
+___ test_finish_rejects_incoherent_correlated_completed_observation[change3] ___
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55481/batch7_etl_worker))
+change = {'items_processed': -1}
+
+    @pytest.mark.parametrize("change", [
+        {"started_at": datetime(2100, 1, 1), "finished_at": datetime(2100, 1, 2)},
+        {"started_at": datetime(2000, 1, 1), "finished_at": datetime(2000, 1, 2)},
+        {"errors": ["INERT_PRIVATE_FAILURE"]}, {"items_processed": -1},
+    ])
+    def test_finish_rejects_incoherent_correlated_completed_observation(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        observation(factory, identity, token, **change)
+        result = finish(factory, generation, identity, token, 0)
+        with factory() as db:
+            command = db.get(EtlDispatchCommand, identity)
+>           assert result is False or command.status != "completed", {
+                "finish_result": result, "command_status": command.status, "job_id": command.job_id, "input": change}
+E           AssertionError: {'command_status': 'completed', 'finish_result': True, 'input': {'items_processed': -1}, 'job_id': 1}
+E           assert (True is False or 'completed' != 'completed')
+E            +  where 'completed' = <models.EtlDispatchCommand object at 0x10c198140>.status
+
+backend/tests/test_batch7_etl_adversarial.py:142: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:26
+  /Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend/models.py:26: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_direct_replay_rejects_nonboolean_semantic_intent[False-0]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_direct_replay_rejects_nonboolean_semantic_intent[False-0.0]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_direct_replay_rejects_nonboolean_semantic_intent[True-1]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_direct_replay_rejects_nonboolean_semantic_intent[True-1.0]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_finish_rejects_incoherent_correlated_completed_observation[change0]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_finish_rejects_incoherent_correlated_completed_observation[change1]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_finish_rejects_incoherent_correlated_completed_observation[change2]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_finish_rejects_incoherent_correlated_completed_observation[change3]
+8 failed, 62 deselected, 2 warnings in 0.44s

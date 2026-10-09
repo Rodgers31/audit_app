@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     Boolean,
+    BigInteger,
     Column,
     CheckConstraint,
     Date,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Uuid,
 )
 from sqlalchemy.sql import false as sa_false
 from sqlalchemy.dialects.postgresql import JSONB
@@ -23,6 +25,65 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+
+class EtlDispatchCommand(Base):
+    """Accepted intents, separate from historical ingestion observations."""
+
+    __tablename__ = "etl_dispatch_commands"
+    __table_args__ = (
+        UniqueConstraint("actor_id", "idempotency_key", name="uq_etl_dispatch_actor_key"),
+        CheckConstraint("source = 'oag' AND domain = 'audits'", name="ck_etl_dispatch_mapping"),
+        CheckConstraint("version BETWEEN 1 AND 9007199254740991", name="ck_etl_dispatch_version"),
+        CheckConstraint("created_at <= updated_at AND (started_at IS NULL OR created_at <= started_at) AND (finished_at IS NULL OR (finished_at <= updated_at AND (started_at IS NULL OR started_at <= finished_at)))", name="ck_etl_dispatch_times"),
+        CheckConstraint("(status='queued' AND started_at IS NULL AND finished_at IS NULL AND job_id IS NULL AND outcome IS NULL AND claim_token IS NULL AND NOT execution_started) OR (status='running' AND started_at IS NOT NULL AND finished_at IS NULL AND outcome IS NULL AND claim_token IS NOT NULL) OR (status='completed' AND started_at IS NOT NULL AND finished_at IS NOT NULL AND job_id IS NOT NULL AND job_id > 0 AND outcome IS NOT NULL AND outcome='completed') OR (status='failed' AND finished_at IS NOT NULL AND outcome IS NOT NULL AND outcome='failed') OR (status='interrupted' AND started_at IS NOT NULL AND finished_at IS NOT NULL AND outcome IS NOT NULL AND outcome='execution_unverified')", name="ck_etl_dispatch_state"),
+        Index("ix_etl_dispatch_history", "created_at", "id"),
+        Index("ix_etl_dispatch_queue", "status", "created_at"),
+    )
+    id = Column(Uuid(as_uuid=True), primary_key=True)
+    actor_id = Column(String(64), nullable=False)
+    idempotency_key = Column(Uuid(as_uuid=True), nullable=False)
+    source = Column(String(20), nullable=False)
+    domain = Column(String(100), nullable=False)
+    dry_run = Column(Boolean, nullable=False)
+    generation = Column(Uuid(as_uuid=True), nullable=False)
+    claim_token = Column(Uuid(as_uuid=True))
+    execution_started = Column(Boolean, nullable=False, server_default=sa_false())
+    status = Column(String(20), nullable=False)
+    version = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    updated_at = Column(DateTime(timezone=True), nullable=False)
+    started_at = Column(DateTime(timezone=True))
+    finished_at = Column(DateTime(timezone=True))
+    job_id = Column(Integer, ForeignKey("ingestion_jobs.id"))
+    outcome = Column(String(30))
+    audit_id = Column(Integer, ForeignKey("admin_audit_log.id"), nullable=False, unique=True)
+
+
+class EtlDispatchWorker(Base):
+    __tablename__ = "etl_dispatch_worker"
+    __table_args__ = (
+        CheckConstraint("id = 1", name="ck_etl_dispatch_single_worker"),
+        CheckConstraint("last_seen_at < expires_at", name="ck_etl_dispatch_lease_times"),
+    )
+    id = Column(Integer, primary_key=True)
+    generation = Column(Uuid(as_uuid=True), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    ready = Column(Boolean, nullable=False)
+
+
+class EtlDispatchDomain(Base):
+    """A lease expiry never clears this durable execution exclusion."""
+
+    __tablename__ = "etl_dispatch_domains"
+    __table_args__ = (
+        CheckConstraint("domain = 'audits'", name="ck_etl_dispatch_domain"),
+        CheckConstraint("(command_id IS NULL) = (claim_token IS NULL)", name="ck_etl_dispatch_domain_claim"),
+    )
+    domain = Column(String(100), primary_key=True)
+    command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
+    claim_token = Column(Uuid(as_uuid=True))
 
 
 class EntityType(enum.Enum):
