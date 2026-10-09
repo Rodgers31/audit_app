@@ -1,0 +1,12 @@
+{
+  "macos": {
+    "bytes_sha256": "1648080ac34561716ac3d28293bf0bc8f622be18cb4bca1adfd91d511a3bf878",
+    "max_abs_l2_norm_minus_one": 4.75738392680114e-07,
+    "max_abs_squared_norm_minus_one": 9.514770116236804e-07
+  },
+  "linux": {
+    "bytes_sha256": "9dc2b2ab83f110ff01db0375644a5d6c2d72a89f63f2d92dca427bb619207de2",
+    "max_abs_l2_norm_minus_one": 4.618777178500011e-07,
+    "max_abs_squared_norm_minus_one": 9.237556488628229e-07
+  }
+}

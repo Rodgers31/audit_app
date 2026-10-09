@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http-corrected.log",
+  "sha256": "9f0cbcc6eca5a0a67796a10946d21f348efd26db3b76f0f5bebb4e210e3742bb",
+  "encoding": "utf-8",
+  "text": "{\"results\":[{\"path\":\"/api/health\",\"status\":200,\"bytes\":15},{\"path\":\"/learn\",\"status\":200,\"bytes\":107463}],\"termination\":{\"status\":0,\"signal\":null},\"groupAlive\":false,\"platform\":\"linux\",\"arch\":\"x64\",\"node\":\"v22.23.3\"}\n"
+}

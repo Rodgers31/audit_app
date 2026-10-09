@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-verify.log",
+  "sha256": "4e274cb53ee7379a8b93a1711e0a4874ee5f332edd1a1acf9898e0e789380874",
+  "encoding": "utf-8",
+  "text": "{\"check\":\"pruned-runtime-dependencies\",\"root\":\"/work/frontend\",\"node\":\"v22.23.3\",\"platform\":\"linux\",\"arch\":\"x64\",\"next\":\"15.5.27\",\"sharp\":\"0.35.5\",\"imageDecode\":true,\"installedPackageCount\":145,\"excludedPackageNames\":[\"tailwindcss\",\"autoprefixer\",\"braces\",\"micromatch\",\"chokidar\",\"@huggingface/transformers\",\"onnxruntime-node\",\"onnxruntime-web\",\"onnxruntime-common\",\"@huggingface/jinja\",\"@huggingface/tokenizers\",\"@tailwindcss/typography\",\"adm-zip\",\"sprintf-js\",\"jest\",\"eslint\"],\"excludedPackagesAbsent\":true}\n"
+}

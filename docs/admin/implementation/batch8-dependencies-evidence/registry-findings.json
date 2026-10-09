@@ -1,0 +1,457 @@
+[
+  {
+    "package": "@eslint/config-array",
+    "latest": "0.23.5",
+    "tags": {
+      "maintenance": "0.21.2",
+      "latest": "0.23.5"
+    },
+    "latest_dependencies": {
+      "@eslint/object-schema": "^3.0.5",
+      "debug": "^4.3.1",
+      "minimatch": "^10.2.4"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-@eslint_config-array.json",
+    "sha256": "40a192db73010c97adfba148829f15d0e93e5abdde70378627393a0b16f706c9"
+  },
+  {
+    "package": "@eslint/eslintrc",
+    "latest": "3.3.7",
+    "tags": {
+      "latest": "3.3.7"
+    },
+    "latest_dependencies": {
+      "ajv": "^6.14.0",
+      "debug": "^4.3.2",
+      "espree": "^10.0.1",
+      "ignore": "^5.2.0",
+      "globals": "^14.0.0",
+      "js-yaml": "^4.3.2",
+      "minimatch": "^3.1.5",
+      "import-fresh": "^3.2.1",
+      "strip-json-comments": "^3.1.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-@eslint_eslintrc.json",
+    "sha256": "395973c90175caf014dd2e547ee7c26d32b915383e0bc8164cdb065c233379b1"
+  },
+  {
+    "package": "@istanbuljs/load-nyc-config",
+    "latest": "1.1.0",
+    "tags": {
+      "latest": "1.1.0"
+    },
+    "latest_dependencies": {
+      "camelcase": "^5.3.1",
+      "find-up": "^4.1.0",
+      "get-package-type": "^0.1.0",
+      "js-yaml": "^3.13.1",
+      "resolve-from": "^5.0.0"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-@istanbuljs_load-nyc-config.json",
+    "sha256": "7c80bf5ae4e9cbb695654132206c940053267259f4d00e2c846fc39b315db61b"
+  },
+  {
+    "package": "@jest/transform",
+    "latest": "30.5.2",
+    "tags": {
+      "next": "30.0.0-rc.1",
+      "latest": "30.5.2"
+    },
+    "latest_dependencies": {
+      "chalk": "^4.1.2",
+      "slash": "^3.0.0",
+      "pirates": "^4.0.7",
+      "jest-util": "30.5.1",
+      "@babel/core": "^7.27.4",
+      "@jest/types": "30.5.1",
+      "graceful-fs": "^4.2.11",
+      "jest-haste-map": "30.5.1",
+      "jest-regex-util": "30.5.0",
+      "write-file-atomic": "^5.0.1",
+      "convert-source-map": "^2.0.0",
+      "babel-plugin-istanbul": "^8.0.0",
+      "@jridgewell/trace-mapping": "^0.3.31",
+      "fast-json-stable-stringify": "^2.1.0"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-@jest_transform.json",
+    "sha256": "ed040f71e5ca210506522295d5143180d6081ac041c7771be13d9c49c52280dd"
+  },
+  {
+    "package": "@next/eslint-plugin-next",
+    "latest": "16.4.0",
+    "tags": {
+      "next-11": "11.1.4",
+      "next-12-2-6": "12.2.6",
+      "next-14-1": "14.1.1",
+      "rc": "15.0.0-rc.1",
+      "next-13": "13.5.11",
+      "next-12-3-2": "12.3.7",
+      "beta": "16.0.0-beta.0",
+      "next-14": "14.2.35",
+      "next-15-3": "15.3.9",
+      "next-15-2": "15.2.9",
+      "next-15-0": "15.1.12",
+      "next-15-0-0": "15.0.8",
+      "preview": "16.3.0-preview.10",
+      "backport": "15.5.27",
+      "latest": "16.4.0",
+      "canary": "16.5.0-canary.5"
+    },
+    "latest_dependencies": {
+      "fast-glob": "3.3.1",
+      "@eslint-community/eslint-utils": "4.9.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-@next_eslint-plugin-next.json",
+    "sha256": "2973a7ff72c94aff8c8f948084a6af881913ae4d636a9a8ec56e104b1087575a"
+  },
+  {
+    "package": "argparse",
+    "latest": "3.0.2",
+    "tags": {
+      "latest": "3.0.2"
+    },
+    "latest_dependencies": null,
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-argparse.json",
+    "sha256": "63397626366983090c55537ffb3437a9ed11001fbc540a2f3a489440ced33efa"
+  },
+  {
+    "package": "babel-jest",
+    "latest": "30.5.2",
+    "tags": {
+      "next": "30.0.0-rc.1",
+      "latest": "30.5.2"
+    },
+    "latest_dependencies": {
+      "chalk": "^4.1.2",
+      "slash": "^3.0.0",
+      "graceful-fs": "^4.2.11",
+      "@jest/transform": "30.5.2",
+      "babel-preset-jest": "30.5.0",
+      "@types/babel__core": "^7.20.5",
+      "babel-plugin-istanbul": "^8.0.0"
+    },
+    "latest_peerDependencies": {
+      "@babel/core": "^7.11.0 || ^8.0.0-0"
+    },
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-babel-jest.json",
+    "sha256": "e146caf54257154aea5017c0e6442ab8b7a20c12df9768b35f25a9ea2db7587f"
+  },
+  {
+    "package": "babel-plugin-istanbul",
+    "latest": "8.0.0",
+    "tags": {
+      "latest": "8.0.0"
+    },
+    "latest_dependencies": {
+      "@babel/helper-plugin-utils": "^7.0.0",
+      "@istanbuljs/load-nyc-config": "^1.0.0",
+      "@istanbuljs/schema": "^0.1.3",
+      "istanbul-lib-instrument": "^6.0.2",
+      "test-exclude": "^7.0.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-babel-plugin-istanbul.json",
+    "sha256": "89d1c6119600c5d67f21c8acfb97e66ec6f66865d446198ab8acef699ec27085"
+  },
+  {
+    "package": "braces",
+    "latest": "3.0.3",
+    "tags": {
+      "latest": "3.0.3"
+    },
+    "latest_dependencies": {
+      "fill-range": "^7.1.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-braces.json",
+    "sha256": "db806469d4e3351cc4272ca16629631924e2a3352f992a3044fa740d86ac3ffb"
+  },
+  {
+    "package": "chokidar",
+    "latest": "5.0.0",
+    "tags": {
+      "latest": "5.0.0"
+    },
+    "latest_dependencies": {
+      "readdirp": "^5.0.0"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-chokidar.json",
+    "sha256": "b3b75db26803b56d35b19342429e4db350b64ee307c5f581fd41c5ef0cdc5a1b"
+  },
+  {
+    "package": "eslint-config-next",
+    "latest": "16.4.0",
+    "tags": {
+      "next-11": "11.1.4",
+      "next-12-2-6": "12.2.6",
+      "next-14-1": "14.1.1",
+      "rc": "15.0.0-rc.1",
+      "next-13": "13.5.11",
+      "next-12-3-2": "12.3.7",
+      "beta": "16.0.0-beta.0",
+      "next-14": "14.2.35",
+      "next-15-3": "15.3.9",
+      "next-15-2": "15.2.9",
+      "next-15-0": "15.1.12",
+      "next-15-0-0": "15.0.8",
+      "preview": "16.3.0-preview.10",
+      "backport": "15.5.27",
+      "latest": "16.4.0",
+      "canary": "16.5.0-canary.5"
+    },
+    "latest_dependencies": {
+      "globals": "16.4.0",
+      "typescript-eslint": "^8.56.0",
+      "eslint-plugin-react": "^7.37.0",
+      "eslint-plugin-import": "^2.32.0",
+      "eslint-plugin-jsx-a11y": "^6.10.0",
+      "@next/eslint-plugin-next": "16.4.0",
+      "eslint-plugin-react-hooks": "^7.1.0",
+      "eslint-import-resolver-node": "^0.3.6",
+      "eslint-import-resolver-typescript": "^3.5.2"
+    },
+    "latest_peerDependencies": {
+      "eslint": ">=9.0.0",
+      "typescript": ">=3.3.1"
+    },
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-eslint-config-next.json",
+    "sha256": "a76cf90a4ebffa39c1c03084da8f113a074663d733de2905fdf234c69c68de77"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "latest": "2.32.0",
+    "tags": {
+      "next": "2.0.0-beta.1",
+      "latest": "2.32.0"
+    },
+    "latest_dependencies": {
+      "@rtsao/scc": "^1.1.0",
+      "array-includes": "^3.1.9",
+      "array.prototype.findlastindex": "^1.2.6",
+      "array.prototype.flat": "^1.3.3",
+      "array.prototype.flatmap": "^1.3.3",
+      "debug": "^3.2.7",
+      "doctrine": "^2.1.0",
+      "eslint-import-resolver-node": "^0.3.9",
+      "eslint-module-utils": "^2.12.1",
+      "hasown": "^2.0.2",
+      "is-core-module": "^2.16.1",
+      "is-glob": "^4.0.3",
+      "minimatch": "^3.1.2",
+      "object.fromentries": "^2.0.8",
+      "object.groupby": "^1.0.3",
+      "object.values": "^1.2.1",
+      "semver": "^6.3.1",
+      "string.prototype.trimend": "^1.0.9",
+      "tsconfig-paths": "^3.15.0"
+    },
+    "latest_peerDependencies": {
+      "eslint": "^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9"
+    },
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-eslint-plugin-import.json",
+    "sha256": "ed644c6758bb7ae463017786b687f59c2e48ab479292606ed11496a7cef92422"
+  },
+  {
+    "package": "fast-glob",
+    "latest": "3.3.3",
+    "tags": {
+      "next": "2.0.2",
+      "beta": "3.2.1-beta.1",
+      "latest": "3.3.3"
+    },
+    "latest_dependencies": {
+      "@nodelib/fs.stat": "^2.0.2",
+      "@nodelib/fs.walk": "^1.2.3",
+      "glob-parent": "^5.1.2",
+      "merge2": "^1.3.0",
+      "micromatch": "^4.0.8"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-fast-glob.json",
+    "sha256": "ead305fe5692ae9cb339975023bc1339e145c01e2623e5cc0f00f29c316bcea5"
+  },
+  {
+    "package": "jest-config",
+    "latest": "30.5.2",
+    "tags": {
+      "next": "30.0.0-rc.1",
+      "latest": "30.5.2"
+    },
+    "latest_dependencies": {
+      "glob": "^13.0.6",
+      "chalk": "^4.1.2",
+      "slash": "^3.0.0",
+      "ci-info": "^4.2.0",
+      "deepmerge": "^4.3.1",
+      "jest-util": "30.5.1",
+      "babel-jest": "30.5.2",
+      "parse-json": "^5.2.0",
+      "@babel/core": "^7.27.4",
+      "@jest/types": "30.5.1",
+      "graceful-fs": "^4.2.11",
+      "jest-circus": "30.5.2",
+      "jest-runner": "30.5.2",
+      "jest-resolve": "30.5.1",
+      "@jest/pattern": "30.5.0",
+      "jest-docblock": "30.5.0",
+      "jest-validate": "30.5.1",
+      "pretty-format": "30.5.1",
+      "@jest/get-type": "30.5.0",
+      "jest-regex-util": "30.5.0",
+      "strip-json-comments": "^3.1.1",
+      "@jest/test-sequencer": "30.5.2",
+      "jest-environment-node": "30.5.2"
+    },
+    "latest_peerDependencies": {
+      "ts-node": ">=9.0.0",
+      "@types/node": "*",
+      "esbuild-register": ">=3.4.0"
+    },
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-jest-config.json",
+    "sha256": "d8a9461eb28532526b6ee538ba82bc32cfc559844bc9294a9b5dde5bf965cb66"
+  },
+  {
+    "package": "jest-message-util",
+    "latest": "30.5.1",
+    "tags": {
+      "next": "30.0.0-rc.1",
+      "latest": "30.5.1"
+    },
+    "latest_dependencies": {
+      "chalk": "^4.1.2",
+      "slash": "^3.0.0",
+      "jest-util": "30.5.1",
+      "picomatch": "^4.0.3",
+      "@jest/types": "30.5.1",
+      "graceful-fs": "^4.2.11",
+      "stack-utils": "^2.0.6",
+      "pretty-format": "30.5.1",
+      "@babel/code-frame": "^7.27.1",
+      "@types/stack-utils": "^2.0.3"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-jest-message-util.json",
+    "sha256": "79f474bbd7ac4ad5a2e1457a755348ff9328931ec0676b3fb27857bc0ec30076"
+  },
+  {
+    "package": "jest",
+    "latest": "30.5.2",
+    "tags": {
+      "next": "30.0.0-rc.1",
+      "latest": "30.5.2"
+    },
+    "latest_dependencies": {
+      "jest-cli": "30.5.2",
+      "@jest/core": "30.5.2",
+      "@jest/types": "30.5.1",
+      "import-local": "^3.2.0"
+    },
+    "latest_peerDependencies": {
+      "node-notifier": "^8.0.1 || ^9.0.0 || ^10.0.0"
+    },
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-jest.json",
+    "sha256": "d39a534769fe71d57d928a917da5ba5d1e74dee3a93e48afc75aae8a1ce3920e"
+  },
+  {
+    "package": "js-yaml",
+    "latest": "5.4.3",
+    "tags": {
+      "v4-legacy": "4.3.2",
+      "v3-legacy": "3.15.2",
+      "latest": "5.4.3"
+    },
+    "latest_dependencies": {
+      "argparse": "^2.0.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-js-yaml.json",
+    "sha256": "08c7d5c760b94f9da189759e902ac78fa9b7055655fc820fbc506c65cd6535b4"
+  },
+  {
+    "package": "micromatch",
+    "latest": "4.0.8",
+    "tags": {
+      "latest": "4.0.8"
+    },
+    "latest_dependencies": {
+      "braces": "^3.0.3",
+      "picomatch": "^2.3.1"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-micromatch.json",
+    "sha256": "95708a2b655c76934393b30bc92b3222a925f84f1b094c3b04af57aeda31ddc8"
+  },
+  {
+    "package": "nyc",
+    "latest": "18.0.0",
+    "tags": {
+      "latest-12": "12.0.1",
+      "latest": "18.0.0",
+      "next": "18.0.0"
+    },
+    "latest_dependencies": {
+      "glob": "^13.0.6",
+      "p-map": "^3.0.0",
+      "yargs": "^15.0.2",
+      "rimraf": "^6.1.3",
+      "find-up": "^4.1.0",
+      "make-dir": "^3.0.0",
+      "decamelize": "^1.2.0",
+      "spawn-wrap": "^3.0.0",
+      "signal-exit": "^3.0.2",
+      "node-preload": "^0.2.1",
+      "resolve-from": "^5.0.0",
+      "test-exclude": "^8.0.0",
+      "find-cache-dir": "^3.2.0",
+      "foreground-child": "^3.3.0",
+      "get-package-type": "^0.1.0",
+      "istanbul-reports": "^3.0.2",
+      "process-on-spawn": "^1.0.0",
+      "caching-transform": "^4.0.0",
+      "istanbul-lib-hook": "^3.0.0",
+      "@istanbuljs/schema": "^0.1.2",
+      "convert-source-map": "^1.7.0",
+      "istanbul-lib-report": "^3.0.0",
+      "istanbul-lib-coverage": "^3.0.0",
+      "istanbul-lib-instrument": "^6.0.2",
+      "istanbul-lib-processinfo": "^3.0.0",
+      "istanbul-lib-source-maps": "^4.0.0",
+      "@istanbuljs/load-nyc-config": "^1.0.0"
+    },
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-nyc.json",
+    "sha256": "4c9da56ef9609f352bfdb2aafb9e4a69cfb25de43f4f819f5fc58a95aebc29f9"
+  },
+  {
+    "package": "sprintf-js",
+    "latest": "1.1.3",
+    "tags": {
+      "latest": "1.1.3"
+    },
+    "latest_dependencies": null,
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-sprintf-js.json",
+    "sha256": "6bb876d17626cdbdcf1f2bf47c6865f0dc8184423b39035029bd6ab5eba02808"
+  },
+  {
+    "package": "tailwindcss",
+    "latest": "4.3.3",
+    "tags": {
+      "next": "4.0.0",
+      "v3-lts": "3.4.19",
+      "latest": "4.3.3",
+      "insiders": "0.0.0-insiders.fa81d69"
+    },
+    "latest_dependencies": null,
+    "latest_peerDependencies": null,
+    "raw": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/registry-tailwindcss.json",
+    "sha256": "c008d14322b0af1ad258f250ef279a03b9db7f99c90c37af9e9a8b1df837e90b"
+  }
+]
