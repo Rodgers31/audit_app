@@ -1,0 +1,16 @@
+{
+  "builder": {
+    "count": 264,
+    "dim": 384,
+    "finite": true,
+    "max_norm_error": 4.75738392680114e-07
+  },
+  "css_same": true,
+  "css": {
+    "f3bdb27a5f5bd668.css": "54a87594088c1caa486e574267693fcedf65682e9634f5dc00f961a5de985698",
+    "986b60ebc218ddcc.css": "7fc4acffc30c399f92711a3394d2e3543ff652f96dadd80c8ea109ea93181069",
+    "d3c616e02c683ae4.css": "cdbcf3f4a265ba9bc7fe130e89db58ddf5fc5bb6d558eac9c0636933dca1dffd",
+    "7e1c9c26e89dab58.css": "03dd4d5d68943eb71a5e38b7581fd8fe2da364dff704feb07c832a57009d2ca6"
+  },
+  "production_embeddings_and_builder_bytes_preserved": true
+}

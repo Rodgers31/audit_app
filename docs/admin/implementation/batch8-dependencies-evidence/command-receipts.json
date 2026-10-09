@@ -1,0 +1,1412 @@
+[
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=installed",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:36:39.691202+00:00",
+    "finished": "2026-10-09T08:36:39.763644+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-fixed.log",
+    "sha256": "cfbeb6edf285ca8cba23f6b7fe5d3e280d7c8508460dfb8e0bff3aa85df7719b",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "adversarial-malformed-fixed",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=installed",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:35:04.689622+00:00",
+    "finished": "2026-10-09T08:35:04.747004+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-red.log",
+    "sha256": "9e60c8cf429fd4f219dbad8b4f0c1cc4c4691ce77fc8279d2237564838fa19b9",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "adversarial-malformed-red",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=installed",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:35:32.992815+00:00",
+    "finished": "2026-10-09T08:35:33.082076+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-reproduced.log",
+    "sha256": "9d1a620b040c50fdb698381dcaa4c7f482025a1604515223cfcbe73c9dcc1552",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "adversarial-malformed-reproduced",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:19:06.218571+00:00",
+    "finished": "2026-10-09T08:19:07.252189+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-audit-full.log",
+    "sha256": "58586207a550c5b752845ebec5832454055639af7845338058bed849ea187a53",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-audit-full",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:19:06.218588+00:00",
+    "finished": "2026-10-09T08:19:06.742671+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-audit-prod.log",
+    "sha256": "20e6c90c6053b965045e62773ffd33c9b99802bc946ded89be45f46ad837bec8",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-audit-prod",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-probes.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:19:49.081239+00:00",
+    "finished": "2026-10-09T08:19:49.115063+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-bounded-probes.log",
+    "sha256": "01ebc08d6402dfd6e3481274d7dd5086cfcbf34574b7b8fc0b0bd326dac7aa58",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-bounded-probes",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "verify:dependency-browser"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:27:54.281558+00:00",
+    "finished": "2026-10-09T08:28:01.249976+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-browser.log",
+    "sha256": "b130844e43f88025de07a4c95606a4b18c947a678f3b4ceb6f98eee6ef12d825",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-browser",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:25:43.245491+00:00",
+    "finished": "2026-10-09T08:26:11.816182+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-build.log",
+    "sha256": "dd4f6af61348f5b55a89cf8e066d13de592e24b01307dc17f04bde174f0053b7",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-build",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ci",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:18:01.140802+00:00",
+    "finished": "2026-10-09T08:18:11.902832+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-ci.log",
+    "sha256": "20f52fba3347495a71317f143b4e4ba44123d7802f05d13fcb51e63366b194c2",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-ci",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:25:59.426998+00:00",
+    "finished": "2026-10-09T08:26:00.613007+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-boundary-corrected.log",
+    "sha256": "b2f5ba4632058e088b3621cdac8691725ece8f3b200e711153738ea8c2a4c178",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-boundary-corrected",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:26:24.847859+00:00",
+    "finished": "2026-10-09T08:26:26.440980+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-boundary-red.log",
+    "sha256": "803f8bab3eab4222aeae27ad2f57b6b88bee0556934c02b163655d19f6021c31",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-boundary-red",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:25:29.834729+00:00",
+    "finished": "2026-10-09T08:25:31.533647+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-boundary.log",
+    "sha256": "baab173e97e0b71bd2d7ce03a509bb3e92087c802e2d26b8cc6e101a0e097baf",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-boundary",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/probe-jest-discovery.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:21:44.681364+00:00",
+    "finished": "2026-10-09T08:21:45.343443+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-discovery-probe.log",
+    "sha256": "5f01c328821b1c6b45d302049b36d5a8e48518b807e85f7decdfd116e146ed65",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-discovery-probe",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--listTests",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:22:38.512289+00:00",
+    "finished": "2026-10-09T08:22:40.417352+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-list.log",
+    "sha256": "03d47d41319f813ccf861a847276dfb69a49568e4e53a9f4ebd4a025abdca45e",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-list",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "query",
+      "#jest *",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:23:16.284192+00:00",
+    "finished": "2026-10-09T08:23:16.888325+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-query.log",
+    "sha256": "4fcd90702c92962423dfcf0c361216e7c892c180ccfd45816e02a6aac777790a",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-jest-query",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ls",
+      "--all",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:19:06.218591+00:00",
+    "finished": "2026-10-09T08:19:06.760224+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-peer-tree.log",
+    "sha256": "5935840afb18753665e9d6aa5a777ec400a97bc2fcca8464f6187e54677df478",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-peer-tree",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--ci",
+      "--coverage",
+      "--runInBand"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:24:22.237069+00:00",
+    "finished": "2026-10-09T08:24:53.196257+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-tests.log",
+    "sha256": "5cd07f7b4f3fb4fb22fda78e67fba87d5720e1a7d708da6940cbb6769e01f119",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-tests",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "why",
+      "braces",
+      "sprintf-js",
+      "micromatch",
+      "fast-glob",
+      "chokidar",
+      "@istanbuljs/load-nyc-config",
+      "js-yaml",
+      "argparse",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:19:06.218566+00:00",
+    "finished": "2026-10-09T08:19:07.054264+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-why.log",
+    "sha256": "1901ca2187dcb5e935ec8abe27f7edb4e086768edc8ec3c4fae1955182b66e3d",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "baseline-why",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:20:18.481361+00:00",
+    "finished": "2026-10-09T08:20:19.273719+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-audit.log",
+    "sha256": "baa6e808fe9a4a22d40cdfead16fa135ca3fa7f3bef535e7a8e14111eba82457",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-audit",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--ci",
+      "--coverage",
+      "--runInBand"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:21:44.068612+00:00",
+    "finished": "2026-10-09T08:22:14.689780+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-compatible-tests.log",
+    "sha256": "b717daf8c1ee31922665c40f73ec44e9a0b0ca98afbb4e1d177881bd1a999606",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-compatible-tests",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "install",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:19:23.066098+00:00",
+    "finished": "2026-10-09T08:19:31.736879+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-install.log",
+    "sha256": "360a03ab8aa778e185f9655a6c6a2621e5a80cb3205f4199069db18daee05bba",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-install",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--listTests",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:22:40.462203+00:00",
+    "finished": "2026-10-09T08:22:40.897619+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-list.log",
+    "sha256": "74a20dce0b31e4270b8053fd685ffac5d0c456bbc78609afb6a109a34bda678c",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-list",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ls",
+      "--all",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:20:18.481315+00:00",
+    "finished": "2026-10-09T08:20:18.952489+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-peer-tree.log",
+    "sha256": "9be7683d63ea28a7aab99c0f20ca96222f8c4c27145d0d1a5d45a67e84ac169e",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-peer-tree",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "query",
+      "#jest *",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:23:16.934744+00:00",
+    "finished": "2026-10-09T08:23:17.404068+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-query.log",
+    "sha256": "d75cdde202d31a95e00006a255380ce4a95235ad9f5880d026071e424729ab8d",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-query",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--ci",
+      "--coverage",
+      "--runInBand"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/jest30/frontend",
+    "started": "2026-10-09T08:20:18.481759+00:00",
+    "finished": "2026-10-09T08:20:50.522247+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-jest30-tests.log",
+    "sha256": "0a69a0102080f7e89fa6f83fabfd3e4bd07bef357f021007d14c0dda05bb62bb",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-jest30-tests",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "install",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/tailwind4",
+    "started": "2026-10-09T08:24:23.413554+00:00",
+    "finished": "2026-10-09T08:24:24.023251+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-tailwind4-install.log",
+    "sha256": "c14bb91c5fb19ff4af957549e9ca45b5745268748bbe2609878243ae3cd7b98f",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-tailwind4-install",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "probe.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidates/tailwind4",
+    "started": "2026-10-09T08:25:30.947627+00:00",
+    "finished": "2026-10-09T08:25:30.989650+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/candidate-tailwind4-probe.log",
+    "sha256": "0701994ea292c8493c74fe67489da010f0596cf0df120a143208b3fb1c9aa8a9",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "candidate-tailwind4-probe",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "rm",
+      "-f",
+      "batch8-dependencies-linux"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:49:19.136529+00:00",
+    "finished": "2026-10-09T08:49:19.282087+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/docker-cleanup.log",
+    "sha256": "d549177a930ed8e5061e7a34029747ba5d8869f558976b9071e9a4c58965d9b3",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "docker-cleanup",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.095888+00:00",
+    "finished": "2026-10-09T08:31:16.754851+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-audit-full.log",
+    "sha256": "935386a4f81247454641a8b7e58d5b187d458d98c513d936254f145043377d98",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-audit-full",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.095883+00:00",
+    "finished": "2026-10-09T08:31:16.495542+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-audit-prod.log",
+    "sha256": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-audit-prod",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:39:00.414892+00:00",
+    "finished": "2026-10-09T08:39:19.108855+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-boundaries-corrected.log",
+    "sha256": "3062fb15c62c9a15f026482f05f2a9fdbbefb008e3927fe289557954dd78f5a6",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-boundaries-corrected",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:38:01.887634+00:00",
+    "finished": "2026-10-09T08:38:03.576711+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-boundaries-repaired.log",
+    "sha256": "db2c57b29126526abb2df998936489a5324640b698ecd876be36c8a2a7c1f84a",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-boundaries-repaired",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:29:53.675438+00:00",
+    "finished": "2026-10-09T08:30:14.011756+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-boundaries.log",
+    "sha256": "c8262e00c92e7b99c77c9ec099ef4fec345fbd2d595e7f2430cdd9ff85b3c0a1",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-boundaries",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "verify:dependency-browser"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:39:53.445418+00:00",
+    "finished": "2026-10-09T08:40:01.507040+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-browser.log",
+    "sha256": "b130844e43f88025de07a4c95606a4b18c947a678f3b4ceb6f98eee6ef12d825",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-browser",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.096103+00:00",
+    "finished": "2026-10-09T08:31:43.481099+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-build.log",
+    "sha256": "163c8fd308d720f88b3bed2ed2ed27cf0cde47bc7be077c71c3032f17827594e",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-build",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--import",
+      "./.batch8-builder/scripts/pinned-local.mjs",
+      ".batch8-builder/scripts/build-embeddings.mjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:32:11.405835+00:00",
+    "finished": "2026-10-09T08:32:13.140830+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-builder.log",
+    "sha256": "f8c25d2d76f4ba873000afc9c87300118e68cd20c5a3473b43d1b1f7fabfd087",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-builder",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ci",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:29:16.174645+00:00",
+    "finished": "2026-10-09T08:29:23.123935+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-ci.log",
+    "sha256": "bdeb85a28b6c92ce5e64a5756545f67f8c73ef0c2946bf60cfbe8e6f288a9cb0",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-ci",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "lint",
+      "--",
+      "--max-warnings=0"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:33:49.522959+00:00",
+    "finished": "2026-10-09T08:33:50.494021+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-lint-corrected.log",
+    "sha256": "02111bf2b93c7ac7933fb7e06922585671789ce558acde6308d00dac2a2dd7f6",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-lint-corrected",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "lint",
+      "--",
+      "--max-warnings=0"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:33:01.857387+00:00",
+    "finished": "2026-10-09T08:33:02.061295+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-lint.log",
+    "sha256": "c7d71692523018e57a0004d1946d960d8bf4ede94129947a61a7f533251e70a0",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-lint",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "verify:native"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:29:54.779990+00:00",
+    "finished": "2026-10-09T08:29:55.852032+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-native.log",
+    "sha256": "eea44f774ab4666ff4c539149245111f8c0a435956f59d653fe46ca23d67d3f9",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-native",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ls",
+      "--all",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.095910+00:00",
+    "finished": "2026-10-09T08:31:16.465089+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-peer-tree.log",
+    "sha256": "9be7683d63ea28a7aab99c0f20ca96222f8c4c27145d0d1a5d45a67e84ac169e",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-peer-tree",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:45:41.151350+00:00",
+    "finished": "2026-10-09T08:45:41.909209+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-script-lint-corrected.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-script-lint-corrected",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "scripts/jest-dependency-boundary.test.cjs",
+      "--max-warnings=0"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:33:50.642549+00:00",
+    "finished": "2026-10-09T08:33:51.171492+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-script-lint.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-script-lint",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--ci",
+      "--coverage",
+      "--runInBand",
+      "--coverageDirectory=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-coverage"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.095902+00:00",
+    "finished": "2026-10-09T08:31:47.878619+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-tests.log",
+    "sha256": "fe91d575509e5940959b51a8c9832d719be4db5df0496f3a8274da0090cccda4",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-tests",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "run",
+      "verify:dependency-tooling"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:31:16.095904+00:00",
+    "finished": "2026-10-09T08:31:16.496492+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-tooling.log",
+    "sha256": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-tooling",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:33:50.524067+00:00",
+    "finished": "2026-10-09T08:33:56.828331+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-types.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "final-types",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=graph gate",
+      "scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:39:00.062686+00:00",
+    "finished": "2026-10-09T08:39:00.386008+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-green.log",
+    "sha256": "03f1603734f06164ed5f56b3cd1e8bd0d4c08ff30c0293451bdb7c089adfb2b8",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "graph-regression-green",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=graph gate",
+      "scripts/.batch8-jest-gate-red.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:38:32.503897+00:00",
+    "finished": "2026-10-09T08:38:32.625402+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-red-corrected.log",
+    "sha256": "01bb0cd7dd3cad40a73c9eb8214c22977c9d3d5ea38531b5ef5867bbbaf4494d",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "graph-regression-red-corrected",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "--test",
+      "--test-name-pattern=graph gate",
+      "scripts/.batch8-jest-gate-red.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:38:00.577141+00:00",
+    "finished": "2026-10-09T08:38:00.654216+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-red.log",
+    "sha256": "944ecffa11d80d58017ed981bf08d5a9ffefed1cdc2dd970d0d53bfb396bd824",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "graph-regression-red",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "gh",
+      "issue",
+      "list",
+      "--repo",
+      "Rodgers31/audit_app",
+      "--state",
+      "all",
+      "--limit",
+      "1000",
+      "--json",
+      "number,title,state,url"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:18:24.453675+00:00",
+    "finished": "2026-10-09T08:18:26.251191+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/issue-all-state.log",
+    "sha256": "de92d7fa68c429e5818fe0014dd78553fbbfd6c5d51c598f4cb4f62c21fa4e37",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "issue-all-state",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "gh",
+      "issue",
+      "view",
+      "494",
+      "--repo",
+      "Rodgers31/audit_app",
+      "--json",
+      "number,state,title,body,comments,url"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:18:23.697786+00:00",
+    "finished": "2026-10-09T08:18:24.426543+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/issue-current.log",
+    "sha256": "e8dc8c40265d454732111a152ad9b4078391c7c643791c1648f383de76199caf",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "issue-current",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:34:47.585025+00:00",
+    "finished": "2026-10-09T08:34:49.434246+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-audit-full.log",
+    "sha256": "ef193464a1c27b6aa960451d914d483fc9a5dbc230068799a467d1a097e45745",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-audit-full",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "--workdir",
+      "/work/frontend",
+      "batch8-dependencies-linux",
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:46:32.967460+00:00",
+    "finished": "2026-10-09T08:46:33.989871+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-audit-prod.log",
+    "sha256": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-audit-prod",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:39:52.259061+00:00",
+    "finished": "2026-10-09T08:40:35.900592+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-boundaries.log",
+    "sha256": "b90b906da8ac2b76b14ced58d86d070c7fbc2dfabc9f7edf338157932a2bd6b1",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-boundaries",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "-e",
+      "NEXT_PUBLIC_API_URL=http://127.0.0.1:58175",
+      "-e",
+      "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:58175",
+      "-e",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY=batch8-inert-public-key",
+      "batch8-dependencies-linux",
+      "npm",
+      "run",
+      "build"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:34:47.585026+00:00",
+    "finished": "2026-10-09T08:36:24.786700+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-build.log",
+    "sha256": "b6d9bfb2f34eef79630968b540d74f338dd6c6e8880c69d2984b1ae529a4a312",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-build",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "-e",
+      "BATCH8_LOCAL_MODEL_ROOT=/builder-models/",
+      "batch8-dependencies-linux",
+      "node",
+      "--import",
+      "./.batch8-builder/scripts/pinned-local.mjs",
+      ".batch8-builder/scripts/build-embeddings.mjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:39:53.178210+00:00",
+    "finished": "2026-10-09T08:40:10.190634+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-builder.log",
+    "sha256": "db0de3152cd17190a0d71dcad7410cab9f0d15e894a5cb91145285e9a385fd66",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-builder",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "npm",
+      "ci",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:33:01.053298+00:00",
+    "finished": "2026-10-09T08:33:27.310629+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-ci.log",
+    "sha256": "78914c528e55c7ef3c1bf318e949d1fed2193ecd6b184845d23015f25909889b",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-ci",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "image",
+      "inspect",
+      "--platform",
+      "linux/amd64",
+      "node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:51:56.299143+00:00",
+    "finished": "2026-10-09T08:51:56.344556+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-image-amd64-identity.log",
+    "sha256": "2a8383ef7c20950158f76e7c5c75f76fbe71918c72b646410d16956f41af5a06",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-image-amd64-identity",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "image",
+      "inspect",
+      "node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:51:39.981053+00:00",
+    "finished": "2026-10-09T08:51:40.024477+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-image-identity.log",
+    "sha256": "fbd1c425d8d60e0bc5679376c967fa42ba2f98e37daca3a3eb86c537d56433af",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-image-identity",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "-e",
+      "NATIVE_VERIFY_CACHE_DIR=/owned/model-cache",
+      "batch8-dependencies-linux",
+      "npm",
+      "run",
+      "verify:native"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:39:51.223191+00:00",
+    "finished": "2026-10-09T08:39:53.144793+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-native.log",
+    "sha256": "3a46dac65fb996e2aea633fec627e8c8c60adcf226d7bf6e9702813f2f5e1ec6",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-native",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "npm",
+      "ls",
+      "--all",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:34:47.585025+00:00",
+    "finished": "2026-10-09T08:34:48.563861+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-peer-tree.log",
+    "sha256": "883fb173ad3f265997248a73c7b6c671c607729c3c7550c1a118277a88b9cc16",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-peer-tree",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "--workdir",
+      "/work/frontend",
+      "batch8-dependencies-linux",
+      "npm",
+      "prune",
+      "--omit=dev",
+      "--include=optional"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:46:01.954540+00:00",
+    "finished": "2026-10-09T08:46:05.809763+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-prune.log",
+    "sha256": "bb30627d6987c83623ef4d1b1f28517d9fba6f1baf1d1a5c93e530751fd20d70",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-prune",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "node",
+      "-p",
+      "JSON.stringify({node:process.version,arch:process.arch,platform:process.platform,env:{ONNXRUNTIME_NODE_INSTALL:process.env.ONNXRUNTIME_NODE_INSTALL,NEXT_TELEMETRY_DISABLED:process.env.NEXT_TELEMETRY_DISABLED,npm_config_cache:process.env.npm_config_cache}})"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:33:00.734729+00:00",
+    "finished": "2026-10-09T08:33:01.012299+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-corrected.log",
+    "sha256": "fc645e08b8246b47c3c9353cab9448f79a565ef9d4477264b95c08c43d5c7961",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-runtime-corrected",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "node",
+      "/work/probe-runtime-http.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:48:40.536129+00:00",
+    "finished": "2026-10-09T08:48:42.199393+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http-corrected.log",
+    "sha256": "9f0cbcc6eca5a0a67796a10946d21f348efd26db3b76f0f5bebb4e210e3742bb",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-runtime-http-corrected",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "node",
+      "/work/probe-runtime-http.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:47:28.840212+00:00",
+    "finished": "2026-10-09T08:47:40.266063+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http.log",
+    "sha256": "317c0ec496dee87cefee39950f647a425acc420710c779369a1d72bdd7579299",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-runtime-http",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "--workdir",
+      "/work/frontend",
+      "batch8-dependencies-linux",
+      "node",
+      "scripts/verify-runtime-dependencies.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:46:32.967452+00:00",
+    "finished": "2026-10-09T08:46:33.596355+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-verify.log",
+    "sha256": "4e274cb53ee7379a8b93a1711e0a4874ee5f332edd1a1acf9898e0e789380874",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-runtime-verify",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "npm",
+      "test",
+      "--",
+      "--ci",
+      "--coverage",
+      "--runInBand",
+      "--coverageDirectory=/owned/coverage"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:34:47.585043+00:00",
+    "finished": "2026-10-09T08:36:21.797673+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-tests.log",
+    "sha256": "adb92d9a87e4cfebd7b66c398096a5e6912406577b0fb82f4a30018bda9bea79",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-tests",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "--workdir",
+      "/work/frontend",
+      "batch8-dependencies-linux",
+      "npm",
+      "run",
+      "verify:dependency-tooling"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:45:41.152731+00:00",
+    "finished": "2026-10-09T08:45:42.385836+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-tooling.log",
+    "sha256": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-tooling",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "docker",
+      "exec",
+      "batch8-dependencies-linux",
+      "node",
+      "/work/probe-parcel-watch-portable.cjs",
+      "/work/frontend/node_modules/jest/bin/jest.js",
+      "/owned/watch-portable-linux"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:45:28.546028+00:00",
+    "finished": "2026-10-09T08:45:33.262745+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-watch.log",
+    "sha256": "4d27ad2117962ee44426fc5e4a1ea385f87c579e1c138b71553c6ac8f3e19b80",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "linux-watch",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-source/frontend",
+    "started": "2026-10-09T08:46:32.967474+00:00",
+    "finished": "2026-10-09T08:46:33.482164+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-audit-prod.log",
+    "sha256": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-audit-prod",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "npm",
+      "ci",
+      "--omit=dev",
+      "--include=optional",
+      "--no-fund"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-source/frontend",
+    "started": "2026-10-09T08:38:01.575080+00:00",
+    "finished": "2026-10-09T08:38:04.612119+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-ci.log",
+    "sha256": "65f3deb306d5a79ab1defa97d73f492f022cdd388cecff50c2df85bc6bd57827",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-ci",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/verify-http.py"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:45:28.230597+00:00",
+    "finished": "2026-10-09T08:45:28.322180+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http-corrected.log",
+    "sha256": "b258e13a55197ddcf137558130c2f53e0174af25c2f9349070c4549aac0d71c5",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-http-corrected",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/verify-http.py"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+    "started": "2026-10-09T08:41:12.974713+00:00",
+    "finished": "2026-10-09T08:41:13.660339+00:00",
+    "exit": 1,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http.log",
+    "sha256": "4f6e6dcb8aecbd2a179493e45aea6ef53bd219fc3aa65704b77db6ccb07fde07",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-http",
+    "phase": "baseline-or-retained-experiment",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/probe-trace-image.cjs",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-source/frontend",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/actual-next-image.webp"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:47:28.840220+00:00",
+    "finished": "2026-10-09T08:47:28.896687+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-trace-image.log",
+    "sha256": "7dc0a6ac8e323d30aada9ba9739af8fc36877fed926da4f8b46c36ce78dba5be",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-trace-image",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  },
+  {
+    "command": [
+      "node",
+      "scripts/verify-runtime-dependencies.cjs",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-source/frontend"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "started": "2026-10-09T08:45:28.379987+00:00",
+    "finished": "2026-10-09T08:45:28.455311+00:00",
+    "exit": 0,
+    "log": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-verify.log",
+    "sha256": "e6285b573c30fc5c8cbaeb4c010735dc90bce355c24b12df38b464a3ffdc8355",
+    "source": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "name": "runtime-verify",
+    "phase": "final-observation",
+    "source_field_meaning": "fixed review baseline"
+  }
+]

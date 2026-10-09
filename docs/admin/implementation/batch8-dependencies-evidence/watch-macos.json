@@ -1,0 +1,61 @@
+{
+  "command": [
+    "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+    "--require",
+    "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/trace-loader.cjs",
+    "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+    "--config",
+    "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/fixture\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/cache\"}",
+    "--watchAll",
+    "--watchman=false",
+    "--runInBand",
+    "--json",
+    "--outputFile",
+    "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/jest-results.json"
+  ],
+  "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/fixture",
+  "env": {
+    "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin",
+    "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/tmp",
+    "NODE_ENV": "test",
+    "FORCE_COLOR": "0"
+  },
+  "started": "2026-10-09T08:41:10.544Z",
+  "finished": "2026-10-09T08:41:11.359Z",
+  "node": "v22.19.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "pid": 23522,
+  "observedRuns": 2,
+  "initial": {
+    "success": true,
+    "numTotalTests": 1,
+    "numPassedTests": 1
+  },
+  "updated": {
+    "success": false,
+    "numTotalTests": 1,
+    "numFailedTests": 1
+  },
+  "parcelLoaded": true,
+  "native": [
+    {
+      "timestamp": "2026-10-09T08:41:10.624Z",
+      "pid": 23522,
+      "request": "@parcel/watcher-darwin-arm64",
+      "resolved": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/@parcel/watcher-darwin-arm64/watcher.node",
+      "sha256": "bdc5c3950f2bc6dde211a17e100faf862e712e51c853555dade6f5d1aab1e921"
+    }
+  ],
+  "termination": {
+    "status": null,
+    "signal": "SIGTERM"
+  },
+  "groupAlive": false,
+  "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/stdout.log",
+  "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-portable-macos/stderr.log",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "2d766f5bffda1e1c86a0784fbbd46d36c358b5292f6c784ad9f0ee406d3854f6",
+  "scriptSha256": "2adebfcb98a45a57cf129d6a0ee09be32a655ff25701a37af9019967d206105f",
+  "verdict": "PASSED"
+}

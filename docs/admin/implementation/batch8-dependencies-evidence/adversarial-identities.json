@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-10-09T08:40:27.165Z",
+  "repo": "/Users/roger/.codex/worktrees/0a0e/audit_app",
+  "node": "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+  "version": "v22.19.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "files": {
+    "frontend/package.json": "b2947edfd0234a8b41f3ab337eb2ac59a98b76ebd2e5249e19257defe7ea0623",
+    "frontend/package-lock.json": "ee2b344b0dcfe62289ddbcaa8294877dddee6c5dee39c271c8bcd772862be0e2",
+    "frontend/jest.config.js": "1c21d454148a749de1510186fd4847a6aa9c186dc4e6c8d0c5fed0f198e013c9",
+    "frontend/scripts/jest-dependency-boundary.test.cjs": "ae7b43c389bc8a8457ecc69f43ec4ab2e01dfc6821e676606fbe1cdb90a7e830"
+  },
+  "patchSha256": "943bbfa073816598aa3b807ab90963bc4cbad9b7b4f4969420f614bc81134a63",
+  "jestVersion": "30.5.2",
+  "npmVersion": "11.6.0"
+}
