@@ -1,0 +1,21 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "b1b95496b933a5d4fff17d72b76214ef64ad1408b9415a8213f33b0498b597b8",
+  "generated_at": "2026-10-09T08:27:42.851178+00:00",
+  "target_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "target_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "producer_sha256": "9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f",
+  "test_sha256": "e21974a1e75f82a1ec45956b07bd85497d49aef52fb882d03b56afe7d5ef03d0",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-c",
+    "from pathlib import Path; import hashlib,re,json; p=Path(\"scripts/r2_producer_acceptance.py\"); w=Path(\"../.github/workflows/r2-acceptance.yml\"); expected=re.search(r\"expected_script_sha=([a-f0-9]{64})\",w.read_text()).group(1); actual=hashlib.sha256(p.read_bytes()).hexdigest(); print(json.dumps({\"scope\":\"offline hash comparison only; workflow not invoked\",\"expected\":expected,\"actual\":actual,\"pin_matches\":expected==actual})); assert expected!=actual"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/537c/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 0,
+  "verdict": "PASS",
+  "stdout": "{\"scope\": \"offline hash comparison only; workflow not invoked\", \"expected\": \"15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028\", \"actual\": \"9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f\", \"pin_matches\": false}\n",
+  "stderr": ""
+}

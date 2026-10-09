@@ -1,0 +1,451 @@
+[
+  {
+    "name": "application-discovery",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/jest.config.js",
+      "--runInBand",
+      "--cacheDirectory",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/jest-cache",
+      "--listTests",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:36:59.426Z",
+    "finished": "2026-10-09T08:36:59.806Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-discovery.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-discovery.stderr.log",
+    "stdoutSha256": "63a581b186459ef093bfd3a9af6eeaa692a86298e71af7c229ed6d373a5e7179",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "discovery": [
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/__tests__/nested.tsx",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/application.test.tsx",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/application.test.jsx",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/application.test.ts",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/application.test.js",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/__tests__/nested.js",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/__tests__/nested.ts",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/__tests__/nested.jsx"
+    ]
+  },
+  {
+    "name": "application-discovery-denominator",
+    "expected": [
+      "__tests__/nested.js",
+      "__tests__/nested.jsx",
+      "__tests__/nested.ts",
+      "__tests__/nested.tsx",
+      "application.test.js",
+      "application.test.jsx",
+      "application.test.ts",
+      "application.test.tsx"
+    ],
+    "actual": [
+      "__tests__/nested.js",
+      "__tests__/nested.jsx",
+      "__tests__/nested.ts",
+      "__tests__/nested.tsx",
+      "application.test.js",
+      "application.test.jsx",
+      "application.test.ts",
+      "application.test.tsx"
+    ],
+    "expectationMet": true
+  },
+  {
+    "name": "application-execution",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/jest.config.js",
+      "--runInBand",
+      "--cacheDirectory",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/jest-cache",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:36:59.807Z",
+    "finished": "2026-10-09T08:37:00.732Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-execution.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-execution.stderr.log",
+    "stdoutSha256": "a08c69c97d505c719f64371a363250c085da723f03e5bf41db6dbf8ca02fd4e4",
+    "stderrSha256": "d4e8c50e9b41d6983386855ede692df3383a50bbb7759f039caa070ff9b8c684",
+    "success": true,
+    "numTotalTests": 8,
+    "numPassedTests": 8,
+    "numFailedTests": 0,
+    "numRuntimeErrorTestSuites": 0
+  },
+  {
+    "name": "application-coverage",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application/jest.config.js",
+      "--runInBand",
+      "--cacheDirectory",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/jest-cache",
+      "--json",
+      "--coverage",
+      "--coverageDirectory",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/coverage"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/application",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:00.732Z",
+    "finished": "2026-10-09T08:37:01.401Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-coverage.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-application-coverage.stderr.log",
+    "stdoutSha256": "ac69cbc8974e8798ed011a1aac9df9f34cb6919b2da767e6b0476704dbf602c5",
+    "stderrSha256": "312d91ad0aae7c19bf4e02248eb37dcf187775593410a0e9962c38d7445c5902",
+    "success": true,
+    "numTotalTests": 8,
+    "numPassedTests": 8,
+    "numFailedTests": 0,
+    "numRuntimeErrorTestSuites": 0
+  },
+  {
+    "name": "no-tests",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.402Z",
+    "finished": "2026-10-09T08:37:01.482Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-no-tests.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-no-tests.stderr.log",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "b962f7b0dae5399b94feef267cf084437870ac0e0571feacaaa91f68253fdb0d"
+  },
+  {
+    "name": "missing-config",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/absent-config.json",
+      "--runInBand"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.483Z",
+    "finished": "2026-10-09T08:37:01.530Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-missing-config.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-missing-config.stderr.log",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "5e17884e7555d6415bc11611e221b3a85adc749f9b88eed9822cd6d996f13043"
+  },
+  {
+    "name": "malformed-config",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/malformed-config.json",
+      "--runInBand"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.531Z",
+    "finished": "2026-10-09T08:37:01.582Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-malformed-config.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-malformed-config.stderr.log",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "6f881f77ea6eefa075642a8af55c9b643763bc32406e44c590edc193d1876ce3"
+  },
+  {
+    "name": "null-testmatch",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[null],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--listTests"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.582Z",
+    "finished": "2026-10-09T08:37:01.634Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-null-testmatch.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-null-testmatch.stderr.log",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "5e5a8a81d8efc1dd1702a05299112417e2d6fbe9fc55dc2d149afbf702b7bd4c"
+  },
+  {
+    "name": "intentional-assertion",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.634Z",
+    "finished": "2026-10-09T08:37:01.818Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-intentional-assertion.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-intentional-assertion.stderr.log",
+    "stdoutSha256": "ad4a85ec4871ad110a3bc56f8adb5c947192816854c0a8523fac71ff1711da5d",
+    "stderrSha256": "dfdbf28d560e791556febd7fd1baf6095b212464f88446d711646787c3c9a059",
+    "success": false,
+    "numTotalTests": 1,
+    "numPassedTests": 0,
+    "numFailedTests": 1,
+    "numRuntimeErrorTestSuites": 0
+  },
+  {
+    "name": "import-error",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:01.818Z",
+    "finished": "2026-10-09T08:37:02.005Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-import-error.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-import-error.stderr.log",
+    "stdoutSha256": "837629ac418cb05aaf4066abe22f24e1d9213be1ad1a63dd0441942875b47f3e",
+    "stderrSha256": "83e078eed4e73f8ea1aee2677d512bcc974ea23a2212aee0ccf403e62d6b56e1",
+    "success": false,
+    "numTotalTests": 0,
+    "numPassedTests": 0,
+    "numFailedTests": 0,
+    "numRuntimeErrorTestSuites": 1
+  },
+  {
+    "name": "test-timeout",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:02.005Z",
+    "finished": "2026-10-09T08:37:02.197Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-test-timeout.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-test-timeout.stderr.log",
+    "stdoutSha256": "fff4c6ca72353bfcecd422f9f45e68fa9693771816dd9cddf8c32a0bb2cea8a6",
+    "stderrSha256": "64cccf5c94dc727ed3868e6d5c4b690df20345dddbabdf9637077988fd0ae4ae",
+    "success": false,
+    "numTotalTests": 1,
+    "numPassedTests": 0,
+    "numFailedTests": 1,
+    "numRuntimeErrorTestSuites": 0
+  },
+  {
+    "name": "process-timeout",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/simple-cache\"}",
+      "--runInBand",
+      "--json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:02.198Z",
+    "finished": "2026-10-09T08:37:02.702Z",
+    "status": null,
+    "signal": "SIGTERM",
+    "error": {
+      "code": "ETIMEDOUT",
+      "message": "spawnSync /Users/roger/.nvm/versions/node/v22.19.0/bin/node ETIMEDOUT"
+    },
+    "expected": null,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-process-timeout.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v2-process-timeout.stderr.log",
+    "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "process-timeout-uninterpretable",
+    "expectationMet": true,
+    "status": null,
+    "errorCode": "ETIMEDOUT"
+  },
+  {
+    "name": "macos-parcel-watch",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--require",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/trace-watcher-v2.cjs",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/jest/bin/jest.js",
+      "--config",
+      "{\"rootDir\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-cache\"}",
+      "--watchAll",
+      "--watchman=false",
+      "--runInBand",
+      "--json",
+      "--outputFile",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch-v2-results.json"
+    ],
+    "cwd": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/watch",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "NODE_ENV": "test",
+      "FORCE_COLOR": "0"
+    },
+    "started": "2026-10-09T08:37:02.704Z",
+    "finished": "2026-10-09T08:37:03.514Z",
+    "pid": 21442,
+    "initial": {
+      "success": true,
+      "numTotalTests": 1,
+      "numPassedTests": 1
+    },
+    "updated": {
+      "success": false,
+      "numTotalTests": 1,
+      "numFailedTests": 1
+    },
+    "runsObserved": 2,
+    "parcelLoaded": true,
+    "nativeLoaded": [
+      {
+        "time": "2026-10-09T08:37:02.778Z",
+        "pid": 21442,
+        "request": "@parcel/watcher-darwin-arm64",
+        "resolved": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/node_modules/@parcel/watcher-darwin-arm64/watcher.node",
+        "sha256": "bdc5c3950f2bc6dde211a17e100faf862e712e51c853555dade6f5d1aab1e921"
+      }
+    ],
+    "termination": {
+      "code": null,
+      "signal": "SIGTERM"
+    },
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/watch-v2.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/watch-v2.stderr.log",
+    "expectationMet": true
+  }
+]

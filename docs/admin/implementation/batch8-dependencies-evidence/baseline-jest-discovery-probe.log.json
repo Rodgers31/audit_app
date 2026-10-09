@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-jest-discovery-probe.log",
+  "sha256": "5f01c328821b1c6b45d302049b36d5a8e48518b807e85f7decdfd116e146ed65",
+  "encoding": "utf-8",
+  "text": "{\"name\":\"positive\",\"status\":0,\"signal\":null,\"stdout\":\"/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch8-jest-pattern-iao9VD/fixture.test.js\\n\",\"stderr\":\"\"}\n{\"name\":\"nested\",\"status\":0,\"signal\":null,\"stdout\":\"\\n\",\"stderr\":\"\"}\n"
+}

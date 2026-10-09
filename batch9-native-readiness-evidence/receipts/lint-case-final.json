@@ -1,0 +1,32 @@
+{
+  "generated_by": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/batch9-native-readiness-evidence/run_receipt.py",
+  "generator_sha256": "eb16160462ef2d6ff1adbc7dd0b8b59e381449ce72b93e1833eeebe52004bf4c",
+  "generated_at": "2026-10-09T20:26:40.351617+00:00",
+  "target_commit": "5c68fb1b4454bad60db9bf12f9b7c68ce4549168",
+  "source_hashes": {
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/test_batch9_native_schema_readiness.py": "04953a41dd4d1cbf0a751389e1d3e1510c082c9040e2cbeaac64e6ee078bc727",
+    "backend/tests/batch9_native_readiness_fixture/sitecustomize.py": "8dba2c966e2821829ea16e60518defda86770243f485f82320c1b628701504be"
+  },
+  "command": [
+    "/Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/bin/python",
+    "-m",
+    "flake8",
+    "seeding/exclusion.py",
+    "tests/test_batch9_native_schema_readiness.py",
+    "tests/batch9_native_readiness_fixture/sitecustomize.py",
+    "--select=E9,F63,F7,F82"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+    "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/NATIVE_SCHEMA_READINESS/owned-import.sqlite",
+    "JWT_SECRET_KEY": "batch9-readiness-inert-jwt-key",
+    "BATCH9_NATIVE_READINESS_DATABASE_URL": "postgresql+psycopg2://batch9_readiness:batch9-inert-local@127.0.0.1:55495/batch9_native_readiness"
+  },
+  "exit_code": 0,
+  "verdict": "PASSED",
+  "output": ""
+}

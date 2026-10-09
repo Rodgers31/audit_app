@@ -1,0 +1,33 @@
+{
+  "generated_by": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/batch9-native-readiness-evidence/run_receipt.py",
+  "generator_sha256": "eb16160462ef2d6ff1adbc7dd0b8b59e381449ce72b93e1833eeebe52004bf4c",
+  "generated_at": "2026-10-09T20:10:33.550310+00:00",
+  "target_commit": "5c68fb1b4454bad60db9bf12f9b7c68ce4549168",
+  "source_hashes": {
+    "backend/seeding/exclusion.py": "5b8963f6d82397bf6bdec43c10de3b487c18f922017ce121dd47f40613920e6f",
+    "backend/tests/test_batch9_native_schema_readiness.py": "dc675c3d3928b02a0e8ab7f5eb5688ac8a13e1cbc6c3eab2a7f8da48e383ada7",
+    "backend/tests/batch9_native_readiness_fixture/sitecustomize.py": "8dba2c966e2821829ea16e60518defda86770243f485f82320c1b628701504be"
+  },
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "-p",
+    "no:cacheprovider",
+    "tests/test_batch9_native_schema_readiness.py",
+    "tests/test_batch8_exclusion_sqlite.py",
+    "-q"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+    "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/NATIVE_SCHEMA_READINESS/owned-import.sqlite",
+    "JWT_SECRET_KEY": "batch9-readiness-inert-jwt-key",
+    "BATCH9_NATIVE_READINESS_DATABASE_URL": "postgresql+psycopg2://batch9_readiness:batch9-inert-local@127.0.0.1:55495/batch9_native_readiness"
+  },
+  "exit_code": 0,
+  "verdict": "PASSED",
+  "output": "...................................................................      [100%]\n=============================== warnings summary ===============================\ndatabase.py:64\n  /Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nmodels.py:28\n  /Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n../../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11\n  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n67 passed, 3 warnings in 7.27s\n"
+}

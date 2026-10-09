@@ -18,9 +18,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, ConfigDict, StrictBool
 from sqlalchemy import text
+from tests.ci_browser_database import browser_database_port
 
 BACKEND = Path(__file__).resolve().parents[1]
-URL = "postgresql+psycopg2://batch7_coordinator:batch7-inert-coordinator-local@127.0.0.1:55483/batch7_coordinator"
+DATABASE_PORT = browser_database_port(55483)
+URL = f"postgresql+psycopg2://batch7_coordinator:batch7-inert-coordinator-local@127.0.0.1:{DATABASE_PORT}/batch7_coordinator"
 ADMIN = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 OTHER = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 SERVICE_KEY = "batch7-coordinator-inert-service-key"
@@ -32,7 +34,7 @@ _connect = socket.socket.connect
 
 
 def local_only(sock, address):
-    if not isinstance(address, tuple) or address[:2] not in (("127.0.0.1", 55483), ("127.0.0.1", 8163)):
+    if not isinstance(address, tuple) or address[:2] not in (("127.0.0.1", DATABASE_PORT), ("127.0.0.1", 8163)):
         raise RuntimeError("External transport refused by coordinator fixture")
     return _connect(sock, address)
 
@@ -53,19 +55,35 @@ workers: list[subprocess.Popen] = []
 role = "admin"
 
 
+def required_coordinator_migrations():
+    """Require the exact additive migrations belonging to the actual models."""
+    migrations = [("etl_dispatch_commands", "e554d7c9a001_etl_dedicated_dispatch.py")]
+    if "seeding_domain_claims" in Base.metadata.tables:
+        migrations.append(("seeding_domain_claims", "e572b8c9a001_shared_seeding_exclusion.py"))
+    paths = [(table, BACKEND / "alembic/versions" / name) for table, name in migrations]
+    for _, path in paths:
+        if not path.is_file():
+            raise RuntimeError("Missing required coordinator fixture migration: " + path.name)
+    return paths
+
+
 def prepare_database():
-    """Existing observation/audit schema plus the actual additive migration."""
-    Base.metadata.create_all(engine, tables=[IngestionJob.__table__, AdminAuditLog.__table__])
+    """Existing observation/audit schema plus the actual declared migrations."""
+    paths = required_coordinator_migrations()
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
-    path = BACKEND / "alembic/versions/e554d7c9a001_etl_dedicated_dispatch.py"
-    spec = importlib.util.spec_from_file_location("coordinator_dispatch_migration", path)
-    migration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(migration)
+    migrations = []
+    for table, path in paths:
+        spec = importlib.util.spec_from_file_location("coordinator_migration_" + path.stem, path)
+        migration = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(migration)
+        migrations.append((table, migration))
+    Base.metadata.create_all(engine, tables=[IngestionJob.__table__, AdminAuditLog.__table__])
     with engine.begin() as connection:
-        if not connection.scalar(text("SELECT to_regclass('public.etl_dispatch_commands')")):
-            with Operations.context(MigrationContext.configure(connection)):
-                migration.upgrade()
+        for table, migration in migrations:
+            if not connection.scalar(text("SELECT to_regclass(:table)"), {"table": "public." + table}):
+                with Operations.context(MigrationContext.configure(connection)):
+                    migration.upgrade()
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_control (mode text NOT NULL CHECK (mode IN ('normal','failure','before','after')))"))
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_effects (job_id integer NOT NULL REFERENCES ingestion_jobs(id))"))
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_markers (stage text NOT NULL, job_id integer NOT NULL REFERENCES ingestion_jobs(id))"))
@@ -106,6 +124,8 @@ def start_worker():
            "DATABASE_URL": URL, "ADMIN_ETL_DISPATCH_ENABLED": "true",
            "BATCH7_COORDINATOR_INERT_WORKER": "true", "SEED_STORAGE_PATH": str(runtime / "storage"),
            "SEED_CACHE_PATH": str(runtime / "cache")}
+    if DATABASE_PORT == 55494:
+        env.update(BATCH9_CI_BROWSER="true", BROWSER_FIXTURE_POSTGRES_PORT="55494")
     process = subprocess.Popen([sys.executable, "-m", "admin_etl_dispatch_worker"], env=env, cwd=BACKEND,
                                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                start_new_session=True)
@@ -152,7 +172,7 @@ def profile(request: Request):
 
 @app.get("/fixture/health")
 def fixture_health():
-    return {"fixture": "actual-router-postgresql-native-worker", "owned_database_port": 55483}
+    return {"fixture": "actual-router-postgresql-native-worker", "owned_database_port": DATABASE_PORT}
 
 
 @app.post("/fixture/reset")
