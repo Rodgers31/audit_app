@@ -447,7 +447,6 @@ def test_actual_audit_writer_reports_failed_commit(monkeypatch):
     assert result is False
 
 
-@pytest.mark.xfail(strict=True, reason="Coordinator-owned shared require_admin parser: malformed role mapping authorizes admin")
 def test_shared_auth_rejects_malformed_role_mapping(harness, monkeypatch):
     harness.app.dependency_overrides.pop(supabase_auth.get_current_user)
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "inert-test-secret-not-a-production-secret")

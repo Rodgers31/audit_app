@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from fastapi.routing import APIRoute
 from fastapi.exceptions import RequestValidationError
-from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from fastapi.exception_handlers import http_exception_handler
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy.orm import Session
 
@@ -27,10 +28,19 @@ class UsersRoute(APIRoute):
             try:
                 response = await original(request)
             except StarletteHTTPException as error:
+                if error.status_code >= 500 and error.status_code not in {502, 503}:
+                    error = HTTPException(503, 'User service is unavailable.', headers=error.headers)
+                elif error.status_code >= 500:
+                    error = HTTPException(error.status_code, 'User service is unavailable.', headers=error.headers)
+                elif error.status_code in {401, 403}:
+                    error.detail = 'Administrator access required.'
                 response = await http_exception_handler(request, error)
-            except RequestValidationError as error:
-                response = await request_validation_exception_handler(request, error)
+            except RequestValidationError:
+                response = JSONResponse(status_code=422, content={'detail': 'Invalid user request.'})
+            except Exception:
+                response = JSONResponse(status_code=503, content={'detail': 'User service is unavailable.'})
             response.headers['Cache-Control'] = 'no-store'
+            response.headers['Vary'] = 'Authorization'
             return response
         return handle
 
@@ -283,7 +293,7 @@ def _delete_ack(value, expected_id):
 
 
 @router.get('', response_model=AdminUserList, summary='List users')
-async def list_users(q: Optional[str] = Query(None, max_length=320),
+def list_users(q: Optional[str] = Query(None, max_length=320),
                      page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100)):
     users = _all_users()
     needle = (q or '').strip().casefold()
@@ -298,7 +308,7 @@ async def list_users(q: Optional[str] = Query(None, max_length=320),
 
 
 @router.get('/stats', response_model=AdminUserStats, summary='User stats summary')
-async def user_stats():
+def user_stats():
     users = _all_users()
     profiles = _profile_map([user['id'] for user in users])
     now = datetime.now(timezone.utc)
@@ -310,14 +320,14 @@ async def user_stats():
 
 
 @router.get('/{user_id}', response_model=AdminUserDetail, summary='Get user details')
-async def get_user(user_id: UUID):
+def get_user(user_id: UUID):
     uid = str(user_id)
     user = _auth_user(_provider(supabase_admin.get_user, uid), uid)
     return _detail(user, _profile_map([uid]).get(uid))
 
 
 @router.patch('/{user_id}/roles', response_model=AdminUserMutation, summary='Update user roles (profiles.roles)')
-async def update_user_roles(user_id: UUID, body: UpdateRolesBody,
+def update_user_roles(user_id: UUID, body: UpdateRolesBody,
                             actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db)):
     uid = str(user_id)
     new_roles = list(dict.fromkeys(role.strip() for role in body.roles))
@@ -343,7 +353,7 @@ async def update_user_roles(user_id: UUID, body: UpdateRolesBody,
 
 
 @router.delete('/{user_id}', summary='Delete a user')
-async def delete_user(user_id: UUID, actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db)):
+def delete_user(user_id: UUID, actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db)):
     uid = str(user_id)
     if UUID(actor.id) == user_id:
         raise HTTPException(400, 'You cannot delete yourself.')
@@ -355,7 +365,7 @@ async def delete_user(user_id: UUID, actor: AdminUser = Depends(require_admin), 
 
 
 @router.post('/{user_id}/send-reset', summary='Request password-reset email')
-async def send_reset(user_id: UUID, body: SendResetBody,
+def send_reset(user_id: UUID, body: SendResetBody,
                      actor: AdminUser = Depends(require_admin), db: Session = Depends(get_db)):
     uid = str(user_id)
     user = _auth_user(_provider(supabase_admin.get_user, uid), uid)

@@ -4,6 +4,8 @@ import UsersList from '@/app/admin/users/page';
 import UserDetail from '@/app/admin/users/[userId]/page';
 
 const id = '11111111-1111-4111-8111-111111111111';
+let mockActor = '22222222-2222-4222-8222-222222222222';
+let mockAuthorized = true;
 const self = '22222222-2222-4222-8222-222222222222';
 const detail = {
   id,
@@ -39,7 +41,7 @@ jest.mock('@/lib/api/axios', () => ({
   },
 }));
 jest.mock('@/lib/auth/AuthProvider', () => ({
-  useAuth: () => ({ authUser: { id: self } }),
+  useAuth: () => ({ authUser: { id: mockActor }, user: { id: mockActor, roles: mockAuthorized ? ['admin'] : [] }, isAuthenticated: true, isLoading: false }),
 }));
 jest.mock('@/components/layout/PageShell', () => ({
   __esModule: true,
@@ -93,6 +95,8 @@ async function showDetail() {
 }
 beforeEach(() => {
   jest.clearAllMocks();
+  mockActor = self;
+  mockAuthorized = true;
   mockParams = new URLSearchParams();
   mockGet.mockResolvedValue({ data: detail });
 });
@@ -200,4 +204,29 @@ test('detail provider failure offers retry', async () => {
   });
   fireEvent.click(await screen.findByRole('button', { name: 'Retry' }));
   await screen.findByText('Roles');
+});
+
+
+test('private user list is fetched again when the administrator identity changes', async () => {
+  mockGet.mockResolvedValue({data:{users:[detail],total:1,page:1,page_size:20,has_more:false}});
+  const qc = new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const view = render(<QueryClientProvider client={qc}><UsersList/></QueryClientProvider>);
+  await screen.findAllByText('fixture@example.invalid');
+  mockActor = '33333333-3333-4333-8333-333333333333';
+  mockGet.mockResolvedValue({data:{users:[],total:0,page:1,page_size:20,has_more:false}});
+  view.rerender(<QueryClientProvider client={qc}><UsersList/></QueryClientProvider>);
+  await screen.findByText('No users match.');
+  expect(screen.queryAllByText('fixture@example.invalid')).toHaveLength(0);
+  expect(mockGet).toHaveBeenCalledTimes(2);
+});
+
+test('private users are removed immediately when admin access is revoked', async () => {
+  mockGet.mockResolvedValue({data:{users:[detail],total:1,page:1,page_size:20,has_more:false}});
+  const qc=new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const view=render(<QueryClientProvider client={qc}><UsersList/></QueryClientProvider>);
+  await screen.findAllByText('fixture@example.invalid');
+  mockAuthorized=false;
+  view.rerender(<QueryClientProvider client={qc}><UsersList/></QueryClientProvider>);
+  expect(screen.queryAllByText('fixture@example.invalid')).toHaveLength(0);
+  expect(mockGet).toHaveBeenCalledTimes(1);
 });

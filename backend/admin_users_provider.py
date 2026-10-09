@@ -7,7 +7,10 @@ import logging
 from typing import Optional
 
 import httpx
-from supabase_admin import SupabaseAdminError, _config, _headers
+if __package__:
+    from .supabase_admin import SupabaseAdminError, _config, _headers
+else:
+    from supabase_admin import SupabaseAdminError, _config, _headers
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +73,12 @@ def send_password_reset(email, redirect_to: Optional[str] = None):
 
 def record_admin_action(db, *, actor, action, target_type=None, target_id=None, payload=None) -> bool:
     """Report audit commit separately from an already accepted provider mutation."""
-    from database import SessionLocal
-    from models import AdminAuditLog
+    if __package__:
+        from .database import SessionLocal
+        from .models import AdminAuditLog
+    else:
+        from database import SessionLocal
+        from models import AdminAuditLog
     del db
     session = None
     try:

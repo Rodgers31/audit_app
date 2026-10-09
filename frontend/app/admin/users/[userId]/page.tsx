@@ -9,6 +9,7 @@
 
 import PageShell from '@/components/layout/PageShell';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useAdmin } from '@/lib/auth/admin';
 import api from '@/lib/api/axios';
 import {
   parseUserDetail,
@@ -31,7 +32,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { use, useState, useRef } from 'react';
+import { use, useState, useRef, useEffect } from 'react';
 
 const KNOWN_ROLES = ['citizen', 'admin'];
 
@@ -46,15 +47,20 @@ const fadeUp = {
 
 export default function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
+  const { authUser } = useAuth();
   return (
     <div className='[&_h1]:[overflow-wrap:anywhere] [&_header_p]:[overflow-wrap:anywhere]'>
-      <UserDetailInner key={userId} userId={userId} />
+      <UserDetailInner key={`${authUser?.id}:${userId}`} userId={userId} />
     </div>
   );
 }
 
 function UserDetailInner({ userId }: { userId: string }) {
   const { authUser } = useAuth();
+  const { isAdmin: allowed } = useAdmin();
+  const actorId = authUser?.id;
+  const active = useRef(true);
+  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const router = useRouter();
   const qc = useQueryClient();
   const isSelf = authUser?.id?.toLowerCase() === userId.toLowerCase();
@@ -63,16 +69,19 @@ function UserDetailInner({ userId }: { userId: string }) {
   const backHref = returnTo && /^\/admin\/users(?:\?|$)/.test(returnTo) ? returnTo : '/admin/users';
   const mutationLock = useRef(false);
   const runMutation = (mutate: () => void) => {
-    if (mutationLock.current) return;
+    if (!allowed || !active.current || mutationLock.current) return;
     mutationLock.current = true;
     mutate();
   };
 
   const { data, isLoading, error, refetch } = useQuery<UserDetail>({
-    queryKey: ['admin', 'user', userId],
+    queryKey: ['admin', 'user', actorId, userId],
+    enabled: allowed,
+    gcTime: 0,
+    retry: false,
     queryFn: async ({ signal }) => {
       if (!validUserId(userId)) throw new Error('Invalid user ID.');
-      return parseUserDetail((await api.get(`/admin/users/${userId}`, { signal })).data, userId);
+      return parseUserDetail((await api.get(`/admin/users/${userId}`, { signal, headers: { 'Cache-Control': 'no-store' } })).data, userId);
     },
     staleTime: 15_000,
   });
@@ -97,7 +106,8 @@ function UserDetailInner({ userId }: { userId: string }) {
       mutationLock.current = false;
     },
     onSuccess: (updated) => {
-      qc.setQueryData(['admin', 'user', userId], updated);
+      if (!active.current) return;
+      qc.setQueryData(['admin', 'user', actorId, userId], updated);
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] });
       qc.invalidateQueries({ queryKey: ['admin', 'user-stats'] });
@@ -114,7 +124,7 @@ function UserDetailInner({ userId }: { userId: string }) {
     onSettled: () => {
       mutationLock.current = false;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] }),
+    onSuccess: () => { if (active.current) qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] }); },
   });
 
   const deleteUser = useMutation({
@@ -123,12 +133,15 @@ function UserDetailInner({ userId }: { userId: string }) {
       mutationLock.current = false;
     },
     onSuccess: (result) => {
+      if (!active.current) return;
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] });
       qc.invalidateQueries({ queryKey: ['admin', 'user-stats'] });
       if (result.audit_recorded) router.replace(backHref);
     },
   });
+
+  if (!allowed) return <PageShell title='Users'><p>Administrator access required.</p></PageShell>;
 
   const busy =
     saveRoles.isPending || sendReset.isPending || deleteUser.isPending || deleteUser.isSuccess;
@@ -163,7 +176,7 @@ function UserDetailInner({ userId }: { userId: string }) {
             This user could not be loaded.
           </p>
           <button
-            onClick={() => refetch()}
+            onClick={() => { if (allowed) refetch(); }}
             className='px-4 py-2 rounded-xl border border-neutral-border'
           >
             Retry

@@ -42,6 +42,7 @@ import os
 import time
 from dataclasses import dataclass
 from typing import List, Optional
+from uuid import UUID
 
 import httpx
 from fastapi import Depends, HTTPException, status
@@ -208,9 +209,20 @@ def _fetch_roles(user_id: str) -> tuple[Optional[str], List[str]]:
         row = supabase_admin.get_profile(user_id)
     except supabase_admin.SupabaseAdminError:
         return None, []
-    if not row:
+    if not isinstance(row, dict):
         return None, []
-    return row.get("email"), list(row.get("roles") or [])
+    try:
+        if UUID(row.get("id")) != UUID(user_id):
+            return None, []
+    except (ValueError, TypeError, AttributeError):
+        return None, []
+    roles = row.get("roles")
+    if not isinstance(roles, list) or any(
+        not isinstance(role, str) or not role.strip() for role in roles
+    ):
+        return None, []
+    email = row.get("email")
+    return email if isinstance(email, str) else None, roles.copy()
 
 
 def get_current_user(
@@ -238,7 +250,9 @@ def get_current_user(
 
 def require_admin(current_user: AdminUser = Depends(get_current_user)) -> AdminUser:
     """FastAPI dependency that 403s anyone without ``admin`` in roles."""
-    if "admin" not in current_user.roles:
+    if (not isinstance(current_user.roles, list)
+        or any(not isinstance(role, str) or not role.strip() for role in current_user.roles)
+        or "admin" not in current_user.roles):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required",

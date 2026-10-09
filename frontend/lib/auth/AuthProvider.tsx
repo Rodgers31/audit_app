@@ -13,6 +13,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { getBaseUrl } from '@/lib/utils/getBaseUrl';
+import { profileMatchesIdentity } from '@/lib/auth/roles';
 import type { User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -58,7 +59,7 @@ async function fetchProfile(userId: string): Promise<UserProfile | null> {
     .select('id, email, display_name, roles')
     .eq('id', userId)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !profileMatchesIdentity(data, userId)) return null;
   return data as UserProfile;
 }
 

@@ -45,6 +45,7 @@ const isUserTimestamp = (value: unknown) => {
   const calendar = new Date(0);
   calendar.setUTCFullYear(year, month, 0);
   return (
+    year >= 1 &&
     month >= 1 &&
     month <= 12 &&
     day >= 1 &&

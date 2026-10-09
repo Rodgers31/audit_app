@@ -147,3 +147,44 @@ The first local PostgreSQL setup lacked server binaries. A SQLite attempt could 
 - [Supabase resetPasswordForEmail](https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail): reset request sending semantics.
 - [GoTrue recover handler](https://github.com/supabase/auth/blob/master/internal/api/recover.go) and [admin handler](https://github.com/supabase/auth/blob/master/internal/api/admin.go): empty success responses, pagination and deletion. Mutable upstream references informed compatibility; deployed-provider verification is not claimed.
 - Installed `frontend/node_modules/@supabase/auth-js/src/GoTrueAdminApi.ts` and `fetch.ts`: raw/wrapped delete response compatibility.
+
+## Coordinator review repairs (2026-10-08)
+
+The shared-core exception is coordinated in this PR: backend signed-token role
+lookup validates an actual string array and matching canonical profile UUID;
+frontend profile fetch, guard and middleware validate shapes and matching
+identities. The prior strict xfail is removed and now passes. Empty/citizen
+arrays deny admin; legitimate admin and unknown legacy strings remain supported.
+Provider helpers support both package and top-level imports. All six synchronous
+provider handlers run in FastAPI's worker pool, so slow scans no longer stall the
+ASGI event loop. The existing scan cap and non-atomic census limitation remain.
+
+Users responses sanitize authentication/internal/validation errors, retain
+no-store and add Vary Authorization (#564). Queries use actor-specific keys,
+no inactive retention, disabled unauthorized reads and guarded mutation controls;
+detail remounts on actor transition and ignores late success callbacks after
+unmount (#563). ISO year zero is rejected to match Python's datetime contract.
+
+Observed pre-fix regressions: backend14 failures/7 controls (signed roles/identity,
+package import, concurrent health); frontend16 failures/6 controls (guard and
+middleware); private errors5 failures/2 transport controls; actual AuthProvider3
+failures/1 control; actor cache2 failures; year zero1 failure. The cache replay
+corrected a test precondition that initially matched two equivalent email labels;
+only the corrected pinned-head failure counts as product evidence. Current
+coordinator scoped replay: backend160 passed, frontend90 passed, full TypeScript
+and scoped lint exit0. Compatible runtimes, inert identities/HTTP and no dotenv.
+
+The redirect-to-body suggestion is refuted: actual installed official auth-js
+resetPasswordForEmail with injected fetch sends redirect_to in query and email in
+JSON; the owned httpx transport retains matching query round trips. Official
+Supabase auth RecoverParams excludes that JSON field, and utilities.getRedirectTo
+reads header/form query. See the official sources:
+https://github.com/supabase/auth/blob/master/internal/api/recover.go and
+https://github.com/supabase/auth/blob/master/internal/utilities/request.go.
+No live reset email was sent. Deployed allowlists remain provider configuration.
+
+Cross-lane write policy (#553) and combined acceptance remain coordinator checks:
+the boolean audit writer must reuse the overview lane's safe_audit_payload before
+all four current callers can be certified; the overview user count must describe
+Auth identities, including those without profiles. Final merged-head receipts
+will supersede the initial lane-only/xfail counts above.

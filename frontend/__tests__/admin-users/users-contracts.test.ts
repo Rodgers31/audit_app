@@ -156,3 +156,7 @@ test.each(['nope', '0', '-1', 'NaN', 'Infinity'])(
     expect(userPage(page)).toBe(1);
   }
 );
+
+test('rejects ISO year zero which the provider datetime contract cannot represent', () => {
+  expect(() => parseUser({...summary,created_at:'0000-01-01T00:00:00Z'})).toThrow();
+});

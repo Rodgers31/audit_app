@@ -9,6 +9,8 @@
 
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { useAdmin } from '@/lib/auth/admin';
 import { parseUserList, userPage, type UserList } from '@/lib/admin/users';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -56,6 +58,9 @@ export default function UsersListPage() {
 }
 
 function UsersListInner() {
+  const { authUser } = useAuth();
+  const { isAdmin: allowed } = useAdmin();
+  const actorId = authUser?.id;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -92,7 +97,10 @@ function UsersListInner() {
   );
 
   const { data, isLoading, error, refetch, isFetching } = useQuery<UserList>({
-    queryKey: ['admin', 'users', { q, page }],
+    queryKey: ['admin', 'users', actorId, { q, page }],
+    enabled: allowed,
+    gcTime: 0,
+    retry: false,
     queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = {
         page,
@@ -100,13 +108,15 @@ function UsersListInner() {
       };
       if (q) params.q = q;
       return parseUserList(
-        (await api.get('/admin/users', { params, signal })).data,
+        (await api.get('/admin/users', { params, signal, headers: { 'Cache-Control': 'no-store' } })).data,
         page,
         PAGE_SIZE
       );
     },
     staleTime: 15_000,
   });
+
+  if (!allowed) return <PageShell title='Users'><p>Administrator access required.</p></PageShell>;
 
   return (
     <PageShell
@@ -128,7 +138,7 @@ function UsersListInner() {
             />
           </div>
           <button
-            onClick={() => refetch()}
+            onClick={() => { if (allowed) refetch(); }}
             disabled={isFetching}
             className='inline-flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text rounded-xl text-sm transition-all shadow-surface disabled:opacity-50'
           >
