@@ -1,0 +1,70 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/cleanup_receipt.py",
+  "generator_sha256": "d9acfda25ce8c127eedc5a707806a130f4386f1573f3e314f48e54da3906331c",
+  "generated_at": "2026-10-09T19:32:19.998882+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2",
+    "backend/seeding/reconciliation.py": "4ccaf416c5d1180e24bf45a020b50b559289128836d9b33ab35aa26663607e1e",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/tests/test_batch9_reconciliation.py": "b9a74548b591b5c91e6efb5fe9f2a421942564904be41c35788f0fb6195701ad",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "be8d4815cdffddc6b31b425673de8bdd1e0c69ca5a4f8ac1181ccd9486ca77f9",
+    "backend/tests/test_batch9_reconciliation_processes.py": "46886d00554f39df6c42b6a5c1db84ef8d9624441eef1be21aa196ec5b3c59f0",
+    "backend/tests/test_batch9_reconciliation_migration.py": "5becf4622a97962c9b7d9fd86ba216116193a7d838f7874f2bd7080b38007eb5",
+    "backend/tests/batch9_reconciliation_fixture/sitecustomize.py": "7d24781e410bdbb3a133eac4661ff465ca27eb3534052228f9921649c1fd61d6"
+  },
+  "runtime": {
+    "command": [
+      "/Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/bin/python",
+      "--version"
+    ],
+    "exit_code": 0,
+    "stdout": "Python 3.12.15\n",
+    "stderr": ""
+  },
+  "container_before": {
+    "command": [
+      "docker",
+      "inspect",
+      "--format",
+      "{{json .Id}} {{json .Name}} {{json .State.Running}} {{json .NetworkSettings.Ports}}",
+      "batch9-reconciliation-a46a-db"
+    ],
+    "exit_code": 0,
+    "stdout": "\"b70fa66e1693ac4c41ce20a58142672631367db1208630c08da59b2a7b62d843\" \"/batch9-reconciliation-a46a-db\" true {\"5432/tcp\":[{\"HostIp\":\"127.0.0.1\",\"HostPort\":\"55493\"}]}\n",
+    "stderr": ""
+  },
+  "databases_before": [
+    "batch9-reconciliation-a46a"
+  ],
+  "target_sessions_before": [],
+  "owned_processes_remaining": [],
+  "container_stop": {
+    "command": [
+      "docker",
+      "stop",
+      "--time",
+      "10",
+      "batch9-reconciliation-a46a-db"
+    ],
+    "exit_code": 0,
+    "stdout": "Flag --time has been deprecated, use --timeout instead\nbatch9-reconciliation-a46a-db\n",
+    "stderr": ""
+  },
+  "container_after": {
+    "command": [
+      "docker",
+      "inspect",
+      "--format",
+      "{{json .Id}} {{json .State.Running}}",
+      "batch9-reconciliation-a46a-db"
+    ],
+    "exit_code": 0,
+    "stdout": "\"b70fa66e1693ac4c41ce20a58142672631367db1208630c08da59b2a7b62d843\" false\n",
+    "stderr": ""
+  },
+  "loopback_port_accepting_after": false,
+  "retained": "Stopped owned container data, managed worktree, inert owned runtimes and evidence retained for review; no production or shared service changed.",
+  "verdict": "PASSED"
+}

@@ -1,0 +1,38 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/run_receipt.py",
+  "generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+  "generated_at": "2026-10-09T19:22:19.981316+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/seeding/reconciliation.py": "5540a23bce38dc943a80bf649da93a448f14bc6dcab8cf856bfe913799bbfde9",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/tests/test_batch9_reconciliation.py": "c0049e4f0c51832d78ffed569e4b3cc04b319b25a9f62e7a0cd2d160e8cd5b91",
+    "backend/tests/test_batch9_reconciliation_migration.py": "cb81effa9c1c1027f1ab314d00e9ae243e12729b7f52cb7483a629c9c4f8f619",
+    "backend/tests/test_batch9_reconciliation_processes.py": "242e243540731340cf74f0399b3e73f4f3562fd3c3014fe2e75fae500c572561",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "674e929ab15564c13aebe78d8aaf94199131020bc1387322782a6984ec3dc364",
+    "backend/tests/batch9_reconciliation_fixture/sitecustomize.py": "7d24781e410bdbb3a133eac4661ff465ca27eb3534052228f9921649c1fd61d6",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2"
+  },
+  "runtime": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]\nSQLAlchemy 2.0.46\n",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_reconciliation_migration.py",
+    "-q",
+    "--tb=short"
+  ],
+  "environment": {
+    "PATH": "/usr/bin:/bin:/usr/local/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/a46a/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a",
+    "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a"
+  },
+  "exit_code": 0,
+  "stdout": "...                                                                      [100%]\n=============================== warnings summary ===============================\nbackend/database.py:64\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nbackend/models.py:28\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n3 passed, 2 warnings in 3.36s\n",
+  "stderr": ""
+}

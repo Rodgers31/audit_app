@@ -1,0 +1,187 @@
+{
+  "at": "2026-10-09T23:44:08.627798+00:00",
+  "destination": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/retained-private-runtime-artifacts",
+  "retained_exact_bytes": true,
+  "moved": [
+    {
+      "name": "batch9-reconciliation-behavior-backendkill-0d87b366d3ee-io",
+      "files": {
+        "policy.json": "599d4f167c4d288c7be0cf884710366569b8dfc7d138a3e921afc674020c2c58"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-backendkill-14b0e6d8ce57-io",
+      "files": {
+        "policy.json": "d435f00af5f6976adb271bafa948248e90482710e951109b54d585cc68356f11"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-backendkill-1dcf6a935cb2-io",
+      "files": {
+        "policy.json": "09255ed5000b46823caa16ae8871980189f3c1cba2fa41d6958fe1607cfced94"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-backendkill-6f7ee4282054-io",
+      "files": {
+        "policy.json": "a5b0a7d26fdba032c954ab10cb5c951de202a5731e71cb460211e82c4eb972ab"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-backendkill-a5d6aaf81b30-io",
+      "files": {
+        "policy.json": "07ca349fc79c11e24c56beaf7b6059cfab410c0e5b7291755351d36557432c91"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-lostreport-09c65380ccc3-io",
+      "files": {
+        "policy.json": "25f6c1d6cc5605d137b27bb3dfb1ab3ba778811a6e4b4db0305de3fdf1456b56"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-lostreport-1c206c34ebac-io",
+      "files": {
+        "policy.json": "72f0f75f825010bf38d429a5313453b18e9ae91a07d02493b0d995bbee2e55a0"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-lostreport-200d13119a33-io",
+      "files": {
+        "policy.json": "ffd514662ca62a3aac0ad4373cb6a393947c2dec11a54a9a79f1d18b534703e7"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-lostreport-9ca111105946-io",
+      "files": {
+        "policy.json": "da8d828eb37036f4b32e95f7da5e65be487bab37f5a638f23170e2a2503d18d9"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-lostreport-f1b8ee75f357-io",
+      "files": {
+        "policy.json": "a18e6e29c279c026cb7dc84d61759914d8a6c4e6f53685eecdbce910106442c2"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-midwritekill-5e4458f4e52e-io",
+      "files": {
+        "policy.json": "caa595b1eeee83c83c9951a78ea7ec63c2c8031dba7f13c0e95b41137a29cb20"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-midwritekill-6ebaccb4cd59-io",
+      "files": {
+        "policy.json": "dc456aef1c46c78a95a877fa965b318b5a1818779ef05015228a9bb0aeba19f2"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-midwritekill-a67868eee9c3-io",
+      "files": {
+        "policy.json": "859ec598e85a328d28c7d62a040fb6c1fb89d4a85e9dc6117e6a79d01e9f7288"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-midwritekill-c6288cc2d511-io",
+      "files": {
+        "policy.json": "cd4c63b7bbcf47f850395328cb6db67341691f83e8593e2b5e1fc3fbe1715f70"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-midwritekill-d8e195523ef9-io",
+      "files": {
+        "policy.json": "0e08e341476eab2cb5dcb3370fa18da9bdb5a6e8325691f8603d59fe50efde51"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-restart-396b862f10db-io",
+      "files": {
+        "policy.json": "22207ed8a3dfa8e5d36a58d517af77bc6fdc4faba11131f97663d0fe37148879"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-restart-7d18be97f538-io",
+      "files": {
+        "policy.json": "54696343ac26cc555a7279fb5a780b23858d5c28a1e1a7115342357b0d1d2256"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-restart-b26f6929d968-io",
+      "files": {
+        "policy.json": "0f02e913f89e2bd0b41af1a0019bbfea42efeca67156bb5cf4ee3dad1746f780"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-restart-dd901324de03-io",
+      "files": {
+        "policy.json": "84299cccb17af78ad59c59998a62beaf0f69d83e085b2b21f28c7e866d869f80"
+      }
+    },
+    {
+      "name": "batch9-reconciliation-behavior-restart-fbb9f05df346-io",
+      "files": {
+        "policy.json": "58f822f21a9b12e83a3ff7f4aeac3555a543fa48981aeee1731ea98666294c00"
+      }
+    },
+    {
+      "name": "policy-controls-376576c3947f4b4d98f5d39b99ca8398",
+      "files": {
+        "fingerprint.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "oversized.json": "76c002eec0c9da854ca2ee5dae9fb0069a622274b6638ab712fcb70384304899",
+        "malformed.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "world-writable.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    {
+      "name": "policy-controls-50a393126f7145fbbf5f60b92552d258",
+      "files": {
+        "fingerprint.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "oversized.json": "76c002eec0c9da854ca2ee5dae9fb0069a622274b6638ab712fcb70384304899",
+        "malformed.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "world-writable.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    {
+      "name": "policy-controls-e059a5da74864fce8cc29ce8655a4f75",
+      "files": {
+        "fingerprint.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "oversized.json": "76c002eec0c9da854ca2ee5dae9fb0069a622274b6638ab712fcb70384304899",
+        "malformed.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "world-writable.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    {
+      "name": "policy-controls-ee9a61153fa3439c8712368c2943d0f5",
+      "files": {
+        "fingerprint.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "oversized.json": "76c002eec0c9da854ca2ee5dae9fb0069a622274b6638ab712fcb70384304899",
+        "malformed.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "world-writable.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    {
+      "name": "policy-controls-fa6ad0e45db74aa6a2936268c1a57e76",
+      "files": {
+        "fingerprint.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "oversized.json": "76c002eec0c9da854ca2ee5dae9fb0069a622274b6638ab712fcb70384304899",
+        "malformed.json": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+        "world-writable.json": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    {
+      "name": "review-current.json",
+      "sha256": "db9377d7a5bfe393d22f463a51e8914fd4ce8fc965bcc39139e41fb20808f280",
+      "superseded_for_acceptance": true
+    },
+    {
+      "name": "review-minimum.json",
+      "sha256": "492133d04b96e2981cd211f27105e0e1cd31bb0d07b2e9a51c3eae1cdfd5d275",
+      "superseded_for_acceptance": true
+    },
+    {
+      "name": "review-publishing-final-minimum.json",
+      "sha256": "7f4b5871763a8aa55b598a04fe40a07f54d3aa1272d0fdf88c2e732e19a5e971",
+      "superseded_for_acceptance": true
+    }
+  ]
+}

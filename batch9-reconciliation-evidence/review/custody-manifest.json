@@ -1,0 +1,148 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/review/package_review_evidence.py",
+  "generator_sha256": "000cb491998493fb24de465b9e4c130aa092c325f258dadf3aaf6a76bc2fef35",
+  "generated_at": "2026-10-09T23:45:26.019034+00:00",
+  "author_head": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5",
+  "integrated_main": "b0ec603ccbf29d5ae7f6540faa3d484964334fb1",
+  "actual_execution_target": "93f39ded212edb9e847221cdb7def25900015159",
+  "copied_receipt_identity": "original execution identities retained; no postcommit relabeling",
+  "custody": [
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/publishing-final-scope-current.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/publishing-final-scope-current.json",
+      "sha256": "edad4d2c80971eb5de6cbae8d7d1af08d67771bad0c61d51a2d74556fd674d22",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/publishing-final-scope-minimum.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/publishing-final-scope-minimum.json",
+      "sha256": "7c15c5cf5619fea2c6958d1448d959ab6d9920afb3e27e889321754f0178f354",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/spec-final.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/spec-final.json",
+      "sha256": "adc15e2ae2f08c57396b15f014f437a11553b650bb11bdcd7c52ee652498fb96",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/spec-final-spec.md",
+      "committed_copy": "batch9-reconciliation-evidence/review/spec-final-spec.md",
+      "sha256": "19b16625497bd42d4ae1dd59db56beec9c6a138e5ba8aee754e717cc5cd6fae1",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/standards-current.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/standards-current.json",
+      "sha256": "4fdc3122cc4851e018d801256885ca0434bd5c48dc31d5ed3f8cc74e3c8bfa37",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/standards-minimum.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/standards-minimum.json",
+      "sha256": "4d724fa670fbcb0c3cc65417e8c5a74314f419be87f6f475a617064af13e3a22",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/standards-current-standards.md",
+      "committed_copy": "batch9-reconciliation-evidence/review/standards-current-standards.md",
+      "sha256": "ded594feba86e94482196c6b2bd357537fc2af73cac00c0524a220f3a0e13e6a",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/standards-minimum-standards.md",
+      "committed_copy": "batch9-reconciliation-evidence/review/standards-minimum-standards.md",
+      "sha256": "3ccdd44fde34c0b895f38444ebbd4e052f9b3e3f45266589e7e80a06349d17c8",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/ci-controls-final-current.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/ci-controls-final-current.json",
+      "sha256": "4d6fdd5642bd972588b889a3bb4cfd654a43a66b2a96b61b7f0fa42a4e8b5416",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/ci-controls-final-minimum.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/ci-controls-final-minimum.json",
+      "sha256": "a43aa93984da141ac036b6f806d9ecafb9ee1c53f85ace9c0bb2aff77ed2c3be",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/publishing-final-behavior-current.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/publishing-final-behavior-current.json",
+      "sha256": "a2d70abf14f631adfa7ce6ab37fe7d0f3c5c3e2a27303cd090c921d6a87340ef",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/frozen-minimum.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/frozen-minimum.json",
+      "sha256": "89e81121214ac513352cc8fe0f888256721be3428cb09b6498768638a98a3969",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/critical-lint-final.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/critical-lint-final.json",
+      "sha256": "fca34c4f7277219fa61cf600155bf829270ccb447abbaf8cd92fa3999d193589",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/final-cleanup.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/final-cleanup.json",
+      "sha256": "1cdd393a6ab5b071a4fd8a2a08c9a1ebb1f2a6abbcd063594b70ff6ffcf1f8b5",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/temporary-artifact-relocation.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/temporary-artifact-relocation.json",
+      "sha256": "9d5dc354504349de2fac18601679a55ca69fcb2e630436ab0cef68f4e6596e13",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/orphan-fixture-cleanup.json",
+      "committed_copy": "batch9-reconciliation-evidence/review/orphan-fixture-cleanup.json",
+      "sha256": "f831a644fb409ce20b3396b70b56a0f9b51bd2bc0a42efb7c865c094eb3c443f",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/run_checks.py",
+      "committed_copy": "batch9-reconciliation-evidence/review/run_checks.py",
+      "sha256": "68bca2734d11b4cf70e875be2f106eae196517eb05cbce9faf6496ada3111c7a",
+      "bytes_unchanged": true
+    },
+    {
+      "original_path": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/PR592/package_review_evidence.py",
+      "committed_copy": "batch9-reconciliation-evidence/review/package_review_evidence.py",
+      "sha256": "000cb491998493fb24de465b9e4c130aa092c325f258dadf3aaf6a76bc2fef35",
+      "bytes_unchanged": true
+    }
+  ],
+  "source_sha256": {
+    ".github/scripts/prepare_reconciliation_test_fixture.py": "1f891334f3f9c1b72217a45654bb189270047cb97669bf61364e9764aa35b36a",
+    ".github/scripts/tests/test_reconciliation_test_fixture.py": "ddde01e27312fe0e7d3eecd3232cc2c3ace02532762a17728afeea4fed310704",
+    "backend/tests/batch9_reconciliation_fixture/sitecustomize.py": "9cc3037d4d19f4f99890d007f0e7efa181865a8c7280f058c456872868388537",
+    "backend/tests/test_batch9_reconciliation.py": "5e92207d75a5a422d520bedecab936acb7499bc4a7c3c8a609064944f7053a1e",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "b012629db43317d94d7fcf45e2026702df77953352aaa38b5355062ca9c73bd5",
+    "backend/tests/test_batch9_reconciliation_migration.py": "5becf4622a97962c9b7d9fd86ba216116193a7d838f7874f2bd7080b38007eb5",
+    "backend/tests/test_batch9_reconciliation_processes.py": "743b60214178be6c85f63165b70e142ca139bb40d25499cff2c051af8ae6a277",
+    "backend/tests/test_batch9_reconciliation_receipts.py": "e86414204b6f6a37e435375c0be8392bf49526a00a8633c6e9f7445a619c1862",
+    "backend/seeding/reconciliation.py": "4ccaf416c5d1180e24bf45a020b50b559289128836d9b33ab35aa26663607e1e",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2",
+    "batch9-reconciliation-evidence/check_receipt_provenance.py": "c2c904988c7b0c209bdac4b2335f349142eca5406f3099910aaa19e36e942b5d",
+    "batch9-reconciliation-evidence/cleanup_receipt.py": "d9acfda25ce8c127eedc5a707806a130f4386f1573f3e314f48e54da3906331c",
+    "batch9-reconciliation-evidence/delivery_manifest.py": "a312ea4c77a73eb5adf9799cbffa2b33dec87d06bcf885fcf9ba75e1b556601c",
+    "batch9-reconciliation-evidence/inventory_receipt.py": "9c9de44e28889ed0517556f8aa0d2aab52895ad61911bf01b567d7b9f1074d98",
+    "batch9-reconciliation-evidence/receipt_safety.py": "02ac0d6ae12205d4a818301367bced2787f65e0fe71eebdfa89e6c95f275a2c4",
+    "batch9-reconciliation-evidence/review_packet.py": "8f93e797f868aafbe6f4ca8489ce9ed8ad06611541902beec9e336b6822fd1c2",
+    "batch9-reconciliation-evidence/run_receipt.py": "d83ceab3234b52e5a26f9aec186ddc2f2464488b0a1b5acd48c840c1a0854b6e",
+    "batch9-reconciliation-evidence/spec_review_record.py": "2da4402906dcfbde6f9a47283e8d3f8abfca085f4c7a37adf93f6fef958dca40",
+    "batch9-reconciliation-evidence/spec_review_record_pre_cov_fix.py": "44e275d88b5d68602df18bdb676816e90651d920b0f06b41c7c82b1dceb90655",
+    "batch9-reconciliation-evidence/standards_evidence_generator.py": "dda31979da6cf3867bb7e8076740e4233af0d68a3c56d01782ccef0b9a5c16a2",
+    "batch9-reconciliation-evidence/standards_evidence_generator_pre_expiry_fix.py": "006256f3ea062d15eca1da77decc843bbea07ab9995ecc774130d799fce9a37f",
+    "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py": "9d92f089f9d6a3554fe1bfce2ed86dabcef6115a289dcf8f6163a4c2e72fc0db"
+  },
+  "production_acceptance": "PENDING; issue #583 remains open",
+  "independent_coordinator_review": "PENDING",
+  "historical_supersessions": "batch9-reconciliation-evidence/publication-supersessions.json"
+}

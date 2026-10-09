@@ -1,0 +1,37 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/run_receipt.py",
+  "generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+  "generated_at": "2026-10-09T19:18:31.508285+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/seeding/reconciliation.py": "7d717101c9ec8a28c09de2db4be7c50aacb2c6114457f4a26c07023532401d88",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/tests/test_batch9_reconciliation.py": "0f7f1bf18eb136aba1f11dfc416cc14cb33a00e326dfe51413b67c9dffbcac6c",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "674e929ab15564c13aebe78d8aaf94199131020bc1387322782a6984ec3dc364",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2"
+  },
+  "runtime": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]\nSQLAlchemy 2.0.46\n",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_reconciliation.py",
+    "-q",
+    "--tb=short",
+    "-k",
+    "real_unicode_operator_evidence"
+  ],
+  "environment": {
+    "PATH": "/usr/bin:/bin:/usr/local/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/a46a/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a",
+    "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a"
+  },
+  "exit_code": 1,
+  "stdout": "F                                                                        [100%]\n=================================== FAILURES ===================================\n_________ test_real_unicode_operator_evidence_is_within_durable_limit __________\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context\n    self.dialect.do_execute(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py:952: in do_execute\n    cursor.execute(statement, parameters)\nE   psycopg2.errors.CheckViolation: new row for relation \"seeding_domain_claims\" violates check constraint \"ck_seeding_claim_reconciliation\"\nE   DETAIL:  Failing row contains (392a44b9-28a0-4e36-9b8f-f8aee15bac7a, audits, native, null, 2026-10-09 19:18:30.649235+00, 2026-10-09 19:18:30.649235+00, 950dcec2-3861-93f6-7e6e-bab2834ad77a, null, 2026-10-09 19:18:30.809042+00, null, operator, {\"effects\":\"\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u68...).\n\nThe above exception was the direct cause of the following exception:\nbackend/tests/test_batch9_reconciliation.py:345: in test_real_unicode_operator_evidence_is_within_durable_limit\n    assert apply_plan(owned.connection, policy, evidence, plan)[\"status\"] == \"applied\"\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nbackend/seeding/reconciliation.py:427: in apply_plan\n    connection.execute(SeedingDomainClaim.__table__.update().where(SeedingDomainClaim.id == UUID(ownership[\"id\"])).values(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1419: in execute\n    return meth(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py:527: in _execute_on_connection\n    return connection._execute_clauseelement(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1641: in _execute_clauseelement\n    ret = self._execute_context(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1846: in _execute_context\n    return self._exec_single_context(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1986: in _exec_single_context\n    self._handle_dbapi_exception(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:2363: in _handle_dbapi_exception\n    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py:1967: in _exec_single_context\n    self.dialect.do_execute(\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py:952: in do_execute\n    cursor.execute(statement, parameters)\nE   sqlalchemy.exc.IntegrityError: (psycopg2.errors.CheckViolation) new row for relation \"seeding_domain_claims\" violates check constraint \"ck_seeding_claim_reconciliation\"\nE   DETAIL:  Failing row contains (392a44b9-28a0-4e36-9b8f-f8aee15bac7a, audits, native, null, 2026-10-09 19:18:30.649235+00, 2026-10-09 19:18:30.649235+00, 950dcec2-3861-93f6-7e6e-bab2834ad77a, null, 2026-10-09 19:18:30.809042+00, null, operator, {\"effects\":\"\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u6838\\u68...).\nE   \nE   [SQL: UPDATE seeding_domain_claims SET released_at=%(released_at)s, reconciled_by=%(reconciled_by)s, reconciliation=%(reconciliation)s WHERE seeding_domain_claims.id = %(id_1)s::UUID]\nE   [parameters: {'released_at': datetime.datetime(2026, 10, 9, 19, 18, 30, 809042, tzinfo=datetime.timezone.utc), 'reconciled_by': 'operator', 'reconciliation': '{\"effects\":\"\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6838\\\\u6 ... (14353 characters truncated) ... \\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\\\\u00e9\"}', 'id_1': UUID('392a44b9-28a0-4e36-9b8f-f8aee15bac7a')}]\nE   (Background on this error at: https://sqlalche.me/e/20/gkpj)\n=============================== warnings summary ===============================\nbackend/database.py:64\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nbackend/models.py:28\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED backend/tests/test_batch9_reconciliation.py::test_real_unicode_operator_evidence_is_within_durable_limit\n1 failed, 35 deselected, 2 warnings in 0.42s\n",
+  "stderr": ""
+}

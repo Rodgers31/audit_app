@@ -1,0 +1,23 @@
+{
+  "why": "Review fixture stop helper incorrectly returned after supervisor exit; these four known review groups matched UID/PID/command before SIGKILL. Fixed helper retains verified orphan group cleanup.",
+  "owned_groups": {
+    "67564": [
+      67566
+    ],
+    "67593": [
+      67595
+    ],
+    "68080": [
+      68094
+    ],
+    "68113": [
+      68123
+    ]
+  },
+  "pre_signal_rows": [
+    "  501 67566 67564 Fri Oct  9 18:31:46 2026     /opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/Resources/Python.app/Contents/MacOS/Python -m admin_etl_dispatch_adapter 96b200b9-0b70-4465-a52a-f603c5331b8a 7e5074ce-2f04-4226-bc53-15491567fd81 163f9e60-51ea-4b73-80b7-ce41010ba2ae",
+    "  501 67595 67593 Fri Oct  9 18:31:50 2026     /opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/Resources/Python.app/Contents/MacOS/Python -m admin_etl_dispatch_adapter f75b9149-fef4-4656-a065-70217adc6b24 7b94cd96-1043-44a3-b7c7-13d2fc26943d eac6bd26-de9e-40a9-9110-c3f55af43532",
+    "  501 68094 68080 Fri Oct  9 18:33:22 2026     /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/bin/python -m admin_etl_dispatch_adapter 678d1952-2fc2-4713-964b-694e0b703760 ee81369b-e600-48e0-b403-ecbce792c113 c3eccdf1-4db3-4b00-8391-e309b2ff12bd",
+    "  501 68123 68113 Fri Oct  9 18:33:27 2026     /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/bin/python -m admin_etl_dispatch_adapter 5b39df74-0a54-47f2-b4bf-1e319310e943 f4e74ff7-3298-4b8e-bfbd-4905efeffa72 09c5d9fa-0a5e-48c2-9ced-90ce9793cd8b"
+  ]
+}

@@ -22,6 +22,30 @@ FULL_QUALITY_SCOPE = "${{ always() && inputs.verification_scope == 'full' }}"
 
 
 class ManualWorkflowBoundaryTests(unittest.TestCase):
+    def test_required_reconciliation_fixture_is_ready_before_tests_and_always_cleaned(self):
+        for filename in ("ci.yml", "verification.yml"):
+            steps = yaml.safe_load((ROOT / ".github/workflows" / filename).read_text())["jobs"]["test-backend"]["steps"]
+            images = next(i for i, step in enumerate(steps) if step.get("name") == "Prepare pinned owned PostgreSQL test images")
+            preparation = next(step for step in steps if step.get("name") == "Prepare owned reconciliation test fixture")
+            tests = next(i for i, step in enumerate(steps) if step.get("id") == "backend_tests")
+            cleanup = next(step for step in steps if step.get("name") == "Remove owned reconciliation test fixture")
+            self.assertLess(images, steps.index(preparation))
+            self.assertLess(steps.index(preparation), tests)
+            self.assertGreater(steps.index(cleanup), tests)
+            self.assertEqual(preparation["timeout-minutes"], 5)
+            self.assertEqual(cleanup["timeout-minutes"], 5)
+            self.assertNotIn("continue-on-error", preparation)
+            self.assertNotIn("continue-on-error", cleanup)
+            self.assertEqual(cleanup["if"], "always()")
+            state = '"$RUNNER_TEMP/reconciliation-fixture-state.json"'
+            self.assertEqual(preparation["run"],
+                             f"python .github/scripts/prepare_reconciliation_test_fixture.py prepare --state {state} --port 55496")
+            self.assertIn(f"if [ -f {state} ]; then", cleanup["run"])
+            self.assertIn(f"python .github/scripts/prepare_reconciliation_test_fixture.py cleanup --state {state}", cleanup["run"])
+            self.assertNotIn("DATABASE_URL", preparation.get("env", {}))
+            self.assertEqual(steps[tests]["env"]["DATABASE_URL"],
+                             "postgresql://postgres:postgres@localhost:5432/audit_app_test")
+
     def test_only_manual_trigger_and_no_production_jobs(self):
         workflow = yaml.safe_load((ROOT / ".github/workflows/verification.yml").read_text())
         # PyYAML's YAML 1.1 loader may read an unquoted 'on' as True.

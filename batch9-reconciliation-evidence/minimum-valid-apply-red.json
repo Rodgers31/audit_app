@@ -1,0 +1,39 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/run_receipt.py",
+  "generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+  "generated_at": "2026-10-09T19:20:42.455143+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/seeding/reconciliation.py": "b74505f28cd458a704edf3cb24a00d71fdd628cafd35bb606f437a9fa3727055",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/tests/test_batch9_reconciliation.py": "3df2988015ecfa50af39a92b811dbb47268e4d499bf78f2f23a3805312df81b0",
+    "backend/tests/test_batch9_reconciliation_processes.py": "242e243540731340cf74f0399b3e73f4f3562fd3c3014fe2e75fae500c572561",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "674e929ab15564c13aebe78d8aaf94199131020bc1387322782a6984ec3dc364",
+    "backend/tests/batch9_reconciliation_fixture/sitecustomize.py": "7d24781e410bdbb3a133eac4661ff465ca27eb3534052228f9921649c1fd61d6",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2"
+  },
+  "runtime": "3.12.15 (main, Oct  3 2026, 00:54:33) [Clang 22.1.3 ]\nSQLAlchemy 2.0.23\n",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "command": [
+    ".batch9-min/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_reconciliation.py",
+    "-q",
+    "--tb=short",
+    "-k",
+    "audited_native_reconciliation or legacy_observations_without_claim"
+  ],
+  "environment": {
+    "PATH": "/usr/bin:/bin:/usr/local/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/a46a/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a",
+    "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a"
+  },
+  "exit_code": 1,
+  "stdout": "FF                                                                       [100%]\n=================================== FAILURES ===================================\n_________ test_audited_native_reconciliation_and_subsequent_native_run _________\nbackend/tests/test_batch9_reconciliation.py:140: in test_audited_native_reconciliation_and_subsequent_native_run\n    result = apply_plan(owned.connection, policy, evidence, plan)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nbackend/seeding/reconciliation.py:457: in apply_plan\n    connection.execute(IngestionJob.__table__.update().where(IngestionJob.id == job[\"id\"]).values(\n<string>:2: in values\n    ???\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/base.py:283: in _generative\n    x = fn(self, *args, **kw)\n        ^^^^^^^^^^^^^^^^^^^^^\n<string>:2: in values\n    ???\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/base.py:316: in check\n    return fn(self, *args, **kw)\n           ^^^^^^^^^^^^^^^^^^^^^\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/dml.py:1157: in values\n    coerced_arg = dict(kv_generator(self, arg.items(), True))\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:449: in _get_crud_kv_pairs\n    return list(\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:392: in _get_orm_crud_kv_pairs\n    desc._bulk_update_tuples(v),\n    ^^^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'MetaData' object has no attribute '_bulk_update_tuples'\n_________ test_legacy_observations_without_claim_are_exact_and_audited _________\nbackend/tests/test_batch9_reconciliation.py:172: in test_legacy_observations_without_claim_are_exact_and_audited\n    apply_plan(owned.connection, policy, evidence, plan)\nbackend/seeding/reconciliation.py:457: in apply_plan\n    connection.execute(IngestionJob.__table__.update().where(IngestionJob.id == job[\"id\"]).values(\n<string>:2: in values\n    ???\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/base.py:283: in _generative\n    x = fn(self, *args, **kw)\n        ^^^^^^^^^^^^^^^^^^^^^\n<string>:2: in values\n    ???\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/base.py:316: in check\n    return fn(self, *args, **kw)\n           ^^^^^^^^^^^^^^^^^^^^^\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/sql/dml.py:1157: in values\n    coerced_arg = dict(kv_generator(self, arg.items(), True))\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:449: in _get_crud_kv_pairs\n    return list(\n.batch9-min/lib/python3.12/site-packages/sqlalchemy/orm/bulk_persistence.py:392: in _get_orm_crud_kv_pairs\n    desc._bulk_update_tuples(v),\n    ^^^^^^^^^^^^^^^^^^^^^^^^\nE   AttributeError: 'MetaData' object has no attribute '_bulk_update_tuples'\n=============================== warnings summary ===============================\n.batch9-min/lib/python3.12/site-packages/fastapi/testclient.py:1\n  /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\nbackend/database.py:64\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nbackend/models.py:28\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n.batch9-min/lib/python3.12/site-packages/_pytest/config/__init__.py:1464\n  /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/lib/python3.12/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope\n  \n    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n\n.batch9-min/lib/python3.12/site-packages/_pytest/config/__init__.py:1464\n  /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/lib/python3.12/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode\n  \n    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED backend/tests/test_batch9_reconciliation.py::test_audited_native_reconciliation_and_subsequent_native_run\nFAILED backend/tests/test_batch9_reconciliation.py::test_legacy_observations_without_claim_are_exact_and_audited\n2 failed, 35 deselected, 5 warnings in 0.85s\n",
+  "stderr": ""
+}
