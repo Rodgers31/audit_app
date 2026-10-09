@@ -13,7 +13,7 @@ const output = resolve('legacy-results');
 const target = checked('git', ['rev-parse', 'HEAD']).trim();
 const owner = randomUUID();
 const container = `batch9-ci-browser-${owner}`;
-const image = 'postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675';
+const image = 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675';
 let ownedDatabase = false;
 let active;
 let interrupted = false;

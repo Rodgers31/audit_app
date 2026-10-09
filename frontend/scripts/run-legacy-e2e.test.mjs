@@ -153,6 +153,9 @@ test('complete CLI succeeds only with fresh reports and removes its owned databa
     assert.equal(summary.inventory_total, names.length);
     assert.deepEqual(summary.cohort_exit_codes, Object.fromEntries(names.map(name => [name, 0])));
     assert.equal(summary.owned_database_removed, true);
+    const started = commands.find(command => command.command === 'docker' && command.args[0] === 'run');
+    assert.equal(started.args.at(-1), 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
+    assert.equal(started.args[started.args.indexOf('--platform') + 1], 'linux/amd64');
     assertOwnedRemoval(commands);
   });
 });
