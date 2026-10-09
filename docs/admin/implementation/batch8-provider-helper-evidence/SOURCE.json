@@ -34,5 +34,7 @@
   "lint": "owned venv, flake8 7.3.0 / pyflakes 3.4.0 / pycodestyle 2.14.0 / mccabe 0.7.0",
   "all_state_issues": 282,
   "originating_issue_updates": "#570/#571 current snapshots have no comments; open; #550/#551/#564 remain closed",
-  "external_evidence_root": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence"
+  "external_evidence_root": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence",
+  "implementation_commit": "2ae043cc3930d40bb15deb25525fe49c5b13ee1e",
+  "implementation_tree": "529438255b340f3c8a32274e7d0164b6314f74ee"
 }

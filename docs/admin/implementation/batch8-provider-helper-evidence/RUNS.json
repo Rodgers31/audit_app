@@ -588,5 +588,31 @@
       "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
     },
     "log_sha256": "2d5bdb5f5dfbec74197382d83b3e6dfd73fc55bfdac9418b0474f6786ce55d7b"
+  },
+  "context-claim-author-confirm": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/standards-review/context_probe.py"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "2ae043cc3930d40bb15deb25525fe49c5b13ee1e",
+    "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "703b850bb28c2d7f402fdf3224db7f290c1baa3c34c24d7024d41c66205f0667"
   }
 }

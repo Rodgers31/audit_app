@@ -29,6 +29,7 @@ snapshot in a fresh process without changing the worktree or any runtime.
 | `final-combined-green` | Exit0, **449 passed**, two existing SQLAlchemy warnings. Includes 215 new helper cases, two fresh import cases, 68 retained helper/import cases, 164 active Users/auth/audit cases. |
 | `final-scoped-lint` | flake8 7.3.0 critical gate, output `0`, exit0 for changed helper/tests and committed socket-denial runner. |
 | `broad-lint` | Exit1, unchanged `scripts/r2_producer_acceptance.py:440:9 F821 undefined name 'captured'`, tracked #569. The producer is byte-identical to base: SHA256 `15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028`. |
+| `context-claim-author-confirm` | Exit0, two inert probes confirm normal tracebacks suppress encoding-error markers while internal `__context__.object` retains them. Overbroad report wording corrected; no ordinary-surface product defect inferred. |
 
 All provider values, identities, keys and JWTs are synthetic fixtures. Actual
 HTTPX MockTransport executes the real helper. Socket connect/connect_ex are
@@ -42,7 +43,7 @@ directory and a compatible runtime (Python3.13.9/httpx0.28.1/pytest9.0.2 used):
 
 ```sh
 env -i PATH=/usr/bin:/bin PYTHONPATH="$PWD" PYTHONDONTWRITEBYTECODE=1 \
-  PYTHON_DOTENV_DISABLED=1 DATABASE_URL=sqlite:// \
+  PYTHON_DOTENV_DISABLED=1 DATABASE_URL=sqlite:////owned/temp/provider-helper-import.sqlite \
   SUPABASE_URL=https://batch8-helper.invalid \
   SUPABASE_SERVICE_ROLE_KEY=inert-batch8-service-key \
   SUPABASE_JWT_SECRET=inert-batch8-jwt-secret \
@@ -55,6 +56,11 @@ env -i PATH=/usr/bin:/bin PYTHONPATH="$PWD" PYTHONDONTWRITEBYTECODE=1 \
 ```
 
 `--basetemp` must be owned/disposable: pytest may remove it at startup. Do not
-reuse another session's directory. Whole unrelated backend/frontend/ETL suites,
+reuse another session's directory. Create the owned parent directory first;
+keep the import SQLite path outside `--basetemp`. An in-memory `sqlite://` URL
+does not accept the existing database factory's pool arguments; use a file URL
+as in the actual retained receipts. The Spec review's failed reproduction attempt
+is retained separately; it established a documentation error, not a product bug.
+Whole unrelated backend/frontend/ETL suites,
 real provider/production/database semantics and disabled hosted gates are not
 certified by this lane selection.

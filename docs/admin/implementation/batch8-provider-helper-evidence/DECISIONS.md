@@ -29,6 +29,10 @@
   encoding or excessive decoder nesting) becomes safe 502. Original exception
   chains are suppressed in normal formatted tracebacks. No automatic retry is
   added: an unconfirmed mutation can already have occurred upstream.
+- Suppressed chaining does not scrub Python's internal `__context__` or traceback
+  frame locals. Deliberate exception/frame introspection is outside the ordinary
+  diagnostic contract; the independent Standards probe and author replay confirm
+  this limit. No new trusted diagnostic access channel is introduced.
 - Invalid configured URLs and non-ASCII service keys become safe 500 before
   transport, including consumers importing shared configuration helpers. Invalid
   per-call header construction becomes safe 400; a direct invalid raw-request URL
