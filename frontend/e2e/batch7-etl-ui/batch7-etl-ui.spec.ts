@@ -182,6 +182,48 @@ for(const status of [401,403]) {
     await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
     expect(await page.getByRole('link',{name:/View command /}).count()).toBe(0);
   });
+  test('review regression '+status+' first-submission refusal cannot recover the denied key after renewal',async({page,request})=>{
+    const keys:string[]=[];
+    let refused=false;
+    await page.route('**/api/v1/admin/etl/trigger/oag',async route=>{
+      keys.push(route.request().headers()['idempotency-key']);
+      if(!refused) {refused=true;await route.fulfill({status,json:{detail:'REVIEW_PRIVATE_DIAGNOSTIC'}});}
+      else await route.continue();
+    });
+    await page.goto('/admin/etl');await page.getByRole('button',{name:'Dry Run · oag'}).click();
+    await expect(page.getByText('Administrator access expired. Renew your session to verify access.')).toBeVisible();
+    await expect(page.getByRole('button',{name:'Dry Run · oag'})).toBeDisabled();
+    await renew(page);
+    await expect(page.getByRole('button',{name:'Dry Run · oag'})).toBeEnabled();
+    await expect(page.getByRole('button',{name:'Recover same intent'})).toHaveCount(0);
+    await expect(page.getByText('REVIEW_PRIVATE_DIAGNOSTIC',{exact:true})).toHaveCount(0);
+    expect(keys).toHaveLength(1);
+    await page.getByRole('button',{name:'Dry Run · oag'}).click();
+    await expect(page.getByText('Command accepted. Queued acceptance is not completed work.')).toBeVisible();
+    expect(keys).toHaveLength(2);expect(keys[1]).not.toBe(keys[0]);
+    expect(await (await request.get(fixture+'/fixture/requests')).json()).toHaveLength(1);
+  });
+  test('review control '+status+' refused recovery preserves a committed lost-response receipt after renewal',async({page,request})=>{
+    const keys:string[]=[];
+    await page.route('**/api/v1/admin/etl/trigger/oag',async route=>{
+      keys.push(route.request().headers()['idempotency-key']);
+      if(keys.length===1) {await route.fetch();await route.abort();}
+      else if(keys.length===2) await route.fulfill({status,json:{detail:'Administrator access unavailable.'}});
+      else await route.continue();
+    });
+    await page.goto('/admin/etl');await page.getByRole('button',{name:'Dry Run · oag'}).click();
+    await page.getByRole('button',{name:'Recover same intent'}).click();
+    await expect(page.getByText('Administrator access expired. Renew your session to verify access.')).toBeVisible();
+    await renew(page);
+    await expect(page.getByRole('button',{name:'Dry Run · oag'})).toBeEnabled();
+    expect(keys).toHaveLength(2);
+    await page.getByRole('button',{name:'Recover same intent'}).click();
+    await expect(page.getByText('Original receipt recovered. No second command was accepted.')).toBeVisible();
+    expect(keys).toHaveLength(3);expect(new Set(keys).size).toBe(1);
+    const submitted=await (await request.get(fixture+'/fixture/requests')).json();
+    expect(submitted).toHaveLength(2);expect(submitted[1].key).toBe(submitted[0].key);
+    await expect(page.getByText('20 on this page · 46 commands matching')).toBeVisible();
+  });
 }
 for(const transition of ['actor','renewal','role','hidden','unmount']) {
   test('committed in-flight acceptance cannot expose stale success after '+transition,async({page,request})=>{

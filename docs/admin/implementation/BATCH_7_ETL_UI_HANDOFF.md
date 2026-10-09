@@ -15,9 +15,9 @@ merge remain separate work.
 | Pinned main | `f0ea1bbd41f33e7666cf2b7fbc4cc4abcfe60b0d` |
 | Pinned tree | `712b43650b1203ffd84583b67d07d30775669b1e` |
 | Initial implementation | `f27a3fc6a7aea891bc6cf149a3946d28fb85f1f3` |
-| Final product source | `6087347edf1412d232302f986166c889403d17da` |
+| Author final product source | `6087347edf1412d232302f986166c889403d17da` |
 | Accepted tests/browser capture | `dba511b9fec01ce63843fe576ef20f6e2539375a` |
-| Delivery revision | Commit containing this handoff; later changes are documentation only |
+| Author delivery revision | Commit containing the original handoff; coordinator review repair is recorded below |
 
 Frozen inputs were read from
 `/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_SESSIONS/`:
@@ -179,3 +179,30 @@ production gates were not executed or certified. Full Jest here was run without
 coverage instrumentation; ESLint was scoped to owned files. Local UI/build
 acceptance is not full deployment CI. No workflows/rules/statuses were changed,
 no extra bot review was requested, and no merge was performed.
+
+## Coordinator review repair for PR #576
+
+Copilot comment `4227288028` identified a valid first-submission defect at
+reviewed head `3a3daba6e03bfffdcec9769c0f41c3ffdb084cbc`: a definite 401/403
+invalidated the authorized lifetime before its submitted key was retired.
+The repaired branch retires a definite first-submission refusal before access
+invalidation. A refused recovery keeps the key because that response cannot
+prove the original ambiguous POST was absent. Both entry paths remain guarded
+against stale callbacks and require an explicit authorized recovery.
+
+The retained original-source fixture failed both 401/403 first-submission cases
+while ten controls passed; the repaired twelve cases pass. The full frontend
+suite passes 147 suites / 2,077 tests with one existing skip. TypeScript, scoped
+ESLint and the production build pass. All 28 real Chromium journeys pass against
+the inert contract fixture, including a committed lost response followed by a
+refused recovery and successful same-key renewal recovery. This remains UI
+fixture evidence; actual worker/PostgreSQL integration belongs to coordinator
+acceptance.
+
+The reviewed ETL product content SHA256 is
+`f32429392c5c5dd4130891020a3e0f19db804ba6c542e9cd8f9ea43d632c87fc`.
+The [review repair receipt](batch7-etl-ui-evidence/review-repairs.md) specifies
+the hash construction, entrypoint inventory, executed commands, original/final
+receipts and limits. Owned ports 3162/8162 were stopped after replay. No new
+out-of-scope defect was confirmed: #568 covers this repair; the coordinator
+retains GitHub issue accounting, replies, push, final review and merge ownership.

@@ -67,13 +67,14 @@ export default function DispatchPanel() {
       void qc.invalidateQueries({queryKey:['admin','etl-commands',access.actorId,access.lifetime]});
     } catch (failure) {
       if (!access.current(selected.lifetime) || controller.signal.aborted) return;
+      // Retire a definite first-submission refusal before access invalidation.
+      // Refusing recovery cannot prove the original ambiguous POST was absent.
+      // Missing/invalid acknowledgment or server failures can follow a commit.
+      const status=dispatchHttpStatus(failure);
+      const ambiguous=recovery || status===undefined || status>=500;
+      if(!ambiguous) clearSubmittedIntent(access.authActorId,selected.key);
       access.rejectAccess(failure);
       if (!access.current(selected.lifetime)) return;
-      // Missing/invalid acknowledgment or server failures can follow a commit.
-      // An explicit same-key recovery is the only resend offered.
-      const status=dispatchHttpStatus(failure);
-      const ambiguous=status===undefined || status>=500;
-      if(!ambiguous) clearSubmittedIntent(access.authActorId,selected.key);
       setIntent(ambiguous ? {...selected,ambiguous:true} : null);
       setError({lifetime:selected.lifetime,ambiguous});
       void qc.resetQueries({queryKey:['admin','etl-dispatch',access.actorId,access.lifetime]});
