@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/afa1/audit_app/batch8-exclusion-evidence/spec-scope-repro.py", line 45, in <module>
+    settings = SeedingSettings(log_path=None, domain_timeout_seconds=0, total_timeout_seconds=0)
+  File "/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pydantic_settings/main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pydantic/main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 1 validation error for SeedingSettings
+domain_timeout_seconds
+  Input should be greater than or equal to 1 [type=greater_than_equal, input_value=0, input_type=int]
+    For further information visit https://errors.pydantic.dev/2.12/v/greater_than_equal

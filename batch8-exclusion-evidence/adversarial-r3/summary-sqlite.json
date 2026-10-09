@@ -1,0 +1,7 @@
+{
+  "label": "sqlite",
+  "checks": 17,
+  "passed": 16,
+  "failed": 1,
+  "harness_errors": 0
+}

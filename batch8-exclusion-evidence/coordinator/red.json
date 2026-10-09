@@ -1,0 +1,29 @@
+{
+  "source_head": "207be85c658832ff436ed95b967711ec090839cb",
+  "source_files_sha256": {
+    "seeding/exclusion.py": "1183e9f68f870ac943820896cd2ac2cf0c9d04428152685314927dbee044a47a",
+    "admin_etl_dispatch_worker.py": "eb29e580aac1a48c44de6038348381df07e14fad7f368a66041709921c0b81a7",
+    "admin_etl_dispatch_adapter.py": "9ad54e6d88a2bacfc3e30fe304027325b68d888eb9307fc17376f325aa78344a",
+    "models.py": "251a139df8990b8de2e0b2d53b342b67b49119bc48dba25cf99b1a588a5be66e",
+    "tests/test_batch8_exclusion_review.py": "6872573db5218d05ba926fbf79db4e15eabdf1202bcb579b6b15a7e939b68b2f",
+    "tests/test_batch8_exclusion_migration.py": "e537790fd697f981b237aa7cdd8b82215b12d5e728a303ed165e567dce8f0e33"
+  },
+  "fixture_port_normalization": [
+    "tests/test_batch7_etl_postgres.py",
+    "tests/test_batch7_etl_review.py",
+    "tests/test_batch7_etl_adversarial.py",
+    "tests/batch7_etl_worker_fixture/sitecustomize.py"
+  ],
+  "owned_database_url": "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55486/batch7_etl_worker",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-ra",
+    "tests/test_batch8_exclusion_review.py",
+    "tests/test_batch8_exclusion_migration.py::test_unentered_claim_with_a_correlated_run_observation_stays_uncertain"
+  ],
+  "working_directory": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_8_REVIEW/exclusion-coordinator/red-runtime/backend",
+  "exit_code": 1
+}

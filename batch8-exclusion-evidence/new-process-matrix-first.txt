@@ -1,0 +1,89 @@
+....F.F....                                                              [100%]
+=================================== FAILURES ===================================
+________ test_native_death_retains_claim_and_no_second_effect[after-1] _________
+
+process_pg = (<starlette.testclient.TestClient object at 0x1103b1940>, sessionmaker(class_='Session', bind=Engine(postgresql+psycop...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker))
+tmp_path = PosixPath('/private/tmp/pytest-of-roger/pytest-160/test_native_death_retains_clai1')
+phase = 'after', effects = 1
+
+    @pytest.mark.parametrize("phase,effects", [("before", 0), ("after", 1)])
+    def test_native_death_retains_claim_and_no_second_effect(process_pg, tmp_path, phase, effects):
+        _, _, engine = process_pg
+        mode(engine, phase)
+        native = start_native(tmp_path)
+        try:
+>           entered(engine)
+
+backend/tests/test_batch8_native_exclusion.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_batch8_native_exclusion.py:45: in entered
+    wait_for(lambda: count(engine, "batch7_markers"), lambda n: n == 1)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+read = <function entered.<locals>.<lambda> at 0x110552a20>
+predicate = <function entered.<locals>.<lambda> at 0x110552b60>, timeout = 15
+
+    def wait_for(read, predicate, timeout=15):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            value = read()
+            if predicate(value):
+                return value
+            time.sleep(0.05)
+>       raise AssertionError("Timed out waiting for isolated process observation")
+E       AssertionError: Timed out waiting for isolated process observation
+
+backend/tests/test_batch7_etl_process.py:27: AssertionError
+_____ test_live_orphan_adapter_survives_supervisor_death_and_blocks_native _____
+
+process_pg = (<starlette.testclient.TestClient object at 0x1106218c0>, sessionmaker(class_='Session', bind=Engine(postgresql+psycop...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker))
+tmp_path = PosixPath('/private/tmp/pytest-of-roger/pytest-160/test_live_orphan_adapter_survi0')
+
+    def test_live_orphan_adapter_survives_supervisor_death_and_blocks_native(process_pg, tmp_path):
+        client, factory, engine = process_pg
+        mode(engine, "after")
+        worker = start_worker(child_env(tmp_path))
+        restarted = None
+        try:
+            ready = wait_for(lambda: capability(client), lambda c: c.get("available") is True)
+            identity = post(client, ready["generation"]).json()["command"]["id"]
+            entered(engine)
+            wait_for(lambda: count(engine, "batch7_effects"), lambda n: n == 1)
+            os.kill(worker.pid, signal.SIGKILL)  # Child deliberately remains alive.
+            worker.wait(timeout=5)
+            expire(factory)
+            restarted = start_worker(child_env(tmp_path))
+            newer = wait_for(lambda: capability(client), lambda c: c.get("available") and c["generation"] != ready["generation"])
+            queued = post(client, newer["generation"]).json()["command"]["id"]
+            assert receipt(client, identity)["status"] == "interrupted"
+>           assert_rejected(engine, tmp_path)
+
+backend/tests/test_batch8_native_exclusion.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+engine = Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker)
+tmp_path = PosixPath('/private/tmp/pytest-of-roger/pytest-160/test_live_orphan_adapter_survi0')
+
+    def assert_rejected(engine, tmp_path):
+        other = start_native(tmp_path)
+        try:
+            assert other.wait(timeout=10) == 1
+>           assert count(engine, "batch7_markers") == 1
+E           AssertionError: assert 2 == 1
+E            +  where 2 = count(Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker), 'batch7_markers')
+
+backend/tests/test_batch8_native_exclusion.py:52: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch8_native_exclusion.py::test_native_death_retains_claim_and_no_second_effect[after-1]
+FAILED backend/tests/test_batch8_native_exclusion.py::test_live_orphan_adapter_survives_supervisor_death_and_blocks_native
+2 failed, 9 passed, 2 warnings in 31.30s

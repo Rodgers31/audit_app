@@ -18,6 +18,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.sql import false as sa_false
 from sqlalchemy.dialects.postgresql import JSONB
@@ -84,6 +85,35 @@ class EtlDispatchDomain(Base):
     domain = Column(String(100), primary_key=True)
     command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
     claim_token = Column(Uuid(as_uuid=True))
+
+
+class SeedingDomainClaim(Base):
+    """Retained native/dispatch ownership; expiry never authorizes takeover."""
+
+    __tablename__ = "seeding_domain_claims"
+    __table_args__ = (
+        CheckConstraint("length(domain) BETWEEN 1 AND 100", name="ck_seeding_claim_domain"),
+        CheckConstraint("(kind='native' AND command_id IS NULL) OR (kind='dispatch' AND command_id IS NOT NULL)", name="ck_seeding_claim_kind"),
+        CheckConstraint("(returned_at IS NULL AND job_id IS NULL AND (released_at IS NULL OR (acquired_at <= released_at AND (entered_at IS NULL OR reconciled_by IS NOT NULL)))) OR (returned_at IS NOT NULL AND job_id IS NOT NULL AND job_id > 0 AND acquired_at <= returned_at AND (released_at IS NULL OR returned_at <= released_at))", name="ck_seeding_claim_receipt"),
+        # Operator release after reconciliation; no runtime path writes these.
+        CheckConstraint("(reconciled_by IS NULL) = (reconciliation IS NULL) AND (reconciled_by IS NULL OR (released_at IS NOT NULL AND length(reconciled_by) <= 64 AND length(reconciliation) <= 4000 AND length(ltrim(rtrim(reconciled_by))) >= 1 AND length(ltrim(rtrim(reconciliation))) >= 1))", name="ck_seeding_claim_reconciliation"),
+        CheckConstraint("(entered_at IS NULL) = (entry_id IS NULL) AND (kind <> 'native' OR entered_at IS NOT NULL) AND (entered_at IS NULL OR acquired_at <= entered_at) AND (returned_at IS NULL OR (entered_at IS NOT NULL AND entered_at <= returned_at))", name="ck_seeding_claim_entry"),
+        Index("uq_seeding_active_domain", "domain", unique=True,
+            postgresql_where=text("released_at IS NULL"), sqlite_where=text("released_at IS NULL")),
+    )
+    id = Column(Uuid(as_uuid=True), primary_key=True)
+    domain = Column(String(100), nullable=False)
+    kind = Column(String(20), nullable=False)
+    command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
+    acquired_at = Column(DateTime(timezone=True), nullable=False)
+    # One-use entry: native at acquisition, dispatch when the CLI consumes it.
+    entered_at = Column(DateTime(timezone=True))
+    entry_id = Column(Uuid(as_uuid=True), unique=True)
+    returned_at = Column(DateTime(timezone=True))
+    released_at = Column(DateTime(timezone=True))
+    job_id = Column(Integer, ForeignKey("ingestion_jobs.id"))
+    reconciled_by = Column(String(64))
+    reconciliation = Column(Text)
 
 
 class EntityType(enum.Enum):

@@ -1,0 +1,170 @@
+{
+  "generated_by": "batch9-native-readiness-evidence/finalize_evidence.py",
+  "generator_sha256": "8471222060fc025faa0820ceffb15e44147c71f6c58572f06db9d3d340128c3d",
+  "generated_at": "2026-10-09T20:14:21.078731+00:00",
+  "base_commit": "5c68fb1b4454bad60db9bf12f9b7c68ce4549168",
+  "source_hashes": {
+    "backend/seeding/exclusion.py": "5b8963f6d82397bf6bdec43c10de3b487c18f922017ce121dd47f40613920e6f",
+    "backend/tests/test_batch9_native_schema_readiness.py": "dc675c3d3928b02a0e8ab7f5eb5688ac8a13e1cbc6c3eab2a7f8da48e383ada7",
+    "backend/tests/batch9_native_readiness_fixture/sitecustomize.py": "8dba2c966e2821829ea16e60518defda86770243f485f82320c1b628701504be"
+  },
+  "receipts": {
+    "batch9-native-readiness-evidence/receipts/versions-current.json": {
+      "sha256": "5a33f5c336991f449cf633b32746df64f503127cfe9d6a3e54d5a7f6770173bd",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/red-current-full.json": {
+      "sha256": "1afcbe2096237ebe3c54183df2f80416621f575e98eac0dc7b4f60ac9e7cfd34",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt_setup_v2.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/red-minimum-scope-original-entry.json": {
+      "sha256": "e47366dddd51650452141abae944f315b79e427cff11fbd30b41e7225613425d",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/green-current-final.json": {
+      "sha256": "628cb3ab5654cd7759b5df03d917c826163e2832d1378f7b09c338d6ce5b8fe1",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/versions-minimum.json": {
+      "sha256": "471fb83e8eaaa5c9e1780aec950ca1c169489dd4766c6d14d257941be4ffbbb3",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/green-current-scope-final.json": {
+      "sha256": "c14ebd3acbdb164436e4eb717c94d9708de6416223e5109a16da17b146e38ef9",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/red-final-scope-original.json": {
+      "sha256": "d6fa29cf836168dfbfbe318488ca86a6229da64dec325034285f242b8544e937",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/green-minimum-scope-final.json": {
+      "sha256": "8624d6dee504165de9aaabd18c6d2fc8ee5638754d76a5bbd78d2b3dcdfd68f4",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "FINAL",
+      "superseded_by": null,
+      "reason": null
+    },
+    "batch9-native-readiness-evidence/receipts/red-current-dispatch-corrected.json": {
+      "sha256": "f97c36e336a86a4387bd49566232636a94dc00675a0b344052483883053879ca",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt_setup_v2.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/red-minimum-original-entry.json": {
+      "sha256": "4ba686424443280bc2cdd9ca2691a4d9097c5383994bb9660cd03bd893ef13d5",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/red-current-corrected.json": {
+      "sha256": "df270e8cbb31d19f8613aa24d91c662f943624a07b1fa498e99f8caa9f24953a",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt_setup_v2.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/red-final-suite-original.json": {
+      "sha256": "f8f4a1493aaf3cf7f2b861def098826c36bcd0d12fe5d149fe83f5ef589fe6c2",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/red-current.json": {
+      "sha256": "9e83338f27c59d2932c030009e605270e2686ceb2196b1109057dfc2755f45f3",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt_setup_v1.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/green-current-first.json": {
+      "sha256": "355fb9ed1335cac22e57ce6eeec6615e1301fdc0f8103dfa449cbb8bcc7f0a54",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt_setup_v2.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    },
+    "batch9-native-readiness-evidence/receipts/green-minimum-final.json": {
+      "sha256": "4f30a73bad15ecaee01ea644fa415af2564065488894c4df0ea6086ab05ce899",
+      "retained_generator": "batch9-native-readiness-evidence/run_receipt.py",
+      "status": "SUPERSEDED",
+      "superseded_by": [
+        "green-current-scope-final.json",
+        "green-minimum-scope-final.json",
+        "red-final-scope-original.json",
+        "red-minimum-scope-original-entry.json"
+      ],
+      "reason": "Historical setup or narrower fixture/generator version; raw receipt is immutable. Final fixtures and generator were replayed against the pinned original source."
+    }
+  },
+  "results": {
+    "current": "67 passed, 0 skipped",
+    "minimum": "67 passed, 0 skipped",
+    "original_current": "45 behavioral failures, 19 positive passes",
+    "original_minimum_selected": "4 behavioral failures"
+  },
+  "scope": "Local readiness repair only; overlapping test counts are not additive. No production operation, migration, activation, reconciliation or merge is certified."
+}

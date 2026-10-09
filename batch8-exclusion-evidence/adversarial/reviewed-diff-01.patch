@@ -1,0 +1,727 @@
+diff --git a/backend/admin_etl_dispatch_adapter.py b/backend/admin_etl_dispatch_adapter.py
+index 2ea040c..f62b745 100644
+--- a/backend/admin_etl_dispatch_adapter.py
++++ b/backend/admin_etl_dispatch_adapter.py
+@@ -1,15 +1,14 @@
+-"""One static source/domain invocation of the unchanged native seeding CLI."""
++"""One correlated dispatch invocation through the shared native ownership seam."""
+ import argparse
+ import sys
+ from uuid import UUID
+ 
+-from sqlalchemy import event, text
++from sqlalchemy import event
+ from sqlalchemy.orm import Session, sessionmaker
+ 
+ from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh
+-from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob
+-
+-DOMAIN_LOCK = 5540001
++from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, SeedingDomainClaim
++from seeding.exclusion import DomainExecution, dispatch_scope
+ 
+ 
+ def supported_registry():
+@@ -19,47 +18,50 @@ def supported_registry():
+ 
+ 
+ def execute(factory, engine, command_id, token, generation):
+-    if not enabled() or not supported_registry():
++    if not enabled() or not all(isinstance(v, UUID) for v in (command_id, token, generation)) or not supported_registry():
+         return 1
+-    # Session lock prevents a duplicate adapter launch. The durable domain row
+-    # additionally survives lock-connection loss and supervisor/child death.
+-    with engine.connect() as lock:
+-        if not lock.scalar(text("SELECT pg_try_advisory_lock(:key)"), {"key": DOMAIN_LOCK}):
+-            return 1
+-        try:
+-            with factory.begin() as db:
+-                now = db_clock(db)
+-                command = db.get(EtlDispatchCommand, command_id, with_for_update=True)
+-                domain = db.get(EtlDispatchDomain, "audits")
+-                worker = db.get(EtlDispatchWorker, 1)
+-                if not fresh(worker, now) or worker.generation != generation or command is None or command.status != "running" or command.execution_started or command.claim_token != token or command.generation != generation or domain is None or domain.command_id != command_id or domain.claim_token != token:
+-                    return 1
+-                source, dry_run = command.source, command.dry_run
+-                # Persist before work. An ambiguous commit is never permission
+-                # to execute again, even if a duplicate adapter is launched.
+-                command.execution_started = True
+-            from seeding import cli
+-            from seeding.config import SeedingSettings
++    execution = DomainExecution(factory, "audits", token)
++    try:
++        execution.open()
++        with factory.begin() as db:
++            worker = db.get(EtlDispatchWorker, 1, with_for_update=True)
++            now = db_clock(db)
++            domain = db.get(EtlDispatchDomain, "audits", with_for_update=True)
++            command = db.get(EtlDispatchCommand, command_id, with_for_update=True)
++            ownership = db.get(SeedingDomainClaim, token, with_for_update=True)
++            if not fresh(worker, now) or worker.generation != generation or command is None or command.status != "running" or command.execution_started or command.claim_token != token or command.generation != generation or domain is None or domain.command_id != command_id or domain.claim_token != token or ownership is None or ownership.domain != "audits" or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.returned_at is not None or ownership.released_at is not None:
++                return 1
++            source, dry_run = command.source, command.dry_run
++            # Persist the one-use execution decision before entering the CLI.
++            # A lost commit acknowledgment is uncertainty, never permission to retry.
++            command.execution_started = True
++        from seeding import cli
++        from seeding.config import SeedingSettings
+ 
+-            class DispatchSession(Session):
+-                pass
++        class DispatchSession(Session):
++            pass
+ 
+-            @event.listens_for(DispatchSession, "before_flush")
+-            def correlate(session, context, instances):
+-                for row in session.new:
+-                    if isinstance(row, IngestionJob):
+-                        row.meta = {**(row.meta or {}), "dispatch_command_id": str(command_id), "dispatch_claim_token": str(token)}
++        @event.listens_for(DispatchSession, "before_flush")
++        def correlate(session, context, instances):
++            for row in session.new:
++                if isinstance(row, IngestionJob):
++                    row.meta = {**(row.meta or {}), "dispatch_command_id": str(command_id), "dispatch_claim_token": str(token)}
+ 
+-            previous = cli.SessionLocal
+-            cli.SessionLocal = sessionmaker(bind=engine, class_=DispatchSession)
+-            try:
+-                args = argparse.Namespace(domain=[SOURCE_DOMAINS[source]], all=False,
+-                    since=None, dry_run=dry_run, audits_source_manifest=None, audits_observe_listing=False)
++        previous = cli.SessionLocal
++        cli.SessionLocal = sessionmaker(bind=engine, class_=DispatchSession)
++        try:
++            args = argparse.Namespace(domain=[SOURCE_DOMAINS[source]], all=False,
++                since=None, dry_run=dry_run, audits_source_manifest=None, audits_observe_listing=False)
++            # Only this authenticated, live, process-local scope avoids taking
++            # a second incompatible native claim. CLI flags/env cannot supply it.
++            with dispatch_scope(execution):
+                 return cli.run_seed_command(args, SeedingSettings(log_path=None))
+-            finally:
+-                cli.SessionLocal = previous
+         finally:
+-            lock.execute(text("SELECT pg_advisory_unlock(:key)"), {"key": DOMAIN_LOCK})
++            cli.SessionLocal = previous
++    except Exception:
++        return 1
++    finally:
++        execution.close()
+ 
+ 
+ def main():
+diff --git a/backend/admin_etl_dispatch_worker.py b/backend/admin_etl_dispatch_worker.py
+index a5fc5e8..cb0dc39 100644
+--- a/backend/admin_etl_dispatch_worker.py
++++ b/backend/admin_etl_dispatch_worker.py
+@@ -15,7 +15,8 @@ from sqlalchemy import func, select
+ from sqlalchemy.dialects.postgresql import insert
+ 
+ from admin_etl_dispatch import db_clock, enabled, fresh
+-from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus
++from seeding.exclusion import reserve
++from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
+ 
+ LEASE_SECONDS = 30
+ HEARTBEAT_SECONDS = 5
+@@ -72,15 +73,16 @@ def claim(factory, generation):
+         domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
+         if domain is None or domain.command_id is not None:
+             return None
+-        # Existing RUNNING observations can represent an independent native CLI.
+-        # Never reinterpret or clean them up. Activation requires exclusive runner
+-        # ownership; this additional guard is conservative, not a CLI-wide lock.
++        # Preserve pre-migration RUNNING observations conservatively. New native
++        # invocations also acquire the atomic shared ownership index below.
+         if db.scalar(select(IngestionJob.id).where(IngestionJob.domain == "audits", IngestionJob.status == IngestionStatus.RUNNING).limit(1)):
+             return None
+         command = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "queued").order_by(EtlDispatchCommand.created_at, EtlDispatchCommand.id).limit(1).with_for_update(skip_locked=True))
+         if command is None:
+             return None
+         token = uuid4()
++        if not reserve(db, "audits", token, command.id):
++            return None
+         command.status = "running"
+         command.started_at = command.updated_at = now
+         command.generation = generation
+@@ -96,7 +98,7 @@ def finish(factory, generation, command_id, token, exit_code):
+         now = db_clock(db)
+         domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
+         command = db.get(EtlDispatchCommand, command_id, with_for_update=True)
+-        if command is None or command.status != "running" or command.generation != generation or command.claim_token != token or domain.command_id != command_id or domain.claim_token != token:
++        if command is None or command.status != "running" or command.generation != generation or command.claim_token != token or domain is None or domain.command_id != command_id or domain.claim_token != token:
+             return False
+         if not fresh(worker, now) or worker.generation != generation:
+             interrupt(command, now)
+@@ -115,6 +117,10 @@ def finish(factory, generation, command_id, token, exit_code):
+             interrupt(command, now)
+             return False
+         job, observed_start, observed_finish = observations[0]
++        ownership = db.get(SeedingDomainClaim, token, with_for_update=True)
++        if ownership is None or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.released_at is not None or ownership.returned_at is None or ownership.job_id != job.id:
++            interrupt(command, now)
++            return False
+         tolerance = timedelta(seconds=OBSERVATION_CLOCK_SKEW_SECONDS)
+         coherent = (job.domain == command.domain and job.dry_run == command.dry_run
+             and observed_start is not None and observed_finish is not None
+@@ -130,6 +136,7 @@ def finish(factory, generation, command_id, token, exit_code):
+         command.status = command.outcome = "completed" if completed else "failed"
+         command.updated_at = command.finished_at = now
+         command.version += 1
++        ownership.released_at = now
+         domain.command_id = domain.claim_token = None
+         return True
+ 
+diff --git a/backend/models.py b/backend/models.py
+index 0d19352..4753bd0 100644
+--- a/backend/models.py
++++ b/backend/models.py
+@@ -18,6 +18,7 @@ from sqlalchemy import (
+     Text,
+     UniqueConstraint,
+     Uuid,
++    text,
+ )
+ from sqlalchemy.sql import false as sa_false
+ from sqlalchemy.dialects.postgresql import JSONB
+@@ -86,6 +87,27 @@ class EtlDispatchDomain(Base):
+     claim_token = Column(Uuid(as_uuid=True))
+ 
+ 
++class SeedingDomainClaim(Base):
++    """Retained native/dispatch ownership; expiry never authorizes takeover."""
++
++    __tablename__ = "seeding_domain_claims"
++    __table_args__ = (
++        CheckConstraint("length(domain) BETWEEN 1 AND 100", name="ck_seeding_claim_domain"),
++        CheckConstraint("(kind='native' AND command_id IS NULL) OR (kind='dispatch' AND command_id IS NOT NULL)", name="ck_seeding_claim_kind"),
++        CheckConstraint("(returned_at IS NULL AND job_id IS NULL AND released_at IS NULL) OR (returned_at IS NOT NULL AND job_id IS NOT NULL AND job_id > 0 AND acquired_at <= returned_at AND (released_at IS NULL OR returned_at <= released_at))", name="ck_seeding_claim_receipt"),
++        Index("uq_seeding_active_domain", "domain", unique=True,
++            postgresql_where=text("released_at IS NULL"), sqlite_where=text("released_at IS NULL")),
++    )
++    id = Column(Uuid(as_uuid=True), primary_key=True)
++    domain = Column(String(100), nullable=False)
++    kind = Column(String(20), nullable=False)
++    command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
++    acquired_at = Column(DateTime(timezone=True), nullable=False)
++    returned_at = Column(DateTime(timezone=True))
++    released_at = Column(DateTime(timezone=True))
++    job_id = Column(Integer, ForeignKey("ingestion_jobs.id"))
++
++
+ class EntityType(enum.Enum):
+     NATIONAL = "national"
+     COUNTY = "county"
+diff --git a/backend/seeding/cli.py b/backend/seeding/cli.py
+index 5a9641b..1bb6074 100644
+--- a/backend/seeding/cli.py
++++ b/backend/seeding/cli.py
+@@ -25,6 +25,7 @@ from .logging import configure_logging
+ from .registries import REGISTRY, load_builtin_domains
+ from .types import DomainRunContext, DomainRunResult
+ from . import freshness
++from .exclusion import enter_domain
+ 
+ #: Module-level logger for helpers that run outside ``run_seed_command``'s
+ #: locally-configured one. ``configure_logging`` attaches handlers to the
+@@ -298,250 +299,274 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
+         _ensure_db_sessionlocal()
+         assert SessionLocal is not None  # for type-checkers
+ 
+-        with SessionLocal() as session:
+-            try:
+-                # Create ingestion job record
+-                from models import IngestionJob, IngestionStatus
+-
+-                job = IngestionJob(
+-                    domain=domain,
+-                    status=IngestionStatus.RUNNING,
+-                    dry_run=dry_run,
+-                    started_at=started_at,
+-                    items_processed=0,
+-                    items_created=0,
+-                    items_updated=0,
+-                    errors=[],
+-                    meta={
+-                        "since": since.isoformat() if since else None,
+-                        **(
+-                            {"audit_source_scope": context.audits_source_receipt}
+-                            if context.audits_source_receipt is not None
+-                            else {}
+-                        ),
+-                    },
+-                )
+-                session.add(job)
+-                session.flush()
+-                job_id = job.id
+-                # Commit the RUNNING record immediately so it survives a
+-                # later session.rollback() (e.g. on DomainTimeoutError or
+-                # any other handler exception). Without this commit the
+-                # job insert is inside the same transaction as the handler
+-                # work, so rollback erases it and error_session.get(…)
+-                # returns None, leaving no trace of the failed domain run.
+-                session.commit()
+-
+-                context.job_id = job_id
+-
+-                # Per-domain timeout so one stuck domain (e.g. a stalled
+-                # PDF parse in counties_budget) can't take down the whole
+-                # `seed --all` run. Falls through to the except below,
+-                # which rolls back the session, marks the job FAILED,
+-                # and lets the outer loop move to the next domain.
+-                #
+-                # If a global budget is active, cap this domain's alarm at the
+-                # time remaining so the in-flight domain can't push the run past
+-                # the global deadline. `global_capped` records that the global
+-                # budget (not this domain's own budget) is the binding limit, so
+-                # a resulting timeout is treated as a clean stop, not a failure.
+-                domain_budget = settings.domain_timeout_seconds
+-                if deadline is not None:
+-                    remaining = int(deadline - time.monotonic())
+-                    if remaining < domain_budget:
+-                        domain_budget = max(1, remaining)
+-                        global_capped = True
+-
+-                with _domain_timeout(domain_budget):
+-                    result = handler(session=session, settings=settings, context=context)
+-
+-                if context.audits_source_receipt is not None:
+-                    receipt = context.audits_source_receipt
+-                    if receipt["deferred"] or receipt["refused"]:
+-                        status = 1
++        try:
++            ownership = enter_domain(SessionLocal, domain)
++        except Exception:
++            logger.error("Domain ownership unavailable; no handler started", extra={"domain": domain})
++            status = 1
++            continue
+ 
+-                # Update job with results
+-                job.finished_at = datetime.now(timezone.utc)
+-                job.items_processed = result.items_processed if result else 0
+-                job.items_created = result.items_created if result else 0
+-                job.items_updated = result.items_updated if result else 0
+-                job.errors = result.errors if result else []
+-                if result and result.metadata:
+-                    job.meta = dict(job.meta or {})
+-                    job.meta.update(result.metadata)
+-
+-                # Record WHERE the data came from. A domain that silently
+-                # served a git-tracked fixture used to be indistinguishable
+-                # from one that reached the publisher and found nothing new —
+-                # that is how three domains stayed frozen for months while
+-                # the nightly reported [OK] (see seeding/freshness.py).
+-                provenance = freshness.get(domain)
+-                job.meta = dict(job.meta or {})
+-                job.meta["source_mode"] = provenance.get("mode")
+-                if provenance.get("reason"):
+-                    job.meta["source_fallback_reason"] = provenance["reason"]
+-                if provenance.get("detail"):
+-                    job.meta["source_detail"] = provenance["detail"]
+-                # What the publisher lists as its newest edition, when the domain
+-                # discovers editions — read by seeding.edition_gates, which goes
+-                # red when that is newer than what the database holds.
+-                edition = freshness.get_publisher_edition(domain)
+-                if edition:
+-                    job.meta["publisher_edition"] = edition
+-
+-                if result and result.errors:
+-                    job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+-                elif provenance.get("mode") == freshness.FIXTURE:
+-                    # Not an error, but NOT a clean success either: nothing
+-                    # authoritative was ingested. Surfacing it as
+-                    # completed_with_errors makes the nightly print [WARN]
+-                    # instead of [OK] without failing the whole run.
+-                    job.status = IngestionStatus.COMPLETED_WITH_ERRORS
+-                    job.errors = list(job.errors or []) + [
+-                        f"served from fixture, not the publisher "
+-                        f"(reason={provenance.get('reason')})"
+-                    ]
+-                else:
+-                    job.status = IngestionStatus.COMPLETED
+-
+-                if dry_run:
+-                    finished_at_dry = datetime.now(timezone.utc)
+-                    # Keep the source/result receipts before rollback expires
+-                    # the ORM job. Dry-run jobs must retain failure telemetry.
+-                    dry_metadata = dict(job.meta or {})
+-                    dry_status = job.status
+-                    dry_errors = list(job.errors or [])
+-                    session.rollback()
+-                    logger.info(
+-                        "Dry run - rolled back all changes", extra={"domain": domain}
++        try:
++            with SessionLocal() as session:
++                try:
++                    # Create ingestion job record
++                    from models import IngestionJob, IngestionStatus
++
++                    job = IngestionJob(
++                        domain=domain,
++                        status=IngestionStatus.RUNNING,
++                        dry_run=dry_run,
++                        started_at=started_at,
++                        items_processed=0,
++                        items_created=0,
++                        items_updated=0,
++                        errors=[],
++                        meta={
++                            "since": since.isoformat() if since else None,
++                            "seeding_claim_id": str(ownership.identity),
++                            **(
++                                {"audit_source_scope": context.audits_source_receipt}
++                                if context.audits_source_receipt is not None
++                                else {}
++                            ),
++                        },
+                     )
+-                    # The rollback above also undoes the in-flight job status
+-                    # update (job was committed as RUNNING before the handler
+-                    # ran). Persist the final status in a separate session so
+-                    # the record doesn't stay orphaned in RUNNING state.
+-                    if job_id:
+-                        try:
+-                            with SessionLocal() as status_session:
+-                                dry_job = status_session.get(IngestionJob, job_id)
+-                                if dry_job:
+-                                    dry_job.status = dry_status
+-                                    dry_job.finished_at = finished_at_dry
+-                                    dry_job.items_processed = (
+-                                        result.items_processed if result else 0
+-                                    )
+-                                    dry_job.items_created = (
+-                                        result.items_created if result else 0
+-                                    )
+-                                    dry_job.items_updated = (
+-                                        result.items_updated if result else 0
+-                                    )
+-                                    dry_job.errors = dry_errors
+-                                    dry_job.meta = dry_metadata
+-                                    status_session.commit()
+-                        except Exception:  # pragma: no cover - best-effort
+-                            logger.warning(
+-                                "Failed to update dry-run job status",
+-                                extra={"domain": domain, "job_id": job_id},
+-                                exc_info=True,
+-                            )
+-                else:
++                    session.add(job)
++                    session.flush()
++                    job_id = job.id
++                    # Commit the RUNNING record immediately so it survives a
++                    # later session.rollback() (e.g. on DomainTimeoutError or
++                    # any other handler exception). Without this commit the
++                    # job insert is inside the same transaction as the handler
++                    # work, so rollback erases it and error_session.get(…)
++                    # returns None, leaving no trace of the failed domain run.
+                     session.commit()
+-                    logger.info(
+-                        "Committed changes", extra={"domain": domain, "job_id": job_id}
+-                    )
+ 
+-            # DomainTimeoutError is a BaseException (so fetchers' ``except
+-            # Exception`` can't swallow it), so catch it explicitly alongside
+-            # Exception here — the handler below already branches on its type.
+-            except (DomainTimeoutError, Exception) as exc:
+-                session.rollback()
+-
+-                # A DomainTimeoutError raised because the *global* budget capped
+-                # this domain's alarm is an expected, clean "out of time" stop —
+-                # not a domain failure. Record it as non-fatal so the CI step
+-                # stays green (and the validation job still runs), then stop the
+-                # loop. A timeout from the domain's *own* budget falls through to
+-                # the failure handling below, exactly as before.
+-                if global_capped and isinstance(exc, DomainTimeoutError):
+-                    logger.warning(
+-                        "Global seed budget exhausted during '%s' (%.0fs elapsed); "
+-                        "stopping run cleanly",
+-                        domain,
+-                        time.monotonic() - loop_start,
++                    context.job_id = job_id
++
++                    # Per-domain timeout so one stuck domain (e.g. a stalled
++                    # PDF parse in counties_budget) can't take down the whole
++                    # `seed --all` run. Falls through to the except below,
++                    # which rolls back the session, marks the job FAILED,
++                    # and lets the outer loop move to the next domain.
++                    #
++                    # If a global budget is active, cap this domain's alarm at the
++                    # time remaining so the in-flight domain can't push the run past
++                    # the global deadline. `global_capped` records that the global
++                    # budget (not this domain's own budget) is the binding limit, so
++                    # a resulting timeout is treated as a clean stop, not a failure.
++                    domain_budget = settings.domain_timeout_seconds
++                    if deadline is not None:
++                        remaining = int(deadline - time.monotonic())
++                        if remaining < domain_budget:
++                            domain_budget = max(1, remaining)
++                            global_capped = True
++
++                    with _domain_timeout(domain_budget):
++                        result = handler(session=session, settings=settings, context=context)
++
++                    if context.audits_source_receipt is not None:
++                        receipt = context.audits_source_receipt
++                        if receipt["deferred"] or receipt["refused"]:
++                            status = 1
++
++                    # Update job with results
++                    job.finished_at = datetime.now(timezone.utc)
++                    job.items_processed = result.items_processed if result else 0
++                    job.items_created = result.items_created if result else 0
++                    job.items_updated = result.items_updated if result else 0
++                    job.errors = result.errors if result else []
++                    if result and result.metadata:
++                        job.meta = dict(job.meta or {})
++                        job.meta.update(result.metadata)
++
++                    # Record WHERE the data came from. A domain that silently
++                    # served a git-tracked fixture used to be indistinguishable
++                    # from one that reached the publisher and found nothing new —
++                    # that is how three domains stayed frozen for months while
++                    # the nightly reported [OK] (see seeding/freshness.py).
++                    provenance = freshness.get(domain)
++                    job.meta = dict(job.meta or {})
++                    job.meta["source_mode"] = provenance.get("mode")
++                    if provenance.get("reason"):
++                        job.meta["source_fallback_reason"] = provenance["reason"]
++                    if provenance.get("detail"):
++                        job.meta["source_detail"] = provenance["detail"]
++                    # What the publisher lists as its newest edition, when the domain
++                    # discovers editions — read by seeding.edition_gates, which goes
++                    # red when that is newer than what the database holds.
++                    edition = freshness.get_publisher_edition(domain)
++                    if edition:
++                        job.meta["publisher_edition"] = edition
++
++                    if result and result.errors:
++                        job.status = IngestionStatus.COMPLETED_WITH_ERRORS
++                    elif provenance.get("mode") == freshness.FIXTURE:
++                        # Not an error, but NOT a clean success either: nothing
++                        # authoritative was ingested. Surfacing it as
++                        # completed_with_errors makes the nightly print [WARN]
++                        # instead of [OK] without failing the whole run.
++                        job.status = IngestionStatus.COMPLETED_WITH_ERRORS
++                        job.errors = list(job.errors or []) + [
++                            f"served from fixture, not the publisher "
++                            f"(reason={provenance.get('reason')})"
++                        ]
++                    else:
++                        job.status = IngestionStatus.COMPLETED
++
++                    if dry_run:
++                        finished_at_dry = datetime.now(timezone.utc)
++                        # Keep the source/result receipts before rollback expires
++                        # the ORM job. Dry-run jobs must retain failure telemetry.
++                        dry_metadata = dict(job.meta or {})
++                        dry_status = job.status
++                        dry_errors = list(job.errors or [])
++                        session.rollback()
++                        logger.info(
++                            "Dry run - rolled back all changes", extra={"domain": domain}
++                        )
++                        # The rollback above also undoes the in-flight job status
++                        # update (job was committed as RUNNING before the handler
++                        # ran). Persist the final status in a separate session so
++                        # the record doesn't stay orphaned in RUNNING state.
++                        if job_id:
++                            try:
++                                with SessionLocal() as status_session:
++                                    dry_job = status_session.get(IngestionJob, job_id)
++                                    if dry_job:
++                                        dry_job.status = dry_status
++                                        dry_job.finished_at = finished_at_dry
++                                        dry_job.items_processed = (
++                                            result.items_processed if result else 0
++                                        )
++                                        dry_job.items_created = (
++                                            result.items_created if result else 0
++                                        )
++                                        dry_job.items_updated = (
++                                            result.items_updated if result else 0
++                                        )
++                                        dry_job.errors = dry_errors
++                                        dry_job.meta = dry_metadata
++                                        status_session.commit()
++                            except Exception:  # pragma: no cover - best-effort
++                                logger.warning(
++                                    "Failed to update dry-run job status",
++                                    extra={"domain": domain, "job_id": job_id},
++                                    exc_info=True,
++                                )
++                    else:
++                        session.commit()
++                        logger.info(
++                            "Committed changes", extra={"domain": domain, "job_id": job_id}
++                        )
++
++                # DomainTimeoutError is a BaseException (so fetchers' ``except
++                # Exception`` can't swallow it), so catch it explicitly alongside
++                # Exception here — the handler below already branches on its type.
++                except (DomainTimeoutError, Exception) as exc:
++                    if isinstance(exc, DomainTimeoutError):
++                        ownership.uncertain = True
++                    session.rollback()
++
++                    # A DomainTimeoutError raised because the *global* budget capped
++                    # this domain's alarm is an expected, clean "out of time" stop —
++                    # not a domain failure. Record it as non-fatal so the CI step
++                    # stays green (and the validation job still runs), then stop the
++                    # loop. A timeout from the domain's *own* budget falls through to
++                    # the failure handling below, exactly as before.
++                    if global_capped and isinstance(exc, DomainTimeoutError):
++                        logger.warning(
++                            "Global seed budget exhausted during '%s' (%.0fs elapsed); "
++                            "stopping run cleanly",
++                            domain,
++                            time.monotonic() - loop_start,
++                        )
++                        if job_id:
++                            try:
++                                with SessionLocal() as budget_session:
++                                    from models import IngestionJob, IngestionStatus
++
++                                    stopped_job = budget_session.get(IngestionJob, job_id)
++                                    if stopped_job:
++                                        # FAILED, not completed_with_errors: this
++                                        # domain did not refresh. As a [WARN] it
++                                        # was not counted by the workflow's
++                                        # exit-code check, so a truncated run
++                                        # reported success.
++                                        stopped_job.status = IngestionStatus.FAILED
++                                        stopped_job.finished_at = datetime.now(timezone.utc)
++                                        if context.audits_source_receipt is not None:
++                                            stopped_job.meta = {
++                                                **(stopped_job.meta or {}),
++                                                "audit_source_scope": context.audits_source_receipt,
++                                            }
++                                        stopped_job.errors = [
++                                            "stopped: global seed budget exhausted"
++                                        ]
++                                        budget_session.commit()
++                            except Exception:  # pragma: no cover - best-effort
++                                pass
++                        _record_dropped_domains(
++                            domains[index + 1 :],
++                            total_budget,
++                            time.monotonic() - loop_start,
++                        )
++                        status = 1
++                        break
++
++                    logger.exception(
++                        "Domain run failed", extra={"domain": domain, "error": str(exc)}
+                     )
++                    status = 1
++
++                    # Try to update job status even on failure
+                     if job_id:
+                         try:
+-                            with SessionLocal() as budget_session:
++                            with SessionLocal() as error_session:
+                                 from models import IngestionJob, IngestionStatus
+ 
+-                                stopped_job = budget_session.get(IngestionJob, job_id)
+-                                if stopped_job:
+-                                    # FAILED, not completed_with_errors: this
+-                                    # domain did not refresh. As a [WARN] it
+-                                    # was not counted by the workflow's
+-                                    # exit-code check, so a truncated run
+-                                    # reported success.
+-                                    stopped_job.status = IngestionStatus.FAILED
+-                                    stopped_job.finished_at = datetime.now(timezone.utc)
++                                failed_job = error_session.get(IngestionJob, job_id)
++                                if failed_job:
++                                    failed_job.status = IngestionStatus.FAILED
++                                    failed_job.finished_at = datetime.now(timezone.utc)
++                                    failed_job.errors = [str(exc)]
+                                     if context.audits_source_receipt is not None:
+-                                        stopped_job.meta = {
+-                                            **(stopped_job.meta or {}),
++                                        failed_job.meta = {
++                                            **(failed_job.meta or {}),
+                                             "audit_source_scope": context.audits_source_receipt,
+                                         }
+-                                    stopped_job.errors = [
+-                                        "stopped: global seed budget exhausted"
+-                                    ]
+-                                    budget_session.commit()
+-                        except Exception:  # pragma: no cover - best-effort
++                                    # A run that discovered a newer edition and then
++                                    # failed is the case the edition gate exists
++                                    # for; keep what it saw.
++                                    edition = freshness.get_publisher_edition(domain)
++                                    if edition:
++                                        failed_job.meta = {
++                                            **(failed_job.meta or {}),
++                                            "publisher_edition": edition,
++                                        }
++                                    error_session.commit()
++                        except Exception:  # pragma: no cover
+                             pass
+-                    _record_dropped_domains(
+-                        domains[index + 1 :],
+-                        total_budget,
+-                        time.monotonic() - loop_start,
+-                    )
+-                    status = 1
+-                    break
+ 
+-                logger.exception(
+-                    "Domain run failed", extra={"domain": domain, "error": str(exc)}
+-                )
++                    result = DomainRunResult.empty(
++                        domain=domain,
++                        dry_run=dry_run,
++                        started_at=started_at,
++                    ).with_error(str(exc))
++
++            # Session closure and a coherent persisted observation are required.
++            # A process exit or an expired connection/lease cannot reach this ack.
++            ownership.acknowledge(job_id)
++        except Exception:
++            logger.error("Execution unverified; domain ownership retained", extra={"domain": domain})
++            status = 1
++        finally:
++            try:
++                ownership.close()
++            except Exception:
++                logger.error("Execution connection lost; inspect retained ownership", extra={"domain": domain})
+                 status = 1
+ 
+-                # Try to update job status even on failure
+-                if job_id:
+-                    try:
+-                        with SessionLocal() as error_session:
+-                            from models import IngestionJob, IngestionStatus
+-
+-                            failed_job = error_session.get(IngestionJob, job_id)
+-                            if failed_job:
+-                                failed_job.status = IngestionStatus.FAILED
+-                                failed_job.finished_at = datetime.now(timezone.utc)
+-                                failed_job.errors = [str(exc)]
+-                                if context.audits_source_receipt is not None:
+-                                    failed_job.meta = {
+-                                        **(failed_job.meta or {}),
+-                                        "audit_source_scope": context.audits_source_receipt,
+-                                    }
+-                                # A run that discovered a newer edition and then
+-                                # failed is the case the edition gate exists
+-                                # for; keep what it saw.
+-                                edition = freshness.get_publisher_edition(domain)
+-                                if edition:
+-                                    failed_job.meta = {
+-                                        **(failed_job.meta or {}),
+-                                        "publisher_edition": edition,
+-                                    }
+-                                error_session.commit()
+-                    except Exception:  # pragma: no cover
+-                        pass
+-
+-                result = DomainRunResult.empty(
+-                    domain=domain,
+-                    dry_run=dry_run,
+-                    started_at=started_at,
+-                ).with_error(str(exc))
+-
+         finished_at = datetime.now(timezone.utc)
+         if result is None:
+             result = DomainRunResult.empty(

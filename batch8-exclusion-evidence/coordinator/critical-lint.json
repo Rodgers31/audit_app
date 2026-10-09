@@ -1,0 +1,19 @@
+{
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "flake8",
+    "seeding/exclusion.py",
+    "admin_etl_dispatch_worker.py",
+    "tests/test_batch8_exclusion_review.py",
+    "tests/test_batch8_exclusion_scope.py",
+    "tests/test_batch8_exclusion_migration.py",
+    "--select",
+    "E9,F63,F7,F82"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/social-batch3-integration/audit_app/backend",
+  "version": "7.3.0 (mccabe: 0.7.0, pycodestyle: 2.14.0, pyflakes: 3.4.0) CPython 3.13.9 on\nDarwin",
+  "exit_code": 0,
+  "stdout": "",
+  "stderr": ""
+}
