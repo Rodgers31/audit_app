@@ -12,7 +12,10 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 MAX_SECONDS = 240
 DIAGNOSTIC_SAMPLE_BYTES = 8192
-PIN = re.compile(r"(?:postgres|public\.ecr\.aws/supabase/postgres)@sha256:[0-9a-f]{64}")
+PIN = re.compile(r"public\.ecr\.aws/(?:docker/library/postgres|supabase/postgres)@sha256:[0-9a-f]{64}")
+REPO_DIGEST = re.compile(r"[^\s@]+@sha256:[0-9a-f]{64}")
+SERVICE_POSTGRES_REF = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
+SERVICE_ALIAS = "postgres:17"
 
 
 class Refusal(RuntimeError):
@@ -72,7 +75,13 @@ def required_images():
     return images
 
 
-def prepare():
+def prepare(*, service_postgres_ref=None):
+    # Validate before the caller's input can enter a diagnostic context. Service
+    # preparation is opt-in; standalone fixture preparation never touches aliases.
+    if service_postgres_ref is not None and (type(service_postgres_ref) is not str
+                                            or service_postgres_ref != SERVICE_POSTGRES_REF):
+        raise Refusal("unapproved_service_postgres_ref")
+    images = required_images()
     deadline = time.monotonic() + MAX_SECONDS
     context = {"phase": "docker_server", "image": None, "platform": None, "exit_code": None}
 
@@ -113,29 +122,64 @@ def prepare():
             refuse("invalid_docker_image_metadata")
 
     server = decode(run(["version", "--format", "{{json .Server}}"], phase="docker_server"))
-    if not isinstance(server, dict) or server.get("Os") != "linux" or server.get("Arch") not in {"amd64", "arm64"}:
+    if (not isinstance(server, dict) or server.get("Os") != "linux"
+            or type(server.get("Arch")) is not str or server["Arch"] not in {"amd64", "arm64"}):
         refuse("unsupported_native_docker_platform")
     platform = "linux/" + server["Arch"]
     context["platform"] = platform
-    for ref in required_images():
-        raw = run(["image", "inspect", ref], phase="inspect_cached", image=ref, missing=True)
-        if raw is None:
-            run(["pull", "--platform", platform, ref], phase="pull", image=ref, timeout=MAX_SECONDS)
-            raw = run(["image", "inspect", ref], phase="inspect_pulled", image=ref)
+
+    def verified_image(raw, ref, *, require_repo_digest=True):
         records = decode(raw)
         if not isinstance(records, list) or len(records) != 1 or not isinstance(records[0], dict):
             refuse("invalid_docker_image_metadata")
         image = records[0]
-        if (not isinstance(image.get("RepoDigests"), list) or ref not in image["RepoDigests"]
+        digests = image.get("RepoDigests")
+        if (not isinstance(digests, list)
+                or any(type(value) is not str or REPO_DIGEST.fullmatch(value) is None for value in digests)
+                or (require_repo_digest and ref not in digests)
                 or not isinstance(image.get("Id"), str) or re.fullmatch(r"sha256:[0-9a-f]{64}", image["Id"]) is None
                 or image.get("Os") != "linux" or image.get("Architecture") != server["Arch"]):
             refuse("fixture_image_identity_or_platform_mismatch")
+        return image
+
+    if service_postgres_ref is not None:
+        # The hosted service was pulled before checkout. An absent/mismatched
+        # service cache refuses; alias preparation never downloads an image.
+        service = verified_image(run(["image", "inspect", service_postgres_ref],
+                                     phase="inspect_service", image=service_postgres_ref), service_postgres_ref)
+        raw = run(["image", "inspect", SERVICE_ALIAS], phase="inspect_service_alias",
+                  image=SERVICE_ALIAS, missing=True)
+        if raw is not None:
+            alias = verified_image(raw, SERVICE_ALIAS, require_repo_digest=False)
+            if alias["Id"] != service["Id"]:
+                refuse("existing_service_alias_mismatch")
+        else:
+            run(["image", "tag", service["Id"], SERVICE_ALIAS], phase="tag_service_alias", image=service_postgres_ref)
+            alias = verified_image(run(["image", "inspect", SERVICE_ALIAS],
+                                       phase="inspect_service_alias_readback", image=SERVICE_ALIAS),
+                                   SERVICE_ALIAS, require_repo_digest=False)
+            if alias["Id"] != service["Id"]:
+                refuse("service_alias_identity_mismatch")
+        print(f"Verified local {SERVICE_ALIAS} alias ({platform}; {service['Id']}; {service_postgres_ref})", flush=True)
+
+    for ref in images:
+        raw = run(["image", "inspect", ref], phase="inspect_cached", image=ref, missing=True)
+        if raw is None:
+            run(["pull", "--platform", platform, ref], phase="pull", image=ref, timeout=MAX_SECONDS)
+            raw = run(["image", "inspect", ref], phase="inspect_pulled", image=ref)
+        image = verified_image(raw, ref)
         print(f"Prepared {ref} ({platform}; {image['Id']})", flush=True)
 
 
 if __name__ == "__main__":
     try:
-        prepare()
+        if len(sys.argv) == 1:
+            service_ref = None
+        elif len(sys.argv) == 3 and sys.argv[1] == "--service-postgres-ref":
+            service_ref = sys.argv[2]
+        else:
+            raise Refusal("invalid_image_preparation_arguments")
+        prepare(service_postgres_ref=service_ref)
     except Refusal as exc:
         print(json.dumps(exc.receipt, sort_keys=True), file=sys.stderr, flush=True)
         sys.exit(1)

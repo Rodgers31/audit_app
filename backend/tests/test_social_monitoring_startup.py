@@ -8,8 +8,20 @@ import sys
 import pytest
 
 
-SCRIPT = r'''
+ROUTE_INVENTORY = r'''
+def social_route_inventory(routes):
+    from fastapi import routing
+    # Older supported FastAPI versions flatten included routers; current
+    # versions expose effective prefixed contexts through the public iterator.
+    contexts = getattr(routing, 'iter_route_contexts', iter)(routes)
+    return [(method, route.path) for route in contexts
+            for method in (getattr(route, 'methods', None) or ())
+            if '/social' in (getattr(route, 'path', None) or '')]
+'''
+
+SCRIPT = ROUTE_INVENTORY + r'''
 import json, socket, sys
+import os
 socket.socket.connect = lambda *a, **kw: (_ for _ in ()).throw(AssertionError('External network forbidden'))
 import sentry_sdk
 from sentry_sdk.transport import Transport
@@ -32,6 +44,9 @@ try:
 except Exception as exc:
     startup_error = str(exc)
 if startup_error is None:
+    if os.environ.get('CI_DUPLICATE_SOCIAL_ROUTER') == 'true':
+        from social.api import router
+        main.app.include_router(router)
     from fastapi.testclient import TestClient
     from social.api import service, require_admin
     from supabase_auth import AdminUser
@@ -60,9 +75,8 @@ if startup_error is None:
     responses.append(client.get('/api/v1/admin/social/accounts'))
     assert [r.status_code for r in responses] == [200,500,401]
     assert all(r.headers['cache-control'] == 'private, no-store' for r in responses)
-    routes = [(method,r.path) for r in main.app.routes if hasattr(r,'methods')
-              for method in r.methods if '/social' in r.path]
-    assert len(routes) == len(set(routes)) == 35
+    routes = social_route_inventory(main.app.routes)
+    assert len(routes) == len(set(routes)) == 35, 'Social route inventory must contain 35 unique registrations'
     assert not any('/privacy/' in path for _,path in routes)
     assert not vars(main.app.state)['_state']
     assert client.post('/_runtime-fixture/error', data={'signed_request':'INERT-549-PRIVATE-MARKER'}).status_code == 500
@@ -110,6 +124,29 @@ def test_explicit_actual_app_startup_preserves_healthy_and_failed_captures():
     assert result['status_codes'] == [200,500,401,500]
     assert result['marker_present'] is False and result['profiles'] == 0
     assert result['private_options_disabled']
+
+
+def test_duplicate_actual_social_router_registration_is_detected():
+    with pytest.raises(AssertionError, match='Social route inventory must contain 35 unique registrations'):
+        capture(CI_DUPLICATE_SOCIAL_ROUTER='true')
+
+
+def test_route_inventory_supports_flat_routes_without_discarding_duplicates(monkeypatch):
+    from fastapi import APIRouter, routing
+
+    router = APIRouter()
+
+    @router.get('/api/v1/admin/social/fixture')
+    async def fixture():
+        return {'fixture': True}
+
+    namespace = {}
+    exec(ROUTE_INVENTORY, namespace)
+    monkeypatch.delattr(routing, 'iter_route_contexts', raising=False)
+    inventory = namespace['social_route_inventory']
+    expected = [('GET', '/api/v1/admin/social/fixture')]
+    assert inventory(router.routes) == expected
+    assert inventory(router.routes + router.routes) == expected + expected
 
 
 @pytest.mark.parametrize('values', [

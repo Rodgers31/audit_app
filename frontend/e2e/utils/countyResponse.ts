@@ -4,7 +4,7 @@ import { expect, type Page, type Route } from '@playwright/test';
 // the browser response instead of silently testing the hydrated happy path.
 export async function countyResponse(page: Page, handle: (route: Route) => Promise<void>) {
   await page.goto('/counties');
-  await expect(page.getByPlaceholder('Type to search…')).toBeVisible();
+  await expect(page.getByRole('searchbox', { name: 'Search County', exact: true })).toBeVisible();
   let calls = 0;
   await page.route(url => url.pathname === '/api/v1/counties' && url.searchParams.get('fiscal_year') === 'FY2024/25', async route => {
     calls++;
