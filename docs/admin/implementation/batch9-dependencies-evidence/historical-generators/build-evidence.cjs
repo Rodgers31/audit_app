@@ -1,9 +1,5 @@
 'use strict';
 
-if (process.argv.includes('--verify-existing')) {
-  require('./verify-historical.cjs');
-} else {
-
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -82,4 +78,3 @@ assert.equal(readback.generator_sha256, hash(fs.readFileSync(__filename)));
 assert.equal(readback.rawArchive.sha256, hash(fs.readFileSync(archive)));
 assert.equal(readback.lockDelta.unchangedProductionRecords, 173);
 console.log(JSON.stringify({ recordedCommands: commands.length, archivedFiles: payload.length, archiveBytes: fs.statSync(archive).size, lockDelta: summary.lockDelta, auditCounts: Object.fromEntries(Object.entries(summary.audits).map(([name, data]) => [name, { entries: data.affectedPackageEntries, roots: Object.keys(data.advisoryRoots).length }])) }));
-}

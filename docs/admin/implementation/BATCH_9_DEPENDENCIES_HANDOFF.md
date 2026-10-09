@@ -8,6 +8,30 @@ numeric prereleases. **Complete acceptance of [#494](https://github.com/Rodgers3
 is not met:** both unpatched advisory roots remain, full audits still fail, and
 no residual-risk exception is assumed. Keep the issue open and the PR draft.
 
+## Coordinator review amendments
+
+The author history below is preserved. Review reproduced a false rejection for
+a child that never reached the graph assertion, premature JSON from spreading
+an unawaited Promise, and a host-specific npm validator import. The Promise
+case exited nonzero on the tested Node runtime; the review's exit-zero mechanism
+was not reproduced, but the premature success-shaped output was real.
+
+The accepted controls now require the intended assertion/guard diagnostic and
+exact graph-test execution, await asynchronous validation, and resolve npm and
+the validator from the owned installation. Null/array/syntax-invalid Tailwind
+and unreadable ESLint inputs receive explicit contract diagnostics. Their tests
+use installed modules so unrelated missing-dependency setup cannot satisfy the
+negative control. The complete baseline fixture now includes its manifest and
+provides the actual npm CLI to its child.
+
+The original summary/archive stays unchanged. A new read-only portable archive
+verifier validates historical bytes and explicitly labels their source identity;
+`build-evidence.cjs --verify-existing` invokes it. New recorders capture source
+before execution and refuse a success verdict after source/generator/HEAD
+changes. Current controls and historical diagnostics are distinguished in the
+evidence README. These repairs do not remove either residual advisory root or
+meet complete #494 acceptance.
+
 ## Source, ownership and resume point
 
 Base: verified main `672c5c011ce57dc41551f5fbc642bc4e69134c43`. Product head:

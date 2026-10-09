@@ -6,12 +6,11 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '../../../..');
 const frontend = path.join(repo, 'frontend');
-const npmCli = require('./control_contract.cjs').npmCli();
+const npmCli = '/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js';
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const roots = [];
 const results = [];
 const failures = [];
-const sourceBefore = require('./control_contract.cjs').sourceIdentity(__filename);
 function run(label, command, args, cwd) {
   const output = spawnSync(command, args, { cwd, encoding: 'utf8', timeout: 20000, maxBuffer: 16 * 1024 * 1024,
     env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' } });
@@ -47,10 +46,8 @@ try {
     overrides:[{files:['*.js'],settings:{next:{rootDir:'{'.repeat(4000)+'a,b'+'}'.repeat(4000)}}}]}));
   run('css-verdict-with-unsafe-eslint-override', process.execPath, [path.join(root, 'scripts/verify-dependency-tooling.cjs')], root);
 } finally {
-  const sourceAfter = require('./control_contract.cjs').sourceIdentity(__filename, false);
-  if (JSON.stringify(sourceBefore) !== JSON.stringify(sourceAfter)) failures.push('source-changed-during-execution');
-  fs.writeFileSync(path.join(__dirname, 'behavior-accepted-lifecycle-results-review-'+Date.now()+'.json'), JSON.stringify({generated_by:__filename,
-    generator_sha256:sourceBefore.generator_sha256, source_before: sourceBefore, source_after: sourceAfter, generated_at:new Date().toISOString(),
+  fs.writeFileSync(path.join(__dirname, 'behavior-accepted-lifecycle-results.json'), JSON.stringify({generated_by:__filename,
+    generator_sha256:hash(fs.readFileSync(__filename)), generated_at:new Date().toISOString(),
     head:spawnSync('git',['rev-parse','HEAD'],{cwd:repo,encoding:'utf8'}).stdout.trim(),
     runtime:{node:process.version,platform:process.platform,arch:process.arch},results,expectationFailures:failures},null,2)+'\n');
   for (const root of roots) fs.rmSync(root,{recursive:true,force:true});

@@ -22,7 +22,7 @@
     "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
+    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",

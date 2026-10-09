@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '../../../..');
 const frontend = path.join(repo, 'frontend');
-const npmCli = require('./control_contract.cjs').npmCli();
+const npmCli = '/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js';
 const guard = path.join(frontend, 'scripts/verify-tooling-inputs.cjs');
 const graph = path.join(frontend, 'scripts/jest-dependency-boundary.test.cjs');
 const patterns = ['pages', 'components', 'app', 'src'].map(dir => `./${dir}/**/*.{js,ts,jsx,tsx,mdx}`);
@@ -39,7 +39,7 @@ function fixture() {
   return root;
 }
 function guardCall(label, root) {
-  return run(label, process.execPath, ['-e', '(async () => { const fn = require(process.argv[1]).verifyToolingInputs; console.log(JSON.stringify({check:"bounded-tooling-inputs", ...await fn(process.argv[2])})); })().catch(error => { console.error(error); process.exitCode = 1; });', guard, root], { cwd: root });
+  return run(label, process.execPath, ['-e', 'const fn = require(process.argv[1]).verifyToolingInputs; console.log(JSON.stringify({check:"bounded-tooling-inputs", ...fn(process.argv[2])}));', guard, root], { cwd: root });
 }
 const roots = [];
 try {
@@ -94,6 +94,6 @@ try {
       guard_sha256: hash(fs.readFileSync(guard)), graph_sha256: hash(fs.readFileSync(graph)),
       package_sha256: hash(fs.readFileSync(path.join(frontend, 'package.json'))), lock_sha256: hash(fs.readFileSync(path.join(frontend, 'package-lock.json'))) },
     runtime: {node: process.version, platform: process.platform, arch: process.arch}, fixture_roots: roots, results };
-  fs.writeFileSync(path.join(__dirname, 'behavior-control-results-review-'+Date.now()+'.json'), JSON.stringify(record, null, 2) + '\n');
+  fs.writeFileSync(path.join(__dirname, 'behavior-control-results.json'), JSON.stringify(record, null, 2) + '\n');
   for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
 }

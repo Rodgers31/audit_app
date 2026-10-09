@@ -33,10 +33,18 @@ function verifyNextSettings(config) {
  * @throws {Error} Reject missing/malformed config, expanded source scope or root globs.
  */
 async function verifyToolingInputs(root = path.resolve(__dirname, '..')) {
-  const tailwind = require(path.join(root, 'tailwind.config.js'));
+  let tailwind;
+  try { tailwind = require(path.join(root, 'tailwind.config.js')); } catch {
+    throw new Error('tooling input contract: Tailwind configuration cannot be loaded');
+  }
+  assert.ok(tailwind && typeof tailwind === 'object' && !Array.isArray(tailwind),
+    'tooling input contract: Tailwind configuration must be an object');
   assert.deepEqual(tailwind.content, approvedContent,
     'tooling input contract: Tailwind content must retain the reviewed bounded source patterns');
-  const eslint = JSON.parse(fs.readFileSync(path.join(root, '.eslintrc.json'), 'utf8'));
+  let eslint;
+  try { eslint = JSON.parse(fs.readFileSync(path.join(root, '.eslintrc.json'), 'utf8')); } catch {
+    throw new Error('tooling input contract: ESLint configuration must contain readable JSON');
+  }
   verifyNextSettings(eslint);
   // These are Next lint's default directories and extensions. The scan itself
   // uses two constant, shallow brace groups, never caller-supplied patterns.

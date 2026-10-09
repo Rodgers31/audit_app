@@ -10,6 +10,34 @@ const test = require('node:test');
 const frontend = path.resolve(__dirname, '..');
 const deepPattern = '{'.repeat(4000) + 'a,b' + '}'.repeat(4000);
 
+for (const [name, filename, bytes] of [
+  ['missing Tailwind', 'tailwind.config.js', null],
+  ['null Tailwind', 'tailwind.config.js', 'module.exports = null;'],
+  ['array Tailwind', 'tailwind.config.js', 'module.exports = [];'],
+  ['invalid Tailwind syntax', 'tailwind.config.js', 'module.exports = {'],
+  ['missing ESLint', '.eslintrc.json', null],
+  ['invalid ESLint JSON', '.eslintrc.json', '{'],
+]) {
+  test(`malformed ${name} reports the input contract without a success verdict`, () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'batch9-config-diagnostic-'));
+    try {
+      fs.symlinkSync(path.join(frontend, 'node_modules'), path.join(root, 'node_modules'), 'dir');
+      fs.copyFileSync(path.join(frontend, 'tailwind.config.js'), path.join(root, 'tailwind.config.js'));
+      fs.copyFileSync(path.join(frontend, '.eslintrc.json'), path.join(root, '.eslintrc.json'));
+      if (bytes === null) fs.unlinkSync(path.join(root, filename));
+      else fs.writeFileSync(path.join(root, filename), bytes);
+      const result = spawnSync(process.execPath, ['-e',
+        '(async()=>console.log(JSON.stringify({check:"bounded-tooling-inputs",...await require(process.argv[1]).verifyToolingInputs(process.argv[2])})))().catch(e=>{console.error(e);process.exitCode=1;});',
+        path.join(__dirname, 'verify-tooling-inputs.cjs'), root], { encoding: 'utf8', timeout: 15000 });
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      assert.match(result.stderr, /tooling input contract:/);
+      assert.match(result.stderr, filename === '.eslintrc.json' ? /ESLint/ : /Tailwind/);
+      assert.doesNotMatch(result.stdout, /bounded-tooling-inputs/);
+      assert.doesNotMatch(result.stderr, /Cannot read properties of null/);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+}
+
 for (const [name, content, settings] of [
   ['deep Tailwind brace glob', [deepPattern], undefined],
   ['unreviewed Tailwind source scope', ['../**/*.{js,ts}'], undefined],

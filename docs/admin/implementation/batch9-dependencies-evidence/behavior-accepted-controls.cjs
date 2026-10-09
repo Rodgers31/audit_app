@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '../../../..');
 const frontend = path.join(repo, 'frontend');
-const npmCli = '/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js';
+const npmCli = require('./control_contract.cjs').npmCli();
 const guard = path.join(frontend, 'scripts/verify-tooling-inputs.cjs');
 const graph = path.join(frontend, 'scripts/jest-dependency-boundary.test.cjs');
 const patterns = ['pages', 'components', 'app', 'src'].map(dir => `./${dir}/**/*.{js,ts,jsx,tsx,mdx}`);
@@ -16,6 +16,7 @@ const deepPattern = '{'.repeat(4000) + 'a,b' + '}'.repeat(4000);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const results = [];
 const failures = [];
+const sourceBefore = require('./control_contract.cjs').sourceIdentity(__filename);
 const positiveLabels = new Set(['guard-valid-default', 'standard-lint-valid-default', 'graph-valid-control', 'graph-version-13', 'graph-version-14', 'graph-valid-builtin-name']);
 function run(label, command, args, options = {}) {
   const output = spawnSync(command, args, { encoding: 'utf8', timeout: 20000, maxBuffer: 16 * 1024 * 1024, ...options });
@@ -23,7 +24,7 @@ function run(label, command, args, options = {}) {
     signal: output.signal, error: output.error?.message || null, stdout: output.stdout || '', stderr: output.stderr || '' };
   const expected = positiveLabels.has(label) ? 0 : 1;
   result.expected = expected;
-  result.matchesExpectation = result.status === expected && !result.error && result.signal === null;
+  Object.assign(result, require('./control_contract.cjs').classifyControl(label, result, expected));
   if (!result.matchesExpectation) failures.push(label);
   if (label.startsWith('standard-lint') && expected === 1 && /bounded-tooling-inputs|> next lint|Maximum call stack size exceeded/.test(result.stdout + result.stderr)) failures.push(label + '-not-blocked-before-next');
   results.push(result);
@@ -99,12 +100,15 @@ try {
       env: { PATH: process.env.PATH, npm_execpath: npmReport } });
   }
 } finally {
-  const record = { generated_by: __filename, generator_sha256: hash(fs.readFileSync(__filename)), generated_at: new Date().toISOString(),
+  const sourceAfter = require('./control_contract.cjs').sourceIdentity(__filename, false);
+  if (JSON.stringify(sourceBefore) !== JSON.stringify(sourceAfter)) failures.push('source-changed-during-execution');
+  const record = { generated_by: __filename, generator_sha256: sourceBefore.generator_sha256, generated_at: new Date().toISOString(),
+    source_before: sourceBefore, source_after: sourceAfter,
     source: { head: spawnSync('git', ['rev-parse', 'HEAD'], {cwd: repo, encoding: 'utf8'}).stdout.trim(),
       guard_sha256: hash(fs.readFileSync(guard)), graph_sha256: hash(fs.readFileSync(graph)),
       package_sha256: hash(fs.readFileSync(path.join(frontend, 'package.json'))), lock_sha256: hash(fs.readFileSync(path.join(frontend, 'package-lock.json'))) },
     runtime: {node: process.version, platform: process.platform, arch: process.arch}, fixture_roots: roots, results, expectationFailures:failures };
-  fs.writeFileSync(path.join(__dirname, 'behavior-accepted-control-results.json'), JSON.stringify(record, null, 2) + '\n');
+  fs.writeFileSync(path.join(__dirname, 'behavior-accepted-control-results-review-'+Date.now()+'.json'), JSON.stringify(record, null, 2) + '\n');
   for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
 }
 

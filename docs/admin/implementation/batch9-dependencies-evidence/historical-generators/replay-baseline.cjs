@@ -10,15 +10,11 @@ try {
   const frontend = path.join(repo, 'frontend');
   fs.cpSync(path.join(frontend, 'scripts'), path.join(root, 'scripts'), { recursive: true });
   fs.copyFileSync(path.join(frontend, 'tailwind.config.js'), path.join(root, 'tailwind.config.js'));
-  fs.copyFileSync(path.join(frontend, '.eslintrc.json'), path.join(root, '.eslintrc.json'));
-  fs.copyFileSync(path.join(frontend, 'package.json'), path.join(root, 'package.json'));
   fs.symlinkSync(path.join(frontend, 'node_modules'), path.join(root, 'node_modules'), 'dir');
   const old = spawnSync('git', ['show', '672c5c011ce57dc41551f5fbc642bc4e69134c43:frontend/scripts/verify-dependency-tooling.cjs'], { cwd: repo, encoding: 'utf8' });
   if (old.status !== 0) throw new Error(old.stderr);
   fs.writeFileSync(path.join(root, 'scripts/verify-dependency-tooling.cjs'), old.stdout);
-  const env = { ...process.env, npm_execpath: require('./control_contract.cjs').npmCli() };
-  delete env.NODE_TEST_CONTEXT;
-  const result = spawnSync(process.execPath, ['--test', path.join(root, 'scripts/tooling-input-boundary.test.cjs')], { cwd: root, encoding: 'utf8', env });
+  const result = spawnSync(process.execPath, ['--test', path.join(root, 'scripts/tooling-input-boundary.test.cjs')], { cwd: root, encoding: 'utf8' });
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
   process.exitCode = result.status;

@@ -1,6 +1,6 @@
 'use strict';
 
-// Independent review controls. Only writes owned temporary fixtures and evidence.
+// Independent accepted-source recheck. Await async guard; preserve both prior review rounds.
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -8,17 +8,24 @@ const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const repo = path.resolve(__dirname, '../../../..');
 const frontend = path.join(repo, 'frontend');
-const npmCli = require('./control_contract.cjs').npmCli();
+const npmCli = '/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js';
 const guard = path.join(frontend, 'scripts/verify-tooling-inputs.cjs');
 const graph = path.join(frontend, 'scripts/jest-dependency-boundary.test.cjs');
 const patterns = ['pages', 'components', 'app', 'src'].map(dir => `./${dir}/**/*.{js,ts,jsx,tsx,mdx}`);
 const deepPattern = '{'.repeat(4000) + 'a,b' + '}'.repeat(4000);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const results = [];
+const failures = [];
+const positiveLabels = new Set(['guard-valid-default', 'standard-lint-valid-default', 'graph-valid-control', 'graph-version-13', 'graph-version-14', 'graph-valid-builtin-name']);
 function run(label, command, args, options = {}) {
   const output = spawnSync(command, args, { encoding: 'utf8', timeout: 20000, maxBuffer: 16 * 1024 * 1024, ...options });
   const result = { label, command: [command, ...args], cwd: options.cwd || process.cwd(), status: output.status,
     signal: output.signal, error: output.error?.message || null, stdout: output.stdout || '', stderr: output.stderr || '' };
+  const expected = positiveLabels.has(label) ? 0 : 1;
+  result.expected = expected;
+  result.matchesExpectation = result.status === expected && !result.error && result.signal === null;
+  if (!result.matchesExpectation) failures.push(label);
+  if (label.startsWith('standard-lint') && expected === 1 && /bounded-tooling-inputs|> next lint|Maximum call stack size exceeded/.test(result.stdout + result.stderr)) failures.push(label + '-not-blocked-before-next');
   results.push(result);
   console.log(JSON.stringify({ label, status: result.status, signal: result.signal, error: result.error,
     successVerdict: /bounded-tooling-inputs/.test(result.stdout), braceCrash: /Maximum call stack size exceeded/.test(result.stderr),
@@ -80,7 +87,10 @@ try {
     ...[null, true, 0, {}, [], { name: 'dependency' }, { name: 1, version: '1.2.3' }, { name: '   ', version: '1.2.3' }].map((row, index) => [`invalid-row-${index}`, JSON.stringify([...callers, row])]),
     ...['01.2.3', '1.2.03', 'v1.2.3', '=1.2.3', ' 1.2.3', '1.2.3 ', '1.2.3-01', '1.2.3-9007199254740992', '1.2.3-9007199254740993', '9007199254740992.1.1', '1.2.9007199254740992', '1.2.3\u0000', '1.2.3\n', '1.2.3+build.001', '1.2.3-rc.1+build.001'].map((version,index) => [`version-${index}`, JSON.stringify([...callers, { name: 'dependency', version }])]),
     ...['braces', 'micromatch'].map(name => [`excluded-${name}`, JSON.stringify([...callers, { name, version: '3.0.3' }])]),
+    ['valid-builtin-name', JSON.stringify([...callers, {name:'fs',version:'3.0.3'}])],
+    ...['.invalid','@scope/.invalid','@scope/bad%20name','@scope/node_modules/invalid','braces\t'].map((name,index) => [`additional-hostile-name-${index}`, JSON.stringify([...callers,{name,version:'3.0.3'}])]),
     ['whitespace-excluded-braces', JSON.stringify([...callers, { name: 'braces ', version: '3.0.3' }])],
+    ...['braces\n', 'braces\r', 'braces\u2028', 'braces\u2029', 'braces\r\n', '@scope/bad name', 'bra ces', '', '@scope/', '.braces', '_braces', 'node_modules', 'favicon.ico'].map((name,index) => [`hostile-name-${index}`, JSON.stringify([...callers, {name,version:'3.0.3'}])]),
   ];
   for (const [label, report] of reports) {
     const npmReport = path.join(root, 'report.cjs');
@@ -93,7 +103,10 @@ try {
     source: { head: spawnSync('git', ['rev-parse', 'HEAD'], {cwd: repo, encoding: 'utf8'}).stdout.trim(),
       guard_sha256: hash(fs.readFileSync(guard)), graph_sha256: hash(fs.readFileSync(graph)),
       package_sha256: hash(fs.readFileSync(path.join(frontend, 'package.json'))), lock_sha256: hash(fs.readFileSync(path.join(frontend, 'package-lock.json'))) },
-    runtime: {node: process.version, platform: process.platform, arch: process.arch}, fixture_roots: roots, results };
-  fs.writeFileSync(path.join(__dirname, 'behavior-control-results-review-'+Date.now()+'.json'), JSON.stringify(record, null, 2) + '\n');
+    runtime: {node: process.version, platform: process.platform, arch: process.arch}, fixture_roots: roots, results, expectationFailures:failures };
+  fs.writeFileSync(path.join(__dirname, 'behavior-accepted-control-results.json'), JSON.stringify(record, null, 2) + '\n');
   for (const root of roots) fs.rmSync(root, { recursive: true, force: true });
 }
+
+console.log(JSON.stringify({controlRunnerCompleted:true, expectationFailures:failures}));
+if (failures.length) process.exitCode = 1;
