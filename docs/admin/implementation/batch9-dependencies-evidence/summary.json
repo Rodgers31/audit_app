@@ -1,0 +1,1862 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-dependencies-evidence/build-evidence.cjs",
+  "generator_sha256": "1d0eb957196a296489eaf5f5725bc78b63a51799c77a686dbf4abb99a6439ca1",
+  "generated_at": "2026-10-09T19:30:35.200Z",
+  "baseline_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43",
+  "product_commit": "94f350ffc93bec4433617b04bf7c94bad4828345",
+  "source_sha256": {
+    "frontend/README.md": "b86dfe1fd8d6d0d732fc977771680a11c6b30a26185fd0b422021c62c95fbdea",
+    "frontend/package-lock.json": "ec81954d2635fbceb9af001723a2c3b3948078cfda4567d7b3310729c09a8e40",
+    "frontend/package.json": "79d4242df7a848ea95b237da735869b4bb6dd1c895c70c8ff02990bf483e288a",
+    "frontend/scripts/jest-dependency-boundary.test.cjs": "386395033c74b8518451f22e56628e9222fa4e3fa90a8db76f5f2dbe4f877450",
+    "frontend/scripts/tooling-input-boundary.test.cjs": "834888b881c9eb922401eae6f58aa1ecde15214e1fba1fa5bfd577bb6490259c",
+    "frontend/scripts/verify-dependency-tooling.cjs": "1cbb127039adfd1022732cf20eb3beffc6aba40c59c04e577c3d9e5ac0a30f17",
+    "frontend/scripts/verify-tooling-inputs.cjs": "93e5509d7b3701f2ca1babda14ac2eb10a479e2fc5e6da6642e5e257abdc8f8c"
+  },
+  "lockDelta": {
+    "unchangedExistingPackageRecords": 901,
+    "unchangedProductionRecords": 173,
+    "added": [
+      "node_modules/validate-npm-package-name"
+    ],
+    "modified": [
+      "root devDependency declaration"
+    ]
+  },
+  "discovery": {
+    "identicalSuitePaths": 147
+  },
+  "audits": {
+    "baseline-full-audit": {
+      "receipt": "baseline-full-audit.json",
+      "verdict": "ADVISORIES_PRESENT",
+      "affectedPackageEntries": 26,
+      "affectedInstalledNodes": 28,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 19,
+        "high": 7,
+        "critical": 0,
+        "total": 26
+      },
+      "advisoryRoots": {
+        "https://github.com/advisories/GHSA-hp3w-g68c-fv3c": [
+          "@istanbuljs/load-nyc-config",
+          "@jest/core",
+          "@jest/expect",
+          "@jest/globals",
+          "@jest/reporters",
+          "@jest/transform",
+          "argparse",
+          "babel-jest",
+          "babel-plugin-istanbul",
+          "jest",
+          "jest-circus",
+          "jest-cli",
+          "jest-config",
+          "jest-resolve-dependencies",
+          "jest-runner",
+          "jest-runtime",
+          "jest-snapshot",
+          "js-yaml",
+          "sprintf-js"
+        ],
+        "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm": [
+          "@next/eslint-plugin-next",
+          "braces",
+          "chokidar",
+          "eslint-config-next",
+          "fast-glob",
+          "micromatch",
+          "tailwindcss"
+        ]
+      }
+    },
+    "baseline-production-audit": {
+      "receipt": "baseline-production-audit.json",
+      "verdict": "NO_ADVISORIES_REPORTED",
+      "affectedPackageEntries": 0,
+      "affectedInstalledNodes": 0,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "advisoryRoots": {}
+    },
+    "final-mac-audit": {
+      "receipt": "final-mac-audit.json",
+      "verdict": "ADVISORIES_PRESENT",
+      "affectedPackageEntries": 26,
+      "affectedInstalledNodes": 28,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 19,
+        "high": 7,
+        "critical": 0,
+        "total": 26
+      },
+      "advisoryRoots": {
+        "https://github.com/advisories/GHSA-hp3w-g68c-fv3c": [
+          "@istanbuljs/load-nyc-config",
+          "@jest/core",
+          "@jest/expect",
+          "@jest/globals",
+          "@jest/reporters",
+          "@jest/transform",
+          "argparse",
+          "babel-jest",
+          "babel-plugin-istanbul",
+          "jest",
+          "jest-circus",
+          "jest-cli",
+          "jest-config",
+          "jest-resolve-dependencies",
+          "jest-runner",
+          "jest-runtime",
+          "jest-snapshot",
+          "js-yaml",
+          "sprintf-js"
+        ],
+        "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm": [
+          "@next/eslint-plugin-next",
+          "braces",
+          "chokidar",
+          "eslint-config-next",
+          "fast-glob",
+          "micromatch",
+          "tailwindcss"
+        ]
+      }
+    },
+    "final-mac-prod-audit": {
+      "receipt": "final-mac-prod-audit.json",
+      "verdict": "NO_ADVISORIES_REPORTED",
+      "affectedPackageEntries": 0,
+      "affectedInstalledNodes": 0,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "advisoryRoots": {}
+    },
+    "final-linux-audit": {
+      "receipt": "final-linux-audit.json",
+      "verdict": "ADVISORIES_PRESENT",
+      "affectedPackageEntries": 27,
+      "affectedInstalledNodes": 29,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 19,
+        "high": 8,
+        "critical": 0,
+        "total": 27
+      },
+      "advisoryRoots": {
+        "https://github.com/advisories/GHSA-hp3w-g68c-fv3c": [
+          "@istanbuljs/load-nyc-config",
+          "@jest/core",
+          "@jest/expect",
+          "@jest/globals",
+          "@jest/reporters",
+          "@jest/transform",
+          "argparse",
+          "babel-jest",
+          "babel-plugin-istanbul",
+          "jest",
+          "jest-circus",
+          "jest-cli",
+          "jest-config",
+          "jest-resolve-dependencies",
+          "jest-runner",
+          "jest-runtime",
+          "jest-snapshot",
+          "js-yaml",
+          "sprintf-js"
+        ],
+        "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm": [
+          "@next/eslint-plugin-next",
+          "@tailwindcss/typography",
+          "braces",
+          "chokidar",
+          "eslint-config-next",
+          "fast-glob",
+          "micromatch",
+          "tailwindcss"
+        ]
+      }
+    },
+    "final-linux-prod-audit": {
+      "receipt": "final-linux-prod-audit.json",
+      "verdict": "NO_ADVISORIES_REPORTED",
+      "affectedPackageEntries": 0,
+      "affectedInstalledNodes": 0,
+      "severities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "advisoryRoots": {}
+    }
+  },
+  "commands": [
+    {
+      "receipt": "actual-caller-controls.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/probe-callers.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "add-name-validator.json",
+      "command": [
+        "npm",
+        "install",
+        "--save-dev",
+        "--save-exact",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--engine-strict",
+        "--cache",
+        "/Users/roger/.codex/visualizations/2026/10/09/01a1220d-747e-7c50-bf38-369c8db7b3a7/batch9-dependencies-npm-cache",
+        "validate-npm-package-name@6.0.2"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "advisory-braces.json",
+      "command": [
+        "gh",
+        "api",
+        "/advisories/GHSA-vfj7-8cjw-p6xm"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "advisory-sprintf.json",
+      "command": [
+        "gh",
+        "api",
+        "/advisories/GHSA-hp3w-g68c-fv3c"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "baseline-boundaries.json",
+      "command": [
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "baseline-callers.json",
+      "command": [
+        "npm",
+        "why",
+        "braces",
+        "sprintf-js",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "baseline-discovery.json",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--listTests",
+        "--json",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "baseline-full-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "baseline-install.json",
+      "command": [
+        "npm",
+        "ci",
+        "--engine-strict",
+        "--cache",
+        "/Users/roger/.codex/visualizations/2026/10/09/01a1220d-747e-7c50-bf38-369c8db7b3a7/batch9-dependencies-npm-cache"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "baseline-production-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "behavior-accepted-actual-graph.json",
+      "command": [
+        "env",
+        "npm_execpath=/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js",
+        "node",
+        "--test",
+        "frontend/scripts/jest-dependency-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "behavior-accepted-controls.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-accepted-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "behavior-accepted-lifecycle.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-accepted-lifecycle-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "behavior-accepted-provenance.json",
+      "command": [
+        "node",
+        "-e",
+        "const fs=require(\"fs\"),crypto=require(\"crypto\"),path=require(\"path\");const d=\"docs/admin/implementation/batch9-dependencies-evidence/\";const hash=p=>crypto.createHash(\"sha256\").update(fs.readFileSync(p)).digest(\"hex\");let valid=true;for(const [receipt,script]of [[\"behavior-accepted-control-results.json\",\"behavior-accepted-controls.cjs\"],[\"behavior-accepted-lifecycle-results.json\",\"behavior-accepted-lifecycle-controls.cjs\"]]){const x=JSON.parse(fs.readFileSync(d+receipt));const roots=x.fixture_roots||[...new Set(x.results.map(r=>r.cwd))];const result={receipt,generatorSha256:x.generator_sha256,generatorHashMatches:x.generator_sha256===hash(d+script),head:x.source?.head||x.head,controls:x.results.length,expectationFailures:x.expectationFailures,allOwnedRootsRemoved:roots.every(p=>!fs.existsSync(p))};valid=valid&&result.generatorHashMatches&&result.allOwnedRootsRemoved&&result.expectationFailures.length===0;console.log(JSON.stringify(result));}for(const name of [\"behavior-accepted-controls\",\"behavior-accepted-lifecycle\",\"behavior-accepted-actual-graph\"]){const x=JSON.parse(fs.readFileSync(d+name+\".json\"));const result={receipt:name,head:x.target_commit,outerGeneratorHashMatches:x.generator_sha256===hash(d+\"run.cjs\"),stdoutHashMatches:x.stdout_sha256===hash(d+name+\".stdout\"),stderrHashMatches:x.stderr_sha256===hash(d+name+\".stderr\"),exit:x.exit};valid=valid&&result.outerGeneratorHashMatches&&result.stdoutHashMatches&&result.stderrHashMatches&&result.exit===0;console.log(JSON.stringify(result));}if(!valid)process.exitCode=1;"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "behavior-controls.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "behavior-final-controls.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-final-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "behavior-final-lifecycle.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-final-lifecycle-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "behavior-final-name-validator.json",
+      "command": [
+        "node",
+        "-e",
+        "const {createRequire}=require(\"node:module\");const r=createRequire(\"/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js\");const validate=r(\"validate-npm-package-name\");for(const name of [\"braces\",\".braces\",\"_braces\",\"node_modules\",\"favicon.ico\",\"@scope/dependency\"])console.log(JSON.stringify({name,validation:validate(name)}));"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "behavior-lifecycle.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/behavior-lifecycle-controls.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "current-issue.json",
+      "command": [
+        "gh",
+        "issue",
+        "view",
+        "494",
+        "--repo",
+        "Rodgers31/audit_app",
+        "--json",
+        "number,title,state,body,comments,url"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-fresh-install.json",
+      "command": [
+        "npm",
+        "ci",
+        "--engine-strict",
+        "--cache",
+        "/Users/roger/.codex/visualizations/2026/10/09/01a1220d-747e-7c50-bf38-369c8db7b3a7/batch9-dependencies-npm-cache"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "final-linux-audit.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-linux-boundaries.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-linux-build.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "-e",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "-e",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "-e",
+        "NEXT_PUBLIC_SUPABASE_URL=https://batch9-dependencies.invalid",
+        "-e",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=batch9-dependencies-inert",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-linux-prod-audit.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-linux-tests.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "test",
+        "--",
+        "--ci",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-linux-tree.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-boundaries.json",
+      "command": [
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-build.json",
+      "command": [
+        "env",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "NEXT_PUBLIC_SUPABASE_URL=https://batch9-dependencies.invalid",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=batch9-dependencies-inert",
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-lint.json",
+      "command": [
+        "env",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-prod-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-tests.json",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--ci",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-tree.json",
+      "command": [
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-mac-types.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "tsc",
+        "--noEmit"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-name-boundary.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/tooling-input-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "final-preview.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/preview-smoke.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "final-script-lint.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "eslint",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/verify-tooling-inputs.cjs",
+        "scripts/tooling-input-boundary.test.cjs",
+        "scripts/verify-dependency-tooling.cjs",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "green-effective-config.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "scripts/tooling-input-boundary.test.cjs",
+        "scripts/jest-dependency-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "green-report-input.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/tooling-input-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "green-unsafe-prerelease.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/replay-unsafe-version.cjs",
+        "candidate"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "issue-dedup.json",
+      "command": [
+        "gh",
+        "api",
+        "--paginate",
+        "--slurp",
+        "repos/Rodgers31/audit_app/issues?state=all&per_page=100"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "linux-boundaries.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-build.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "-e",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "-e",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "-e",
+        "NEXT_PUBLIC_SUPABASE_URL=https://batch9-dependencies.invalid",
+        "-e",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=batch9-dependencies-inert",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-cleanup-readback.json",
+      "command": [
+        "docker",
+        "ps",
+        "-a",
+        "--filter",
+        "name=^/batch9-dependencies-linux$",
+        "--format",
+        "{{.Names}}"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "linux-cleanup.json",
+      "command": [
+        "docker",
+        "rm",
+        "-f",
+        "batch9-dependencies-linux"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "linux-container-identity.json",
+      "command": [
+        "docker",
+        "inspect",
+        "batch9-dependencies-linux",
+        "--format",
+        "{{.Config.Image}} {{.Image}} {{.Platform}}"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "linux-final-environment.json",
+      "command": [
+        "docker",
+        "exec",
+        "batch9-dependencies-linux",
+        "sh",
+        "-c",
+        "node --version && npm --version && uname -a"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "linux-final-install.json",
+      "command": [
+        "docker",
+        "exec",
+        "batch9-dependencies-linux",
+        "sh",
+        "-c",
+        "cp /source/frontend/package.json /source/frontend/package-lock.json /batch9-dependencies-app/frontend/ && cp /source/frontend/scripts/jest-dependency-boundary.test.cjs /source/frontend/scripts/tooling-input-boundary.test.cjs /source/frontend/scripts/verify-tooling-inputs.cjs /source/frontend/scripts/verify-dependency-tooling.cjs /batch9-dependencies-app/frontend/scripts/ && cd /batch9-dependencies-app/frontend && npm ci --engine-strict --cache /batch9-dependencies-npm-cache && sha256sum package-lock.json package.json scripts/jest-dependency-boundary.test.cjs scripts/verify-tooling-inputs.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "linux-final-lint.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "-e",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "-e",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "linux-final-tooling.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "verify:dependency-tooling"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "linux-full-audit.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-full-tests.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "test",
+        "--",
+        "--ci",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-image.json",
+      "command": [
+        "docker",
+        "run",
+        "--name",
+        "batch9-dependencies-linux",
+        "--platform",
+        "linux/amd64",
+        "-d",
+        "-v",
+        "/Users/roger/.codex/worktrees/a486/audit_app:/source:ro",
+        "node@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392",
+        "sleep",
+        "infinity"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "linux-install.json",
+      "command": [
+        "docker",
+        "exec",
+        "batch9-dependencies-linux",
+        "sh",
+        "-c",
+        "mkdir /batch9-dependencies-app && cp -R /source/. /batch9-dependencies-app/ && rm -rf /batch9-dependencies-app/frontend/node_modules /batch9-dependencies-app/frontend/.next && cd /batch9-dependencies-app/frontend && node --version && npm --version && uname -m && npm ci --engine-strict --cache /batch9-dependencies-npm-cache"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "linux-production-audit.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-refresh.json",
+      "command": [
+        "docker",
+        "exec",
+        "batch9-dependencies-linux",
+        "sh",
+        "-c",
+        "cp /source/frontend/scripts/verify-tooling-inputs.cjs /source/frontend/scripts/tooling-input-boundary.test.cjs /source/frontend/scripts/verify-dependency-tooling.cjs /source/frontend/scripts/jest-dependency-boundary.test.cjs /batch9-dependencies-app/frontend/scripts/ && cd /batch9-dependencies-app/frontend && sha256sum scripts/verify-tooling-inputs.cjs scripts/tooling-input-boundary.test.cjs scripts/verify-dependency-tooling.cjs scripts/jest-dependency-boundary.test.cjs package-lock.json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "linux-repaired-boundaries.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "linux-tooling.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "run",
+        "verify:dependency-tooling"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "linux-tree.json",
+      "command": [
+        "docker",
+        "exec",
+        "-w",
+        "/batch9-dependencies-app/frontend",
+        "batch9-dependencies-linux",
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-build.json",
+      "command": [
+        "env",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "NEXT_PUBLIC_SUPABASE_URL=https://batch9-dependencies.invalid",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY=batch9-dependencies-inert",
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-environment.json",
+      "command": [
+        "npm",
+        "--version"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "mac-final-discovery.json",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--listTests",
+        "--json",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-final-full-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-final-prebuild.json",
+      "command": [
+        "npm",
+        "run",
+        "prebuild"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "mac-final-production-audit.json",
+      "command": [
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-full-tests.json",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--ci",
+        "--runInBand"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-lint-inert.json",
+      "command": [
+        "env",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-lint.json",
+      "command": [
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-tooling.json",
+      "command": [
+        "npm",
+        "run",
+        "verify:dependency-tooling"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "mac-tree.json",
+      "command": [
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "mac-types.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "tsc",
+        "--noEmit"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "native-inventory-complete.json",
+      "command": [
+        "npm",
+        "ls",
+        "@huggingface/transformers",
+        "onnxruntime-node",
+        "onnxruntime-web",
+        "adm-zip",
+        "sharp",
+        "--all",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "native-inventory.json",
+      "command": [
+        "node",
+        "-e",
+        "const {createRequire}=require(\"node:module\"); const t=createRequire(require.resolve(\"@huggingface/transformers\"));const n=createRequire(require.resolve(\"next/package.json\"));const o=createRequire(t.resolve(\"onnxruntime-node\")); for(const [caller,r,names] of [[\"app\",require,[\"next\",\"sharp\"]],[\"transformers\",t,[\"sharp\",\"onnxruntime-node\",\"onnxruntime-web\"]],[\"onnx installer\",o,[\"adm-zip\"]]]) for(const name of names) {const p=r.resolve(name+\"/package.json\");console.log(JSON.stringify({caller,name,version:r(name+\"/package.json\").version,path:p}));}"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "red-effective-config.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=^standard lint",
+        "scripts/tooling-input-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "red-registry-name.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=^graph gate rejects",
+        "scripts/jest-dependency-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "red-report-name.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=^graph gate rejects",
+        "scripts/jest-dependency-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "red-tooling-complete.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/replay-baseline-complete.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "red-tooling-input.json",
+      "command": [
+        "node",
+        "--test",
+        "scripts/tooling-input-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "red-tooling-replay.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/replay-baseline.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "red-unsafe-prerelease.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/replay-unsafe-version.cjs",
+        "baseline"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "red-version-boundary.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "--test-name-pattern=^graph gate",
+        "scripts/jest-dependency-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 1,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "registry-braces.json",
+      "command": [
+        "npm",
+        "view",
+        "braces",
+        "version",
+        "versions",
+        "dependencies",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "registry-name-validator.json",
+      "command": [
+        "npm",
+        "view",
+        "validate-npm-package-name@6.0.2",
+        "version",
+        "engines",
+        "dependencies",
+        "peerDependencies",
+        "repository",
+        "dist.integrity",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "registry-next-lint.json",
+      "command": [
+        "npm",
+        "view",
+        "@next/eslint-plugin-next@latest",
+        "version",
+        "dependencies",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "registry-nyc.json",
+      "command": [
+        "npm",
+        "view",
+        "@istanbuljs/load-nyc-config@latest",
+        "version",
+        "dependencies",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "registry-sprintf.json",
+      "command": [
+        "npm",
+        "view",
+        "sprintf-js",
+        "version",
+        "versions",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "registry-tailwind.json",
+      "command": [
+        "npm",
+        "view",
+        "tailwindcss@3.4.19",
+        "version",
+        "dependencies",
+        "engines",
+        "--json"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "repaired-lint.json",
+      "command": [
+        "env",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:43994",
+        "NEXT_TELEMETRY_DISABLED=1",
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "repaired-scoped-lint.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "eslint",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/verify-dependency-tooling.cjs",
+        "scripts/tooling-input-boundary.test.cjs",
+        "scripts/verify-tooling-inputs.cjs",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "repaired-tooling.json",
+      "command": [
+        "npm",
+        "run",
+        "verify:dependency-tooling"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "baad3586cea2945242ea957aff9d141e83f5b348"
+    },
+    {
+      "receipt": "scoped-lint.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "eslint",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/verify-dependency-tooling.cjs",
+        "scripts/tooling-input-boundary.test.cjs",
+        "scripts/verify-tooling-inputs.cjs",
+        "--max-warnings=0"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43"
+    },
+    {
+      "receipt": "spec-accepted-boundaries.json",
+      "command": [
+        "npm",
+        "exec",
+        "--",
+        "node",
+        "--test",
+        "scripts/jest-dependency-boundary.test.cjs",
+        "scripts/tooling-input-boundary.test.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app/frontend",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "spec-report-name-green.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/spec-report-name-control.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    },
+    {
+      "receipt": "spec-report-name-red.json",
+      "command": [
+        "node",
+        "docs/admin/implementation/batch9-dependencies-evidence/spec-report-name-control.cjs"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 1,
+      "source_commit": "d16c5a43d7e94fde2799afe9ecaf93ac2400ebd7"
+    },
+    {
+      "receipt": "workflow-state.json",
+      "command": [
+        "gh",
+        "api",
+        "repos/Rodgers31/audit_app/actions/workflows",
+        "--jq",
+        ".workflows[] | {name,state,path}"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/a486/audit_app",
+      "exit": 0,
+      "source_commit": "94f350ffc93bec4433617b04bf7c94bad4828345"
+    }
+  ],
+  "rawArchive": {
+    "path": "raw-receipts.tar.gz",
+    "sha256": "30a67f5528bf7b224386a8082800a91cd36025c671782c44d428988ddc3f18aa",
+    "entries": {
+      "actual-caller-controls.json": "01f076919576f6c7fde2e898ba0266710530e2184660a13c417c791b7480b6f3",
+      "actual-caller-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "actual-caller-controls.stdout": "88790070fa69226e105c8bfc14879185ea04c86e6eb110f128457ae5cc51e884",
+      "add-name-validator.json": "f6da15d1400e31159d596143e24bcbafe8eb3fcf90aa628ca17b482065614214",
+      "add-name-validator.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "add-name-validator.stdout": "15a5872745a05f191d9ee3399d426bbd56535c6b85770c6c12f48963d32d820a",
+      "advisory-braces.json": "8244bc7686198ebbeecf84d810e50adc736161ef35167704df6d5142795170cf",
+      "advisory-braces.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "advisory-braces.stdout": "b3961db9d1e95c8d03b9266e0cc6420efa3789f9361ef02d65f8f5997d9fc6b8",
+      "advisory-sprintf.json": "8c1d7092cd5312f06acc0d2928dcaf5086c5dfdcab228d58027e55c49017fbea",
+      "advisory-sprintf.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "advisory-sprintf.stdout": "1615cfd3d7382bbefb81df03f3fedb173925b69b57d8558f06d4f1a653f918f0",
+      "baseline-boundaries.json": "5a32dae77d3c5178d9002fedc082c60ef4e5af279ef2d6ff89b02698164bdf70",
+      "baseline-boundaries.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline-boundaries.stdout": "067d1a87dd8461eb8b6373a39d7de327be1bb4dc607d74356c1b607ad68693ba",
+      "baseline-callers.json": "8f4bec8c5019b46b20326cdc6492382142860f5f445a1850d1bea08c243e1972",
+      "baseline-callers.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline-callers.stdout": "876aa5aeb83839df86588475ee62cfec6a0b617b6aaa3d7b1fbd8511471534f5",
+      "baseline-discovery.json": "7b9eb350b7940dfb7554fb06b34435c49580da83c7abb9e5f6b18d2bbd0362de",
+      "baseline-discovery.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline-discovery.stdout": "5bd4234a6db36a0dfaaa48d7a7ce82388d7a6001053b76c4b566929b7f76de4d",
+      "baseline-full-audit.json": "ee4638be050d90989305f1e7c20826fc84cac7fc95cdedf1904f9eee7c6c6a7f",
+      "baseline-full-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline-full-audit.stdout": "5db68c2a5db4e1a3992058dc57c68f5bdb38582cce2451797ac05e01b65ba00c",
+      "baseline-install.json": "1d162a4c3e776297cb1ff21212a404e6b913b588b726fdd03b24b8a90270ab27",
+      "baseline-install.stderr": "a53d3bd5983ad5cd50b3f67708c0adb1740d662919cfff24a2756dbba7f15c1b",
+      "baseline-install.stdout": "4e69af1af2da2bbfacb86e8c6e5191023f78339abdb89cf18163d9b589665740",
+      "baseline-production-audit.json": "cea935053513aa84aa2ec5199dfc2b7c2fddccfd617f89def652a4744ec26a81",
+      "baseline-production-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "baseline-production-audit.stdout": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+      "behavior-accepted-actual-graph.json": "3b9c29f1846656c3d1e373a6a513ebbb108b0dc551df27f26dc06a94de44c0ad",
+      "behavior-accepted-actual-graph.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-accepted-actual-graph.stdout": "c64d7e3aad0fb9583f94b4207a297432383ded02079472885f09478bc5a6103b",
+      "behavior-accepted-control-results.json": "036dd7a96f8207bd9afaf5f391d50dcf6718c69cc972ab0dab8ef6d7112ba96e",
+      "behavior-accepted-controls.cjs": "a35e96da814d8683d82d40a604872291f88f8154ff1b745b19b6ca0599c7a044",
+      "behavior-accepted-controls.json": "d4337462b2707d8285f39789b8fcc4108b520e11247f63ed0b4aedfa401f6af4",
+      "behavior-accepted-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-accepted-controls.stdout": "f63b0696a57173a679ea08cf0cb930a57313a2efddf49da92ee7a651bdd88828",
+      "behavior-accepted-lifecycle-controls.cjs": "40278a4fe7c175b1ec1c5901a165bc09a03eac7785234e057de4bc247aadaaf1",
+      "behavior-accepted-lifecycle-results.json": "86d58eb7e5996314fba18dd41e644c8265cb8dd918f4af23422ec30bf912fdac",
+      "behavior-accepted-lifecycle.json": "799a0b965d5ab037d3bdfedd900ed11db6998410cb6e96a23c97e248e314cd2a",
+      "behavior-accepted-lifecycle.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-accepted-lifecycle.stdout": "6479961772ccfc26b639e123e4e2627aef4a79759c719eec3f2f0dca94e428da",
+      "behavior-accepted-provenance.json": "a5aab636cbed763c45a17bd585be416e682d2ef323a519602d57339fe757a061",
+      "behavior-accepted-provenance.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-accepted-provenance.stdout": "8cc89fbbbdd09f09e1d228fc13bb5b12e6ee62cd8a75f396b9e5acf383c9cf36",
+      "behavior-control-results.json": "ed1675c87c2465dda4080852ee6a40901487c7c67b9b5b6817ffe4d3aff46ad2",
+      "behavior-controls.cjs": "46dc3719c37bfa47ee61fed60e68aa50e78a0fd402fdf8a3c7b76efda72cb74f",
+      "behavior-controls.json": "0d389b4cb10623ba1a2362d556b81e9d71d45e592acacee42f7ab5dfaf1d5df9",
+      "behavior-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-controls.stdout": "a7fa9c86fc65616530d22eedb966163e81c5a1aa0b348cc81f4c6ce06e4667bd",
+      "behavior-final-control-results.json": "f0a9ab98ddf8155c3a94983b724046d587a7346bdf1cef362aac6f9a752aff36",
+      "behavior-final-controls.cjs": "f74a68da292838c50c2510b212656556692a971fe11fb97c4428a3161b3e2ece",
+      "behavior-final-controls.json": "738480ebac818b6120daae7dc0495a583467a9c2bf2d2301930fc2eaf9638c54",
+      "behavior-final-controls.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-final-controls.stdout": "de08a41680fa7b01dbb9c9fda7ca5973ed8e664b7bc8bd0b163dd1ec482ab896",
+      "behavior-final-lifecycle-controls.cjs": "01629123811a6c1a1fba10650d7a0750f08e2ec3002f728c7adfb0fe16723406",
+      "behavior-final-lifecycle-results.json": "2f1364acce549ab86775e22fabe82009b0728839ef7152f882ecc10eeb87172a",
+      "behavior-final-lifecycle.json": "802a2a96ce3de76809db739bd9473d1fdfc586aed7f01273208c7e4862f1672f",
+      "behavior-final-lifecycle.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-final-lifecycle.stdout": "6479961772ccfc26b639e123e4e2627aef4a79759c719eec3f2f0dca94e428da",
+      "behavior-final-name-validator.json": "abe0c6fa4132e00645a668aa01558ccd1afe90adb6fd4a6c444bdf75c1b425ed",
+      "behavior-final-name-validator.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-final-name-validator.stdout": "30c188eccc0ce9a622cd4525d53a3189e4c4514cae7dfe416d6fc00363e8176c",
+      "behavior-lifecycle-controls.cjs": "707ca0cf424f2ac83c3357d4cc89e46963890417584061317f626e31b1926665",
+      "behavior-lifecycle-results.json": "bfbc50a683148290d2f22c8f17ab37edef8c41508d6140f19a96a730364ad9b9",
+      "behavior-lifecycle.json": "f1a91416d17d0e1275031758bfa78126d40080422a998c8d048f16fb63a55d34",
+      "behavior-lifecycle.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "behavior-lifecycle.stdout": "1ff6831fbb663f5c6c3625d99d89eae5e6b5c14fb7cfabce7a7aeaed417853b2",
+      "build-evidence.cjs": "1d0eb957196a296489eaf5f5725bc78b63a51799c77a686dbf4abb99a6439ca1",
+      "current-issue.json": "3caa02a85466d39c81bc2dd0a90d170e1cf04c7cf927227d5c3e22ef4a3fb0a1",
+      "current-issue.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "current-issue.stdout": "f55dfdce80f90b23941d5c65e3a19d3d699e7fa49584ca522f6317a9b62958e4",
+      "final-fresh-install.json": "77f9722bccf824ee1774272753502b4b02c6ca5cc4aad5395ab5f1c3001a438b",
+      "final-fresh-install.stderr": "6d71d8480bc0b3c31617abce75c9dcaaa2d112f76b2951c3807861bbb1f320e4",
+      "final-fresh-install.stdout": "a374c9f71251a9adfda20b4b6dfb5dd22679fc81f11c7cf39aa467755a991dcd",
+      "final-linux-audit.json": "feb720365ea955f783fd6135df9c3007b3ab3bfeb032dcee050b671c031557dd",
+      "final-linux-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-linux-audit.stdout": "90c0956d1d5bba19207e4b5273fca1cb08c4b449065ded82973c481e8a958393",
+      "final-linux-boundaries.json": "a1f937b9b0468afaeb42f75a78c8e22c5ce4c68e62b26b10d786a0cd3b4cdbe2",
+      "final-linux-boundaries.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-linux-boundaries.stdout": "853fcff2c6d0d3ff7064267afd50768f587646012b767e72c2b8a858ed3e9b80",
+      "final-linux-build.json": "f335118866e377e9e812e8647bc4a11c10fcc0a1f3cb36e6af72befeef2b641e",
+      "final-linux-build.stderr": "2d0814956a54d103b93869f7f6c4bd2fe73de63bd1d0c4be2b616e999a62d708",
+      "final-linux-build.stdout": "c48c560eed3beedf60014f339e8a16c931d0ab3183de601702f539b058c47377",
+      "final-linux-prod-audit.json": "9409b4a445079fcb783abd93a9681d2691154b7ec73b42877020ee11664e2d8f",
+      "final-linux-prod-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-linux-prod-audit.stdout": "69829d83db409aa48d4b8384fa3ca3ae7e2899aba30254e99c09a9ba5fc1604e",
+      "final-linux-tests.json": "a1c481a742c59b162ed8ab9b97c1408d386fc69fc3c68d43966b9a57ec23055f",
+      "final-linux-tests.stderr": "1b61968d0a46b9389301dae63c33abc3814e13177c351b20c2a79869150ce61c",
+      "final-linux-tests.stdout": "38ed9e7fca043bde064d19ec08218572f80c22f843931ae49abb2c5f38c05656",
+      "final-linux-tree.json": "00434f1542f1eb61f1f5c197bfe31b623f62f2ed6cbe327cac2898ff34439d2c",
+      "final-linux-tree.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-linux-tree.stdout": "dbc5428b02ed2dc5551ca8931dbd68dc3a0c28315797e1bf238c32c95228433a",
+      "final-mac-audit.json": "f13e023859c97956906e447ba5b60d890608b2c3de186157d839ab1cc2608927",
+      "final-mac-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-mac-audit.stdout": "4d74da210e47e9f32e4ec1d886417b5dc557c97ca251f96686405d551c60a291",
+      "final-mac-boundaries.json": "2999696b323b74923dc5bb465bfdf07cc78250c6de8130ddf1e8c162cd60f255",
+      "final-mac-boundaries.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-mac-boundaries.stdout": "1623b29601a507d9339d30f0d9fd1b3d6d18777b0f5e648c3c375393019cb0a7",
+      "final-mac-build.json": "702d9b591d4af2066d301023d61131aa000989efcb307cab0f3cdf7c06520d91",
+      "final-mac-build.stderr": "fdc79130a50c4b8d04d754222fe7528f2e525f8ec3bc1bea97b180e57139dbf1",
+      "final-mac-build.stdout": "e00ab3fceabb4d512c81295a86563dd9856df300fc98f00eb8238e1b1353b61e",
+      "final-mac-lint.json": "3797c572313dd61976b17dfe236b2c745eba93ce815f75c63d553de5df663802",
+      "final-mac-lint.stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2",
+      "final-mac-lint.stdout": "4d4a00e59c6d6d2ef165215aa747dc61e26211f41b88cee568de8e3d1e709ecb",
+      "final-mac-prod-audit.json": "fee4261a5221865ada30f770c4b2a763bb1e4b68088f22939d8b1241176a8821",
+      "final-mac-prod-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-mac-prod-audit.stdout": "69829d83db409aa48d4b8384fa3ca3ae7e2899aba30254e99c09a9ba5fc1604e",
+      "final-mac-tests.json": "d1b820dcfc7fc1cd986a02e2556e66550c957094b5596c2ef4db47ffd15b2042",
+      "final-mac-tests.stderr": "36d64eb883ac6b134456f6d9780afb3b067f716db41e9079633f3c93eb36a7af",
+      "final-mac-tests.stdout": "38ed9e7fca043bde064d19ec08218572f80c22f843931ae49abb2c5f38c05656",
+      "final-mac-tree.json": "f2fc4c5fd0b60ded4524cdcf5c96e111d52e266596e3302a8bdd4cc5cff450e7",
+      "final-mac-tree.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-mac-tree.stdout": "259cd2363be7b0e806c75cecb0291918995ddadd907e35170c58a5df53c8458f",
+      "final-mac-types.json": "aa57a4e5f0ede8bbd2470dcb1566b2c853de7600cb39c170e29c9c1a7f267818",
+      "final-mac-types.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-mac-types.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-name-boundary.json": "8563771e499dea800ba2471bf2d075450d6cfab490775506c9de78ce135bb415",
+      "final-name-boundary.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-name-boundary.stdout": "46135dfeb40684d57730ebbe35c404d4ece8987c35f92f66a1bb8d60507045cd",
+      "final-preview.json": "39fd7c32ff752fc20c6a51fc084c3003c5459d981a2b09b5de496d7a5d5fd789",
+      "final-preview.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-preview.stdout": "4cb01670e2bde6d6d86be76f6e626d5ebc07fcf0a82cb5d8989961df6312d318",
+      "final-script-lint.json": "d948a6d44522846293148e2fd8e8c4e4a1d982a00a5a127230c96f26af5a4e05",
+      "final-script-lint.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "final-script-lint.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "green-effective-config.json": "f11f589444abca876879bcabe430fe02a54ab928b797d1d65f6921f87a5f6c44",
+      "green-effective-config.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "green-effective-config.stdout": "bc13e679291ef910d712abd972b87047a82ab2113dbf79e08ec22ba4e9064721",
+      "green-report-input.json": "be0bb52b171c0863c27c6528d29398e79a15fe9e13e83eb79485f303dea81b11",
+      "green-report-input.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "green-report-input.stdout": "abe015619fe54bb19f63552a8f533d9b2b64003c6eaa5a0feb3dd2316b39c712",
+      "green-unsafe-prerelease.json": "11ad498a1fc2f6eb759f0af87efcd7339be82053794f86841b080fe912c0d806",
+      "green-unsafe-prerelease.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "green-unsafe-prerelease.stdout": "66b20fd81c2ba422fc54c14e2895555ff28eab2b62d4cd91a12ac14ddc8268c5",
+      "issue-dedup.json": "1f56134c0863fc9894b5cb49ad7ee0d65ef1d1ce6ca9f5daf1f0f1939772a6de",
+      "issue-dedup.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "issue-dedup.stdout": "7c3dce8595776444aa7b3985768d5ec37129908f16dd9906956d2ee281055044",
+      "linux-boundaries.json": "1674adc6af92da1690048feed3167cda940bfa5f20c2c8b6f8bd942317dbc0d4",
+      "linux-boundaries.stderr": "c884fe29effaff733ee4200ea15832ae7dbfd4e66cfb0b21656e1561b3060545",
+      "linux-boundaries.stdout": "ef2d186d69ebfde0edb6f21c24b65e4931dbe8658573b679e7990e6a12d28396",
+      "linux-build.json": "74b2a0c983f7289b3c0a661304bc33eae46adc362488b654abcb691d0bc9e6f8",
+      "linux-build.stderr": "d24117b01b46b73ff008fc4eadc87dc556bf01ae481c0009ae02fc60c9dda736",
+      "linux-build.stdout": "6518803e2291e7ffcb0d3240df4a591a10f449751307d77a9efde83ec21b072f",
+      "linux-cleanup-readback.json": "f2f07102e603f242b60897919ef515c37665cb75f1f38ed8b28804df59cabc9d",
+      "linux-cleanup-readback.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-cleanup-readback.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-cleanup.json": "b8b7e089263f80eb611f571a2863610655fcdf5ca4251b1ca1405bb7cddb6b9b",
+      "linux-cleanup.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-cleanup.stdout": "8d6c082249d7edf8ef9d30a963e514c5ccdf955a3f84cfbff41d681bec144618",
+      "linux-container-identity.json": "6e43bf1d36c4cf072ab29bc8e37d6e03a81c47a2a4737f08d4940ebe47f17a9f",
+      "linux-container-identity.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-container-identity.stdout": "da360df2a4fd5bb95d99733ccf9e16863bf8aa9c03101065f1c98d18b4943203",
+      "linux-final-environment.json": "71f47eacd6680ffe9753e5befb85ef8a35f98326d80fcaf702cb0195602e59ca",
+      "linux-final-environment.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-final-environment.stdout": "11842201544b188d1dd3f27ed953c93885860f737518f28ac31e88e93c15451f",
+      "linux-final-install.json": "c7bb43b28b4e7ad5e88cdc8c683dfb8c7b53a939dcbbaae983f36667cfbca86c",
+      "linux-final-install.stderr": "fa5ce9597e271c6e7211ca1040f1643d3f7b619ed8ea8991de9d8d2623010be2",
+      "linux-final-install.stdout": "4a4c51f99794c6e16740bc7f5451d103115b29db4f8fea45241222115d6610e4",
+      "linux-final-lint.json": "2a734822d6059b189a2e1bd85d932ecf9d7831b560d12a4242f07378b18c4029",
+      "linux-final-lint.stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2",
+      "linux-final-lint.stdout": "4d4a00e59c6d6d2ef165215aa747dc61e26211f41b88cee568de8e3d1e709ecb",
+      "linux-final-tooling.json": "7b12e7d7e08f5ba2939de4db3bd45932bc76ccf4cf5bd3cb5e07eadd68b08c8e",
+      "linux-final-tooling.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-final-tooling.stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "linux-full-audit.json": "571bf1e9a0d6728da1dac6bea793ab6d661960da96331c530f3daed90964211a",
+      "linux-full-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-full-audit.stdout": "98d841c04b8e28fd7183150cf38962689d7f5215f4c61e27cd383e6ae48319a0",
+      "linux-full-tests.json": "32dc1955bba9349b1471ae61f6746eebd3c95605662eb6b8cafc59d91ee8edc7",
+      "linux-full-tests.stderr": "7633ffcbfac653ba9167b121cbdafb36c3ba96fe304509d8a7e31cfa546198c9",
+      "linux-full-tests.stdout": "38ed9e7fca043bde064d19ec08218572f80c22f843931ae49abb2c5f38c05656",
+      "linux-image.json": "9dec33d1694e11a31d2ba16974c0ac0ca26e54b488cbb57c74237715e1607ee3",
+      "linux-image.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-image.stdout": "c3357363fd34b419db4d6704d161ff8de1e96fc4709e5dfb2b79a72d2f6d346f",
+      "linux-install.json": "6d57e9596f32daecf5f31f6750630e0b10e03573ced3bfba010cccd29570444c",
+      "linux-install.stderr": "73df51a0997c00cf3fb7a132ab77a11dd2f0a2c4be3ef20335542fd59f4203b6",
+      "linux-install.stdout": "95080a3a09d33d71401cc22612be8b4fbca50291ceb398d3e0d838e9837f168a",
+      "linux-production-audit.json": "c795fcd5ec7785840503c7071df391d5166da45599428a69626a52cc8449924f",
+      "linux-production-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-production-audit.stdout": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+      "linux-refresh.json": "4bb78515cc0c3477900b8e1fcab216274460ad0b00707e1e026c8d3b9d9067a7",
+      "linux-refresh.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-refresh.stdout": "c4ccf8f077b40e955eedfaf0c3654f96ebe905fdbc4a251edc037cfeab2ed34f",
+      "linux-repaired-boundaries.json": "d46ffb5462b90070c3e631da3275a4a5b066fbd2e4cbc35d024cec74e05bb4a8",
+      "linux-repaired-boundaries.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-repaired-boundaries.stdout": "f7d0aad450a9aeb9a4c1fe4d514cd6d9d67df949dd380b4934498580d9f2d353",
+      "linux-tooling.json": "f2ecc27c87691e97e926406471e9fe3aee9a3efd1a0a3f8e7de16e5245f1855c",
+      "linux-tooling.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-tooling.stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "linux-tree.json": "534c42a15551a63f9d80db000f056574f4912eb102b64556d9d4e3baff115fdb",
+      "linux-tree.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "linux-tree.stdout": "1955adef95f0d72b3667f1e9b7d98732f5731805af1e488f78f7de6555bd0ae8",
+      "mac-build.json": "5f5216e0a46ca5e70cabdf0cefe0af3f159c303e47010166121c275a6a9ce469",
+      "mac-build.stderr": "f27ad23fde5597eed0b6eb03c937578edc14c48ad6a6e0acbf07777e63328714",
+      "mac-build.stdout": "61ee66c0c825c2196acd3fc007e93ccfcb30a58f402ebcff0575bb6c05703936",
+      "mac-environment.json": "399cf8c413712aac1eecd8b08d5a05bb67e473dc6e16dec65aaa3f3c12fb67e0",
+      "mac-environment.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-environment.stdout": "3feff640caf45a44b1f043aee65d8fdfec6379d905d9efc1a2ba8b51a9f23652",
+      "mac-final-discovery.json": "9260bf1293ee32f872406ac25e7ff5541ee1ccace1251eb018b4c2d447935408",
+      "mac-final-discovery.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-final-discovery.stdout": "2219d2fcbcb31e07af21a6f23f0461a250e1eef716639f803e8a9c5bfddf0f2e",
+      "mac-final-full-audit.json": "423f19facebb79311f79726a375172f917e36ed62ab5976fc9cf868f6ebcf89d",
+      "mac-final-full-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-final-full-audit.stdout": "935386a4f81247454641a8b7e58d5b187d458d98c513d936254f145043377d98",
+      "mac-final-prebuild.json": "b36d78b5e3f74ca6f411af18c55d5e0c0a772d7146ca1d5199213611a1a5f59b",
+      "mac-final-prebuild.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-final-prebuild.stdout": "f92203889e09525491a758b024bbb415be1ca714234b0bbb7ae34bb76b32e0b3",
+      "mac-final-production-audit.json": "3a12298916edf8f6095b1379e43e2145b445cb67727f6f31ac60e3da864f4142",
+      "mac-final-production-audit.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-final-production-audit.stdout": "ffa1f501e8b4e6fafddeff324fd833d916502eeff135a1f80d713cc10278bc3a",
+      "mac-full-tests.json": "4287e2ad0d4d5b164f7ad2264342dbda834966f69259ea62de1c4e455bac49a4",
+      "mac-full-tests.stderr": "6566a9c485db0282e762d201a1759ef10b8b310ece886bbd160cbe7e51cdc98f",
+      "mac-full-tests.stdout": "38ed9e7fca043bde064d19ec08218572f80c22f843931ae49abb2c5f38c05656",
+      "mac-lint-inert.json": "f1cabb5d00c8116269145d86079536293dcc1cca6f80db304a03af05658fed68",
+      "mac-lint-inert.stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2",
+      "mac-lint-inert.stdout": "5fca8c573ee5bd24c08d7b4411ec904e4f2467c1a2879116270915eaef4953d5",
+      "mac-lint.json": "cebf0ca28c4cd7f77e20dfb7751d4fbe68ed0aeb8a9072d957985b5b2d3856c8",
+      "mac-lint.stderr": "f584cfc4a6d5ddfd1e24406b25ebecf30a35970d16e1920b1bdfd0458d2b5fec",
+      "mac-lint.stdout": "78ed5c8ff495a785400989cb60f16b0f289dfad52adaebebff6340f692f3a7ab",
+      "mac-tooling.json": "4a120b68b1d59c675d15cbc898108303840b8d3ce4c67400b9ecb491e4702262",
+      "mac-tooling.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-tooling.stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "mac-tree.json": "568bd01fc4775af84d7af056d75e0aba19c4e8b9db20172d4c47cb0ce8c239fd",
+      "mac-tree.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-tree.stdout": "9be7683d63ea28a7aab99c0f20ca96222f8c4c27145d0d1a5d45a67e84ac169e",
+      "mac-types.json": "8c67c5db3b6994880fcd728646fe73d50bfef3079cdcc85229d2fb3a11b0403a",
+      "mac-types.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mac-types.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "native-inventory-complete.json": "d2f70efa1ed62a7720f12440139a9f3cc220b053f3d9a1c1095bf4153e09f190",
+      "native-inventory-complete.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "native-inventory-complete.stdout": "d61a1a41d330fafe97ea30dde9aa49aabe2dc501f79754b5c0f9450d9da16299",
+      "native-inventory.json": "30760d57ded8a8da1dd9b9b6ab954fb5339928c31bf183df21d18d68757c413b",
+      "native-inventory.stderr": "c41877898057fcb4eadc192acaf016a72491ead39b487ad74a6432a7bd2582da",
+      "native-inventory.stdout": "7cf354374a1610180587f57628fc3ec23e85b69b652172506eb0ae15f5e170a0",
+      "preview-smoke.cjs": "952ad98f40cda9f491bd5f47eb906f208c3171bfb34865a1a40f8daae99af09f",
+      "probe-callers.cjs": "940787c637e7ccc155aafd9935c7008c7359618fe9abd9e9de4e9d20e8a4145c",
+      "red-effective-config.json": "6e6cde4abe8c5f03e64d5460397973544d478d25bb43e07559f7bc0a38739812",
+      "red-effective-config.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-effective-config.stdout": "e72d1cc0c5a06acd003c26d77f885febc801e58809d0e40e65225a8325a84b32",
+      "red-registry-name.json": "acfbcc777f93c6d09a266cda63dda357fb868cd133dc76fc2043a5e0b3d6d90e",
+      "red-registry-name.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-registry-name.stdout": "1b6179ae8ef714afb3b3dea3148f208e5be23440da63a09c63b7f0753bfcf2e6",
+      "red-report-name.json": "62862973f6bd77e811c8dff0a9631c252e0f878c7c1f783493e03207d553b46a",
+      "red-report-name.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-report-name.stdout": "b01100c50aa0e3477ff9770accdbcd8d63c767a355d1db1e5490d0c3a73cbdfd",
+      "red-tooling-complete.json": "0dc41b829f925a9335486ac9b71e6eb746b7afc26f166e0a662916765ac1ac0d",
+      "red-tooling-complete.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-tooling-complete.stdout": "dc44f97233fed242b4fc0e0052765a3719e2f41b85e6d2cc274bd679ad640965",
+      "red-tooling-input.json": "0dc3023cf2a9249859593bc25f24d92142f8a8a99800b4522fde1d56fbfbe796",
+      "red-tooling-input.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-tooling-input.stdout": "29ff5ed1b7c05b63f6a9f6943fcf38e5d6a82da7dddb2489854ca928c48b626c",
+      "red-tooling-replay.json": "2bc1536963b85fba0eee91a39e566b2b4530886fbe6c7c65af9ab5634618b1b8",
+      "red-tooling-replay.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-tooling-replay.stdout": "e33325ff71194238c40175fcc1c76fb2ed25c39eeee71b8c9067ba18e39e197a",
+      "red-unsafe-prerelease.json": "7109e9f984e27acb4445a31ef31430c2db84f2fbd2920fddac02eeb6af89ac83",
+      "red-unsafe-prerelease.stderr": "d74f9d73723408f24645f799357a8f9478558f7ede18a1ea335b4d6a38a64e8a",
+      "red-unsafe-prerelease.stdout": "4bf46260be5cfc9ee9f6598bf509cf6220561447dba784b362bf9b6ca87d737d",
+      "red-version-boundary.json": "2409f0df806ee509adab2d7bd08f14657db19ec73491dcf284793badd8686ea6",
+      "red-version-boundary.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "red-version-boundary.stdout": "188270780c7f78c9ef26318db2720c996a472d9aa67632b39c6ff3107b3ccfd7",
+      "registry-braces.json": "3fb13835e3087501c07a4741407c9aae3023f15e98dfe440b41fd749b8ce44ab",
+      "registry-braces.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-braces.stdout": "9fbff4d42f1befba7448f679bd8cd0800dc2e858b34bbd5d8db21c54b15b2ee5",
+      "registry-name-validator.json": "7acc7ed0736b40596570e0a8d567fa4c8207e525806af8e4a799f5f5f82117a9",
+      "registry-name-validator.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-name-validator.stdout": "ba440401290833c9ad9097c9b459beedbe0ff4db4d95c2ba7f861689c1402ef0",
+      "registry-next-lint.json": "05ecce00a219c996b7d120c9c3cd6912996de495c5c75cd089db45ff0c6e7e8d",
+      "registry-next-lint.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-next-lint.stdout": "ab9cedf7ad9584576990db71ea6ae39e98200332ee1c208ad1d89bd169b4e6e7",
+      "registry-nyc.json": "e000e3fb94521cc5fdb7c858a3e6df44923d78e61beda96a80f7e5882c92bec8",
+      "registry-nyc.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-nyc.stdout": "7a8bb634ac795f88ae7768607f5212d57699077d3cf78836807d38ee0903b60e",
+      "registry-sprintf.json": "b211bbc4f175654329e23987164355459e3fdc848476aab115e59c6937c94b71",
+      "registry-sprintf.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-sprintf.stdout": "cea3605d96690d02d6e2d86049ebe0b4ec11f4dbe5303e10d65e06a2567a0aa3",
+      "registry-tailwind.json": "3360980316eb958bcc2aaa43bb1e14eb0aa71fe7d608e7333a05fe245a577ea3",
+      "registry-tailwind.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "registry-tailwind.stdout": "47d2b97167b76d0d138d09cc15a97ff9f6302fd69a2cd52c55eea4161c2aa19b",
+      "repaired-lint.json": "a5b6d8febbc680385292057bc5b34a8fa5e4178f7c5c401550014dd3a55f169b",
+      "repaired-lint.stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2",
+      "repaired-lint.stdout": "4d4a00e59c6d6d2ef165215aa747dc61e26211f41b88cee568de8e3d1e709ecb",
+      "repaired-scoped-lint.json": "ba5669417f84032718cd28d249419b5351a942f4da448c9d7f37f97926ea6ba8",
+      "repaired-scoped-lint.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repaired-scoped-lint.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repaired-tooling.json": "6b7d3bafa66d673e07906e33761b1159e1f21711292c7dc95c74716e1fbf2044",
+      "repaired-tooling.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "repaired-tooling.stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "replay-baseline-complete.cjs": "09d8094987cca2bd46994b7a6cef851c689c8c44c27bf8d481f2e154b0e5cfd7",
+      "replay-baseline.cjs": "8c4b908491d1042336af27522b3855a17a1f303224019805ba9d755cc0598008",
+      "replay-unsafe-version.cjs": "de77d4bf1ae64b2b60c185250a58666e9b543f7cf8a9b484fb730c7c8198321d",
+      "run.cjs": "7de734d0b00d8bb3bfdbc081c21d763dc8ec385603bf163a637ad9f03e35f9d8",
+      "scoped-lint.json": "fa9d01828723f2ae0e261d935c13ad49185a2cfd6552fbbc694ea855d08722b5",
+      "scoped-lint.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scoped-lint.stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "spec-accepted-boundaries.json": "f894777dbf733f1a5f78023c670453c43626bb48202a606ea1af8a659ef282ad",
+      "spec-accepted-boundaries.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "spec-accepted-boundaries.stdout": "778ca864a3bdbea3cd4324e265fe63012130498703feeed00ff02ba2155417eb",
+      "spec-report-name-control.cjs": "7173aa3c421794981f083e921265882eb8466a6f65f780a0949815a407534308",
+      "spec-report-name-green.json": "c474e6eb3560685a8729b24c83400387b4063d06290d1d1d3737de6674720c6e",
+      "spec-report-name-green.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "spec-report-name-green.stdout": "b87755eb9e8fd507ccd64688af8016433074461daf50795878f4c07ff0c1495e",
+      "spec-report-name-red.json": "8db9f44b1b1f7907d24e3a71e49f6fe350ff514533dad8b563f55f3d8cb0e888",
+      "spec-report-name-red.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "spec-report-name-red.stdout": "4c601be0cd720052bbc8b3df2c1bdbce836b1ed6b018d4d0bf946e96b75db4e3",
+      "workflow-state.json": "58a19bdd9b18a83d65c15e6897f3d94b76bcd3c4f387e123c7a4258fad0fd6ea",
+      "workflow-state.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "workflow-state.stdout": "3e4c62ee2a98d4ddc6e26d825e1e8b0a71b438a496aa8f84abd0c0494084176f"
+    }
+  }
+}
