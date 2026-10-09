@@ -13,3 +13,5 @@ Runtime: build first, finish full native checks, then in an owned copy `npm prun
 The portable watcher harness at raw/review-adversarial/probe-parcel-watch-portable.cjs executes real --watchAll --watchman=false, edits an inert test, observes pass then failure, traces the platform native binding and stops its group. Its hash is 2adebfcb98a45a57cf129d6a0ee09be32a655ff25701a37af9019967d206105f. Both platform receipts are committed. Linux was executed via owned Docker amd64 emulation, not a native host or deployed service. No Windows/musl/GPU/macOS-x64/arm-Linux/watchman-backed claim follows.
 
 See ../BATCH_8_DEPENDENCIES_HANDOFF.md for the decision and residual chains. #494 remains open. Review reports state their exact inspected snapshots; final delivery identity is recorded after the normal push.
+
+Selected raw outputs use [lossless JSON envelopes](LOG_FORMAT.md); decoding `text` as UTF-8 reproduces the exact original SHA256, including carriage returns and spaces. Full publisher notes remain in raw evidence; the committed release note is a compact review summary.

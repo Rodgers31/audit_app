@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-tooling.log",
+  "sha256": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+  "encoding": "utf-8",
+  "text": "\n> audit-app-frontend@1.0.0 verify:dependency-tooling\n> node scripts/verify-dependency-tooling.cjs\n\nDependency tooling checks passed: parser resolution, theme tokens, dark/responsive/group/peer/arbitrary selectors, typography, and nesting.\n"
+}

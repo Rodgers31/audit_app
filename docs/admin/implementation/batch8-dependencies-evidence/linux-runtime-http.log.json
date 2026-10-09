@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/linux-runtime-http.log",
+  "sha256": "317c0ec496dee87cefee39950f647a425acc420710c779369a1d72bdd7579299",
+  "encoding": "utf-8",
+  "text": "AssertionError [ERR_ASSERTION]: owned Next runtime must start\n    at main (/work/probe-runtime-http.cjs:11:10) {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n"
+}

@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/adversarial-malformed-fixed.log",
+  "sha256": "cfbeb6edf285ca8cba23f6b7fe5d3e280d7c8508460dfb8e0bff3aa85df7719b",
+  "encoding": "utf-8",
+  "text": "TAP version 13\n# Subtest: installed Jest dependency graph excludes the vulnerable brace compiler\nnot ok 1 - installed Jest dependency graph excludes the vulnerable brace compiler\n  ---\n  duration_ms: 20.363708\n  type: 'test'\n  location: '/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs:19:1'\n  failureType: 'testCodeFailure'\n  error: 'npm graph rows must identify packages'\n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: true\n  actual: false\n  operator: '=='\n  stack: |-\n    TestContext.<anonymous> (/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs:29:10)\n    Test.runInAsyncScope (node:async_hooks:214:14)\n    Test.run (node:internal/test_runner/test:1047:25)\n    Test.start (node:internal/test_runner/test:944:17)\n    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 49.564459\n"
+}

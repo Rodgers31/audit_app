@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http.log",
+  "sha256": "4f6e6dcb8aecbd2a179493e45aea6ef53bd219fc3aa65704b77db6ccb07fde07",
+  "encoding": "utf-8",
+  "text": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/verify-http.py\", line 8, in <module>\n    if path.startswith('/_next/image'):assert type=='image/webp';assert body[:4]==b'RIFF';(p/'actual-next-image.webp').write_bytes(body)\n                                              ^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+}

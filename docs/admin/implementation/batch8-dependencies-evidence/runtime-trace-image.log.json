@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-trace-image.log",
+  "sha256": "7dc0a6ac8e323d30aada9ba9739af8fc36877fed926da4f8b46c36ce78dba5be",
+  "encoding": "utf-8",
+  "text": "{\"trace\":\"/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-source/frontend/.next/server/app/learn/page.js.nft.json\",\"files\":73,\"prohibited\":0,\"actualHttpImage\":{\"format\":\"webp\",\"mediaType\":\"image/webp\",\"size\":68,\"width\":2,\"height\":2,\"space\":\"srgb\",\"channels\":3,\"depth\":\"uchar\",\"isProgressive\":false,\"isPalette\":false,\"hasProfile\":false,\"hasAlpha\":false,\"autoOrient\":{\"width\":2,\"height\":2}}}\n"
+}
