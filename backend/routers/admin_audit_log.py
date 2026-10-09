@@ -30,6 +30,8 @@ class PrivateAuditRoute(APIRoute):
             except HTTPException as exc:
                 if exc.status_code in {401, 403}:
                     exc.detail = "Administrator access required."
+                elif exc.status_code >= 500:
+                    exc.detail = "Audit evidence is unavailable."
                 exc.headers = {**(exc.headers or {}), **PRIVATE}
                 raise
             except Exception:

@@ -10,6 +10,7 @@
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useAdmin } from '@/lib/auth/admin';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { auditFilters, AuditEntry, AuditList, decodeAudit, timeAgo } from '@/lib/admin/audit';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -62,6 +63,9 @@ function AuditLogInner() {
   const searchParams = useSearchParams();
 
   const { isAdmin } = useAdmin();
+  const { user } = useAuth();
+  const actorId = isAdmin ? user?.id ?? null : null;
+  const enabled = isAdmin && !!actorId;
   const filters = auditFilters(new URLSearchParams(searchParams));
   const { actor_id, action, target_type, target_id, days, page, snapshot_id, as_of, visibility_snapshot } = filters;
   const setQuery = useCallback(
@@ -78,7 +82,7 @@ function AuditLogInner() {
     [router, filters]
   );
   const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<AuditList>({
-    queryKey: ['admin', 'audit-log', filters],
+    queryKey: ['admin', 'audit-log', actorId, filters],
     queryFn: async ({ signal }) => {
       const params: Record<string, string | number> = { page, page_size: PAGE_SIZE, days };
       for (const [key, value] of Object.entries({ actor_id, action, target_type, target_id })) if (value) params[key] = value;
@@ -88,9 +92,10 @@ function AuditLogInner() {
       if (result.page !== page || result.page_size !== PAGE_SIZE) throw new Error('Unexpected audit page');
       return result;
     },
-    enabled: isAdmin, retry: false, gcTime: 0, staleTime: 15_000,
+    enabled, retry: false, gcTime: 0, staleTime: 15_000,
   });
   const refreshAudit = () => {
+    if (!enabled) return;
     if (page !== 1 || ['snapshot_id', 'as_of', 'visibility_snapshot'].some(key => searchParams.has(key))) {
       setQuery({ page: 1, snapshot_id: null, as_of: null, visibility_snapshot: null });
     }
@@ -111,7 +116,7 @@ function AuditLogInner() {
         <AuditFilters key={searchParams.toString()} filters={filters} apply={setQuery} clear={() => router.push('/admin/audit-log', { scroll: false })} />
         <div className='flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-muted'>
           <p>Audit recording is best-effort. Missing evidence does not prove no activity. Payload fields may be redacted.</p>
-          <button onClick={refreshAudit} disabled={isFetching} className='inline-flex min-h-11 items-center gap-2 px-3 py-1.5 border border-neutral-border rounded-lg focus-visible:ring-2 focus-visible:ring-gov-sage disabled:opacity-50'>
+          <button onClick={refreshAudit} disabled={!enabled || isFetching} className='inline-flex min-h-11 items-center gap-2 px-3 py-1.5 border border-neutral-border rounded-lg focus-visible:ring-2 focus-visible:ring-gov-sage disabled:opacity-50'>
             <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} aria-hidden='true' />Refresh
           </button>
           {dataUpdatedAt > 0 && <span>{error ? 'Last successful fetch ' : 'Fetched '}{timeAgo(new Date(dataUpdatedAt).toISOString())}{isFetching ? ' · Refreshing…' : ''}</span>}

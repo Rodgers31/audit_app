@@ -1,4 +1,12 @@
 import { count, object, text, timestamp } from './audit';
+
+const CALENDAR_SOURCES = ['treasury', 'cob', 'oag', 'knbs', 'opendata', 'cra'];
+
+function calendarTimestamp(value: unknown): string {
+  const result = text(value, 80), parsed = timestamp(result);
+  if (parsed === null || parsed > Date.now() + 5000) throw new Error('Invalid calendar timestamp');
+  return result;
+}
 export function decodeIngestion(value: unknown) {
   const o = object(value);
   const total_jobs = count(o.total_jobs), completed = count(o.completed), failed = count(o.failed), running = count(o.running), pending = count(o.pending), completed_with_errors = count(o.completed_with_errors);
@@ -10,9 +18,10 @@ export function decodeIngestion(value: unknown) {
 export function decodeSchedule(value: unknown) {
   const o = object(value), efficiency = object(o.efficiency);
   if (!Array.isArray(o.sources_to_run) || o.sources_to_run.length > 100) throw new Error('Invalid schedule');
-  const result = { timestamp: text(o.timestamp, 80), running_today: count(o.running_today), skipping_today: count(o.skipping_today), total_sources: count(o.total_sources), efficiency: { vs_fixed_schedule: text(efficiency.vs_fixed_schedule) },
+  const result = { timestamp: calendarTimestamp(o.timestamp), running_today: count(o.running_today), skipping_today: count(o.skipping_today), total_sources: count(o.total_sources), efficiency: { vs_fixed_schedule: text(efficiency.vs_fixed_schedule) },
     sources_to_run: o.sources_to_run.map(v => { const s = object(v); return { source: text(s.source, 80), reason: text(s.reason, 1000) }; }) };
-  if (result.running_today + result.skipping_today !== result.total_sources || result.sources_to_run.length !== result.running_today) throw new Error('Invalid schedule counts');
+  const plannedSources = result.sources_to_run.map(s => s.source);
+  if (result.total_sources !== CALENDAR_SOURCES.length || result.running_today + result.skipping_today !== result.total_sources || result.sources_to_run.length !== result.running_today || new Set(plannedSources).size !== plannedSources.length || plannedSources.some(s => !CALENDAR_SOURCES.includes(s))) throw new Error('Invalid schedule counts');
   return result;
 }
 export function decodeHealth(value: unknown) {
@@ -22,12 +31,12 @@ export function decodeHealth(value: unknown) {
     ? scheduler_status === 'healthy' ? 'available' : scheduler_status.startsWith('error:') ? 'unavailable' : 'unverified'
     : text(o.plan_status, 80);
   if (!['available', 'unavailable', 'unverified'].includes(plan_status)) throw new Error('Invalid calendar evidence');
-  return { timestamp: text(o.timestamp, 80), scheduler_status, plan_status };
+  return { timestamp: calendarTimestamp(o.timestamp), scheduler_status, plan_status };
 }
 export function decodeUsers(value: unknown) {
   const o = object(value);
   const result = { total_users: count(o.total_users), admin_users: count(o.admin_users), new_last_7_days: count(o.new_last_7_days), new_last_30_days: count(o.new_last_30_days) };
-  if (result.admin_users > result.total_users || result.new_last_7_days > result.new_last_30_days || result.new_last_30_days > result.total_users) throw new Error('Invalid profile counts');
+  if (result.admin_users > result.total_users || result.new_last_7_days > result.new_last_30_days || result.new_last_30_days > result.total_users) throw new Error('Invalid user counts');
   return result;
 }
 export function decodeFailures(value: unknown) {

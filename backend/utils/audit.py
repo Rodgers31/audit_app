@@ -16,9 +16,9 @@ Failures are swallowed
 ----------------------
 A failure to write the audit log must never roll back the
 underlying admin action. The action already happened — failing the
-request would be a worse outcome than a missing log row. We log the
-exception to the application logger so a missing-audit incident is
-still investigable.
+request would be a worse outcome than a missing log row. We log a fixed
+failure message so a missing-audit incident remains observable without
+exposing exception text, SQL parameters or caller payloads.
 """
 
 from __future__ import annotations
@@ -95,8 +95,8 @@ def record_admin_action(
         still persists. We want a record that the admin attempted /
         completed the action.
       * Conversely, a failure here can't poison the caller's pending
-        work. The exception is swallowed and logged rather than
-        re-raised; the underlying admin action already happened, and
+        work. The failure is swallowed and logged with a fixed message rather
+        than exception details; the underlying admin action already happened, and
         failing the request because we couldn't audit it would be a
         worse outcome than a missing log row.
 

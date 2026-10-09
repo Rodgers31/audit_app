@@ -18,7 +18,7 @@ Issue [#548](https://github.com/Rodgers31/audit_app/issues/548), parent [#545](h
 | --- | --- | --- |
 | Overview ingestion | Runtime validates exact status/domain totals, finite safe counters; shows seven-day scope, errors, fetched time, volume and encoded domain/failure/job drill-downs. Raw error bodies omitted from overview. | Operations owns diagnostic detail, job semantics and provider counters; #554/#556/#557. |
 | Overview ETL | Calendar due count says “sources due by calendar”; legacy `healthy` and additive `plan_status=available` say “Schedule calculated”; unavailable calculation is actionable and unknown calculation remains unverified; worker execution explicitly unverified. Reported timestamp separated from fetch time. | No worker/scheduler operating receipt invented. The documented #548 Operations health contract is consumed; producer/worker acceptance remains Operations-owned. |
-| Overview users | Labels existing counts “Profile records”; explains identities without profiles are outside this count; rejects malformed/impossible counters. | Users owns provider count accuracy and global search. Four separate profile count reads are not a transactional identity census. |
+| Overview users | With coordinated Users PR #559, labels the verified Auth population “Auth identities”, including identities without profiles; admin roles come from linked profiles. Rejects malformed/impossible counters. | Depends on #559's producer semantics; provider enumeration is bounded and is not an atomic identity census. |
 | Overview social | Existing `/admin/social/system/status` reports publishing opt-in, delivery targets across all states, and fresh/stale/unavailable worker evidence; heartbeat plus scan required for active/idle. | Social status fixture is inert; actual social service/worker startup is #549's acceptance. |
 | Overview audit/failure evidence | Loading and request errors distinguish unavailable evidence. No-record result says recording is best-effort. Manual refresh, cancellation and bounded polling of failures/social status retained. | A missing row cannot prove no mutation; operational audit failures remain logger evidence. |
 | Audit API | Existing `require_admin`; no write route. Private/no-store + Vary Authorization for success, auth, invalid filters and storage/serialization outage. Absent table is sanitized 503, not zero activity. | Global malformed provider role-shape handling is #550; unchanged auth core requires coordinator integration. Method-not-allowed responses expose no audit data. Production DB ACL/retention acceptance not run. |
@@ -26,7 +26,7 @@ Issue [#548](https://github.com/Rodgers31/audit_app/issues/548), parent [#545](h
 | Audit UI | Labelled submit-together filters, target-ID input, URL/history/back restoration, clear/refresh (including malformed bookmark normalization and actual refetch), atomic snapshot fields and snapshot transfer on paging, empty-page Prev recovery. Malformed 200 data fails as unavailable. Payload buttons expose expansion state; JSON rendered as text after policy. Invalid/future row times labelled explicitly. | Real browser run is local Chromium with inert auth/API transport; deployed and other browser acceptance not claimed. |
 | Audit recording | Actual roles/delete/reset/ETL callers exercised. Public signature, None return and independent session/commit retained. Failure logging never attaches exception/SQL parameters/PII; failures cannot roll back caller action. | No reliable global completeness count. Helper records caller acknowledgment, not downstream execution. |
 | Navigation | All current route families and social compose/accounts links covered. Most-specific boundary match, `aria-current`, named nav, visible focus, 44px minimum height, horizontal mobile keyboard focus scrolling. | Users/ingestion/social detail page workflows belong to their lanes; links are not acceptance of those pages. |
-| Private browser data | Owned page reads wait for `useAdmin`; requests carry no-store; no extra React Query retries, zero inactive cache retention; admin layout clears admin cache on access loss/exit. | Shared middleware, Axios and auth provider remain read-only. #550 and shared browser privacy changes require coordinator approval/integration. |
+| Private browser data | Owned page reads require a current administrator and actor; actor-scoped keys, no-store, no extra retries and zero inactive cache retention. Layout cancels/removes departing actor queries without cancelling the next actor; access loss removes admin data. Inactive Refresh cannot issue private reads. | Shared middleware, Axios and auth provider remain read-only. Shared #550 repair is coordinator-owned. |
 
 The existing PageShell, typography, pill navigation and card styling were preserved. The required 12ui skill was read; these are repairs within the approved shell and reuse its cards. No paid design generation or redesign was run.
 
@@ -77,7 +77,37 @@ Final author checks at implementation head: 34 backend tests passed (including t
 - [#556](https://github.com/Rodgers31/audit_app/issues/556): calendar calculations masquerading as worker health; consumer here labels the existing contract honestly. Operations owns producer repair.
 - [#557](https://github.com/Rodgers31/audit_app/issues/557): ingestion monitoring/diagnostic boundaries, Operations lane. Overview omits raw diagnostic text.
 
-Consumer contracts remain the pinned user/ETL/ingestion/social shapes. Other lanes must retain fields or coordinate additive contract changes before integration. Specifically: user stats are profile counts with four numeric fields; schedule summary retains `running_today`, `skipping_today`, `total_sources`, `sources_to_run` and efficiency text; ETL health retains status and timestamp, adds plan_status=available|unavailable with scheduler/worker/freshness unverified; overview supports both legacy and additive producer contracts; failed list retains exact count/page/page_size/has_more and five or fewer failed rows; social status retains publishing flag, worker state/heartbeat/scan and queue counts. Audit response adds snapshot ID/time/visibility; both owned UI consumers were updated together.
+Coordinated consumer contracts preserve field names while adopting #559's Auth enumeration semantics. This overview wording depends on that producer repair. User stats retain four numeric fields; the calendar summary retains `running_today`, `skipping_today`, `total_sources`, `sources_to_run` and efficiency text. Overview requires the complete six supported sources, unique known planned source names and valid nonfuture timestamps. ETL health retains status and timestamp, adds plan_status=available|unavailable with scheduler/worker/freshness unverified; overview supports both legacy and additive health contracts. Failed list retains exact count/page/page_size/has_more and five or fewer failed rows; social status retains publishing flag, worker state/heartbeat/scan and queue counts. Audit response adds snapshot ID/time/visibility; both owned UI consumers were updated together.
+
+## Coordinator review repairs
+
+PR #562 review and cross-lane integration independently reproduced three private
+dependency 5xx response leaks; all now expose the fixed unavailable body while
+retaining their status and private headers. The audit helper documentation now
+describes the fixed-message logging policy. Existing XID bounds already reject
+epochs at/above 2^32: six new executable controls passed before repairs, including
+server-captured 503 and supplied-client 422 before any audit-row query. No
+epoch-aware production-storage support is claimed or introduced.
+
+New rendered/parser regressions independently exposed incorrect Auth census
+copy, incomplete/unknown/duplicate calendar sources, impossible/future calendar
+timestamps, cross-administrator cache reuse and inactive Refresh. The corrected
+suite against immutable original head had 17 failures/one valid control pass;
+the retained backend review suite had three failures/six passing epoch controls.
+One initial audit-row selector expected a full email but the existing UI displays
+its local part; that harness expectation was corrected before replaying the
+actual actor-transition failure. These fixtures use inert HTTP data and jsdom.
+
+After repairs: the entire owned frontend suite passes 52 tests in three suites;
+backend audit/review plus historical ETL compatibility passes 40 tests, with two
+existing SQLAlchemy warnings. Complete TypeScript and scoped ESLint pass. These
+review repairs did not rerun PostgreSQL, Chromium or a production build; the
+coordinator must execute the combined tree with #559/#560/#561. Historical actual
+caller tests still exercise this branch's original Users/ETL routers and require
+coordinated adaptation/replay when those producers are integrated. No pushes,
+external review replies, new bot requests, live services or storage mutations
+were performed by the independent reviewer. Raw replay commands/outputs are in
+the coordinator's BATCH_6_REVIEW/spec artifact.
 
 ## Closeout boundaries
 

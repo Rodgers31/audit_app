@@ -13,6 +13,7 @@ const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({ usePathname: () => mockPath, useSearchParams: () => mockSearch, useRouter: () => ({ push: mockPush, replace: mockReplace }) }));
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true, isLoading: false }), AdminGuard: ({ children }: any) => <>{children}</> }));
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'inert-admin' } }) }));
 jest.mock('@/components/layout/PageShell', () => ({ __esModule: true, default: ({ title, subtitle, children }: any) => <main><h1>{title}</h1><p>{subtitle}</p>{children}</main> }));
 jest.mock('framer-motion', () => {
   const components: Record<string, any> = {};
@@ -22,7 +23,7 @@ jest.mock('framer-motion', () => {
 const audit = { entries: [], total: 0, page: 1, page_size: 25, has_more: false, snapshot_id: 0, as_of: '2026-10-08T00:00:00Z' };
 const responses: Record<string, any> = {
   '/admin/ingestion-jobs/stats/summary': { total_jobs: 0, completed: 0, failed: 0, running: 0, pending: 0, completed_with_errors: 0, total_items_processed: 0, total_items_created: 0, total_items_updated: 0, domains: {} },
-  '/admin/etl/schedule/summary': { timestamp: '2026-10-08T00:00:00Z', running_today: 1, skipping_today: 1, total_sources: 2, efficiency: { skip_percentage: 50, vs_fixed_schedule: '50% reduction' }, sources_to_run: [{ source: 'cob', reason: 'calendar' }] },
+  '/admin/etl/schedule/summary': { timestamp: '2026-10-08T00:00:00Z', running_today: 1, skipping_today: 5, total_sources: 6, efficiency: { skip_percentage: 83.3, vs_fixed_schedule: '50% reduction' }, sources_to_run: [{ source: 'cob', reason: 'calendar' }] },
   '/admin/etl/health': { timestamp: '2026-10-08T00:00:00Z', scheduler_status: 'healthy', schedule_summary: {} },
   '/admin/users/stats': { total_users: 2, admin_users: 1, new_last_7_days: 0, new_last_30_days: 1 },
   '/admin/audit-log': audit,
@@ -44,7 +45,7 @@ test('overview does not certify a running worker from scheduler calculation', as
   mount(<Overview />);
   expect(await screen.findByText(/Worker execution unverified/)).toBeVisible();
   expect(screen.queryByText('Healthy')).not.toBeInTheDocument();
-  expect(screen.getByText(/Profile records/)).toBeVisible();
+  expect(screen.getByText(/Auth identities/)).toBeVisible();
   expect(screen.getByRole('link', { name: /Social publishing/ })).toHaveAttribute('href', '/admin/social');
 });
 

@@ -14,6 +14,7 @@
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useAdmin } from '@/lib/auth/admin';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { decodeAudit, timeAgo } from '@/lib/admin/audit';
 import { decodeFailures, decodeHealth, decodeIngestion, decodeSchedule, decodeSocial, decodeUsers, socialWorkerEvidence } from '@/lib/admin/overview';
 import { useQuery } from '@tanstack/react-query';
@@ -46,52 +47,55 @@ const fadeUp = {
 
 export default function AdminOverviewPage() {
   const { isAdmin } = useAdmin();
+  const { user } = useAuth();
+  const actorId = isAdmin ? user?.id ?? null : null;
+  const enabled = isAdmin && !!actorId;
   const ingestion = useQuery<ReturnType<typeof decodeIngestion>>({
-    queryKey: ['admin', 'ingestion-stats', 7],
+    queryKey: ['admin', 'ingestion-stats', actorId, 7],
     queryFn: async ({ signal }) =>
       decodeIngestion((await api.get('/admin/ingestion-jobs/stats/summary', { params: { days: 7 }, signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 30_000,
   });
 
   const schedule = useQuery<ReturnType<typeof decodeSchedule>>({
-    queryKey: ['admin', 'etl-schedule-summary'],
+    queryKey: ['admin', 'etl-schedule-summary', actorId],
     queryFn: async ({ signal }) => decodeSchedule((await api.get('/admin/etl/schedule/summary', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
   const health = useQuery<ReturnType<typeof decodeHealth>>({
-    queryKey: ['admin', 'etl-health'],
+    queryKey: ['admin', 'etl-health', actorId],
     queryFn: async ({ signal }) => decodeHealth((await api.get('/admin/etl/health', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
   const userStats = useQuery<ReturnType<typeof decodeUsers>>({
-    queryKey: ['admin', 'user-stats'],
+    queryKey: ['admin', 'user-stats', actorId],
     queryFn: async ({ signal }) => decodeUsers((await api.get('/admin/users/stats', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 60_000,
   });
 
   const recentActions = useQuery<ReturnType<typeof decodeAudit>>({
-    queryKey: ['admin', 'audit-log', { recent: true }],
+    queryKey: ['admin', 'audit-log', actorId, { recent: true }],
     queryFn: async ({ signal }) =>
       decodeAudit((await api.get('/admin/audit-log', { params: { page_size: 5, days: 30 }, signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 30_000,
   });
 
   const failedJobs = useQuery<ReturnType<typeof decodeFailures>>({
-    queryKey: ['admin', 'ingestion-jobs', 'failed'],
+    queryKey: ['admin', 'ingestion-jobs', actorId, 'failed'],
     queryFn: async ({ signal }) =>
       decodeFailures((
         await api.get('/admin/ingestion-jobs', {
           params: { status: 'failed', days: 7, page_size: 5 }, signal, headers: { 'Cache-Control': 'no-store' }
         })
       ).data),
-    enabled: isAdmin, retry: false, gcTime: 0,
+    enabled, retry: false, gcTime: 0,
     staleTime: 30_000,
     // Refetch every 60s so the alerts banner reflects new failures without
     // a full page reload.
@@ -99,9 +103,9 @@ export default function AdminOverviewPage() {
   });
 
   const social = useQuery({
-    queryKey: ['admin', 'overview-social-status'],
+    queryKey: ['admin', 'overview-social-status', actorId],
     queryFn: async ({ signal }) => decodeSocial((await api.get('/admin/social/system/status', { signal, headers: { 'Cache-Control': 'no-store' } })).data),
-    enabled: isAdmin, retry: false, gcTime: 0, staleTime: 30_000, refetchInterval: 60_000,
+    enabled, retry: false, gcTime: 0, staleTime: 30_000, refetchInterval: 60_000,
   });
   const queries = [ingestion, schedule, health, userStats, recentActions, failedJobs, social];
   const alerts: { kind: 'failed-jobs' | 'unhealthy-etl'; count?: number }[] = [];
@@ -115,7 +119,7 @@ export default function AdminOverviewPage() {
       <div className='space-y-8'>
         <div className='flex flex-wrap items-center justify-between gap-3 text-sm'>
           <p className='text-neutral-muted'>Counts describe each API's stated scope. Recorded actions do not prove worker execution.</p>
-          <button className='inline-flex min-h-11 items-center gap-2 rounded-lg border border-neutral-border px-3 focus-visible:ring-2 focus-visible:ring-gov-sage' disabled={queries.some(q => q.isFetching)} onClick={() => queries.forEach(q => void q.refetch())}><RefreshCcw className='h-4 w-4' aria-hidden='true' />Refresh overview</button>
+          <button className='inline-flex min-h-11 items-center gap-2 rounded-lg border border-neutral-border px-3 focus-visible:ring-2 focus-visible:ring-gov-sage' disabled={!enabled || queries.some(q => q.isFetching)} onClick={() => { if (enabled) queries.forEach(q => void q.refetch()); }}><RefreshCcw className='h-4 w-4' aria-hidden='true' />Refresh overview</button>
         </div>
         {(failedJobs.error || recentActions.error) && <div role='status' className='rounded-2xl border border-gov-warning p-4 text-sm'>
           {failedJobs.error && <p>Failure evidence unavailable. Recent ingestion failures could not be checked. <Link href='/admin/ingestion?status=failed&days=7' className='underline'>Review ingestion</Link></p>}
@@ -267,8 +271,8 @@ export default function AdminOverviewPage() {
               href='/admin/users'
               renderValue={(d) => (
                 <>
-                  <BigNumber value={d.total_users} label='Profile records' />
-                  <p className='text-xs text-neutral-muted mt-2'>Auth identities without profiles are outside this count.</p>
+                  <BigNumber value={d.total_users} label='Auth identities' />
+                  <p className='text-xs text-neutral-muted mt-2'>Includes identities without profiles. Admin roles come from linked profiles.</p>
                   <SubStatRow>
                     <SubStat label='admins' value={d.admin_users} tone='info' />
                     <SubStat label='new this week' value={d.new_last_7_days} tone='ok' />
