@@ -19,19 +19,6 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def source_identity(files, generator):
-    def git(*args):
-        return subprocess.check_output(["git", *args], cwd=REPO, text=True).strip()
-    return {
-        "target_commit": git("rev-parse", "HEAD"),
-        "target_tree": git("rev-parse", "HEAD^{tree}"),
-        "working_tree_status": git("status", "--short"),
-        "tracked_status": git("status", "--porcelain", "--untracked-files=no"),
-        "source_sha256": {name: sha(REPO / name) if (REPO / name).is_file() else None for name in files},
-        "generator_sha256": sha(generator) if generator.is_file() else None,
-    }
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--label", required=True)
@@ -50,35 +37,26 @@ def main():
     env = {"PATH": os.defpath + ":/sbin", "PYTHONDONTWRITEBYTECODE": "1",
            "PYTHON_DOTENV_DISABLED": "1", "PYTHONNOUSERSITE": "1",
            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
+    result = subprocess.run(command, cwd=args.cwd, env=env, text=True,
+                            capture_output=True, timeout=180)
     files = [".github/workflows/r2-acceptance.yml", "backend/scripts/r2_producer_acceptance.py",
              "backend/tests/test_r2_acceptance_workflow_pin.py",
              "docs/admin/implementation/batch8-producer-evidence/run_check.py"]
     generator = Path(__file__).resolve()
-    before = source_identity(files, generator)
-    if any(value is None for value in before["source_sha256"].values()):
-        raise ValueError("required receipt source is absent before execution")
-    result = subprocess.run(command, cwd=args.cwd, env=env, text=True,
-                            capture_output=True, timeout=180)
-    after = source_identity(files, generator)
-    fields = ("target_commit", "target_tree", "tracked_status", "source_sha256", "generator_sha256")
-    changed = any(before[name] != after[name] for name in fields)
-    verification_exit = result.returncode or (1 if changed else 0)
     receipt = {
         "generated_by": str(generator.relative_to(REPO)),
-        "generator_sha256": before["generator_sha256"],
+        "generator_sha256": sha(generator),
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "target_commit": before["target_commit"],
-        "target_tree": before["target_tree"],
-        "working_tree_status": before["working_tree_status"],
-        "source_sha256": before["source_sha256"],
-        "source_before": before, "source_after": after, "source_changed": changed,
+        "target_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip(),
+        "target_tree": subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=REPO, text=True).strip(),
+        "working_tree_status": subprocess.check_output(["git", "status", "--short"], cwd=REPO, text=True),
+        "source_sha256": {name: sha(REPO / name) for name in files},
         "command": command, "cwd": str(args.cwd.resolve()),
         "python": sys.version, "platform": platform.platform(),
         "versions": {name: importlib.metadata.version(name) for name in ["pytest", "PyYAML"]},
         "environment": env,
         "exit_status": result.returncode,
-        "verification_exit_status": verification_exit,
-        "verdict": "PASS" if verification_exit == 0 else "FAILED",
+        "verdict": "PASS" if result.returncode == 0 else "FAILED",
         "stdout": result.stdout, "stderr": result.stderr,
         "scope": "offline shell/argument/git guards only; live run boundary replaced; no workflow invocation",
     }
@@ -86,12 +64,12 @@ def main():
         json.dump(receipt, stream, indent=2)
         stream.write("\n")
     reread = json.loads(destination.read_text())
-    if reread != receipt:
-        raise RuntimeError("receipt readback changed")
+    assert reread == receipt
+    assert reread["generator_sha256"] == sha(generator)
     print(result.stdout, end="")
     print(result.stderr, end="", file=sys.stderr)
     print(f"receipt={destination} verdict={receipt['verdict']} exit={result.returncode}")
-    return verification_exit
+    return result.returncode
 
 
 if __name__ == "__main__":

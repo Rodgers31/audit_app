@@ -1,5 +1,31 @@
 # Batch 9 PDF pin handoff — #586
 
+## Coordinator review corrections
+
+The original execution history below is retained as history. The repaired offline
+test creates its own two-commit Git repository instead of checking out an old
+application commit that is absent in a depth-one CI clone. It verifies the
+producer's original HEAD/tree constants first, then substitutes only the owned
+fixture HEAD/tree in the observer and shell. Actual CLI parsing, guards, Git
+commands and the pilot/PDF observation boundary still execute. This proves the
+offline guard contract; it does not execute the frozen production application.
+The deployment workflow and producer pins remain unchanged by this correction.
+
+The receipt recorder now captures HEAD, tree, tracked status, generator and bound
+source hashes **before** the child runs and compares them afterward. A successful
+child cannot receive PASS if these identities change or a bound file disappears.
+The child exit and verification exit are separate fields. Seven executable
+controls cover stable input, source/generator mutation, deletion, HEAD advance,
+child failure, and missing source before execution. Original JSON receipts are
+unchanged; their original recorder bytes are archived under
+`batch9-pdf-pin-evidence/historical-generators/` and explicitly represent the
+earlier candidate. They do not recertify repaired code.
+
+The shallow-clone failure and source-mutation false pass were reproduced before
+repair. The repaired 24 workflow controls and seven provenance controls pass in
+both the review checkout and a fresh depth-one clone. Coordinator receipts bind
+the exact executed source and are stored separately from the original history.
+
 ## Goal and ownership
 
 [Issue #586](https://github.com/Rodgers31/audit_app/issues/586) asks for an offline

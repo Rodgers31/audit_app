@@ -20,7 +20,8 @@ PRODUCER_SHA = "9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f
 
 # Only the final live run boundary is replaced. The real module's argument
 # parser, main, guards and actual git subprocesses execute in each child.
-# Linux/Python 3.12 are explicitly simulated for this offline guard control;
+# Frozen HEAD/tree use a real, self-contained owned Git fixture; the original
+# deployment pins are checked separately. Linux/Python 3.12 are simulated;
 # this is not intended-host/runtime parity or full producer acceptance.
 OBSERVER = r'''
 import importlib.util
@@ -50,7 +51,11 @@ def observed(args, repo, output):
         stream.write(json.dumps(event) + "\n")
     return {"status": "OFFLINE_GUARD_ACCEPTED", "stage": args.stage}
 
-with patch.object(module, "run", observed), \
+assert module.HEAD == os.environ["OFFLINE_SOURCE_HEAD"]
+assert module.TREE == os.environ["OFFLINE_SOURCE_TREE"]
+with patch.object(module, "HEAD", os.environ["OFFLINE_FIXTURE_HEAD"]), \
+     patch.object(module, "TREE", os.environ["OFFLINE_FIXTURE_TREE"]), \
+     patch.object(module, "run", observed), \
      patch.object(module.platform, "system", return_value="Linux"), \
      patch.object(module.sys, "version_info", (3, 12)):
     sys.exit(module.main(sys.argv[2:]))
@@ -69,13 +74,17 @@ def live_step():
 @pytest.fixture
 def owned(tmp_path):
     app = tmp_path / "app"
-    # Local objects are read-only; this clone owns its checkout/index/refs.
-    subprocess.run(["git", "clone", "--quiet", "--shared", "--no-checkout",
-                    str(REPO), str(app)], check=True)
-    subprocess.run(["git", "checkout", "--quiet", "--detach", APP_HEAD],
-                   cwd=app, check=True)
-    assert subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"],
-                                   cwd=app, text=True).strip() == APP_TREE
+    # No historical objects or network are required, including on depth-one CI.
+    app.mkdir()
+    subprocess.run(["git", "init", "--quiet"], cwd=app, check=True)
+    (app / "README.md").write_text("owned offline Git fixture\n")
+    subprocess.run(["git", "add", "README.md"], cwd=app, check=True)
+    for message in ("owned tree", "owned frozen head"):
+        subprocess.run(["git", "-c", "user.name=Offline fixture", "-c",
+                        "user.email=fixture@example.invalid", "commit", "--quiet",
+                        "--allow-empty", "-m", message], cwd=app, check=True)
+    fixture_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=app, text=True).strip()
+    fixture_tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=app, text=True).strip()
     script = tmp_path / "acceptance-tools/backend/scripts/r2_producer_acceptance.py"
     script.parent.mkdir(parents=True)
     script.write_bytes(PRODUCER.read_bytes())
@@ -91,6 +100,10 @@ def owned(tmp_path):
         "GITHUB_WORKSPACE": str(tmp_path),
         "RUNNER_TEMP": str(tmp_path / "runner"),
         "OFFLINE_CALL_LOG": str(calls),
+        "OFFLINE_SOURCE_HEAD": APP_HEAD,
+        "OFFLINE_SOURCE_TREE": APP_TREE,
+        "OFFLINE_FIXTURE_HEAD": fixture_head,
+        "OFFLINE_FIXTURE_TREE": fixture_tree,
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHON_DOTENV_DISABLED": "1",
     }
@@ -99,8 +112,8 @@ def owned(tmp_path):
 
 def execute(owned, body=None):
     _, _, calls, env = owned
-    result = subprocess.run(["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c",
-                             live_step()["run"] if body is None else body],
+    shell = (live_step()["run"] if body is None else body).replace(APP_HEAD, env["OFFLINE_FIXTURE_HEAD"])
+    result = subprocess.run(["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", shell],
                             env=env, text=True, capture_output=True, timeout=30)
     events = [json.loads(line) for line in calls.read_text().splitlines()] if calls.exists() else []
     return result, events
@@ -132,7 +145,7 @@ def test_unreviewed_or_missing_bytes_never_reach_producer(owned, mutation):
 
 def test_wrong_actual_checkout_never_reaches_live_boundary(owned):
     app, _, _, _ = owned
-    subprocess.run(["git", "checkout", "--quiet", "--detach", APP_HEAD + "^"], cwd=app, check=True)
+    subprocess.run(["git", "checkout", "--quiet", "--detach", "HEAD^"], cwd=app, check=True)
     result, events = execute(owned)
     assert result.returncode == 1
     assert json.loads(result.stdout) == {"status": "FAILED", "reason": "checkout_mismatch"}
@@ -207,5 +220,8 @@ def test_pdf_pin_receipts_have_current_generators():
     for path in receipts:
         receipt = json.loads(path.read_text())
         generator = REPO / receipt["generated_by"]
+        if hashlib.sha256(generator.read_bytes()).hexdigest() != receipt["generator_sha256"]:
+            generator = path.parent / "historical-generators" / ("record_check_" + receipt["generator_sha256"] + ".py")
         assert hashlib.sha256(generator.read_bytes()).hexdigest() == receipt["generator_sha256"], path
-        assert receipt["verdict"] == ("PASS" if receipt["exit_status"] == 0 else "FAILED"), path
+        status = receipt.get("verification_exit_status", receipt["exit_status"])
+        assert receipt["verdict"] == ("PASS" if status == 0 else "FAILED"), path
