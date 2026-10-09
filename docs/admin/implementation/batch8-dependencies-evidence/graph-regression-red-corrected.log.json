@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/graph-regression-red-corrected.log",
+  "sha256": "01bb0cd7dd3cad40a73c9eb8214c22977c9d3d5ea38531b5ef5867bbbaf4494d",
+  "encoding": "utf-8",
+  "text": "TAP version 13\n# Subtest: graph gate rejects malformed rows and incomplete measurements\nnot ok 1 - graph gate rejects malformed rows and incomplete measurements\n  ---\n  duration_ms: 69.651125\n  type: 'test'\n  location: '/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/.batch8-jest-gate-red.cjs:66:1'\n  failureType: 'testCodeFailure'\n  error: |-\n    undefined\n    \n    0 !== 1\n    \n  code: 'ERR_ASSERTION'\n  name: 'AssertionError'\n  expected: 1\n  actual: 0\n  operator: 'strictEqual'\n  stack: |-\n    TestContext.<anonymous> (/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/.batch8-jest-gate-red.cjs:77:14)\n    Test.runInAsyncScope (node:async_hooks:214:14)\n    Test.run (node:internal/test_runner/test:1047:25)\n    Test.start (node:internal/test_runner/test:944:17)\n    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)\n  ...\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 1\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 98.180042\n"
+}

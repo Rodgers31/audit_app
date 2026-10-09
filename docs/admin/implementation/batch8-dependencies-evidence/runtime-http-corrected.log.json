@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/runtime-http-corrected.log",
+  "sha256": "b258e13a55197ddcf137558130c2f53e0174af25c2f9349070c4549aac0d71c5",
+  "encoding": "utf-8",
+  "text": "[\n  {\n    \"path\": \"/api/health\",\n    \"status\": 200,\n    \"content_type\": \"application/json\",\n    \"bytes\": 15,\n    \"sha256\": \"a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288\"\n  },\n  {\n    \"path\": \"/learn\",\n    \"status\": 200,\n    \"content_type\": \"text/html; charset=utf-8\",\n    \"bytes\": 107463,\n    \"sha256\": \"6977650d41047ae4fbf52e2df2575ff58d1167d695a3fe1cb77f72af636f3189\"\n  },\n  {\n    \"path\": \"/_next/image?url=http%3A%2F%2Flocalhost%3A43196%2Ffixture.png&w=16&q=75\",\n    \"status\": 200,\n    \"content_type\": \"image/webp\",\n    \"bytes\": 68,\n    \"sha256\": \"8557208a3d4805be45ebaaeb04c5e0b34dd2e9209972e4a63fae8e9e60d54ed9\"\n  }\n]\n"
+}
