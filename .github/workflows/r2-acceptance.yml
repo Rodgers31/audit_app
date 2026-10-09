@@ -57,7 +57,7 @@ jobs:
         run: |
           set -eu
           script="$GITHUB_WORKSPACE/acceptance-tools/backend/scripts/r2_producer_acceptance.py"
-          expected_script_sha=15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028
+          expected_script_sha=9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f
           actual_script_sha=$(sha256sum "$script" | cut -d " " -f 1)
           test "$actual_script_sha" = "$expected_script_sha"
           repo="$GITHUB_WORKSPACE/app"
