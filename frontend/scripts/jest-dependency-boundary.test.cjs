@@ -5,7 +5,11 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { createRequire } = require('node:module');
 const test = require('node:test');
+
+// Sharp declares this parser directly; do not rely on npm hoisting it.
+const semver = createRequire(require.resolve('sharp'))('semver');
 
 const frontend = path.resolve(__dirname, '..');
 const jestCli = require.resolve('jest/bin/jest');
@@ -15,6 +19,22 @@ function jest(args) {
     cwd: frontend, encoding: 'utf8', timeout: 15000,
   });
 }
+
+test('advertised Node runtime range fits installed application and Jest tooling', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(frontend, 'package.json'), 'utf8'));
+  const lock = JSON.parse(fs.readFileSync(path.join(frontend, 'package-lock.json'), 'utf8'));
+  const advertised = manifest.engines.node;
+  assert.ok(semver.validRange(advertised), 'Frontend must declare a valid Node runtime range');
+  assert.deepEqual(lock.packages[''].engines, manifest.engines,
+    'Manifest and lock root must advertise the same runtime contract');
+  for (const name of ['next', 'jest', 'jest-environment-jsdom']) {
+    const supported = require(`${name}/package.json`).engines.node;
+    assert.ok(semver.subset(advertised, supported),
+      `Frontend Node range ${advertised} advertises runtimes unsupported by ${name}: ${supported}`);
+  }
+  assert.ok(semver.satisfies(process.versions.node, advertised),
+    `Executed Node ${process.versions.node} must meet the advertised runtime contract`);
+});
 
 test('installed Jest dependency graph excludes the vulnerable brace compiler', () => {
   const npmCli = process.env.npm_execpath;
@@ -28,7 +48,7 @@ test('installed Jest dependency graph excludes the vulnerable brace compiler', (
   assert.ok(Array.isArray(packages) && packages.length > 0, 'Jest graph must be measured');
   assert.ok(packages.every(pkg => pkg && typeof pkg === 'object' && !Array.isArray(pkg)
     && typeof pkg.name === 'string' && pkg.name.trim()
-    && typeof pkg.version === 'string' && pkg.version.trim()), 'npm graph rows must identify packages');
+    && typeof pkg.version === 'string' && semver.valid(pkg.version)), 'npm graph rows must identify packages');
   for (const caller of ['@jest/core', 'jest-cli', 'jest-config', 'jest-message-util']) {
     assert.ok(packages.some(pkg => pkg.name === caller), `npm graph must include ${caller}`);
   }
@@ -39,15 +59,21 @@ test('installed Jest dependency graph excludes the vulnerable brace compiler', (
 test('graph gate rejects malformed rows and incomplete measurements', () => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'audit-app-jest-graph-'));
   try {
-    const core = { name: '@jest/core', version: '30.5.2' };
-    for (const rows of [[core], [core, {}], [core, { version: '3.0.3' }], [core, null]]) {
+    const callers = ['@jest/core', 'jest-cli', 'jest-config', 'jest-message-util']
+      .map(name => ({ name, version: '30.5.2' }));
+    const core = callers[0];
+    const cases = [[core], [core, {}], [core, { version: '3.0.3' }], [core, null],
+      ...['not-a-version', '>=30', '30.x', '30.5', '30.5.2.1', '01.5.2']
+        .map(version => [...callers, { name: 'ordinary-dependency', version }])];
+    for (const rows of cases) {
       const npmCli = path.join(fixture, 'npm-stub.cjs');
       fs.writeFileSync(npmCli, `process.stdout.write(${JSON.stringify(JSON.stringify(rows))});\n`);
       const result = spawnSync(process.execPath, ['--test', '--test-name-pattern=^installed Jest', __filename], {
         cwd: frontend, encoding: 'utf8', timeout: 15000,
         env: { PATH: process.env.PATH, npm_execpath: npmCli },
       });
-      assert.equal(result.status, 1, result.stderr || String(result.error));
+      assert.equal(result.status, 1,
+        `Malformed npm graph ${JSON.stringify(rows)} passed: ${result.stdout || result.stderr || String(result.error)}`);
       assert.match(result.stdout, /npm graph (?:rows must identify packages|must include)/);
     }
   } finally { fs.rmSync(fixture, { recursive: true, force: true }); }

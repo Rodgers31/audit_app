@@ -256,17 +256,19 @@ def test_invalid_exception_status_cannot_become_a_diagnostic_channel(status):
     httpx.Response(200, content=b'{"inert-sensitive-diagnostic-marker":'),
     httpx.ConnectError(MARKER),
 ], ids=["wrong-container", "wrong-identity", "upstream", "invalid-json", "connection"])
-def test_signed_auth_consumer_refuses_admin_when_actual_profile_read_fails(memory, response):
+def test_signed_auth_consumer_refuses_admin_when_actual_profile_read_fails(memory, response, monkeypatch):
     from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException
     from fastapi.security import HTTPAuthorizationCredentials
     from jose import jwt
     import supabase_auth
 
+    secret = "inert-batch8-jwt-secret"
+    monkeypatch.setenv("SUPABASE_JWT_SECRET", secret)
     memory.response = response
     token = jwt.encode({"sub": TARGET, "aud": "authenticated",
                         "exp": datetime.now(timezone.utc) + timedelta(minutes=5)},
-                       "inert-batch8-jwt-secret", algorithm="HS256")
+                       secret, algorithm="HS256")
     actor = supabase_auth.get_current_user(HTTPAuthorizationCredentials(scheme="Bearer", credentials=token))
     assert actor.id == TARGET and actor.roles == []
     with pytest.raises(HTTPException) as raised:

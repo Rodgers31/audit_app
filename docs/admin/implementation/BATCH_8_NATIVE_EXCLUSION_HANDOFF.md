@@ -6,6 +6,15 @@ and production activation pending). Dedicated dispatch remains default-off and
 limited to the accepted OAG→`audits` mapping. Pre-merge operational gates
 (below, and #583) are **not executed**.
 
+Coordinator review repaired three confirmed code defects and preserved the
+recorded restart-retention policy. Detailed classifications and observed
+red/green results are in
+[`batch8-exclusion-evidence/coordinator-review.md`](../../../batch8-exclusion-evidence/coordinator-review.md).
+Final local ETL/process/migration verification: **197 passed**, no skips or
+xfails, plus **4/4 actual PostgreSQL acknowledgement controls** on supported
+SQLAlchemy 2.0.23. This adds local evidence; the unexecuted #583 gates below
+remain prerequisites for acceptance.
+
 ## Identities
 
 | | |
@@ -74,6 +83,10 @@ a dedicated connection until the run ends:
 - `close()` rolls back, and invalidates the connection if that fails.
 
 Losing the lock never releases anything; it only prevents acknowledgement.
+Acknowledgement updates use a savepoint on the same connection, followed by a
+commit of the outer lock transaction. Loss before that commit rolls back the
+update and retains ownership. A rejected observation rolls back its savepoint
+without ending the original continuity lock.
 
 **Release.**
 
@@ -120,7 +133,9 @@ never complete a command.
 **Pre-seam RUNNING rows.** A RUNNING observation without a `seeding_claim_id`
 tag may be a live writer outside the seam. It refuses its domain in both native
 entry and the worker's `claim()`, with **no age limit**: an age limit would be an
-expiry-based takeover. Tagged rows are governed by their claim.
+expiry-based takeover. Tagged rows are governed only by a UUID resolving to an
+unreleased claim for that same domain; malformed, absent, released or mismatched
+claims still refuse the domain.
 
 **Unchanged:** CLI arguments, `--all`, source-manifest scope, provenance
 metadata, dry-run rollback with its preserved observation, and publication.

@@ -80,7 +80,7 @@ observed exits/output identities, source/fixture hashes and earlier failures.
   This includes 215 new helper cases, two new fresh-import cases, 68 retained
   helper/import cases and 164 retained auth/Users/audit controls. Counts overlap
   earlier runs and are not additive coverage.
-- Scoped critical flake87.3.0: output `0`, exit0. Broad critical lint: unchanged
+- Scoped critical flake8 7.3.0: output `0`, exit0. Broad critical lint: unchanged
   producer F821 tracked by #569; base/current producer SHA256 matches. No broad
   lint green or full unrelated backend/frontend/ETL claim is made.
 - Independent [read execution](batch8-provider-helper-evidence/ADVERSARIAL_READS.md):
@@ -146,3 +146,34 @@ coordinator exact-head review of the scoped draft PR, combined integration and
 manually requested Copilot handling. #570/#571 remain open until that acceptance
 and closure; #545 and operational acceptance remain broader work. Do not merge
 from this author session.
+
+## Coordinator review addendum
+
+Copilot comment 4232126293's exception hierarchy claim was refuted by execution.
+On both installed HTTPX **0.28.1** and the supported minimum **0.25.2**,
+`httpx.InvalidURL.__mro__` is `InvalidURL, Exception, BaseException, object` and
+`issubclass(httpx.InvalidURL, httpx.HTTPError)` is false. A real malformed-port
+URL passed to `_raw_request` produces the existing safe **500** before transport;
+a valid profile read succeeds and an actual MockTransport `ConnectError`
+produces safe **503**. Socket transport was denied. The production helper was
+left unchanged: changing handler order would not repair an observed defect.
+
+The retained helper suite passed **215 tests** using the minimum HTTPX package
+installed only in an owned external target. The installed runtime's combined
+helper/auth/Users/fresh-import selection passed **449 tests**, with two existing
+SQLAlchemy warnings. A first minimum-package collection lacked its `sniffio`
+dependency; that failed attempt is retained, and the complete minimum run is
+reported separately. Comment 4232126359's documentation typo was valid and is
+corrected above to `flake8 7.3.0`.
+
+Exact probes, outputs and failed/complete runs are in the coordinator's
+`BATCH_8_REVIEW/` directory. These receipts do not certify live provider behavior,
+deployment diagnostics, hosted checks or broader production acceptance.
+
+The coordinator also made the signed-auth negative test self-contained: it
+now scopes its own inert JWT verification key to match its signed token.
+Previously five cases failed with absent or different ambient configuration.
+Independent absent/different-key replay passes 10/10; the repaired combined
+backend selection passes 1,425 with three retained-document skips. This
+changes test configuration only. Actual current/minimum HTTPX receipts and
+replay are committed in `batch8-provider-helper-evidence/COORDINATOR_REVIEW.md`.

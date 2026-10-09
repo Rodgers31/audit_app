@@ -33,7 +33,7 @@ A modern React/Next.js frontend for the Government Financial Transparency Audit 
 
 ### Prerequisites
 
-- Node.js 18 or later
+- Node.js `^20.9.0 || ^22.0.0 || >=24.0.0` (Node 22 is locally verified and configured for CI; Node 21/23 are unsupported by Jest)
 - npm or yarn
 
 ### Installation

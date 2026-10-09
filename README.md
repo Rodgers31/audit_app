@@ -204,7 +204,7 @@ Deployments are automatically blocked if any tests fail.
 ## Prerequisites
 
 - Python 3.9+
-- Node.js 18+
+- Node.js `^20.9.0 || ^22.0.0 || >=24.0.0` (Node 22 is locally verified and configured for frontend CI; Node 21/23 are unsupported by Jest)
 - PostgreSQL 17 through Docker (optional for the isolated PostgreSQL path)
 - Redis (optional for local previews)
 

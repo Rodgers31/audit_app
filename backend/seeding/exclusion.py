@@ -67,11 +67,19 @@ def reserve(db, domain, identity, command_id=None, entry=None):
 
 def unclaimed_running(db, domain):
     """A RUNNING observation from a writer outside this seam (e.g. written before
-    the migration). Rows tagged with a seeding claim are governed by that claim.
+    the migration). Only a tag resolving to an active claim for this domain is
+    governed by that claim; an arbitrary string is not ownership evidence.
     No age limit: an old row is uncertainty, never permission to take over."""
     for meta in db.scalars(select(IngestionJob.meta).where(
             IngestionJob.domain == domain, IngestionJob.status == IngestionStatus.RUNNING)):
         if not (type(meta) is dict and type(meta.get("seeding_claim_id")) is str):
+            return True
+        try:
+            identity = UUID(meta["seeding_claim_id"])
+        except ValueError:
+            return True
+        ownership = db.get(SeedingDomainClaim, identity)
+        if ownership is None or ownership.domain != domain or ownership.released_at is not None:
             return True
     return False
 
@@ -145,7 +153,7 @@ class DomainExecution:
     def acknowledge(self, job_id):
         if not self.entered or not isinstance(self.entry, UUID) or not self.continuous():
             raise DomainOwnershipError("Execution unverified; domain ownership retained")
-        with self.factory.begin() as db:
+        with self._acknowledgement_transaction() as db:
             claim = db.get(SeedingDomainClaim, self.identity, with_for_update=True)
             # Bound to this object's own durable entry: same domain, kind and
             # command, and the nonce (not its stored digest) this object entered with.
@@ -160,6 +168,24 @@ class DomainExecution:
             if claim.kind == "native":
                 claim.released_at = claim.returned_at
         # Commit before reporting normal release. Ambiguous commits do not retry.
+
+    @contextmanager
+    def _acknowledgement_transaction(self):
+        if self.engine.dialect.name == "postgresql":
+            # Commit the acknowledgement on the transaction that holds the
+            # continuity lock. If that backend dies at any point, its claim
+            # update rolls back with it; a second connection must not release
+            # authority on the strength of an earlier continuity check.
+            # A rejected observation rolls back only its savepoint, preserving
+            # the existing lock for a correctly bound observation. Successful
+            # validation commits the outer lock transaction exactly once.
+            with self.factory(bind=self.connection, join_transaction_mode="create_savepoint") as db:
+                with db.begin():
+                    yield db
+            self.connection.commit()
+        else:
+            with self.factory.begin() as db:
+                yield db
 
     def close(self):
         if self.connection is not None:

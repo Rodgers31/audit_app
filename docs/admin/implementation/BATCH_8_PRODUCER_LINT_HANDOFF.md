@@ -219,3 +219,23 @@ Actions was read back disabled. No merge, workflow invocation, manual deployment
 provider/source acquisition, production SQL/storage write or issue closure
 occurred. Scoped local #569 acceptance is complete; the retained-PDF replay,
 future workflow pin rebind and broader operational gates remain separate.
+
+## Coordinator review addendum
+
+Copilot comment 4232125457 was valid: the receipt runner created SQLite's parent
+after starting its child. The new default-suite regression
+`backend/tests/test_r2_producer_runner.py` starts a real application SQLAlchemy
+child against a previously absent nested receipt directory, denies child socket
+transport and verifies the committed SQLite row and read-back passing receipt.
+It was observed failing before repair with `unable to open database file`, then
+passing after moving the existing directory creation before `subprocess.run`.
+No producer, parser, writer or financial source behavior changed in this repair.
+
+The repaired runner's current receipts are
+`coordinator-producer-suite.json` (**287 passed, 3 retained-document skips**) and
+`coordinator-critical-lint.json` (**flake8 7.3.0**, stdout `0`, exit 0). They were
+copied without alteration from the owned review output directory. Historical
+receipt generator hashes are retained and explicitly superseded in
+`SUPERSEDED_RUNNER.md`; the evidence guard remains enabled. These local checks
+include the fresh-directory regression and do not execute the full retained-PDF
+oracle, a hosted workflow or any production acceptance gate.
