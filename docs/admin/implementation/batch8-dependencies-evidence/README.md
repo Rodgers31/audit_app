@@ -15,3 +15,15 @@ The portable watcher harness at raw/review-adversarial/probe-parcel-watch-portab
 See ../BATCH_8_DEPENDENCIES_HANDOFF.md for the decision and residual chains. #494 remains open. Review reports state their exact inspected snapshots; final delivery identity is recorded after the normal push.
 
 Selected raw outputs use [lossless JSON envelopes](LOG_FORMAT.md); decoding `text` as UTF-8 reproduces the exact original SHA256, including carriage returns and spaces. Full publisher notes remain in raw evidence; the committed release note is a compact review summary.
+
+## Coordinator filename corrections — 2026-10-09
+
+The historical review snapshots keep their original text and inspected hashes. Three filename references in those snapshots use the original raw names rather than the committed packet names. Use these exact committed files:
+
+| Historical reference | Committed evidence |
+| --- | --- |
+| `final-evidence-validation.json` in `spec-final-followup.md` | [spec-final-evidence-validation.json](spec-final-evidence-validation.json) |
+| `format-checks.json` in `standards-format-followup.md` | [standards-format-checks.json](standards-format-checks.json) |
+| `documentation-checks.json` in `standards-documentation-followup.md` | [standards-documentation-checks.json](standards-documentation-checks.json) |
+
+The coordinator also narrows the manifest and lock root's Node contract to `^20.9.0 || ^22.0.0 || >=24.0.0`, consistent with the installed Jest tooling. Node 22 is locally exercised and already configured in workflow definitions; Actions remains disabled. Semantic-version validation now rejects nonempty but malformed versions in measured npm graph rows. The author reports above describe the earlier inspected snapshot; current coordinator receipts supersede their runtime-range and graph-validation claims.
