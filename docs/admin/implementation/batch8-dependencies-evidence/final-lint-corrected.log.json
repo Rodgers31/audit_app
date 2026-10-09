@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/final-lint-corrected.log",
+  "sha256": "02111bf2b93c7ac7933fb7e06922585671789ce558acde6308d00dac2a2dd7f6",
+  "encoding": "utf-8",
+  "text": "\n> audit-app-frontend@1.0.0 lint\n> next lint --max-warnings=0\n\n`next lint` is deprecated and will be removed in Next.js 16.\nFor new projects, use create-next-app to choose your preferred linter.\nFor existing projects, migrate to the ESLint CLI:\nnpx @next/codemod@canary next-lint-to-eslint-cli .\n\n\u2714 No ESLint warnings or errors\n"
+}

@@ -1,0 +1,28 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "b8cb7f42cbb368df83ef7962ed29b8ca22c66d7f25a48c25b2a42662d4a6f26c",
+  "generated_at": "2026-10-09T17:57:48.981697+00:00",
+  "target_commit": "207be85c658832ff436ed95b967711ec090839cb",
+  "target_tree": "bca039f1013bc4d3f95ba0fde5a2923283aabf71",
+  "producer_sha256": "9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f",
+  "test_sha256": "e21974a1e75f82a1ec45956b07bd85497d49aef52fb882d03b56afe7d5ef03d0",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "flake8",
+    ".",
+    "../docs/admin/implementation/batch8-producer-evidence/run_check.py",
+    "--count",
+    "--select=E9,F63,F7,F82",
+    "--show-source",
+    "--statistics",
+    "--exclude=venv,__pycache__,.git"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/social-batch3-integration/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 0,
+  "verdict": "PASS",
+  "stdout": "0\n",
+  "stderr": ""
+}

@@ -1,0 +1,40 @@
+{
+  "base_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "base_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "worktree": "/Users/roger/.codex/worktrees/2262/audit_app",
+  "branch": "codex/batch8-provider-helper",
+  "source_files": {
+    "backend/supabase_admin.py": {
+      "sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+      "git_blob": "96969c07d98f57ec15c2a33e4474e5bcf2b191fa"
+    },
+    "backend/tests/test_batch7_supabase_helpers.py": {
+      "sha256": "b6c113112f8073305890fb4f1965834d0e9207fa933163681922f12a73d4ee10",
+      "git_blob": "6d3d77f9ffb7977936cc78007ca66f58866f205f"
+    },
+    "backend/tests/test_batch8_supabase_helpers.py": {
+      "sha256": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "git_blob": "1b6757a7be942bed55a52e72709c7d394f775a7f"
+    },
+    "backend/tests/test_batch8_supabase_helpers_imports.py": {
+      "sha256": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad",
+      "git_blob": "f53f69b186ee68d6ebba2bbd1d3014c7593e4663"
+    }
+  },
+  "unchanged_controls": {
+    "backend/supabase_auth.py": "79f315ec493092d7f9b41da45462201e05c5a116c00106bdf8131120fac48971",
+    "backend/admin_users_provider.py": "2ca83ff8e54effa363593595e7ea2e91a8d0c3d8d00214edd1cc9bc304388ac5",
+    "backend/routers/admin_users.py": "446672040942931cbbb1f2e5873f11622914553cdb33c470912c4fb25b6dc405",
+    "backend/main.py": "dbac56fe5b9c2300cf6946a65021e24b292da429bacf11cc6a45b1c52e12c82a",
+    "backend/models.py": "aad0868bd9d22b66c67e6b881a7cac175f7d05198414502bc8b8d85fb5460cd7",
+    "backend/seeding/cli.py": "f7127e5cf714680ec788457ee9e09e964e85993a28adbed69fb1149cb000c157",
+    "backend/scripts/r2_producer_acceptance.py": "15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028"
+  },
+  "runtime": "read-only /Users/roger/Documents/projects/audit_app/venv/bin/python; Python3.13.9; macOS27.0.1 arm64; httpx0.28.1 pytest9.0.2 SQLAlchemy2.0.46",
+  "lint": "owned venv, flake8 7.3.0 / pyflakes 3.4.0 / pycodestyle 2.14.0 / mccabe 0.7.0",
+  "all_state_issues": 282,
+  "originating_issue_updates": "#570/#571 current snapshots have no comments; open; #550/#551/#564 remain closed",
+  "external_evidence_root": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence",
+  "implementation_commit": "2ae043cc3930d40bb15deb25525fe49c5b13ee1e",
+  "implementation_tree": "529438255b340f3c8a32274e7d0164b6314f74ee"
+}

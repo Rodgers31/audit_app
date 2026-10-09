@@ -1,0 +1,61 @@
+{
+  "command": [
+    "/usr/local/bin/node",
+    "--require",
+    "/owned/watch-portable-linux/trace-loader.cjs",
+    "/work/frontend/node_modules/jest/bin/jest.js",
+    "--config",
+    "{\"rootDir\":\"/owned/watch-portable-linux/fixture\",\"testEnvironment\":\"node\",\"transform\":{},\"testMatch\":[\"**/*.test.js\"],\"cacheDirectory\":\"/owned/watch-portable-linux/cache\"}",
+    "--watchAll",
+    "--watchman=false",
+    "--runInBand",
+    "--json",
+    "--outputFile",
+    "/owned/watch-portable-linux/jest-results.json"
+  ],
+  "cwd": "/owned/watch-portable-linux/fixture",
+  "env": {
+    "PATH": "/usr/local/bin:/usr/local/bin:/usr/bin:/bin",
+    "TMPDIR": "/owned/watch-portable-linux/tmp",
+    "NODE_ENV": "test",
+    "FORCE_COLOR": "0"
+  },
+  "started": "2026-10-09T08:45:28.775Z",
+  "finished": "2026-10-09T08:45:30.251Z",
+  "node": "v22.23.3",
+  "platform": "linux",
+  "arch": "x64",
+  "pid": 973,
+  "observedRuns": 2,
+  "initial": {
+    "success": true,
+    "numTotalTests": 1,
+    "numPassedTests": 1
+  },
+  "updated": {
+    "success": false,
+    "numTotalTests": 1,
+    "numFailedTests": 1
+  },
+  "parcelLoaded": true,
+  "native": [
+    {
+      "timestamp": "2026-10-09T08:45:29.215Z",
+      "pid": 973,
+      "request": "@parcel/watcher-linux-x64-glibc",
+      "resolved": "/work/frontend/node_modules/@parcel/watcher-linux-x64-glibc/watcher.node",
+      "sha256": "f5a86a5231fb33c6c1830649eafd2c9e72647edb45aad753148d08cee6a42dea"
+    }
+  ],
+  "termination": {
+    "status": null,
+    "signal": "SIGTERM"
+  },
+  "groupAlive": false,
+  "stdout": "/owned/watch-portable-linux/stdout.log",
+  "stderr": "/owned/watch-portable-linux/stderr.log",
+  "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSha256": "e5e68496a83c3ffdc9f1c6f14218aec27bee14dc0e1654338ea997dcf263ca43",
+  "scriptSha256": "2adebfcb98a45a57cf129d6a0ee09be32a655ff25701a37af9019967d206105f",
+  "verdict": "PASSED"
+}

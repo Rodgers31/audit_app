@@ -171,10 +171,12 @@ def test_matching_role_arrays_preserve_public_row_contract(memory, roles):
 
 
 @pytest.mark.parametrize("failure", [httpx.ConnectError("inert unavailable"), httpx.ReadTimeout("inert timeout")])
-def test_transport_failure_propagates_without_role_success(memory, failure):
+def test_transport_failure_is_safe_without_role_success(memory, failure):
     memory.response = failure
-    with pytest.raises(type(failure)):
+    with pytest.raises(supabase_admin.SupabaseAdminError) as error:
         supabase_admin.update_profile_roles(TARGET, ["admin"])
+    assert error.value.status_code == 503
+    assert error.value.body is None
     assert len(memory.requests) == 1
 
 

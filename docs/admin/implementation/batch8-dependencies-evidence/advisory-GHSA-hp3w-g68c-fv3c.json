@@ -1,0 +1,72 @@
+{
+  "ghsa_id": "GHSA-hp3w-g68c-fv3c",
+  "cve_id": "CVE-2026-97058",
+  "url": "https://api.github.com/advisories/GHSA-hp3w-g68c-fv3c",
+  "html_url": "https://github.com/advisories/GHSA-hp3w-g68c-fv3c",
+  "summary": "sprintf-js vulnerable to denial of service through unbounded precision specifiers",
+  "description": "sprintf-js through 1.1.3 passes unbounded precision specifiers to toFixed, toExponential, and toPrecision methods without validation, causing uncaught RangeError exceptions. Attackers who control format strings can inject precision values exceeding ECMAScript limits to abort calling operations with minimal payload.",
+  "type": "reviewed",
+  "severity": "medium",
+  "repository_advisory_url": null,
+  "source_code_location": "https://github.com/alexei/sprintf.js",
+  "identifiers": [
+    {
+      "value": "GHSA-hp3w-g68c-fv3c",
+      "type": "GHSA"
+    },
+    {
+      "value": "CVE-2026-97058",
+      "type": "CVE"
+    }
+  ],
+  "references": [
+    "https://nvd.nist.gov/vuln/detail/CVE-2026-97058",
+    "https://github.com/alexei/sprintf.js/issues/237",
+    "https://github.com/alexei/sprintf.js/blob/3a0d8c26d291b5bd9f1974877ecc50739921d6f5/src/sprintf.js#L17",
+    "https://github.com/alexei/sprintf.js/blob/3a0d8c26d291b5bd9f1974877ecc50739921d6f5/src/sprintf.js#L84-L90",
+    "https://www.vulncheck.com/advisories/sprintf-js-through-1.1.3-denial-of-service-via-unbounded-precision",
+    "https://github.com/advisories/GHSA-hp3w-g68c-fv3c"
+  ],
+  "published_at": "2026-09-24T15:31:31Z",
+  "updated_at": "2026-10-05T23:47:35Z",
+  "github_reviewed_at": "2026-10-05T23:47:34Z",
+  "nvd_published_at": "2026-09-24T14:18:21Z",
+  "withdrawn_at": null,
+  "vulnerabilities": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "sprintf-js"
+      },
+      "vulnerable_version_range": "<= 1.1.3",
+      "first_patched_version": null,
+      "vulnerable_functions": []
+    }
+  ],
+  "cvss_severities": {
+    "cvss_v3": {
+      "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+      "score": 5.3
+    },
+    "cvss_v4": {
+      "vector_string": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+      "score": 6.9
+    }
+  },
+  "cwes": [
+    {
+      "cwe_id": "CWE-1284",
+      "name": "Improper Validation of Specified Quantity in Input"
+    }
+  ],
+  "credits": [],
+  "comments": 0,
+  "cvss": {
+    "vector_string": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
+    "score": 5.3
+  },
+  "epss": {
+    "percentage": 0.00366,
+    "percentile": 0.27755
+  }
+}
