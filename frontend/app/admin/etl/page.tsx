@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import {parseSchedule,parseEtlHealth,type ScheduleSourceDecision} from '@/lib/admin/etl';
 import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
+import { Suspense } from 'react';
+import DispatchPanel from './DispatchPanel';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -62,6 +64,7 @@ export default function AdminEtlPage() {
       subtitle='Calendar planning for source checks. Execution requires the dedicated runner.'
       back={{ href: '/admin', label: 'Back to overview' }}>
       <div className='space-y-5'>
+        <Suspense fallback={<p role='status'>Loading worker dispatch…</p>}><DispatchPanel /></Suspense>
         <p className='text-sm text-neutral-muted'>A calendar calculation does not establish scheduler activity, job execution or financial data freshness.</p>
         <p role='status' className='text-sm text-neutral-muted'>{healthData?.manual_trigger.reason ?? 'Manual execution is unavailable. No job was accepted.'}</p>
         {health.isError && <p role='alert' className='text-sm text-gov-copper'>Could not load execution evidence.</p>}

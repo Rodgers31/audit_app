@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "note": "Inert examples, not runtime readiness evidence. OAG-only availability is illustrative, not a production mapping grant.",
+  "capability_unavailable": {
+    "timestamp": "2026-10-09T12:00:00Z",
+    "evidence": "worker_dispatch",
+    "available": false,
+    "reason": "Dedicated worker dispatch is unavailable.",
+    "generation": null,
+    "worker": {
+      "status": "unavailable",
+      "last_seen_at": null,
+      "expires_at": null
+    },
+    "sources": {
+      "treasury": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      },
+      "cob": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      },
+      "oag": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      },
+      "knbs": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      },
+      "opendata": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      },
+      "cra": {
+        "available": false,
+        "reason": "Dedicated worker dispatch is unavailable."
+      }
+    }
+  },
+  "capability_ready": {
+    "timestamp": "2026-10-09T12:00:00Z",
+    "evidence": "worker_dispatch",
+    "available": true,
+    "reason": "Dedicated worker is ready for supported sources.",
+    "generation": "11111111-1111-4111-8111-111111111111",
+    "worker": {
+      "status": "ready",
+      "last_seen_at": "2026-10-09T11:59:59Z",
+      "expires_at": "2026-10-09T12:00:29Z"
+    },
+    "sources": {
+      "treasury": {
+        "available": false,
+        "reason": "This source has no approved dispatch mapping."
+      },
+      "cob": {
+        "available": false,
+        "reason": "This source has no approved dispatch mapping."
+      },
+      "oag": {
+        "available": true,
+        "reason": "Dedicated audit runner is available."
+      },
+      "knbs": {
+        "available": false,
+        "reason": "This source has no approved dispatch mapping."
+      },
+      "opendata": {
+        "available": false,
+        "reason": "This source has no approved dispatch mapping."
+      },
+      "cra": {
+        "available": false,
+        "reason": "This source has no approved dispatch mapping."
+      }
+    }
+  },
+  "trigger_body": {
+    "dry_run": true,
+    "dispatch_generation": "11111111-1111-4111-8111-111111111111"
+  },
+  "trigger_headers": {
+    "Idempotency-Key": "33333333-3333-4333-8333-333333333333"
+  },
+  "accepted": {
+    "ok": true,
+    "accepted": true,
+    "replayed": false,
+    "audit_recorded": true,
+    "command": {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "source": "oag",
+      "dry_run": true,
+      "status": "queued",
+      "version": 1,
+      "created_at": "2026-10-09T12:00:01Z",
+      "updated_at": "2026-10-09T12:00:01Z",
+      "started_at": null,
+      "finished_at": null,
+      "job_id": null,
+      "outcome": null
+    }
+  },
+  "replayed": {
+    "ok": true,
+    "accepted": true,
+    "replayed": true,
+    "audit_recorded": true,
+    "command": {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "source": "oag",
+      "dry_run": true,
+      "status": "completed",
+      "version": 3,
+      "created_at": "2026-10-09T12:00:01Z",
+      "updated_at": "2026-10-09T12:00:03Z",
+      "started_at": "2026-10-09T12:00:02Z",
+      "finished_at": "2026-10-09T12:00:03Z",
+      "job_id": 1,
+      "outcome": "completed"
+    }
+  },
+  "list": {
+    "entries": [
+      {
+        "id": "22222222-2222-4222-8222-222222222222",
+        "source": "oag",
+        "dry_run": true,
+        "status": "completed",
+        "version": 3,
+        "created_at": "2026-10-09T12:00:01Z",
+        "updated_at": "2026-10-09T12:00:03Z",
+        "started_at": "2026-10-09T12:00:02Z",
+        "finished_at": "2026-10-09T12:00:03Z",
+        "job_id": 1,
+        "outcome": "completed"
+      }
+    ],
+    "page": 1,
+    "page_size": 20,
+    "total": 1,
+    "has_more": false
+  },
+  "detail": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "source": "oag",
+    "dry_run": true,
+    "status": "completed",
+    "version": 3,
+    "created_at": "2026-10-09T12:00:01Z",
+    "updated_at": "2026-10-09T12:00:03Z",
+    "started_at": "2026-10-09T12:00:02Z",
+    "finished_at": "2026-10-09T12:00:03Z",
+    "job_id": 1,
+    "outcome": "completed"
+  }
+}
