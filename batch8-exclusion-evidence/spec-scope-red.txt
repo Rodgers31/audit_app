@@ -1,0 +1,9 @@
+{"asctime": "2026-10-09 03:29:56,239", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "audits"}
+{"asctime": "2026-10-09 03:29:56,241", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "audits", "job_id": 1}
+{"asctime": "2026-10-09 03:29:56,242", "levelname": "ERROR", "name": "seeding", "message": "Execution unverified; domain ownership retained", "domain": "audits"}
+{"asctime": "2026-10-09 03:29:56,242", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "audits", "started_at": "2026-10-09T08:29:56.240299+00:00", "finished_at": "2026-10-09T08:29:56.242433+00:00", "items_processed": 0, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {}}
+{"asctime": "2026-10-09 03:29:56,243", "levelname": "INFO", "name": "seeding", "message": "Committed changes", "domain": "audits", "job_id": 2}
+{"asctime": "2026-10-09 03:29:56,244", "levelname": "INFO", "name": "seeding", "message": "Domain run completed", "domain": "audits", "started_at": "2026-10-09T08:29:56.242930+00:00", "finished_at": "2026-10-09T08:29:56.244508+00:00", "items_processed": 0, "items_created": 1, "items_updated": 0, "dry_run": false, "errors": [], "metadata": {}}
+{"label": "plain CLI denies retained ownership", "code": 1, "effects": 0, "active_claims": 1}
+{"label": "arbitrary scope commits before failed acknowledgement", "code": 1, "effects": 1, "active_claims": 1}
+{"label": "arbitrary scope reuses and clears retained native claim", "code": 0, "effects": 2, "active_claims": 0}

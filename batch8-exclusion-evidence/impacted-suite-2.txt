@@ -1,0 +1,23 @@
+# command: run.sh -m pytest backend/tests/test_batch8_exclusion_scope.py backend/tests/test_batch8_native_exclusion.py backend/tests/test_batch8_exclusion_migration.py backend/tests/test_batch7_etl_postgres.py backend/tests/test_batch7_etl_process.py backend/tests/test_batch7_etl_migration.py backend/tests/test_batch7_etl_contract.py backend/tests/test_batch7_etl_adversarial.py backend/tests/test_batch7_etl_review.py backend/tests/test_admin_operations_lane.py backend/tests/test_admin_operations_adversarial.py backend/tests/test_etl_admin_endpoints.py backend/tests/test_web_ingestion_ownership.py backend/tests/test_ingestion_query_transfer.py backend/tests/test_seeding_cli_budget.py backend/tests/test_seeding_utils.py -q -p no:cacheprovider -rfEx
+# source: HEAD 97fe77462b4e63ffad7dc393b8bf97d3e51571f7 + working tree; diff sha256 6fe4f4e47a5760cd7dde20ab17dec77f100e059492009316bc07661164e7770e
+........................................................................ [ 21%]
+........................................................................ [ 43%]
+.......ssssssss......................................................... [ 65%]
+........................................................................ [ 87%]
+...........................................                              [100%]
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+323 passed, 8 skipped, 3 warnings in 50.00s
+# exit: 0

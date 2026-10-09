@@ -16,13 +16,13 @@ from admin_etl_dispatch import TriggerBody, accept
 from admin_etl_dispatch_worker import claim, finish, register_worker
 from models import (
     AdminAuditLog, Base, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker,
-    IngestionJob,
+    IngestionJob, SeedingDomainClaim,
 )
 from routers import etl_admin
 from supabase_auth import AdminUser, require_admin
 
 ACTOR = AdminUser(id="batch7-review-admin", email="inert@example.invalid", roles=["admin"])
-URL = "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55484/batch7_etl_worker"
+URL = "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
 SCHEMA = "batch7_review_worker"
 
 
@@ -86,7 +86,7 @@ def review_pg(monkeypatch):
     with engine.begin() as connection:
         connection.execute(text("CREATE SCHEMA " + SCHEMA))
     tables = [AdminAuditLog.__table__, IngestionJob.__table__, EtlDispatchCommand.__table__,
-              EtlDispatchWorker.__table__, EtlDispatchDomain.__table__]
+              EtlDispatchWorker.__table__, EtlDispatchDomain.__table__, SeedingDomainClaim.__table__]
     Base.metadata.create_all(engine, tables=tables)
     factory = sessionmaker(bind=engine)
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")

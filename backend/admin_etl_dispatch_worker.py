@@ -11,11 +11,12 @@ import threading
 from datetime import timedelta
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from admin_etl_dispatch import db_clock, enabled, fresh
-from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus
+from seeding.exclusion import reserve, unclaimed_running
+from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
 
 LEASE_SECONDS = 30
 HEARTBEAT_SECONDS = 5
@@ -72,15 +73,16 @@ def claim(factory, generation):
         domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
         if domain is None or domain.command_id is not None:
             return None
-        # Existing RUNNING observations can represent an independent native CLI.
-        # Never reinterpret or clean them up. Activation requires exclusive runner
-        # ownership; this additional guard is conservative, not a CLI-wide lock.
-        if db.scalar(select(IngestionJob.id).where(IngestionJob.domain == "audits", IngestionJob.status == IngestionStatus.RUNNING).limit(1)):
+        # Preserve pre-migration RUNNING observations conservatively. New native
+        # invocations also acquire the atomic shared ownership index below.
+        if unclaimed_running(db, "audits"):
             return None
         command = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "queued").order_by(EtlDispatchCommand.created_at, EtlDispatchCommand.id).limit(1).with_for_update(skip_locked=True))
         if command is None:
             return None
         token = uuid4()
+        if not reserve(db, "audits", token, command.id):
+            return None
         command.status = "running"
         command.started_at = command.updated_at = now
         command.generation = generation
@@ -96,11 +98,30 @@ def finish(factory, generation, command_id, token, exit_code):
         now = db_clock(db)
         domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
         command = db.get(EtlDispatchCommand, command_id, with_for_update=True)
-        if command is None or command.status != "running" or command.generation != generation or command.claim_token != token or domain.command_id != command_id or domain.claim_token != token:
+        if command is None or command.status != "running" or command.generation != generation or command.claim_token != token or domain is None or domain.command_id != command_id or domain.claim_token != token:
             return False
         if not fresh(worker, now) or worker.generation != generation:
             interrupt(command, now)
             return False
+        ownership = db.get(SeedingDomainClaim, token, with_for_update=True)
+        if (ownership is not None and ownership.kind == "dispatch" and ownership.command_id == command_id
+                and ownership.entered_at is None and ownership.returned_at is None and ownership.released_at is None
+                # Defence in depth: any correlated run observation other than an
+                # ownership refusal means something ran; keep it uncertain.
+                and db.scalar(select(IngestionJob.id).where(
+                    IngestionJob.meta["dispatch_command_id"].astext == str(command_id),
+                    IngestionJob.meta["dispatch_claim_token"].astext == str(token),
+                    or_(func.jsonb_typeof(IngestionJob.meta["ownership_refused"]).is_distinct_from("boolean"),
+                        IngestionJob.meta["ownership_refused"].astext.is_distinct_from("true"))).limit(1)) is None):
+            # The CLI never entered, so no handler ran; entry re-proves this
+            # running command and unreleased claim under these same row locks,
+            # so nothing can enter after this. Free the domain, record failure.
+            command.status = command.outcome = "failed"
+            command.updated_at = command.finished_at = now
+            command.version += 1
+            ownership.released_at = now
+            domain.command_id = domain.claim_token = None
+            return True
         # Correlation comes from the adapter's actual CLI session insertion, never
         # a latest-ID guess or the child's exit code alone. Reads are bounded.
         # Native observations have timestamp-without-time-zone columns. Their
@@ -115,6 +136,9 @@ def finish(factory, generation, command_id, token, exit_code):
             interrupt(command, now)
             return False
         job, observed_start, observed_finish = observations[0]
+        if ownership is None or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.released_at is not None or ownership.returned_at is None or ownership.job_id != job.id:
+            interrupt(command, now)
+            return False
         tolerance = timedelta(seconds=OBSERVATION_CLOCK_SKEW_SECONDS)
         coherent = (job.domain == command.domain and job.dry_run == command.dry_run
             and observed_start is not None and observed_finish is not None
@@ -130,6 +154,7 @@ def finish(factory, generation, command_id, token, exit_code):
         command.status = command.outcome = "completed" if completed else "failed"
         command.updated_at = command.finished_at = now
         command.version += 1
+        ownership.released_at = now
         domain.command_id = domain.claim_token = None
         return True
 

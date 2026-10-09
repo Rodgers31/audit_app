@@ -11,14 +11,14 @@ import os
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import sessionmaker
 
 from admin_etl_dispatch import Command, TriggerBody, accept, capability, command_history
 from admin_etl_dispatch_worker import claim, finish, heartbeat, register_worker
-from models import AdminAuditLog, Base, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus
+from models import AdminAuditLog, Base, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
 
-URL = "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55481/batch7_etl_worker"
+URL = "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
 SCHEMA = "batch7_adversarial"
 ACTOR = SimpleNamespace(id="batch7-adversarial-admin", email="inert@example.invalid")
 pytestmark = pytest.mark.skipif(os.environ.get("BATCH7_ETL_ADVERSARIAL_DATABASE_URL") != URL, reason="Explicit owned PostgreSQL required")
@@ -29,7 +29,7 @@ def isolated_engine():
     engine = create_engine(URL, connect_args={"options": "-c search_path=" + SCHEMA})
     with engine.begin() as db:
         db.execute(text("CREATE SCHEMA batch7_adversarial"))
-    Base.metadata.create_all(engine, tables=[AdminAuditLog.__table__, IngestionJob.__table__, EtlDispatchCommand.__table__, EtlDispatchWorker.__table__, EtlDispatchDomain.__table__])
+    Base.metadata.create_all(engine, tables=[AdminAuditLog.__table__, IngestionJob.__table__, EtlDispatchCommand.__table__, EtlDispatchWorker.__table__, EtlDispatchDomain.__table__, SeedingDomainClaim.__table__])
     try:
         yield engine
     finally:
@@ -41,7 +41,7 @@ def isolated_engine():
 @pytest.fixture
 def pg(isolated_engine, monkeypatch):
     with isolated_engine.begin() as db:
-        db.execute(text("TRUNCATE etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
+        db.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
     yield sessionmaker(bind=isolated_engine), isolated_engine
 
@@ -74,6 +74,12 @@ def observation(factory, command_id, token, **changes):
         db.add(row)
         db.flush()
         identity = row.id
+        # Stand in for the CLI's entry and acknowledgement so these cases reach
+        # finish()'s own coherence checks, which must hold independently.
+        ownership = db.get(SeedingDomainClaim, token)
+        stamp = db.scalar(select(func.clock_timestamp()))
+        ownership.entered_at, ownership.entry_id = stamp, uuid4()
+        ownership.returned_at, ownership.job_id = stamp, identity
     return identity
 
 
@@ -215,7 +221,7 @@ def inert_adapter(monkeypatch, tmp_path):
 
     original_connect = socket.socket.connect
     def local_only(sock, address):
-        if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55481):
+        if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55485):
             raise RuntimeError("External transport blocked in adversarial fixture")
         return original_connect(sock, address)
     monkeypatch.setattr(socket.socket, "connect", local_only)

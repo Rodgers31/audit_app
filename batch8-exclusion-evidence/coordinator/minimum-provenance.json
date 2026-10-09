@@ -1,0 +1,15 @@
+{
+  "source_head": "207be85c658832ff436ed95b967711ec090839cb",
+  "source_files_sha256": {
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/admin_etl_dispatch_worker.py": "2e4d3341795efc1072d326b0aa402ad955380c15b7e5f340a47b77a7063bb141",
+    "backend/tests/test_batch8_exclusion_review.py": "ff4ad20a2e3eeeb0fd622e9f4836a473a3163bba3b321e0ff6d000cf2d0bfab4"
+  },
+  "python": "3.12.14",
+  "sqlalchemy": "2.0.23",
+  "psycopg2_binary": "2.9.11",
+  "probe_script_sha256": "b8dfa129f744df1fe2c8fe9db0877a5eb6ead03b67ef45c49c6e24c5905796b1",
+  "exit_code": 0,
+  "result_file": "acknowledgement-minimum.txt",
+  "scope": "actual local PostgreSQL public native entry/acknowledgement methods; no real pooler verification"
+}
