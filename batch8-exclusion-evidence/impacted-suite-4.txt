@@ -1,0 +1,48 @@
+# command: run.sh -m pytest backend/tests/test_batch8_exclusion_scope.py backend/tests/test_batch8_exclusion_sqlite.py backend/tests/test_batch8_native_exclusion.py backend/tests/test_batch8_exclusion_migration.py backend/tests/test_batch7_etl_postgres.py backend/tests/test_batch7_etl_process.py backend/tests/test_batch7_etl_migration.py backend/tests/test_batch7_etl_contract.py backend/tests/test_batch7_etl_adversarial.py backend/tests/test_batch7_etl_review.py backend/tests/test_admin_operations_lane.py backend/tests/test_admin_operations_adversarial.py backend/tests/test_etl_admin_endpoints.py backend/tests/test_web_ingestion_ownership.py backend/tests/test_ingestion_query_transfer.py backend/tests/test_seeding_cli_budget.py backend/tests/test_seeding_utils.py backend/tests/test_a_truncated_run_is_not_a_successful_run.py backend/tests/test_audits_listing_observation.py backend/tests/test_audits_domain_county_ingest.py backend/tests/test_audits_source_scope.py backend/tests/test_inflation_sweep_lineage.py backend/tests/test_healthcheck_probes_the_real_hosts.py backend/tests/test_national_gdp_failure_observability.py backend/tests/test_national_debt_ids_visibility.py backend/tests/test_pending_bills_write_validation_postgres.py backend/tests/test_staleness_gates.py backend/tests/test_stalled_projects_persistence.py -q -p no:cacheprovider -rfEx
+# source: HEAD 97fe77462b4e63ffad7dc393b8bf97d3e51571f7 + working tree; diff sha256 bc4f8b4b8397c2245a68e14207418b111cf5243b31e51cca5d7643f28019f9d7
+........................................................................ [  9%]
+........................................................................ [ 19%]
+........................................................................ [ 29%]
+........................................................................ [ 38%]
+........................................................................ [ 48%]
+........................................................................ [ 58%]
+........................................................................ [ 67%]
+........................................................................ [ 77%]
+................F....................................................... [ 87%]
+........................................................................ [ 96%]
+.......................                                                  [100%]
+=================================== FAILURES ===================================
+_______________ test_runtime_and_source_shaped_positive_controls _______________
+
+pg_engine = Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker)
+
+    def test_runtime_and_source_shaped_positive_controls(pg_engine):
+        import main
+        from config.settings import Settings
+        from tests.test_pending_publication_completeness_adversarial import (
+            _national_payload,
+        )
+    
+>       assert main.AUTO_SEEDER_ENABLED is False and main._WARMUP_ENABLED is False
+E       AssertionError: assert (True is False)
+E        +  where True = <module 'main' from '/Users/roger/.codex/worktrees/afa1/audit_app/backend/main.py'>.AUTO_SEEDER_ENABLED
+
+backend/tests/test_pending_bills_write_validation_postgres.py:152: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_pending_bills_write_validation_postgres.py::test_runtime_and_source_shaped_positive_controls
+1 failed, 742 passed, 3 warnings in 156.59s (0:02:36)
+# exit: 1

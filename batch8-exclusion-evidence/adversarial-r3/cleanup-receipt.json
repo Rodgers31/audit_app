@@ -1,0 +1,10 @@
+{
+  "listed": 103,
+  "present_before": 103,
+  "dropped": 103,
+  "remaining_r3_schemas": [],
+  "unlisted_r3_schemas_seen": [],
+  "other_backends_same_role_after": 1,
+  "advisory_locks_after": 0,
+  "engine_disposed": true
+}

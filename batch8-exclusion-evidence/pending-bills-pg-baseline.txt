@@ -1,0 +1,6 @@
+# command (cwd = git archive of 97fe77462b4e63ffad7dc393b8bf97d3e51571f7 backend): env -i PATH PYTHONDONTWRITEBYTECODE=1 PYTHON_DOTENV_DISABLED=1 PYTHONPATH=backend DATABASE_URL=PENDING_BILLS_TEST_POSTGRES_URL=<owned loopback> venv python -m pytest backend/tests/test_pending_bills_write_validation_postgres.py -q -p no:cacheprovider -rf
+# pytest exit: 1
+E       AssertionError: assert (True is False)
+E        +  where True = <module 'main' from '/private/tmp/claude-501/-Users-roger-Documents-projects-audit-app/b4daa123-5f8a-469a-8ced-2dfda811acaa/scratchpad/b8/base/backend/main.py'>.AUTO_SEEDER_ENABLED
+FAILED backend/tests/test_pending_bills_write_validation_postgres.py::test_runtime_and_source_shaped_positive_controls
+1 failed, 51 passed, 3 warnings in 25.08s
