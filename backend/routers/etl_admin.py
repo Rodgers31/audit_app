@@ -6,9 +6,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
-from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
+from pydantic import BaseModel, StrictBool, StrictStr
 
-from routers.admin_operations import DISPATCH_ERROR, DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
+from routers.admin_operations import DISPATCH_REASON, OperationsRoute, PRIVATE_HEADERS
 from supabase_auth import AdminUser, require_admin
 from database import get_db
 from sqlalchemy.orm import Session

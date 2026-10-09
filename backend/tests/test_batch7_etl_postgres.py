@@ -1,6 +1,5 @@
 """Native PostgreSQL acceptance/lease interleavings on an explicitly owned DB."""
 from concurrent.futures import ThreadPoolExecutor
-from datetime import timedelta
 from threading import Barrier
 from uuid import uuid4
 import os
@@ -8,12 +7,12 @@ import os
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 import database
 import supabase_auth
-from admin_etl_dispatch import accept, command_detail, command_history, TriggerBody
+from admin_etl_dispatch import accept, command_history, TriggerBody
 from admin_etl_dispatch_worker import claim, finish, heartbeat, register_worker
 from models import AdminAuditLog, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus
 from routers import etl_admin

@@ -1,5 +1,4 @@
 """Real Alembic upgrade/downgrade on the owned PostgreSQL database only."""
-import os
 from pathlib import Path
 import subprocess
 import sys

@@ -5,14 +5,13 @@ import signal
 import subprocess
 import sys
 import time
-from uuid import UUID
 
 import pytest
 from sqlalchemy import text
 
 from test_batch7_etl_postgres import pg, post, expire, AUTH, URL
 from admin_etl_dispatch_worker import register_worker, claim, finish
-from models import EtlDispatchWorker, EtlDispatchDomain
+from models import EtlDispatchDomain
 
 pytestmark = pytest.mark.skipif(not URL, reason="Owned PostgreSQL required")
 ROOT = Path(__file__).resolve().parents[1]

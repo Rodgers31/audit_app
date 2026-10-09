@@ -4,18 +4,17 @@ The domain row stays occupied after uncertain execution, even after process deat
 Only a fresh fenced terminal receipt releases it. There is no automatic recovery
 of uncertain effects or administrative unblock endpoint.
 """
-import os
 from pathlib import Path
 import subprocess
 import sys
 import threading
 from datetime import timedelta
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
-from admin_etl_dispatch import db_clock, enabled, fresh, SOURCE_DOMAINS
+from admin_etl_dispatch import db_clock, enabled, fresh
 from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus
 
 LEASE_SECONDS = 30

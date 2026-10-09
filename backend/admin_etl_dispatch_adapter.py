@@ -3,7 +3,7 @@ import argparse
 import sys
 from uuid import UUID
 
-from sqlalchemy import event, select, text
+from sqlalchemy import event, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh
