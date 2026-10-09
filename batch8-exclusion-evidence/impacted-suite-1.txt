@@ -1,0 +1,59 @@
+# command: run.sh -m pytest backend/tests/test_batch8_exclusion_scope.py backend/tests/test_batch8_native_exclusion.py backend/tests/test_batch8_exclusion_migration.py backend/tests/test_batch7_etl_postgres.py backend/tests/test_batch7_etl_process.py backend/tests/test_batch7_etl_migration.py backend/tests/test_batch7_etl_contract.py backend/tests/test_batch7_etl_adversarial.py backend/tests/test_batch7_etl_review.py backend/tests/test_admin_operations_lane.py backend/tests/test_admin_operations_adversarial.py backend/tests/test_etl_admin_endpoints.py backend/tests/test_web_ingestion_ownership.py backend/tests/test_ingestion_query_transfer.py backend/tests/test_seeding_cli_budget.py backend/tests/test_seeding_utils.py -q -p no:cacheprovider -rfEx
+# source: HEAD 97fe77462b4e63ffad7dc393b8bf97d3e51571f7 + working tree; diff sha256 1a056789164dd8398868396721c1482784d56bb3d95b359f1b7e8edb5db37a0b
+........................................................................ [ 21%]
+..........FF............................................................ [ 43%]
+.......ssssssss......................................................... [ 65%]
+........................................................................ [ 87%]
+...........................................                              [100%]
+=================================== FAILURES ===================================
+___________ test_truthy_failed_observation_cannot_complete[change0] ____________
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker))
+change = {'status': <IngestionStatus.FAILED: 'failed'>}
+
+    @pytest.mark.parametrize("change", [
+        {"status": IngestionStatus.FAILED}, {"status": IngestionStatus.COMPLETED_WITH_ERRORS},
+    ])
+    def test_truthy_failed_observation_cannot_complete(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        job_id = observation(factory, identity, token, **change)
+>       assert finish(factory, generation, identity, token, 0) is True
+E       AssertionError: assert False is True
+E        +  where False = finish(sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker), autoflush=True, expire_on_commit=True), UUID('9c2edfb3-17b2-42a5-b035-2f7e83ecab87'), UUID('a7d4f600-83a3-448b-8748-bdcad4bc004a'), UUID('85fc4d00-19be-4d79-b58e-f385b4198fd5'), 0)
+
+backend/tests/test_batch7_etl_adversarial.py:126: AssertionError
+___________ test_truthy_failed_observation_cannot_complete[change1] ____________
+
+pg = (sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker)...oflush=True, expire_on_commit=True), Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker))
+change = {'status': <IngestionStatus.COMPLETED_WITH_ERRORS: 'completed_with_errors'>}
+
+    @pytest.mark.parametrize("change", [
+        {"status": IngestionStatus.FAILED}, {"status": IngestionStatus.COMPLETED_WITH_ERRORS},
+    ])
+    def test_truthy_failed_observation_cannot_complete(pg, change):
+        factory, _, generation, identity, token, _ = running(pg)
+        job_id = observation(factory, identity, token, **change)
+>       assert finish(factory, generation, identity, token, 0) is True
+E       AssertionError: assert False is True
+E        +  where False = finish(sessionmaker(class_='Session', bind=Engine(postgresql+psycopg2://batch7_worker:***@127.0.0.1:55485/batch7_etl_worker), autoflush=True, expire_on_commit=True), UUID('32897acf-2627-4142-a182-6d2155738410'), UUID('7d5cf711-04b0-4e6c-bd4b-2845788bc376'), UUID('776d6d37-0cd0-40e5-9102-270bbf36b3e3'), 0)
+
+backend/tests/test_batch7_etl_adversarial.py:126: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/afa1/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_truthy_failed_observation_cannot_complete[change0]
+FAILED backend/tests/test_batch7_etl_adversarial.py::test_truthy_failed_observation_cannot_complete[change1]
+2 failed, 321 passed, 8 skipped, 3 warnings in 49.53s
+# exit: 1

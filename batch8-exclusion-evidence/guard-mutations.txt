@@ -1,0 +1,32 @@
+## mutation: remove [claim.domain != self.domain or ]
+FAILED test_acknowledgement_rejects_each_mismatched_binding[other_domain]
+1 failed, 14 passed, 3 warnings in 1.19s
+## mutation: remove [claim.entry_id != self.entry]
+FAILED test_acknowledgement_rejects_each_mismatched_binding[wrong_entry]
+1 failed, 14 passed, 3 warnings in 1.18s
+## mutation: remove [or claim.command_id != self.command_id]
+15 passed, 3 warnings in 1.17s
+## mutation: remove [or command.dry_run is not dry_run]
+FAILED test_scope_with_mismatched_correlation_starts_no_work[dry_run]
+1 failed, 14 passed, 3 warnings in 1.32s
+## mutation: remove [worker.generation != scope.generation]
+15 passed, 3 warnings in 1.18s
+## mutation: remove [or claim.entered_at is not None]
+15 passed, 3 warnings in 1.18s
+## unmutated
+15 passed, 3 warnings in 1.17s
+
+# round 2 after adding re-entry and dispatch-command tests
+## mutation: remove [or claim.command_id != self.command_id]
+FAILED test_dispatch_acknowledgement_requires_its_own_command
+1 failed, 16 passed, 3 warnings in 1.36s
+## mutation: remove [or claim.entered_at is not None]
+FAILED test_entered_dispatch_claim_cannot_be_entered_again_after_lock_loss
+1 failed, 16 passed, 3 warnings in 1.38s
+## unmutated
+17 passed, 3 warnings in 1.46s
+
+# round 3b: finish() refusal predicate reverted to key-existence (is_(None))
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_unentered_claim_with_a_correlated_run_observation_stays_uncertain[,'ownership_refused',false]
+FAILED backend/tests/test_batch8_exclusion_migration.py::test_unentered_claim_with_a_correlated_run_observation_stays_uncertain[,'ownership_refused','no']
+2 failed, 1 passed, 13 deselected, 2 warnings in 0.31s

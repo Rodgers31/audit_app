@@ -1,0 +1,10 @@
+{
+  "label": "new-pg",
+  "python": "3.13.9",
+  "sqlalchemy": "2.0.46",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "server": "PostgreSQL 16.15 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "database": "batch7_etl_worker",
+  "user": "batch7_worker"
+}
