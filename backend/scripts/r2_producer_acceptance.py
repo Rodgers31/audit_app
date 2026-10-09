@@ -460,7 +460,7 @@ def pdf_producer(settings, store, counts, work):
     # Comparison projection ONLY: expected provider and check time differ.
     # Runtime capabilities/receipts are never modified or persisted this way.
     compare_pdf_output(captured)
-    del captured
+    captured.clear()
     sql_report = pdf_sqlite_output(settings,counts,work,converted)
     return {'pdf_pages':935,'tables':1129,'records':468,'cell_evidence':378,
             'complete_projection_sha256':ORACLE_SHA,'provider_and_time_projection_only':True,
