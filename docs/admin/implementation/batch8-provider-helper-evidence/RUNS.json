@@ -1,0 +1,618 @@
+{
+  "baseline-observations": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/baseline_probe.py"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "fdb2ba0c7e95da9bcdf945d244f6cff67d9899d8ea6371c4fc5c40891c04d003",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "e5e56ee05d628db679689c2bbf659b8073043ebde9e77396135fe4b1b3e111e4"
+    },
+    "log_sha256": "e3d1a7d53ae813b7bab3ea2b560a08a6d6593fab03980b5602b335de28d82ecd"
+  },
+  "profile-core-red": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/profile-core-red",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "fdb2ba0c7e95da9bcdf945d244f6cff67d9899d8ea6371c4fc5c40891c04d003",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "e5e56ee05d628db679689c2bbf659b8073043ebde9e77396135fe4b1b3e111e4"
+    },
+    "log_sha256": "0537d9c80bd6bbb3a271647c74cf485afb914c23d602a8fafe23309a41864465"
+  },
+  "profile-core-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/profile-core-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "5525e4862e30d5bd013163418543b4d5783723117ce025a931740f527f20db2b",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "e5e56ee05d628db679689c2bbf659b8073043ebde9e77396135fe4b1b3e111e4"
+    },
+    "log_sha256": "c723a76134ee36b60652b58558212be63043a94d381e0f18baee896a65440a1b"
+  },
+  "diagnostics-red": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/diagnostics-red",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "-k",
+      "http_errors or connection_errors or rejected_json"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "5525e4862e30d5bd013163418543b4d5783723117ce025a931740f527f20db2b",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "2b309623a6c943f19b84110716b4f2833f5fd7e691a6442f91031c5a9171a0cf"
+    },
+    "log_sha256": "4f9ee7a04d3c2a51f1079d135f4485ff367dcbe49c528d026d3d937f58d6325c"
+  },
+  "diagnostics-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/diagnostics-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "2b309623a6c943f19b84110716b4f2833f5fd7e691a6442f91031c5a9171a0cf"
+    },
+    "log_sha256": "571003d4ecef7f6bd43777936f9820076d6e5d998b1db009c6d2f921ae9e07d6"
+  },
+  "diagnostics-green-corrected": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/diagnostics-green-corrected",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "-s"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "7aa314f8adff3fd7e53d58bc16ae51c0bb87a43eebef9f2aea21bacdb99be4f5"
+    },
+    "log_sha256": "a0c79db7a3182197658b2990802e037754075d430b10ae1001350910ca773dc1"
+  },
+  "expanded-baseline-red": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/baseline_pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/expanded-baseline-red",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "--tb=short"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "fdb2ba0c7e95da9bcdf945d244f6cff67d9899d8ea6371c4fc5c40891c04d003",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "11844604ea26572f980677e5ec657b51e2b0557576f00a36b44172dbb0ded2c4",
+    "helper_source_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7"
+  },
+  "active-baseline-control": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/baseline_pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/active-baseline-control",
+      "tests/test_admin_users_boundaries.py",
+      "tests/test_admin_users_review.py",
+      "tests/test_admin_users_adversarial_replay.py",
+      "tests/test_admin_users_audit_policy.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "fdb2ba0c7e95da9bcdf945d244f6cff67d9899d8ea6371c4fc5c40891c04d003",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "499d7cff602e3ea4fa09b0f55c04f1fa3dcf1179d60ca86a313401365c0e7d55",
+    "helper_source_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7"
+  },
+  "profile-matrix-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/profile-matrix-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "tests/test_batch7_supabase_helpers.py",
+      "tests/test_batch7_supabase_helpers_imports.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e"
+    },
+    "log_sha256": "7d86fd22a1d9a17e2d4807a78830a21d1065f9ba30cd43150eac54c71bcdfaa3"
+  },
+  "imports-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/imports-green",
+      "tests/test_batch8_supabase_helpers_imports.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "8b65f7acf7aca4eb7d4e24034be2031b3bc0ba84a6f6a839ebca1f93eca8e392"
+  },
+  "combined-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/combined-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers_imports.py",
+      "tests/test_batch7_supabase_helpers.py",
+      "tests/test_batch7_supabase_helpers_imports.py",
+      "tests/test_admin_users_boundaries.py",
+      "tests/test_admin_users_review.py",
+      "tests/test_admin_users_adversarial_replay.py",
+      "tests/test_admin_users_audit_policy.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "024b1bf8acbd832b143ab0a7d20bfdeda27b7f8c07e521c69e890b0fbf1267a5"
+  },
+  "independent-findings-author-red": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/independent-findings-author-red",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "--tb=short",
+      "-k",
+      "invalid_config or invalid_url or non_ascii or malformed_uuid_spellings"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "9b5bda1e88b3f0fa8068dd3fef2f47645bcf07c533ec0ca41e8c509202ddd4a0",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "210735d1f87a73ed77c856abeef7987e6385e7f7a9483e560a96a21c0e00c05a"
+  },
+  "independent-findings-author-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/independent-findings-author-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "--tb=short",
+      "-k",
+      "invalid_config or invalid_url or non_ascii or malformed_uuid_spellings"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "9b5bda1e88b3f0fa8068dd3fef2f47645bcf07c533ec0ca41e8c509202ddd4a0",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "2d7afc2d0db6b938a16c31b9d902da6dff481cab5dce5a9ebc28ea5f215eced8"
+  },
+  "final-fixture-baseline-red": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/baseline_pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/final-fixture-baseline-red",
+      "tests/test_batch8_supabase_helpers.py",
+      "-q",
+      "--tb=short"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "fdb2ba0c7e95da9bcdf945d244f6cff67d9899d8ea6371c4fc5c40891c04d003",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "da55cdce7eb5147577c72ba29628166880244473d4e2aa2a425c37dc6558346b",
+    "helper_source_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7"
+  },
+  "final-combined-green": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "-p",
+      "no:cacheprovider",
+      "--basetemp=/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/final-combined-green",
+      "tests/test_batch8_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers_imports.py",
+      "tests/test_batch7_supabase_helpers.py",
+      "tests/test_batch7_supabase_helpers_imports.py",
+      "tests/test_admin_users_boundaries.py",
+      "tests/test_admin_users_review.py",
+      "tests/test_admin_users_adversarial_replay.py",
+      "tests/test_admin_users_audit_policy.py",
+      "-q"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "8031b80650f15afbe82cc210026c591f5922d3e539e89f7cf2ecbd11b2583bb9"
+  },
+  "scoped-lint": {
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/lint-venv/bin/python",
+      "-m",
+      "flake8",
+      "supabase_admin.py",
+      "tests/test_batch7_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers_imports.py",
+      "--count",
+      "--select=E9,F63,F7,F82",
+      "--show-source",
+      "--statistics"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "final-scoped-lint": {
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/lint-venv/bin/python",
+      "-m",
+      "flake8",
+      "supabase_admin.py",
+      "tests/test_batch7_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers.py",
+      "tests/test_batch8_supabase_helpers_imports.py",
+      "../docs/admin/implementation/batch8-provider-helper-evidence/pytest_no_sockets.py",
+      "--count",
+      "--select=E9,F63,F7,F82",
+      "--show-source",
+      "--statistics"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "broad-lint": {
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/lint-venv/bin/python",
+      "-m",
+      "flake8",
+      ".",
+      "--count",
+      "--select=E9,F63,F7,F82",
+      "--show-source",
+      "--statistics",
+      "--exclude=venv,__pycache__,.git"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 1,
+    "head": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+    "helper_sha256": "6d27f045b2203b6ba7c83cdc1dc0f58b2ea1900d967e22e2331b68f6553e0a5d",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "6791325112456572ac089bb2c10501ab89eb4674fdafe119de3806a7e280fa2e",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "2d5bdb5f5dfbec74197382d83b3e6dfd73fc55bfdac9418b0474f6786ce55d7b"
+  },
+  "context-claim-author-confirm": {
+    "command": [
+      "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+      "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/standards-review/context_probe.py"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+    "environment": {
+      "PATH": "/usr/bin:/bin",
+      "PYTHONPATH": "/Users/roger/.codex/worktrees/2262/audit_app/backend",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHON_DOTENV_DISABLED": "1",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp",
+      "DATABASE_URL": "sqlite:////Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-74018ef2d342/batch8-provider-helper-evidence/tmp/inert.sqlite",
+      "SUPABASE_URL": "https://batch8-helper.invalid",
+      "SUPABASE_SERVICE_ROLE_KEY": "inert-batch8-service-key",
+      "SUPABASE_JWT_SECRET": "inert-batch8-jwt-secret"
+    },
+    "exit_code": 0,
+    "head": "2ae043cc3930d40bb15deb25525fe49c5b13ee1e",
+    "helper_sha256": "9a74e003f90b333c38503ca2fde4683cfd99ddcf70a1b8d5fd4ae1291612b5b1",
+    "test_sha256": {
+      "backend/tests/test_batch8_supabase_helpers.py": "ffe58e48bb67882fd5794b1ce2b9ada60c45951d6f17469c81f7377d2c18a374",
+      "backend/tests/test_batch8_supabase_helpers_imports.py": "36d644bc4ccbcf531ff7d510662f7d81f512278bc033c1433f1c4c046d39d0ad"
+    },
+    "log_sha256": "703b850bb28c2d7f402fdf3224db7f290c1baa3c34c24d7024d41c66205f0667"
+  }
+}
