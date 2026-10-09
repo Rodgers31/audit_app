@@ -46,5 +46,5 @@ def test_downgrade_refuses_active_worker_and_accepted_history(pg):
     result = migrate("d8f4a619b203", "downgrade")
     assert result.returncode != 0 and "Dispatch history exists" in result.stderr
     with engine.connect() as conn:
-        assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "e554d7c9a001"
+        assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "e572b8c9a001"
         assert conn.scalar(text("SELECT count(*) FROM etl_dispatch_commands")) == 1

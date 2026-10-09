@@ -182,7 +182,6 @@ def test_duplicate_native_adapter_cannot_execute_same_claim_twice(process_pg, tm
         assert conn.scalar(text("SELECT count(*) FROM batch7_effects")) == 1
 
 
-@pytest.mark.xfail(strict=True, reason="Independent native CLI requires a coordinated shared exclusion seam before activation")
 def test_independent_native_cli_honors_dispatch_domain_exclusion(process_pg, tmp_path):
     client, factory, engine = process_pg
     with engine.begin() as conn:
@@ -197,12 +196,11 @@ def test_independent_native_cli_honors_dispatch_domain_exclusion(process_pg, tmp
                 return conn.scalar(text("SELECT count(*) FROM batch7_effects"))
         wait_for(committed, lambda count: count == 1)
         # An independently launched unchanged CLI is outside adapter ownership.
-        code = "from argparse import Namespace; from seeding.cli import run_seed_command; from seeding.config import SeedingSettings; run_seed_command(Namespace(domain=['audits'],all=False,since=None,dry_run=False),SeedingSettings(log_path=None))"
+        code = "from argparse import Namespace; from seeding.cli import run_seed_command; from seeding.config import SeedingSettings; raise SystemExit(run_seed_command(Namespace(domain=['audits'],all=False,since=None,dry_run=False),SeedingSettings(log_path=None)))"
         native = subprocess.Popen([sys.executable, "-c", code], env=child_env(tmp_path), cwd=ROOT,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-        wait_for(committed, lambda count: count == 2)
-        # This fails with two real inert committed effects; records the uncovered
-        # shared-seam requirement without changing the frozen runner's semantics.
+        assert native.wait(timeout=10) == 1
+        # Rejection is observed from the real CLI, with one committed effect.
         assert committed() == 1
     finally:
         if native is not None:
