@@ -1,0 +1,43 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:22:00.364112+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  }
+}
+
+{
+  "generator_sha256": "40f9be53749508697e53256efd27149032357420aa4f5b10d5b4b7deb5073a76",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-c",
+    "import socket\nconnect = socket.socket.connect\ndef loopback(sock, address):\n    assert isinstance(address,tuple) and address[:2]==('127.0.0.1',55492)\n    return connect(sock,address)\nsocket.socket.connect=loopback\nimport asyncio,main\nasyncio.run(main._startup_sequence())\nprint('ACTUAL_READY',main._app_ready.is_set())\n"
+  ],
+  "exit_code": 0,
+  "stdout": "ACTUAL_READY True\n",
+  "stderr": "2026-10-09 14:22:01,503 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))\n2026-10-09 14:22:01,505 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 14:22:01,512 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 14:22:01,512 - main - INFO - Redis cache initialized successfully\n2026-10-09 14:22:01,563 - config.secrets - INFO - Using environment variables for secrets\n2026-10-09 14:22:01,563 - main - INFO - Using Redis-backed rate limiting\n2026-10-09 14:22:01,563 - main - INFO - Security middleware registered (rate limit, audit log, headers)\n2026-10-09 14:22:01,762 - main - INFO - Social admin router registered at /api/v1/admin/social\n2026-10-09 14:22:01,778 - main - INFO - ETL admin router registered at /api/v1/admin/etl\n2026-10-09 14:22:01,799 - main - INFO - Economic data router registered at /api/v1/economic\n2026-10-09 14:22:01,806 - main - INFO - Admin router registered at /api/v1/admin\n2026-10-09 14:22:01,816 - main - INFO - Admin users router registered at /api/v1/admin/users\n2026-10-09 14:22:01,822 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log\n2026-10-09 14:22:01,830 - main - INFO - User features router registered (newsletter endpoints)\n2026-10-09 14:22:01,841 - main - INFO - Audit dashboard router registered at /api/v1/audit\n2026-10-09 14:22:01,844 - main - INFO - Detailed health router registered at /health/detailed\n2026-10-09 14:22:01,849 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 14:22:01,852 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow\n2026-10-09 14:22:01,854 - main - INFO - Data freshness router registered at /api/v1/data/freshness\n2026-10-09 14:22:01,855 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate\n2026-10-09 14:22:01,865 - main - INFO - Data provenance router registered at /api/v1/provenance\n2026-10-09 14:22:01,877 - main - INFO - Main Backend API starting up...\n2026-10-09 14:22:01,877 - main - INFO - Working directory: /Users/roger/.codex/worktrees/1183/audit_app/backend\n2026-10-09 14:22:01,900 - main - INFO - Database connection pool warmed up successfully\n2026-10-09 14:22:01,936 - bootstrap - WARNING - bootstrap: deferring \u2014 the 'audits' seeding domain is writing now, and both write `audits`. The weekly bootstrap job owns this refresh; nothing here is time-critical.\n2026-10-09 14:22:01,936 - main - INFO - Main Backend API startup complete!\n2026-10-09 14:22:01,936 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false\n2026-10-09 14:22:01,959 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.\n2026-10-09 14:22:01,959 - apscheduler.scheduler - INFO - Scheduler started\n2026-10-09 14:22:01,959 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)\n2026-10-09 14:22:01,959 - apscheduler.scheduler - INFO - Added job \"_setup_etl_scheduler.<locals>._digest_wrapper\" to job store \"default\"\n2026-10-09 14:22:01,959 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false\n",
+  "county_count": 0,
+  "bootstrap_jobs": 0
+}
+REPRODUCED: non-budget deferral reports ready with no counties

@@ -1,0 +1,1936 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+  "generator_sha256": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8",
+  "generated_at": "2026-10-09T23:39:42.627723+00:00",
+  "command": [
+    "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+    "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+    "--run",
+    "review-adversarial-min-final"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app",
+  "runtime": {
+    "python": "3.12.15",
+    "sqlalchemy": "2.0.23",
+    "pydantic": "2.14.0"
+  },
+  "target_commit": "cfc77b7615c3c0bb8af110edf22beca8cc15abe8",
+  "source_sha256": {
+    "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+  },
+  "cases": [
+    {
+      "mode": "normal",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "normal"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_b1e6fc4979ef4c0ca9c2c5fb3cdbed18",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "COMPLETED",
+            "items_processed": 1,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "1277ba4e-a508-4287-8bfe-86b341fa4e40"
+            },
+            "errors": []
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "completed",
+                "ownership_refused": false,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "none",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "none"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_a43c4fa83f9c4c3391ac26f6952d5d50",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "22b35fa9-7530-4863-bf5f-b332114c4141",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned no coherent result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "empty_dict",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "empty_dict"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_7fe9d493342449a2824b4cc40b94d723",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "9f2ebd27-135b-469e-82e1-90d0f0a1bae4",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned no coherent result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "truthy_failure",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "truthy_failure"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_648bbba187a442fa9595b7573369d6df",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "f2c9850b-2d59-4df6-8854-84362752df28",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned no coherent result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "exception",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "exception"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_a77db814d845443a8e768bf49f4a0d84",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "aa758989-9a51-47e5-805b-f0c684f2e53f",
+              "ownership_retained": true
+            },
+            "errors": [
+              "inert failure after destructive write"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "bool_count",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "bool_count"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_20b18ea1b3eb41028bf60297c1f23ad9",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "76da6883-b712-4639-90eb-3b78533e3c72",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\nitems_processed\n  Input should be a valid integer [type=int_type, input_value=True, input_type=bool]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "negative_count",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "negative_count"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_f8dea5792b5b48598be5d59dd96ec3ef",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "a7e2775b-6585-426b-9441-6a63b477022c",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned an invalid result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "overflow_count",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "overflow_count"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_4908476fde724ed18fb6ff5dd0e8763a",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "48ce87bf-1cfe-42f1-beb3-854a20cd2454",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned an invalid result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "nan_count",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "nan_count"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_10acd63265ba4ddbbe1298cf481f0e27",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "511d76a9-6280-44b4-9e23-08a49f936731",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\nitems_processed\n  Input should be a valid integer [type=int_type, input_value=nan, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "inf_count",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "inf_count"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_b82b5b237dee4cc78a5edba5cde2d095",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "f9751d18-5cfa-44a7-aad0-b4128092acde",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\nitems_processed\n  Input should be a valid integer [type=int_type, input_value=inf, input_type=float]\n    For further information visit https://errors.pydantic.dev/2.14/v/int_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "wrong_domain",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "wrong_domain"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_df85d1950b40461a89c7282b8266ecd6",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "5a5b39b2-736f-473a-8ec4-23cc88c61e1c",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned an invalid result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "dry_run",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "dry_run"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_3cb08db5e86744cf8f642bc7d6f46c2d",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "2b5b7079-98b5-4f4b-b8c6-333d52b035b9",
+              "ownership_retained": true
+            },
+            "errors": [
+              "national_budget returned an invalid result"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "string_dry_run",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "string_dry_run"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_30c7bc05bb8f41dd8b579b670847ab82",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "52d483b2-f74a-4c05-a339-4e6fd74c5b35",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\ndry_run\n  Input should be a valid boolean [type=bool_type, input_value='false', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/bool_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "errors",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "errors"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_53eee0c75c434ec0814b2df36e311932",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "7e4189ce-5a3f-43ca-bff5-b7281e860c07",
+              "ownership_retained": true
+            },
+            "errors": [
+              "inert returned failure"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "errors_shape",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "errors_shape"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_c30d7ae958a843b788ef7b1b5e28896d",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "7416edf4-c315-4315-87b8-181ff9a6721c",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\nerrors\n  Input should be a valid list [type=list_type, input_value='failure', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/list_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "metadata_none",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "metadata_none"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_a2eab08ea7d74a8ea4337f21effa4e16",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "b9895eb7-89af-4dc1-8aa1-8f83db2d23be",
+              "ownership_retained": true
+            },
+            "errors": [
+              "1 validation error for DomainRunResult\nmetadata\n  Input should be a valid dictionary [type=dict_type, input_value=None, input_type=NoneType]\n    For further information visit https://errors.pydantic.dev/2.14/v/dict_type"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "failed",
+                "ownership_refused": false,
+                "ownership_retained": true
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "reference_failure",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "reference_failure"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_2f56b3200c544ea48a2dfe92877f4d71",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 1,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 0,
+        "national_jobs": [],
+        "bootstrap_jobs": [
+          {
+            "status": "FAILED",
+            "metadata": {
+              "source_mode": "fixture",
+              "source_fallback_detail": "RuntimeError: inert reference error before budget handler",
+              "source_fallback_reason": "bootstrap_failed"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 0
+      },
+      "passed": true
+    },
+    {
+      "mode": "legacy_running",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "legacy_running"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_c2587cc2fc53422b97861a1b809a9807",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 0,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "RUNNING",
+            "items_processed": 0,
+            "metadata": {},
+            "errors": []
+          },
+          {
+            "status": "FAILED",
+            "items_processed": 0,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "unknown",
+              "ownership_refused": true
+            },
+            "errors": [
+              "Domain ownership unavailable; reconcile retained execution"
+            ]
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 2,
+                "status": "failed",
+                "ownership_refused": true,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 0,
+        "released_claims": 0,
+        "budget_effects": 0,
+        "sentinel_budget_rows": 1,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "factory_connection",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "factory_connection"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_4c615a06933b4dbeb1b9fef14c9be7c9",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "COMPLETED",
+            "items_processed": 1,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "6e70d401-b6bf-47f2-a7ef-10b475e320de"
+            },
+            "errors": []
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "completed",
+                "ownership_refused": false,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "invalid_then_valid",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "invalid_then_valid"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_19bd0df5ff5c4e59a5b6958ebd455d32",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 0,
+      "state": {
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "COMPLETED",
+            "items_processed": 1,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "5a73d0cb-2004-4f24-8dea-cfec7b48b744"
+            },
+            "errors": []
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "completed",
+                "ownership_refused": false,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "active_claims": 0,
+        "released_claims": 1,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "loss_after_proof",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "loss_after_proof"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_aed70772829e46b59bf9775afa822153",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 1,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "COMPLETED",
+            "items_processed": 1,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "394b1285-737b-4456-aa15-d6304f872f68"
+            },
+            "errors": []
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "completed",
+                "ownership_refused": false,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          },
+          {
+            "status": "FAILED",
+            "metadata": {
+              "source_mode": "fixture",
+              "source_fallback_detail": "OperationalError: (psycopg2.OperationalError) server closed the connection unexpectedly\n\tThis probably means the server terminated abnormally\n\tbefore or while processing the request.\n\n[SQL: SAVEPOINT sa_savepoint_1]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+              "source_fallback_reason": "bootstrap_failed"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47
+      },
+      "passed": true
+    },
+    {
+      "mode": "loss_during_release",
+      "command": [
+        "/Users/roger/.codex/worktrees/1183/audit_app/.local-dev/batch9-bootstrap-min/venv/bin/python",
+        "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py",
+        "--child",
+        "loss_during_release"
+      ],
+      "environment": {
+        "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+        "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+        "PYTHON_DOTENV_DISABLED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base-a-1858ac367dc3?options=-csearch_path%3Dadversarial_9a9553804eec43ec828e39b6eee01c90",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
+        "ENABLE_ETL_SCHEDULER": "false",
+        "JWT_SECRET_KEY": "batch9-adversarial-inert-key"
+      },
+      "exit_code": 1,
+      "state": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47,
+        "national_jobs": [
+          {
+            "status": "COMPLETED",
+            "items_processed": 1,
+            "metadata": {
+              "bootstrap": true,
+              "source_mode": "fixture",
+              "seeding_claim_id": "49c8e6f1-a918-4901-92ea-0971970526bc"
+            },
+            "errors": []
+          }
+        ],
+        "bootstrap_jobs": [
+          {
+            "status": "COMPLETED",
+            "metadata": {
+              "files": [
+                {
+                  "file": "enhanced_county_data.json",
+                  "bytes": 47585,
+                  "sha256": "b7e93f6358628a91417e57c13006e5279eb70a850ecd9501b3ff9f0bca608767",
+                  "present": true,
+                  "age_days": 411,
+                  "data_date": "2025-08-24",
+                  "superseded": true,
+                  "live_source": "counties_budget",
+                  "supersession_evidence": "no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures"
+                }
+              ],
+              "data_dir": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/data/reference",
+              "is_stale": false,
+              "source_mode": "fixture",
+              "stale_files": [],
+              "national_budget": {
+                "job_id": 1,
+                "status": "completed",
+                "ownership_refused": false,
+                "ownership_retained": false
+              },
+              "stale_after_days": 180,
+              "superseded_files": [
+                "enhanced_county_data.json"
+              ],
+              "source_fallback_detail": "all 1 fixture(s) superseded by live data: enhanced_county_data.json (counties_budget) \u2014 no budget-line, loan or population row traces to enhanced_county_data.json, and none of the 47 counties still holds its modelled figures",
+              "source_fallback_reason": "fixture_superseded"
+            }
+          },
+          {
+            "status": "FAILED",
+            "metadata": {
+              "source_mode": "fixture",
+              "source_fallback_detail": "OperationalError: (psycopg2.OperationalError) server closed the connection unexpectedly\n\tThis probably means the server terminated abnormally\n\tbefore or while processing the request.\n\n[SQL: RELEASE SAVEPOINT sa_savepoint_1]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+              "source_fallback_reason": "bootstrap_failed"
+            }
+          }
+        ]
+      },
+      "expected": {
+        "active_claims": 1,
+        "released_claims": 0,
+        "budget_effects": 1,
+        "sentinel_budget_rows": 0,
+        "county_entities": 47
+      },
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Local owned PostgreSQL only; no hosted CI or production claim.",
+    "Registry handler is intentionally inert; bootstrap and claim/release paths are actual product code."
+  ],
+  "owned_database": "batch9-review-590-base-a-1858ac367dc3",
+  "setup_error": null,
+  "passed": 22,
+  "failed": 0,
+  "skipped": 0,
+  "exit_code": 0,
+  "verdict": "PASSED",
+  "output_sha256": "22d1659bd011bb21311260133a69d61422125c2adaf2ad20fa0ea0326d7ccad5"
+}

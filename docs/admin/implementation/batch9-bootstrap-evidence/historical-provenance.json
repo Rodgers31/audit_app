@@ -1,0 +1,1095 @@
+{
+  "historical_author_head": "813acb0b75c6eccadf514dbbaffbc6439fd7fb63",
+  "reason": "New transaction and fixture boundary repairs supersede prior current-acceptance claims. Original receipt, output and generator bytes remain immutable.",
+  "untrustworthy_as_current": [
+    "product behavior",
+    "fixture isolation",
+    "source_sha256 at current head"
+  ],
+  "receipts": {
+    "lint-import.json": {
+      "receipt_sha256": "6d9a69d0913520f66fd72700cc1f06bc36e014c7ca7836c432fc8c0ff77e8f59",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "issue-dedup.json": {
+      "receipt_sha256": "53a9eba8a5a35472e31da5fab2656ab98b9ded65b47f2fed00205e92f92fa764",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "ownership-min-final.json": {
+      "receipt_sha256": "393cdc91e9689372219946045beee5c9470edead7b387322d22f95103ba37a53",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "compile-import.json": {
+      "receipt_sha256": "370c74ddd0097af434d05101a88e5d32b82bc8dd382a96daf630edf785046ea8",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "readiness-red.json": {
+      "receipt_sha256": "cbbab5cc9af88c50c6016bf48020072cb3d506302f780f5823ffc2dfcf9071bc",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "issue-dedup-configured.json": {
+      "receipt_sha256": "41963e56098086f41f732cef93708747716e1052dee56c295c933509dec51f34",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "other-domain-readiness.json": {
+      "receipt_sha256": "0efd27179331c88a4392b118f45d38d1f14e3815657547591c311e5e1ae24959",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "runtime-min.json": {
+      "receipt_sha256": "52bf03111e06daf9f805d28436354bd0f74d8dce86db412601fab4ec7e6cdba7",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "d014d08f2930c4d986e2a7d6b8d5860897b92088b351576e78f31abe6f9d4c38",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "ownership-green-final.json": {
+      "receipt_sha256": "bf2ce11f1f98f20733d427ebf7715325a18777a5ed8a766d595fa351d9443e07",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "d014d08f2930c4d986e2a7d6b8d5860897b92088b351576e78f31abe6f9d4c38",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "ownership-red.json": {
+      "receipt_sha256": "84b9674b20e43f656ce23d5acb6872afd5c8263326be695dc9f0dfefd83cb2a3",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "712956d5f37a9c5d320f09681be7e2c1e5cac50938f5c3f8e6b5858b08add079",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "5b9a97085ed57f2e5410697a91b704b31c0489d4ed6537ee91a6c2f478cd51be",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "ownership-current-final.json": {
+      "receipt_sha256": "8ba2907bfad2177a8944bef326ab756d8a178a3aefa73d3bd98a3eba47a85183",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "readiness-session-green.json": {
+      "receipt_sha256": "b05b2be973451e53d7c948fa57e8ce02e7ff61ac8552c2a01d5388a4ff0dadf8",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "c6ef3e32182a94bd24f0fc5511146fcd56a471f4221cf1484fa372d55d7b9765",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "ownership-green-1.json": {
+      "receipt_sha256": "d4b38c37e694a5c1246a45f7e2ff96b3f4855c87233890369f8b74fb39edc5a9",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "5b9a97085ed57f2e5410697a91b704b31c0489d4ed6537ee91a6c2f478cd51be",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "cleanup.json": {
+      "receipt_sha256": "570707b303904da41c092c0dcda728ca1b28eac10c7512733a62e5b3e6f14bbf",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "runtime-current.json": {
+      "receipt_sha256": "03b86332be374f5a10a2b93019485810296a223954f19c08106d8bbfb1933298",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "d014d08f2930c4d986e2a7d6b8d5860897b92088b351576e78f31abe6f9d4c38",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "baseline.json": {
+      "receipt_sha256": "54b5ede1c928861780e3a97d56e644dc34a87d241f809477addcc4792858b12c",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "712956d5f37a9c5d320f09681be7e2c1e5cac50938f5c3f8e6b5858b08add079",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "5b9a97085ed57f2e5410697a91b704b31c0489d4ed6537ee91a6c2f478cd51be",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "standards-session-control-current.json": {
+      "receipt_sha256": "81c97dcd33215cab536c6ea34487a4def38b20c1d882df2b0cda6eb097bb087e",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "standards-session-min-green.json": {
+      "receipt_sha256": "ddaaef7a7eef6534bd564e1f55f59db7cdbb2e715a95c6fde1ec1317e754b45d",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "c6ef3e32182a94bd24f0fc5511146fcd56a471f4221cf1484fa372d55d7b9765",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "additional-scoped.json": {
+      "receipt_sha256": "9169be8bae6b7f55036d88983c66d4d2dd00b7fae5d83585d2e213571b40aeee",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "dedup-before-589-snapshot.json": {
+      "receipt_sha256": "7e2f4a544491621d7df66b5e158b27422783784afe8bff280fda04a2835c3759",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "standards-session-green.json": {
+      "receipt_sha256": "5728ffcb657596d83083114c0d56f1cbd0eefbeca29ddc6fd73529508104decd",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "c6ef3e32182a94bd24f0fc5511146fcd56a471f4221cf1484fa372d55d7b9765",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "migration-min.json": {
+      "receipt_sha256": "7c4d494afb47784d8040c6e53db875af835bc9e176017628275f3530aeb0d258",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "supplied-session-red.json": {
+      "receipt_sha256": "b974447592723d33533cb487ad0a3e9d325b7f3f5f3d80061e07c23c1ce7f5f6",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "standards-session-control-min.json": {
+      "receipt_sha256": "c9ba5f81745a77b24bc2258b720b775237eccaff3b9dce0e516906dea65d4b42",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "migration-current.json": {
+      "receipt_sha256": "b2b578ac28ea9701635f1368270e3f59b4af3bfe58d517958fe30b252d22af33",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "regressions-green-1.json": {
+      "receipt_sha256": "1a8d56a8611e948d2afd69837987dd2c50190e3e5634ffdd2b51b1cf87692eb1",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "regressions-min-final.json": {
+      "receipt_sha256": "12f875954e951bbc68233e98eaeec3b5fc1d39a5892476751928ae5ce88971b3",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "d014d08f2930c4d986e2a7d6b8d5860897b92088b351576e78f31abe6f9d4c38",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "standards-session-red.json": {
+      "receipt_sha256": "049e3571872b37721bd77c4dafd3b032e36a4d1138f31ecd420fd93a9a4f6600",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "regressions-green-final.json": {
+      "receipt_sha256": "02bf425f07a25d80650a98d813edd5619077c745b824a24ebd02d59ed1d1a04c",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "d014d08f2930c4d986e2a7d6b8d5860897b92088b351576e78f31abe6f9d4c38",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+      }
+    },
+    "adversarial/current-1.json": {
+      "receipt_sha256": "9b2482cd310b300c74a044b240bdaf0f745aba2fd8d6b4d427c0d9f1b17e2308",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+      }
+    },
+    "adversarial/minimum-1.json": {
+      "receipt_sha256": "f8f76ddad48a6ea8a02fe569fa7c32f678ddc3a0d6a31eee02d7f856c8295329",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Recorded working-tree hashes; not proof of current source. Original target_commit may precede uncommitted source edits.",
+      "source_sha256": {
+        "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+        "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+        "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+      }
+    },
+    "review-process-current.json": {
+      "receipt_sha256": "6593ca9538463f2481b9e55460c1fda89224bae03cca4e0658f8fdb4b1d887bd",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Superseded intermediate repair. Empty libpq service explicitly failed before database construction; guard removed that unsupported argument. Original outcome/source hashes retained.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "4ba64815c7e611b608dcb42a2690faa864d3b1cbfb62e0676eb6d76e90d436f9",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "8c3c28a0445c315e691b2f671e714568ba44b4e6e2046567ab1b76b5bdad7d6e",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-controls-min.json": {
+      "receipt_sha256": "2c3a77e353cf4acf655a447243f04e85273d7e91c1513fda446d7cb9e56e5e6d",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Superseded intermediate repair. Empty libpq service explicitly failed before database construction; guard removed that unsupported argument. Original outcome/source hashes retained.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "4ba64815c7e611b608dcb42a2690faa864d3b1cbfb62e0676eb6d76e90d436f9",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "8c3c28a0445c315e691b2f671e714568ba44b4e6e2046567ab1b76b5bdad7d6e",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-controls-current.json": {
+      "receipt_sha256": "3895a09624d185bcfbf0da3e309d4d7037e4541fdfc0f2448cfcf067ffb10eae",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Superseded intermediate repair. Empty libpq service explicitly failed before database construction; guard removed that unsupported argument. Original outcome/source hashes retained.",
+      "source_sha256": {
+        "backend/bootstrap.py": "d854025a61f4f5ad56b4ee09725a05292bcddeef1ff42beb1d6327c16bee34f2",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "4ba64815c7e611b608dcb42a2690faa864d3b1cbfb62e0676eb6d76e90d436f9",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "8c3c28a0445c315e691b2f671e714568ba44b4e6e2046567ab1b76b5bdad7d6e",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "dedaecff559755b4a74bd9c3665fbd1b1357df8113f316beea61f4b69a8d62bc",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-process-current-v2.json": {
+      "receipt_sha256": "e0c893c9b2e1fa4a1d09e4ee26bae9bdabc38c6b8c9d58f1ecbdd39a63870737",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-default-fixture-red.json": {
+      "receipt_sha256": "9ce86cbd2f17ab841ba3dc697f02862f7061798fb126ee7b37a4ca202c6a2043",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-borrowed-pg-red-current.json": {
+      "receipt_sha256": "ad02950439aefbdf378dacccbe6737138754162a71cbcd5316ee40d4cfba9338",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-controls-current-final.json": {
+      "receipt_sha256": "ee042c44f4136235ed001d095ff05ebb6119c138bc41f452769c9b18322d428b",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-scope-current.json": {
+      "receipt_sha256": "c1475d6b07c989e592338a198fae1d3f2861ac04e185e26e345a04e4eb6ad9bb",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-process-min.json": {
+      "receipt_sha256": "1afa6cc3b01c97d0e8e81a8b28045d577d219a6f037ddd533f0dffb4c2bede86",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-borrowed-pg-green-current.json": {
+      "receipt_sha256": "f77ff5e7af4fff0f814b7fcd14521a81242f2db358504abc9ae25c36bb2c6d29",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-adversarial-wrapper-current.json": {
+      "receipt_sha256": "ca96c67a80fcb762dc76a536ff233fce724b78fc91f893e812a9d86e5197353a",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "adversarial/review-adversarial-current.json": {
+      "receipt_sha256": "fe8cbfa6ba31f7c0885307501e9632c2cfdf740698caed41606b4a98cac8a482",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Pre-default-fixture evidence retained. Later default setup executes required process cases without the author URL; previous overrides and selections remain separate historical runs.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+      }
+    },
+    "review-default-process-current-final.json": {
+      "receipt_sha256": "dc4390cbfa39d901578ec11a659216d8d710074dafa1628f025ef73e247c65c8",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Before final default fixture transport correction. Docker internal network reported no published host ports; actual diagnostic preserved and owned resources removed. Source-bound original outcomes retained.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "460222bfa623a55dd91813acb019ef6e67fb6f19e389ac93accaca1e20ace272",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-scope-min-final.json": {
+      "receipt_sha256": "1ac7abd142e00db53145ac3ee3c7882ddf9441a7f192325fc567a2f4df3d9f54",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Before final default fixture transport correction. Docker internal network reported no published host ports; actual diagnostic preserved and owned resources removed. Source-bound original outcomes retained.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "460222bfa623a55dd91813acb019ef6e67fb6f19e389ac93accaca1e20ace272",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-scope-current-v2-final.json": {
+      "receipt_sha256": "18b7700375c32ee45742d8c8b6e6f2a5f75412040f44317226f1feba9fa480fc",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-adversarial-wrapper-min-final.json": {
+      "receipt_sha256": "dd6310324989d91ce41b62337c5ccc517cd4aa39f3e901a5273212997c2f5c1e",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-borrowed-green-current-final.json": {
+      "receipt_sha256": "94024118ce5bab132e56df15851d51a1748414ba2c874968ab13afa36cc17040",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-migration-min-final.json": {
+      "receipt_sha256": "3094e038d9d35d51aaeb5c50d8fb503e7a2d5302242c8cb58ec9ea8a3364245a",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-spec-current-final.json": {
+      "receipt_sha256": "504d1325d9b5382c0e9b7e552de74bb368134e31e15d3fb2de3a9818292db4fe",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-default-process-min-v3-final.json": {
+      "receipt_sha256": "4b7d509f620b467457e51bf4ab2928358b4842aa3cfbbc594a3a317a4b0b6dc7",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "a665b454b11fcb82f68714dd9f0158be4da7e9cd627db83f61efc2447b482751",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-borrowed-green-min-final.json": {
+      "receipt_sha256": "da9015ae6024d066fb5662fbde637917da8e540fffb46c44d1a063d433a7f7cc",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-default-process-current-v3-final.json": {
+      "receipt_sha256": "80bcf6bc514ed3eb04ced3a707ff9687e642e766e499af9a64f9306b970b43bc",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "a665b454b11fcb82f68714dd9f0158be4da7e9cd627db83f61efc2447b482751",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-migration-current-final.json": {
+      "receipt_sha256": "c759279bfd9935eaba0fa10405149ba5958bfb9ebd9056d92ba0871554d6a2bc",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-other-readiness-final.json": {
+      "receipt_sha256": "3166977017240fac5dfdfc3e7f7348c2c8969ce4a60617c4dfff8481baf55662",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-adversarial-wrapper-current-final.json": {
+      "receipt_sha256": "6bdea85a4db282f04f5a6f9606b21783f1cc03d17267cb8c766aef84dc282cc2",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-standards-min-final.json": {
+      "receipt_sha256": "f37fd424fa444125d49f2474334944e8f270e364080470e4ef7ea10eeb268fe1",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-standards-current-final.json": {
+      "receipt_sha256": "61290c1f0b11b2a060dbb5484a42b75ac4803e1135184e8d51d9b90e0f83fcdb",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-spec-min-final.json": {
+      "receipt_sha256": "5bd53b1ed2f342fcb82dedd058d595c7f58d693686eb285719847f975eb0ff6b",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-default-process-current-v2-final.json": {
+      "receipt_sha256": "3e963ccd6cc23eca3c754a3ab0f67384084fc2ec614b9fccabba4fcf0c537f90",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "review-borrowed-red-current-final.json": {
+      "receipt_sha256": "932af9464cf2ff89ef86a277c7055d6ae67722736b5bb045b4293e663805adaa",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+        "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+        "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+        "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+        "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+        "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+        "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+        "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+        "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+        "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+        "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+        "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+        "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+        "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+        "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+      }
+    },
+    "adversarial/review-adversarial-current-final.json": {
+      "receipt_sha256": "1208fdbddab2c84f88cc29635261ef702702e0267c79be93dc8ce06e9d47f840",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+      }
+    },
+    "adversarial/review-adversarial-min-final.json": {
+      "receipt_sha256": "46684dcad415a5fb1cf0f98d139efac10529725de69be4d82b984fd08f02fea3",
+      "status": "HISTORICAL_ONLY",
+      "source_binding": "Immutable earlier review run; superseded by final acceptance, including setup failures and prior source snapshots.",
+      "source_sha256": {
+        "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+        "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+        "backend/seeding/types.py": "96e5d1e50cc3193ccfefc04bbf0b437e9124e21e37d44659c3394dcde944d7db"
+      }
+    }
+  },
+  "spec_raw": [
+    "spec-readiness-red",
+    "spec-readiness-green",
+    "spec-readiness-green-minimum"
+  ]
+}

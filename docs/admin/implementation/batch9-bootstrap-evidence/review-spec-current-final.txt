@@ -1,0 +1,78 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py",
+  "generator_sha256": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+  "generated_at": "2026-10-09T23:39:17.492108+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app",
+  "environment": {
+    "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "ENABLE_ETL_SCHEDULER": "false",
+    "JWT_SECRET_KEY": "batch9-review-590-inert"
+  },
+  "target_commit": "cfc77b7615c3c0bb8af110edf22beca8cc15abe8",
+  "source_state": "working_tree_bound_by_source_sha256",
+  "source_sha256": {
+    "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+    "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "723ffc7a313ae9c8b5536ecf003932823d115d06e9b09fe60c79bea0b9359852",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+    "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+    "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+    "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+    "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+    "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+    "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+    "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+    "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+    "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+    "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+  }
+}
+
+{
+  "python": "3.13.9",
+  "sqlalchemy": "2.0.46",
+  "command": [
+    "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py"
+  ],
+  "schema": "spec_2f0a243759074a7a9b3fbbbd899a59dd",
+  "owned_database": "batch9-review-590-base-s-719f80c1b92d",
+  "bootstrap_sha256": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+  "control_sha256": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+  "native_command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "seeding.cli",
+    "seed",
+    "--domain",
+    "national_budget",
+    "--no-dry-run"
+  ],
+  "startup_command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-c",
+    "import asyncio, main; asyncio.run(main._startup_sequence()); print('BOOTSTRAP_READY', main._app_ready.is_set())"
+  ],
+  "startup_exit_code": 0,
+  "startup_stdout": "BOOTSTRAP_READY True\n",
+  "startup_stderr": "2026-10-09 18:39:18,959 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))\n2026-10-09 18:39:18,961 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 18:39:18,967 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 18:39:18,967 - main - INFO - Redis cache initialized successfully\n2026-10-09 18:39:19,001 - config.secrets - INFO - Using environment variables for secrets\n2026-10-09 18:39:19,001 - main - INFO - Using Redis-backed rate limiting\n2026-10-09 18:39:19,001 - main - INFO - Security middleware registered (rate limit, audit log, headers)\n2026-10-09 18:39:19,195 - main - INFO - Social admin router registered at /api/v1/admin/social\n2026-10-09 18:39:19,210 - main - INFO - ETL admin router registered at /api/v1/admin/etl\n2026-10-09 18:39:19,231 - main - INFO - Economic data router registered at /api/v1/economic\n2026-10-09 18:39:19,237 - main - INFO - Admin router registered at /api/v1/admin\n2026-10-09 18:39:19,248 - main - INFO - Admin users router registered at /api/v1/admin/users\n2026-10-09 18:39:19,253 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log\n2026-10-09 18:39:19,262 - main - INFO - User features router registered (newsletter endpoints)\n2026-10-09 18:39:19,272 - main - INFO - Audit dashboard router registered at /api/v1/audit\n2026-10-09 18:39:19,273 - main - INFO - Detailed health router registered at /health/detailed\n2026-10-09 18:39:19,277 - cache.redis_cache - INFO - Redis not configured \u2014 using in-memory cache (this is normal without a Redis add-on)\n2026-10-09 18:39:19,280 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow\n2026-10-09 18:39:19,282 - main - INFO - Data freshness router registered at /api/v1/data/freshness\n2026-10-09 18:39:19,283 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate\n2026-10-09 18:39:19,292 - main - INFO - Data provenance router registered at /api/v1/provenance\n2026-10-09 18:39:19,304 - main - INFO - Main Backend API starting up...\n2026-10-09 18:39:19,304 - main - INFO - Working directory: /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend\n2026-10-09 18:39:19,313 - main - INFO - Database connection pool warmed up successfully\n2026-10-09 18:39:19,350 - bootstrap - WARNING - national_budget bootstrap skipped: Domain execution is already owned\n2026-10-09 18:39:19,356 - bootstrap - INFO - Created base country record for Kenya\n2026-10-09 18:39:19,359 - bootstrap - INFO - Created fiscal period FY2025/26\n2026-10-09 18:39:19,413 - bootstrap - INFO - Economic indicator writes delegated to economic_indicators domain\n2026-10-09 18:39:19,413 - bootstrap - INFO - Poverty index seeding delegated to national_gdp seeding domain\n2026-10-09 18:39:19,413 - bootstrap - INFO - National-level data seeded (GDP); economic indicators use the dedicated domain. Run 'python -m seeding.cli seed --domain national_debt' for debt records.\n2026-10-09 18:39:19,434 - bootstrap - INFO - Reference county data initialized (47 counties)\n2026-10-09 18:39:19,434 - main - INFO - Main Backend API startup complete!\n2026-10-09 18:39:19,434 - main - INFO - Auto-seeder disabled via AUTO_SEEDER_ENABLED=false\n2026-10-09 18:39:19,447 - main - INFO - Legacy discovery unavailable in this deployment; use the dedicated seeding runner. Skipping legacy discovery schedules.\n2026-10-09 18:39:19,447 - apscheduler.scheduler - INFO - Scheduler started\n2026-10-09 18:39:19,447 - main - INFO - Parliament pipeline disabled (PARLIAMENT_PIPELINE_ENABLED != 1)\n2026-10-09 18:39:19,448 - apscheduler.scheduler - INFO - Added job \"_setup_etl_scheduler.<locals>._digest_wrapper\" to job store \"default\"\n2026-10-09 18:39:19,448 - main - INFO - Cache warmup disabled via AUTO_WARMUP_ENABLED=false\n",
+  "county_count_before_native_release": 47,
+  "bootstrap_jobs_before_native_release": 1,
+  "entered_handlers_before_native_release": 1,
+  "native_exit_code": 0,
+  "native_output": "{\"asctime\": \"2026-10-09 18:39:19,695\", \"levelname\": \"INFO\", \"name\": \"seeding\", \"message\": \"Committed changes\", \"domain\": \"national_budget\", \"job_id\": 1}\n{\"asctime\": \"2026-10-09 18:39:19,701\", \"levelname\": \"INFO\", \"name\": \"seeding\", \"message\": \"Domain run completed\", \"domain\": \"national_budget\", \"started_at\": \"2026-10-09T23:39:19.693019+00:00\", \"finished_at\": \"2026-10-09T23:39:19.701531+00:00\", \"items_processed\": 1, \"items_created\": 1, \"items_updated\": 0, \"dry_run\": false, \"errors\": [], \"metadata\": {\"owned_fixture\": true}}\n"
+}

@@ -34,7 +34,9 @@ from county_metrics_purge import (  # noqa: F401 - re-exported
     PURGED_METRIC_FIELDS,
     purge_modelled_county_metrics,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import Connection
+from seeding.exclusion import DomainExecution, DomainOwnershipError, enter_domain
 
 logger = logging.getLogger(__name__)
 
@@ -838,7 +840,9 @@ def _seed_national_data(
     )
 
 
-def _seed_national_budget(session: Session) -> None:
+def _seed_national_budget(
+    session: Session, ownership: DomainExecution
+) -> IngestionJob:
     """Seed national-government BudgetLine rows from the CoB NG-BIRR fixture.
 
     Delegates to the national_budget seeding domain so bootstrap stays
@@ -847,34 +851,63 @@ def _seed_national_budget(session: Session) -> None:
     CLI entrypoint (`python -m seeding.cli seed --domain national_budget`)
     is still the right tool when a fresh live fetch is wanted.
 
-    Idempotent — the domain writer matches on
-    (entity_id, period_id, category, subcategory), so repeat calls are no-ops
-    when the fixture hasn't changed.
+    The caller holds the shared claim through its outer commit. This helper
+    never commits or releases ownership. A failed budget savepoint leaves the
+    reference work intact and retains the claim for explicit reconciliation.
     """
+    if (ownership.domain != "national_budget" or not ownership.entered
+            or not ownership.continuous()):
+        raise DomainOwnershipError("Bootstrap budget execution unverified")
+    job = IngestionJob(
+        domain="national_budget", status=IngestionStatus.RUNNING, dry_run=False,
+        started_at=datetime.now(timezone.utc), errors=[],
+        meta={"source_mode": "fixture", "bootstrap": True,
+              "seeding_claim_id": str(ownership.identity)},
+    )
+    session.add(job)
+    session.flush()
     try:
         from seeding.config import SeedingSettings
-        from seeding.domains.national_budget import run as _run
-        from seeding.types import DomainRunContext
-    except ImportError as exc:  # seeding package missing — safe to skip
-        logger.warning("national_budget seed skipped (import failed): %s", exc)
-        return
+        from seeding.registries import REGISTRY, load_builtin_domains
+        from seeding.types import DomainRunContext, DomainRunResult
 
-    try:
+        load_builtin_domains()
+        handler = REGISTRY.get("national_budget")
+        if handler is None:
+            raise RuntimeError("national_budget handler unavailable")
         settings = SeedingSettings(live_pdf_fetch_enabled=False)
-        context = DomainRunContext(since=None, dry_run=False, job_id=None)
-        result = _run(session=session, settings=settings, context=context)
-        if result.errors:
-            logger.warning(
-                "national_budget seed completed with errors: %s", result.errors
-            )
+        context = DomainRunContext(since=None, dry_run=False, job_id=job.id)
+        with session.begin_nested():
+            result = handler(session=session, settings=settings, context=context)
+            if not isinstance(result, DomainRunResult):
+                raise ValueError("national_budget returned no coherent result")
+            # Revalidate even an already constructed/mutated result. Unknown
+            # shapes and boolean/negative counters cannot certify completion.
+            result = DomainRunResult.model_validate(result.model_dump(), strict=True)
+            if (result.domain != "national_budget" or result.dry_run is not False
+                    or any(type(n) is not int or not 0 <= n <= 2147483647 for n in (
+                        result.items_processed, result.items_created, result.items_updated))):
+                raise ValueError("national_budget returned an invalid result")
+            if result.errors:
+                raise RuntimeError("; ".join(result.errors)[:2000])
+        job.status = IngestionStatus.COMPLETED
+        job.items_processed = result.items_processed
+        job.items_created = result.items_created
+        job.items_updated = result.items_updated
+        job.meta = {**result.metadata, **job.meta}
         logger.info(
             "National budget execution seeded (processed=%d, created=%d, updated=%d)",
             result.items_processed,
             result.items_created,
             result.items_updated,
         )
-    except Exception as exc:  # don't crash startup on seeder hiccups
-        logger.warning("national_budget seed skipped: %s", exc)
+    except Exception as exc:
+        job.status = IngestionStatus.FAILED
+        job.errors = [str(exc)[:2000]]
+        job.meta = {**job.meta, "ownership_retained": True}
+        logger.warning("national_budget bootstrap failed; ownership retained: %s", exc)
+    job.finished_at = datetime.now(timezone.utc)
+    return job
 
 
 #: How long a RUNNING ingestion row is taken at its word. The seeding CLI's own
@@ -908,12 +941,36 @@ def _seed_run_in_flight(session: Session) -> Optional[str]:
         .filter(
             IngestionJob.status == IngestionStatus.RUNNING,
             IngestionJob.domain != BOOTSTRAP_DOMAIN,
+            # Budget now yields atomically at its shared claim. Deferring the
+            # whole bootstrap here would skip empty-DB reference initialization
+            # while web startup still marks reference readiness.
+            IngestionJob.domain != "national_budget",
             IngestionJob.started_at >= cutoff.replace(tzinfo=None),
         )
         .order_by(IngestionJob.started_at.desc())
         .first()
     )
     return row.domain if row else None
+
+
+def _bootstrap_session() -> Tuple[Session, bool]:
+    """Keep an existing caller transaction authoritative over bootstrap writes."""
+    candidate = SessionLocal()
+    bind = candidate.get_bind()
+    if candidate.in_transaction() or (
+        isinstance(bind, Connection) and bind.in_transaction()
+    ):
+        connection = candidate.connection() if candidate.in_transaction() else bind
+        if connection.dialect.name == "sqlite":
+            # sqlite3 defers the physical BEGIN until a write. A SAVEPOINT
+            # issued first becomes the outer transaction, whose release would
+            # commit bootstrap writes despite an active caller SessionTransaction.
+            # Materialize that caller transaction before borrowing a savepoint.
+            driver = connection.connection.driver_connection
+            if not driver.in_transaction:
+                connection.exec_driver_sql("BEGIN")
+        return Session(bind=connection, join_transaction_mode="create_savepoint"), False
+    return candidate, True
 
 
 def initialize_reference_data(
@@ -937,7 +994,7 @@ def initialize_reference_data(
     # row saying otherwise would be read by check_ingestion_freshness as a
     # bootstrap that served a fixture.
     if not force:
-        probe = SessionLocal()
+        probe, _ = _bootstrap_session()
         try:
             busy = _seed_run_in_flight(probe)
         except Exception:  # noqa: BLE001 - a probe must never be the failure
@@ -958,7 +1015,7 @@ def initialize_reference_data(
     # up even when the county entities are already in place.
     skip_county_loop = False
     if not force:
-        quick_session = SessionLocal()
+        quick_session, _ = _bootstrap_session()
         try:
             county_count = (
                 quick_session.query(Entity)
@@ -987,8 +1044,34 @@ def initialize_reference_data(
 
 
     started_at = datetime.now(timezone.utc)
-    session = SessionLocal()
+    session, owns_transaction = _bootstrap_session()
+    budget_ownership = None
+    budget_job = None
     try:
+        # Acquire before reference mutations as well: supplied SQLite sessions
+        # may share a single connection, so a claim commit must not accidentally
+        # commit this bootstrap's pending data. PostgreSQL uses independent
+        # sessions and the seam's dedicated transaction for continuity/release.
+        bind = session.get_bind()
+        factory = sessionmaker(
+            bind=bind if bind.dialect.name == "sqlite" else bind.engine,
+            # Externally managed SQLite test transactions must survive a refused
+            # child claim. SQLite has no PostgreSQL continuity/persistence proof;
+            # its supplied connection remains authoritative for the test.
+            join_transaction_mode="create_savepoint",
+        )
+        try:
+            budget_ownership = enter_domain(factory, "national_budget", False)
+        except DomainOwnershipError as exc:
+            logger.warning("national_budget bootstrap skipped: %s", exc)
+            budget_job = IngestionJob(
+                domain="national_budget", status=IngestionStatus.FAILED, dry_run=False,
+                started_at=datetime.now(timezone.utc), finished_at=datetime.now(timezone.utc),
+                errors=[str(exc)], meta={"bootstrap": True, "ownership_refused": True,
+                                       "source_mode": "unknown"},
+            )
+            session.add(budget_job)
+
         country = _ensure_country(session)
         period = _ensure_fiscal_period(session, country.id)
 
@@ -1060,13 +1143,25 @@ def initialize_reference_data(
         _seed_national_data(session, country=country, period=period)
 
         # --- National-government budget execution (CoB NG-BIRR) ---
-        _seed_national_budget(session)
+        if budget_ownership is not None:
+            budget_job = _seed_national_budget(session, budget_ownership)
 
         # Record the run so the freshness checks can see it (issue #137 P3).
         # Before this the weekly job was invisible: no IngestionJob, no
         # freshness mark, so a fixture could freeze for a year — and one had —
         # while every gate stayed green because none of them was looking.
+        if not owns_transaction and budget_job is not None and budget_ownership is not None:
+            budget_job.meta = {**budget_job.meta, "ownership_retained": True,
+                               "outer_commit_pending": True}
         provenance = bootstrap_provenance(session)
+        if budget_job is not None:
+            session.flush()
+            provenance["national_budget"] = {
+                "status": budget_job.status.value,
+                "ownership_refused": budget_job.meta.get("ownership_refused") is True,
+                "ownership_retained": budget_job.meta.get("ownership_retained") is True,
+                "job_id": budget_job.id,
+            }
         session.add(
             IngestionJob(
                 domain=BOOTSTRAP_DOMAIN,
@@ -1078,6 +1173,12 @@ def initialize_reference_data(
             )
         )
         session.commit()
+        # Only a successful, persisted budget receipt permits release. The
+        # shared seam proves continuity and mutates on its lock-holding backend.
+        # Any failure (including an ambiguous commit) retains the durable claim.
+        if (owns_transaction and budget_ownership is not None and budget_job is not None
+                and budget_job.status == IngestionStatus.COMPLETED):
+            budget_ownership.acknowledge(budget_job.id)
 
         if provenance["is_stale"]:
             logger.warning(
@@ -1130,3 +1231,5 @@ def initialize_reference_data(
         raise
     finally:
         session.close()
+        if budget_ownership is not None:
+            budget_ownership.close()

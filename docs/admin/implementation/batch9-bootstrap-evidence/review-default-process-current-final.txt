@@ -1,0 +1,1082 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py",
+  "generator_sha256": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+  "generated_at": "2026-10-09T23:37:09.607513+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-c",
+    "import os,pytest; os.environ.pop('BATCH9_BOOTSTRAP_POSTGRES_URL',None); raise SystemExit(pytest.main(['backend/tests/test_batch9_bootstrap_ownership.py','-q','-s']))"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app",
+  "environment": {
+    "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "ENABLE_ETL_SCHEDULER": "false",
+    "JWT_SECRET_KEY": "batch9-review-590-inert"
+  },
+  "target_commit": "cfc77b7615c3c0bb8af110edf22beca8cc15abe8",
+  "source_state": "working_tree_bound_by_source_sha256",
+  "source_sha256": {
+    "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+    "backend/tests/batch9_bootstrap_fixture/owned_postgres.py": "460222bfa623a55dd91813acb019ef6e67fb6f19e389ac93accaca1e20ace272",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+    "backend/tests/test_batch9_bootstrap_fixture_safety.py": "f3569a463aa6f43fd26e4c7752b09d4325de1eb906e7a3f123d08404745256c9",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "b0faf543e250d90b7d033a62bb33ee53aab9a884057b8767168e54a458062fa4",
+    "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+    "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+    "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+    "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+    "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+    "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+    "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+    "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+    "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+  }
+}
+
+2026-10-09 18:37:10,138 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-09 18:37:10,140 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:37:10,146 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:37:10,146 - main - INFO - Redis cache initialized successfully
+2026-10-09 18:37:10,180 - config.secrets - INFO - Using environment variables for secrets
+2026-10-09 18:37:10,180 - main - INFO - Using Redis-backed rate limiting
+2026-10-09 18:37:10,180 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-09 18:37:10,366 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-09 18:37:10,380 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-09 18:37:10,401 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-09 18:37:10,406 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-09 18:37:10,415 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-09 18:37:10,420 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-09 18:37:10,429 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-09 18:37:10,439 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-09 18:37:10,440 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-09 18:37:10,444 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-09 18:37:10,446 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-09 18:37:10,448 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-09 18:37:10,449 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-09 18:37:10,459 - main - INFO - Data provenance router registered at /api/v1/provenance
+OWNED_BOOTSTRAP_DEFAULT_FIXTURE_REMOVED batch9-review-590-auto-3308c08fa21f41d4 batch9-review-590-auto-network-3308c08fa21f41d4 port_free 55492
+EEEEEEEEEEEEEEEEEEEE
+==================================== ERRORS ====================================
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[force-arguments0] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[force-arguments1] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments0] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments1] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments0] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments1] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-weekly] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-startup] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-weekly] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-startup] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_startup_scopes_its_configuration_with_absent_or_different_ambient[None] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_startup_scopes_its_configuration_with_absent_or_different_ambient[different-inert-startup-value] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_empty_then_current_superseded_database_startup_keeps_readiness_and_provenance _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_kill_retains_uncertain_claim_across_restart[before] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_kill_retains_uncertain_claim_across_restart[afterwrite] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_kill_retains_uncertain_claim_across_restart[outer_commit] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_bootstrap_connection_death_retains_claim_even_after_writer_commit _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_failed_bootstrap_budget_rolls_back_budget_retains_claim_and_keeps_references[failure] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_failed_bootstrap_budget_rolls_back_budget_retains_claim_and_keeps_references[errors] _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+_ ERROR at setup of test_native_dry_run_excludes_bootstrap_and_rolls_back_before_next_owner _
+
+    @pytest.fixture(scope="module")
+    def bootstrap_postgres_url():
+        if URL:
+            owned_url(URL)
+            yield URL
+        else:
+            from batch9_bootstrap_fixture.owned_postgres import postgres
+>           with postgres() as url:
+                 ^^^^^^^^^^
+
+backend/tests/test_batch9_bootstrap_ownership.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:141: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextmanager
+    def postgres():
+        docker = docker_command()
+        image = json.loads(run(docker, "image", "inspect", IMAGE))
+        server = json.loads(run(docker, "version", "--format", "{{json .Server}}"))
+        assert len(image) == 1 and IMAGE in image[0]["RepoDigests"]
+        assert image[0]["Os"] == server["Os"] == "linux"
+        assert image[0]["Architecture"] == server["Arch"]
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", PORT))
+        token = uuid4().hex[:16]
+        name, network = "batch9-review-590-auto-" + token, "batch9-review-590-auto-network-" + token
+        database = "batch9-bootstrap-auto-" + token
+        url = f"postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:{PORT}/{database}"
+        network_id = container_id = None
+        engine = None
+        try:
+            network_id = run(docker, "network", "create", "--internal", "--label", "audit.batch9.owner=" + OWNER, network)
+            container_id = run(docker, "run", "--pull=never", "-d", "--name", name, "--network", network,
+                               "--label", "audit.batch9.owner=" + OWNER, "-p", f"127.0.0.1:{PORT}:5432",
+                               "-e", "POSTGRES_USER=batch9_bootstrap", "-e", "POSTGRES_PASSWORD=batch9-inert-local",
+                               "-e", "POSTGRES_DB=" + database, IMAGE)
+            container = json.loads(run(docker, "inspect", container_id))[0]
+            assert container["Name"] == "/" + name and container["Id"] == container_id
+            assert container["Config"]["Labels"]["audit.batch9.owner"] == OWNER
+>           assert container["NetworkSettings"]["Ports"] == {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(PORT)}]}
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError
+
+backend/tests/batch9_bootstrap_fixture/owned_postgres.py:60: AssertionError
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[force-arguments0]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[force-arguments1]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments0]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[weekly-arguments1]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments0]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_first_bootstrap_skips_budget_and_preserves_reference_work[startup-arguments1]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-weekly]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments0-startup]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-weekly]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_first_blocks_native_then_completion_allows_next[arguments1-startup]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_startup_scopes_its_configuration_with_absent_or_different_ambient[None]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_startup_scopes_its_configuration_with_absent_or_different_ambient[different-inert-startup-value]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_empty_then_current_superseded_database_startup_keeps_readiness_and_provenance
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_kill_retains_uncertain_claim_across_restart[before]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_kill_retains_uncertain_claim_across_restart[afterwrite]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_kill_retains_uncertain_claim_across_restart[outer_commit]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_bootstrap_connection_death_retains_claim_even_after_writer_commit
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_failed_bootstrap_budget_rolls_back_budget_retains_claim_and_keeps_references[failure]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_failed_bootstrap_budget_rolls_back_budget_retains_claim_and_keeps_references[errors]
+ERROR backend/tests/test_batch9_bootstrap_ownership.py::test_native_dry_run_excludes_bootstrap_and_rolls_back_before_next_owner
+2 warnings, 20 errors in 6.69s
