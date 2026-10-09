@@ -1,38 +1,38 @@
 {
   "backend/main.py": {
-    "ast_sha256": "32925d4aafa7c95a0656ce04f865362bdb90da2015e386db1ae084a31e01f1a1",
+    "ast_sha256": "a1feee54730bad33f8b69712d2ba210ddfd7e2d1a6ee718bf03c97a81b60eac1",
     "sites": [
       {
         "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "unused private upper-bound constant; no code reference beyond definition",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
-        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'_PENDING_BILLS_SEVERE_SHARE' is published from typed-in numbers [25.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented score policy calibration threshold, not a measured monetary observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
-        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'_budget_overview_meta' is published from typed-in numbers [1800]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "response metadata TTL keyword 1800 seconds, not a finance amount",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
-        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'anchor_pct_gdp' is published from typed-in numbers [55.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
-        "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       }
     ]
   },
@@ -66,13 +66,15 @@
     ]
   },
   "backend/seeding/config.py": {
-    "ast_sha256": "4f5359acd086aa40a3807b27e242f31e1d88b53b3ac22a2c10de741de71df14f",
+    "ast_sha256": "6805dc66af8d2a0a15eab20d9dddd4bb383f6d77a276da3974eff3c38c41855d",
     "sites": [
       {
         "signature": "'audits_county_start_budget_seconds' is published from typed-in numbers [240]. Nothing measured it. Serve a sourced figure or serve nothing.",
-        "reason": "documented configuration/validation threshold; not a measured published amount (source context attached)",
+        "reason": "elapsed-time admission threshold in seconds, disclosed in scheduling metadata; never supplied as a financial amount",
         "disposition": "reviewed contextual value",
-        "tracking": "https://github.com/Rodgers31/audit_app/issues/301"
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       }
     ]
   },
@@ -150,6 +152,19 @@
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
         "reviewed_against": "355c057: prior full-module AST matches previous inventory pin",
         "review_context": "docs/verification/2026-10-03-ci-safeguard-context-review.md"
+      }
+    ]
+  },
+  "backend/scripts/r2_producer_acceptance.py": {
+    "ast_sha256": "314708e335750c7f61f9db185e5f342f051e1e8c0e717d223c1dc90ecd67738a",
+    "sites": [
+      {
+        "signature": "'sqlite_budget_rows' is published from typed-in numbers [468]. Nothing measured it. Serve a sourced figure or serve nothing.",
+        "reason": "checked expected retained-source acceptance row count, bound to actual disposable SQL rows, qualifications and row-derived public endpoint equality; diagnostic report only, never a monetary observation",
+        "disposition": "reviewed contextual value",
+        "tracking": "https://github.com/Rodgers31/audit_app/issues/591",
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact producer source and complete report/publication context",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       }
     ]
   }

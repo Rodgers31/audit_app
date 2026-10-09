@@ -5,15 +5,17 @@ import time
 if os.environ.get("BATCH7_COORDINATOR_INERT_WORKER") == "true":
     try:
         import socket
+        from tests.ci_browser_database import browser_database_port
+        database_port = browser_database_port(55483)
         original_connect = socket.socket.connect
 
         def local_only(sock, address):
-            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", 55483):
+            if not isinstance(address, tuple) or address[:2] != ("127.0.0.1", database_port):
                 raise RuntimeError("External transport blocked in coordinator worker fixture")
             return original_connect(sock, address)
 
         socket.socket.connect = local_only
-        assert os.environ["DATABASE_URL"] == "postgresql+psycopg2://batch7_coordinator:batch7-inert-coordinator-local@127.0.0.1:55483/batch7_coordinator"
+        assert os.environ["DATABASE_URL"] == f"postgresql+psycopg2://batch7_coordinator:batch7-inert-coordinator-local@127.0.0.1:{database_port}/batch7_coordinator"
         from sqlalchemy import text
         from database import SessionLocal
         from seeding.registries import REGISTRY, load_builtin_domains
