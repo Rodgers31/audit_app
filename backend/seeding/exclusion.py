@@ -15,11 +15,13 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime, timezone, timedelta
 from hashlib import sha256
+import re
 from uuid import UUID, uuid4
 
-from sqlalchemy import func, select, text
+from sqlalchemy import func, inspect, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import SQLAlchemyError
 
 from models import (EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob,
     IngestionStatus, SeedingDomainClaim)
@@ -29,6 +31,51 @@ _dispatch_scope = ContextVar("authenticated_dispatch_scope", default=None)
 
 class DomainOwnershipError(RuntimeError):
     """A safe bounded diagnostic: no database/provider exception payload."""
+
+
+def _require_claim_storage(connection):
+    """Prove the actual active-domain arbiter, on the admission transaction.
+
+    A table/index name or successful insert is insufficient: without the partial
+    unique domain index, ON CONFLICT silently admits another retained owner.
+    Inspect fresh connection-local metadata, never a cached startup verdict.
+    PostgreSQL's table read also holds ACCESS SHARE until this transaction ends;
+    ordinary DROP/ALTER cannot replace the checked table during admission. This
+    does not fence arbitrary privileged concurrent index DDL during a run.
+    """
+    try:
+        # Select every required claim column without reading any claim data.
+        connection.execute(select(SeedingDomainClaim.__table__).limit(0))
+        dialect = connection.dialect.name
+        if dialect == "postgresql":
+            ready = connection.scalar(text("""SELECT EXISTS (
+                SELECT 1 FROM pg_class t
+                JOIN pg_index i ON i.indrelid=t.oid
+                JOIN pg_attribute a ON a.attrelid=t.oid AND a.attname='domain'
+                WHERE t.oid=to_regclass('seeding_domain_claims') AND t.relkind IN ('r','p')
+                AND i.indisunique AND i.indisvalid AND i.indisready AND i.indislive
+                AND i.indimmediate AND i.indnkeyatts=1 AND i.indkey[0]=a.attnum
+                AND i.indexprs IS NULL AND pg_get_expr(i.indpred,i.indrelid)='(released_at IS NULL)'
+            )"""))
+        elif dialect == "sqlite":
+            ready = False
+            # SQLite resolves TEMP before main and folds ASCII identifier case.
+            # Metadata matching must use that same identity before checking main.
+            shadow = connection.scalar(text("SELECT EXISTS (SELECT 1 FROM sqlite_temp_master WHERE name='seeding_domain_claims' COLLATE NOCASE)"))
+            if not shadow and connection.scalar(text("SELECT type FROM sqlite_master WHERE name='seeding_domain_claims' COLLATE NOCASE")) == "table":
+                for index in inspect(connection).get_indexes("seeding_domain_claims"):
+                    predicate = index.get("dialect_options", {}).get("sqlite_where")
+                    if (index.get("unique") and index.get("column_names") == ["domain"]
+                            and re.fullmatch(r'\(*\s*(?:"released_at"|released_at)\s+IS\s+NULL\s*\)*',
+                                str(predicate).strip(), re.IGNORECASE)):
+                        ready = True
+                        break
+        else:
+            ready = False
+        if not ready:
+            raise DomainOwnershipError("Domain ownership storage incomplete; shared migration required")
+    except SQLAlchemyError:
+        raise DomainOwnershipError("Domain ownership storage unavailable; shared migration required") from None
 
 
 def clock(db):
@@ -56,6 +103,7 @@ def reserve(db, domain, identity, command_id=None, entry=None):
     insertion = {"postgresql": pg_insert, "sqlite": sqlite_insert}.get(dialect)
     if insertion is None:
         raise DomainOwnershipError("Domain ownership storage unsupported")
+    _require_claim_storage(db.connection())
     now = clock(db)
     # The unique active-domain index is the acquisition commit point, including
     # native/native and native/worker contenders using separate DB connections.
@@ -139,6 +187,15 @@ class DomainExecution:
             if not self.continuous():  # e.g. an autocommit engine already dropped it
                 self.close()
                 raise DomainOwnershipError("Domain execution lock is not held")
+        try:
+            if self.connection is not None:
+                _require_claim_storage(self.connection)
+            else:
+                with self.factory() as db:
+                    _require_claim_storage(db.connection())
+        except BaseException:
+            self.close()
+            raise
 
     def continuous(self):
         if self.connection is None:
@@ -226,6 +283,7 @@ def _enter_dispatch(factory, scope, domain, dry_run):
         raise DomainOwnershipError("Dispatch ownership scope invalid")
     entry = uuid4()
     with factory.begin() as db:
+        _require_claim_storage(db.connection())
         # Same lock order as the worker's claim/finish and the adapter.
         worker = db.get(EtlDispatchWorker, 1, with_for_update=True)
         now = clock(db)
