@@ -124,3 +124,15 @@ the coordinator's BATCH_6_REVIEW/spec artifact.
 No merge, issue closure, production deployment/migration, publishing, real user deletion/email/provider/storage operation, production environment change or paid/bot review request. Operational parents #481/#488/#490/#525 and dependency issue #494 remain open pending their own evidence. Local tests cannot close them.
 
 Owned PostgreSQL container `batch6-admin-overview-audit-pg` (loopback55473, disposable cached postgres17 image) was stopped and automatically removed after tests/reviews. Fixture/API8153 and Next3153 terminated with Playwright. Final container listing was empty and no listeners remained on3153/8153/55473. Draft PR attachment and final documentation head are recorded in the final brief. No implementation work remains interrupted. Temporary setup/test path mistakes and a concurrent generated-file check conflict were corrected and affected commands replayed sequentially; only completed green results count.
+
+
+### Coordinated shared write policy
+
+The pure safe_audit_payload policy now lives in utils.audit_policy, with the same
+public re-export from utils.audit. The users boolean audit writer reuses this
+exact policy before storage; no signature or transaction contract changes.
+Canonical file bytes are coordinated across PR559/562, with actual current
+users/ETL callers tested on the combined tree. This prevents supported legacy
+role strings or arbitrary mutation evidence bypassing the write policy (#553).
+Standalone overview compatibility replay after extraction:40 passed; epoch
+follow-up adds5 cases for45 total. This remains local acceptance.
