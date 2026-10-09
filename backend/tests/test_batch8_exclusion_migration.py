@@ -130,7 +130,7 @@ def test_migrated_batch7_claim_that_started_is_never_treated_as_unentered(pg, st
     assert (released, status, active) == ((False, "interrupted", True) if started else (True, "failed", False))
 
 
-@pytest.mark.parametrize("extra", ["", ",'ownership_refused',false", ",'ownership_refused','no'"])
+@pytest.mark.parametrize("extra", ["", ",'ownership_refused',false", ",'ownership_refused','no'", ",'ownership_refused','true'", ",'ownership_refused',null", ",'ownership_refused',1"])
 def test_unentered_claim_with_a_correlated_run_observation_stays_uncertain(pg, extra):
     # Only a genuine refusal row (ownership_refused = true) is ignored.
     client, factory, engine = pg

@@ -37,7 +37,9 @@ backend behind a transaction pooler, and the lock cannot outlive it on a pooled
 connection; it disables the idle-in-transaction timeout for that transaction and
 checks continuity immediately after locking), and verifies that same backend and
 lock still exist before acknowledging synchronous runner
-return and a coherent terminal observation. Connection/lease loss, SIGKILL or
+return and a coherent terminal observation. The acknowledgement mutation commits
+on that same lock-holding transaction, so loss before its commit rolls back the
+receipt and release together. Connection/lease loss, SIGKILL or
 SIGTERM/SIGINT before acknowledgement, or absent/malformed receipts retain
 ownership. A child exit does not acknowledge runner return. A per-domain or
 global-budget timeout is raised by SIGALRM in the runner's own thread; once the
@@ -49,10 +51,14 @@ dispatch acknowledgement remains held until the fresh supervisor commits the
 fenced command receipt. A dispatch claim the CLI never entered is released by
 that supervisor's `finish()` with a `failed` command and no job: entry re-proves
 the running command and unreleased claim under the same row locks, so nothing
-can enter afterwards and no handler can have run. No expiry-based reclaim,
+can enter afterwards and no handler can have run. A supervisor restart still
+retains even a never-entered claim: replacement-generation fencing does not
+replace the explicitly reviewed reconciliation procedure. No expiry-based reclaim,
 deletion or unblock tool. A RUNNING observation without a seeding claim tag
 (a writer outside this seam, e.g. from before the migration) refuses its domain
-with no age limit; tagged observations are governed by their claim. The
+with no age limit. Tags must parse as UUIDs and resolve to unreleased claims for
+the same domain; malformed, absent, released or other-domain claims remain
+blocking. A genuine refusal is JSON boolean `true`, not the string `"true"`. The
 migration records copied Batch 7 claims whose command had started as entered,
 so they can be neither acknowledged nor treated as never entered.
 

@@ -11,7 +11,7 @@ import threading
 from datetime import timedelta
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
 from admin_etl_dispatch import db_clock, enabled, fresh
@@ -111,7 +111,8 @@ def finish(factory, generation, command_id, token, exit_code):
                 and db.scalar(select(IngestionJob.id).where(
                     IngestionJob.meta["dispatch_command_id"].astext == str(command_id),
                     IngestionJob.meta["dispatch_claim_token"].astext == str(token),
-                    IngestionJob.meta["ownership_refused"].astext.is_distinct_from("true")).limit(1)) is None):
+                    or_(func.jsonb_typeof(IngestionJob.meta["ownership_refused"]).is_distinct_from("boolean"),
+                        IngestionJob.meta["ownership_refused"].astext.is_distinct_from("true"))).limit(1)) is None):
             # The CLI never entered, so no handler ran; entry re-proves this
             # running command and unreleased claim under these same row locks,
             # so nothing can enter after this. Free the domain, record failure.

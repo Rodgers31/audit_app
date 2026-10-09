@@ -318,11 +318,11 @@ def test_only_running_rows_outside_the_seam_refuse_native_entry(inert, tagged):
         db.add(IngestionJob(domain="audits", status=IngestionStatus.RUNNING, dry_run=False,
             started_at=datetime.now(timezone.utc), items_processed=0, items_created=0, items_updated=0,
             errors=[], meta=meta))
-    # A tagged row is governed by its (here: absent/released) claim; an untagged
-    # one may be a live pre-seam writer and has no age limit.
-    assert run() == (0 if tagged else 1)
-    assert len(calls) == (1 if tagged else 0)
-    assert refused(engine)[0] == (0 if tagged else 1)
+    # An absent claim does not prove ownership, even when the tag parses as a
+    # UUID. Both observations may be live out-of-seam writers, with no age limit.
+    assert run() == 1
+    assert calls == []
+    assert refused(engine)[0] == 1
 
 
 def test_autocommit_engine_cannot_hold_the_continuity_lock(inert):
