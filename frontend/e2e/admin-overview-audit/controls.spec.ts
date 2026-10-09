@@ -56,7 +56,8 @@ test('overview cards and mobile keyboard navigation preserve shell and truthful 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/admin');
   await expect(page.getByText('Worker execution unverified', { exact: true })).toBeVisible();
-  await expect(page.getByText('Profile records', { exact: true })).toBeVisible();
+  await expect(page.getByText('Auth identities', { exact: true })).toBeVisible();
+  await expect(page.getByText('Auth identities', { exact: true }).locator('..').getByText('3', { exact: true })).toBeVisible();
   await expect(page.getByText('Publishing disabled', { exact: true })).toBeVisible();
   await expect(page.locator('main section').last()).toHaveCSS('opacity', '1');
   await page.screenshot({ path: '/tmp/admin-overview-audit-mobile.png', fullPage: true });

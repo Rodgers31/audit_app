@@ -11,28 +11,31 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { validRoles } from '@/lib/auth/roles';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 /* ───── Hook: useAdmin ───── */
 export function useAdmin() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, authUser, isAuthenticated, isLoading } = useAuth();
 
-  const isAdmin = !isLoading && isAuthenticated && !!user?.roles?.includes('admin');
+  const roles = validRoles(user?.roles) && (!authUser || user?.id === authUser.id) ? user.roles : [];
+  const isAdmin = !isLoading && isAuthenticated && roles.includes('admin');
 
   return {
     isAdmin,
     isLoading,
     isAuthenticated,
-    roles: user?.roles ?? [],
+    roles,
   };
 }
 
 /* ───── Hook: check any role ───── */
 export function useHasRole(role: string) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, authUser, isAuthenticated, isLoading } = useAuth();
 
-  const hasRole = !isLoading && isAuthenticated && !!user?.roles?.includes(role);
+  const roles = validRoles(user?.roles) && (!authUser || user?.id === authUser.id) ? user.roles : [];
+  const hasRole = !isLoading && isAuthenticated && roles.includes(role);
 
   return { hasRole, isLoading, isAuthenticated };
 }

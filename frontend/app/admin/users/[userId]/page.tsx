@@ -9,7 +9,16 @@
 
 import PageShell from '@/components/layout/PageShell';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { useAdmin } from '@/lib/auth/admin';
 import api from '@/lib/api/axios';
+import {
+  parseUserDetail,
+  parseUserAck,
+  parseRoleAck,
+  userError,
+  validUserId,
+  type UserDetail,
+} from '@/lib/admin/users';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -22,22 +31,8 @@ import {
   User as UserIcon,
   XCircle,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { use, useState } from 'react';
-
-interface UserDetail {
-  id: string;
-  email: string | null;
-  display_name: string | null;
-  roles: string[];
-  created_at: string | null;
-  last_sign_in_at: string | null;
-  email_confirmed: boolean;
-  banned_until: string | null;
-  app_metadata: Record<string, unknown>;
-  user_metadata: Record<string, unknown>;
-  updated_at: string | null;
-}
+import { useRouter, useSearchParams } from 'next/navigation';
+import { use, useState, useRef, useEffect } from 'react';
 
 const KNOWN_ROLES = ['citizen', 'admin'];
 
@@ -50,20 +45,44 @@ const fadeUp = {
   }),
 };
 
-export default function UserDetailPage({
-  params,
-}: {
-  params: Promise<{ userId: string }>;
-}) {
+export default function UserDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const { authUser } = useAuth();
+  return (
+    <div className='[&_h1]:[overflow-wrap:anywhere] [&_header_p]:[overflow-wrap:anywhere]'>
+      <UserDetailInner key={`${authUser?.id}:${userId}`} userId={userId} />
+    </div>
+  );
+}
+
+function UserDetailInner({ userId }: { userId: string }) {
+  const { authUser } = useAuth();
+  const { isAdmin: allowed } = useAdmin();
+  const actorId = authUser?.id;
+  const active = useRef(true);
+  useEffect(() => { active.current = allowed; return () => { active.current = false; }; }, [allowed]);
   const router = useRouter();
   const qc = useQueryClient();
-  const isSelf = authUser?.id === userId;
+  const isSelf = authUser?.id?.toLowerCase() === userId.toLowerCase();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const backHref = returnTo && /^\/admin\/users(?:\?|$)/.test(returnTo) ? returnTo : '/admin/users';
+  const mutationLock = useRef(false);
+  const runMutation = (mutate: () => void) => {
+    if (!allowed || !active.current || mutationLock.current) return;
+    mutationLock.current = true;
+    mutate();
+  };
 
-  const { data, isLoading, error } = useQuery<UserDetail>({
-    queryKey: ['admin', 'user', userId],
-    queryFn: async ({ signal }) => (await api.get(`/admin/users/${userId}`, { signal })).data,
+  const { data, isLoading, error, refetch } = useQuery<UserDetail>({
+    queryKey: ['admin', 'user', actorId, userId],
+    enabled: allowed,
+    gcTime: 0,
+    retry: false,
+    queryFn: async ({ signal }) => {
+      if (!validUserId(userId)) throw new Error('Invalid user ID.');
+      return parseUserDetail((await api.get(`/admin/users/${userId}`, { signal, headers: { 'Cache-Control': 'no-store' } })).data, userId);
+    },
     staleTime: 15_000,
   });
 
@@ -72,11 +91,23 @@ export default function UserDetailPage({
   const dirty =
     pendingRoles !== null && JSON.stringify(pendingRoles) !== JSON.stringify(data?.roles ?? []);
 
-  const saveRoles = useMutation<UserDetail, unknown, string[]>({
+  const saveRoles = useMutation<
+    UserDetail & { ok: true; audit_recorded: boolean },
+    unknown,
+    string[]
+  >({
     mutationFn: async (roles) =>
-      (await api.patch(`/admin/users/${userId}/roles`, { roles })).data,
+      parseRoleAck(
+        (await api.patch(`/admin/users/${userId}/roles`, { roles })).data,
+        userId,
+        roles
+      ),
+    onSettled: () => {
+      mutationLock.current = false;
+    },
     onSuccess: (updated) => {
-      qc.setQueryData(['admin', 'user', userId], updated);
+      if (!active.current) return;
+      qc.setQueryData(['admin', 'user', actorId, userId], updated);
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] });
       qc.invalidateQueries({ queryKey: ['admin', 'user-stats'] });
@@ -86,23 +117,49 @@ export default function UserDetailPage({
 
   const sendReset = useMutation({
     mutationFn: async () =>
-      (await api.post(`/admin/users/${userId}/send-reset`, {})).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] }),
+      parseUserAck(
+        (await api.post(`/admin/users/${userId}/send-reset`, {})).data,
+        data?.email ?? undefined
+      ),
+    onSettled: () => {
+      mutationLock.current = false;
+    },
+    onSuccess: () => { if (active.current) qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] }); },
   });
 
   const deleteUser = useMutation({
-    mutationFn: async () => (await api.delete(`/admin/users/${userId}`)).data,
-    onSuccess: () => {
+    mutationFn: async () => parseUserAck((await api.delete(`/admin/users/${userId}`)).data),
+    onSettled: () => {
+      mutationLock.current = false;
+    },
+    onSuccess: (result) => {
+      if (!active.current) return;
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       qc.invalidateQueries({ queryKey: ['admin', 'audit-log'] });
       qc.invalidateQueries({ queryKey: ['admin', 'user-stats'] });
-      router.replace('/admin/users');
+      if (result.audit_recorded) router.replace(backHref);
     },
   });
 
+  if (!allowed) return <PageShell title='Users'><p>Administrator access required.</p></PageShell>;
+
+  const busy =
+    saveRoles.isPending || sendReset.isPending || deleteUser.isPending || deleteUser.isSuccess;
+  if (deleteUser.isSuccess) {
+    return (
+      <PageShell title='User deleted' back={{ href: backHref, label: 'Back to users' }}>
+        <p role='status'>
+          {deleteUser.data.audit_recorded
+            ? 'User deleted.'
+            : 'User deleted. The audit record could not be saved. Do not repeat the deletion.'}
+        </p>
+      </PageShell>
+    );
+  }
+
   if (isLoading) {
     return (
-      <PageShell title='Loading user…' back={{ href: '/admin/users', label: 'Back to users' }}>
+      <PageShell title='Loading user…' back={{ href: backHref, label: 'Back to users' }}>
         <div className='py-16 flex justify-center'>
           <Loader2 className='w-6 h-6 text-gov-sage animate-spin' />
         </div>
@@ -112,10 +169,18 @@ export default function UserDetailPage({
 
   if (error || !data) {
     return (
-      <PageShell title='User not found' back={{ href: '/admin/users', label: 'Back to users' }}>
+      <PageShell title='Could not load user' back={{ href: backHref, label: 'Back to users' }}>
         <div className='py-16 flex flex-col items-center gap-3'>
           <XCircle className='w-10 h-10 text-gov-copper dark:text-red-400' />
-          <p className='text-gov-copper dark:text-red-400 text-sm'>This user could not be loaded.</p>
+          <p className='text-gov-copper dark:text-red-400 text-sm'>
+            This user could not be loaded.
+          </p>
+          <button
+            onClick={() => { if (allowed) refetch(); }}
+            className='px-4 py-2 rounded-xl border border-neutral-border'
+          >
+            Retry
+          </button>
         </div>
       </PageShell>
     );
@@ -127,7 +192,8 @@ export default function UserDetailPage({
     <PageShell
       title={data.display_name ?? data.email ?? 'Unknown user'}
       subtitle={data.email ?? 'No email on record'}
-      back={{ href: '/admin/users', label: 'Back to users' }}>
+      back={{ href: backHref, label: 'Back to users' }}
+    >
       <div className='space-y-6'>
         {/* ── Identity card ── */}
         <motion.section
@@ -135,14 +201,14 @@ export default function UserDetailPage({
           initial='hidden'
           animate='show'
           custom={0}
-          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'>
+          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'
+        >
           <div className='flex items-start gap-4'>
             <div
               className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border ${
-                isAdmin
-                  ? 'bg-gov-gold/15 border-gov-gold/30'
-                  : 'bg-gov-sage/10 border-gov-sage/20'
-              }`}>
+                isAdmin ? 'bg-gov-gold/15 border-gov-gold/30' : 'bg-gov-sage/10 border-gov-sage/20'
+              }`}
+            >
               {isAdmin ? (
                 <Shield className='w-7 h-7 text-gov-gold' />
               ) : (
@@ -184,8 +250,9 @@ export default function UserDetailPage({
           initial='hidden'
           animate='show'
           custom={1}
-          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'>
-          <header className='flex items-center justify-between mb-4'>
+          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'
+        >
+          <header className='flex flex-wrap gap-3 items-center justify-between mb-4'>
             <div className='flex items-center gap-2'>
               <Shield className='w-4 h-4 text-gov-sage' />
               <h2 className='font-display text-lg text-neutral-text'>Roles</h2>
@@ -193,14 +260,20 @@ export default function UserDetailPage({
             {dirty && (
               <div className='flex items-center gap-2'>
                 <button
-                  onClick={() => setPendingRoles(null)}
-                  className='text-xs text-neutral-muted hover:text-neutral-text px-2 py-1'>
+                  disabled={busy}
+                  onClick={() => {
+                    setPendingRoles(null);
+                    saveRoles.reset();
+                  }}
+                  className='text-xs text-neutral-muted hover:text-neutral-text px-2 py-1'
+                >
                   Cancel
                 </button>
                 <button
-                  onClick={() => saveRoles.mutate(pendingRoles!)}
-                  disabled={saveRoles.isPending}
-                  className='inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-gov-sage text-white hover:bg-gov-sage/90 disabled:opacity-50 shadow-surface'>
+                  onClick={() => runMutation(() => saveRoles.mutate(pendingRoles!))}
+                  disabled={busy}
+                  className='inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-gov-sage text-white hover:bg-gov-sage/90 disabled:opacity-50 shadow-surface'
+                >
                   {saveRoles.isPending ? (
                     <Loader2 className='w-3 h-3 animate-spin' />
                   ) : (
@@ -217,28 +290,42 @@ export default function UserDetailPage({
               return (
                 <button
                   key={role}
+                  disabled={busy || (isSelf && role === 'admin')}
+                  aria-pressed={has}
                   onClick={() => {
+                    saveRoles.reset();
                     const base = pendingRoles ?? data.roles;
-                    setPendingRoles(
-                      has ? base.filter((r) => r !== role) : [...base, role]
-                    );
+                    setPendingRoles(has ? base.filter((r) => r !== role) : [...base, role]);
                   }}
                   className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                     has
                       ? 'bg-gov-gold/20 text-gov-forest dark:text-emerald-200 ring-1 ring-inset ring-gov-gold/40 shadow-sm'
                       : 'bg-white dark:bg-surface-base text-neutral-muted ring-1 ring-inset ring-neutral-border hover:ring-gov-sage/40 hover:text-neutral-text'
-                  }`}>
+                  }`}
+                >
                   {has && <CheckCircle2 className='w-3 h-3' />}
                   {role}
                 </button>
               );
             })}
           </div>
+          {data.roles
+            .filter((role) => !KNOWN_ROLES.includes(role))
+            .map((role) => (
+              <p key={role} className='mt-2 text-xs text-neutral-muted'>
+                Existing role: {role} (preserved)
+              </p>
+            ))}
+          {saveRoles.isSuccess && (
+            <p role='status' className='mt-3 text-sm'>
+              {saveRoles.data.audit_recorded
+                ? 'Roles updated.'
+                : 'Roles updated; the audit record could not be saved. Do not repeat this change.'}
+            </p>
+          )}
           {saveRoles.isError && (
-            <p className='text-xs text-gov-copper dark:text-red-400 mt-3 inline-flex items-center gap-1'>
-              <AlertTriangle className='w-3 h-3' />
-              {(saveRoles.error as { response?: { data?: { detail?: string } } })?.response?.data
-                ?.detail || 'Failed to update roles.'}
+            <p role='alert' className='text-xs text-gov-copper dark:text-red-400 mt-3'>
+              {userError(saveRoles.error, 'Failed to update roles.')}
             </p>
           )}
         </motion.section>
@@ -249,7 +336,8 @@ export default function UserDetailPage({
           initial='hidden'
           animate='show'
           custom={2}
-          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface space-y-4'>
+          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface space-y-4'
+        >
           <div className='flex items-center gap-2'>
             <AlertTriangle className='w-4 h-4 text-gov-warning dark:text-amber-300' />
             <h2 className='font-display text-lg text-neutral-text'>Account actions</h2>
@@ -261,37 +349,46 @@ export default function UserDetailPage({
             description="Triggers Supabase's recovery email so the user can set a new password themselves."
             button={
               <button
-                onClick={() => sendReset.mutate()}
-                disabled={sendReset.isPending || !data.email}
-                className='inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text disabled:opacity-50 transition-all shadow-surface'>
+                onClick={() => runMutation(() => sendReset.mutate())}
+                disabled={busy || sendReset.isSuccess || !data.email}
+                className='inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text disabled:opacity-50 transition-all shadow-surface'
+              >
                 {sendReset.isPending ? <Loader2 className='w-3 h-3 animate-spin' /> : 'Send'}
               </button>
             }
             status={
               sendReset.isSuccess ? (
-                <p className='text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1'>
+                <p
+                  role='status'
+                  className='text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1'
+                >
                   <CheckCircle2 className='w-3 h-3' />
-                  Email queued.
+                  {sendReset.data.audit_recorded
+                    ? 'Reset request accepted. Email delivery is unconfirmed.'
+                    : 'Reset request accepted; the audit record could not be saved. Do not send again.'}
                 </p>
               ) : sendReset.isError ? (
                 <p className='text-xs text-gov-copper dark:text-red-400 inline-flex items-center gap-1'>
                   <AlertTriangle className='w-3 h-3' />
-                  Failed to send.
+                  {userError(
+                    sendReset.error,
+                    'Failed to send. Refresh to verify before trying again.'
+                  )}
                 </p>
               ) : null
             }
           />
 
           <DeleteAction
-            email={data.email ?? ''}
+            email={data.email ?? data.id}
             isSelf={isSelf}
-            isPending={deleteUser.isPending}
+            isPending={busy}
             isError={deleteUser.isError}
-            errorMessage={
-              (deleteUser.error as { response?: { data?: { detail?: string } } })?.response
-                ?.data?.detail
-            }
-            onConfirm={() => deleteUser.mutate()}
+            errorMessage={userError(
+              deleteUser.error,
+              'Delete failed. Refresh to verify before trying again.'
+            )}
+            onConfirm={() => runMutation(() => deleteUser.mutate())}
           />
         </motion.section>
 
@@ -301,7 +398,8 @@ export default function UserDetailPage({
           initial='hidden'
           animate='show'
           custom={3}
-          className='bg-white dark:bg-surface-base rounded-2xl border border-neutral-border shadow-surface group'>
+          className='bg-white dark:bg-surface-base rounded-2xl border border-neutral-border shadow-surface group'
+        >
           <summary className='cursor-pointer px-6 py-4 text-sm font-semibold text-neutral-text flex items-center justify-between'>
             Raw Supabase metadata
             <span className='text-xs text-neutral-muted group-open:rotate-180 transition-transform'>
@@ -372,7 +470,7 @@ function ActionRow({
   status?: React.ReactNode;
 }) {
   return (
-    <div className='flex items-start gap-3'>
+    <div className='flex flex-wrap items-start gap-3'>
       <div className='w-9 h-9 rounded-xl bg-gov-sage/10 border border-gov-sage/20 flex items-center justify-center shrink-0'>
         <Icon className='w-4 h-4 text-gov-sage' />
       </div>
@@ -407,7 +505,7 @@ function DeleteAction({
 
   return (
     <div className='border-t border-neutral-border pt-4'>
-      <div className='flex items-start gap-3'>
+      <div className='flex flex-wrap items-start gap-3'>
         <div className='w-9 h-9 rounded-xl bg-gov-copper/15 border border-gov-copper/25 flex items-center justify-center shrink-0'>
           <Trash2 className='w-4 h-4 text-gov-copper dark:text-red-400' />
         </div>
@@ -432,23 +530,28 @@ function DeleteAction({
               <input
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
+                aria-label='Confirm deletion'
+                disabled={isPending}
                 placeholder={email}
                 className='w-full max-w-sm px-3 py-2 text-sm rounded-lg border border-gov-copper/40 focus:outline-none focus:ring-2 focus:ring-gov-copper/40 bg-gov-copper/5 font-mono'
                 autoFocus
               />
               <div className='flex items-center gap-2'>
                 <button
+                  disabled={isPending}
                   onClick={() => {
                     setOpen(false);
                     setTyped('');
                   }}
-                  className='text-xs text-neutral-muted hover:text-neutral-text px-2 py-1'>
+                  className='text-xs text-neutral-muted hover:text-neutral-text px-2 py-1'
+                >
                   Cancel
                 </button>
                 <button
                   onClick={onConfirm}
                   disabled={!canConfirm || isPending}
-                  className='inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-gov-copper text-white hover:bg-gov-copper/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-surface'>
+                  className='inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full bg-gov-copper text-white hover:bg-gov-copper/90 disabled:opacity-50 disabled:cursor-not-allowed shadow-surface'
+                >
                   {isPending ? (
                     <Loader2 className='w-3 h-3 animate-spin' />
                   ) : (
@@ -468,8 +571,10 @@ function DeleteAction({
         </div>
         {!open && !isSelf && (
           <button
+            disabled={isPending}
             onClick={() => setOpen(true)}
-            className='shrink-0 inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full border border-gov-copper/40 text-gov-copper dark:text-red-400 hover:bg-gov-copper/5 transition-all'>
+            className='shrink-0 inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold rounded-full border border-gov-copper/40 text-gov-copper dark:text-red-400 hover:bg-gov-copper/5 transition-all'
+          >
             <Trash2 className='w-3 h-3' />
             Delete…
           </button>

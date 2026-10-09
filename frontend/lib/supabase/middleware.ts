@@ -7,6 +7,7 @@
  *   - /account/* → authenticated user required
  */
 import { createServerClient } from '@supabase/ssr';
+import { profileMatchesIdentity } from '@/lib/auth/roles';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /* ───── Routes that require specific roles ───── */
@@ -82,11 +83,11 @@ export async function updateSession(request: NextRequest) {
   if (user && matchesPrefix(pathname, ADMIN_ROUTES)) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles')
+      .select('id, roles')
       .eq('id', user.id)
       .maybeSingle();
 
-    const isAdmin = profile?.roles?.includes('admin') ?? false;
+    const isAdmin = profileMatchesIdentity(profile, user.id) && profile.roles.includes('admin');
 
     if (!isAdmin) {
       const redirectUrl = request.nextUrl.clone();
