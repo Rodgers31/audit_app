@@ -18,7 +18,7 @@
     "verify:dependency-tooling": "node scripts/verify-dependency-tooling.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
+    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
@@ -63,7 +63,7 @@
     "eslint": "^8.0.0",
     "eslint-config-next": "15.5.27",
     "eslint-plugin-local": "file:./eslint-rules",
-    "jest": "^29.0.0",
+    "jest": "30.5.2",
     "jest-environment-jsdom": "^30.3.0",
     "picomatch": "4.0.7",
     "tailwindcss": "^3.3.0"
