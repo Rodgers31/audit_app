@@ -14,6 +14,14 @@ const excludedPackages = new Set([
   '@tailwindcss/typography', 'adm-zip', 'sprintf-js', 'jest', 'eslint',
 ]);
 
+/**
+ * Inspect npm package directories, including scopes and nested installations.
+ * Real-path tracking prevents cycles through linked dependencies. This checks
+ * package manifests, not code vendored inside another package's build output.
+ * @param {string} directory A node_modules directory or package scope directory.
+ * @param {Set<string>} seen Real directories already visited in this traversal.
+ * @returns {number} Number of inspected package entries.
+ */
 function inspectInstalledPackages(directory, seen = new Set()) {
   const real = fs.realpathSync(directory);
   if (seen.has(real)) return 0;
@@ -36,6 +44,7 @@ function inspectInstalledPackages(directory, seen = new Set()) {
   return count;
 }
 
+/** @returns {Promise<void>} Reject invalid runtime exposure or image decoding. */
 async function main() {
   const root = path.resolve(process.argv[2] || path.join(__dirname, '..'));
   const runtimeRequire = createRequire(path.join(root, 'package.json'));

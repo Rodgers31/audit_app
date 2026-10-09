@@ -8,6 +8,12 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 const { chromium } = require('@playwright/test');
 
+/**
+ * Drive two isolated Learn contexts: BM25 fallback and actual WASM inference.
+ * Model and runtime resources come from the owned pinned fixture; all other
+ * external requests fail. Ranking assertions catch a silently unavailable model.
+ * @returns {Promise<void>} Reject missing fixtures or incompatible search results.
+ */
 async function main() {
   const base = process.env.DEPENDENCY_PREVIEW_URL;
   const cache = process.env.NATIVE_VERIFY_CACHE_DIR;
