@@ -35,3 +35,36 @@ for (const [name, content, settings] of [
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });
 }
+
+for (const mode of ['override', 'extends', 'alternate', 'descendant', 'array', 'string']) {
+  test(`standard lint refuses unsafe effective ${mode} configuration before Next runs`, () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'batch9-dependencies-eslint-'));
+    try {
+      fs.cpSync(__dirname, path.join(root, 'scripts'), { recursive: true });
+      fs.symlinkSync(path.join(frontend, 'node_modules'), path.join(root, 'node_modules'), 'dir');
+      fs.copyFileSync(path.join(frontend, 'tailwind.config.js'), path.join(root, 'tailwind.config.js'));
+      fs.copyFileSync(path.join(frontend, 'package.json'), path.join(root, 'package.json'));
+      fs.mkdirSync(path.join(root, 'app'));
+      fs.writeFileSync(path.join(root, 'app/page.js'), 'export default function Page() { return <div>Fixture</div>; }');
+      const config = { extends: 'next/core-web-vitals' };
+      const unsafe = { settings: { next: { rootDir: deepPattern } } };
+      if (mode === 'override') config.overrides = [{ files: ['*.js'], ...unsafe }];
+      if (mode === 'extends') {
+        config.extends = ['next/core-web-vitals', './inherited.json'];
+        fs.writeFileSync(path.join(root, 'inherited.json'), JSON.stringify(unsafe));
+      }
+      if (mode === 'alternate') fs.writeFileSync(path.join(root, '.eslintrc.cjs'), `module.exports = ${JSON.stringify({ ...config, ...unsafe })};`);
+      if (mode === 'descendant') fs.writeFileSync(path.join(root, 'app/.eslintrc.json'), JSON.stringify(unsafe));
+      fs.writeFileSync(path.join(root, '.eslintrc.json'), JSON.stringify(mode === 'array' ? [] : mode === 'string' ? 'invalid' : config));
+      assert.ok(process.env.npm_execpath, 'Run the suite through npm');
+      const result = spawnSync(process.execPath, [process.env.npm_execpath, 'run', 'lint', '--', '--file', 'app/page.js'], {
+        cwd: root, encoding: 'utf8', timeout: 15000,
+        env: { PATH: process.env.PATH, NEXT_TELEMETRY_DISABLED: '1' },
+      });
+      assert.equal(result.status, 1, result.stdout || result.stderr || String(result.error));
+      assert.match(result.stderr, /tooling input contract/);
+      assert.doesNotMatch(result.stdout, /bounded-tooling-inputs|> next lint/);
+      assert.doesNotMatch(result.stderr, /Maximum call stack size exceeded/);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+}

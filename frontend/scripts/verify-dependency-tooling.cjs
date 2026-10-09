@@ -27,7 +27,7 @@ function expectDeclaration(root, selector, property, value) {
 }
 
 async function main() {
-  verifyToolingInputs();
+  await verifyToolingInputs();
   // Each caller has its own dependency range; a root-only parser upgrade can
   // leave vulnerable nested copies installed without breaking an ordinary build.
   for (const [caller, callerRequire] of [

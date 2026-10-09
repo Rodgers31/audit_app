@@ -160,7 +160,9 @@ The standard `dev`, `build`, and `lint` scripts check the retained dependency
 inputs before starting Next. Tailwind scanning retains the four reviewed
 `pages`, `components`, `app`, and `src` patterns, each with one five-extension
 brace group. Next lint uses its default literal working directory; custom
-`settings.next.rootDir` globs require a separate caller review. The same check
+`settings.next.rootDir` globs require a separate caller review. The guard resolves
+ESLint's effective settings for the default lint directories, including inherited,
+overridden and descendant configuration. The same check
 runs before `verify:dependency-tooling` can report CSS compatibility. Run
 `npm run test:dependency-boundaries` to exercise the rejected-input controls.
 
