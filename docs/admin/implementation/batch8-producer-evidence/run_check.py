@@ -23,6 +23,7 @@ def main():
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[4]
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     env = {
         "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
         "PYTHONDONTWRITEBYTECODE": "1",
@@ -50,7 +51,6 @@ def main():
         "verdict": "PASS" if result.returncode == 0 else "FAILED",
         "stdout": result.stdout, "stderr": result.stderr,
     }
-    args.output_dir.mkdir(parents=True, exist_ok=True)
     path = args.output_dir / (args.label + ".json")
     # Receipts are append-only; a rerun requires a new label.
     with path.open("x") as handle:
