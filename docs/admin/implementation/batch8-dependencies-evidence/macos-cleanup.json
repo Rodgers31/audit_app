@@ -1,0 +1,24 @@
+{
+  "groups": [
+    {
+      "metadata": "final-preview-process.json",
+      "pid": 22926,
+      "group_alive": false
+    },
+    {
+      "metadata": "image-process.json",
+      "pid": 23583,
+      "group_alive": false
+    }
+  ],
+  "ports": [
+    {
+      "port": 43195,
+      "listener_absent": true
+    },
+    {
+      "port": 43196,
+      "listener_absent": true
+    }
+  ]
+}

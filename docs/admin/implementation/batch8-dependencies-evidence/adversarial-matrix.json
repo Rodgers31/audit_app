@@ -1,0 +1,922 @@
+[
+  {
+    "name": "actual-new-tests",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js"
+    },
+    "started": "2026-10-09T08:40:27.218Z",
+    "finished": "2026-10-09T08:40:29.481Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-actual-new-tests.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-actual-new-tests.stderr.log",
+    "stdoutSha256": "f744a8aeda0c91e17f278f335f094e68075879760acd7880595c43cdde39a6c1",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "actual-new-and-existing-browser",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/dependency-browser-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js"
+    },
+    "started": "2026-10-09T08:40:29.481Z",
+    "finished": "2026-10-09T08:40:31.155Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-actual-new-and-existing-browser.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-actual-new-and-existing-browser.stderr.log",
+    "stdoutSha256": "d20fd722974d7e40e74382dd942ae16237e30a0a07fed711bf223227a7d42e37",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "direct-full-without-env",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false"
+    },
+    "started": "2026-10-09T08:40:31.156Z",
+    "finished": "2026-10-09T08:40:32.304Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-direct-full-without-env.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-direct-full-without-env.stderr.log",
+    "stdoutSha256": "f74adc2b07f904c86d7de9d2b704baeaf5dec83f4e2385a0c21802f76a738984",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "missing-npm-execpath",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false"
+    },
+    "started": "2026-10-09T08:40:32.305Z",
+    "finished": "2026-10-09T08:40:32.362Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-missing-npm-execpath.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-missing-npm-execpath.stderr.log",
+    "stdoutSha256": "280a1793c6aff43c84a7f5030bd425c78334deb86ba85415db067e71ba21123c",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "absent-npm-execpath",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/absent.cjs"
+    },
+    "started": "2026-10-09T08:40:32.362Z",
+    "finished": "2026-10-09T08:40:32.419Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-absent-npm-execpath.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-absent-npm-execpath.stderr.log",
+    "stdoutSha256": "f22ba791d7a0579aeadb732a7a81ba8a7f22249b93b85a25d9df9411d435c6ae",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "relative-npm-execpath",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "relative.cjs"
+    },
+    "started": "2026-10-09T08:40:32.419Z",
+    "finished": "2026-10-09T08:40:32.477Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-relative-npm-execpath.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-relative-npm-execpath.stderr.log",
+    "stdoutSha256": "55cd25075e809dcb01c2c4f2360bab3cb0afa980f9be3405fb93ba0b16eca79d",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "directory-npm-execpath",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs"
+    },
+    "started": "2026-10-09T08:40:32.477Z",
+    "finished": "2026-10-09T08:40:32.534Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-directory-npm-execpath.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-directory-npm-execpath.stderr.log",
+    "stdoutSha256": "dd3feee65ac5e7dc5401a46df13974f0bd09369932bb8a61eac4c76de17f89bc",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-npm-exit-failure",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/npm-exit-failure.cjs"
+    },
+    "started": "2026-10-09T08:40:32.535Z",
+    "finished": "2026-10-09T08:40:32.612Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-npm-exit-failure.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-npm-exit-failure.stderr.log",
+    "stdoutSha256": "191453ce50041f7636b81989f1fe5065e3f50e88f475cbe221524624868ad07b",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-empty-output",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/empty-output.cjs"
+    },
+    "started": "2026-10-09T08:40:32.612Z",
+    "finished": "2026-10-09T08:40:32.689Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-empty-output.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-empty-output.stderr.log",
+    "stdoutSha256": "181cf8bf357834cc0a05f5255edaaa00dea469715d4a0c1919d4d5a8a40de331",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-malformed-json",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/malformed-json.cjs"
+    },
+    "started": "2026-10-09T08:40:32.690Z",
+    "finished": "2026-10-09T08:40:32.769Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-malformed-json.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-malformed-json.stderr.log",
+    "stdoutSha256": "939bfa998e403d28a9eda6cb591145891b8aa28522cda6140658133e3a2545c8",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-empty-array",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/empty-array.cjs"
+    },
+    "started": "2026-10-09T08:40:32.770Z",
+    "finished": "2026-10-09T08:40:32.848Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-empty-array.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-empty-array.stderr.log",
+    "stdoutSha256": "6add3a1d3f918d15c4bef9efdbddeb5eed78e48d6bd2c3a0b4b69aff323eca00",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-wrong-container",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/wrong-container.cjs"
+    },
+    "started": "2026-10-09T08:40:32.848Z",
+    "finished": "2026-10-09T08:40:32.926Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-wrong-container.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-wrong-container.stderr.log",
+    "stdoutSha256": "91de4b62798053ec724b4fc7dbc8dae8197a20eef120524587b5dd44a7fb7360",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-null-container",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/null-container.cjs"
+    },
+    "started": "2026-10-09T08:40:32.927Z",
+    "finished": "2026-10-09T08:40:33.005Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-null-container.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-null-container.stderr.log",
+    "stdoutSha256": "c4332252d1e777a238da3f93e385a316a8b61b553b3f4e20f3afe12acd5d35ac",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-missing-core",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/missing-core.cjs"
+    },
+    "started": "2026-10-09T08:40:33.006Z",
+    "finished": "2026-10-09T08:40:33.092Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-missing-core.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-missing-core.stderr.log",
+    "stdoutSha256": "ff35876063d199dbadd98edf6d2334dd7baba3627bfc549b66d786577537b781",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-with-braces",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/with-braces.cjs"
+    },
+    "started": "2026-10-09T08:40:33.092Z",
+    "finished": "2026-10-09T08:40:33.177Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-with-braces.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-with-braces.stderr.log",
+    "stdoutSha256": "4dd899c584f7e2f2900ed652391adebc12e2bd7c68f6766ddaea880b4f24e053",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-with-micromatch",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/with-micromatch.cjs"
+    },
+    "started": "2026-10-09T08:40:33.178Z",
+    "finished": "2026-10-09T08:40:33.262Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-with-micromatch.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-with-micromatch.stderr.log",
+    "stdoutSha256": "ee496e666ebcf5d1a2388dff1b427492b5b7207483990210579ea7b3d233007a",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-null-entry",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/null-entry.cjs"
+    },
+    "started": "2026-10-09T08:40:33.263Z",
+    "finished": "2026-10-09T08:40:33.348Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-null-entry.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-null-entry.stderr.log",
+    "stdoutSha256": "b6b6317cbff8b8da53d396cdce3bfcb8daba7a28bef4a2c0f607a7e082320358",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-only-core",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/only-core.cjs"
+    },
+    "started": "2026-10-09T08:40:33.349Z",
+    "finished": "2026-10-09T08:40:33.444Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-only-core.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-only-core.stderr.log",
+    "stdoutSha256": "ba28b32870d17529d46b235fc1fb8a30c7c58825a14e4c63b3b7df20c1c12b73",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-core-and-untyped-entry",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/core-and-untyped-entry.cjs"
+    },
+    "started": "2026-10-09T08:40:33.445Z",
+    "finished": "2026-10-09T08:40:33.524Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-core-and-untyped-entry.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-core-and-untyped-entry.stderr.log",
+    "stdoutSha256": "1395a82334c4c2ea3651d38e68f9a0bbfadcb6c3f73f8052c4a1610dc7c5a399",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-core-and-nonnamed-entry",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/core-and-nonnamed-entry.cjs"
+    },
+    "started": "2026-10-09T08:40:33.525Z",
+    "finished": "2026-10-09T08:40:33.602Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-core-and-nonnamed-entry.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-core-and-nonnamed-entry.stderr.log",
+    "stdoutSha256": "5e3138f2f25efd7bc7f693f43b8b3dc00ba21cc3148d3e7f37c6e00a058c5352",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-oversize-output",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/oversize-output.cjs"
+    },
+    "started": "2026-10-09T08:40:33.602Z",
+    "finished": "2026-10-09T08:40:33.689Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-oversize-output.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-oversize-output.stderr.log",
+    "stdoutSha256": "79cccb02f3d8ee13d2b375a4e16097b11cff245ca635341a2acc1e7016921b99",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-npm-query-timeout",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/npm-query-timeout.cjs"
+    },
+    "started": "2026-10-09T08:40:33.689Z",
+    "finished": "2026-10-09T08:40:48.766Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-npm-query-timeout.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-npm-query-timeout.stderr.log",
+    "stdoutSha256": "61b427c8f8f5a2775126ef44acf7ed7669497d3e15fb8f232bd8c6b743f61d49",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-positive",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-positive.cjs"
+    },
+    "started": "2026-10-09T08:40:48.766Z",
+    "finished": "2026-10-09T08:40:48.851Z",
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "expected": 0,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-positive.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-positive.stderr.log",
+    "stdoutSha256": "3acdb5efe668791f29d3e565d3fdb8db399d53996a1d5ebba28a699701b1313e",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-unnamed",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-unnamed.cjs"
+    },
+    "started": "2026-10-09T08:40:48.852Z",
+    "finished": "2026-10-09T08:40:48.923Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-unnamed.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-unnamed.stderr.log",
+    "stdoutSha256": "6b2d862e366ace412f1f6549e4ae1988176a917e1493cc6933283a77cf170bce",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-missing-version",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-missing-version.cjs"
+    },
+    "started": "2026-10-09T08:40:48.923Z",
+    "finished": "2026-10-09T08:40:48.994Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-missing-version.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-missing-version.stderr.log",
+    "stdoutSha256": "dd50bfd7a7a2d4b19c021aa155b4e96b6ed1492c8e04a91d5e5b7589676a87ff",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-empty-name",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-empty-name.cjs"
+    },
+    "started": "2026-10-09T08:40:48.995Z",
+    "finished": "2026-10-09T08:40:49.065Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-empty-name.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-empty-name.stderr.log",
+    "stdoutSha256": "bdc054696b4fc2d312c06fbfcd4b148f116f33fa008cabc4dacee6d5a843a728",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-blank-version",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-blank-version.cjs"
+    },
+    "started": "2026-10-09T08:40:49.066Z",
+    "finished": "2026-10-09T08:40:49.136Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-blank-version.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-blank-version.stderr.log",
+    "stdoutSha256": "5c790c829419d5178578d93aa7919c2dcbae755173d8afd92b425773c8d4ce00",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-array-row",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-array-row.cjs"
+    },
+    "started": "2026-10-09T08:40:49.137Z",
+    "finished": "2026-10-09T08:40:49.208Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-array-row.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-array-row.stderr.log",
+    "stdoutSha256": "5d7773131db32962d2fca217f04653a62acc12018ac74a1501f55309669a749e",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-bool-row",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-bool-row.cjs"
+    },
+    "started": "2026-10-09T08:40:49.208Z",
+    "finished": "2026-10-09T08:40:49.279Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-bool-row.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-bool-row.stderr.log",
+    "stdoutSha256": "77c6bfbb1a0fb7d40297b2a4f21e36d9ceb19a9abb8fce35d5620249761c7e5e",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-numeric-version",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-numeric-version.cjs"
+    },
+    "started": "2026-10-09T08:40:49.280Z",
+    "finished": "2026-10-09T08:40:49.351Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-numeric-version.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-numeric-version.stderr.log",
+    "stdoutSha256": "75b7c5be7c8d4215cf5b60584ce3b09e225ee08357f217192e8eab52faf45b85",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-null-row",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-null-row.cjs"
+    },
+    "started": "2026-10-09T08:40:49.351Z",
+    "finished": "2026-10-09T08:40:49.422Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-null-row.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-null-row.stderr.log",
+    "stdoutSha256": "5a029d11db8623bf562b183c4968bc26b66dd61556275763340415ce07f9b420",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-braces-row",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-braces-row.cjs"
+    },
+    "started": "2026-10-09T08:40:49.423Z",
+    "finished": "2026-10-09T08:40:49.494Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-braces-row.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-braces-row.stderr.log",
+    "stdoutSha256": "2bc25d2a672b930bce8f99f1e4a02e01a149d8fbfce1937c2df531e0293bc8f5",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "graph-four-callers-micromatch-row",
+    "command": [
+      "/Users/roger/.nvm/versions/node/v22.19.0/bin/node",
+      "--test",
+      "--test-name-pattern=installed Jest dependency graph",
+      "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend/scripts/jest-dependency-boundary.test.cjs"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/0a0e/audit_app/frontend",
+    "env": {
+      "PATH": "/Users/roger/.nvm/versions/node/v22.19.0/bin:/usr/bin:/bin",
+      "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/tmp",
+      "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/npm-cache",
+      "npm_config_update_notifier": "false",
+      "npm_execpath": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/stubs/four-callers-micromatch-row.cjs"
+    },
+    "started": "2026-10-09T08:40:49.494Z",
+    "finished": "2026-10-09T08:40:49.566Z",
+    "status": 1,
+    "signal": null,
+    "error": null,
+    "expected": 1,
+    "expectationMet": true,
+    "stdout": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-micromatch-row.stdout.log",
+    "stderr": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/review-adversarial/logs/v3-graph-four-callers-micromatch-row.stderr.log",
+    "stdoutSha256": "274322c2ab2b9d8ff8e05185522f07b47d4199ab81323066e17456552119ec35",
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

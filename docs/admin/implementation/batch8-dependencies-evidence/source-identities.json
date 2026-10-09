@@ -1,0 +1,28 @@
+{
+  "base_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "base_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "product_commit": "dc4cea26d9c0570a06bdedd2b0e71cdeccd4c1f7",
+  "product_tree": "378f52d4b8092e1e75e14c9819aa02e0103e8c09",
+  "branch": "codex/batch8-tooling-dependencies",
+  "raw_root": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies",
+  "product_files": {
+    "frontend/package.json": "b2947edfd0234a8b41f3ab337eb2ac59a98b76ebd2e5249e19257defe7ea0623",
+    "frontend/package-lock.json": "ee2b344b0dcfe62289ddbcaa8294877dddee6c5dee39c271c8bcd772862be0e2",
+    "frontend/jest.config.js": "1c21d454148a749de1510186fd4847a6aa9c186dc4e6c8d0c5fed0f198e013c9",
+    "frontend/scripts/jest-dependency-boundary.test.cjs": "ae7b43c389bc8a8457ecc69f43ec4ab2e01dfc6821e676606fbe1cdb90a7e830"
+  },
+  "baseline_files": {
+    "frontend/package.json": "50c3619a476e8f95f1a75569222a502b1d874543490be13795228db91ea44d0f",
+    "frontend/package-lock.json": "b3b3289f728d8a338815e8457d2fc509030dcc44e457eed733610ebe56ddd51a",
+    "frontend/public/data/constitution/embeddings.bin": "9d9f970982fbbe4b4eb48735b46a6449d72f40f5b0957a86dcc72ef519f2a0a4",
+    "frontend/public/data/constitution/embeddings-index.json": "edd5e63daa76f53dfa4ddc00af9278e5425933990d8eec05c420d158960145b7",
+    "frontend/scripts/build-embeddings.mjs": "01e48a0bba58f77abd77ca90ce8b72e04081303b017105971196e9da0fc52c0b",
+    "css": {
+      "f3bdb27a5f5bd668.css": "54a87594088c1caa486e574267693fcedf65682e9634f5dc00f961a5de985698",
+      "986b60ebc218ddcc.css": "7fc4acffc30c399f92711a3394d2e3543ff652f96dadd80c8ea109ea93181069",
+      "d3c616e02c683ae4.css": "cdbcf3f4a265ba9bc7fe130e89db58ddf5fc5bb6d558eac9c0636933dca1dffd",
+      "7e1c9c26e89dab58.css": "03dd4d5d68943eb71a5e38b7581fd8fe2da364dff704feb07c832a57009d2ca6"
+    }
+  },
+  "note": "Receipt source is the fixed review baseline, not a claim that final runs tested an unchanged baseline. Final product files are bound by the hashes above; superseded experiments retain their own snapshots in raw evidence."
+}

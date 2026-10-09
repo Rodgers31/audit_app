@@ -1,0 +1,6 @@
+{
+  "raw_file": "/Users/roger/.codex/visualizations/2026/10/09/01a11fbc-1c41-7822-ad9a-73eac7dc23ad/batch8-dependencies/baseline-bounded-probes.log",
+  "sha256": "01ebc08d6402dfd6e3481274d7dd5086cfcbf34574b7b8fc0b0bd326dac7aa58",
+  "encoding": "utf-8",
+  "text": "{\"node\":\"v22.19.0\",\"platform\":\"darwin\",\"arch\":\"arm64\"}\npositive braces [\"src/(a|b).js\"]\npositive sprintf 1.25\nbraces.compile depth 4000 RangeError Maximum call stack size exceeded\nsprintf precision 101 RangeError toFixed() digits argument must be between 0 and 100\n"
+}

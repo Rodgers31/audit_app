@@ -7,7 +7,6 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
-import time
 
 import httpx
 import pytest
@@ -56,29 +55,64 @@ def test_users_provider_fresh_import_modes(mode, tmp_path):
     assert result.returncode==0, result.stderr
 
 
+async def _verify_provider_barrier(app, path, started, release):
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://fixture') as client:
+        task = asyncio.create_task(client.get(path))
+        try:
+            assert await asyncio.to_thread(started.wait, 3), 'Provider did not enter its bounded barrier'
+            assert not task.done() and not release.is_set(), 'Provider completed before unrelated request'
+            response = await asyncio.wait_for(client.get('/review-health'), timeout=1)
+            assert response.status_code == 200
+            assert not task.done() and not release.is_set(), 'Provider completed before unrelated request'
+        finally:
+            release.set()
+            response = await asyncio.wait_for(task, timeout=3)
+        assert response.status_code == 200
+
+
 @pytest.mark.parametrize('path', [ROOT, ROOT+'/stats', ROOT+'/'+TARGET])
 def test_slow_provider_does_not_stall_unrelated_requests(harness, monkeypatch, path):
-    started=threading.Event()
+    started = threading.Event()
+    release = threading.Event()
     method='get_user' if path.endswith(TARGET) else 'list_users'
     original=getattr(admin_users.supabase_admin,method)
     def slow(*args,**kwargs):
         started.set()
-        time.sleep(.25)
+        assert release.wait(5), 'Provider barrier was not released'
         return original(*args,**kwargs)
     monkeypatch.setattr(admin_users.supabase_admin,method,slow)
     @harness.app.get('/review-health')
     async def health():
         return {'ok':True}
-    async def replay():
-        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=harness.app),base_url='http://fixture') as client:
-            task=asyncio.create_task(client.get(path))
-            await asyncio.sleep(.01)
-            assert started.is_set()
-            response=await asyncio.wait_for(client.get('/review-health'),timeout=.1)
-            assert response.status_code==200
-            assert not task.done(), 'Slow provider scan completed before event loop could answer health'
-            assert (await task).status_code==200
-    asyncio.run(replay())
+    asyncio.run(_verify_provider_barrier(harness.app, path, started, release))
+
+
+def test_provider_barrier_rejects_an_event_loop_blocking_handler():
+    app = FastAPI()
+    started = threading.Event()
+    release = threading.Event()
+
+    @app.get('/blocked-provider')
+    async def blocked_provider():
+        started.set()
+        assert release.wait(3)
+        return {'fixture': True}
+
+    @app.get('/review-health')
+    async def health():
+        return {'ok': True}
+
+    # This watchdog only bounds the deliberately faulty handler. The probe
+    # must notice it could not answer health while that handler was blocked.
+    watchdog = threading.Timer(1, release.set)
+    watchdog.start()
+    try:
+        with pytest.raises(AssertionError, match='Provider completed before unrelated request'):
+            asyncio.run(_verify_provider_barrier(app, '/blocked-provider', started, release))
+    finally:
+        release.set()
+        watchdog.cancel()
+        watchdog.join(timeout=2)
 
 @pytest.mark.parametrize('status',[401,403,500,503])
 def test_private_users_auth_failures_hide_internal_detail(harness,status):

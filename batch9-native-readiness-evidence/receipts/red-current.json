@@ -1,0 +1,33 @@
+{
+  "generated_by": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/batch9-native-readiness-evidence/run_receipt.py",
+  "generator_sha256": "f3cf41a5a3ec5601a661e29eb99864592f4aa9287f57641e5ddc8293730d1076",
+  "generated_at": "2026-10-09T20:00:06.197216+00:00",
+  "target_commit": "5c68fb1b4454bad60db9bf12f9b7c68ce4549168",
+  "source_hashes": {
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_native_schema_readiness.py": "6f771455a60e72dbb64ed8dee3dfad279b0092179af43fa3d43a86c6aa7714e8"
+  },
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "-p",
+    "no:cacheprovider",
+    "tests/test_batch9_native_schema_readiness.py",
+    "-k",
+    "real_cli_refuses_bad_index and missing and not True",
+    "-q"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend",
+    "DATABASE_URL": "sqlite:///:memory:",
+    "JWT_SECRET_KEY": "batch9-readiness-inert-jwt-key",
+    "BATCH9_NATIVE_READINESS_DATABASE_URL": "postgresql+psycopg2://batch9_readiness:batch9-inert-local@127.0.0.1:55495/batch9_native_readiness"
+  },
+  "exit_code": 4,
+  "verdict": "FAILED",
+  "output": "ImportError while loading conftest '/Users/roger/.codex/worktrees/batch8-review-exclusion/audit_app/backend/conftest.py'.\nconftest.py:151: in <module>\n    from database import get_db\ndatabase.py:54: in <module>\n    engine = create_engine(\n/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/util/deprecations.py:281: in warned\n    return fn(*args, **kwargs)  # type: ignore[no-any-return]\n           ^^^^^^^^^^^^^^^^^^^\n/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py:715: in create_engine\n    raise TypeError(\nE   TypeError: Invalid argument(s) 'max_overflow','pool_timeout' sent to create_engine(), using configuration SQLiteDialect_pysqlite/SingletonThreadPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.\n"
+}
