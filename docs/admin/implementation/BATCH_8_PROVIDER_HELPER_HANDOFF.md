@@ -4,6 +4,10 @@ Originating issues [#570](https://github.com/Rodgers31/audit_app/issues/570) and
 [#571](https://github.com/Rodgers31/audit_app/issues/571); parent
 [#545](https://github.com/Rodgers31/audit_app/issues/545).
 
+Delivery: attached **draft PR [#579](https://github.com/Rodgers31/audit_app/pull/579)**.
+No merge or reviewer request was made. Branch is pushed; the author worktree is
+clean after the final delivery commit (verified in external `DELIVERY.json`).
+
 ## Source and ownership
 
 - Managed worktree: `/Users/roger/.codex/worktrees/2262/audit_app`, attached to this
