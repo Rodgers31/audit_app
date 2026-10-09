@@ -10,6 +10,51 @@ from seeding.registries import REGISTRY, load_builtin_domains
 
 @pytest.mark.parametrize("force", [False, True])
 @pytest.mark.parametrize("binding", ["session", "connection"])
+@pytest.mark.parametrize("pending", [False, True])
+def test_deferred_sqlite_caller_retains_all_bootstrap_writes(
+    tmp_path, monkeypatch, force, binding, pending
+):
+    from models import Base
+    engine = create_engine(f"sqlite:///{tmp_path / 'deferred.sqlite'}")
+    Base.metadata.create_all(engine)
+    connection = engine.connect()
+    if binding == "session":
+        caller = Session(bind=engine)
+        outer = caller.begin()
+        connection.close()
+        connection = caller.connection()
+    else:
+        outer = connection.begin()
+        caller = Session(bind=connection, join_transaction_mode="control_fully")
+    unflushed = IngestionJob(domain="inert-caller", status=IngestionStatus.RUNNING, dry_run=True)
+    if pending:
+        caller.add(unflushed)
+    assert connection.connection.driver_connection.in_transaction is False
+    monkeypatch.setattr(bootstrap, "SessionLocal", lambda: caller)
+    monkeypatch.setattr(bootstrap, "_seed_national_data", lambda *a, **k: None)
+    monkeypatch.setattr(bootstrap, "enter_domain", lambda *a, **k: (_ for _ in ()).throw(
+        bootstrap.DomainOwnershipError("inert competing owner")))
+    try:
+        bootstrap.initialize_reference_data(force=force)
+        assert outer.is_active and connection.in_transaction()
+        if pending:
+            assert unflushed in caller.new
+        assert connection.scalar(text("SELECT count(*) FROM entities")) == 47
+        with engine.connect() as observer:
+            assert observer.scalar(text("SELECT count(*) FROM entities")) == 0
+            assert observer.scalar(text("SELECT count(*) FROM ingestion_jobs")) == 0
+        outer.rollback()
+        with engine.connect() as observer:
+            assert observer.scalar(text("SELECT count(*) FROM entities")) == 0
+            assert observer.scalar(text("SELECT count(*) FROM ingestion_jobs")) == 0
+    finally:
+        caller.close()
+        connection.close()
+        engine.dispose()
+
+
+@pytest.mark.parametrize("force", [False, True])
+@pytest.mark.parametrize("binding", ["session", "connection"])
 def test_refusal_cannot_commit_or_rollback_caller_transaction(
     tmp_path, monkeypatch, force, binding
 ):

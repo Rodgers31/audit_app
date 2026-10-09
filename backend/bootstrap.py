@@ -961,6 +961,14 @@ def _bootstrap_session() -> Tuple[Session, bool]:
         isinstance(bind, Connection) and bind.in_transaction()
     ):
         connection = candidate.connection() if candidate.in_transaction() else bind
+        if connection.dialect.name == "sqlite":
+            # sqlite3 defers the physical BEGIN until a write. A SAVEPOINT
+            # issued first becomes the outer transaction, whose release would
+            # commit bootstrap writes despite an active caller SessionTransaction.
+            # Materialize that caller transaction before borrowing a savepoint.
+            driver = connection.connection.driver_connection
+            if not driver.in_transaction:
+                connection.exec_driver_sql("BEGIN")
         return Session(bind=connection, join_transaction_mode="create_savepoint"), False
     return candidate, True
 

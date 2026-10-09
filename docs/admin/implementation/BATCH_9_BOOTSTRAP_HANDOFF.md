@@ -225,3 +225,20 @@ then re-fetch. Do not request additional paid reviews or merge the delivery.
 
 These are handed to the coordinator for consolidation; globally installed
 skills were not edited.
+
+## Independent deferred SQLite transaction correction
+
+Independent Standards review found that an active SQLAlchemy caller transaction
+could still lack SQLite's physical BEGIN. With `force=True`, bootstrap's first
+SAVEPOINT release committed 47 county entities before caller commit, and caller
+rollback did not remove them. Earlier inserted-row controls materialized BEGIN
+and missed this branch. The coordinator reproduced four actual failures across
+Session/Connection binding and empty/unflushed caller work; four normal-path
+controls already passed. Bootstrap now materializes the borrowed SQLite caller
+transaction before opening its child savepoint, preserving caller authority.
+All 19 caller-session controls pass on Python 3.13.9 / SQLAlchemy 2.0.46 and
+Python 3.12.15 / SQLAlchemy 2.0.23, without skips. Other original receipts retain
+their earlier source identities; independent final-source review and combined
+hosted execution follow. Raw red, green and initial missing-runtime setup results
+are retained in the external coordinator `BATCH_9_PR_REVIEW` packet. This repair
+is within #582; production activation and writer census remain separately gated.
