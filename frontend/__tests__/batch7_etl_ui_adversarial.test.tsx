@@ -274,3 +274,35 @@ test('adversarial rendered terminal refresh hides success after a rewritten fini
   await screen.findByText('Could not verify this command receipt. Refresh to retry.');
   expect(screen.queryByText('Completed — recorded ingestion observation.')).not.toBeInTheDocument();
 });
+test('adversarial rapid history filters merge while intermediate router navigation is unfinished', async () => {
+  get.mockImplementation(async (path:string,config:{params?:{page:number;page_size:number}}) => ({data:path.endsWith('/dispatch')?ready():path.endsWith('/commands')?{...emptyHistory,page:config.params!.page,page_size:config.params!.page_size}:receipt()}));
+  const view = mount(); await screen.findByText('No commands match this page.');
+  fireEvent.change(screen.getByRole('combobox',{name:'Command source'}),{target:{value:'oag'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Command status'}),{target:{value:'completed'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Commands per page'}),{target:{value:'50'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=oag&status=completed&page_size=50');
+  // First navigation completes after subsequent filter intents have been sent.
+  mockQuery='source=oag';view.refresh();
+  fireEvent.change(screen.getByRole('combobox',{name:'Command status'}),{target:{value:'failed'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=oag&status=failed&page_size=50');
+  mockQuery='source=oag&status=failed&page_size=50';view.refresh();
+  await waitFor(()=>expect(get.mock.calls.some(([path,config])=>path.endsWith('/commands')&&config.params.source==='oag'&&config.params.status==='failed'&&config.params.page_size===50)).toBe(true));
+  fireEvent.change(screen.getByRole('combobox',{name:'Command source'}),{target:{value:'cra'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=cra&status=failed&page_size=50');
+});
+test('adversarial clear and browser back remove unfinished history filter intents before the next edit', async () => {
+  get.mockImplementation(async (path:string,config:{params?:{page:number;page_size:number}}) => ({data:path.endsWith('/dispatch')?ready():path.endsWith('/commands')?{...emptyHistory,page:config.params!.page,page_size:config.params!.page_size}:receipt()}));
+  mockQuery='source=oag&status=failed&page=2';
+  const view = mount(); await screen.findByText('No commands match this page.');
+  fireEvent.change(screen.getByRole('combobox',{name:'Command status'}),{target:{value:'completed'}});
+  fireEvent.click(screen.getByRole('button',{name:'Clear command filters'}));
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl');
+  fireEvent.change(screen.getByRole('combobox',{name:'Command source'}),{target:{value:'cra'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=cra');
+  mockQuery='source=cra';view.refresh();
+  fireEvent.change(screen.getByRole('combobox',{name:'Command status'}),{target:{value:'running'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=cra&status=running');
+  mockQuery='source=knbs&page_size=50';act(()=>window.dispatchEvent(new PopStateEvent('popstate')));view.refresh();
+  fireEvent.change(screen.getByRole('combobox',{name:'Command status'}),{target:{value:'failed'}});
+  expect(mockPush).toHaveBeenLastCalledWith('/admin/etl?source=knbs&status=failed&page_size=50');
+});

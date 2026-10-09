@@ -16,6 +16,10 @@ async function visibility(page:Page,shown:boolean) {
     document.dispatchEvent(new Event('visibilitychange'));
   },shown);
 }
+async function snapshot(page:Page,path:string) {
+  await expect.poll(()=>page.locator('.page-shell-content').evaluate(element=>getComputedStyle(element).opacity)).toBe('1');
+  await page.screenshot({path,fullPage:true,animations:'disabled'});
+}
 test.beforeEach(async ({context,page,request}) => {
   await request.post(fixture+'/fixture/reset');
   const token=tokenFor(actor);
@@ -26,7 +30,7 @@ test.beforeEach(async ({context,page,request}) => {
 test('supported source confirmation accepts a queued receipt and opens detail', async ({page},info) => {
   await page.goto('/admin/etl');
   await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeEnabled();
-  await page.screenshot({path:info.outputPath('desktop-ready.png'),fullPage:true});
+  await snapshot(page,info.outputPath('desktop-ready.png'));
   await page.getByRole('button',{name:'Run Now · oag'}).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('button',{name:'Confirm Run Now'}).click();
@@ -34,7 +38,7 @@ test('supported source confirmation accepts a queued receipt and opens detail', 
   await page.getByRole('link',{name:'View accepted command'}).click();
   await expect(page.getByRole('heading',{name:'Command receipt'})).toBeVisible();
   await expect(page.getByText('Queued — accepted, awaiting execution.')).toBeVisible();
-  await page.screenshot({path:info.outputPath('desktop-queued.png'),fullPage:true});
+  await snapshot(page,info.outputPath('desktop-queued.png'));
 });
 for(const mode of ['unavailable','stale','malformed']) {
   test(mode+' capability is disabled and refresh recovers',async({page,request},info)=>{
@@ -42,7 +46,7 @@ for(const mode of ['unavailable','stale','malformed']) {
     await page.goto('/admin/etl');
     await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeDisabled();
     await expect(page.getByText(mode==='unavailable'?'Dedicated worker dispatch is unavailable.':'Worker evidence unavailable or malformed. Controls are disabled.')).toBeVisible();
-    await page.screenshot({path:info.outputPath(mode+'.png'),fullPage:true});
+    await snapshot(page,info.outputPath(mode+'.png'));
     await request.post(fixture+'/fixture/config',{data:{mode:'ready'}});
     await page.getByRole('button',{name:'Refresh worker evidence'}).click();
     await expect(page.getByRole('button',{name:'Run Now · oag'})).toBeEnabled();
@@ -84,6 +88,8 @@ test('history filters, page size, next/back, detail and safe return preserve nav
   await page.getByLabel('Commands per page',{exact:true}).selectOption('10');
   await expect(page.getByText('10 on this page · 45 commands matching')).toBeVisible();
   await page.getByRole('link',{name:/View command /}).first().click();
+  await expect(page).toHaveURL(/\/admin\/etl\/commands\/[0-9a-f-]+\?/);
+  await expect(page.getByRole('heading',{name:'Command receipt',exact:true})).toBeVisible();
   await expect(page.getByText('Completed — recorded ingestion observation.')).toBeVisible();
   await expect(page.getByRole('link',{name:/View ingestion observation/})).toHaveAttribute('href',/\/admin\/ingestion\/[1-9]\d*/);
   await page.getByRole('link',{name:'Back to command history'}).click();
@@ -126,7 +132,7 @@ for(const status of ['failed','interrupted']) {
     await expect(page.getByText(status==='failed'?'Failed — execution did not complete.':'Interrupted — execution unverified. Do not automatically repeat.')).toBeVisible();
     expect(await page.getByRole('button',{name:/Run Now|Recover same intent/}).count()).toBe(0);
     expect(await page.getByRole('link',{name:/View ingestion observation/}).count()).toBe(0);
-    await page.screenshot({path:info.outputPath(status+'.png'),fullPage:true});
+    await snapshot(page,info.outputPath(status+'.png'));
   });
 }
 test('visible active detail polls, pauses hidden, stops terminal and hides stale result on error',async({page,request})=>{
@@ -221,10 +227,10 @@ test('mobile keyboard confirmation traps focus, Escape returns focus, and pages 
   await expect(page.getByRole('button',{name:'Confirm Run Now'})).toBeFocused();
   await page.keyboard.press('Escape');await expect(run).toBeFocused();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.screenshot({path:info.outputPath('mobile-ready.png'),fullPage:true});
+  await snapshot(page,info.outputPath('mobile-ready.png'));
   await run.focus();await page.keyboard.press('Enter');await page.keyboard.press('Tab');await page.keyboard.press('Enter');
   await page.getByRole('link',{name:'View accepted command'}).click();
   await expect(page.getByRole('heading',{name:'Command receipt'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await page.screenshot({path:info.outputPath('mobile-receipt.png'),fullPage:true});
+  await snapshot(page,info.outputPath('mobile-receipt.png'));
 });
