@@ -26,6 +26,12 @@ function verifyNextSettings(config) {
     'tooling input contract: Next lint must use its literal default working directory, without root globs');
 }
 
+/**
+ * Check the retained Tailwind patterns and ESLint's effective Next root setting.
+ * @param {string} root Absolute frontend directory containing owned configuration.
+ * @returns {Promise<object>} Reviewed patterns, literal Next root and checked-file count.
+ * @throws {Error} Reject missing/malformed config, expanded source scope or root globs.
+ */
 async function verifyToolingInputs(root = path.resolve(__dirname, '..')) {
   const tailwind = require(path.join(root, 'tailwind.config.js'));
   assert.deepEqual(tailwind.content, approvedContent,
