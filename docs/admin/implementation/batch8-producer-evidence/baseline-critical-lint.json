@@ -1,0 +1,27 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "43a1342960db0a8ae3660f9f86ff0bc4595da23bd914a9d74dd99fe68a3315d6",
+  "generated_at": "2026-10-09T08:19:51.294838+00:00",
+  "target_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "target_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "producer_sha256": "15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028",
+  "test_sha256": null,
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "flake8",
+    ".",
+    "--count",
+    "--select=E9,F63,F7,F82",
+    "--show-source",
+    "--statistics",
+    "--exclude=venv,__pycache__,.git"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/537c/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 1,
+  "verdict": "FAILED",
+  "stdout": "./scripts/r2_producer_acceptance.py:440:9: F821 undefined name 'captured'\n        captured.update(tables=[dataclasses.asdict(t) for t in parser.tables],\n        ^\n1     F821 undefined name 'captured'\n1\n",
+  "stderr": ""
+}

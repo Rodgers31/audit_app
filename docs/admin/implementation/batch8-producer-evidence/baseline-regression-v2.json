@@ -1,0 +1,27 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "b1b95496b933a5d4fff17d72b76214ef64ad1408b9415a8213f33b0498b597b8",
+  "generated_at": "2026-10-09T08:22:15.422835+00:00",
+  "target_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "target_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "producer_sha256": "15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028",
+  "test_sha256": "fcca8fa2306e738312cbe36544bd4f195352bd46fc70e2c46e4e2d55a02d9f77",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "--confcutdir=tests",
+    "-p",
+    "pytest_asyncio.plugin",
+    "tests/test_r2_producer_capture.py",
+    "-q",
+    "-s"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/537c/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 1,
+  "verdict": "FAILED",
+  "stdout": "F{\"scope\": \"synthetic parser orchestration, real SQLite; no full PDF replay\", \"source_sha256\": \"b4468b18ca570c7ed0239d985c77697a511b3661e7b0171fc0a7a6b00a071d93\", \"markers\": [\"batch8-capture-channel-alive\", \"capture-released-before-sql\", \"real-sqlite-public-qualification-complete\"], \"sql_rows\": 468, \"qualification_fields\": 1404}\n..........\n=================================== FAILURES ===================================\n___________________ test_producer_passes_critical_lint_gate ____________________\n\n    def test_producer_passes_critical_lint_gate():\n        result = subprocess.run(\n            [sys.executable, \"-m\", \"flake8\", str(PRODUCER), \"--count\",\n             \"--select=E9,F63,F7,F82\", \"--show-source\", \"--statistics\"],\n            capture_output=True, text=True,\n        )\n>       assert result.returncode == 0, result.stdout + result.stderr\nE       AssertionError: /Users/roger/.codex/worktrees/537c/audit_app/backend/scripts/r2_producer_acceptance.py:440:9: F821 undefined name 'captured'\nE                 captured.update(tables=[dataclasses.asdict(t) for t in parser.tables],\nE                 ^\nE         1     F821 undefined name 'captured'\nE         1\nE         \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['/Users/roger/Documents/projects/audit_app/venv/bin/python', '-m', 'flake8', '/Users/roger/.cod...bles=[dataclasses.asdict(t) for t in parser.tables],\\n        ^\\n1     F821 undefined name 'captured'\\n1\\n\", stderr='').returncode\n\ntests/test_r2_producer_capture.py:51: AssertionError\n=============================== warnings summary ===============================\ndatabase.py:64\n  /Users/roger/.codex/worktrees/537c/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nmodels.py:27\n  /Users/roger/.codex/worktrees/537c/audit_app/backend/models.py:27: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED tests/test_r2_producer_capture.py::test_producer_passes_critical_lint_gate\n1 failed, 10 passed, 2 warnings in 12.85s\n",
+  "stderr": ""
+}
