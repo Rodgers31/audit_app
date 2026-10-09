@@ -1,0 +1,146 @@
+{
+  "queries": [
+    "gh issue list --repo Rodgers31/audit_app --state all --search 'ETL dispatch' --limit 100 --json number,state,title",
+    "gh issue list --repo Rodgers31/audit_app --state all --search 'session renewal admin' --limit 100 --json number,state,title",
+    "gh issue list --repo Rodgers31/audit_app --state all --search 'retry budget' --limit 100 --json number,state,title"
+  ],
+  "results": [
+    [
+      {
+        "number": 572,
+        "state": "OPEN",
+        "title": "ETL activation: share domain exclusion with the independent native seeding CLI"
+      },
+      {
+        "number": 568,
+        "state": "OPEN",
+        "title": "Admin ETL: verified worker controls, durable command receipts and history"
+      },
+      {
+        "number": 554,
+        "state": "OPEN",
+        "title": "P1: admin ETL trigger acknowledges jobs without a worker consumer"
+      },
+      {
+        "number": 545,
+        "state": "OPEN",
+        "title": "Admin completion: verified UI and backend across all admin areas"
+      },
+      {
+        "number": 565,
+        "state": "CLOSED",
+        "title": "ETL calendar: package the planner in backend-only container builds"
+      },
+      {
+        "number": 478,
+        "state": "CLOSED",
+        "title": "Social publishing: durable PostgreSQL dispatcher and recovery"
+      },
+      {
+        "number": 548,
+        "state": "CLOSED",
+        "title": "Admin overview and audit: complete trustworthy status and navigation"
+      },
+      {
+        "number": 291,
+        "state": "CLOSED",
+        "title": "Legacy browser CI: final hosted suite and quarantine acceptance remain"
+      },
+      {
+        "number": 137,
+        "state": "CLOSED",
+        "title": "Data provenance: chart evidence policy and linked source/history acceptance"
+      },
+      {
+        "number": 322,
+        "state": "CLOSED",
+        "title": "Remaining consolidation follow-ups: stored cleanup, audit coverage and acceptance"
+      }
+    ],
+    [
+      {
+        "number": 483,
+        "state": "CLOSED",
+        "title": "Server-only Meta OAuth, credentials and connected-account discovery"
+      }
+    ],
+    [
+      {
+        "number": 357,
+        "state": "CLOSED",
+        "title": "perf: give frontend requests one bounded retry budget and propagate cancellation"
+      },
+      {
+        "number": 481,
+        "state": "OPEN",
+        "title": "Low-cost publishing prerequisite: reduce Supabase shared-pooler egress"
+      },
+      {
+        "number": 478,
+        "state": "CLOSED",
+        "title": "Social publishing: durable PostgreSQL dispatcher and recovery"
+      },
+      {
+        "number": 491,
+        "state": "CLOSED",
+        "title": "Social publishing: native Facebook and Instagram adapters with durable recovery"
+      },
+      {
+        "number": 234,
+        "state": "CLOSED",
+        "title": "OAG county audit coverage: complete five deferred volumes and verify publication"
+      },
+      {
+        "number": 347,
+        "state": "CLOSED",
+        "title": "Nightly failure: original inflation-history recovery and hosted acceptance remain"
+      },
+      {
+        "number": 307,
+        "state": "CLOSED",
+        "title": "Review the new Swahili strings from the 2026-09-25 round"
+      },
+      {
+        "number": 323,
+        "state": "CLOSED",
+        "title": "Five tested drafts ready for review; previous six-PR release verified"
+      },
+      {
+        "number": 137,
+        "state": "CLOSED",
+        "title": "Data provenance: chart evidence policy and linked source/history acceptance"
+      },
+      {
+        "number": 124,
+        "state": "CLOSED",
+        "title": "⚠️ Data source(s) unreachable: COB WP REST API, OAG Homepage — 2026-07-12"
+      },
+      {
+        "number": 109,
+        "state": "CLOSED",
+        "title": "⚠️ Data source(s) unreachable: COB WP REST API, OAG Homepage — 2026-06-04"
+      },
+      {
+        "number": 85,
+        "state": "CLOSED",
+        "title": "⚠️ Data source(s) unreachable: COB WP REST API, OAG Homepage — 2026-04-26"
+      },
+      {
+        "number": 59,
+        "state": "CLOSED",
+        "title": "⚠️ Data source(s) unreachable: COB Publications — 2026-04-21"
+      },
+      {
+        "number": 43,
+        "state": "CLOSED",
+        "title": "⚠️ Data source(s) unreachable: COB Publications — 2026-03-26"
+      }
+    ]
+  ],
+  "created": [],
+  "closed": [],
+  "actionsPermissions": {
+    "enabled": false,
+    "sha_pinning_required": false
+  }
+}
