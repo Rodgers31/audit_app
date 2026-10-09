@@ -1,15 +1,13 @@
 /**
  * /admin/etl — ETL schedule + manual trigger.
  *
- * Reads /admin/etl/schedule + /admin/etl/health to show what the
- * smart scheduler is doing today, and exposes per-source "trigger
- * now" buttons that POST to /admin/etl/trigger/{source}.
+ * Shows a calendar plan and explicit availability of execution evidence.
  */
 'use client';
 
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -19,48 +17,10 @@ import {
   Loader2,
   PlayCircle,
   RefreshCcw,
-  XCircle,
   Zap,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
-
-interface ScheduleSourceDecision {
-  should_run: boolean;
-  reason: string;
-  next_run: string | null;
-  next_reason?: string;
-  current_period?: string;
-}
-
-interface ScheduleResponse {
-  timestamp: string;
-  summary: {
-    sources_running_today: number;
-    sources_skipping_today: number;
-    total_sources: number;
-    skip_percentage: number;
-    efficiency_vs_fixed_schedule: string;
-    sources_to_run: Array<{ source: string; reason: string }>;
-    sources_not_running: string[];
-  };
-  sources: Record<string, ScheduleSourceDecision>;
-}
-
-interface EtlHealth {
-  timestamp: string;
-  scheduler_status: string;
-  schedule_summary: unknown;
-}
-
-interface TriggerResponse {
-  ok: boolean;
-  job_id: number;
-  source: string;
-  status: string;
-  dry_run: boolean;
-  note: string;
-}
+import {parseSchedule,parseEtlHealth,type ScheduleSourceDecision} from '@/lib/admin/etl';
+import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -72,38 +32,43 @@ const fadeUp = {
 };
 
 export default function AdminEtlPage() {
-  const qc = useQueryClient();
+  const access = useOperationsAccess(['etl-schedule','etl-health']);
 
-  const schedule = useQuery<ScheduleResponse>({
-    queryKey: ['admin', 'etl-schedule'],
-    queryFn: async ({ signal }) => (await api.get('/admin/etl/schedule', { signal })).data,
+  const schedule = useQuery({
+    queryKey: ['admin', 'etl-schedule', access.actorId],
+    queryFn: async ({ signal }) => parseSchedule((await api.get('/admin/etl/schedule', { signal })).data),
+    enabled: access.enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
 
-  const health = useQuery<EtlHealth>({
-    queryKey: ['admin', 'etl-health'],
-    queryFn: async ({ signal }) => (await api.get('/admin/etl/health', { signal })).data,
+  const health = useQuery({
+    queryKey: ['admin', 'etl-health', access.actorId],
+    queryFn: async ({ signal }) => parseEtlHealth((await api.get('/admin/etl/health', { signal })).data),
+    enabled: access.enabled,
+    retry: false,
+    refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
 
-  const trigger = useMutation<TriggerResponse, unknown, { source: string; dryRun: boolean }>({
-    mutationFn: async ({ source, dryRun }) =>
-      (await api.post(`/admin/etl/trigger/${source}`, { dry_run: dryRun })).data,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'etl-schedule'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'ingestion-jobs'] });
-      qc.invalidateQueries({ queryKey: ['admin', 'ingestion-stats'] });
-    },
-  });
+  const planData = access.isAdmin && !schedule.isError ? schedule.data : undefined;
+  const healthData = access.isAdmin && !health.isError ? health.data : undefined;
+  if (!access.isAdmin) return <PageShell title='ETL Schedule'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
 
   return (
     <PageShell
       title='ETL Schedule'
-      subtitle='Smart-scheduler decisions for today, plus manual trigger controls per source.'
+      subtitle='Calendar planning for source checks. Execution requires the dedicated runner.'
       back={{ href: '/admin', label: 'Back to overview' }}>
       <div className='space-y-5'>
+        <p className='text-sm text-neutral-muted'>A calendar calculation does not establish scheduler activity, job execution or financial data freshness.</p>
+        <p role='status' className='text-sm text-neutral-muted'>{healthData?.manual_trigger.reason ?? 'Manual execution is unavailable. No job was accepted.'}</p>
+        {health.isError && <p role='alert' className='text-sm text-gov-copper'>Could not load execution evidence.</p>}
+        {schedule.isError && <p role='alert' className='text-sm text-gov-copper'>Calendar plan unavailable. Refresh to retry.</p>}
         <div className='flex items-center justify-end'>
           <button
+            disabled={schedule.isFetching || health.isFetching || !access.enabled}
             onClick={() => {
               schedule.refetch();
               health.refetch();
@@ -123,65 +88,28 @@ export default function AdminEtlPage() {
           <SummaryCard
             order={0}
             icon={PlayCircle}
-            label='Running today'
+            label='Planned today'
             value={
-              schedule.data
-                ? `${schedule.data.summary.sources_running_today}/${schedule.data.summary.total_sources}`
+              planData
+                ? `${planData.summary.sources_running_today}/${planData.summary.total_sources}`
                 : '…'
             }
           />
           <SummaryCard
             order={1}
             icon={Activity}
-            label='Scheduler health'
-            value={health.data ? health.data.scheduler_status.split(':')[0] : '…'}
+            label='Worker evidence'
+            value={healthData ? healthData.worker_status : '…'}
             valueClassName='capitalize'
           />
           <SummaryCard
             order={2}
             icon={Zap}
-            label='Efficiency vs fixed'
-            value={schedule.data?.summary.efficiency_vs_fixed_schedule ?? '—'}
+            label='Planning vs fixed'
+            value={planData?.summary.efficiency_vs_fixed_schedule ?? '—'}
             small
           />
         </div>
-
-        {/* ── Trigger feedback ── */}
-        {trigger.isSuccess && trigger.data && (
-          <motion.div
-            variants={fadeUp}
-            initial='hidden'
-            animate='show'
-            className='bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 rounded-2xl px-4 py-3 flex items-start gap-2.5 text-sm shadow-surface'>
-            <CheckCircle2 className='w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0' />
-            <div>
-              <p className='font-semibold text-emerald-900 dark:text-emerald-200'>
-                Queued <span className='font-mono'>{trigger.data.source}</span> · job #
-                <Link
-                  href={`/admin/ingestion/${trigger.data.job_id}`}
-                  className='underline underline-offset-2 hover:text-emerald-700 dark:text-emerald-300'>
-                  {trigger.data.job_id}
-                </Link>
-                {trigger.data.dry_run && ' (dry-run)'}
-              </p>
-              <p className='text-emerald-800/80 text-xs mt-0.5'>{trigger.data.note}</p>
-            </div>
-          </motion.div>
-        )}
-        {trigger.isError && (
-          <motion.div
-            variants={fadeUp}
-            initial='hidden'
-            animate='show'
-            className='bg-gov-copper/10 border border-gov-copper/30 rounded-2xl px-4 py-3 flex items-start gap-2.5 text-sm shadow-surface'>
-            <XCircle className='w-5 h-5 text-gov-copper dark:text-red-400 mt-0.5 shrink-0' />
-            <p className='text-gov-copper dark:text-red-400'>
-              Failed to queue trigger:{' '}
-              {(trigger.error as { response?: { data?: { detail?: string } } })?.response?.data
-                ?.detail || 'unknown error'}
-            </p>
-          </motion.div>
-        )}
 
         {/* ── Per-source list ── */}
         <motion.section
@@ -196,25 +124,24 @@ export default function AdminEtlPage() {
               <h2 className='font-display text-lg text-neutral-text'>Sources</h2>
             </div>
           </header>
-          {schedule.isLoading ? (
+          {schedule.isLoading || (!planData && !schedule.isError) ? (
             <div className='py-16 flex justify-center'>
               <Loader2 className='w-5 h-5 text-gov-sage animate-spin' />
             </div>
-          ) : !schedule.data ? (
+          ) : !planData ? (
             <div className='py-12 px-6 text-center text-gov-copper dark:text-red-400 text-sm'>
               <AlertTriangle className='w-6 h-6 mx-auto mb-2' />
               Could not load schedule.
             </div>
           ) : (
             <ul className='divide-y divide-neutral-border/60'>
-              {Object.entries(schedule.data.sources).map(([source, decision], i) => (
+              {Object.entries(planData.sources).map(([source, decision], i) => (
                 <SourceRow
                   key={source}
                   index={i}
                   source={source}
                   decision={decision}
-                  pending={trigger.isPending && trigger.variables?.source === source}
-                  onTrigger={(dryRun) => trigger.mutate({ source, dryRun })}
+
                 />
               ))}
             </ul>
@@ -268,17 +195,12 @@ function SummaryCard({
 function SourceRow({
   source,
   decision,
-  pending,
-  onTrigger,
   index,
 }: {
   source: string;
   decision: ScheduleSourceDecision;
-  pending: boolean;
-  onTrigger: (dryRun: boolean) => void;
   index: number;
 }) {
-  const [confirming, setConfirming] = useState<null | 'real' | 'dry'>(null);
   const Icon = decision.should_run ? CheckCircle2 : Clock;
   const colour = decision.should_run ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-muted/40';
 
@@ -308,49 +230,16 @@ function SourceRow({
         </p>
         {decision.next_run && (
           <p className='mt-0.5'>
-            <span className='text-neutral-muted/70 mr-1'>Next run:</span>
+            <span className='text-neutral-muted/70 mr-1'>Next planned check:</span>
             {new Date(decision.next_run).toLocaleString()}
             {decision.next_reason ? ` · ${decision.next_reason}` : ''}
           </p>
         )}
       </div>
 
-      <div className='flex items-center gap-2 ml-auto'>
-        {confirming ? (
-          <div className='flex items-center gap-2'>
-            <span className='text-xs text-neutral-muted'>
-              Run {source} {confirming === 'dry' ? '(dry-run)' : 'now'}?
-            </span>
-            <button
-              disabled={pending}
-              onClick={() => {
-                onTrigger(confirming === 'dry');
-                setConfirming(null);
-              }}
-              className='px-3 py-1.5 bg-gov-sage text-white text-xs font-semibold rounded-full hover:bg-gov-sage/90 disabled:opacity-50 shadow-surface'>
-              {pending ? <Loader2 className='w-3 h-3 animate-spin' /> : 'Confirm'}
-            </button>
-            <button
-              onClick={() => setConfirming(null)}
-              className='px-2 py-1 text-xs text-neutral-muted hover:text-neutral-text'>
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => setConfirming('dry')}
-              className='inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text transition-all shadow-surface'>
-              Dry-run
-            </button>
-            <button
-              onClick={() => setConfirming('real')}
-              className='inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-full bg-gov-forest text-white hover:bg-gov-dark transition-colors shadow-surface'>
-              <PlayCircle className='w-3 h-3' />
-              Trigger
-            </button>
-          </>
-        )}
+      <div className='flex flex-wrap items-center gap-2 ml-auto'>
+        <button disabled title='Dedicated worker dispatch unavailable' className='px-3 py-1.5 text-xs font-semibold rounded-full border border-neutral-border text-neutral-muted disabled:opacity-50'>Dry-run</button>
+        <button disabled title='Dedicated worker dispatch unavailable' className='px-3 py-1.5 text-xs font-semibold rounded-full bg-gov-forest text-white disabled:opacity-50'>Trigger</button>
       </div>
     </motion.li>
   );

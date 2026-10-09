@@ -1,0 +1,40 @@
+2026-10-08 18:48:41,941 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-08 18:48:41,943 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-08 18:48:41,944 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-08 18:48:41,944 - main - INFO - Redis cache initialized successfully
+2026-10-08 18:48:41,951 - config.secrets - INFO - Using environment variables for secrets
+2026-10-08 18:48:41,951 - main - INFO - Using Redis-backed rate limiting
+2026-10-08 18:48:41,951 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-08 18:48:42,119 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-08 18:48:42,124 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-08 18:48:42,140 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-08 18:48:42,144 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-08 18:48:42,151 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-08 18:48:42,154 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-08 18:48:42,161 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-08 18:48:42,168 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-08 18:48:42,169 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-08 18:48:42,170 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-08 18:48:42,172 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-08 18:48:42,173 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-08 18:48:42,173 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-08 18:48:42,177 - main - INFO - Data provenance router registered at /api/v1/provenance
+2026-10-08 18:48:42,392 - routers.admin - INFO - ingestion_stats_compacted
+.2026-10-08 18:48:42,503 - routers.admin - INFO - ingestion_stats_compacted
+.2026-10-08 18:48:42,614 - routers.admin - INFO - ingestion_stats_compacted
+.2026-10-08 18:48:42,644 - routers.admin - INFO - ingestion_stats_compacted
+2026-10-08 18:48:42,722 - routers.admin - INFO - ingestion_stats_compacted
+.2026-10-08 18:48:42,828 - routers.admin - INFO - ingestion_stats_compacted
+.OPERATIONS_LIST_TRANSFER {'queries': 2, 'returned_rows': 21, 'selected_value_bytes_estimate': 1832, 'peak_checked_out_connections': 0}
+......
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/admin-operations-batch6/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:25
+  /Users/roger/.codex/worktrees/admin-operations-batch6/audit_app/backend/models.py:25: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 2 warnings in 0.89s

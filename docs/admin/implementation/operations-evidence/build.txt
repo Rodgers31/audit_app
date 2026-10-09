@@ -1,0 +1,76 @@
+[next.config] API rewrite target: http://127.0.0.1:8152
+   ▲ Next.js 15.5.27
+   - Experiments (use with caution):
+     ✓ scrollRestoration
+     · optimizePackageImports
+
+[next.config] API rewrite target: http://127.0.0.1:8152
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.2s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/42) ...
+   Generating static pages (10/42)
+   Generating static pages (20/42)
+   Generating static pages (31/42)
+ ✓ Generating static pages (42/42)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS  Revalidate  Expire
+┌ ○ /                                    30.8 kB         442 kB          1h      1y
+├ ○ /_not-found                            995 B         105 kB
+├ ○ /about                               5.34 kB         153 kB
+├ ○ /account                             6.87 kB         214 kB
+├ ○ /accountability/unaccounted-funds     6.7 kB         236 kB
+├ ○ /admin                               8.29 kB         237 kB
+├ ○ /admin/audit-log                     3.22 kB         236 kB
+├ ○ /admin/etl                           3.43 kB         240 kB
+├ ○ /admin/ingestion                     4.18 kB         241 kB
+├ ƒ /admin/ingestion/[jobId]             2.98 kB         239 kB
+├ ○ /admin/social                          396 B         264 kB
+├ ƒ /admin/social/[postId]                 428 B         264 kB
+├ ○ /admin/social/accounts               6.74 kB         249 kB
+├ ƒ /admin/social/accounts/callback        179 B         104 kB
+├ ○ /admin/social/new                      409 B         264 kB
+├ ○ /admin/users                         3.23 kB         236 kB
+├ ƒ /admin/users/[userId]                10.4 kB         239 kB
+├ ƒ /api/account/delete                    179 B         104 kB
+├ ƒ /api/auth/reset-password               179 B         104 kB
+├ ƒ /api/health                            179 B         104 kB
+├ ƒ /api/revalidate                        179 B         104 kB
+├ ○ /apple-icon.png                          0 B            0 B
+├ ○ /audits                              12.7 kB         371 kB          1h      1y
+├ ƒ /auth/callback                         179 B         104 kB
+├ ○ /budget                              23.3 kB         427 kB          1h      1y
+├ ○ /counties                            22.1 kB         382 kB          1h      1y
+├ ƒ /counties/[id]                       10.7 kB         303 kB
+├ ○ /counties/compare                    7.34 kB         294 kB          1h      1y
+├ ○ /debt                                  26 kB         444 kB          1h      1y
+├ ○ /icon.png                                0 B            0 B
+├ ○ /learn                               28.2 kB         185 kB
+├ ○ /learn/glossary                      9.09 kB         254 kB
+├ ○ /learn/government                    7.55 kB         155 kB
+├ ○ /learn/quiz                          6.49 kB         161 kB
+├ ○ /learn/videos                          179 B         104 kB
+├ ○ /learn/why-it-matters                4.87 kB         152 kB
+├ ○ /newsletter/unsubscribe              4.02 kB         224 kB
+├ ○ /privacy                             4.81 kB         152 kB
+├ ○ /reset-password                      5.94 kB         208 kB
+├ ○ /robots.txt                            179 B         104 kB
+├ ○ /sitemap.xml                           179 B         104 kB
+├ ○ /sources                             8.19 kB         237 kB
+├ ƒ /sources/figures/[table]/[id]        5.87 kB         272 kB
+├ ○ /status                              5.42 kB         238 kB
+├ ○ /terms                               4.77 kB         152 kB
+└ ○ /transparency                        13.7 kB         305 kB          1h      1y
++ First Load JS shared by all             104 kB
+  ├ chunks/2ed18727-b5c9d5fdf1e0633f.js  54.2 kB
+  ├ chunks/6411-572d8e4ba0ec0186.js      46.9 kB
+  └ other shared chunks (total)          2.44 kB
+
+
+ƒ Middleware                             82.2 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

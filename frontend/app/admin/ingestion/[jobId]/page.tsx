@@ -1,9 +1,7 @@
 /**
  * /admin/ingestion/[jobId] — single-job detail view.
  *
- * Drill-in target from the ingestion list. Shows the full
- * ``IngestionJobResponse`` payload — every timing field, every
- * metric, the errors array, and the metadata blob.
+ * Shows recorded timing and counters with safe operational diagnostics.
  */
 'use client';
 
@@ -21,22 +19,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { use } from 'react';
-
-interface IngestionJob {
-  id: number;
-  domain: string;
-  status: string;
-  dry_run: boolean;
-  started_at: string;
-  finished_at: string | null;
-  duration_seconds: number | null;
-  items_processed: number;
-  items_created: number;
-  items_updated: number;
-  errors: unknown[];
-  metadata: Record<string, unknown>;
-  created_at: string;
-}
+import {activeJob, parseIngestionJob, type IngestionJob} from '@/lib/admin/ingestion';
+import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 12 },
@@ -53,13 +37,28 @@ export default function IngestionJobDetailPage({
   params: Promise<{ jobId: string }>;
 }) {
   const { jobId } = use(params);
-  const { data, isLoading, error, refetch, isFetching } = useQuery<IngestionJob>({
-    queryKey: ['admin', 'ingestion-job', jobId],
-    queryFn: async ({ signal }) => (await api.get(`/admin/ingestion-jobs/${jobId}`, { signal })).data,
+  const access = useOperationsAccess(['ingestion-job']);
+  const validId = /^\d+$/.test(jobId) && Number(jobId) >= 1 && Number(jobId) <= 2147483647;
+  const job = useQuery<IngestionJob>({
+    queryKey: ['admin', 'ingestion-job', access.actorId, jobId],
+    queryFn: async ({ signal }) => {
+      const data = parseIngestionJob((await api.get(`/admin/ingestion-jobs/${Number(jobId)}`, { signal })).data);
+      if(data.id !== Number(jobId)) throw new Error('Mismatched job');
+      return data;
+    },
+    enabled: access.enabled && validId,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: query => access.enabled && !query.state.error && query.state.data && activeJob(query.state.data) ? 15_000 : false,
     staleTime: 15_000,
   });
 
-  if (isLoading) {
+  const {isLoading,error,refetch,isFetching} = job;
+  const data = access.isAdmin && !error ? job.data : undefined;
+  if (!access.isAdmin) return <PageShell title='Ingestion job'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
+  if (!validId) return <PageShell title='Invalid job ID' back={{href:'/admin/ingestion',label:'Back to ingestion jobs'}}><p>Choose a job from the ingestion list.</p></PageShell>;
+
+  if (isLoading || (!data && !error)) {
     return (
       <PageShell
         title={`Job #${jobId}`}
@@ -78,7 +77,8 @@ export default function IngestionJobDetailPage({
         back={{ href: '/admin/ingestion', label: 'Back to ingestion jobs' }}>
         <div className='py-16 flex flex-col items-center gap-3'>
           <XCircle className='w-10 h-10 text-gov-copper dark:text-red-400' />
-          <p className='text-gov-copper dark:text-red-400 text-sm'>Job not found or failed to load.</p>
+          <p className='text-gov-copper dark:text-red-400 text-sm'>{(error as {response?:{status?:number}})?.response?.status === 404 ? 'Job not found.' : 'Could not load job.'}</p>
+          <button onClick={() => { if(access.enabled) void refetch(); }} disabled={isFetching || !access.enabled} className='text-sm underline'>Retry</button>
         </div>
       </PageShell>
     );
@@ -90,10 +90,11 @@ export default function IngestionJobDetailPage({
       subtitle={`Ingestion job #${data.id}`}
       back={{ href: '/admin/ingestion', label: 'Back to ingestion jobs' }}>
       <div className='space-y-5'>
+        <p className='text-xs text-neutral-muted'>Diagnostics are limited to safe operational fields. Inspect dedicated runner logs for full errors. A recorded status does not establish worker activity or financial data freshness.</p>
         <div className='flex items-center justify-end'>
           <button
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={() => { if(access.enabled) void refetch(); }}
+            disabled={isFetching || !access.enabled}
             className='inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text rounded-lg text-sm transition-all shadow-surface disabled:opacity-50'>
             <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
@@ -132,14 +133,14 @@ export default function IngestionJobDetailPage({
             />
             <Field
               label='Errors'
-              value={data.errors.length.toString()}
+              value={data.error_count.toLocaleString()}
               tone={data.errors.length > 0 ? 'bad' : 'muted'}
               big
             />
           </div>
 
           <div className='grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-6 border-t border-neutral-border'>
-            <Field label='Started' value={formatDate(data.started_at)} />
+            <Field label='Started' value={data.status === 'pending' ? 'Awaiting execution' : formatDate(data.started_at)} />
             <Field
               label='Finished'
               value={data.finished_at ? formatDate(data.finished_at) : '—'}
@@ -162,7 +163,7 @@ export default function IngestionJobDetailPage({
                 <AlertTriangle className='w-3.5 h-3.5 text-gov-copper dark:text-red-400' />
               </div>
               <h2 className='font-display text-lg text-neutral-text'>
-                Errors ({data.errors.length})
+                Errors ({data.error_count})
               </h2>
             </div>
             <ul className='space-y-2'>
@@ -247,7 +248,7 @@ function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean
               bg: 'bg-gov-warning/15',
               text: 'text-gov-warning dark:text-amber-300',
               icon: AlertTriangle,
-              label: 'completed*',
+              label: 'completed w/ errors',
             }
           : {
               bg: 'bg-emerald-100 dark:bg-emerald-900/40',

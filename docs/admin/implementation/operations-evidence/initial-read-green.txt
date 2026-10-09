@@ -1,0 +1,22 @@
+PASS __tests__/admin/operations/operations-ui.test.tsx
+  ✓ an initially hidden ingestion page awaits its first read without claiming empty or failed results (21 ms)
+  ✓ an initially hidden etl page awaits its first read without claiming empty or failed results (8 ms)
+  ○ skipped hostile URL parameters never reach the API and are replaced with bounded defaults
+  ○ skipped filter labels are usable and filter changes use navigable history
+  ○ skipped an empty later page retains a way back to earlier jobs
+  ○ skipped malformed lists are an error state, never no jobs or a table
+  ○ skipped malformed lists are an error state, never no jobs or a table
+  ○ skipped malformed lists are an error state, never no jobs or a table
+  ○ skipped malformed lists are an error state, never no jobs or a table
+  ○ skipped malformed lists are an error state, never no jobs or a table
+  ○ skipped desktop jobs have keyboard-accessible detail links and dry-run remains visible
+  ○ skipped a failed refresh stops showing old successful counts
+  ○ skipped running jobs poll while visible, pause hidden and stop at completion
+  ○ skipped calendar planning never renders running or healthy worker claims and unavailable controls cannot dispatch
+  ○ skipped malformed schedule and health are recoverable errors
+
+Test Suites: 1 passed, 1 total
+Tests:       13 skipped, 2 passed, 15 total
+Snapshots:   0 total
+Time:        0.306 s, estimated 1 s
+Ran all test suites matching /__tests__\/admin\/operations\/operations-ui.test.tsx/i with tests matching "initially hidden".
