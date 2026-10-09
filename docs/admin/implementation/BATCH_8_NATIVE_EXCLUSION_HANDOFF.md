@@ -331,16 +331,24 @@ explicitly retained as a limitation or gate below.
 - Opened after all-state deduplication: #581, #582, #583.
 - The baseline lint failure is tracked by #569 / PR #578 (other lane).
 
-## Resource cleanup
+## Resource cleanup (at delivery)
 
-See the PR description and the final report for the cleanup receipt at delivery.
-Owned resources:
-
-- the container `batch8-exclusion-afa1-db` (kept running for coordinator
-  replay unless removed at delivery);
-- the session scratch directory, holding helper scripts, a lint venv, a base
-  archive and a mutation copy;
-- the raw-evidence directory
-  `…/BATCH_8_SESSIONS/NATIVE_EXCLUSION_CLAUDE_EVIDENCE/`.
-
-Reviewer schemas were dropped by each reviewer (receipts are in their folders).
+- **Container:** `batch8-exclusion-afa1-db` and its anonymous data volume were
+  removed (`docker rm -f -v`). Beforehand it had no other sessions and no
+  leftover reviewer schemas. Afterwards no container of that name exists and
+  nothing listens on 55485.
+- **Reviewer schemas:** each reviewer dropped its own (receipts:
+  `adversarial-r3/cleanup-receipt.json` and
+  `adversarial-r3-recheck/cleanup-receipt.json`; 103 and 243 schemas, 0 left).
+- **Processes:** no test worker, adapter or CLI processes remain. The idle
+  REPLs from the interrupted earlier session were not touched.
+- **Scratch:** the owned lint venv (flake8 6.1.0), base archive and mutation
+  copy were deleted.
+- **Kept for replay, outside the repository**
+  (`…/BATCH_8_SESSIONS/NATIVE_EXCLUSION_CLAUDE_EVIDENCE/`): runner scripts
+  (`runner/run.sh`, `suite.sh`, `rebuild.sh`, `probe.sh`), the review patches,
+  raw reviewer logs and results JSONL, and reviewer SQLite files.
+- **To replay:** start an owned `postgres:16-alpine` with database/user
+  `batch7_etl_worker`/`batch7_worker` (password `batch7-inert-local`) on
+  `127.0.0.1:55485`, run `alembic upgrade head` against it, then run
+  `runner/suite.sh`.
