@@ -1,0 +1,21 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "b1b95496b933a5d4fff17d72b76214ef64ad1408b9415a8213f33b0498b597b8",
+  "generated_at": "2026-10-09T08:23:18.786631+00:00",
+  "target_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "target_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "producer_sha256": "15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028",
+  "test_sha256": "e21974a1e75f82a1ec45956b07bd85497d49aef52fb882d03b56afe7d5ef03d0",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-c",
+    "import importlib.metadata as m; import json,platform; print(json.dumps({\"python\":platform.python_version(),\"system\":platform.system(),\"versions\":{n:m.version(n) for n in [\"flake8\",\"pyflakes\",\"pycodestyle\",\"mccabe\",\"pytest\",\"pdfplumber\",\"pdfminer.six\",\"SQLAlchemy\",\"httpx\",\"botocore\",\"pydantic\"]}},sort_keys=True))"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/537c/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 0,
+  "verdict": "PASS",
+  "stdout": "{\"python\": \"3.13.9\", \"system\": \"Darwin\", \"versions\": {\"SQLAlchemy\": \"2.0.46\", \"botocore\": \"1.42.54\", \"flake8\": \"7.3.0\", \"httpx\": \"0.28.1\", \"mccabe\": \"0.7.0\", \"pdfminer.six\": \"20251230\", \"pdfplumber\": \"0.11.9\", \"pycodestyle\": \"2.14.0\", \"pydantic\": \"2.12.5\", \"pyflakes\": \"3.4.0\", \"pytest\": \"9.0.2\"}}\n",
+  "stderr": ""
+}

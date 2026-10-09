@@ -1,0 +1,27 @@
+{
+  "generated_by": "docs/admin/implementation/batch8-producer-evidence/run_check.py",
+  "generator_sha256": "43a1342960db0a8ae3660f9f86ff0bc4595da23bd914a9d74dd99fe68a3315d6",
+  "generated_at": "2026-10-09T08:21:35.957969+00:00",
+  "target_commit": "97fe77462b4e63ffad7dc393b8bf97d3e51571f7",
+  "target_tree": "f22a430a4402d79867da63ad97db8c8d474d3a71",
+  "producer_sha256": "15b2a796171a9bd8b994d1de16bc8a4e49b863a57dc85dd77baa78395aad1028",
+  "test_sha256": "5293e897d1ad89207c5e2e7d310bd5dd40401e96a5ec819650a7b893cc4da4f5",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "--confcutdir=tests",
+    "-p",
+    "pytest_asyncio.plugin",
+    "tests/test_r2_producer_capture.py",
+    "-q",
+    "-s"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/537c/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "exit_status": 2,
+  "verdict": "FAILED",
+  "stdout": "\n==================================== ERRORS ====================================\n______________ ERROR collecting tests/test_r2_producer_capture.py ______________\ntests/test_r2_producer_capture.py:23: in <module>\n    from services.response_receipts import receipt_is_sealed\nservices/__init__.py:3: in <module>\n    from .auto_seeder import (\nservices/auto_seeder.py:14: in <module>\n    from database import SessionLocal\ndatabase.py:54: in <module>\n    engine = create_engine(\n<string>:2: in create_engine\n    ???\n/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/util/deprecations.py:281: in warned\n    return fn(*args, **kwargs)  # type: ignore[no-any-return]\n           ^^^^^^^^^^^^^^^^^^^\n/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/engine/create.py:715: in create_engine\n    raise TypeError(\nE   TypeError: Invalid argument(s) 'max_overflow','pool_timeout' sent to create_engine(), using configuration SQLiteDialect_pysqlite/SingletonThreadPool/Engine.  Please check that the keyword arguments are appropriate for this combination of components.\n=========================== short test summary info ============================\nERROR tests/test_r2_producer_capture.py - TypeError: Invalid argument(s) 'max...\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n1 error in 0.27s\n",
+  "stderr": ""
+}
