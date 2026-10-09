@@ -1740,6 +1740,12 @@ app = FastAPI(
     lifespan=_app_lifespan,
 )
 
+# Install the accepted privacy policy before middleware/request capture. A DSN
+# alone leaves monitoring dormant; server enablement requires an explicit opt-in.
+from monitoring.startup import install_sentry
+
+install_sentry(app, settings)
+
 
 # Auto-seeder for automated data refresh.
 # Default OFF in development (it blocks startup and fires on every

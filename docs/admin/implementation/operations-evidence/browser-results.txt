@@ -1,0 +1,11 @@
+
+Running 6 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/operations/operations.spec.ts:22:5 › real list filters, pagination, history and keyboard detail navigation (4.1s)
+  ✓  2 [chromium] › e2e/operations/operations.spec.ts:55:5 › bad URL values are canonicalized, empty later pages can recover, missing IDs are distinct (1.7s)
+  ✓  3 [chromium] › e2e/operations/operations.spec.ts:70:5 › calendar plan and disabled execution controls agree with real rejection (1.1s)
+  ✓  4 [chromium] › e2e/operations/operations.spec.ts:89:5 › mobile job cards preserve dry-run and navigation without horizontal overflow (1.2s)
+  ✓  5 [chromium] › e2e/operations/operations.spec.ts:100:5 › malformed API refreshes fail safely and retry recovers (1.2s)
+  ✓  6 [chromium] › e2e/operations/operations.spec.ts:111:5 › middleware and real route admin guards reject inert viewer and anonymous access (303ms)
+
+  6 passed (10.3s)

@@ -1,0 +1,8 @@
+PASS __tests__/admin/operations/operations-ui.test.tsx
+PASS __tests__/admin/operations/operations-adversarial.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       38 passed, 38 total
+Snapshots:   0 total
+Time:        0.82 s, estimated 1 s
+Ran all test suites matching /__tests__\/admin\/operations/i.

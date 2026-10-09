@@ -13,19 +13,21 @@ from time import monotonic
 from typing import List, Optional
 
 from database import get_db
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from models import IngestionJob, IngestionStatus
-from pydantic import ConfigDict, BaseModel
-from sqlalchemy import desc, func
+from pydantic import ConfigDict, BaseModel, Field
+from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session
 
 from supabase_auth import require_admin
+from routers.admin_operations import (OperationsRoute, PRIVATE_HEADERS, bounded_domain, bounded_integer, error_count_expression, job_projection)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/api/v1/admin",
     tags=["Admin"],
+    route_class=OperationsRoute,
     dependencies=[Depends(require_admin)],
 )
 
@@ -41,10 +43,12 @@ class IngestionJobResponse(BaseModel):
     started_at: datetime
     finished_at: Optional[datetime]
     duration_seconds: Optional[float]
-    items_processed: int
-    items_created: int
-    items_updated: int
+    items_processed: int = Field(ge=0)
+    items_created: int = Field(ge=0)
+    items_updated: int = Field(ge=0)
     errors: list
+    error_count: int
+    diagnostics_redacted: bool
     metadata: dict
     created_at: datetime
 
@@ -82,10 +86,10 @@ class IngestionJobStatsResponse(BaseModel):
     summary="List ingestion jobs",
 )
 async def list_ingestion_jobs(
-    domain: Optional[str] = Query(None, description="Filter by domain name"),
-    status: Optional[str] = Query(None, description="Filter by status"),
-    days: Optional[int] = Query(7, description="Number of days to look back"),
-    page: int = Query(1, ge=1, description="Page number"),
+    domain: Optional[str] = Query(None, max_length=100, pattern=r"^[a-zA-Z0-9_-]+$", description="Filter by domain name"),
+    status: Optional[str] = Query(None, max_length=32, description="Filter by status"),
+    days: Optional[int] = Query(7, ge=1, le=365, description="Number of days to look back"),
+    page: int = Query(1, ge=1, le=10000, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
@@ -104,6 +108,11 @@ async def list_ingestion_jobs(
     - Processing metrics (processed, created, updated)
     - Error information if any
     """
+    bounded_integer(page, 1, 10000)
+    bounded_integer(page_size, 1, 100)
+    bounded_domain(domain)
+    if days is not None:
+        bounded_integer(days, 1, 365)
     # Build query
     query = db.query(IngestionJob)
 
@@ -118,7 +127,7 @@ async def list_ingestion_jobs(
         except KeyError:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid status: {status}. Valid values: {[s.value for s in IngestionStatus]}",
+                detail="Invalid ingestion status", headers=PRIVATE_HEADERS,
             )
 
     if days:
@@ -126,40 +135,22 @@ async def list_ingestion_jobs(
         query = query.filter(IngestionJob.created_at >= cutoff)
 
     # Get total count
-    total = query.count()
+    total = query.with_entities(func.count(IngestionJob.id)).scalar()
 
     # Apply pagination and ordering
     jobs = (
-        query.order_by(desc(IngestionJob.started_at))
+        query.with_entities(
+            IngestionJob.id, IngestionJob.domain, IngestionJob.status, IngestionJob.dry_run,
+            IngestionJob.started_at, IngestionJob.finished_at, IngestionJob.items_processed,
+            IngestionJob.items_created, IngestionJob.items_updated, IngestionJob.created_at,
+            error_count_expression(db),
+        ).order_by(desc(IngestionJob.started_at), desc(IngestionJob.id))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
 
-    # Calculate duration for each job
-    job_responses = []
-    for job in jobs:
-        duration_seconds = None
-        if job.finished_at and job.started_at:
-            duration_seconds = (job.finished_at - job.started_at).total_seconds()
-
-        job_responses.append(
-            IngestionJobResponse(
-                id=job.id,
-                domain=job.domain,
-                status=job.status.value,
-                dry_run=job.dry_run,
-                started_at=job.started_at,
-                finished_at=job.finished_at,
-                duration_seconds=duration_seconds,
-                items_processed=job.items_processed,
-                items_created=job.items_created,
-                items_updated=job.items_updated,
-                errors=job.errors or [],
-                metadata=job.meta or {},
-                created_at=job.created_at,
-            )
-        )
+    job_responses = [IngestionJobResponse(**job_projection(job, error_count=job.error_count)) for job in jobs]
 
     return IngestionJobListResponse(
         jobs=job_responses,
@@ -176,7 +167,7 @@ async def list_ingestion_jobs(
     summary="Get ingestion job details",
 )
 async def get_ingestion_job(
-    job_id: int,
+    job_id: int = Path(..., ge=1, le=2147483647),
     db: Session = Depends(get_db),
 ):
     """
@@ -187,30 +178,14 @@ async def get_ingestion_job(
     - Timing information (started_at, finished_at, duration)
     - Processing results (items processed/created/updated)
     """
+    bounded_integer(job_id, 1, 2147483647)
     job = db.query(IngestionJob).filter(IngestionJob.id == job_id).first()
-
     if not job:
-        raise HTTPException(status_code=404, detail=f"Ingestion job {job_id} not found")
+        raise HTTPException(status_code=404, detail="Ingestion job not found", headers=PRIVATE_HEADERS)
+    errors = job.errors
+    count = len(errors) if isinstance(errors, list) else (0 if errors is None else 1)
+    return IngestionJobResponse(**job_projection(job, error_count=count, metadata=job.meta))
 
-    duration_seconds = None
-    if job.finished_at and job.started_at:
-        duration_seconds = (job.finished_at - job.started_at).total_seconds()
-
-    return IngestionJobResponse(
-        id=job.id,
-        domain=job.domain,
-        status=job.status.value,
-        dry_run=job.dry_run,
-        started_at=job.started_at,
-        finished_at=job.finished_at,
-        duration_seconds=duration_seconds,
-        items_processed=job.items_processed,
-        items_created=job.items_created,
-        items_updated=job.items_updated,
-        errors=job.errors or [],
-        metadata=job.meta or {},
-        created_at=job.created_at,
-    )
 
 
 @router.get(
@@ -219,7 +194,7 @@ async def get_ingestion_job(
     summary="Get ingestion job statistics",
 )
 async def get_ingestion_stats(
-    days: Optional[int] = Query(30, description="Number of days to look back"),
+    days: Optional[int] = Query(30, ge=1, le=365, description="Number of days to look back"),
     db: Session = Depends(get_db),
 ):
     """
@@ -234,6 +209,10 @@ async def get_ingestion_stats(
     - Breakdown by domain
     """
     started = monotonic()
+    # Retain the existing direct-call None/0 and negative-window controls while
+    # preventing overflow or bool-as-int inputs. HTTP accepts only 1..365 days.
+    if days is not None:
+        bounded_integer(days, -365, 365)
     # The response only needs counts and counters. Diagnostics and job metadata
     # stay in PostgreSQL instead of being downloaded for Python aggregation.
     query = db.query(
@@ -242,6 +221,8 @@ async def get_ingestion_stats(
         func.sum(IngestionJob.items_processed).label("items_processed"),
         func.sum(IngestionJob.items_created).label("items_created"),
         func.sum(IngestionJob.items_updated).label("items_updated"),
+        func.sum(case((or_(IngestionJob.items_processed < 0, IngestionJob.items_created < 0,
+            IngestionJob.items_updated < 0), 1), else_=0)).label("invalid_counters"),
     )
     if days:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
@@ -264,6 +245,8 @@ async def get_ingestion_stats(
     }
 
     for row in rows:
+        if row.invalid_counters:
+            raise HTTPException(status_code=503, detail="Operations data unavailable", headers=PRIVATE_HEADERS)
         stats["total_jobs"] += row.job_count
         stats[row.status.value] += row.job_count
         stats["total_items_processed"] += row.items_processed
