@@ -287,3 +287,43 @@ are a deployment-preflight gate under #545/#598. Production images, product
 models/migrations, Supabase's pin and the coordinator's three #591 packet paths
 are outside this repair. The coordinator still owns immutable integration,
 fresh full hosted verification, any workflow enablement, commit and merge.
+
+## Reopened complete-cohort job budget — #502
+
+The author resumed exclusive ownership at
+`c0caf6d4a4501ff53f66e4a8a859df9eca5fef30` for a five-file budget repair.
+Fresh full hosted run `37994597421`, attempt one at immutable combined source
+`643b0bd37883f530d5cd8188deab7b7b73a95538`, explicitly reported
+**maximum execution time of 20m0s**. It collected **14,203 administrative cases**
+and recorded **12,357 passes / 1,425 skips**, with no failed/error test verdict
+before cancellation. The remaining 421 administrative cases, legacy cohort,
+aggregate coverage, workflow controls and API import smoke did not complete.
+This partial run is not backend acceptance. All five other test jobs passed,
+including the original browser's **323 identities: 312 passes / 11 existing
+fixmes**. These hosted receipts precede the new budget edit.
+
+Both CI and manual verification now give only `test-backend` a finite
+**30-minute whole-job budget**. The five-minute image preparation step, every
+other job timeout, both package cohorts, all case/assertion/skip prerequisites,
+coverage, maxfail, source pins, individual request/media/backup deadlines and
+attempt-one/frozen-checkout guards are preserved. The parsed workflow comparison
+against the pinned source permits only that one job-budget field to change in
+each workflow; no retry, waiver, production change or workflow activation is
+part of this repair.
+
+`CI_RESTORATION/BACKEND_JOB_BUDGET_502` retains the unchanged raw hosted log and
+annotation hashes, the pre-edit packet manifest, and actual red/green controls.
+The new configuration boundary was red for both original 20-minute workflows;
+the updated manual assertion was also red. At 30 minutes, the current runtime
+passes all **73 workflow-control tests**, and the minimum runtime passes the
+**19 relevant controls** (seven configuration and 12 manual), overlapping the
+current selection. Negative controls refuse short, missing and malformed limits,
+broadened budgets for other jobs and a broadened image-preparation deadline.
+
+The five changed-path freeze is distinct from the six unchanged transport paths
+and the coordinator's three unchanged #591 paths. Preserve previous manifests,
+source bindings and failed receipts; none are rebound to this working tree.
+The coordinator still owns integration and a fresh full seven-job, attempt-one
+hosted run against its new immutable source. Local workflow controls cannot
+establish that the complete backend fits the new hosted budget. Commit, push,
+workflow activation and merge remain coordinator-owned continuation steps.

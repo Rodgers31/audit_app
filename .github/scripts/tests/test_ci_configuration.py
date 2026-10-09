@@ -1,4 +1,5 @@
 """Execute frontend configuration and preserve explicit backend workflow boundaries."""
+from copy import deepcopy
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,68 @@ class ConfigurationTests(unittest.TestCase):
     def workflows(self):
         for name in ("ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
+
+    def assert_job_deadlines(self, workflow):
+        expected = {
+            "test-backend": 30, "test-frontend": 20, "test-etl": 10,
+            "security-scan": 10, "test-browser": 20,
+            "test-browser-legacy": 20, "quality-gate": 5,
+        }
+        for name, minutes in expected.items():
+            actual = workflow["jobs"][name].get("timeout-minutes")
+            self.assertIs(type(actual), int, name)
+            self.assertEqual(actual, minutes, name)
+        for name, job in workflow["jobs"].items():
+            if name not in expected:
+                self.assertNotIn("timeout-minutes", job, name)
+        preparation = next(
+            step for step in workflow["jobs"]["test-backend"]["steps"]
+            if step.get("name") == "Prepare pinned owned PostgreSQL test images"
+        )
+        self.assertIs(type(preparation.get("timeout-minutes")), int)
+        self.assertEqual(preparation["timeout-minutes"], 5)
+
+    def test_complete_backend_has_finite_budget_without_relaxing_other_deadlines(self):
+        # The complete hosted cohort exhausted the old 20-minute whole-job
+        # budget before coverage and smoke, without a failed test verdict.
+        for name, workflow in self.workflows():
+            with self.subTest(workflow=name):
+                self.assert_job_deadlines(workflow)
+
+    def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
+        for name, workflow in self.workflows():
+            valid = deepcopy(workflow)
+            valid["jobs"]["test-backend"]["timeout-minutes"] = 30
+            self.assert_job_deadlines(valid)
+            for minutes in (20, 0, -1, True, 30.0, "30", None,
+                            float("nan"), float("inf"), [], {}):
+                with self.subTest(workflow=name, backend_minutes=minutes):
+                    mutated = deepcopy(valid)
+                    mutated["jobs"]["test-backend"]["timeout-minutes"] = minutes
+                    with self.assertRaises(AssertionError):
+                        self.assert_job_deadlines(mutated)
+            with self.subTest(workflow=name, missing_backend_limit=True):
+                mutated = deepcopy(valid)
+                del mutated["jobs"]["test-backend"]["timeout-minutes"]
+                with self.assertRaises(AssertionError):
+                    self.assert_job_deadlines(mutated)
+            for job in valid["jobs"]:
+                if job == "test-backend":
+                    continue
+                with self.subTest(workflow=name, broadened_job=job):
+                    mutated = deepcopy(valid)
+                    mutated["jobs"][job]["timeout-minutes"] = 30
+                    with self.assertRaises(AssertionError):
+                        self.assert_job_deadlines(mutated)
+            with self.subTest(workflow=name, broadened_image_preparation=True):
+                mutated = deepcopy(valid)
+                preparation = next(
+                    step for step in mutated["jobs"]["test-backend"]["steps"]
+                    if step.get("name") == "Prepare pinned owned PostgreSQL test images"
+                )
+                preparation["timeout-minutes"] = 30
+                with self.assertRaises(AssertionError):
+                    self.assert_job_deadlines(mutated)
 
     def test_services_use_exact_official_ecr_pins_and_preserve_cached_role_fixture(self):
         postgres = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
