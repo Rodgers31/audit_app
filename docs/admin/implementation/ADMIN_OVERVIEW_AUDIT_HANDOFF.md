@@ -85,9 +85,14 @@ PR #562 review and cross-lane integration independently reproduced three private
 dependency 5xx response leaks; all now expose the fixed unavailable body while
 retaining their status and private headers. The audit helper documentation now
 describes the fixed-message logging policy. Existing XID bounds already reject
-epochs at/above 2^32: six new executable controls passed before repairs, including
-server-captured 503 and supplied-client 422 before any audit-row query. No
-epoch-aware production-storage support is claimed or introduced.
+snapshot metadata at/above 2^32: six new executable controls passed before
+repairs. Further independent execution found that supplied epoch-zero bookmarks
+skipped checking the current server epoch. Every PostgreSQL read now captures
+and checks current server bounds before the visibility predicate; a wrapped
+server gives private 503 even for an old bookmark. Invalid client metadata still
+gives 422 before storage reads. Two retained cases failed before this repair;
+three additional invalid-client controls passed. No epoch-aware production
+storage support is claimed or introduced.
 
 New rendered/parser regressions independently exposed incorrect Auth census
 copy, incomplete/unknown/duplicate calendar sources, impossible/future calendar
@@ -99,12 +104,17 @@ its local part; that harness expectation was corrected before replaying the
 actual actor-transition failure. These fixtures use inert HTTP data and jsdom.
 
 After repairs: the entire owned frontend suite passes 52 tests in three suites;
-backend audit/review plus historical ETL compatibility passes 40 tests, with two
-existing SQLAlchemy warnings. Complete TypeScript and scoped ESLint pass. These
-review repairs did not rerun PostgreSQL, Chromium or a production build; the
-coordinator must execute the combined tree with #559/#560/#561. Historical actual
-caller tests still exercise this branch's original Users/ETL routers and require
-coordinated adaptation/replay when those producers are integrated. No pushes,
+backend audit/review plus historical ETL compatibility passes 45 tests, with two
+existing SQLAlchemy warnings. Complete TypeScript and scoped ESLint pass. A
+coordinated combined-tree replay passes 36 audit tests including three actual
+PostgreSQL concurrency/redaction controls; current Users callers preserve
+provider acceptance versus audit-persistence outcomes and ETL rejects four
+repeated real/dry-run commands without jobs or success audit rows. Those fixture
+adaptations are coordinator-owned integration changes. Review repairs did not
+rerun Chromium or a production build; final combined UI/app acceptance remains
+coordinator work. Historical caller tests in this standalone branch retain
+its original producer behavior and need the coordinator's integration updates.
+No pushes,
 external review replies, new bot requests, live services or storage mutations
 were performed by the independent reviewer. Raw replay commands/outputs are in
 the coordinator's BATCH_6_REVIEW/spec artifact.

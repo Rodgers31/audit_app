@@ -116,6 +116,8 @@ async def list_audit_log(
         raise HTTPException(422, "Invalid audit snapshot.")
     if (snapshot_id is None) != (as_of is None):
         raise HTTPException(422, "Both snapshot fields are required together.")
+    if snapshot_id is None and visibility_snapshot is not None:
+        raise HTTPException(422, "All audit snapshot fields are required together.")
     postgres = db.get_bind().dialect.name == 'postgresql'
     visibility = None
     if postgres:
@@ -123,17 +125,19 @@ async def list_audit_log(
             raise HTTPException(422, "Refresh to obtain an audit visibility snapshot.")
         if now - captured > timedelta(minutes=15):
             raise HTTPException(422, "Audit snapshot expired. Refresh the log.")
-        if visibility_snapshot is None:
-            try:
-                visibility = visibility_filter(db.execute(sql_text('SELECT pg_current_snapshot()::text')).scalar_one())
-            except HTTPException:
-                raise HTTPException(503, "Audit visibility evidence is unavailable.") from None
-        else:
+        if visibility_snapshot is not None:
+            # Validate client metadata before performing a storage read.
             visibility = visibility_filter(visibility_snapshot)
+        try:
+            # xmin is only safe to interpret as xid8 while the current server
+            # remains in epoch zero, even when reusing an older bookmark.
+            current_visibility = visibility_filter(db.execute(sql_text('SELECT pg_current_snapshot()::text')).scalar_one())
+        except HTTPException:
+            raise HTTPException(503, "Audit visibility evidence is unavailable.") from None
+        if visibility is None:
+            visibility = current_visibility
     elif visibility_snapshot is not None:
         raise HTTPException(422, "Unsupported audit visibility snapshot.")
-    if snapshot_id is None and visibility_snapshot is not None:
-        raise HTTPException(422, "All audit snapshot fields are required together.")
     start = utc(since) if since is not None else None
     end = utc(until) if until is not None else None
     if start is not None and end is not None and start > end:

@@ -63,3 +63,45 @@ def test_captured_and_supplied_epoch_fail_before_audit_query(supplied, expected_
     with pytest.raises(HTTPException) as error:
         asyncio.run(admin_audit_log.list_audit_log(**kwargs))
     assert error.value.status_code == expected_status
+
+
+@pytest.mark.parametrize("server_snapshot", ["3:4294967296:", "4294967296:4294967297:"])
+def test_epoch_zero_bookmark_cannot_skip_current_server_epoch(server_snapshot):
+    class NoRowsDatabase:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def execute(self, statement):
+            return SimpleNamespace(scalar_one=lambda: server_snapshot)
+
+        def query(self, *args):
+            pytest.fail("Current unsupported epoch must fail before audit rows")
+
+    kwargs = dict(actor_id=None, action=None, target_type=None, target_id=None,
+                  days=30, page=1, page_size=20, since=None, until=None,
+                  snapshot_id=1, as_of=datetime.now(timezone.utc),
+                  visibility_snapshot="3:9:", db=NoRowsDatabase())
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(admin_audit_log.list_audit_log(**kwargs))
+    assert error.value.status_code == 503
+
+
+@pytest.mark.parametrize("snapshot", ["3:4294967296:", "4294967296:4294967297:", "٣:٩:"])
+def test_invalid_client_snapshot_is_rejected_before_current_server_read(snapshot):
+    class NoStorageRead:
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def execute(self, statement):
+            pytest.fail("Invalid client metadata must not read current storage")
+
+        def query(self, *args):
+            pytest.fail("Invalid client metadata must not query audit rows")
+
+    kwargs = dict(actor_id=None, action=None, target_type=None, target_id=None,
+                  days=30, page=1, page_size=20, since=None, until=None,
+                  snapshot_id=1, as_of=datetime.now(timezone.utc),
+                  visibility_snapshot=snapshot, db=NoStorageRead())
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(admin_audit_log.list_audit_log(**kwargs))
+    assert error.value.status_code == 422
