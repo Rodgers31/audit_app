@@ -1,0 +1,37 @@
+{
+  "artifact_root": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_REVIEW",
+  "source_freeze": "cd9704d5de5af9833d38c408b60baedc8dfe7671",
+  "sha256": {
+    "COMBINED_FRONTEND_FINAL.txt": "ffe4494da26811db997ea6ca2ddb46488c589f7b272f46be6844a2f382f7300b",
+    "COMBINED_BACKEND_FINAL.txt": "c79fe86b2b2812fe840ec6c4b3bba0231e4be5a4982dbfc31a6f44048ddda403",
+    "COMBINED_BUILD_FINAL.txt": "6129429a74f8d6821f7304c6f0e556e75b3f2cf2016494c83220d0c156681707",
+    "COMBINED_TYPES_FINAL.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "COMBINED_LINT_FINAL.txt": "5c42078f54845b872566f1acaaa9a00faa737bc2b9965bb47c09676141a4bf0f",
+    "DEPENDENCY_TEST_COMMAND_FINAL_GREEN.txt": "f04afe81bd66bdbacd70fcf01afc107ef70ef5234c7208d764273d19ef76c584",
+    "DEPENDENCY_TEST_COMMAND_LINUX_GREEN.txt": "7203a2226f7f8fb65a02b494f0b00d3fbc6cd1da505908220c6204b774d463ed",
+    "COORDINATOR_INTEGRATION/BROWSER_FINAL.log": "45ec87e845658ba05c92ea6577c198dc76964ddf0f626d37ed908525dd75f1ae",
+    "COORDINATOR_INTEGRATION/FINAL_RESULTS.json": "eb8c8c62ef61d027f8492498af1d07cb861cdfc0a38fc4655d600b5bc5704bf2",
+    "COORDINATOR_INTEGRATION/CLEANUP.json": "c049c8407406398f8fb2825399f8f86ade3d7765d1126969ac7039f58e4b3794"
+  },
+  "checks": {
+    "frontend": {
+      "suites": 147,
+      "passed": 2077,
+      "existing_optional_financial_skip": 1
+    },
+    "selected_admin_backend": {
+      "passed": 438
+    },
+    "actual_combined_chromium": {
+      "passed": 11,
+      "failed": 0
+    },
+    "dependency_boundaries": {
+      "macos": 24,
+      "emulated_linux_amd64": 24
+    },
+    "build_types_lint": "pass"
+  },
+  "activation_blocker": 572,
+  "hosted_actions": "disabled/unexecuted"
+}

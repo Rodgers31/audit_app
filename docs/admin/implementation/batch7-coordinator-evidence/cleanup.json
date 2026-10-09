@@ -1,0 +1,40 @@
+{
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_7_REVIEW/COORDINATOR_INTEGRATION/batch7_coordinator_integration_cleanup_verify.py",
+  "generator_sha256": "774efd36c32b14229304a0d1577e663bfd61be7bce42532e95155c109c4e3195",
+  "generated_at": "2026-10-09T07:31:41.379980+00:00",
+  "target_commit": "cd9704d5de5af9833d38c408b60baedc8dfe7671",
+  "verdict": "CLEANED",
+  "positive_ownership_checked_before_signal": true,
+  "stopped_api_pid": 1876,
+  "stopped_next_pid": 1989,
+  "owned_container": "audit-batch7-coordinator-integration-db",
+  "owned_container_id": "eebe072f61c097f3e92052d40964d01f61cfe54d5686c5c351b66cd379193f1e",
+  "container_absent": true,
+  "closed_loopback_ports": {
+    "8163": {
+      "connect_ex": 61
+    },
+    "3163": {
+      "connect_ex": 61
+    },
+    "55483": {
+      "connect_ex": 61
+    }
+  },
+  "retained_worker_process_groups_absent": [
+    2119,
+    2127,
+    2137,
+    2147,
+    2151,
+    2173,
+    2194,
+    2203,
+    2214,
+    2227
+  ],
+  "fixture_state_workers_empty_before_shutdown": true,
+  "stop_generator_sha256": "d0b108d5c5611dc5d358b440f29371f4e2ec0bb951787cfaf22daaa06c243c14",
+  "verification": "After stop, independent socket connect_ex, exact docker ps name and ps checks passed; recorded native worker groups return ProcessLookupError.",
+  "historical_observer_error": "The first verification command incorrectly used docker ps .Id; actual .ID is corrected here. No cleanup receipt was written by the failed observer and no product test changed."
+}
