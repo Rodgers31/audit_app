@@ -4,6 +4,8 @@ Author checkout: `/Users/roger/.codex/worktrees/batch7-etl-worker/audit_app`.
 Branch `codex/batch7-etl-worker`, pinned base
 `f0ea1bbd41f33e7666cf2b7fbc4cc4abcfe60b0d` / tree
 `712b43650b1203ffd84583b67d07d30775669b1e`.
+Final tested implementation source: `c8cfc5931f22a4cc121005e3f5285845a9480336`;
+subsequent delivery commits contain handoff/review/resource receipts only.
 Frozen v1 contract and examples were read from the shared Batch 7 directory.
 The dirty primary checkout remained read-only. No AGENTS.md/CLAUDE.md was found
 in this checkout or its applicable ancestors. Current #554/#545 bodies and the
@@ -31,6 +33,9 @@ Actual CLI session inserts carry internal command/claim correlation metadata.
 Exit zero alone, an empty registry, missing/malformed matching observation or
 lost fence cannot become completed. A once-only execution marker is persisted
 before invocation, so duplicate adapter processes cannot rerun a claim.
+Completed observations must also have coherent timestamps relative to the
+DB-clock claim (five-second maximum host clock skew), nonnegative integer counts
+and an empty diagnostic list. Unknown evidence interrupts and keeps the block.
 
 Supported mapping: **OAG → `audits`**, grounded in
 `seeding/domains/audits/__init__.py` registration and OAG registry behavior,
@@ -83,6 +88,11 @@ PENDING observation and the exact existing ingestion column/type list.
 
 Read [baseline and red/green receipts](../../../batch7-etl-worker-evidence/baseline-red-green.md)
 and [author final output](../../../batch7-etl-worker-evidence/final-author.txt).
+Final combined replay: **281 passed, 1 strict xfailed (#572), 3 warnings in
+25.39s**, retained in [final-combined.txt](../../../batch7-etl-worker-evidence/final-combined.txt).
+This includes the 70 independent adverse cases with strengthened assertions.
+[Exact commands and cleanup receipts](../../../batch7-etl-worker-evidence/commands.md)
+provide the complete reproducible clean environment.
 The new PostgreSQL tests force duplicate accepts, two consumers, actor isolation,
 lost acknowledgment, audit rollback, stale generation, lease expiry and restart.
 The process tests launch the real worker and adapter; only the registered domain
@@ -94,6 +104,7 @@ block. SIGSTOP pauses only a supervisor while its child survives expiry.
 Canonical author command uses the exact clean environment below and
 `-m pytest backend/tests/test_batch7_etl_postgres.py backend/tests/test_batch7_etl_process.py
 backend/tests/test_batch7_etl_migration.py backend/tests/test_batch7_etl_contract.py
+backend/tests/test_batch7_etl_adversarial.py
 backend/tests/test_admin_operations_lane.py backend/tests/test_admin_operations_adversarial.py
 backend/tests/test_etl_admin_endpoints.py backend/tests/test_web_ingestion_ownership.py
 backend/tests/test_ingestion_query_transfer.py backend/tests/test_seeding_cli_budget.py
@@ -104,6 +115,7 @@ env -i PATH=/usr/bin:/bin:/usr/local/bin PYTHONDONTWRITEBYTECODE=1 PYTHON_DOTENV
 PYTHONPATH=/Users/roger/.codex/worktrees/batch7-etl-worker/audit_app/backend
 DATABASE_URL=postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55481/batch7_etl_worker
 BATCH7_ETL_TEST_DATABASE_URL=postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55481/batch7_etl_worker
+BATCH7_ETL_ADVERSARIAL_DATABASE_URL=postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55481/batch7_etl_worker
 /Users/roger/Documents/projects/audit_app/venv/bin/python
 ```
 
@@ -123,8 +135,37 @@ manifests/runtime dependencies were mutated.
 
 ## Review and remaining acceptance
 
-Independent Standards/Spec/adversarial review receipts and final cleanup state
-will be completed before delivery. #554 and #545 remain open. Coordinator owns
+Independent [Standards](../../../batch7-etl-worker-evidence/standards-review.md),
+[Spec](../../../batch7-etl-worker-evidence/spec-review.md) and
+[adversarial](../../../batch7-etl-worker-evidence/adversarial-review.md) review
+ran against `e98a4be3998f7da4e2326a068802a879e393fb97` versus the pinned base,
+then rechecked the exact final source blobs committed at `c8cfc59`.
+Standards: readiness-after-failed-commit defect fixed, optional duplicate child
+cleanup factored; zero remaining findings. Spec: UTC, readiness, direct intent
+and observation-coherence findings fixed; #572 remains the sole material shared
+exclusion requirement. Adversarial: original **8 red / 56 green**, author replay
+**8 red then 8 green**, final independent **70 passed in 1.94s** plus **10**
+direct-route shape/default-off controls. Reviewers completed without interruption.
+Final combined verification caught and repaired two valid legacy direct-dict
+compatibility cases (retained red and four-case green); all final controls pass.
+
+Each boundary's guard covers all entry paths: API acceptance and actor/key replay
+share strict intent checks; capability/accept/claim/finish serialize against the
+worker row; polling and restart fence stale receipts while leaving exclusion;
+native adapter and duplicate launches share once-only execution; finish alone
+authorizes release from matching coherent observation evidence. No historical
+PENDING row or external runner path is silently redirected through these guards.
+
+Owned test process groups were stopped by finalizers. Before database cleanup,
+SQL observed **0 other database connections** and **0 reviewer schemas**.
+`docker stop audit-batch7-etl-worker-db` removed the owned `--rm` container;
+55481 has no listener and no owned worker/adapter process remains. No API server
+or other lane resources were used/stopped. Worktree remains attached for review.
+Only the repository-pinned lint-tool venv and small pinned-source evidence remain
+outside Git in the owned visualization directory; hashes/ownership are recorded
+in [resource-manifest.json](../../../batch7-etl-worker-evidence/resource-manifest.json).
+
+#554 and #545 remain open. New deduplicated #572 remains open. Coordinator owns
 actual UI/backend replay with #568, final review-comment handling, mapping/shared
 runner seam decisions, operational activation/migration and issue acceptance.
 No production migration/worker/service, real fetch/publication, provider/user/
