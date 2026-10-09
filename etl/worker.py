@@ -1,5 +1,6 @@
 import os
 import random
+import sys
 import threading
 import time
 from datetime import datetime, timedelta
@@ -36,8 +37,8 @@ def run_once(env: Dict[str, str]):
     # APScheduler in backend/main.py to avoid dual-scheduler execution.
     from subprocess import run
 
-    args = ["python", "-m", "etl.backfill"]
-    run(args, env={**os.environ, **env}, check=False)
+    args = [sys.executable, "-m", "etl.backfill"]
+    run(args, env={**os.environ, **env}, check=True)
 
 
 def schedule_worker():
@@ -49,6 +50,8 @@ def schedule_worker():
         time.sleep(10)
         return
 
+    from .database_loader import DatabaseLoader
+    DatabaseLoader(db_url).check_ownership_ready()
     cfg = load_config(cfg_path)
     # Example cfg schema:
     # countries:

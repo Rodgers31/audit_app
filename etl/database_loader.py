@@ -18,9 +18,10 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 # Add backend to path to import models
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "backend"))
 
 # Ensure environment variables are available from backend/.env and root .env
 try:
@@ -95,6 +96,11 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+if __package__:
+    from .writer_ownership import OwnedSession, check_ready, owned_write
+else:
+    from writer_ownership import OwnedSession, check_ready, owned_write
+
 
 class DatabaseLoader:
     """
@@ -124,14 +130,18 @@ class DatabaseLoader:
         )
 
         try:
-            self.engine = create_engine(self.database_url, pool_pre_ping=True)
+            # Thirteen continuity transactions must stay pinned simultaneously.
+            # A small shared/default pool would starve writer/receipt sessions.
+            self.engine = create_engine(self.database_url, pool_pre_ping=True, poolclass=NullPool)
             self.SessionLocal = sessionmaker(
-                autocommit=False, autoflush=False, bind=self.engine
+                autocommit=False, autoflush=False, bind=self.engine, class_=OwnedSession
             )
         except Exception as e:
             logger.error(f"Could not connect to database: {e}")
-            self.engine = None
-            self.SessionLocal = None
+            raise
+
+    def check_ownership_ready(self):
+        check_ready(self.engine)
 
     def get_db_session(self):
         """Get database session"""
@@ -139,6 +149,7 @@ class DatabaseLoader:
             raise RuntimeError("Database not connected")
         return self.SessionLocal()
 
+    @owned_write
     async def ensure_country_exists(self, country_code: str = "KEN") -> int:
         """Ensure Kenya country record exists, return country_id"""
         if not self.engine:
@@ -163,6 +174,7 @@ class DatabaseLoader:
 
             return country.id
 
+    @owned_write
     async def ensure_entity_exists(
         self, entity_data: Dict[str, Any], country_id: int
     ) -> int:
@@ -218,6 +230,7 @@ class DatabaseLoader:
 
             return entity.id
 
+    @owned_write
     async def ensure_fiscal_period_exists(
         self, period_data: Dict[str, Any], country_id: int
     ) -> int:
@@ -251,6 +264,7 @@ class DatabaseLoader:
 
             return period.id
 
+    @owned_write
     async def load_document(
         self, document_record: Dict[str, Any], normalized_data: List[Dict[str, Any]]
     ) -> int:
@@ -537,6 +551,7 @@ class DatabaseLoader:
         db.commit()
         logger.debug(f"Created audit finding for entity {entity_id}")
 
+    @owned_write
     async def load_audit_findings_document(
         self,
         document_record: Dict[str, Any],
@@ -745,6 +760,7 @@ class DatabaseLoader:
         db.add(row)
         db.commit()
 
+    @owned_write
     async def load_sample_kenya_data(self):
         """Load sample Kenya data for MVP testing"""
         logger.info("Loading sample Kenya data...")
@@ -787,7 +803,8 @@ class DatabaseLoader:
         if not self.engine:
             return {"status": "Database not connected"}
 
-        with self.get_db_session() as db:
+        # A summary is read-only and does not contend with active ingestion.
+        with sessionmaker(bind=self.engine)() as db:
             try:
                 summary = {}
 

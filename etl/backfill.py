@@ -84,6 +84,7 @@ async def run_backfill():
     storage = os.getenv("BACKFILL_STORAGE")
 
     pipe = KenyaDataPipeline(storage_path=storage)
+    pipe.db_loader.check_ownership_ready()
 
     all_docs: List[Dict[str, Any]] = []
     for sk in sources:
@@ -125,6 +126,8 @@ async def run_backfill():
     out = Path(pipe.storage_path) / f"backfill_summary.json"
     out.write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary, indent=2))
+    if summary["failed"]:
+        raise RuntimeError("Legacy backfill had failed/refused documents; see summary")
 
 
 if __name__ == "__main__":
