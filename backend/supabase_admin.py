@@ -74,16 +74,26 @@ def _request(method: str, path: str, **kwargs) -> dict:
     return _raw_request(method, _admin_url(path), **kwargs)
 
 
-def _raw_request(method: str, url: str, **kwargs):
+def _raw_request(method: str, url: str, *, headers=None, **kwargs):
     """Make an authenticated request to an arbitrary URL and unwrap.
 
     Returns the parsed JSON body, or ``{}`` for empty/204 responses.
     Lists come through as lists. Raises ``SupabaseAdminError`` on
-    any 4xx/5xx.
+    any non-2xx response. Per-call headers are merged case-insensitively;
+    service-role authentication always takes precedence.
     """
+    if "auth" in kwargs:
+        # HTTPX applies auth after headers and could replace Authorization.
+        raise SupabaseAdminError(400, "Per-call authentication is not supported")
+    request_headers = httpx.Headers()
+    for name, value in httpx.Headers(headers).multi_items():
+        # Assignment collapses case variants into one header (including Prefer).
+        request_headers[name] = value
+    # Per-call options must never replace the service-role credentials.
+    request_headers.update(_headers())
     with httpx.Client(timeout=15.0) as client:
-        resp = client.request(method, url, headers=_headers(), **kwargs)
-        if resp.status_code >= 400:
+        resp = client.request(method, url, headers=request_headers, **kwargs)
+        if not 200 <= resp.status_code < 300:
             try:
                 body = resp.json()
             except Exception:
@@ -173,18 +183,32 @@ def get_profiles(user_ids: List[str]) -> List[dict]:
 
 
 def update_profile_roles(user_id: str, roles: List[str]) -> dict:
-    """Set ``profiles.roles`` for ``user_id``. Returns the updated row."""
-    rows = _raw_request(
-        "PATCH",
-        _rest_url(f"/profiles?id=eq.{user_id}"),
-        json={"roles": roles},
-        # ``return=representation`` makes Supabase echo back the row
-        # so we can reuse it to build the API response.
-        headers={**_headers(), "Prefer": "return=representation"},
-    )
-    if isinstance(rows, list) and rows:
-        return rows[0]
-    raise SupabaseAdminError(404, f"No profile with id={user_id}")
+    """Set roles and return one provider row matching the requested id/roles.
+
+    An empty result retains the missing-profile 404 contract. An absent,
+    malformed or mismatched representation cannot confirm the mutation (502).
+    """
+    try:
+        rows = _raw_request(
+            "PATCH",
+            _rest_url(f"/profiles?id=eq.{user_id}"),
+            json={"roles": roles},
+            headers={"Prefer": "return=representation"},
+        )
+    except ValueError:
+        raise SupabaseAdminError(502, None) from None
+    if isinstance(rows, list) and not rows:
+        raise SupabaseAdminError(404, f"No profile with id={user_id}")
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        raise SupabaseAdminError(502, None)
+    row = rows[0]
+    if row.get("id") != user_id or not isinstance(row.get("roles"), list) or row["roles"] != roles:
+        raise SupabaseAdminError(502, None)
+    if any(key in row for key in ("error", "errors", "error_code")) or any(
+        key in row and row[key] is not True for key in ("ok", "success")
+    ):
+        raise SupabaseAdminError(502, None)
+    return row
 
 
 def count_profiles(
