@@ -1,0 +1,72 @@
+{"node":"v22.19.0","root":"/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence","repo":"/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app","direct_call":"await verifyPackage(isolatedCopy, repo)","sourceBefore":{"verify.mjs":"34beb8a50a24a81acf29fbd640569e8fc7b9ab5d82528709e8e218510b303b48","verify.test.mjs":"6dc6f96df70c0a81bb4d01e4cfde22ec9cc3005f07e953c4c8048c70b1ecf6de","create_package.py":"f19563817e100aafbfa3a62eb8832285151a302f1f5ab2ae2024a989cd8688a5","manifest.json":"51a12f94f2bad7754f294871d9646ac393c4af6ac4f81bf9b4633c14436b7959"},"harnessBefore":"79ed446c7c553226fdb63a4d5837997f8400d12714ac863c051459b3207ac4df"}
+{"name":"valid-baseline","expect":"verify","actual":"verified","verdict":{"archive_integrity":"verified","issue_601":"unresolved","original_inventory":323,"passed":312,"existing_fixmes":11,"targeted_records":6}}
+{"name":"manifest-absent","expect":"reject","actual":"rejected","error":"ENOENT: no such file or directory, open '/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-independent-attack-wctd84/manifest-absent/manifest.json'"}
+{"name":"manifest-empty","expect":"reject","actual":"rejected","error":"Unexpected end of JSON input"}
+{"name":"manifest-malformed","expect":"reject","actual":"rejected","error":"Expected property name or '}' in JSON at position 1 (line 1 column 2)"}
+{"name":"unknown-schema-null","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"unknown-schema-[object Object]","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"unknown-schema-","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"unknown-schema-true","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"unknown-schema-2","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"unknown-schema-1","expect":"reject","actual":"rejected","error":"The issue must remain unresolved"}
+{"name":"files-shape-null","expect":"reject","actual":"rejected","error":"Empty archive manifest"}
+{"name":"files-shape-","expect":"reject","actual":"rejected","error":"Empty archive manifest"}
+{"name":"files-shape-[object Object]","expect":"reject","actual":"rejected","error":"Empty archive manifest"}
+{"name":"files-shape-files","expect":"reject","actual":"rejected","error":"Empty archive manifest"}
+{"name":"archive-byte-tamper","expect":"reject","actual":"rejected","error":"Archive hash mismatch: data/original-linux-20-report.json.gz"}
+{"name":"archive-file-absent","expect":"reject","actual":"rejected","error":"Unlisted or omitted archive files"}
+{"name":"archive-path-traversal","expect":"reject","actual":"rejected","error":"Unlisted or omitted archive files"}
+{"name":"archive-file-symlink","expect":"reject","actual":"rejected","error":"Archive symlinks are refused"}
+{"name":"archive-data-root-symlink","expect":"reject","actual":"rejected","error":"Archive directory symlinks are refused"}
+{"name":"archive-duplicate","expect":"reject","actual":"rejected","error":"Duplicate archive paths"}
+{"name":"empty-targets","expect":"reject","actual":"rejected","error":"Missing targeted controls"}
+{"name":"missing-negative-name","expect":"reject","actual":"rejected","error":"Missing targeted controls"}
+{"name":"negative-name-now-positive","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"negative-result-counter-contradiction","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"negative-assertion-error-missing","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-report-zero-cases","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-report-wrong-case","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-result-error","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-result-retry","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-source-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-generator-mismatch","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-source-hashes-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-receipt-commit-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-log-hash-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"manifest-target-identity-wrong","expect":"reject","actual":"rejected","error":"Wrong author source identity"}
+{"name":"manifest-sources-omit-scroll","expect":"reject","actual":"rejected","error":"Incomplete or changed source census"}
+{"name":"full-receipt-child-fails","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-parent-receipt-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-generator-source-mismatch","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-receipt-error","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-retry","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-inventory-empty","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-inventory-generator-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-inventory-substituted-consistently","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"unknown-archive-compression","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"publisher-generator-hash-wrong","expect":"reject","actual":"rejected","error":"Archived publisher identity mismatch"}
+{"name":"target-count-NaN","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-NaN","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-NaN","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-Inf","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-Inf","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-Inf","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-NegInf","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-NegInf","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-NegInf","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-negative","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-negative","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-negative","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-zero","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-zero","expect":"verify","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-zero","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-bool","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-bool","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-bool","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-null","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-null","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-null","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-count-string","expect":"reject","actual":"rejected","error":"Wrong targeted control identity"}
+{"name":"positive-duration-string","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-counter-string","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"attempts":70,"false_successes":[],"unexpected_rejections":["positive-duration-zero"],"source_unchanged":true}

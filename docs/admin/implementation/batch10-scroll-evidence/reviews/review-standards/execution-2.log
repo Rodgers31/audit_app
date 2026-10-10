@@ -1,0 +1,204 @@
+TAP version 13
+# Subtest: published archive verifies integrity while keeping the causal issue unresolved
+ok 1 - published archive verifies integrity while keeping the causal issue unresolved
+  ---
+  duration_ms: 111.051333
+  type: 'test'
+  ...
+# Subtest: refuses empty or malformed file inventory: []
+ok 2 - refuses empty or malformed file inventory: []
+  ---
+  duration_ms: 11.858041
+  type: 'test'
+  ...
+# Subtest: refuses empty or malformed file inventory: null
+ok 3 - refuses empty or malformed file inventory: null
+  ---
+  duration_ms: 10.653958
+  type: 'test'
+  ...
+# Subtest: refuses empty or malformed file inventory: {}
+ok 4 - refuses empty or malformed file inventory: {}
+  ---
+  duration_ms: 10.762042
+  type: 'test'
+  ...
+# Subtest: refuses empty or malformed file inventory: "garbage"
+ok 5 - refuses empty or malformed file inventory: "garbage"
+  ---
+  duration_ms: 12.583
+  type: 'test'
+  ...
+# Subtest: refuses absent, tampered, unlisted, duplicate and symlinked archive data
+ok 6 - refuses absent, tampered, unlisted, duplicate and symlinked archive data
+  ---
+  duration_ms: 66.259792
+  type: 'test'
+  ...
+# Subtest: refuses a zero-test positive record even after archive hashes are updated
+ok 7 - refuses a zero-test positive record even after archive hashes are updated
+  ---
+  duration_ms: 12.148542
+  type: 'test'
+  ...
+# Subtest: refuses an infrastructure failure masquerading as the native-absence assertion
+ok 8 - refuses an infrastructure failure masquerading as the native-absence assertion
+  ---
+  duration_ms: 11.815541
+  type: 'test'
+  ...
+# Subtest: preserves the observed pagination failure without relabeling it a green replay
+ok 9 - preserves the observed pagination failure without relabeling it a green replay
+  ---
+  duration_ms: 116.726416
+  type: 'test'
+  ...
+# Subtest: refuses source drift, wrong historical identity and a claimed resolution
+ok 10 - refuses source drift, wrong historical identity and a claimed resolution
+  ---
+  duration_ms: 62.967667
+  type: 'test'
+  ...
+# Subtest: refuses omitted cohorts and altered hostile counters in the frozen archive
+ok 11 - refuses omitted cohorts and altered hostile counters in the frozen archive
+  ---
+  duration_ms: 145.553208
+  type: 'test'
+  ...
+# Subtest: executes the original parser on valid results and hostile counters
+ok 12 - executes the original parser on valid results and hostile counters
+  ---
+  duration_ms: 44.354708
+  type: 'test'
+  ...
+# Subtest: seals command, measurement, prerequisite and diagnostic bytes
+    # Subtest: command
+    ok 1 - command
+      ---
+      duration_ms: 20.08475
+      type: 'test'
+      ...
+    # Subtest: measurement
+    ok 2 - measurement
+      ---
+      duration_ms: 10.903708
+      type: 'test'
+      ...
+    # Subtest: prerequisite
+    ok 3 - prerequisite
+      ---
+      duration_ms: 10.878709
+      type: 'test'
+      ...
+    # Subtest: diagnostic
+    ok 4 - diagnostic
+      ---
+      duration_ms: 19.328625
+      type: 'test'
+      ...
+    1..4
+ok 13 - seals command, measurement, prerequisite and diagnostic bytes
+  ---
+  duration_ms: 61.453
+  type: 'test'
+  ...
+# Subtest: rejects independently reproduced false-integrity paths
+    # Subtest: negative control replaced with positive
+    ok 1 - negative control replaced with positive
+      ---
+      duration_ms: 94.167583
+      type: 'test'
+      ...
+    # Subtest: unrelated targeted case
+    ok 2 - unrelated targeted case
+      ---
+      duration_ms: 11.457042
+      type: 'test'
+      ...
+    # Subtest: wrong targeted source hash
+    ok 3 - wrong targeted source hash
+      ---
+      duration_ms: 19.006459
+      type: 'test'
+      ...
+    # Subtest: wrong targeted commit
+    ok 4 - wrong targeted commit
+      ---
+      duration_ms: 20.347042
+      type: 'test'
+      ...
+    # Subtest: wrong targeted log
+    ok 5 - wrong targeted log
+      ---
+      duration_ms: 19.040583
+      type: 'test'
+      ...
+    # Subtest: wrong manifest commit
+    ok 6 - wrong manifest commit
+      ---
+      duration_ms: 12.23375
+      type: 'test'
+      ...
+    # Subtest: omitted scroll source census
+    ok 7 - omitted scroll source census
+      ---
+      duration_ms: 36.453333
+      type: 'test'
+      ...
+    # Subtest: failed full parent
+    ok 8 - failed full parent
+      ---
+      duration_ms: 19.182041
+      type: 'test'
+      ...
+    # Subtest: wrong full parent generator
+    ok 9 - wrong full parent generator
+      ---
+      duration_ms: 19.36275
+      type: 'test'
+      ...
+    # Subtest: full cohort infrastructure error
+    ok 10 - full cohort infrastructure error
+      ---
+      duration_ms: 11.105709
+      type: 'test'
+      ...
+    # Subtest: full cohort retried
+    ok 11 - full cohort retried
+      ---
+      duration_ms: 19.583459
+      type: 'test'
+      ...
+    # Subtest: altered inventory metadata
+    ok 12 - altered inventory metadata
+      ---
+      duration_ms: 12.44825
+      type: 'test'
+      ...
+    # Subtest: substituted inventory case
+    ok 13 - substituted inventory case
+      ---
+      duration_ms: 20.462292
+      type: 'test'
+      ...
+    # Subtest: unknown compression
+    ok 14 - unknown compression
+      ---
+      duration_ms: 11.355375
+      type: 'test'
+      ...
+    1..14
+ok 14 - rejects independently reproduced false-integrity paths
+  ---
+  duration_ms: 326.827208
+  type: 'test'
+  ...
+1..14
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1050.857667
