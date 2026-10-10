@@ -1724,7 +1724,7 @@ async def _startup_sequence() -> None:
     # Reference county data. Failure leaves the service NOT-ready —
     # visible on /health/ready — instead of crash-looping the process.
     try:
-        await asyncio.to_thread(initialize_reference_data)
+        writers_admitted = await asyncio.to_thread(initialize_reference_data)
     except Exception:  # pragma: no cover - surfaced via readiness + logs
         _reset_readiness("reference_initialization_failed")
         logger.exception("Failed to initialize reference data")
@@ -1744,6 +1744,9 @@ async def _startup_sequence() -> None:
         return
     _app_ready.set()
     logger.info("Main Backend API startup complete!")
+    if writers_admitted is False:
+        logger.warning("Startup writers deferred: bootstrap ownership unavailable; references remain readable")
+        return
 
     # Auto-seeder (its initial seed is itself a background task).
     if AUTO_SEEDER_ENABLED:
