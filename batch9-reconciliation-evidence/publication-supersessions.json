@@ -1,0 +1,400 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/review_packet.py",
+  "generator_sha256": "8f93e797f868aafbe6f4ca8489ce9ed8ad06611541902beec9e336b6822fd1c2",
+  "generated_at": "2026-10-09T23:39:46.693357+00:00",
+  "original_author_commit": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5",
+  "target_commit": "93f39ded212edb9e847221cdb7def25900015159",
+  "superseded_at": "2026-10-09",
+  "untrustworthy_fields": [
+    "unredacted environment/command/output publication",
+    "whole-repository writer coverage",
+    "current-source acceptance attribution"
+  ],
+  "corrected_answer": "Current active generators use owned untracked fixture inputs and a shared redaction boundary; source census is an explicitly incomplete subset with all tracked omissions listed. Production/operator acceptance remains pending.",
+  "historical_artifacts": [
+    {
+      "path": "batch9-reconciliation-evidence/app-import-current.json",
+      "sha256": "c9dca022af7c28194341be28a7c35967dadb6d1444c9799553538361c78ca1f2",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/app-import-minimum.json",
+      "sha256": "26014b66f9134b18f2f87bd3a56b8349da17467cc62384f1d1f6f029784bc89f",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/baseline-sqlite.json",
+      "sha256": "72c35a126608ce3418ed9e360dfa209da526db11bb3f8a72254bec2c7621edf6",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/REPORT.md",
+      "sha256": "e32cfa0e1ff3bb1e2906978d6eeee74f33437e7fe6d39374b8cc53b4b082e760",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results."
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/current-final-live.json",
+      "sha256": "7f19c0192f378fb5950cff47ae1443f3fdc10e64fb51c6a1bb785d6fe91b3f1b",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/current-final-stable.json",
+      "sha256": "0e385e3087e74fca6c4b1459b3197e5e55381ca51299b11bad7988e262b0cb8e",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/current-final.json",
+      "sha256": "eb3a09ac0b957394886f888c9f96609856370b9cb23d2516f01fc339d73465be",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/current-fixed.json",
+      "sha256": "2f7fe2e1babc605624b93ac0f6502a12e742d4e3d17be70629f0037432e03a2d",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v5.py",
+      "original_generator_sha256": "1859da048c8ac10fa51487543641425963d78f6e609a2c93482d8cffb2b67a3a",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v5.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/final-summary.json",
+      "sha256": "0a7dd7bb25c0454dfc7dc4447b45b0cad32c3d19ffc0e329871e71206b44f90e",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/finalize_behavior_v3.py",
+      "original_generator_sha256": "132b1e2dd8d3043e123bc55ea53fdcdb146a540f2f463e5ebc40f92b0ad44caf",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/finalize_behavior_v3.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/finalize-first-failed.json",
+      "sha256": "3ab2e7e723a7208cbdc91e9de3850b4d4f149533946f708a5bbb73c6c5f794f5",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/finalize-second-failed.json",
+      "sha256": "c5c21925392bd5b41f0d1b70aeadbdc21ccf213a80f2fa80cc991ae9938c7f1c",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-final-live.json",
+      "sha256": "1b90465c7394091ce4e1c46e532bb44a0789c07a56fb03eabd3e80631f0139c4",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-final-stable.json",
+      "sha256": "707c2bafd602c9819d844edfb26c775911b6cbdd07e8ca8f0f9a357adba4000b",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-final.json",
+      "sha256": "8d0691b9a22a34971c7974ffbe4c8e7545ea03399d939733d4dc0b7bc56dc65c",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v6.py",
+      "original_generator_sha256": "401c8366d0b9cc661d4daad5904e958c005ed2477ca3022c5e9e85f5f64c6649",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v6.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-first.json",
+      "sha256": "ffb849d86aae845f40b3b73476da45a7b2d4bfc61c41f08bea750ee8a8e74c31",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior.py",
+      "original_generator_sha256": "760de2d3eaf10a8073e37f3d7d7b03c3842af42a82f2c4497b821b0a0b8db6cc",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-fixed.json",
+      "sha256": "43189fa612ba8519f4bf7005eb0aeecc0c741dc9e4d8f27c39ae1f84a5ceddda",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v5.py",
+      "original_generator_sha256": "1859da048c8ac10fa51487543641425963d78f6e609a2c93482d8cffb2b67a3a",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v5.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-second.json",
+      "sha256": "4e57450caee28ca51afc66679cb055844cf2b895708003f1611fce9dd0cb40d9",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v2.py",
+      "original_generator_sha256": "71a78cf4d792e076bf756f28383196d0453a23f17103f54db3aae34baa32468b",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v2.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-stable.json",
+      "sha256": "64198686c3da434f497db543258c75fbfc302c4a2629a45c050f461cb135ec1d",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v3.py",
+      "original_generator_sha256": "82be07c164fcb35033b0ffa77dafddf2f81bc26e243e8d0683da2ed0851062e3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v3.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-third.json",
+      "sha256": "28cabec6827af9e84afa096fde1fd6122a252a9daa2ff9f9c102301b5fa453a4",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v3.py",
+      "original_generator_sha256": "82be07c164fcb35033b0ffa77dafddf2f81bc26e243e8d0683da2ed0851062e3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v3.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/behavior/min-valid-red-rollback.json",
+      "sha256": "ea6d1f933a65906cdff62d7ede4239d1f42642dd1c93da5815337eb1ed2d66de",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/behavior/verify_behavior_v4.py",
+      "original_generator_sha256": "5e98656aeb694efc9c27432c08ff3c05a966029266df268b677a17d5c1b4d1ea",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/behavior/verify_behavior_v4.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/cleanup.json",
+      "sha256": "1107b01bdb84a6555df8de02d8e884934438f6852391c791e9c5472792ed0acd",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/cleanup_receipt.py",
+      "original_generator_sha256": "d9acfda25ce8c127eedc5a707806a130f4386f1573f3e314f48e54da3906331c",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/cleanup_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/core-with-legacy-and-unicode.json",
+      "sha256": "e4da369b8b3f279cac641ee442911084c450ee19fa96684f62c01aae94c5f24c",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/correlation-effects-red.json",
+      "sha256": "a5e84ebc6e34a5649398adc90809e99434184ebb3d29f28e6c3bf12318574bc5",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/current-core-green.json",
+      "sha256": "cf280a6c255ac24ae778d4907c70e705d531370d987737e81952a0200fea1c79",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/delivery-manifest.json",
+      "sha256": "c633fccefd4e2454a0c9f2e82b52616a9f5f6a2e56f013041cdc6d0017931184",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/delivery_manifest.py",
+      "original_generator_sha256": "a312ea4c77a73eb5adf9799cbffa2b33dec87d06bcf885fcf9ba75e1b556601c",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/delivery_manifest.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/final-current.json",
+      "sha256": "1363395c3affbbc10aa6e7cd8d32aa350cf63a7146ba41e7f474278fd261a1af",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/final-minimum.json",
+      "sha256": "ae3ec18bdc0cce40445d4561d98d35575dc00eecb2170ed48be4384a1fc7b7ca",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/full-current-candidate.json",
+      "sha256": "53a8ccb6d307461b408ae824bcc67e5c489943f176bf2980850ef4060d62621f",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/full-minimum-candidate.json",
+      "sha256": "a308c6e0f872be53663e6baa68c869311dcc37171bf1c8ecc791c023d6e25871",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/initial-core.json",
+      "sha256": "588eab7cbcab73a6d50273ddc0fb75d1b6a26769ff8b64506b56f8fd04d66ea6",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/issue-inventory-initial.json",
+      "sha256": "b714dbd13faf3f025afe8724fd6bfc1b7f43dc63c9254eddb9e25419069a3223",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results."
+    },
+    {
+      "path": "batch9-reconciliation-evidence/migrations-current.json",
+      "sha256": "106942443b6a2fcddf678626f028561df9e47d9518afe916eea31384456e7171",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/minimum-core-green.json",
+      "sha256": "8f44c1a9c9f1a47400fc4e973a297ec0ae3588d6ff718769eb33969ab4b34bf0",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/minimum-valid-apply-red.json",
+      "sha256": "3b7b83a7a0b292afa70a88b9352da7ae914e9e65e349bc1843d691eb8a3c6312",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/mutation-expiry-red.json",
+      "sha256": "04de9542da1be292194aa3d6539fee96ddaa27cf1beac8d5d462677848e6f11a",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/processes-first.json",
+      "sha256": "dc78ffd816c97ed18d66c961d8b3ed5ccd48e25af27549b8ccd24bbd6e078a7d",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/receipt-provenance.json",
+      "sha256": "b075e0df2fa9af0b459f5262f366d5a95772ca7045c09669cceabb94c769637c",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/check_receipt_provenance.py",
+      "original_generator_sha256": "c2c904988c7b0c209bdac4b2335f349142eca5406f3099910aaa19e36e942b5d",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/check_receipt_provenance.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/repaired-core.json",
+      "sha256": "6f6d9fc180dc4dfdda164927127b8af9495365b91ebb2dd0de039097fd1c9e5a",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/scoped-critical-lint.json",
+      "sha256": "a173093cdc3b138ebc2b2c45427019eed09e6afb20eac2b6a33aba47a19b4501",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/spec-review.md",
+      "sha256": "b95a4008f5394f5c24ef1fdef4ccfe6682ff8f07cb00bb19dc84dcda38fa6ec1",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results."
+    },
+    {
+      "path": "batch9-reconciliation-evidence/standards-review.md",
+      "sha256": "016156ba9880fd1b596bfa31e26f92177fffe6f6e15876e6bccaebc7e066e488",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results."
+    },
+    {
+      "path": "batch9-reconciliation-evidence/unicode-record-red.json",
+      "sha256": "b414b57e2bdda39c56cf725f0698fa2bddc5dbf69db168e639014c134575bbca",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/whitespace-red.json",
+      "sha256": "27eb72d2fc289629fe6790bf32dbd966f6b821c451f8636884539002f7ccd230",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/run_receipt.py",
+      "original_generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/run_receipt.py"
+    },
+    {
+      "path": "batch9-reconciliation-evidence/writer-census.json",
+      "sha256": "08fa19a907ebbbe1679e7163c2fcc7c9ea33ef9b7321ac429577911109a9c0ea",
+      "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+      "why": "Original source attribution and credential-bearing publication retired; preserve as historical author evidence only. Use review-repairs.md and the new review packet for current results.",
+      "original_generator": "batch9-reconciliation-evidence/inventory_receipt.py",
+      "original_generator_sha256": "00ae40d00fe59a7c10ec1de1d1260a89018dfe4e87039716db94a45b2e0f3721",
+      "original_generator_git_blob": "950a0d54ace562acdf1ade46d66dc7fa18d50cb5:batch9-reconciliation-evidence/inventory_receipt.py"
+    }
+  ]
+}

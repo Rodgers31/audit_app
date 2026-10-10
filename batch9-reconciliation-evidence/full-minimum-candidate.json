@@ -1,0 +1,43 @@
+{
+  "generated_by": "batch9-reconciliation-evidence/run_receipt.py",
+  "generator_sha256": "e0a0990b1d2f9a166402dabb9f861886af286986f42101f18359cabc4dd597c3",
+  "generated_at": "2026-10-09T19:24:24.170232+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/seeding/reconciliation.py": "5540a23bce38dc943a80bf649da93a448f14bc6dcab8cf856bfe913799bbfde9",
+    "backend/seeding/reconcile_operator.py": "b81d97af7c0961c31b107563c6a73018794dd55553ffd3e9de2670ec88343f09",
+    "backend/tests/test_batch9_reconciliation.py": "88639575854cdd769c99f80a350a0aaad6eb01748e71f695cd3ccc47b2289ef5",
+    "backend/tests/test_batch9_reconciliation_migration.py": "cb81effa9c1c1027f1ab314d00e9ae243e12729b7f52cb7483a629c9c4f8f619",
+    "backend/tests/test_batch9_reconciliation_processes.py": "d5021a722dcf1ed9b001161d686efd33aed4a0e03a262162bef78bf9f0c99532",
+    "backend/tests/test_batch9_reconciliation_constraints.py": "674e929ab15564c13aebe78d8aaf94199131020bc1387322782a6984ec3dc364",
+    "backend/tests/batch9_reconciliation_fixture/sitecustomize.py": "7d24781e410bdbb3a133eac4661ff465ca27eb3534052228f9921649c1fd61d6",
+    "backend/alembic/versions/e583b9c9a001_reconciliation_evidence.py": "e5d060174e2ae64a4ceb64048fe9c6ff86fdff8a10f8eeaccf3315f5f2864a94",
+    "backend/models.py": "9b7317a9553d0f9c31da7b9e56306b115bcd1a8a61e074f1901dcef9cbe5a4d2"
+  },
+  "runtime": "3.12.15 (main, Oct  3 2026, 00:54:33) [Clang 22.1.3 ]\nSQLAlchemy 2.0.23\n",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "command": [
+    ".batch9-min/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_reconciliation.py",
+    "backend/tests/test_batch9_reconciliation_constraints.py",
+    "backend/tests/test_batch9_reconciliation_processes.py",
+    "backend/tests/test_batch9_reconciliation_migration.py",
+    "backend/tests/test_batch8_exclusion_sqlite.py",
+    "backend/tests/test_batch8_exclusion_scope.py",
+    "-q",
+    "--tb=short"
+  ],
+  "environment": {
+    "PATH": "/usr/bin:/bin:/usr/local/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/a46a/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a",
+    "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres:batch9-inert-local@127.0.0.1:55493/batch9-reconciliation-a46a"
+  },
+  "exit_code": 0,
+  "stdout": "........................................................................ [ 58%]\n..............................sssssssssssssssssssss                      [100%]\n=============================== warnings summary ===============================\n.batch9-min/lib/python3.12/site-packages/fastapi/testclient.py:1\n  /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.\n    from starlette.testclient import TestClient as TestClient  # noqa\n\nbackend/database.py:64\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nbackend/models.py:28\n  /Users/roger/.codex/worktrees/a46a/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n.batch9-min/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11\n  /Users/roger/.codex/worktrees/a46a/audit_app/.batch9-min/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n102 passed, 21 skipped, 4 warnings in 40.45s\n",
+  "stderr": ""
+}
