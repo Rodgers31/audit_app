@@ -1,5 +1,6 @@
 """Replay tool failure boundaries; no provider or production transport."""
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -52,3 +53,62 @@ def test_junit_inventory_reads_one_snapshot(tmp_path, monkeypatch):
     monkeypatch.setattr(module.ET, "parse", parse)
     result = module.inventory(path)
     assert result["counts"]["passed"] == 1 and len(calls) == 1
+
+
+@pytest.mark.parametrize("mode", ["removed", "not_created", "daemon_before", "daemon_after", "permission_before", "permission_after",
+    "failed_run_daemon", "remove_failure", "wrong_owner", "wrong_absent_name", "malformed_state", "survived"])
+def test_linux_cleanup_requires_exact_owned_absence(tmp_path, monkeypatch, capsys, mode):
+    """Execute the actual launcher at a controlled Docker result boundary."""
+    calls, inspections = [], []
+    owned = None
+    def docker(*args, check=True):
+        nonlocal owned
+        calls.append((args, check))
+        if args[0] == "run":
+            owned = args[args.index("--name") + 1]
+            return subprocess.CompletedProcess(args, 125 if mode == "failed_run_daemon" else int(mode == "not_created"),
+                "owned actual run output", "primary run failure" if mode in ("not_created", "failed_run_daemon") else "")
+        if args[0] == "rm":
+            assert args[3] == "owned-container-id" and mode != "wrong_owner"
+            if mode == "remove_failure":
+                raise subprocess.CalledProcessError(1, args, stderr="owned remove permission failure")
+            return subprocess.CompletedProcess(args, 0, "owned-container-id", "")
+        assert args[0] == "inspect" and check is False
+        inspections.append(args)
+        after = len(inspections) > 1
+        if mode == "failed_run_daemon" or mode == ("daemon_after" if after else "daemon_before"):
+            return subprocess.CompletedProcess(args, 1, "", "Cannot connect to the Docker daemon at unix:///owned/inert.sock.")
+        if mode == ("permission_after" if after else "permission_before"):
+            return subprocess.CompletedProcess(args, 1, "", "permission denied while trying to connect to the Docker daemon")
+        if mode == "wrong_absent_name":
+            return subprocess.CompletedProcess(args, 1, "[]", "Error response from daemon: No such object: some-other-container")
+        if mode == "malformed_state":
+            return subprocess.CompletedProcess(args, 0, "[]", "")
+        if mode == "not_created" or (after and mode != "survived"):
+            return subprocess.CompletedProcess(args, 1, "[]", "Error response from daemon: No such object: " + owned)
+        return subprocess.CompletedProcess(args, 0, json.dumps([dict(Id="owned-container-id", Name="/" + owned,
+            Config=dict(Labels={"audit.owner": "someone-else" if mode == "wrong_owner" else "batch11-bootstrap"}))]), "")
+    monkeypatch.setitem(sys.modules, "batch11_bootstrap_fixture.postgres", types.SimpleNamespace(docker=docker))
+    out = tmp_path / "output"
+    monkeypatch.setattr(sys, "argv", ["linux_replay.py", "--runtime-root", str(tmp_path), "--out", str(out)])
+    error = None
+    try:
+        load("linux_replay").main()
+    except RuntimeError as failure:
+        error = failure
+    output = capsys.readouterr().out
+    assert (error is None) is (mode == "removed"), "DOCKER_UNKNOWN_FALSE_GREEN: " + output
+    assert (out / "execution.log").read_text().startswith("owned actual run output")
+    if mode in ("not_created", "failed_run_daemon"):
+        assert str(error) == "Linux replay failed; raw output preserved"
+    if mode == "failed_run_daemon":
+        assert any("cleanup" in note.lower() and "unverified" in note.lower() for note in error.__notes__)
+    if mode not in ("removed", "not_created"):
+        assert "OWNED_LINUX_REMOVED" not in output and "OWNED_LINUX_NOT_CREATED" not in output
+        assert (out / "cleanup-unverified.json").is_file()
+    elif mode == "removed":
+        assert "OWNED_LINUX_REMOVED" in output
+        assert len(inspections) == 2
+    else:
+        assert "OWNED_LINUX_NOT_CREATED" in output
+        assert not any(args[0] == "rm" for args, _ in calls)
