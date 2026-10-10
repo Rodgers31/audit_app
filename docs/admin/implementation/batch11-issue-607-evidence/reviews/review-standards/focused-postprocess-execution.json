@@ -1,0 +1,16 @@
+{
+  "observed_child_exit": 0,
+  "command": [
+    "/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/focused_postprocess.py"
+  ],
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "generator_sha256": "4421b01d8dfd7f94bd8a2ce52ff7b1f5fee150c995f17a404ae768e5e620d72b",
+  "log_sha256": "e217a6a3e010011f02d5ffb1b696176daf188f419a8411c8ad85a86d64a94d89",
+  "receipt_sha256": "5a808754b78ae2659a99813a7a277ab009f7b66b4cca7b2e56289541083b33ab",
+  "portable_child_exit": 0,
+  "original_outer_wrapper_exit": 1,
+  "outer_wrapper_classification": "metadata KeyError after completed six-case passing browser run; preserved and consumed without browser rerun"
+}

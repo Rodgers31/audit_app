@@ -1,0 +1,40 @@
+{
+  "head": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "tree": "958d72062130267d0916ad14f9ab7ab6afb0af71",
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/replay.py",
+    "--checkout",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+    "--output",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1",
+    "--container",
+    "batch11-navigation-linux",
+    "--docker-host",
+    "unix:///Users/roger/.docker/run/docker.sock",
+    "--mode",
+    "original-100"
+  ],
+  "child_exit": 0,
+  "started": 1791649703.224034,
+  "ended": 1791650178.1172092,
+  "reviewer_runtime": {
+    "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+    "executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "platform": "macOS-27.0.1-arm64-arm-64bit"
+  },
+  "helper_hashes_before": {
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/replay.py": "be16b7b91f6578457b2fec44295c8d6ed77286adba2d1d5bf09315d3755e3f95",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py": "f15582d811f4374a459555e67f03abf0044b818eb02e6f5a92a85e2c3947dbc6",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/replay_driver_v2.py": "2c88902a043faedeea21fede6285cf1a98f32fdb3b10e6359eb5dff28485cd23"
+  },
+  "helper_hashes_after": {
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/replay.py": "be16b7b91f6578457b2fec44295c8d6ed77286adba2d1d5bf09315d3755e3f95",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py": "f15582d811f4374a459555e67f03abf0044b818eb02e6f5a92a85e2c3947dbc6",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/replay_driver_v2.py": "2c88902a043faedeea21fede6285cf1a98f32fdb3b10e6359eb5dff28485cd23"
+  },
+  "helper_changed": false,
+  "driver_log_sha256": "04501c2305a406fa8f13d73e05634e4d56981f49d7694922ef0fabb294bf90da",
+  "fresh_output": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1",
+  "scope": "Independent fresh local production-config original case; no hosted or production acceptance."
+}

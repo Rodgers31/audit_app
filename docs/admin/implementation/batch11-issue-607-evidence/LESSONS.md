@@ -34,3 +34,11 @@ hosted environment. Local successes and forced Y=0 controls cannot settle it.
   before any browser case. Preserve that setup receipt, verify exact container
   ownership, and recreate only the owned fixture databases before resuming.
   A setup retry must not be described as a behavioral red/green.
+- `receipt-provenance`: verify every catalogue member in the committed Git
+  tree, not only the filesystem. The first local evidence commit omitted94
+  ignored raw `.log` files; a separate correction added their exact bytes.
+  Use a finite owned path list when force-adding required ignored evidence.
+- `verify-boundary-shapes`: Git's display format C-quotes Unicode paths.
+  Reviewer and author membership checks initially misread em-dash filenames;
+  their failed setup receipts remain preserved. Use NUL-delimited Git path
+  output and compare exact decoded paths before asserting membership.

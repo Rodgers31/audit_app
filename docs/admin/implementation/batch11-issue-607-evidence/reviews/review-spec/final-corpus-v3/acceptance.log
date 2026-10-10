@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py", line 221, in <module>
+    main()
+  File "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py", line 211, in main
+    result = verify(args.packet, args.checkout, args.manifest, args.integrity_only)
+  File "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py", line 194, in verify
+    require(integrity_only or accepted, 'Current full-suite acceptance blocked by unexpected failures')
+  File "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py", line 22, in require
+    raise ValueError(message)
+ValueError: Current full-suite acceptance blocked by unexpected failures

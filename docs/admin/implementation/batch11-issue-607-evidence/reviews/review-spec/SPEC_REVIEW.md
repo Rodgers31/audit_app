@@ -1,0 +1,13 @@
+Spec verdict: partial. No source-scope violation or weakened product assertion found.
+
+Missing acceptance: #607 requires “rerun the original complete Chromium inventory with no unexpected or retried failures.” Current measured source `982a961` has 316 passes, 2 unexpected failures, 11 unchanged fixmes and 0 flaky across 329 cases. The unchanged county h1 and duplicate Showing failures remain preserved; their cause and regression status are unestablished. The earlier 318-pass snapshot and fresh focused successes cannot replace this failed gate. #607 must remain open.
+
+Partial diagnosis: the unchanged original prefix fails three times at line 38 before its scrollTo/detail/back steps when a real 200 response is held pending; the same three inputs pass after repair. This demonstrates the asynchronous URL/local-row boundary eliminated by native history publication. It does not reproduce or explain the old naturally delivered 200 failure. The distinct historical #601 saved ~900→returned 100 cause also remains unmeasured; the authorized scoped handoff leaves it unresolved and changes no scroll implementation.
+
+Preserved requirements: SPEC says “Navigation reproduces/repairs against the pinned launch lock.” The actual full diff from base to `6fcaed1` changes four scoped frontend files plus evidence/handoff documentation. Original smart-back bytes, viewport/configuration, lock/package/native/style files, trail and scroll sources remain pinned. No new sleep, quarantine or weakened assertion appears. Added cases retain query duplicates, fragments, deep links, filters, back/forward and meaningful saved-position checks.
+
+Independent execution: current unit copy 21/21 passes; a no-op history mutation fails the actual URL assertion, and same-URL write mutations fail both negative controls with live URL/call readbacks. The first fresh original-case replay passes 100/100 with 1280×720, configured 2 workers and 0 retries. Own Node/Chromium executable hashes, source/runtime identities, commands, exits and raw outputs are retained. Reviewer postcondition/setup failures remain preserved separately.
+
+Independent corpus checks verify 754 catalogued files plus manifest, all 329 exact descriptors, 323 original identities plus 6 additions, direct six-report accounting and unchanged source/helpers. Integrity-only exits 0 with acceptance false; default acceptance exits 1. Full diff and commit list were rechecked.
+
+These are local Linux AMD64 results under macOS ARM64 Docker emulation. They establish neither hosted nor production acceptance. Final remote identity/corpus recheck remains coordinator-owned.

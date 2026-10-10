@@ -70,6 +70,8 @@ acceptance remain separate. The shared SPEC and skill files were read-only.
 | First explicit full Jest | 2073 passes /1 existing pending /4 failures | Four assertions required the old router transport; raw failures preserved |
 | Native-history unit observer | 21 passes | Existing rows, normalization, SSR, first-commit and hydration contracts retained |
 | Refreshed explicit frontend gates at current source | All passed | Lint, TypeScript,147 Jest suites /2077 passes /1 existing pending, native verification |
+| Independent Spec original-case replay at6fcaed1 | 100 passes /0 retries | First execution of the unchanged original case; local diagnostic positive |
+| Independent Standards focused replay at6fcaed1 | 6 passes /0 retries | First execution through the supported portable replay; no source/helper drift |
 
 Original viewport1280×720, configured workers2 for public /1 for other cohorts,
 zero retries. A sequential single spec can use one actual worker despite a
@@ -129,12 +131,40 @@ producer scripts and source inventories retain their measured identities.
 The prior [Batch10 scroll handoff](BATCH_10_SCROLL_HANDOFF.md) and packet remain
 unchanged; historical receipts are not attributed to this repair source.
 
-Independent author-separate Spec, Standards and adversarial reviewers execute
-controls with their own receipts. Preliminary source/control reviews are under
-`batch11-issue-607-evidence/reviews/`. Fresh replays and final commit/corpus
-rechecks are recorded separately when complete. The packet checker distinguishes historical integrity
-from recorded local acceptance and fresh execution. The supported portable
-entrypoint is `tools/replay.py`; old archive generators are identity records.
+Independent author-separate Spec, Standards and adversarial reviewers completed
+controls at evidence commit `6fcaed18327d4ebdb91b475c016d81ca624deda8`, tree
+`958d72062130267d0916ad14f9ab7ab6afb0af71`. Their reports and own commands,
+runtime readbacks, exits and source/helper inventories are retained:
+
+- [Spec report](batch11-issue-607-evidence/reviews/review-spec/SPEC_REVIEW.md):
+  partial acceptance, no scope violation or weakened assertion; first original
+  case replay100/100, unit21/21 and meaningful no-op/same-URL mutation detectors.
+- [Standards report](batch11-issue-607-evidence/reviews/review-standards/standards-final-v2.md):
+  zero documented-standard or Fowler findings; first focused replay6/6 and
+  thirty report/input guard controls.
+- [Adversarial report](batch11-issue-607-evidence/reviews/review-adversarial/FINAL_REVIEW_V1.md):
+  forty-four actual-corpus checks, including thirty recatalogued hostile
+  mutations, with default acceptance rejection and explicit integrity-only
+  acceptance false.
+
+All three independently rechecked the actual full diff, four-commit list and
+frozen packet-v1 corpus. Reviewer wrapper/setup/post-processing errors are
+preserved separately; their successful browser results were not rerun to repair
+metadata. Spec's historical final-remote sentence refers to coordinator
+acceptance; author final publication identity and packet-v2 readbacks are
+recorded externally after the final evidence commit, avoiding a self-hash cycle.
+The final catalogue is `packet-v2.json`. Frozen packet-v1 SHA256 is
+`5c0f77c0411fc8349e3a06fa86df1b11d02de55032fd0fd82fcb3b1b5e1b359d`;
+its complete historical checkout is6fcaed1. An earlier local evidence commit
+omitted94 ignored raw `.log` files;6fcaed1 added those exact bytes. The corrected
+NUL-delimited Git-tree readback verifies all755 packet-v1 files were committed.
+The final packet retains the failed comparison/setup receipts and the membership
+repair. Five spaces-only lines in an archival raw transcript retain producer
+bytes; active source/docs whitespace checks pass.
+
+The packet checker distinguishes historical integrity from recorded local
+acceptance and fresh execution. The supported portable entrypoint is
+`tools/replay.py`; old archive generators are identity records.
 See [LESSONS](batch11-issue-607-evidence/LESSONS.md) for evidenced proposals rather
 than shared skill edits.
 

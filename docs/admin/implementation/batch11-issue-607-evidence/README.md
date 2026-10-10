@@ -60,7 +60,7 @@ Use `tools/verify_packet.py` against the final packet manifest from the handoff:
 ```sh
 python3 "$CHECKOUT/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py" \
   --packet "$CHECKOUT/docs/admin/implementation/batch11-issue-607-evidence" \
-  --checkout "$CHECKOUT" --manifest packet-v1.json --integrity-only \
+  --checkout "$CHECKOUT" --manifest packet-v2.json --integrity-only \
   --output "$EXTERNAL/packet-integrity.json"
 ```
 
@@ -77,6 +77,20 @@ nonempty unique cases/counters, and distinguishes diagnostic/historical records
 from local acceptance. It does not execute a browser or certify hosted state.
 The final remote HEAD/tree is in an external postcommit binder, avoiding a
 handoff that attempts to name its own future hash.
+
+`packet-v2.json` includes the final independent reports and fresh replays.
+The frozen `packet-v1.json` retains its original bytes and catalogue; verify
+that historical packet in checkout `6fcaed18327d4ebdb91b475c016d81ca624deda8`,
+where all755 original members are committed. Explicitly select packet-v2 for
+this final checkout; the tool's historical default remains packet-v1.
+
+Independent Spec replay passed the unchanged original case100/100, and
+Standards passed the six focused cases on their first executions, with zero
+retries and unchanged source/helpers. Spec's21 unit controls and live mutation
+detectors, Standards'30 malformed-report guards and adversarial44 actual-corpus
+checks are retained under `reviews/`. Their successful focused results do not
+replace the two failures in current full-suite acceptance. The handoff links
+their concise reports and records preserved reviewer metadata/setup errors.
 
 ## Fresh replay
 

@@ -1,0 +1,12 @@
+{
+  "driver": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v4.py",
+  "driver_sha256": "d23861910802379b0dff06a800704ec738a94debc05ca551404d3831239568bd",
+  "preserved_failed_v2_driver_sha256": "45c70049b714c8aeb315d89d2643aae223baeadeaec5cd751b0e11b450502de3",
+  "fixtures": {
+    "valid.test.tsx": "c3ed6d872b35b6459a7208b1f41363fec9a7285924cf4ac84b236b343f7d870b",
+    "noop.test.tsx": "4e8d2b3df30ad61e706cb898fa01c2babea24858a6dad9af95573cf87e861b15",
+    "same-url-write.test.tsx": "672ec9e91b8785909005e0dd5f0c2f1f84d301bd923d553e787b7fe71670d2ca",
+    "jest.config.cjs": "442c3e09079728ff74c385e0f4c44db6072da0047b87461075d28813dadc3db8"
+  },
+  "change": "Synthetic mutations and assertions retained; add explicit URL/call readback probes and validate failure locations because pinned pretty-format obscures Expected output. No tracked source or package changes. Prior v3 preparation aborted before execution because preflight expected one matching mutation block but original mutant has four; partial v3 files retained."
+}

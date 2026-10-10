@@ -1,0 +1,29 @@
+{
+  "head": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "source_before_matches_after": true,
+  "counts": [
+    {
+      "variant": "valid",
+      "passed": 21,
+      "intentionally_failed": 0,
+      "unselected": 0
+    },
+    {
+      "variant": "noop",
+      "passed": 0,
+      "intentionally_failed": 1,
+      "unselected": 20
+    },
+    {
+      "variant": "same-url",
+      "passed": 0,
+      "intentionally_failed": 2,
+      "unselected": 19
+    }
+  ],
+  "limits": [
+    "First reviewer drivers aborted after valid and intended no-op execution because formatter output and JSON diagnostic schema differed from their postcondition assumptions; raw attempts remain preserved.",
+    "Pinned pretty-format obscures Expected formatting; explicit live probes and preserved assertion locations establish each synthetic mismatch.",
+    "Selected synthetic failures/skips are detector checks, not product causal reds, quarantines, or original browser acceptance."
+  ]
+}

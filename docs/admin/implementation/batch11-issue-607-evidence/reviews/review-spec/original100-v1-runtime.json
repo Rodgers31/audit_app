@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/usr/local/bin/docker",
+    "exec",
+    "-w",
+    "/app/frontend",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright",
+    "node",
+    "-e",
+    "const fs=require('node:fs'),crypto=require('node:crypto'),os=require('node:os');const {chromium}=require('@playwright/test');const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');(async()=>{const b=await chromium.launch();const c=await b.newContext({viewport:{width:1280,height:720}});const p=await c.newPage();console.log(JSON.stringify({node:process.version,arch:process.arch,platform:process.platform,kernel:os.release(),nodeExecutable:process.execPath,nodeSha:sha(process.execPath),playwright:require('@playwright/test/package.json').version,chromium:b.version(),chromiumExecutable:chromium.executablePath(),chromiumSha:sha(chromium.executablePath()),viewport:await p.evaluate(()=>({width:innerWidth,height:innerHeight}))}));await b.close()})().catch(e=>{console.error(e);process.exit(1)});"
+  ],
+  "child_exit": 0,
+  "stdout": "{\"node\":\"v22.23.3\",\"arch\":\"x64\",\"platform\":\"linux\",\"kernel\":\"7.0.12-linuxkit\",\"nodeExecutable\":\"/opt/b11/node-v22.23.3-linux-x64/bin/node\",\"nodeSha\":\"fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48\",\"playwright\":\"1.58.2\",\"chromium\":\"145.0.7632.6\",\"chromiumExecutable\":\"/ms-playwright/chromium-1208/chrome-linux64/chrome\",\"chromiumSha\":\"481fea1516a1f2b76454664272f12cd9dd1f20117b21e1f1498e08bc7f872c00\",\"viewport\":{\"width\":1280,\"height\":720}}\n",
+  "stderr": ""
+}
