@@ -24,7 +24,8 @@ python3 docs/admin/implementation/batch11-issue-611-evidence/record.py \
   --python /absolute/owned/venv/bin/python \
   --out /absolute/fresh/external/output \
   tests/admin_audit_epoch/test_prototype.py \
-  tests/admin_overview_audit/test_review_boundaries.py
+  tests/admin_overview_audit/test_review_boundaries.py \
+  tests/admin_overview_audit/test_audit_boundary.py
 python3 docs/admin/implementation/batch11-issue-611-evidence/verify_run.py \
   /absolute/fresh/external/output/run.json
 ```
@@ -56,3 +57,10 @@ after an interrupted/failed attempt, inspect and clean only these owned resource
 Full backend core, actual Alembic upgrade, hosted gate and deployment acceptance
 are not claimed. #611 and #583 remain open. See the committed lane handoff and
 external final postcommit binder for source correspondence and remaining work.
+
+The published `history-v1.tar.gz` and `history-index.json` retain prior diagnostic
+bytes, failures and independent reports. `python3 docs/admin/implementation/batch11-issue-611-evidence/verify_packet.py`
+checks the actual bundle and producer inventory without extracting it. It reports
+only historical bundle integrity, with `current_acceptance=false`. Then replay the
+live recorder and verifier above into a new external destination. No old
+`run.json` or generator identity has been rewritten to match this publication.

@@ -142,6 +142,19 @@ def verify(path):
         ids.append(case["id"])
     if len(ids) != len(set(ids)):
         raise ValueError("Duplicate testcase identity")
+    modules = recorder.selected_modules(command)
+    executed = [case["id"].split("::", 1)[0] for case in cases]
+    matches = lambda module, classname: classname == module or classname.startswith(
+        module + "."
+    )
+    if any(
+        not any(matches(module, classname) for module in modules)
+        for classname in executed
+    ) or any(
+        not any(matches(module, classname) for classname in executed)
+        for module in modules
+    ):
+        raise ValueError("Executed JUnit cases contradict selected test files")
     counts = record.get("counts")
     if (
         type(counts) is not dict

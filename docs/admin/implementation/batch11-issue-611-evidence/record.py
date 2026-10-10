@@ -77,14 +77,48 @@ def output_path(path, fresh=False):
 
 
 def junit_cases(path):
+    root = ET.parse(path).getroot()
+    if root.tag != "testsuites" or any(suite.tag != "testsuite" for suite in root):
+        raise ValueError("Expected pytest JUnit suites")
     cases = []
-    for case in ET.parse(path).iter("testcase"):
-        classname, name = case.attrib.get("classname"), case.attrib.get("name")
-        if not classname or not name:
-            raise ValueError("JUnit case identity missing")
-        state = next((s for s in STATES[1:] if case.find(s) is not None), "passed")
-        cases.append({"id": classname + "::" + name, "state": state})
+    for suite in root:
+        suite_cases = []
+        if any(child.tag in {"error", "failure", "testsuite"} for child in suite):
+            raise ValueError("Unrepresented JUnit suite outcome")
+        for case in suite.findall("testcase"):
+            classname, name = case.attrib.get("classname"), case.attrib.get("name")
+            if not classname or not name:
+                raise ValueError("JUnit case identity missing")
+            outcomes = [s for s in STATES[1:] if case.find(s) is not None]
+            if len(outcomes) > 1:
+                raise ValueError("Contradictory JUnit testcase outcomes")
+            suite_cases.append(
+                {
+                    "id": classname + "::" + name,
+                    "state": outcomes[0] if outcomes else "passed",
+                }
+            )
+        expected = {
+            "tests": len(suite_cases),
+            "failures": sum(c["state"] == "failure" for c in suite_cases),
+            "errors": sum(c["state"] == "error" for c in suite_cases),
+            "skipped": sum(c["state"] == "skipped" for c in suite_cases),
+        }
+        for key, value in expected.items():
+            if suite.attrib.get(key) != str(value):
+                raise ValueError("JUnit summary contradicts actual testcase inventory")
+        cases.extend(suite_cases)
     return cases
+
+
+def selected_modules(command):
+    selected = command[6:-3]
+    if not selected or any(
+        not t.startswith("tests/") or not t.endswith(".py") or ".." in Path(t).parts
+        for t in selected
+    ):
+        raise ValueError("Explicit backend test files required")
+    return [t[:-3].replace("/", ".") for t in selected]
 
 
 def counts(cases):
@@ -124,7 +158,10 @@ def main():
     parser.add_argument("tests", nargs="+")
     args = parser.parse_args()
     if not args.python.is_file() or any(
-        not name.startswith("tests/") or ".." in Path(name).parts for name in args.tests
+        not name.startswith("tests/")
+        or not name.endswith(".py")
+        or ".." in Path(name).parts
+        for name in args.tests
     ):
         raise ValueError("Explicit interpreter and backend tests required")
     destination = Destination(args.out)

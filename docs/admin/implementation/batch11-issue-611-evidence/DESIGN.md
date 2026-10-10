@@ -126,8 +126,13 @@ An RLS policy changed to `false` produced a false empty 200 before the capabilit
 repair; the six-control refusal replay retained five positive controls and one
 observed failure. These are prototype defects, not new production issue claims.
 The client regression was observed red (3 failures / 10 passes), then the complete
-overview/audit client cohort passed 65 cases. Later final receipts and independent
-reviews bind the published bytes; historical passes remain historical.
+overview/audit client cohort passed 65 cases. The later author complete cohort passed 71 cases, adding the unchanged actual
+legacy caller/router cases using the repository SQLite JSONB compile setup. A
+scoped attempt without that setup had 52 passes and 19 setup errors and remains
+NOT_ACCEPTED. Independent Spec replay at dce1991 passed 52 current and minimum
+cases. The browser/API journey later passed with explicit zero-table/zero-role
+cleanup. Final external replays and independent rechecks bind published bytes;
+historical passes remain historical.
 
 ## Integration still required
 
