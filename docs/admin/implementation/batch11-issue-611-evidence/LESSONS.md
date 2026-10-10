@@ -54,3 +54,15 @@ Shared skills were read only. No shared policy or skill was edited.
    parameter named XPASS and a recatalogued false-PASS receipt under normal
    and optimized Python. Local packet consistency is still not authentication
    against a party able to rewrite all raw outputs.
+10. Physical cleanup and completed test work are different observations. An
+    exited passing parent with a live child must be cleaned, but cannot certify
+    completion afterward. Preserve survived-parent detection as refusal in
+    both recorder and reader, even when the group is physically absent. Test
+    the actual pytest parent and a coherently altered PASS verdict, alongside
+    a normal no-survivor acceptance control.
+11. A separately configured owned browser fixture still joins the normal suite
+    if its spec is under that suite's testDir. Prove discovery with the real
+    canonical list, place dedicated fixtures outside that directory, and run
+    their standalone configuration separately. Keep the original canonical
+    config/workflow and assertions unchanged; retain pre-move inventories and
+    prove both ordinary exclusion and actual owned journey after relocation.

@@ -323,6 +323,7 @@ def main():
         code == 0
         and execution["source_unchanged"]
         and lifecycle["absent"]
+        and not lifecycle["survived_parent"]
         and not execution["unexpected_passes"]
         and bool(cases)
         and len(set(identities)) == len(identities)

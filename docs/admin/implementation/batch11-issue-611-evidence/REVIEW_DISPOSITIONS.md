@@ -91,3 +91,17 @@ bundle; later rechecks supplement them.
   and optimized Python. An ordinary parameter named XPASS remains valid.
   Historical producers and archives remain unchanged; current final counts
   and source correspondence belong in the external publication binder.
+- **Completion follow-up:** the first repaired recorder accepted a passing
+  parent after closing its surviving group. Coordinator review tightened this
+  bounded completion contract: unfinished child work cannot become acceptance
+  through cleanup. Producer and reader now require survived_parent=false as
+  well as absent=true. The actual pytest-parent regression was observed red
+  against45236cc, then freshly rerun; that commit and its97-case receipts remain
+  historical. Normal completion without survivors remains accepted.
+- **Canonical discovery follow-up:** the owned epoch-one fixture was discovered
+  by the ordinary e2e gate, which does not provision its dedicated API/database.
+  Real canonical collection included it before repair. Current fixture/config
+  move together to `frontend/browser-fixtures/admin-audit-epoch` with unchanged
+  bytes/assertions; canonical config/workflow remain unchanged. Standalone
+  execution and canonical exclusion are separately measured in the external
+  binder. Historical source and browser execution paths remain historical.

@@ -88,7 +88,7 @@ def verify(path):
     lifecycle = record.get("process_group")
     if (type(lifecycle) is not dict or set(lifecycle) != {"id", "survived_parent", "signals", "absent"}
         or type(lifecycle["id"]) is not int or lifecycle["id"] <= 0
-        or type(lifecycle["survived_parent"]) is not bool or lifecycle["absent"] is not True
+        or lifecycle["survived_parent"] is not False or lifecycle["absent"] is not True
         or type(lifecycle["signals"]) is not list
         or any(type(value) is not int or value not in (15, 9) for value in lifecycle["signals"])):
         raise ValueError("Closed owned process group readback required")
