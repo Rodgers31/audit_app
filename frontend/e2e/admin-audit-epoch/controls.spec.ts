@@ -1,0 +1,46 @@
+import { test, expect } from '@playwright/test';
+import { createHmac } from 'crypto';
+
+test('actual epoch-one API and browser transfer durable pages, history, filters, expiry and unavailable state', async ({ page, context, request }) => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  const encode = (v: unknown) => Buffer.from(JSON.stringify(v)).toString('base64url');
+  const body = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: id, aud: 'authenticated', role: 'authenticated', email: 'admin@example.invalid', exp: Math.floor(Date.now() / 1000) + 3600 })}`;
+  const token = `${body}.${createHmac('sha256', 'issue611-inert-key').update(body).digest('base64url')}`;
+  const headers = { Authorization: 'Bearer ' + token };
+  const response = await request.get('http://127.0.0.1:18034/api/v1/admin/audit-log?days=0', { headers });
+  expect(response.status()).toBe(200);
+  expect(response.headers()['cache-control']).toBe('private, no-store');
+  expect(response.headers()['vary']).toContain('Authorization');
+  const first = await response.json();
+  expect(first.visibility_snapshot).toMatch(/^v2:/);
+  expect(BigInt(first.visibility_snapshot.split(':')[3])).toBeGreaterThan(BigInt(4294967296));
+  expect(await response.text()).not.toContain('INERT_SECRET');
+  const session = { access_token: token, refresh_token: 'inert', expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600, token_type: 'bearer',
+    user: { id, aud: 'authenticated', role: 'authenticated', email: 'admin@example.invalid', app_metadata: {}, user_metadata: {} } };
+  await context.addCookies([{ name: 'sb-127-auth-token', value: 'base64-' + encode(session), domain: '127.0.0.1', path: '/', sameSite: 'Lax' }]);
+  await page.route('**/*', route => ['127.0.0.1', 'localhost'].includes(new URL(route.request().url()).hostname) ? route.continue() : route.abort());
+  await page.goto('/admin/audit-log?days=0');
+  await expect(page.getByText('28 actions recorded.')).toBeVisible();
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(page.getByText('Page 2', { exact: true })).toBeVisible();
+  const next = new URL(page.url());
+  expect(next.searchParams.get('visibility_snapshot')).toMatch(/^v2:/);
+  const transferred = next.searchParams.get('visibility_snapshot');
+  await page.goBack();
+  await expect(page.getByText('Page 1', { exact: true })).toBeVisible();
+  await page.getByLabel('Action', { exact: true }).fill('absent');
+  await page.getByRole('button', { name: 'Apply filters' }).click();
+  await expect(page.getByText('0 actions recorded.')).toBeVisible();
+  expect(new URL(page.url()).searchParams.has('visibility_snapshot')).toBe(false);
+  const expired = await request.get('http://127.0.0.1:18034/api/v1/admin/audit-log?' + new URLSearchParams({ snapshot_id: '28', as_of: new Date(Date.now()-16*60_000).toISOString(), visibility_snapshot: transferred! }), { headers });
+  expect(expired.status()).toBe(422);
+  expect(expired.headers()['cache-control']).toBe('private, no-store');
+  await request.post('http://127.0.0.1:18034/__fixture/unavailable');
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(page.getByText(/Could not load audit log/)).toBeVisible();
+  await request.post('http://127.0.0.1:18034/__fixture/restore-ready');
+  expect((await request.get('http://127.0.0.1:18034/api/v1/admin/audit-log')).status()).toBe(401);
+  const cleaned = await request.post('http://127.0.0.1:18034/__fixture/cleanup');
+  expect(cleaned.status()).toBe(200);
+  expect(await cleaned.json()).toEqual({ tables: 0, roles: 0 });
+});
