@@ -147,3 +147,23 @@ The initial in-memory SQLite setup refusal was not a behavioral red; the correct
 owned-file baseline supplied the nine failures. The initial repaired publication
 fixture lacked its newly required helper; adding the real helper fixed that
 fixture. Independent final-source review and combined hosted execution follow.
+
+## Independent owned-volume cleanup repair
+
+Independent Spec review executed a fresh owned helper fixture and found that
+container/network removal left its anonymous PostgreSQL data volume behind.
+The existing #583 covers this in-scope fixture gap. Cleanup now requests
+`docker rm -f --volumes` after the same exact ownership verification, removing
+only anonymous volumes attached to the owned bound container. The actual missing
+flag contract was observed red, and all 85 workflow/fixture tests pass after
+repair. A new real migrated fixture at verified-free port 55510 proves its exact
+container, network and anonymous volume are absent afterward, cleaned state is
+read back and the port is reusable. No shared volume or production operation
+was used. The previous helper is archived with SHA256 `1f891334f3f9c1b72217a45654bb189270047cb97669bf61364e9764aa35b36a`.
+
+The active helper SHA256 is now `c51823b9b4420a7ef5718d3de9ad349bc6073e6d9b2d4a18486daf9129a2b167`. Earlier helper and
+publication/behavior records preserve their previous source identities; they
+do not certify this later cleanup change. Independent final helper replay and
+fresh combined hosted execution remain separate. The first combined run was
+normally cancelled for a newly discovered PR596 recorder fix; its frontend
+installer failure is tracked separately in #600 and no partial run is acceptance.
