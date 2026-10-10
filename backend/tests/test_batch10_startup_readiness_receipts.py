@@ -207,3 +207,85 @@ def test_source_mutation_and_missing_child_cannot_certify_success(package):
         timeout=15,
     )
     assert result.returncode == 1 and json.loads(absent.read_text())["child_exit"] == 2
+
+
+@pytest.mark.parametrize("optimize", [False, True])
+@pytest.mark.parametrize("present", [False, True])
+def test_recorder_preserves_child_secret_inputs_without_publishing_values(
+    package, optimize, present
+):
+    import hashlib
+
+    root, tmp = package
+    output = tmp / "portable.json"
+    # These values are synthetic. Hashes in the command prove unchanged child
+    # inputs without placing credentials in the recorded command or child log.
+    secrets = {
+        "DATABASE_URL": "postgresql://toy-user:toy-password-604@127.0.0.1:9/toy-db",
+        "JWT_SECRET_KEY": "toy-jwt-secret-604-portable-control",
+        "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql://toy-user:toy-worker-604@127.0.0.1:9/toy-db",
+    }
+    expected = {
+        key: hashlib.sha256(value.encode()).hexdigest()
+        for key, value in secrets.items()
+    }
+    payload = (
+        "import hashlib,os; expected="
+        + repr(expected)
+        + "; "
+        + (
+            "assert all(hashlib.sha256(os.environ[k].encode()).hexdigest()==v for k,v in expected.items()); "
+            if present
+            else "assert all(k not in os.environ for k in expected); "
+        )
+        + "print('CHILD_SECRET_INPUTS_PRESERVED')"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            *(["-O"] if optimize else []),
+            str(root / "record.py"),
+            "--root",
+            str(root),
+            "--output",
+            str(output),
+            "--",
+            sys.executable,
+            "-c",
+            payload,
+        ],
+        env={"PATH": os.defpath, **(secrets if present else {})},
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 0, result.stderr
+    receipt = json.loads(output.read_text())
+    assert receipt["child_exit"] == 0 and receipt["verdict"] == "PASS"
+    assert "CHILD_SECRET_INPUTS_PRESERVED" in output.with_suffix(".txt").read_text()
+    portable = output.read_bytes() + output.with_suffix(".txt").read_bytes()
+    assert not any(
+        value.encode() in portable for value in secrets.values()
+    ), "PORTABLE_RECEIPT_LEAKS_SECRET"
+    assert receipt.get(
+        "secret_environment_present", {key: False for key in secrets}
+    ) == {key: present for key in secrets}
+    assert all(
+        receipt["environment"].get(key) == ("<redacted>" if present else None)
+        for key in secrets
+    )
+    verified = subprocess.run(
+        [
+            sys.executable,
+            *(["-O"] if optimize else []),
+            str(root / "verify_package.py"),
+            "--root",
+            str(root),
+            "--receipt",
+            str(output),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert verified.returncode == 0, verified.stderr

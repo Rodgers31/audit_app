@@ -995,7 +995,7 @@ def required_county_references_available(session: Session) -> bool:
     for name, slug in rows:
         code = official_county_code(name)
         if code is None:
-            continue
+            return False
         if code in found or not isinstance(slug, str) or not slug.strip():
             return False
         found.add(code)

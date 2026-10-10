@@ -162,3 +162,35 @@ preview both final heads, integrate #589 first, reconcile this lane onto that
 accepted integration, and rerun both real caller and readiness cohorts. No
 unpublished sibling commits are included here. #595 remains open. #583 and the
 parent/operational tickets retain their separate coordinator acceptance gates.
+
+## Coordinator correction — 2026-10-10 (PR604)
+
+Comment 4237305256 identified the data-dependent missing-table check: it ran only
+when debt and fiscal rows were both absent. Real PostgreSQL controls reproduced
+500s for partial populations, aborted fiscal/helper transactions and loss of
+valid national-debt fallback data. The same optional-table invariant also
+failed on broader debt. A shared catalog check now runs before the headline,
+projection and broader readers query IMF storage, independently of debt/fiscal
+population. Missing storage returns the existing explicit IMF absence values;
+valid CBK/World Bank fallbacks remain declared. Catalog/connection failures are
+errors, rather than being classified as absence. Healthy PostgreSQL controls
+preserve actuals, forecasts, caller responses and usable transactions. The
+broader reader's explicitly flagged forecast contract is unchanged.
+
+Comment 4237305222 identified an evidence boundary gap: the verifier could
+accept real passing outputs hidden under `.git`, an ignored checkout directory,
+or a symlink path. It now requires current replay receipts, raw/JUnit outputs
+and the fixture database path to be external and free of symlink/escape
+components. A separate real SQLite child also reproduced an externally named
+fixture database resolving into `.git`; this is now refused. Ordinary Python
+and `-O` refusal controls preserve inherited bytes. Existing #608 environment
+and primitive-type controls remain required.
+
+The previous verifier and identity are retained in
+`batch10-imf-evidence/history/copilot-2026-10-10/`.
+`batch10-imf-evidence/COPILOT_CORRECTION_2026_10_10.json` labels the correction
+without changing any original manifest, execution history, counts or producer
+identity. Current acceptance requires a separate external final replay against
+the complete committed corpus. The coordinator records current/minimum focused
+startup, IMF, PostgreSQL and evidence controls in `BATCH_10_MERGE/604`; immutable
+hosted acceptance and production observations retain their separate gates.

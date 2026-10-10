@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "generated_by": "docs/admin/implementation/batch10-readiness-evidence/publish_copilot_correction.py",
+  "generator_sha256": "1da0511f8fdfe9036987e7656f057a1e60b1fd7c1ffe8270d64a3a11189f2c65",
+  "generated_at": "2026-10-10",
+  "review_comment": "4237305222",
+  "classification": "tool_correction_publication",
+  "historical_current_checkout_acceptance": false,
+  "historical_disposition": "Superseded for current checkout acceptance; retained as records of their original executions, with no source/generator/count rebinding.",
+  "original_tool": {
+    "schema": 1,
+    "classification": "historical_tool_snapshot",
+    "current_checkout_acceptance": false,
+    "source_head": "ad4a9f76f944514c414465643a72f2cee0b1bc19",
+    "source_tree": "e82775f2bf7f900027797d3f7c20da468edff052",
+    "original_path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+    "retained_path": "docs/admin/implementation/batch10-imf-evidence/history/copilot-2026-10-10/verify_evidence.py.txt",
+    "sha256": "c50119677c80a7ad3ce80d794a35b33527c6677a1a44c3bf591c4bd721d8df80",
+    "reason": "Preserve the pre-correction tool bytes without rebinding any historical execution receipt."
+  },
+  "replacement_tool": {
+    "path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+    "sha256": "fe3b1f6c92eef38b52e18b15afc02ef743dac79f3c0cd9b4c20193eceb911333"
+  },
+  "change": "Current receipts, outputs and fixture database must be external to consumed source and have no symlink/escape components.",
+  "current_acceptance": "Requires a separate external execution receipt whose complete source HEAD/tree/corpus matches the final committed checkout.",
+  "original_manifest": {
+    "path": "docs/admin/implementation/batch10-imf-evidence/manifest.json",
+    "sha256": "9aee4b506a8e8024e30c15a664235f92eddfebc25f29584460b121a558481c2b"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "classification": "historical_tool_snapshot",
+  "current_checkout_acceptance": false,
+  "source_head": "ad4a9f76f944514c414465643a72f2cee0b1bc19",
+  "source_tree": "e82775f2bf7f900027797d3f7c20da468edff052",
+  "original_path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+  "retained_path": "docs/admin/implementation/batch10-imf-evidence/history/copilot-2026-10-10/verify_evidence.py.txt",
+  "sha256": "c50119677c80a7ad3ce80d794a35b33527c6677a1a44c3bf591c4bd721d8df80",
+  "reason": "Preserve the pre-correction tool bytes without rebinding any historical execution receipt."
+}

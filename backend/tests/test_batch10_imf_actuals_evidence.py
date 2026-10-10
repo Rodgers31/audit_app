@@ -317,3 +317,125 @@ def test_evidence_rejects_malformed_execution_provenance(
     result = verify(evidence_package, optimized)
     assert result.returncode != 0, result.stdout
     assert "current_checked" not in result.stdout
+
+
+@pytest.mark.parametrize("optimized", [False, True])
+@pytest.mark.parametrize("destination", ["git", "ignored", "symlink"])
+def test_evidence_refuses_current_outputs_hidden_inside_checkout(
+    evidence_package, optimized, destination
+):
+    checkout, artifacts, replay, receipt = evidence_package
+    if destination == "symlink":
+        alias = replay.parent / "replay-alias"
+        alias.symlink_to(replay, target_is_directory=True)
+        receipt_path = alias / "receipt.json"
+    else:
+        hidden = checkout / (
+            ".git/current-replay" if destination == "git" else "ignored-output"
+        )
+        hidden.mkdir()
+        if destination == "ignored":
+            (checkout / ".gitignore").write_text("ignored-output/\n")
+            subprocess.run(
+                ["git", "-C", str(checkout), "add", ".gitignore"], check=True
+            )
+        receipt["command"][-1] = "--junitxml=" + str(hidden / "cases.xml")
+        receipt["environment"]["DATABASE_URL"] = "sqlite:///" + str(
+            hidden / "batch10-imf-import.sqlite"
+        )
+        receipt["started_at"] = datetime.now(timezone.utc).isoformat()
+        child = subprocess.run(
+            receipt["command"],
+            cwd=checkout,
+            env=receipt["environment"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        assert child.returncode == 0, child.stdout + child.stderr
+        (hidden / "raw.log").write_text(child.stdout + child.stderr)
+        receipt["ended_at"] = datetime.now(timezone.utc).isoformat()
+        receipt["outputs"] = {
+            name: digest(hidden / name) for name in ("raw.log", "cases.xml")
+        }
+        # Measure the actual post-fixture source, including the added ignore rule.
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "imf_review_recorder", VERIFIER.with_name("run_evidence.py")
+        )
+        recorder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(recorder)
+        state = recorder.source_state(checkout, recorder.source_names(checkout))
+        receipt["start"] = state
+        receipt["end"] = json.loads(json.dumps(state))
+        receipt_path = hidden / "receipt.json"
+    receipt_path.write_text(json.dumps(receipt))
+    retained = {
+        name: digest(receipt_path.parent / name)
+        for name in ("receipt.json", "cases.xml", "raw.log")
+    }
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            *(["-O"] if optimized else []),
+            str(VERIFIER),
+            str(checkout),
+            str(artifacts),
+            str(receipt_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode != 0, "CURRENT_REPLAY_INSIDE_CHECKOUT_ACCEPTED"
+    assert "external" in result.stderr or "symlink" in result.stderr, result.stderr
+    assert retained == {
+        name: digest(receipt_path.parent / name) for name in retained
+    }, "Verifier changed inherited output bytes"
+
+
+@pytest.mark.parametrize("optimized", [False, True])
+def test_evidence_refuses_fixture_database_symlink_into_checkout(
+    evidence_package, optimized
+):
+    checkout, _, replay, receipt = evidence_package
+    hidden = checkout / ".git/hidden-fixture.sqlite"
+    fixture = replay / "batch10-imf-import.sqlite"
+    fixture.symlink_to(hidden)
+    test = checkout / "test_control.py"
+    test.write_text(
+        "import os,sqlite3\ndef test_control():\n    with sqlite3.connect(os.environ['DATABASE_URL'].removeprefix('sqlite:///')) as db:\n        assert db.execute('SELECT 1').fetchone() == (1,)\n"
+    )
+    receipt["started_at"] = datetime.now(timezone.utc).isoformat()
+    child = subprocess.run(
+        receipt["command"],
+        cwd=checkout,
+        env=receipt["environment"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert child.returncode == 0, child.stdout + child.stderr
+    assert hidden.is_file(), "Actual child did not open the hidden database"
+    (replay / "raw.log").write_text(child.stdout + child.stderr)
+    receipt["ended_at"] = datetime.now(timezone.utc).isoformat()
+    receipt["outputs"] = {
+        name: digest(replay / name) for name in ("raw.log", "cases.xml")
+    }
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "imf_db_boundary_recorder", VERIFIER.with_name("run_evidence.py")
+    )
+    recorder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(recorder)
+    state = recorder.source_state(checkout, recorder.source_names(checkout))
+    receipt["start"] = state
+    receipt["end"] = json.loads(json.dumps(state))
+    before = hidden.read_bytes()
+    result = verify(evidence_package, optimized)
+    assert result.returncode != 0, "CURRENT_DATABASE_RESOLVES_INTO_CHECKOUT_ACCEPTED"
+    assert "symlink" in result.stderr or "external" in result.stderr, result.stderr
+    assert hidden.read_bytes() == before

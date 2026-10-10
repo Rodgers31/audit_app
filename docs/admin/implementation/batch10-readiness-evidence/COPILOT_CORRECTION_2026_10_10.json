@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "generated_by": "docs/admin/implementation/batch10-readiness-evidence/publish_copilot_correction.py",
+  "generator_sha256": "1da0511f8fdfe9036987e7656f057a1e60b1fd7c1ffe8270d64a3a11189f2c65",
+  "generated_at": "2026-10-10",
+  "review_comment": "4237305236",
+  "classification": "tool_correction_publication",
+  "historical_current_checkout_acceptance": false,
+  "historical_disposition": "Superseded for current checkout acceptance; retained as records of their original executions, with no source/generator/count rebinding.",
+  "original_tool": {
+    "schema": 1,
+    "classification": "historical_tool_snapshot",
+    "current_checkout_acceptance": false,
+    "source_head": "ad4a9f76f944514c414465643a72f2cee0b1bc19",
+    "source_tree": "e82775f2bf7f900027797d3f7c20da468edff052",
+    "original_path": "docs/admin/implementation/batch10-readiness-evidence/record.py",
+    "retained_path": "docs/admin/implementation/batch10-readiness-evidence/history/copilot-2026-10-10/record.py.txt",
+    "sha256": "0516f0eb4436c528ff3dcbf443cf03699bc1b2f42f3a003e8f106426f65eb933",
+    "reason": "Preserve the pre-correction tool bytes without rebinding any historical execution receipt."
+  },
+  "replacement_tool": {
+    "path": "docs/admin/implementation/batch10-readiness-evidence/record.py",
+    "sha256": "0fb46e49ef1562aac0e327b83fc78c11b3fc0c2186338adb8c44f8a93178655c"
+  },
+  "change": "Child credential inputs remain unchanged; portable environment values are redacted with boolean presence metadata.",
+  "current_acceptance": "Requires a separate external execution receipt whose complete source HEAD/tree/corpus matches the final committed checkout.",
+  "original_manifest": {
+    "path": "docs/admin/implementation/batch10-readiness-evidence/MANIFEST.json",
+    "sha256": "a30355c1f9ae2da9336432eeae1200e6648008f33c6dc57e5aca887158e3a3b3"
+  }
+}
