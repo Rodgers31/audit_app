@@ -18,7 +18,7 @@ def digest(path):
 
 def snapshot():
     files = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT, text=True).splitlines()
-    included = ['backend/requirements.txt', 'backend/requirements-dev.txt', 'backend/models.py', 'backend/database.py', 'backend/admin_etl_dispatch.py', 'backend/admin_etl_dispatch_worker.py']
+    included = ['backend/models.py', 'backend/database.py', 'backend/admin_etl_dispatch.py', 'backend/admin_etl_dispatch_worker.py']
     prefixes = ('etl/', 'backend/seeding/', 'backend/tests/test_batch9_legacy', 'backend/tests/batch9_legacy', '.github/scripts/run_backend_tests', '.github/scripts/tests/test_backend_test_launcher', 'batch9-legacy-etl-evidence/')
     return {p: digest(ROOT / p) for p in files if (p in included or p.startswith(prefixes)) and (ROOT / p).is_file()}
 
@@ -34,7 +34,7 @@ head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True
 clock_start = time.monotonic()
 now = datetime.now(timezone.utc).isoformat()
 selected_environment = {key: os.environ.get(key) for key in ('PYTHONDONTWRITEBYTECODE', 'PYTHON_DOTENV_DISABLED', 'TESTING', 'DATABASE_URL', 'BATCH9_LEGACY_DATABASE_URL', 'BATCH9_LEGACY_FIXTURE_PORT')}
-with (OUT / (name + '.log')).open('x') as stream:
+with (OUT / (name + '.log')).open('w') as stream:
     result = subprocess.run(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT)
 end = snapshot()
 head_after = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()

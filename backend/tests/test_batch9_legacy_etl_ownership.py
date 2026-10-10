@@ -126,6 +126,15 @@ def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, nati
     other = None
     try:
         entered(engine, "legacy")
+        with engine.connect() as connection:
+            legacy_claim_ids = connection.execute(text(
+                "SELECT id::text FROM seeding_domain_claims WHERE released_at IS NULL"
+            )).scalars().all()
+        assert len(legacy_claim_ids) == 13
+        if native_kind == "dispatch":
+            # A queued successor may acquire ownership as soon as legacy exits.
+            # Hold its real handler before effects to observe that transfer.
+            mode(engine, "native", "before")
         other = start(tmp_path, native_kind)
         if native_kind == "native":
             assert other.wait(timeout=15) == 1, "Conflicting native CLI ran while legacy owned writes"
@@ -136,12 +145,20 @@ def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, nati
         assert effects(engine) == 0
         mode(engine, "legacy", "normal")
         assert legacy.wait(timeout=20) == 0
-        assert effects(engine) == 1 and retained(engine) == 0
+        assert scalar(engine, "SELECT count(*) FROM seeding_domain_claims "
+                      "WHERE id=ANY(CAST(:claim_ids AS uuid[])) AND released_at IS NULL",
+                      claim_ids=legacy_claim_ids) == 0
         if native_kind == "native":
+            assert effects(engine) == 1 and retained(engine) == 0
             stop(other)
             other = start(tmp_path, "native")
             assert other.wait(timeout=15) == 0
         else:
+            entered(engine, "native")
+            assert effects(engine) == 1 and retained(engine) == 1
+            assert scalar(engine, "SELECT count(*) FROM seeding_domain_claims "
+                          "WHERE kind='dispatch' AND released_at IS NULL") == 1
+            mode(engine, "native", "normal")
             wait_for(lambda: scalar(engine, "SELECT status FROM etl_dispatch_commands WHERE id=:i", i=identity), lambda s: s == "completed")
         assert effects(engine) == 2 and retained(engine) == 0
     finally:
