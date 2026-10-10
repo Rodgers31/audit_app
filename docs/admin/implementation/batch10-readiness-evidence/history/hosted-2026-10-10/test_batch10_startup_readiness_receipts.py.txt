@@ -73,69 +73,6 @@ def run(root, output, payload, *, optimize=False, negative=None):
 
 
 @pytest.mark.parametrize("optimize", [False, True])
-@pytest.mark.parametrize("bytecode_setting", [None, "0", "1"])
-@pytest.mark.parametrize("existing_cache", [False, True])
-def test_valid_verification_preserves_complete_source_with_bytecode_enabled(
-    package, optimize, bytecode_setting, existing_cache
-):
-    root, tmp = package
-    if existing_cache:
-        cache = root / "__pycache__/retained-input.pyc"
-        cache.parent.mkdir()
-        cache.write_bytes(b"retained measured input")
-    output = tmp / "valid.json"
-    recorded = run(root, output, "print('actual child')")
-    assert recorded.returncode == 0, recorded.stderr
-    receipt_bytes = output.read_bytes()
-    log_bytes = output.with_suffix(".txt").read_bytes()
-    before = json.loads(receipt_bytes)["after"]
-    source_bytes = {path: (root / path).read_bytes() for path in before["sources"]}
-    environment = {"PATH": os.defpath}
-    if bytecode_setting is not None:
-        environment["PYTHONDONTWRITEBYTECODE"] = bytecode_setting
-    # Execute the actual CLI with an explicit ordinary/optimized interpreter.
-    # Record its flags and require the imported helper to restore ambient state.
-    payload = (
-        "import json,runpy,sys; "
-        "initial=sys.dont_write_bytecode; "
-        "print(json.dumps({'optimize':sys.flags.optimize,'dont_write_bytecode':initial})); "
-        f"sys.argv={[str(root / 'verify_package.py'), '--root', str(root), '--receipt', str(output)]!r}; "
-        f"runpy.run_path({str(root / 'verify_package.py')!r},run_name='__main__'); "
-        "print(json.dumps({'restored':sys.dont_write_bytecode is initial}))"
-    )
-    checked = subprocess.run(
-        [sys.executable, *(["-O"] if optimize else []), "-c", payload],
-        env=environment,
-        capture_output=True,
-        text=True,
-        timeout=15,
-    )
-    assert checked.returncode == 0, checked.stderr
-    flags, verdict, restored = [json.loads(line) for line in checked.stdout.splitlines()]
-    assert flags == {
-        "optimize": int(optimize),
-        "dont_write_bytecode": bytecode_setting not in (None, "0"),
-    }
-    assert restored == {"restored": True}
-    assert verdict["verdict"] == "PASS"
-    paths = subprocess.check_output(
-        ["git", "-C", str(root), "ls-files", "-c", "--others", "--exclude-standard"],
-        env={"PATH": os.defpath},
-        text=True,
-    ).splitlines()
-    assert set(paths) == set(source_bytes)
-    assert all((root / path).read_bytes() == value for path, value in source_bytes.items())
-    status = subprocess.check_output(
-        ["git", "-C", str(root), "status", "--porcelain"],
-        env={"PATH": os.defpath},
-        text=True,
-    ).strip()
-    assert status == before["status"]
-    assert output.read_bytes() == receipt_bytes
-    assert output.with_suffix(".txt").read_bytes() == log_bytes
-
-
-@pytest.mark.parametrize("optimize", [False, True])
 @pytest.mark.parametrize("destination", ["inherited", "source", "generator", "symlink"])
 def test_recorder_refuses_overwrite_before_child(package, destination, optimize):
     root, tmp = package
@@ -194,7 +131,6 @@ def test_package_verifier_rejects_tampering(package, optimize, tamper):
                 "--receipt",
                 str(output),
             ],
-            env={"PATH": os.defpath},
             capture_output=True,
             text=True,
             timeout=15,
@@ -266,7 +202,6 @@ def test_source_mutation_and_missing_child_cannot_certify_success(package):
             sys.executable,
             str(tmp / "absent-child.py"),
         ],
-        env={"PATH": os.defpath},
         capture_output=True,
         text=True,
         timeout=15,
@@ -349,7 +284,6 @@ def test_recorder_preserves_child_secret_inputs_without_publishing_values(
             "--receipt",
             str(output),
         ],
-        env={"PATH": os.defpath},
         capture_output=True,
         text=True,
         timeout=15,

@@ -64,3 +64,27 @@ frozen. The recorder snapshots the complete source, command, interpreter,
 environment metadata and actual exit; the receipt verifier must accept that
 exact current source, rather than rebinding an old author run. #603, #583 and
 the broader operational gates remain separate pending work.
+
+## Hosted correction — 2026-10-10 (#591/#616)
+
+The frozen combined f75 full hosted run failed five backend cases and ten browser
+coordinator cases; it is diagnostic, not merge acceptance. The backend failures
+are distinct: the financial context pin correctly required re-review after
+PR604 changed main.py, and the receipt verifier's import wrote bytecode inside
+its measured three-file inert Git fixture. The latter is not sibling historical
+source copying. Local parent `PYTHONDONTWRITEBYTECODE=1` had hidden that import
+side effect. The verifier now prevents only its import write and restores the
+caller flag. It still measures every existing cache/source file and refuses
+source/output/generator/verdict/provenance tampering under ordinary Python/-O.
+The new controls explicitly set bytecode unset/0/1, including pre-existing
+measured cache files, and preserve source/Git status and original receipt/logs.
+
+The dated financial context review links exact old/new source/AST identities,
+unchanged four raw sites and dispositions, all financial callers and changed IMF
+publication/fallback paths. `HOSTED_CORRECTION_2026_10_10.json` and retained old
+inventory/verifier/test snapshots preserve prior tool and history bytes. Old
+receipts remain bound to their original source and do not certify this changed
+candidate. New external current/minimum receipt and financial gate executions
+must bind the final published corpus; frozen full hosted acceptance is separate.
+#591/#616 track these repairs; #603/#602/#583 stay pending. The independent browser
+fixture repair is tracked in #615 and owned in PR606.

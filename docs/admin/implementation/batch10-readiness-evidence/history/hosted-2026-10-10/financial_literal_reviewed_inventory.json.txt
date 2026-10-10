@@ -1,38 +1,38 @@
 {
   "backend/main.py": {
-    "ast_sha256": "5cb0b69964a08ce4dbbd280abdf4f08382d2cc86d6a2d1ac074e6de9413ce4ab",
+    "ast_sha256": "a1feee54730bad33f8b69712d2ba210ddfd7e2d1a6ee718bf03c97a81b60eac1",
     "sites": [
       {
         "signature": "'_MAX_COUNTY_BUDGET_KES' is published from typed-in numbers [50000000000]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "unused private upper-bound constant; no code reference beyond definition",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7: exact current module and complete callers/publication/fallback use-context re-review (#591)",
-        "review_context": "docs/verification/2026-10-10-batch10-finance-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'_PENDING_BILLS_SEVERE_SHARE' is published from typed-in numbers [25.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented score policy calibration threshold, not a measured monetary observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7: exact current module and complete callers/publication/fallback use-context re-review (#591)",
-        "review_context": "docs/verification/2026-10-10-batch10-finance-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'_budget_overview_meta' is published from typed-in numbers [1800]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "response metadata TTL keyword 1800 seconds, not a finance amount",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7: exact current module and complete callers/publication/fallback use-context re-review (#591)",
-        "review_context": "docs/verification/2026-10-10-batch10-finance-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       },
       {
         "signature": "'anchor_pct_gdp' is published from typed-in numbers [55.0]. Nothing measured it. Serve a sourced figure or serve nothing.",
         "reason": "documented legislative debt-anchor threshold, not a reported debt observation",
         "disposition": "reviewed contextual value",
         "tracking": "https://github.com/Rodgers31/audit_app/issues/301",
-        "reviewed_against": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7: exact current module and complete callers/publication/fallback use-context re-review (#591)",
-        "review_context": "docs/verification/2026-10-10-batch10-finance-context-review.md"
+        "reviewed_against": "672c5c011ce57dc41551f5fbc642bc4e69134c43: exact current module and complete use-context review",
+        "review_context": "docs/verification/2026-10-09-batch9-finance-context-review.md"
       }
     ]
   },
