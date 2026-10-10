@@ -21,6 +21,9 @@ import requests
 import urllib3
 from bs4 import BeautifulSoup
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 try:
     from .cob_headless import fetch_cob_download, headless_allowed  # type: ignore
 except Exception:
@@ -167,16 +170,19 @@ except Exception as e:
             return True
 
 
-class NoopDatabaseLoader:
+class UnavailableDatabaseLoader:
+    def check_ownership_ready(self):
+        raise DomainOwnershipError("Legacy database writer unavailable")
+
     async def load_audit_findings_document(self, document_record, findings):
-        return 1
+        raise DomainOwnershipError("Legacy database writer unavailable")
 
     async def load_document(self, document_record, normalized_data):
-        return 1
+        raise DomainOwnershipError("Legacy database writer unavailable")
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Ownership refusals must reach schedulers rather than become an empty success.
+from seeding.exclusion import DomainOwnershipError
 
 
 class KenyaDataPipeline:
@@ -210,13 +216,13 @@ class KenyaDataPipeline:
         # Database loader is optional; fall back to a no-op when DB models aren't available
         try:
             self.db_loader = (
-                DatabaseLoader() if DatabaseLoader else NoopDatabaseLoader()
+                DatabaseLoader() if DatabaseLoader else UnavailableDatabaseLoader()
             )
         except Exception:
             logger.warning(
-                "DatabaseLoader unavailable; using NoopDatabaseLoader for this run"
+                "DatabaseLoader unavailable; discovery only, all writes will refuse"
             )
-            self.db_loader = NoopDatabaseLoader()
+            self.db_loader = UnavailableDatabaseLoader()
 
         # HTTP session with a reasonable User-Agent; we'll allow per-host SSL fallback
         self.http = requests.Session()
@@ -2139,6 +2145,8 @@ class KenyaDataPipeline:
                         normalized_data = knbs_items
                         knbs_loaded = True
                         # Update manifest and return handled below
+                    except DomainOwnershipError:
+                        raise
                     except Exception as knbs_err:
                         logger.error(f"KNBS parse/load failed: {knbs_err}")
                         # Fall back to generic normalization so we still retain the document record
@@ -2222,6 +2230,9 @@ class KenyaDataPipeline:
                 "normalized_data": normalized_data,
             }
 
+        except DomainOwnershipError:
+            logger.error("Legacy writer ownership refused; document not processed")
+            raise
         except Exception as e:
             logger.error(f"Error processing document {doc_info['url']}: {e}")
             return None
@@ -2294,6 +2305,9 @@ class KenyaDataPipeline:
                 pipeline_results["sources_processed"][source_key] = source_results
                 pipeline_results["total_documents"] += source_results["processed"]
 
+            except DomainOwnershipError:
+                logger.error("Legacy writer ownership refused; pipeline failed")
+                raise
             except Exception as e:
                 error_msg = f"Error processing source {source_key}: {e}"
                 logger.error(error_msg)

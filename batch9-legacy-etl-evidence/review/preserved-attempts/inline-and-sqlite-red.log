@@ -1,0 +1,162 @@
+FFFF/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-2 (failed)
+
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/tests/test_batch9_legacy_etl_sessions.py", line 162, in failed
+    raise CalledProcessError(1, ["inert-backfill"])
+subprocess.CalledProcessError: Command '['inert-backfill']' returned non-zero exit status 1.
+
+Enable tracemalloc to get traceback where the object was allocated.
+See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+  warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-1 (failed)
+
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/tests/test_batch9_legacy_etl_sessions.py", line 162, in failed
+    raise CalledProcessError(1, ["inert-backfill"])
+subprocess.CalledProcessError: Command '['inert-backfill']' returned non-zero exit status 1.
+
+Enable tracemalloc to get traceback where the object was allocated.
+See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+  warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+=================================== FAILURES ===================================
+_____ test_session_factory_refuses_another_engine_before_acquisition[call] _____
+
+loader = <etl.database_loader.DatabaseLoader object at 0x1087de120>
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-416/test_session_factory_refuses_a0')
+method = 'call'
+
+    @pytest.mark.parametrize("method", ["call", "configure", "mutated-default"])
+    def test_session_factory_refuses_another_engine_before_acquisition(loader, tmp_path, method):
+        other = create_engine("sqlite:///" + str(tmp_path / "other.sqlite"))
+        Base.metadata.create_all(other)
+        try:
+>           with pytest.raises(DomainOwnershipError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'seeding.exclusion.DomainOwnershipError'>
+
+backend/tests/test_batch9_legacy_etl_sessions.py:109: Failed
+__ test_session_factory_refuses_another_engine_before_acquisition[configure] ___
+
+loader = <etl.database_loader.DatabaseLoader object at 0x10907a990>
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-416/test_session_factory_refuses_a1')
+method = 'configure'
+
+    @pytest.mark.parametrize("method", ["call", "configure", "mutated-default"])
+    def test_session_factory_refuses_another_engine_before_acquisition(loader, tmp_path, method):
+        other = create_engine("sqlite:///" + str(tmp_path / "other.sqlite"))
+        Base.metadata.create_all(other)
+        try:
+>           with pytest.raises(DomainOwnershipError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'seeding.exclusion.DomainOwnershipError'>
+
+backend/tests/test_batch9_legacy_etl_sessions.py:109: Failed
+_ test_session_factory_refuses_another_engine_before_acquisition[mutated-default] _
+
+loader = <etl.database_loader.DatabaseLoader object at 0x109079d10>
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-416/test_session_factory_refuses_a2')
+method = 'mutated-default'
+
+    @pytest.mark.parametrize("method", ["call", "configure", "mutated-default"])
+    def test_session_factory_refuses_another_engine_before_acquisition(loader, tmp_path, method):
+        other = create_engine("sqlite:///" + str(tmp_path / "other.sqlite"))
+        Base.metadata.create_all(other)
+        try:
+>           with pytest.raises(DomainOwnershipError):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           Failed: DID NOT RAISE <class 'seeding.exclusion.DomainOwnershipError'>
+
+backend/tests/test_batch9_legacy_etl_sessions.py:109: Failed
+__________ test_in_memory_sqlite_retains_schema_across_owned_sessions __________
+
+    def test_in_memory_sqlite_retains_schema_across_owned_sessions():
+        owned = DatabaseLoader("sqlite:///:memory:")
+        try:
+            Base.metadata.create_all(owned.engine)
+            with owned.engine.begin() as conn:
+                conn.execute(text("CREATE TABLE inert_effects(n integer)"))
+>           with owned.get_db_session() as session:
+                 ^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_legacy_etl_sessions.py:139: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+etl/database_loader.py:150: in get_db_session
+    return self.SessionLocal()
+           ^^^^^^^^^^^^^^^^^^^
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py:5121: in __call__
+    return self.class_(**local_kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+etl/writer_ownership.py:222: in __init__
+    self._ownership = acquire_scope(engine)
+                      ^^^^^^^^^^^^^^^^^^^^^
+etl/writer_ownership.py:140: in acquire_scope
+    active.acquire()
+etl/writer_ownership.py:89: in acquire
+    check_ready(self.engine)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+engine = Engine(sqlite:///:memory:)
+
+    def check_ready(engine):
+        """Read-only startup check. A missing migration never selects an unlocked path."""
+        factory = sessionmaker(bind=engine_for(engine))
+        try:
+            with factory() as db:
+                db.execute(select(SeedingDomainClaim).limit(0))
+                db.execute(select(IngestionJob).limit(0))
+                db.execute(select(EtlDispatchDomain).limit(0))
+            indexes = inspect(engine).get_indexes("seeding_domain_claims")
+            def active_domain_index(index):
+                predicate = index.get("dialect_options", {}).get(engine.dialect.name + "_where")
+                predicate = "".join(str(predicate).lower().replace("(", "").replace(")", "").split())
+                return (index.get("unique") and index.get("column_names") == ["domain"]
+                        and predicate == "released_atisnull")
+            if not any(active_domain_index(index) for index in indexes):
+                raise DomainOwnershipError("Legacy writer requires the unique active-domain index")
+        except SQLAlchemyError:
+>           raise DomainOwnershipError("Legacy writer requires the shared ownership migration") from None
+E           seeding.exclusion.DomainOwnershipError: Legacy writer requires the shared ownership migration
+
+etl/writer_ownership.py:64: DomainOwnershipError
+------------------------------ Captured log call -------------------------------
+ERROR    etl.writer_ownership:writer_ownership.py:160 Legacy writer ownership refused; no loader work started
+=============================== warnings summary ===============================
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:65: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:103: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_etl_sessions.py::test_session_factory_refuses_another_engine_before_acquisition[call]
+FAILED backend/tests/test_batch9_legacy_etl_sessions.py::test_session_factory_refuses_another_engine_before_acquisition[configure]
+FAILED backend/tests/test_batch9_legacy_etl_sessions.py::test_session_factory_refuses_another_engine_before_acquisition[mutated-default]
+FAILED backend/tests/test_batch9_legacy_etl_sessions.py::test_in_memory_sqlite_retains_schema_across_owned_sessions
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/tests/test_batch9_legacy_etl_sessions.py:164: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+4 failed, 15 deselected, 4 warnings in 0.69s

@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 LEGACY_ETL_TESTS = frozenset({
     "tests/test_audit_parser.py",
+    "tests/test_batch9_legacy_etl_sessions.py",
     "tests/test_county_normalizer.py",
     "tests/test_county_pending_bills_one_source.py",
     "tests/test_etl.py",

@@ -1,0 +1,171 @@
+........................................................................ [ 63%]
+.........................................E                               [100%]
+==================================== ERRORS ====================================
+_ ERROR at teardown of test_sqlite_forged_scope_starts_no_work_and_keeps_retained_claim[True] _
+
+tmp_path_factory = TempPathFactory(_given_basetemp=PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8c...-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-fresh-current'), _retention_count=3, _retention_policy='all')
+
+    @pytest.fixture(scope="session")
+    def owned_database(tmp_path_factory):
+>       with owned_postgres_fixture(URL_OVERRIDE, ROOT, tmp_path_factory.mktemp("batch9-review-596-resources")) as url:
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+backend/tests/test_batch9_legacy_etl_ownership.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py:148: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+override = None
+root = PosixPath('/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app')
+receipt_dir = PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-fresh-current/batch9-review-596-resources0')
+
+    @contextmanager
+    def owned_postgres_fixture(override, root, receipt_dir):
+        """Prepare one migrated process fixture unless its owner provided the exact target."""
+        import hashlib
+        import json
+        import socket
+        import subprocess
+        import sys
+        import time
+        from pathlib import Path
+        from uuid import uuid4
+    
+        url = validate_target(override or DEFAULT_URL)
+        if override:
+            yield url
+            return
+        token = uuid4().hex[:12]
+        stem = "batch9-review-596-" + token
+        container, network = stem + "-db", stem + "-network"
+        receipt = {"generated_by": str(Path(__file__).relative_to(root)),
+                   "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                   "container": container, "network": network, "port": OWNED_PORT,
+                   "database": OWNED_DATABASE, "image": APPROVED_IMAGE,
+                   "container_removed": False, "network_removed": False}
+        receipt_dir.mkdir(parents=True, exist_ok=True)
+        receipt_path = receipt_dir / "owned-postgres.json"
+        network_created = False
+        container_created = False
+        def command(args):
+            return subprocess.run(args, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True)
+        try:
+            with socket.socket() as reservation:
+                reservation.bind((OWNED_HOST, OWNED_PORT))
+            command(["docker", "image", "inspect", APPROVED_IMAGE])
+            command(["docker", "network", "create", "--label", "audit_app.fixture=" + token, network])
+            network_created = True
+            result = command(["docker", "run", "--pull", "never", "--detach", "--name", container,
+                              "--label", "audit_app.fixture=" + token, "--network", network,
+                              "--publish", f"{OWNED_HOST}:{OWNED_PORT}:5432",
+                              "--env", "POSTGRES_USER=" + OWNED_USER,
+                              "--env", "POSTGRES_PASSWORD=" + OWNED_PASSWORD,
+                              "--env", "POSTGRES_DB=" + OWNED_DATABASE, APPROVED_IMAGE])
+            container_created = True
+            receipt["container_id"] = result.stdout.strip()
+            inspection = json.loads(command(["docker", "inspect", container]).stdout)[0]
+            if (inspection["Config"]["Image"] != APPROVED_IMAGE
+                    or inspection["Config"]["Labels"].get("audit_app.fixture") != token
+                    or inspection["NetworkSettings"]["Ports"]["5432/tcp"] != [{"HostIp": OWNED_HOST, "HostPort": str(OWNED_PORT)}]):
+                raise RuntimeError("Owned PostgreSQL identity/binding mismatch")
+            receipt["image_id"] = inspection["Image"]
+            deadline = time.monotonic() + 40
+            while True:
+                ready = subprocess.run(["docker", "exec", container, "pg_isready", "-U", OWNED_USER, "-d", OWNED_DATABASE], capture_output=True)
+                if ready.returncode == 0:
+                    break
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("Owned PostgreSQL readiness timed out")
+                time.sleep(.2)
+            environment = {"PATH": str(Path(sys.executable).parent) + os.pathsep + os.environ.get("PATH", "/usr/bin:/bin"),
+                           "PYTHONDONTWRITEBYTECODE": "1", "PYTHON_DOTENV_DISABLED": "1",
+                           "DATABASE_URL": url, "PYTHONPATH": str(root / "backend")}
+            migrated = subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"],
+                                      cwd=root / "backend", env=environment, text=True,
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            receipt["migration_exit"] = migrated.returncode
+            receipt["migration_output"] = migrated.stdout
+            if migrated.returncode:
+                raise RuntimeError("Owned PostgreSQL migration failed")
+            import psycopg2
+            with psycopg2.connect(**connect_args()) as db:
+                with db.cursor() as cursor:
+                    cursor.execute("SELECT current_database(),current_user,version(),(SELECT version_num FROM alembic_version)")
+                    database, user, version, revision = cursor.fetchone()
+                    if database != OWNED_DATABASE or user != OWNED_USER or revision != "e572b8c9a001":
+                        raise RuntimeError("Owned PostgreSQL migrated target mismatch")
+                    receipt.update(server_version=version, migration_revision=revision)
+            receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
+            yield url
+        finally:
+            errors = []
+            # A failed docker run may create an inactive container before returning.
+            inspection = subprocess.run(["docker", "inspect", container], capture_output=True, text=True)
+            if inspection.returncode == 0:
+                metadata = json.loads(inspection.stdout)[0]
+                if metadata["Config"]["Labels"].get("audit_app.fixture") != token:
+                    errors.append("container ownership changed; removal refused")
+                else:
+                    removed = subprocess.run(["docker", "rm", "--force", "--volumes", container], capture_output=True, text=True)
+                    receipt["container_removed"] = removed.returncode == 0
+                    if removed.returncode:
+                        errors.append("owned container removal failed")
+            else:
+                receipt["container_removed"] = not container_created
+            if network_created:
+                removed = subprocess.run(["docker", "network", "rm", network], capture_output=True, text=True)
+                receipt["network_removed"] = removed.returncode == 0
+                if removed.returncode:
+                    errors.append("owned network removal failed")
+            else:
+                receipt["network_removed"] = True
+            try:
+                with socket.socket() as reservation:
+                    reservation.bind((OWNED_HOST, OWNED_PORT))
+                receipt["port_free_after_cleanup"] = True
+            except OSError:
+                receipt["port_free_after_cleanup"] = False
+                if container_created:
+                    errors.append("owned port remained occupied")
+            receipt["cleanup_errors"] = errors
+            receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
+            print("BATCH9_OWNED_POSTGRES_RECEIPT " + str(receipt_path), flush=True)
+            if errors:
+>               raise RuntimeError("Owned PostgreSQL cleanup failed: " + "; ".join(errors))
+E               RuntimeError: Owned PostgreSQL cleanup failed: owned port remained occupied
+
+backend/tests/batch9_legacy_fixture/batch9_legacy_target.py:147: RuntimeError
+----------------------------- Captured stderr call -----------------------------
+{"asctime": "2026-10-09 18:40:20,402", "levelname": "ERROR", "name": "seeding", "message": "Domain ownership unavailable; no handler started", "domain": "audits"}
+--------------------------- Captured stdout teardown ---------------------------
+BATCH9_OWNED_POSTGRES_RECEIPT /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-fresh-current/batch9-review-596-resources0/owned-postgres.json
+=============================== warnings summary ===============================
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:65: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:103: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_unavailable_writer_refuses_pipeline_and_monitor
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+    warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR backend/tests/test_batch8_exclusion_sqlite.py::test_sqlite_forged_scope_starts_no_work_and_keeps_retained_claim[True]
+113 passed, 6 warnings, 1 error in 157.49s (0:02:37)

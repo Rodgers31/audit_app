@@ -1,0 +1,109 @@
+"""
+Lightweight scheduler for the Kenya ETL pipeline.
+
+Usage (container default):
+  python -m scheduler
+
+Scheduling controls via environment variables:
+  - ETL_RUN_ON_START=true|false  (default: true)
+  - ETL_DAILY_AT=HH:MM           (optional; if set, runs daily at this local time)
+  - ETL_INTERVAL_MINUTES=N       (fallback interval when ETL_DAILY_AT not set; default: 720)
+
+Notes:
+  - Concurrency is guarded so a new run won't start if a previous run is still active.
+  - The pipeline itself is idempotent via a local processed_manifest and DB-level checks.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+import os
+import time
+from typing import Optional
+
+import schedule
+
+# Use monitored runner for alerting support
+from .monitored_runner import run_monitored_pipeline
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger("etl.scheduler")
+
+
+_RUNNING = False
+
+
+async def run_once(storage_path: Optional[str] = None) -> None:
+    global _RUNNING
+    if _RUNNING:
+        logger.info("ETL run skipped: previous run still in progress")
+        return
+    _RUNNING = True
+    try:
+        logger.info("Starting monitored Kenya ETL run")
+        # Use monitored pipeline for automatic alerting
+        results = await run_monitored_pipeline()
+        logger.info(
+            "ETL completed: %s/%s successful; errors=%s",
+            results.get("successful_extractions"),
+            results.get("total_documents"),
+            len(results.get("errors", [])),
+        )
+    except Exception as e:
+        logger.exception("ETL run failed: %s", e)
+        # Alert is already sent by monitored_runner
+        raise
+    finally:
+        _RUNNING = False
+
+
+def _schedule_job(job_coro, *, daily_at: Optional[str], interval_minutes: int):
+    """Register the job with schedule, using either daily time or fixed interval."""
+    if daily_at:
+        logger.info("Scheduling ETL daily at %s", daily_at)
+        schedule.every().day.at(daily_at).do(lambda: asyncio.run(job_coro()))
+    else:
+        logger.info("Scheduling ETL every %d minutes", interval_minutes)
+        schedule.every(interval_minutes).minutes.do(lambda: asyncio.run(job_coro()))
+
+
+def main():
+    from .database_loader import DatabaseLoader
+    DatabaseLoader().check_ownership_ready()
+    # Read config
+    run_on_start = os.getenv("ETL_RUN_ON_START", "true").lower() in {"1", "true", "yes"}
+    daily_at = os.getenv("ETL_DAILY_AT")  # e.g., "02:30"
+    interval_minutes = int(os.getenv("ETL_INTERVAL_MINUTES", "720"))
+    storage_path = os.getenv("ETL_STORAGE_PATH")
+
+    # Register job
+    _schedule_job(
+        lambda: run_once(storage_path),
+        daily_at=daily_at,
+        interval_minutes=interval_minutes,
+    )
+
+    # Optional immediate run
+    if run_on_start:
+        asyncio.run(run_once(storage_path))
+
+    # Scheduler loop
+    logger.info("ETL scheduler started; waiting for next runs…")
+    while True:
+        try:
+            schedule.run_pending()
+            time.sleep(30)
+        except KeyboardInterrupt:
+            logger.info("Scheduler interrupted; exiting…")
+            break
+        except Exception as e:
+            logger.exception("Scheduler error: %s", e)
+            time.sleep(5)
+
+
+if __name__ == "__main__":
+    main()

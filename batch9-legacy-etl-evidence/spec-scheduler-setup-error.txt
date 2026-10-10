@@ -1,0 +1,1 @@
+Initial documented `python -m scheduler` from the etl working directory using the read-only primary venv stopped at ModuleNotFoundError: No module named 'schedule'. This setup error proves no ownership behavior. The independent import-only control supplies an inert schedule module and does not invoke main/scheduling.

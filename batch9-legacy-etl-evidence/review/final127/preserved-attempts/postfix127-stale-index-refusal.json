@@ -1,0 +1,29 @@
+{
+  "target_commit": "a7b3c0d9a31435c9fb6b83ce37265ec5f1703104",
+  "inherited_provenance_sha256": "a0a32faac6940746b4ee1daa9daa2ff50deb584e2f85ea622fb85f0f512f3f29",
+  "results": [
+    {
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/batch9-legacy-etl-evidence/verify_delivery.py\", line 113, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'backend/tests/test_batch9_legacy_receipt_integrity.py')\n",
+      "inherited_provenance_preserved": true
+    },
+    {
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/batch9-legacy-etl-evidence/verify_delivery.py\", line 113, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'backend/tests/test_batch9_legacy_receipt_integrity.py')\n",
+      "inherited_provenance_preserved": true
+    }
+  ],
+  "scope": "Expected actual refusal of historical125 index against repaired receipt fixture; not fresh candidate acceptance",
+  "verdict": "PASSED"
+}

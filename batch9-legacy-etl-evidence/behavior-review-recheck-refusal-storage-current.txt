@@ -1,0 +1,112 @@
+/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+  warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+ERROR:etl.writer_ownership:Legacy refusal observation unavailable; no loader work started
+ERROR:etl.writer_ownership:Legacy writer ownership refused; no loader work started
+INFO:etl.kenya_pipeline:Data validators initialized with min_confidence=0.7
+INFO:etl.kenya_pipeline:Smart scheduler initialized for calendar-aware ETL runs
+INFO:extractors.government.knbs_extractor:[CERT] Using pinned KNBS certificate bundle: /Users/roger/.codex/worktrees/af79/audit_app/config/certs/knbs_trust_store.pem
+INFO:etl.kenya_pipeline:[OK] KNBS extractor initialized
+INFO:etl.kenya_pipeline:[OK] KNBS parser initialized
+INFO:etl.kenya_pipeline:[CERT] KNBS downloads will use pinned certificate bundle at /Users/roger/.codex/worktrees/af79/audit_app/config/certs/knbs_trust_store.pem
+INFO:etl.monitored_runner:Starting ETL pipeline: run_full_pipeline
+INFO:etl.kenya_pipeline:Checking smart scheduler for sources to run...
+INFO:etl.kenya_pipeline:Scheduler efficiency: Skipping 0% of sources today
+INFO:etl.kenya_pipeline:✅ Processing source: treasury - Owned fixture
+INFO:etl.kenya_pipeline:✅ Processing source: cob - Owned fixture
+INFO:etl.kenya_pipeline:✅ Processing source: oag - Owned fixture
+INFO:etl.kenya_pipeline:Downloaded: Owned inert audit -> /var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch9-legacy-refusal-review-xkiri68s/storage/oag_20261009_144014_inert.pdf
+INFO:etl.kenya_pipeline:Audit validation complete: 1/1 valid, 0 rejected, 0 warnings
+ERROR:etl.writer_ownership:Legacy refusal observation unavailable; no loader work started
+ERROR:etl.writer_ownership:Legacy writer ownership refused; no loader work started
+ERROR:etl.kenya_pipeline:Legacy writer ownership refused; document not processed
+ERROR:etl.kenya_pipeline:Legacy writer ownership refused; pipeline failed
+ERROR:etl.monitored_runner:ETL pipeline failed after 0.00s: run_full_pipeline
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/monitored_runner.py", line 55, in run_with_monitoring
+    result = await pipeline_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/kenya_pipeline.py", line 2294, in run_full_pipeline
+    result = await self.download_and_process_document(doc_info)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/kenya_pipeline.py", line 1966, in download_and_process_document
+    doc_id = await self.db_loader.load_audit_findings_document(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        document_record, validated_findings
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py", line 207, in wrapped
+    with writer_scope(self.engine):
+         ~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py", line 182, in writer_scope
+    active = acquire_scope(engine)
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py", line 140, in acquire_scope
+    active.acquire()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py", line 92, in acquire
+    execution = enter_domain(self.factory, domain, False)
+  File "/Users/roger/.codex/worktrees/af79/audit_app/backend/seeding/exclusion.py", line 263, in enter_domain
+    raise DomainOwnershipError("Domain ownership unavailable; reconcile retained execution")
+seeding.exclusion.DomainOwnershipError: Domain ownership unavailable; reconcile retained execution
+INFO:backend.config.secrets:Using environment variables for secrets
+INFO:backend.monitoring.alerts:Alert manager initialized with channels: [<AlertChannel.LOG: 'log'>]
+ERROR:backend.monitoring.alerts:[ALERT] ETL Pipeline Failed: run_full_pipeline: Error: Domain ownership unavailable; reconcile retained execution
+
+Duration: 0.00s | Metadata: {"start_time": "2026-10-09T14:40:14.637527", "pipeline": "run_full_pipeline", "end_time": "2026-10-09T14:40:14.640545", "duration_seconds": 0.0, "success": false, "error": "Domain ownership unavailable; reconcile retained execution", "traceback": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/monitored_runner.py\", line 55, in run_with_monitoring\n    result = await pipeline_func(*args, **kwargs)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/kenya_pipeline.py\", line 2294, in run_full_pipeline\n    result = await self.download_and_process_document(doc_info)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/kenya_pipeline.py\", line 1966, in download_and_process_document\n    doc_id = await self.db_loader.load_audit_findings_document(\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        document_record, validated_findings\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    )\n    ^\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py\", line 207, in wrapped\n    with writer_scope(self.engine):\n         ~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py\", line 141, in __enter__\n    return next(self.gen)\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py\", line 182, in writer_scope\n    active = acquire_scope(engine)\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py\", line 140, in acquire_scope\n    active.acquire()\n    ~~~~~~~~~~~~~~^^\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/etl/writer_ownership.py\", line 92, in acquire\n    execution = enter_domain(self.factory, domain, False)\n  File \"/Users/roger/.codex/worktrees/af79/audit_app/backend/seeding/exclusion.py\", line 263, in enter_domain\n    raise DomainOwnershipError(\"Domain ownership unavailable; reconcile retained execution\")\nseeding.exclusion.DomainOwnershipError: Domain ownership unavailable; reconcile retained execution\n"}
+INFO:etl.monitored_runner:ETL failure alert sent successfully
+{
+  "generated_by": "batch9-legacy-etl-evidence/behavior_review_refusal_storage_v1.py",
+  "generator_sha256": "cc20583ff843ec3260d165dfaa93499e730e8516b4c3525220f474915163e5cb",
+  "generated_at": "2026-10-09T19:40:14.648835+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "start_source_sha256": {
+    "etl/writer_ownership.py": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8",
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4"
+  },
+  "source_sha256": {
+    "etl/writer_ownership.py": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8",
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4"
+  },
+  "command": [
+    "batch9-legacy-etl-evidence/behavior_review_refusal_storage_v1.py",
+    "batch9-legacy-etl-evidence/behavior-review-recheck-refusal-storage-current.json"
+  ],
+  "executable": "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/behavior-current/bin/python",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "sqlalchemy": "2.0.46",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "results": [
+    {
+      "control": "direct_loader_refusal_recording_failure",
+      "outcome": {
+        "returned": false,
+        "error": "DomainOwnershipError",
+        "diagnostic": "Domain ownership unavailable; reconcile retained execution"
+      }
+    },
+    {
+      "control": "full_pipeline_refusal_recording_failure",
+      "outcome": {
+        "returned": false,
+        "error": "DomainOwnershipError",
+        "diagnostic": "Domain ownership unavailable; reconcile retained execution",
+        "monitor_success": false
+      }
+    }
+  ],
+  "state": {
+    "countries": 0,
+    "documents": 0,
+    "audits": 0,
+    "retained": 1,
+    "jobs": 0
+  },
+  "verdict": "PASSED",
+  "limitation": "Owned SQLite storage fault only; PostgreSQL transaction/process and production acceptance remain separate gates."
+}

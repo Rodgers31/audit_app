@@ -1,0 +1,44 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/standards-final-verify-receipts.py",
+  "generator_sha256": "454d319f6351090f8158f480af9688914bac4464c9ce95f49b92b18660e7a724",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "/Users/roger/.codex/worktrees/af79/audit_app/batch9-legacy-etl-evidence/standards-final-verify-receipts.py"
+  ],
+  "python": "3.13.9",
+  "replay_generator_sha256": "519b548f3760f324c3a44fa2616a2e56ff4819d6fa9f5909a94e0d14868011bd",
+  "writer_source_sha256": "27c7b20eac3229118685cb278a9473ab1d843fad1c0350cc8fcb7879993b94e8",
+  "results": [
+    {
+      "receipt": "standards-session-final2-independent.json",
+      "python": "3.13.9",
+      "verified": true
+    },
+    {
+      "receipt": "standards-session-final2-minimum-independent.json",
+      "python": "3.12.14",
+      "verified": true
+    },
+    {
+      "receipt": "standards-readiness-final2-independent.json",
+      "python": "3.13.9",
+      "verified": true
+    },
+    {
+      "receipt": "standards-readiness-final2-minimum-independent.json",
+      "python": "3.12.14",
+      "verified": true
+    },
+    {
+      "receipt": "standards-refusal-final2-independent.json",
+      "python": "3.13.9",
+      "verified": true
+    },
+    {
+      "receipt": "standards-refusal-final2-minimum-independent.json",
+      "python": "3.12.14",
+      "verified": true
+    }
+  ],
+  "verdict": "PASSED"
+}

@@ -25,7 +25,10 @@ from typing import Optional
 import schedule
 
 # Use monitored runner for alerting support
-from monitored_runner import run_monitored_pipeline
+if __package__:
+    from .monitored_runner import run_monitored_pipeline
+else:
+    from monitored_runner import run_monitored_pipeline
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,6 +59,7 @@ async def run_once(storage_path: Optional[str] = None) -> None:
     except Exception as e:
         logger.exception("ETL run failed: %s", e)
         # Alert is already sent by monitored_runner
+        raise
     finally:
         _RUNNING = False
 
@@ -71,6 +75,11 @@ def _schedule_job(job_coro, *, daily_at: Optional[str], interval_minutes: int):
 
 
 def main():
+    if __package__:
+        from .database_loader import DatabaseLoader
+    else:
+        from database_loader import DatabaseLoader
+    DatabaseLoader().check_ownership_ready()
     # Read config
     run_on_start = os.getenv("ETL_RUN_ON_START", "true").lower() in {"1", "true", "yes"}
     daily_at = os.getenv("ETL_DAILY_AT")  # e.g., "02:30"

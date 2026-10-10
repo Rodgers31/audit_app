@@ -1,9 +1,10 @@
 import os
 import random
-import threading
+import sys
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict
+from subprocess import CalledProcessError
 
 import psycopg2
 import yaml
@@ -36,8 +37,8 @@ def run_once(env: Dict[str, str]):
     # APScheduler in backend/main.py to avoid dual-scheduler execution.
     from subprocess import run
 
-    args = ["python", "-m", "etl.backfill"]
-    run(args, env={**os.environ, **env}, check=False)
+    args = [sys.executable, "-m", "etl.backfill"]
+    run(args, env={**os.environ, **env}, check=True)
 
 
 def schedule_worker():
@@ -49,6 +50,8 @@ def schedule_worker():
         time.sleep(10)
         return
 
+    from .database_loader import DatabaseLoader
+    DatabaseLoader(db_url).check_ownership_ready()
     cfg = load_config(cfg_path)
     # Example cfg schema:
     # countries:
@@ -104,18 +107,15 @@ def schedule_worker():
                         print(
                             f"[worker] running {country}/{source} at {now.isoformat()}Z"
                         )
-                        # Run job in a short-lived thread to not block scheduling loop
-                        t = threading.Thread(
-                            target=run_once,
-                            kwargs={"env": item["env"]},
-                        )
-                        t.start()
+                        run_once(item["env"])
                         # schedule next
                         item["next"] = now + item["interval"]
                 time.sleep(30)
             finally:
                 pg_advisory_unlock(conn)
                 conn.close()
+        except CalledProcessError:
+            raise
         except Exception as e:
             print("[worker] error:", e)
             time.sleep(10)

@@ -1,0 +1,47 @@
+"""Execute actual normal/-O candidate verifier on owned corrupted packet copies."""
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+ROOT=Path('/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app')
+OUT=Path(__file__).resolve().parent/'current-verifier-controls'
+EVIDENCE=ROOT/'batch9-legacy-etl-evidence'
+source=json.loads((EVIDENCE/'review-verification-manifest.json').read_text())['source_sha256']
+results=[]
+for optimized in (False,True):
+ for mutation,message in [('valid','PASSED PR596 scoped review verification'),('source','candidate source changed'),('receipt-exit','successful stable execution required'),('generator','archived execution generator identity'),('output','raw output bytes'),('source-drift','successful stable execution required')]:
+  owned=OUT/(('optimized-' if optimized else 'normal-')+mutation)
+  evidence=owned/'batch9-legacy-etl-evidence'
+  shutil.copytree(EVIDENCE,evidence)
+  for relative in source:
+   if not relative.startswith('batch9-legacy-etl-evidence/'):
+    target=owned/relative;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/relative,target)
+  (evidence/'review-delivery-provenance.json').unlink(missing_ok=True)
+  manifest_path=evidence/'review-verification-manifest.json'
+  manifest=json.loads(manifest_path.read_text());check=manifest['checks']['current']
+  if mutation=='source':
+   with (owned/'etl/worker.py').open('a') as stream:stream.write('\n# inert candidate source corruption\n')
+  elif mutation in ('receipt-exit','generator','source-drift'):
+   path=owned/check['receipt'];record=json.loads(path.read_text())
+   if mutation=='receipt-exit':record.update(exit_code=1,verdict='FAILED')
+   elif mutation=='generator':record['generator_sha256']='0'*64
+   else:record['source_stable']=False
+   path.write_text(json.dumps(record,indent=2)+'\n')
+   check['receipt_sha256']=hashlib.sha256(path.read_bytes()).hexdigest()
+   manifest_path.write_text(json.dumps(manifest,indent=2)+'\n')
+  elif mutation=='output':
+   with (owned/check['output']).open('a') as stream:stream.write('\ninert output corruption\n')
+  command=[sys.executable,*(['-O'] if optimized else []),str(evidence/'verify_delivery.py')]
+  result=subprocess.run(command,cwd=owned,env={'PATH':os.environ.get('PATH',''),'PYTHONDONTWRITEBYTECODE':'1'},capture_output=True,text=True)
+  text=result.stdout+result.stderr
+  if ((result.returncode==0)!=(mutation=='valid')) or message not in text:
+   raise RuntimeError((optimized,mutation,result.returncode,text))
+  if mutation!='valid' and (evidence/'review-delivery-provenance.json').exists():
+   raise RuntimeError('Corrupted packet emitted PASSED provenance')
+  results.append({'optimized':optimized,'mutation':mutation,'command':command,'exit_code':result.returncode,'expected_message':message,'output':text})
+record={'generated_by':str(Path(__file__)),'generator_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'results':results,'verdict':'PASSED'}
+OUT.mkdir(exist_ok=True);(OUT/'results.json').write_text(json.dumps(record,indent=2)+'\n')
+print('12 actual candidate verifier controls passed; corrupted bytes/failed exits/generator identities/source drift refuse under normal and -O Python')

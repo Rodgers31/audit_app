@@ -1,0 +1,39 @@
+{
+  "scope": "Fresh minimal schedule prerequisite only; full backend requirements are not installed here",
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/install_schedule_prerequisite.py",
+  "generator_sha256": "ca9a2e174c33a7c7edec597c085cd43eda80f2848fd03245a160d880ab6de593",
+  "source_before": {
+    "backend/requirements-dev.txt": "fb67df1d926146e2abeea5ba936c05b8c57cf62301dba6eb8eba695fca3f2fe5",
+    "etl/requirements.txt": "e3677d0076262f08019b8a845772fcbd79620ad1b0c36f7f65409a17ea574f9c"
+  },
+  "source_after": {
+    "backend/requirements-dev.txt": "fb67df1d926146e2abeea5ba936c05b8c57cf62301dba6eb8eba695fca3f2fe5",
+    "etl/requirements.txt": "e3677d0076262f08019b8a845772fcbd79620ad1b0c36f7f65409a17ea574f9c"
+  },
+  "source_stable": true,
+  "runtime": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "prefix": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime",
+  "schedule_absent_before": true,
+  "command": [
+    "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+    "-m",
+    "pip",
+    "--isolated",
+    "install",
+    "--no-deps",
+    "schedule==1.2.0"
+  ],
+  "exit_code": 0,
+  "schedule_version": "1.2.0",
+  "schedule_module": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/lib/python3.13/site-packages/schedule/__init__.py",
+  "pins": {
+    "backend/requirements-dev.txt": [
+      "schedule==1.2.0"
+    ],
+    "etl/requirements.txt": [
+      "schedule==1.2.0"
+    ]
+  },
+  "output_sha256": "6a28c81e17b48110ce5aab4cb34903c54a34265f25d7112cca1a1ef4e87b942f",
+  "verdict": "PASSED"
+}

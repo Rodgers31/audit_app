@@ -1,0 +1,71 @@
+"""Independent owned SQLite control for manual loader session close order."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import platform
+import subprocess
+import sys
+import tempfile
+
+ROOT = Path(__file__).resolve().parents[1]
+os.environ["PYTHON_DOTENV_DISABLED"] = "1"
+sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
+
+with tempfile.TemporaryDirectory(prefix="batch9-legacy-standards-") as temp:
+    url = "sqlite:///" + str(Path(temp) / "owned.sqlite")
+    os.environ["DATABASE_URL"] = url
+    import sqlalchemy
+    from sqlalchemy import text
+    from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.ext.compiler import compiles
+    from models import Base
+    from etl.database_loader import DatabaseLoader
+
+    @compiles(JSONB, "sqlite")
+    def jsonb_sqlite(*args, **kwargs):
+        return "TEXT"
+
+    loader = DatabaseLoader(url)
+    Base.metadata.create_all(loader.engine)
+    with loader.engine.begin() as db:
+        db.execute(text("CREATE TABLE inert_effects (n integer)"))
+    first = loader.get_db_session()
+    second = loader.get_db_session()
+    for db in (first, second):
+        db.execute(text("INSERT INTO inert_effects VALUES (1)"))
+        db.commit()
+    events = []
+    for name, db in (("first", first), ("second", second)):
+        try:
+            db.close()
+            events.append({"close": name, "outcome": "returned"})
+        except Exception as exc:
+            events.append({"close": name, "outcome": type(exc).__name__, "detail": str(exc)})
+    try:
+        next_session = loader.get_db_session()
+        next_session.close()
+        events.append({"next_run": "returned"})
+    except Exception as exc:
+        events.append({"next_run": type(exc).__name__, "detail": str(exc)})
+    with loader.engine.connect() as db:
+        retained = db.scalar(text("SELECT count(*) FROM seeding_domain_claims WHERE released_at IS NULL"))
+        effects = db.scalar(text("SELECT count(*) FROM inert_effects"))
+    receipt = {
+        "generated_by": str(Path(__file__).relative_to(ROOT)),
+        "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+        "command": [sys.executable, str(Path(__file__).resolve())],
+        "python": platform.python_version(), "sqlalchemy": sqlalchemy.__version__,
+        "source_sha256": {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest()
+            for p in ("etl/database_loader.py", "etl/writer_ownership.py", "backend/seeding/exclusion.py")},
+        "database": "owned temporary SQLite; deleted after probe",
+        "events": events, "retained_claims": retained, "committed_inert_effects": effects,
+        "acceptance": "normal manual closes permit the next run",
+        "verdict": "PASSED" if retained == 0 else "FAILED",
+    }
+    output = ROOT / "batch9-legacy-etl-evidence" / "standards-session-probe.json"
+    output.write_text(json.dumps(receipt, indent=2) + "\n")
+    print(json.dumps(receipt, indent=2))
+    loader.engine.dispose()
+    sys.exit(0 if retained == 0 else 1)

@@ -1,0 +1,64 @@
+/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+DISPATCH_TRANSFER_ACTUAL_ROWS [{'kind': 'dispatch', 'domain': 'audits', 'active': True}, {'kind': 'native', 'domain': 'audits', 'active': False}, {'kind': 'native', 'domain': 'counties_budget', 'active': False}, {'kind': 'native', 'domain': 'county_officials', 'active': False}, {'kind': 'native', 'domain': 'debt_timeline', 'active': False}, {'kind': 'native', 'domain': 'economic_indicators', 'active': False}, {'kind': 'native', 'domain': 'fiscal_summary', 'active': False}, {'kind': 'native', 'domain': 'national_budget', 'active': False}, {'kind': 'native', 'domain': 'national_debt', 'active': False}, {'kind': 'native', 'domain': 'national_gdp', 'active': False}, {'kind': 'native', 'domain': 'pending_bills', 'active': False}, {'kind': 'native', 'domain': 'population', 'active': False}, {'kind': 'native', 'domain': 'revenue_by_source', 'active': False}, {'kind': 'native', 'domain': 'stalled_projects', 'active': False}]
+FBATCH9_OWNED_POSTGRES_RECEIPT /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-dispatch-transfer-red/batch9-review-596-resources0/owned-postgres.json
+
+=================================== FAILURES ===================================
+_____ test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch] ______
+
+db = (Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), sessionmaker(class_='Session',...postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), autoflush=True, expire_on_commit=True))
+tmp_path = PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-dispatch-transfer-red/test_legacy_first_blocks_nativ0')
+native_kind = 'dispatch'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a97a9e0>
+
+    @pytest.mark.parametrize("native_kind", ["native", "dispatch"])
+    def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, native_kind, monkeypatch):
+        engine, factory = db
+        monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
+        mode(engine, "legacy", "before")
+        legacy = start(tmp_path, "document")
+        other = None
+        try:
+            entered(engine, "legacy")
+            if native_kind == "dispatch":
+                mode(engine, "native", "before")
+            other = start(tmp_path, native_kind)
+            if native_kind == "native":
+                assert other.wait(timeout=15) == 1, "Conflicting native CLI ran while legacy owned writes"
+            else:
+                identity = queue(factory)
+                time.sleep(.6)
+                assert scalar(engine, "SELECT status FROM etl_dispatch_commands WHERE id=:i", i=identity) == "queued"
+            assert effects(engine) == 0
+            mode(engine, "legacy", "normal")
+            assert legacy.wait(timeout=20) == 0
+            if native_kind == "dispatch":
+                entered(engine, "native")
+                with engine.connect() as c:
+                    claims = c.execute(__import__("sqlalchemy").text("SELECT kind,domain,released_at IS NULL AS active FROM seeding_domain_claims ORDER BY kind,domain")).mappings().all()
+                    print("DISPATCH_TRANSFER_ACTUAL_ROWS", [dict(r) for r in claims])
+>           assert effects(engine) == 1 and retained(engine) == 0
+E           assert (1 == 1 and 1 == 0)
+E            +  where 1 = effects(Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596))
+E            +  and   1 = retained(Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596))
+
+../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/dispatch_transfer_red.py:146: AssertionError
+=============================== warnings summary ===============================
+visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/dispatch_transfer_red.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch]
+  /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/alembic/config.py:604: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/dispatch_transfer_red.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch]
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/dispatch_transfer_red.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch]
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/dispatch_transfer_red.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch]
+1 failed, 3 warnings in 5.88s

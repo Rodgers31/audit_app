@@ -21,6 +21,9 @@ SPEC.loader.exec_module(LAUNCHER)
 
 
 class LauncherTests(unittest.TestCase):
+    def test_public_legacy_session_regressions_have_explicit_cohort_ownership(self):
+        self.assertIn("tests/test_batch9_legacy_etl_sessions.py", LAUNCHER.LEGACY_ETL_TESTS)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -97,7 +100,7 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(fixed.returncode, 0, fixed.stdout + fixed.stderr)
         summary = json.loads((self.output / "summary.json").read_text())
         self.assertEqual(summary["verdict"], "PASSED")
-        self.assertEqual(summary["collected_counts"], {"backend": 1, "legacy": 8})
+        self.assertEqual(summary["collected_counts"], {"backend": 1, "legacy": 9})
         self.assertEqual(summary["coverage_result"], 0)
         self.assertTrue((self.root / "backend/coverage.xml").is_file())
         for cohort in ("backend", "legacy"):
@@ -139,7 +142,7 @@ def test_descendant():
         result = self.run_launcher()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         summary = json.loads((self.output / "summary.json").read_text())
-        self.assertEqual(summary["collected_counts"], {"backend": 2, "legacy": 9})
+        self.assertEqual(summary["collected_counts"], {"backend": 2, "legacy": 10})
 
     def test_descendant_package_selection_preserves_configuration_before_import(self):
         (self.root / "backend/database.py").write_text(

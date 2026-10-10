@@ -1,0 +1,41 @@
+"""Fresh owned prerequisite proof; no shared runtime installation."""
+import hashlib
+import importlib.metadata
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+ROOT = Path('/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app')
+OUT = Path(__file__).resolve().parent
+paths = ('backend/requirements-dev.txt', 'etl/requirements.txt')
+sources = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in paths}
+pins = {p: [line.strip() for line in (ROOT / p).read_text().splitlines()
+            if line.strip().startswith('schedule==')] for p in paths}
+if any(values != ['schedule==1.2.0'] for values in pins.values()):
+    raise RuntimeError('Required development/legacy dependency declarations disagree')
+before = importlib.util.find_spec('schedule')
+if before is not None:
+    raise RuntimeError('Fresh prerequisite proof requires an empty owned runtime')
+command = [sys.executable, '-m', 'pip', '--isolated', 'install', '--no-deps', 'schedule==1.2.0']
+result = subprocess.run(command, text=True, capture_output=True)
+(OUT / 'fresh-schedule-install.log').write_text(result.stdout + result.stderr)
+if result.returncode:
+    raise RuntimeError('Fresh exact-pin installation failed')
+import schedule
+version = importlib.metadata.version('schedule')
+if version != '1.2.0' or not Path(schedule.__file__).is_relative_to(Path(sys.prefix)):
+    raise RuntimeError('Installed prerequisite did not resolve from owned runtime')
+after = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in paths}
+if sources != after:
+    raise RuntimeError('Declaration changed during installation')
+record = {'scope': 'Fresh minimal schedule prerequisite only; full backend requirements are not installed here',
+          'generated_by': str(Path(__file__)), 'generator_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+          'source_before': sources, 'source_after': after, 'source_stable': sources == after,
+          'runtime': sys.version, 'prefix': sys.prefix, 'schedule_absent_before': True,
+          'command': command, 'exit_code': result.returncode, 'schedule_version': version,
+          'schedule_module': schedule.__file__, 'pins': pins,
+          'output_sha256': hashlib.sha256((OUT / 'fresh-schedule-install.log').read_bytes()).hexdigest(), 'verdict': 'PASSED'}
+(OUT / 'fresh-schedule-prerequisite.json').write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps(record, indent=2))

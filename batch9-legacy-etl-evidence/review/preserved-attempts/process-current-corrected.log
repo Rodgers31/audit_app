@@ -1,0 +1,111 @@
+................................................F....................... [ 65%]
+......................................                                   [100%]
+=================================== FAILURES ===================================
+_______ test_scheduling_parent_death_does_not_release_live_writing_child _______
+
+db = (Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), sessionmaker(class_='Session',...postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), autoflush=True, expire_on_commit=True))
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-428/test_scheduling_parent_death_d0')
+
+    def test_scheduling_parent_death_does_not_release_live_writing_child(db, tmp_path):
+        engine, _ = db
+        mode(engine, "legacy", "before")
+        cfg = tmp_path / "schedule.yaml"
+        cfg.write_text("countries:\n  KE:\n    sources:\n      oag: {interval_hours: 24}\n")
+        # psycopg2 scheduler consumes a DBAPI URL, as the deployed worker does.
+        parent = start(tmp_path, "worker", extra={"ETL_SCHEDULE_CONFIG": str(cfg), "DATABASE_URL": URL.replace("+psycopg2", "")})
+        other = None
+        try:
+>           entered(engine, "legacy")
+
+backend/tests/test_batch9_legacy_etl_ownership.py:261: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+backend/tests/test_batch9_legacy_etl_ownership.py:90: in entered
+    return wait_for(lambda: scalar(engine, "SELECT count(*) FROM batch9_legacy_markers WHERE writer=:w AND stage=:s", w=writer, s=stage), lambda n: n == 1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+read = <function entered.<locals>.<lambda> at 0x10ae7a980>
+predicate = <function entered.<locals>.<lambda> at 0x1130c5260>, timeout = 20
+
+    def wait_for(read, predicate, timeout=20):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            value = read()
+            if predicate(value):
+                return value
+            time.sleep(.04)
+>       raise AssertionError(f"Owned control timeout: last={value}")
+E       AssertionError: Owned control timeout: last=0
+
+backend/tests/test_batch9_legacy_etl_ownership.py:28: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+db = (Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), sessionmaker(class_='Session',...postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), autoflush=True, expire_on_commit=True))
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-428/test_scheduling_parent_death_d0')
+
+    def test_scheduling_parent_death_does_not_release_live_writing_child(db, tmp_path):
+        engine, _ = db
+        mode(engine, "legacy", "before")
+        cfg = tmp_path / "schedule.yaml"
+        cfg.write_text("countries:\n  KE:\n    sources:\n      oag: {interval_hours: 24}\n")
+        # psycopg2 scheduler consumes a DBAPI URL, as the deployed worker does.
+        parent = start(tmp_path, "worker", extra={"ETL_SCHEDULE_CONFIG": str(cfg), "DATABASE_URL": URL.replace("+psycopg2", "")})
+        other = None
+        try:
+            entered(engine, "legacy")
+            os.kill(parent.pid, signal.SIGKILL)
+            parent.wait(timeout=5)
+            assert retained(engine) == 13
+            other = start(tmp_path, "native")
+            assert other.wait(timeout=15) == 1 and effects(engine) == 0
+            mode(engine, "legacy", "normal")
+            wait_for(lambda: effects(engine), lambda n: n == 1)
+            wait_for(lambda: retained(engine), lambda n: n == 0)
+            stop(other)
+            other = start(tmp_path, "native")
+            assert other.wait(timeout=15) == 0 and effects(engine) == 2
+        finally:
+>           stop(parent)
+
+backend/tests/test_batch9_legacy_etl_ownership.py:274: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+proc = <Popen: returncode: None args: ['/Users/roger/.codex/worktrees/af79/audit_ap...>
+
+    def stop(proc):
+        # Always stop the group: killing the scheduling parent can leave a live child.
+        try:
+>           os.killpg(proc.pid, signal.SIGKILL)
+E           PermissionError: [Errno 1] Operation not permitted
+
+backend/tests/test_batch9_legacy_etl_ownership.py:75: PermissionError
+=============================== warnings summary ===============================
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:65: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:103: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_unavailable_writer_refuses_pipeline_and_monitor
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+    warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_etl_ownership.py::test_scheduling_parent_death_does_not_release_live_writing_child
+1 failed, 109 passed, 6 warnings in 159.71s (0:02:39)

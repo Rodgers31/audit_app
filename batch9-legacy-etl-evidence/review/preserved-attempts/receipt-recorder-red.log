@@ -1,0 +1,66 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_receipt_runner_does_not_certify_source_changes_during_execution[False] __
+
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-426/test_receipt_runner_does_not_c0')
+mutates = False
+
+    @pytest.mark.parametrize("mutates", [False, True])
+    def test_receipt_runner_does_not_certify_source_changes_during_execution(tmp_path, mutates):
+        root = tmp_path / "app"
+        evidence = root / "batch9-legacy-etl-evidence"
+        evidence.mkdir(parents=True)
+        shutil.copyfile(EVIDENCE / "run_receipt.py", evidence / "run_receipt.py")
+        (root / "etl").mkdir()
+        (root / "etl/inert.py").write_text("VALUE = 'before'\n")
+        for args in (["init", "-q"], ["add", "."],
+                     ["-c", "user.name=Owned receipt fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "fixture"]):
+            subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+        code = "from pathlib import Path; Path('etl/inert.py').write_text(\"VALUE = 'after'\\n\")" if mutates else "print('inert check completed')"
+        result = subprocess.run([sys.executable, str(evidence / "run_receipt.py"), "owned.json", sys.executable, "-c", code],
+                                cwd=root, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
+                                capture_output=True, text=True)
+        receipt = json.loads((evidence / "owned.json").read_text())
+        if mutates:
+            assert result.returncode != 0
+            assert receipt["verdict"] == "FAILED"
+            assert receipt["source_stable"] is False
+        else:
+            assert result.returncode == 0, result.stdout + result.stderr
+            assert receipt["verdict"] == "PASSED"
+>           assert receipt["source_stable"] is True
+                   ^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'source_stable'
+
+backend/tests/test_batch9_legacy_receipt_integrity.py:75: KeyError
+__ test_receipt_runner_does_not_certify_source_changes_during_execution[True] __
+
+tmp_path = PosixPath('/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/pytest-of-roger/pytest-426/test_receipt_runner_does_not_c1')
+mutates = True
+
+    @pytest.mark.parametrize("mutates", [False, True])
+    def test_receipt_runner_does_not_certify_source_changes_during_execution(tmp_path, mutates):
+        root = tmp_path / "app"
+        evidence = root / "batch9-legacy-etl-evidence"
+        evidence.mkdir(parents=True)
+        shutil.copyfile(EVIDENCE / "run_receipt.py", evidence / "run_receipt.py")
+        (root / "etl").mkdir()
+        (root / "etl/inert.py").write_text("VALUE = 'before'\n")
+        for args in (["init", "-q"], ["add", "."],
+                     ["-c", "user.name=Owned receipt fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "fixture"]):
+            subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+        code = "from pathlib import Path; Path('etl/inert.py').write_text(\"VALUE = 'after'\\n\")" if mutates else "print('inert check completed')"
+        result = subprocess.run([sys.executable, str(evidence / "run_receipt.py"), "owned.json", sys.executable, "-c", code],
+                                cwd=root, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
+                                capture_output=True, text=True)
+        receipt = json.loads((evidence / "owned.json").read_text())
+        if mutates:
+>           assert result.returncode != 0
+E           AssertionError: assert 0 != 0
+E            +  where 0 = CompletedProcess(args=['/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python', '/private/var/fol...\nReceipt owned.json: exit=0, generator=519b548f3760f324c3a44fa2616a2e56ff4819d6fa9f5909a94e0d14868011bd\n', stderr='').returncode
+
+backend/tests/test_batch9_legacy_receipt_integrity.py:69: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_receipt_integrity.py::test_receipt_runner_does_not_certify_source_changes_during_execution[False]
+FAILED backend/tests/test_batch9_legacy_receipt_integrity.py::test_receipt_runner_does_not_certify_source_changes_during_execution[True]
+2 failed, 12 deselected in 0.25s

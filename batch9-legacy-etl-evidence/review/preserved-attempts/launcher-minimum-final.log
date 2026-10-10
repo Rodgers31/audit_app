@@ -1,0 +1,130 @@
+test_a_failing_legacy_case_keeps_the_complete_gate_red (test_backend_test_launcher.LauncherTests.test_a_failing_legacy_case_keeps_the_complete_gate_red) ... ERROR
+test_ambient_selectors_or_collect_only_cannot_turn_execution_green (test_backend_test_launcher.LauncherTests.test_ambient_selectors_or_collect_only_cannot_turn_execution_green) ... ERROR
+test_descendant_package_selection_preserves_configuration_before_import (test_backend_test_launcher.LauncherTests.test_descendant_package_selection_preserves_configuration_before_import) ... FAIL
+test_descendants_keep_their_real_packages_even_from_repository_root (test_backend_test_launcher.LauncherTests.test_descendants_keep_their_real_packages_even_from_repository_root) ... FAIL
+test_empty_backend_cohort_cannot_pass_and_stale_receipts_are_removed (test_backend_test_launcher.LauncherTests.test_empty_backend_cohort_cannot_pass_and_stale_receipts_are_removed) ... ok
+test_missing_legacy_file_refuses_the_inventory_and_removes_stale_summary (test_backend_test_launcher.LauncherTests.test_missing_legacy_file_refuses_the_inventory_and_removes_stale_summary) ... ok
+test_missing_real_seeding_does_not_fall_back_to_root_stub (test_backend_test_launcher.LauncherTests.test_missing_real_seeding_does_not_fall_back_to_root_stub) ... ok
+test_new_undeclared_etl_importer_requires_an_explicit_owner (test_backend_test_launcher.LauncherTests.test_new_undeclared_etl_importer_requires_an_explicit_owner) ... ok
+test_original_combined_imports_fail_but_both_owned_cohorts_execute (test_backend_test_launcher.LauncherTests.test_original_combined_imports_fail_but_both_owned_cohorts_execute) ... FAIL
+test_public_legacy_session_regressions_have_explicit_cohort_ownership (test_backend_test_launcher.LauncherTests.test_public_legacy_session_regressions_have_explicit_cohort_ownership) ... ok
+test_receipts_cannot_certify_wrong_package_identity_or_uncollected_cases (test_backend_test_launcher.LauncherTests.test_receipts_cannot_certify_wrong_package_identity_or_uncollected_cases) ... ok
+
+======================================================================
+ERROR: test_a_failing_legacy_case_keeps_the_complete_gate_red (test_backend_test_launcher.LauncherTests.test_a_failing_legacy_case_keeps_the_complete_gate_red)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/.github/scripts/tests/test_backend_test_launcher.py", line 124, in test_a_failing_legacy_case_keeps_the_complete_gate_red
+    summary = json.loads((self.output / "summary.json").read_text())
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpozl81o28/results/summary.json'
+
+======================================================================
+ERROR: test_ambient_selectors_or_collect_only_cannot_turn_execution_green (test_backend_test_launcher.LauncherTests.test_ambient_selectors_or_collect_only_cannot_turn_execution_green)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/.github/scripts/tests/test_backend_test_launcher.py", line 211, in test_ambient_selectors_or_collect_only_cannot_turn_execution_green
+    summary = json.loads((self.output / "summary.json").read_text())
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpxqkawn07/results/summary.json'
+
+======================================================================
+FAIL: test_descendant_package_selection_preserves_configuration_before_import (test_backend_test_launcher.LauncherTests.test_descendant_package_selection_preserves_configuration_before_import)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/.github/scripts/tests/test_backend_test_launcher.py", line 165, in test_descendant_package_selection_preserves_configuration_before_import
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/backend
+
+ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/backend
+
+Traceback (most recent call last):
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/.github/scripts/run_backend_tests.py", line 297, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/.github/scripts/run_backend_tests.py", line 293, in main
+    else run_all(output, args.collect_only))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmpnt0ss460/.github/scripts/run_backend_tests.py", line 254, in run_all
+    from coverage import CoverageData
+ModuleNotFoundError: No module named 'coverage'
+
+
+======================================================================
+FAIL: test_descendants_keep_their_real_packages_even_from_repository_root (test_backend_test_launcher.LauncherTests.test_descendants_keep_their_real_packages_even_from_repository_root)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/.github/scripts/tests/test_backend_test_launcher.py", line 143, in test_descendants_keep_their_real_packages_even_from_repository_root
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/backend
+
+ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/backend
+
+Traceback (most recent call last):
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/.github/scripts/run_backend_tests.py", line 297, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/.github/scripts/run_backend_tests.py", line 293, in main
+    else run_all(output, args.collect_only))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp039w7pol/.github/scripts/run_backend_tests.py", line 254, in run_all
+    from coverage import CoverageData
+ModuleNotFoundError: No module named 'coverage'
+
+
+======================================================================
+FAIL: test_original_combined_imports_fail_but_both_owned_cohorts_execute (test_backend_test_launcher.LauncherTests.test_original_combined_imports_fail_but_both_owned_cohorts_execute)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/.github/scripts/tests/test_backend_test_launcher.py", line 100, in test_original_combined_imports_fail_but_both_owned_cohorts_execute
+    self.assertEqual(fixed.returncode, 0, fixed.stdout + fixed.stderr)
+AssertionError: 1 != 0 : ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/backend
+
+ERROR: usage: pytest.main() [options] [file_or_dir] [file_or_dir] [...]
+pytest.main(): error: unrecognized arguments: --cov=. --cov-report=
+  inifile: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/backend/pytest.ini
+  rootdir: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/backend
+
+Traceback (most recent call last):
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/.github/scripts/run_backend_tests.py", line 297, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/.github/scripts/run_backend_tests.py", line 293, in main
+    else run_all(output, args.collect_only))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/tmp0f0jb191/.github/scripts/run_backend_tests.py", line 254, in run_all
+    from coverage import CoverageData
+ModuleNotFoundError: No module named 'coverage'
+
+
+----------------------------------------------------------------------
+Ran 11 tests in 2.723s
+
+FAILED (failures=3, errors=2)
