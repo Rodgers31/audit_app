@@ -9705,6 +9705,12 @@ async def get_fiscal_summary(db: Session = Depends(get_db)):
             ),
             "debt_to_gdp_pct": _imf_d2g[0] if _imf_d2g else None,
             "debt_to_gdp_year": _imf_d2g[1] if _imf_d2g else None,
+            "debt_to_gdp_vintage": _imf_d2g[2] if _imf_d2g else None,
+            "debt_to_gdp_source": "IMF World Economic Outlook" if _imf_d2g else None,
+            "debt_to_gdp_absent_reason": (
+                None if _imf_d2g else
+                "No valid IMF actual is available in the selected Kenya WEO vintage."
+            ),
             "debt_to_gdp_basis": (
                 "IMF General Government Gross Debt, % of GDP (nominal); not "
                 "comparable to the present-value anchor"
@@ -10280,13 +10286,17 @@ def _latest_imf_debt_to_gdp(db):
     """Latest IMF GGXWDG_NGDP (general-government gross debt, % of GDP) for Kenya.
 
     Returns ``(ratio_pct, year, vintage_iso)`` for the most recent ACTUAL
-    (non-projection) year in the newest WEO vintage, or ``None`` if the IMF
-    table is not seeded. This is the vintage-consistent headline
+    (non-projection) year in the newest Kenya WEO vintage, or ``None`` if
+    that vintage has no valid actual. The vintage selection remains across
+    Kenya's indicators; an older vintage is never substituted. Forecasts
+    remain available through the separately declared projection series.
+    This is the vintage-consistent headline
     debt-to-GDP measure (same-year debt and GDP) and avoids the prior bug
     of dividing a current debt stock by a stale/low nominal-GDP year.
     """
     try:
         from models import ImfWeoObservation
+        from services.fiscal_outturns import finite_number
         from sqlalchemy import func as _func
 
         latest_vintage = (
@@ -10306,12 +10316,13 @@ def _latest_imf_debt_to_gdp(db):
             .order_by(ImfWeoObservation.year)
             .all()
         )
-        usable = [r for r in rows if r.value is not None]
-        if not usable:
-            return None
-        actuals = [r for r in usable if not r.is_projection]
-        chosen = (actuals or usable)[-1]
-        return (round(float(chosen.value), 1), chosen.year, latest_vintage.isoformat())
+        for row in reversed(rows):
+            if row.is_projection is not False:
+                continue
+            value = finite_number(row.value)
+            if value is not None:
+                return (round(value, 1), row.year, latest_vintage.isoformat())
+        return None
     except Exception as exc:  # pragma: no cover - defensive
         logging.warning("IMF debt-to-GDP lookup failed: %s", exc)
         return None
@@ -10543,10 +10554,11 @@ async def get_national_debt():
                     latest_gdp_row = (
                         db.query(DBGDPData).order_by(DBGDPData.year.desc()).first()
                     )
+                    from services.fiscal_outturns import finite_number
+
                     gdp_value = (
-                        float(latest_gdp_row.gdp_value or 0)
-                        if latest_gdp_row and latest_gdp_row.gdp_value
-                        else 0  # No hardcoded fallback; will show 0 until seeded
+                        finite_number(latest_gdp_row.gdp_value)
+                        if latest_gdp_row else None
                     )
                     gdp_year = latest_gdp_row.year if latest_gdp_row else None
 
@@ -10787,9 +10799,9 @@ async def get_national_debt():
                     # This replaces the old bug of dividing current debt by a
                     # stale/low hardcoded GDP (which produced 82% vs ~68%).
                     _computed_ratio = (
-                        round(total_outstanding / gdp_value * 100, 1)
-                        if gdp_value > 0
-                        else 0
+                        finite_number(round(total_outstanding / gdp_value * 100, 1))
+                        if gdp_value is not None and gdp_value > 0
+                        else None
                     )
                     _imf = _latest_imf_debt_to_gdp(db)
                     if _imf is not None:
@@ -10800,7 +10812,7 @@ async def get_national_debt():
                             "(GGXWDG_NGDP) — vintage-consistent"
                         )
                         debt_to_gdp_source = "IMF World Economic Outlook"
-                    else:
+                    elif _computed_ratio is not None:
                         debt_to_gdp_ratio = _computed_ratio
                         debt_to_gdp_year = gdp_year
                         debt_to_gdp_basis = (
@@ -10808,6 +10820,11 @@ async def get_national_debt():
                             f"(World Bank, {gdp_year}) — approximate"
                         )
                         debt_to_gdp_source = "CBK / World Bank"
+                    else:
+                        debt_to_gdp_ratio = None
+                        debt_to_gdp_year = None
+                        debt_to_gdp_basis = None
+                        debt_to_gdp_source = None
 
                     # Real data vintage from source-document provenance —
                     # NOT the request time. Stops the card claiming it was
@@ -10862,6 +10879,11 @@ async def get_national_debt():
                             "debt_to_gdp_year": debt_to_gdp_year,
                             "debt_to_gdp_basis": debt_to_gdp_basis,
                             "debt_to_gdp_source": debt_to_gdp_source,
+                            "debt_to_gdp_vintage": _imf[2] if _imf else None,
+                            "debt_to_gdp_absent_reason": (
+                                None if debt_to_gdp_ratio is not None else
+                                "No valid IMF actual or finite CBK/World Bank fallback ratio is available."
+                            ),
                             "debt_to_gdp_computed_central_gov": _computed_ratio,
                             "reconciliation": reconciliation,
                             # High-level breakdown
@@ -10977,6 +10999,11 @@ async def get_national_debt():
             "loan_count": None,
             "gdp": None,
             "debt_to_gdp_ratio": None,
+            "debt_to_gdp_year": None,
+            "debt_to_gdp_basis": None,
+            "debt_to_gdp_source": None,
+            "debt_to_gdp_vintage": None,
+            "debt_to_gdp_absent_reason": _reason,
             "summary": {},
             "categories": {},
             # Not our figure, so an empty register does not withhold it.
@@ -11858,19 +11885,40 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
 
         latest_fs = latest_publishable_fiscal_summary(db)
 
-        _imf_headline = _latest_imf_debt_to_gdp(db)
-        if not latest_dt and not latest_fs and _imf_headline is None:
+        # An unseeded schema previously returned no_data here. Check table
+        # presence before either IMF read on that path, so PostgreSQL does not
+        # enter an aborted transaction. Catalog/query failures still reach the
+        # endpoint's existing error handler.
+        from models import ImfWeoObservation
+        from sqlalchemy import inspect
+
+        imf_unseeded = (
+            not latest_dt and not latest_fs
+            and not inspect(db.connection()).has_table(ImfWeoObservation.__tablename__)
+        )
+        if imf_unseeded:
+            _imf_headline = None
+            projections, projections_source, projections_absent_reason = (
+                [], None, "no_published_projection_seeded"
+            )
+        else:
+            _imf_headline = _latest_imf_debt_to_gdp(db)
+            projections, projections_source, projections_absent_reason = (
+                _published_debt_projections(db)
+            )
+        if not latest_dt and not latest_fs and _imf_headline is None and not projections:
             return {
                 "status": "no_data",
                 "note": "Run seeders: debt_timeline and fiscal_summary",
                 "imf_dsa": kenya_dsa_rating(),
                 "debt_to_gdp": None,
+                "debt_to_gdp_absent_reason": "No valid IMF actual or CBK debt timeline ratio is available.",
                 "debt_service_to_revenue": None,
                 "debt_service_to_revenue_absent_reason": "No fiscal inputs with separate source locators are available.",
                 "external_debt_share": None,
-                "projections": [],
-                "projections_source": None,
-                "projections_absent_reason": "no_published_projection_seeded",
+                "projections": projections,
+                "projections_source": projections_source,
+                "projections_absent_reason": projections_absent_reason,
                 "regional_peers": _get_regional_peers(),
                 "regional_peers_basis": _peer_column_basis(None),
             }
@@ -11950,11 +11998,6 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             if total is not None and total > 0 and ext is not None and ext <= total:
                 external_share = round(ext / total * 100, 1)
 
-        # ── Projections: published, or absent ──────────────────────
-        projections, projections_source, projections_absent_reason = (
-            _published_debt_projections(db)
-        )
-
         # ── Regional Peers ─────────────────────────────────────────
         #
         # Kenya's cell used to be overwritten with DebtTimeline.gdp_ratio,
@@ -11974,6 +12017,10 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             "status": "success",
             "_meta": _response_meta(unit="percentage", entity_scope="national"),
             "debt_to_gdp": debt_to_gdp,
+            "debt_to_gdp_absent_reason": (
+                None if debt_to_gdp is not None else
+                "No valid IMF actual or CBK debt timeline ratio is available."
+            ),
             "imf_dsa": kenya_dsa_rating(),
             "debt_service_to_revenue": debt_service_to_revenue,
             "debt_service_to_revenue_absent_reason": debt_service_absent_reason,
