@@ -114,3 +114,20 @@ The coordinator should independently review the finished commit, replay combined
 migration/CI integration, reply to and resolve the three threads with their exact
 regression evidence, and push/merge only after its accepted checks. This lane did
 not push, reply, resolve or merge.
+
+## Independent recorder destination correction
+
+Independent Spec review reproduced the public recorder overwriting its own
+generator during publication while reporting a successful stable run. Ten
+actual normal/optimized subprocess controls reproduced unsafe generator,
+traversal, absolute, symlink and existing-receipt destinations. The recorder
+now requires a fresh simple JSON filename in its evidence directory before
+launching the child, and publishes with exclusive creation. All 41 receipt
+integrity/target controls pass on the coordinator runtime. The prior recorder
+bytes are preserved at `run_receipt_pre_destination_ee8d7cde662643dfdeb5ddc1e602b20b60de97a7cda2574ad359ed6626aa9603.py`.
+Earlier seven-check candidate evidence retains its original hashes and requires
+a fresh candidate replay; author and previous coordinator receipts are historical.
+A fresh CI/runtime review also found the mandatory legacy scheduler test needs
+`schedule==1.2.0`, already declared by root ETL but absent from backend test
+prerequisites. The author lane will complete that development-only declaration
+and refresh the candidate packet before final review/hosted acceptance.
