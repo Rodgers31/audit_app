@@ -124,6 +124,10 @@ def verify(checkout, artifacts, current=None):
         require(
             counts["failures"] == 0 and counts["errors"] == 0, "Current cases failed"
         )
+        require(
+            counts["tests"] > counts["skipped"],
+            "Current replay executed no passing cases",
+        )
     return {
         "verified_artifacts": len(manifest["artifacts"]),
         "historical_runs": len(manifest["runs"]),

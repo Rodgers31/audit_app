@@ -68,10 +68,10 @@ schema fixture. They did not execute; this lane used SQLite, not that unrelated
 release fixture. Repo-required critical flake8 selection for changed product/test
 source returned zero findings. There is no frontend build change in this lane.
 
-Final lane fixtures contain 53 financial/API cases and 18 evidence CLI controls:
-**71 passed**. The final fixture replay on the pinned base, using the preserved
-earlier verifier, produced **49 failed, 22 passed, 0 errors/skips**. These include
-new metadata and evidence requirements; they are not 49 reproductions of the
+Final lane fixtures contain 53 financial/API cases and 20 evidence CLI controls:
+**73 passed**. The final fixture replay on the pinned base, using the preserved
+earlier verifier, produced **51 failed, 22 passed, 0 errors/skips**. These include
+new metadata and evidence requirements; they are not 51 reproductions of the
 original financial defect. The Spec review separately proved that the earlier
 missing-table HTTP/no-data contract passed on base and failed on the initial
 candidate. Author review-repair red runs and all four reproduced findings remain
@@ -82,6 +82,9 @@ state, hashes for raw/JUnit outputs, and declared JUnit counts that agree with
 actual testcase nodes and outcomes. CLI refusal controls execute under ordinary
 Python and `-O`; real executed passing output is the positive control. Hashes
 establish correspondence with recorded inputs, not authenticity of a publisher.
+An actual all-skipped pytest child is also refused for current acceptance:
+there must be at least one non-skipped passing case. Honest historical skipped
+records remain verifiable as records of what ran.
 
 The first two historical runs are preserved, including malformed fixture
 failures (page locator and NOT NULL operands). They are explicitly superseded
@@ -109,6 +112,12 @@ Docker container/network/volume, listener, server or background worker was
 created. Test subprocesses have a 180-second deadline. Owned test DBs dispose
 their connections; reviewer processes must finish before scratch cleanup.
 Primary checkout and historical coordinator acceptance remain read-only.
+After all reviewer/author children finished, 30 exact receipt-owned scratch
+directories (6,693 temporary files) were removed; immutable raw logs, XML,
+receipts and executable snapshots remain. The baseline checkout was archived
+through the managed worktree tool after its final red replay. The author checkout and owned
+runtime/cache remain available for review. Cleanup record:
+external `owned-cleanup-before-publication.json`.
 
 This is local synthetic-fixture behavior evidence, not a production observation,
 publisher verification, hosted CI, or deployed acceptance. The five tracked
@@ -117,16 +126,36 @@ left untouched. No paid reviewer was requested.
 
 ## Independent review and coordinator action
 
-Separate Standards, Spec, and adversarial execution reviews are required before
-draft delivery; final report pointers and final package replay will be recorded
-after they execute. Findings must be reproduced by the author before repairs.
-
 Initial Standards review passed with no findings. Spec found one missing-table
 regression; adversarial found the infinite fallback ratio and two evidence
 acceptance gaps. The author reproduced all four before repair. Initial reports:
 external `standards-initial-7e931f/STANDARDS.md`, `spec-review.md`, and
-`adversarial-review.md`; their generators and raw records are preserved. Final
-committed-source reviews remain pending in this candidate commit.
+`adversarial-review.md`; their generators and raw records are preserved.
+
+On committed candidate `33169845ff0747f01dff744ba517683c6cddc20e` (tree
+`0a4a71858ed12c621d266e500b5c23735a0d8097`), repaired Standards passed 71 cases
+with zero findings; Spec passed 176 cases with zero findings; adversarial passed
+its 53 controls and 71 author cases plus 18 verifier controls. These are
+overlapping selections, not additions to the cohort total. That adversarial
+round found the all-skipped acceptance gap. The author reproduced both modes,
+added two real child-execution refusal cases (red: 2 failed), and repaired it
+(green: all 73 lane cases passed). Reports and exact commands:
+`standards-repaired-6ac091/STANDARDS.md`, `spec-repaired-review.md`, and
+`adversarial-repaired/review.md`, all under the external artifact root.
+
+Exact final published-source acceptance is deliberately external, so recording
+it does not change the corpus it measures. Required before draft delivery:
+`final-published/receipt.json`, `final-published-verification.json`, and separate
+`standards-final/report.md`, `spec-final/report.md`, `adversarial-final/report.md`.
+Each final reviewer must record HEAD/tree, complete input/output/generator
+identity, real execution results, finding count, limitations and completion.
+The final replay uses the deduplicated cohort and both ordinary/`-O` verifiers.
+These final records are not relabelled historical manifest runs and do not
+claim hosted CI, deployed acceptance or #589 combined integration.
+
+Reproduction from the owned runtime, using a fresh external output directory:
+`python -B docs/admin/implementation/batch10-imf-evidence/run_evidence.py CHECKOUT FRESH_OUTPUT tests/test_batch10_imf_actuals.py tests/test_batch10_imf_actuals_evidence.py`.
+Then run `python [-O] docs/admin/implementation/batch10-imf-evidence/verify_evidence.py CHECKOUT ARTIFACT_ROOT FRESH_OUTPUT/receipt.json`.
 
 #589 owns startup/readiness and is the first integration owner. Coordinator must
 preview both final heads, integrate #589 first, reconcile this lane onto that

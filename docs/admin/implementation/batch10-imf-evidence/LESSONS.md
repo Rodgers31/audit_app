@@ -26,6 +26,9 @@
 7. Deduplicate cohort selections and compare actual case identities before
    reporting counts. Preserve the original selection and explain corrected
    counts rather than rewriting its historical record.
+8. A zero-exit pytest child with every case skipped supplies no behavioral
+   acceptance. Require a real passing case for a current replay; preserve
+   historical skipped receipts without presenting them as acceptance.
 
 Shared skill files are read-only to this author; these are proposals/evidence,
 not changes to common policy.

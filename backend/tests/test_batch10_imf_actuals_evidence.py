@@ -121,6 +121,49 @@ def test_evidence_accepts_real_executed_control(evidence_package, optimized):
 
 
 @pytest.mark.parametrize("optimized", [False, True])
+def test_evidence_rejects_real_all_skipped_execution(evidence_package, optimized):
+    checkout, _, replay, receipt = evidence_package
+    test = checkout / "test_control.py"
+    test.write_text(
+        'import pytest\n@pytest.mark.skip(reason="synthetic prerequisite absent")\n'
+        'def test_control():\n    raise RuntimeError("body must not execute")\n'
+    )
+    child = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-q",
+            str(test),
+            "--junitxml=" + str(replay / "cases.xml"),
+        ],
+        cwd=checkout,
+        env={"PATH": os.defpath, "PYTHONDONTWRITEBYTECODE": "1"},
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert child.returncode == 0, child.stdout + child.stderr
+    assert "1 skipped" in child.stdout
+    (replay / "raw.log").write_text(child.stdout + child.stderr)
+    state = receipt["start"]
+    state["sha256"]["test_control.py"] = digest(test)
+    state["status"] = subprocess.check_output(
+        ["git", "-C", str(checkout), "status", "--porcelain", "--untracked-files=all"],
+        text=True,
+    ).strip()
+    receipt["end"] = json.loads(json.dumps(state))
+    receipt["outputs"] = {
+        name: digest(replay / name) for name in ("raw.log", "cases.xml")
+    }
+    result = verify(evidence_package, optimized)
+    assert result.returncode != 0, result.stdout
+
+
+@pytest.mark.parametrize("optimized", [False, True])
 @pytest.mark.parametrize(
     "mutation",
     [
