@@ -1646,6 +1646,32 @@ class AuditListResponse(BaseModel):
 # Readiness flag: /health/ready reports 503 until reference data exists.
 # /health (used by the uptime pinger) and /health/live answer immediately.
 _app_ready = asyncio.Event()
+_app_readiness_reason = "starting"
+
+
+def _reset_readiness(reason: str) -> None:
+    global _app_readiness_reason
+    _app_ready.clear()
+    _app_readiness_reason = reason
+
+
+def _required_references_available() -> bool:
+    # A fresh owned session observes committed references, including after a
+    # deferred/normal None bootstrap return. Keep DB work off the event loop.
+    from bootstrap import required_county_references_available
+    from database import SessionLocal as _SessionLocal
+
+    with _SessionLocal() as db:
+        return required_county_references_available(db)
+
+
+def _prewarm_database_pool() -> None:
+    # Session context owns cleanup; the background caller runs this in a
+    # thread so an unavailable database cannot block /health/live.
+    from database import SessionLocal as _SessionLocal
+
+    with _SessionLocal() as db:
+        db.execute(text("SELECT 1"))
 
 
 @contextlib.asynccontextmanager
@@ -1659,14 +1685,17 @@ async def _app_lifespan(app_: "FastAPI"):
     immediately, /health/live answers at once, and /health/ready flips
     to 200 once reference data is confirmed.
     """
+    _reset_readiness("starting")
     if not DATABASE_AVAILABLE:
         # Config error — fail fast, nothing can work without a DB.
+        _reset_readiness("database_unavailable")
         raise RuntimeError("Database is required for backend startup")
 
     startup_task = asyncio.create_task(_startup_sequence())
     try:
         yield
     finally:
+        _reset_readiness("stopped")
         startup_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await startup_task
@@ -1681,19 +1710,13 @@ async def _app_lifespan(app_: "FastAPI"):
 async def _startup_sequence() -> None:
     """Ordered background startup: DB pre-warm → reference data →
     readiness → auto-seeder → cache warmup. Runs off the request path."""
+    _reset_readiness("starting")
     logger.info("Main Backend API starting up...")
     logger.info(f"Working directory: {os.getcwd()}")
 
     # Pre-warm the connection pool so the first real query isn't slow.
     try:
-        # SessionLocal directly rather than the get_db() FastAPI
-        # dependency: `next(get_db())` outside DI leaves the generator
-        # suspended, so its finally-close never runs promptly. The
-        # Session context manager owns the full lifecycle here.
-        from database import SessionLocal as _SessionLocal
-
-        with _SessionLocal() as db:
-            db.execute(text("SELECT 1"))
+        await asyncio.to_thread(_prewarm_database_pool)
         logger.info("Database connection pool warmed up successfully")
     except Exception as e:
         logger.warning(f"Database pre-warm failed (non-fatal): {e}")
@@ -1703,7 +1726,21 @@ async def _startup_sequence() -> None:
     try:
         await asyncio.to_thread(initialize_reference_data)
     except Exception:  # pragma: no cover - surfaced via readiness + logs
+        _reset_readiness("reference_initialization_failed")
         logger.exception("Failed to initialize reference data")
+        return
+    try:
+        references_available = await asyncio.to_thread(_required_references_available)
+    except Exception:
+        _reset_readiness("reference_check_failed")
+        logger.exception("Failed to verify required county references")
+        return
+    if not references_available:
+        _reset_readiness("required_county_references_unavailable")
+        logger.warning(
+            "Startup remains not-ready: required county references unavailable; "
+            "restart after the competing writer completes or references are repaired"
+        )
         return
     _app_ready.set()
     logger.info("Main Backend API startup complete!")
@@ -2273,7 +2310,14 @@ async def health_ready() -> JSONResponse:
     real responses. 503 while the background startup sequence runs (or
     if bootstrap failed — check logs for 'Failed to initialize')."""
     if not _app_ready.is_set():
-        return JSONResponse({"status": "starting"}, status_code=503)
+        return JSONResponse(
+            {
+                "status": "starting",
+                "reason": _app_readiness_reason,
+                "retry": "next_normal_start_after_writer_completion_or_reference_repair",
+            },
+            status_code=503,
+        )
     return JSONResponse({"status": "ready"})
 
 
