@@ -1,5 +1,47 @@
 # Batch 10 ETL mappings handoff — #554
 
+## Current use — 2026-10-10, PR606 review
+
+From any clone, run the packet's read-only verifier:
+
+```sh
+python -B docs/admin/implementation/batch10-mappings-evidence/verify_package.py
+python -B -O docs/admin/implementation/batch10-mappings-evidence/verify_package.py
+```
+
+A passing result certifies historical packet integrity and explicitly reports
+`current_checkout_acceptance=false`; fresh candidate tests have separate external
+receipts. The [active schema2 decision](batch10-mappings-evidence/README.md) and
+[#610 correction](batch10-mappings-evidence/COORDINATOR_610.md) define this scope.
+
+`build_package.py` and `revise_package.py` are immutable historical producer
+artifacts. Their recorded author checkout and exclusive self-copy describe the
+original one-time execution from an external staging directory. They are not
+clone build or repair entrypoints: the packaged revision's self-copy refuses,
+and their original inputs/state cannot be replaced with later checkout bytes.
+Changing those hash-bound producers would invalidate their execution provenance.
+The coordinator publishers are also one-time append-only publication transitions;
+`publish_coordinator_610_v2.py prepare` intentionally refuses an already-final
+schema2 packet. A future publication needs a new versioned producer and preserved
+prior index, rather than rerunning or rewriting a historical producer.
+
+The PR606 maintenance repair addresses the suppressed-write false-success defect
+tracked in [#612](https://github.com/Rodgers31/audit_app/issues/612) and extends
+signed plan/apply reconciliation to
+the selected mapped domain. It verifies the exact source/domain/command/token
+ownership, preserves unrelated retained domains, and releases only after the
+audit, claim, command, domain and required observations all write successfully in
+the same fenced backend transaction. Exact persisted rows are read back after
+pending deferred constraint triggers run; affected-row counts alone cannot prove
+the required values. A missing or changed write or connection loss before
+commit preserves ownership through rollback. A commit acknowledgement failure
+propagates as uncertainty and must not be retried automatically. Admission
+closure, every-writer evidence, full-table freezing,
+continuity locking and default-off activation remain required. Local inert
+PostgreSQL controls do not authorize production reconciliation or activation.
+
+## Original author handoff (historical context)
+
 This draft adds bounded Treasury→fiscal_summary, CoB→counties_budget and KNBS→population dispatch beside the accepted OAG→audits mapping. The native financial writers and their publication contracts are unchanged. CONTRACT.md in [the evidence packet](batch10-mappings-evidence/README.md) states mixed publishers, persistence and exclusions. OpenData/CRA have no implementable native registry entrypoint; deduplicated prerequisite [#602](https://github.com/Rodgers31/audit_app/issues/602) remains open. #554 and production gate #583 remain open.
 
 The accepted base is f6c31e271297eece52f34102dc40a1e2ed7069a8, tree69ddfad6deb814dd08fdaee2db2d512d73e14c78. The dirty primary checkout remained read-only. The isolated managed worktree is /Users/roger/.codex/worktrees/batch10-etl-mappings/audit_app, branch codex/batch10-etl-mappings. No sibling commits are imported. Product ownership is dispatch API/worker/adapter, only the dispatch rows/constraints in models.py, generic native admission in seeding/exclusion.py, and additive migration e554b10a0001. All original tests, financial domains/registries, main/bootstrap, frontend, dependencies and workflows are unchanged.

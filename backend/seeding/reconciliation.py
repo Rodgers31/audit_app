@@ -225,7 +225,7 @@ def _snapshot(connection, selected, lock=False):
         worker = worker_rows[0] if worker_rows else None
         if worker is not None and worker["ready"] is not False:
             refuse("Dedicated supervisor is not stopped; elapsed lease is not proof")
-    if present["etl_dispatch_domains"] and domain == "audits":
+    if present["etl_dispatch_domains"]:
         rows = _rows(connection, EtlDispatchDomain.__table__, (EtlDispatchDomain.domain == domain,))
         dispatch = rows[0] if rows else None
     if present["seeding_domain_claims"]:
@@ -236,9 +236,10 @@ def _snapshot(connection, selected, lock=False):
     if (identity is None) != (ownership is None) or ownership is not None and ownership["id"] != identity:
         refuse("Exact retained owner mismatch")
     if ownership is not None and ownership["kind"] == "dispatch":
+        from admin_etl_dispatch import mapped
         rows = _rows(connection, EtlDispatchCommand.__table__, (EtlDispatchCommand.id == UUID(ownership["command_id"]),))
         command = rows[0] if rows else None
-        if (domain != "audits" or dispatch is None or command is None or
+        if (dispatch is None or command is None or not mapped(command["source"], domain) or
                 dispatch["claim_token"] != identity or dispatch["command_id"] != ownership["command_id"] or
                 command["claim_token"] != identity or command["domain"] != domain or
                 command["status"] not in ("running", "interrupted", "completed", "failed")):
@@ -284,7 +285,7 @@ def _snapshot(connection, selected, lock=False):
     if identity is None and [j["id"] for j in relevant] != selected["legacy_job_ids"]:
         refuse("Exact legacy RUNNING observation set changed")
     if lock:
-        # Existing runtime order: worker -> audits domain -> command -> claim.
+        # Existing runtime order: worker -> selected domain -> command -> claim.
         for table, condition in (
                 (EtlDispatchWorker.__table__, EtlDispatchWorker.id == 1),
                 (EtlDispatchDomain.__table__, EtlDispatchDomain.domain == domain),
@@ -394,6 +395,20 @@ def make_plan(connection, policy, evidence):
     return result
 
 
+def _verify_write_readback(connection, required):
+    # A deferred trigger can rewrite an otherwise successful release at commit.
+    # Execute pending constraint triggers before reading the persisted values,
+    # while this backend still holds admission, continuity and all table locks.
+    connection.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+    for table, conditions, expected in required:
+        actual = _rows(connection, table, conditions)
+        wanted = [{k: _serial(v) for k, v in expected.items()}]
+        # Python equality considers True == 1; canonical JSON retains exact
+        # JSON primitive types, including the signed audit payload's version.
+        if canonical(actual) != canonical(wanted):
+            refuse("Reconciliation write readback differs: " + table.name)
+
+
 def apply_plan(connection, policy, evidence, plan):
     canonical(plan)
     shape(plan, ("version", "generator_sha256", "target", "selector", "snapshot", "snapshot_sha256",
@@ -434,22 +449,49 @@ def apply_plan(connection, policy, evidence, plan):
         verify_evidence(policy, evidence, target, now)
         record = _record(evidence, policy, target, now, digest(plan))
         record_text = _record_text(record) if snapshot["claim"] else None
-        audit_id = connection.scalar(AdminAuditLog.__table__.insert().values(
-            actor_id=evidence["who"], action="seeding.reconcile", target_type="seeding_domain",
-            target_id=evidence["selector"]["claim_id"], payload=record,
-            created_at=now.replace(tzinfo=None)).returning(AdminAuditLog.__table__.c.id))
+        audit_values = dict(actor_id=evidence["who"], action="seeding.reconcile", target_type="seeding_domain",
+                            target_id=evidence["selector"]["claim_id"], payload=record,
+                            created_at=now.replace(tzinfo=None))
+        audit_id = connection.scalar(AdminAuditLog.__table__.insert().values(**audit_values).returning(AdminAuditLog.__table__.c.id))
+        if type(audit_id) is not int or audit_id <= 0:
+            refuse("Reconciliation audit was not recorded")
+        required = [(AdminAuditLog.__table__, (AdminAuditLog.id == audit_id,),
+                     {"id": audit_id, "actor_email": None, **audit_values})]
         ownership, command = snapshot["claim"], snapshot["command"]
         if ownership:
-            connection.execute(SeedingDomainClaim.__table__.update().where(SeedingDomainClaim.__table__.c.id == UUID(ownership["id"])).values(
-                released_at=now, reconciled_by=evidence["who"], reconciliation=record_text))
+            claim_values = dict(released_at=now, reconciled_by=evidence["who"], reconciliation=record_text)
+            released = connection.execute(SeedingDomainClaim.__table__.update().where(
+                SeedingDomainClaim.__table__.c.id == UUID(ownership["id"]),
+                SeedingDomainClaim.__table__.c.domain == ownership["domain"],
+                SeedingDomainClaim.__table__.c.released_at.is_(None)).values(**claim_values))
+            if released.rowcount != 1:
+                refuse("Exact retained claim was not released")
+            required.append((SeedingDomainClaim.__table__, (SeedingDomainClaim.id == UUID(ownership["id"]),),
+                             {**ownership, **claim_values}))
         if command:
+            command_values = {}
             if command["status"] == "running":
-                connection.execute(EtlDispatchCommand.__table__.update().where(EtlDispatchCommand.__table__.c.id == UUID(command["id"])).values(
-                    status="interrupted", outcome="execution_unverified", finished_at=now, updated_at=now,
-                    version=command["version"] + 1))
-            connection.execute(EtlDispatchDomain.__table__.update().where(EtlDispatchDomain.__table__.c.domain == "audits").values(command_id=None, claim_token=None))
+                command_values = dict(status="interrupted", outcome="execution_unverified", finished_at=now,
+                                      updated_at=now, version=command["version"] + 1)
+                interrupted = connection.execute(EtlDispatchCommand.__table__.update().where(
+                    EtlDispatchCommand.__table__.c.id == UUID(command["id"]),
+                    EtlDispatchCommand.__table__.c.claim_token == UUID(command["claim_token"]),
+                    EtlDispatchCommand.__table__.c.status == "running").values(**command_values))
+                if interrupted.rowcount != 1:
+                    refuse("Exact retained command was not interrupted")
+            required.append((EtlDispatchCommand.__table__, (EtlDispatchCommand.id == UUID(command["id"]),),
+                             {**command, **command_values}))
+            cleared = connection.execute(EtlDispatchDomain.__table__.update().where(
+                EtlDispatchDomain.__table__.c.domain == ownership["domain"],
+                EtlDispatchDomain.__table__.c.command_id == UUID(command["id"]),
+                EtlDispatchDomain.__table__.c.claim_token == UUID(ownership["id"])).values(command_id=None, claim_token=None))
+            if cleared.rowcount != 1:
+                refuse("Exact retained dispatch domain was not cleared")
+            required.append((EtlDispatchDomain.__table__, (EtlDispatchDomain.domain == ownership["domain"],),
+                             {**snapshot["dispatch"], "command_id": None, "claim_token": None}))
         for job in snapshot["observations"]:
             if job["status"] != "RUNNING":
+                required.append((IngestionJob.__table__, (IngestionJob.id == job["id"],), job))
                 continue
             if type(job["errors"]) is not list:
                 refuse("Malformed observation errors; effects require investigation")
@@ -457,9 +499,15 @@ def apply_plan(connection, policy, evidence, plan):
             if "operator_reconciliation" in meta:
                 refuse("Observation already contains reconciliation evidence")
             meta["operator_reconciliation"] = {"audit_id": audit_id, "evidence_sha256": digest(evidence), "who": evidence["who"]}
-            connection.execute(IngestionJob.__table__.update().where(IngestionJob.__table__.c.id == job["id"]).values(
-                status="FAILED", finished_at=now.replace(tzinfo=None),
-                errors=job["errors"] + [f"Operator reconciliation audit {audit_id}: execution remains unverified"], metadata=meta))
+            job_values = dict(status="FAILED", finished_at=now.replace(tzinfo=None),
+                              errors=job["errors"] + [f"Operator reconciliation audit {audit_id}: execution remains unverified"],
+                              metadata=meta)
+            updated = connection.execute(IngestionJob.__table__.update().where(
+                IngestionJob.__table__.c.id == job["id"], IngestionJob.__table__.c.status == "RUNNING").values(**job_values))
+            if updated.rowcount != 1:
+                refuse("Exact retained observation was not reconciled")
+            required.append((IngestionJob.__table__, (IngestionJob.id == job["id"],), {**job, **job_values}))
+        _verify_write_readback(connection, required)
         verify_evidence(policy, evidence, target, connection.scalar(text("SELECT clock_timestamp()")))
         _maintenance(connection, lock=True)
         _continuity(connection, key)
