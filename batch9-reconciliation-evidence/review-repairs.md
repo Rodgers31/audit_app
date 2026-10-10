@@ -140,7 +140,7 @@ The previous active generator is retained byte-for-byte in `historical-generator
 with SHA256 `d83ceab3234b52e5a26f9aec186ddc2f2464488b0a1b5acd48c840c1a0854b6e`.
 Its earlier publication controls do not certify this later repair. The new real
 subprocess/Git controls and existing publication selection each pass 18 cases
-on Python 3.13.9 / SQLAlchemy 2.0.46 and Python 3.12.15 / SQLAlchemy 2.0.23,
+on Python 3.13.9 / SQLAlchemy 2.0.54 and Python 3.12.15 / SQLAlchemy 2.0.23,
 without skips. Raw red, green, minimum-runtime and two intermediate fixture/setup
 results are preserved in the coordinator's external `BATCH_9_PR_REVIEW` packet.
 The initial in-memory SQLite setup refusal was not a behavioral red; the corrected
