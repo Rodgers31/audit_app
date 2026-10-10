@@ -1,0 +1,46 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-pdf-pin-evidence/record_check.py",
+  "generator_sha256": "da950042944ad8f7b603f3963ec41c61260a6ac0b3e7f99d26d1e7bc0da6fd7f",
+  "generated_at": "2026-10-09T19:07:55.218483+00:00",
+  "target_commit": "672c5c011ce57dc41551f5fbc642bc4e69134c43",
+  "target_tree": "7c504cd6d4cbda4e1149f20fce60f246a3d4f948",
+  "working_tree_status": "?? backend/tests/test_r2_acceptance_workflow_pin.py\n?? docs/admin/implementation/batch9-pdf-pin-evidence/\n",
+  "source_sha256": {
+    ".github/workflows/r2-acceptance.yml": "87c2e1ff2449cf845e8baf845311581844182f91935d482556b43a430e041dd5",
+    "backend/scripts/r2_producer_acceptance.py": "9124c3c8abad7b48c8ed78d580c01012662174fd1ca4b5bdd148cc0250a1478f",
+    "backend/tests/test_r2_acceptance_workflow_pin.py": "5aa79b2777980c481c8c0f55fd3724f109a7aa751e8f3291b2b455e6b03367d4",
+    "docs/admin/implementation/batch8-producer-evidence/run_check.py": "b8cb7f42cbb368df83ef7962ed29b8ca22c66d7f25a48c25b2a42662d4a6f26c"
+  },
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "--confcutdir=tests",
+    "-p",
+    "pytest_asyncio.plugin",
+    "tests/test_r2_acceptance_workflow_pin.py",
+    "-k",
+    "current_reviewed_bytes",
+    "-q",
+    "-s"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/a9aa/audit_app/backend",
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "versions": {
+    "pytest": "9.0.2",
+    "PyYAML": "6.0.3"
+  },
+  "environment": {
+    "PATH": "/bin:/usr/bin:/sbin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"
+  },
+  "exit_status": 1,
+  "verdict": "FAILED",
+  "stdout": "F\n=================================== FAILURES ===================================\n__________ test_current_reviewed_bytes_reach_both_offline_boundaries ___________\n\nowned = (PosixPath('/private/tmp/pytest-of-roger/pytest-195/test_current_reviewed_bytes_re0/app'), PosixPath('/private/tmp/pyt...est-of-roger/pytest-195/test_current_reviewed_bytes_re0/bin:/bin:/usr/bin:/sbin', 'PYTHONDONTWRITEBYTECODE': '1', ...})\n\n    def test_current_reviewed_bytes_reach_both_offline_boundaries(owned):\n        assert hashlib.sha256(PRODUCER.read_bytes()).hexdigest() == PRODUCER_SHA\n        result, events = execute(owned)\n>       assert result.returncode == 0, result.stdout + result.stderr\nE       AssertionError: \nE       assert 1 == 0\nE        +  where 1 = CompletedProcess(args=['bash', '--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', 'set -eu\\nscript=\"$GITHUB_WORKSP...3 \\\\\\n  --memory-budget-bytes 8589934592 --timeout-seconds 720 --allow-live-r2\\n'], returncode=1, stdout='', stderr='').returncode\n\ntests/test_r2_acceptance_workflow_pin.py:112: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_r2_acceptance_workflow_pin.py::test_current_reviewed_bytes_reach_both_offline_boundaries\n1 failed, 23 deselected in 0.32s\n",
+  "stderr": "",
+  "scope": "offline shell/argument/git guards only; live run boundary replaced; no workflow invocation"
+}
