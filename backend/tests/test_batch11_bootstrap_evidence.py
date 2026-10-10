@@ -39,7 +39,8 @@ def recorded(tmp_path_factory):
 
 
 @pytest.mark.parametrize("optimized", [False, True])
-@pytest.mark.parametrize("fault", ["valid", "bool_exit", "missing_runtime", "wrong_entry", "bool_counts", "empty_cases", "internal", "symlink"])
+@pytest.mark.parametrize("fault", ["valid", "bool_exit", "missing_runtime", "wrong_entry", "bool_counts", "empty_cases", "internal", "symlink",
+    "null_timestamp", "unordered_time", "naive_timestamp", "invalid_environment", "enabled_dispatch", "secret_presence", "unredacted_input", "wrong_portable_entrypoint"])
 def test_packet_types_outputs_and_execution_identity(recorded, tmp_path, optimized, fault):
     source, original, env = recorded
     packet = tmp_path / "copy"
@@ -56,6 +57,23 @@ def test_packet_types_outputs_and_execution_identity(recorded, tmp_path, optimiz
         index["testcases"]["counts"]["failed"] = False
     elif fault == "empty_cases":
         index["testcases"]["identities"] = []
+    elif fault == "null_timestamp":
+        receipt["started_at"] = None
+    elif fault == "unordered_time":
+        receipt["ended_at"] = "2000-01-01T00:00:00+00:00"
+    elif fault == "naive_timestamp":
+        receipt["started_at"] = "2000-01-01T00:00:00"
+    elif fault == "invalid_environment":
+        receipt["environment"] = None
+    elif fault == "enabled_dispatch":
+        receipt["environment"]["ENABLE_ETL_SCHEDULER"] = "true"
+    elif fault == "secret_presence":
+        receipt["secret_environment_present"]["DATABASE_URL"] = True
+    elif fault == "unredacted_input":
+        receipt["environment"]["DATABASE_URL"] = "inert-unredacted-input"
+        receipt["secret_environment_present"]["DATABASE_URL"] = True
+    elif fault == "wrong_portable_entrypoint":
+        index["portable_command"] = ["<python>", "-m", "fake_cli"]
     elif fault == "symlink":
         (packet / "receipt.txt").unlink()
         (packet / "receipt.txt").symlink_to(original / "receipt.txt")
@@ -73,7 +91,7 @@ def test_packet_types_outputs_and_execution_identity(recorded, tmp_path, optimiz
         "--root", str(source), "--index", str(target)]
     before = subprocess.check_output(["git", "status", "--porcelain"], cwd=source, env=env)
     result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=10)
-    assert (result.returncode == 0) is (fault == "valid"), result.stdout + result.stderr
+    assert (result.returncode == 0) is (fault == "valid"), "MALFORMED_PACKET_ACCEPTED: " + result.stdout + result.stderr
     after = subprocess.check_output(["git", "status", "--porcelain"], cwd=source, env=env)
     assert before == after == b""
     if fault == "valid":

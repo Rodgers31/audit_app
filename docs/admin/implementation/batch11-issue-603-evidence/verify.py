@@ -1,5 +1,6 @@
 """Validate recorded current execution; historical integrity is a separate claim."""
 import argparse
+from datetime import datetime, timedelta
 import hashlib
 import importlib.util
 import json
@@ -81,6 +82,25 @@ def validate(root, index_path, *, current=True):
     require(type(receipt["secret_environment_present"]) is dict and
         set(receipt["secret_environment_present"]) == {"DATABASE_URL", "JWT_SECRET_KEY", "BATCH9_BOOTSTRAP_POSTGRES_URL"}
         and all(type(v) is bool for v in receipt["secret_environment_present"].values()), "Presence metadata invalid")
+    timestamps = []
+    for key in ("started_at", "ended_at"):
+        require(type(receipt[key]) is str, "Timestamp metadata invalid")
+        try:
+            value = datetime.fromisoformat(receipt[key])
+        except ValueError:
+            raise ValueError("Timestamp metadata invalid") from None
+        require(value.tzinfo is not None and value.utcoffset() == timedelta(0), "UTC timestamp required")
+        timestamps.append(value)
+    require(timestamps[0] <= timestamps[1], "Execution timestamp order invalid")
+    flags = dict(PYTHON_DOTENV_DISABLED="1", PYTHONDONTWRITEBYTECODE="1",
+        AUTO_SEEDER_ENABLED="false", AUTO_WARMUP_ENABLED="false", ENABLE_ETL_SCHEDULER="false")
+    environment = receipt["environment"]
+    allowed = set(flags) | {"PATH", "PYTHONPATH"} | set(receipt["secret_environment_present"])
+    require(type(environment) is dict and set(environment) <= allowed
+        and all(type(k) is str and type(v) is str and v for k, v in environment.items()), "Environment metadata invalid")
+    require(all(environment.get(k) == v for k, v in flags.items()), "Disabled execution flags required")
+    require(all(present is (key in environment) and (not present or environment[key] == "<redacted>")
+        for key, present in receipt["secret_environment_present"].items()), "Redaction/presence metadata invalid")
     require(receipt["before"] == receipt["after"] and type(receipt["before"]) is dict, "Source changed during execution")
     source = receipt["before"]
     require(type(source.get("sources")) is dict and bool(source["sources"]), "Missing source inventory")
@@ -90,6 +110,18 @@ def validate(root, index_path, *, current=True):
     require(receipt.get("generator_sha256") == source["sources"].get(RECORDER), "Recorder identity mismatch")
     require(packet.get("generator_sha256") == source["sources"].get(packet["generated_by"]), "Publisher identity mismatch")
     require(receipt.get("log_sha256") == packet["files"]["receipt.txt"], "Raw execution output mismatch")
+    command = receipt["command"]
+    require(len(command) >= 10 and command[-6:-4] == ["-vv", "-s"] and command[-2] == "-o",
+        "Publisher execution shape invalid")
+    for arg, prefix, name in ((command[-4], "--junitxml=", "results.xml"),
+            (command[-3], "--basetemp=", "tmp"), (command[-1], "cache_dir=", "pytest-cache")):
+        require(arg.startswith(prefix) and Path(arg[len(prefix):]).is_absolute()
+            and Path(arg[len(prefix):]).name == name, "Recorded output invocation invalid")
+    tests = command[3:-6]
+    require(all(t.startswith("tests/") and ".." not in Path(t).parts
+        and source["sources"].get("backend/" + t) for t in tests), "Executed test selection identity invalid")
+    portable = ["<python>", *command[1:-6], "-vv", "-s", "--junitxml=<output>/results.xml"]
+    require(packet.get("portable_command") == portable, "Portable invocation differs from execution")
     observed = inventory(index_path.parent / "results.xml")
     declared = packet.get("testcases")
     require(type(declared) is dict and set(declared) == {"identities", "counts", "skips"}
