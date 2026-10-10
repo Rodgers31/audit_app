@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "generated_by": "docs/admin/implementation/batch10-readiness-evidence/publish_hosted_correction.py",
+  "generator_sha256": "22c4a8999254dc6a0f7f0499c641f4f36c258c9c098123a60f728206aab1386e",
+  "generated_at": "2026-10-10",
+  "classification": "hosted_verifier_and_context_correction_publication",
+  "issues": [
+    591,
+    616
+  ],
+  "original_head": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7",
+  "original_tool_and_context": [
+    {
+      "source_head": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7",
+      "original_path": "docs/admin/implementation/batch10-readiness-evidence/verify_package.py",
+      "retained_path": "docs/admin/implementation/batch10-readiness-evidence/history/hosted-2026-10-10/verify_package.py.txt",
+      "sha256": "e644aee2ba57a1ae97c5e7e8609650b837d57cece76e975895a79c21dbfbdbce",
+      "bytes": 2992
+    },
+    {
+      "source_head": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7",
+      "original_path": "backend/tests/test_batch10_startup_readiness_receipts.py",
+      "retained_path": "docs/admin/implementation/batch10-readiness-evidence/history/hosted-2026-10-10/test_batch10_startup_readiness_receipts.py.txt",
+      "sha256": "04706b8fa4b911aff0a418df6a8abee5c9a42a1837d13fd4180b6e5f001b5d1b",
+      "bytes": 9150
+    },
+    {
+      "source_head": "6db43b4a806f7006f7b14631f6f01bff7f5b3db7",
+      "original_path": "backend/tests/financial_literal_reviewed_inventory.json",
+      "retained_path": "docs/admin/implementation/batch10-readiness-evidence/history/hosted-2026-10-10/financial_literal_reviewed_inventory.json.txt",
+      "sha256": "3da9f31e824350a6088436ce76834c5ceaeb516c9a410ac09106349fec593c98",
+      "bytes": 11149
+    }
+  ],
+  "replacement_files": [
+    {
+      "path": "docs/admin/implementation/batch10-readiness-evidence/verify_package.py",
+      "sha256": "ed4259033090567ae25b8ead6bb1e4ad30d7a7f1eb7e4ceecc5c01540bdf7dd1"
+    },
+    {
+      "path": "backend/tests/test_batch10_startup_readiness_receipts.py",
+      "sha256": "54fdd8d3e89ed554c5ef8615cda37f3ce4dcc4f394f753ee60f74621e6461e7f"
+    },
+    {
+      "path": "backend/tests/financial_literal_reviewed_inventory.json",
+      "sha256": "091e166962335a609d3bdf1e6961fc76c3f886866051100207b822d175ba7118"
+    }
+  ],
+  "historical_current_checkout_acceptance": false,
+  "historical_disposition": "Original receipts retain their source, generator, counts, verdicts and bytes; they do not certify this changed candidate. The f75 full hosted run failed five backend and ten browser cases and is diagnostic, not acceptance.",
+  "mechanism": "Verifier import wrote a new measured __pycache__ file when bytecode was enabled. Prevent the import write and restore the caller flag; retain every measured file and all tamper refusals. This is not historical sibling-source copying.",
+  "context_review": "docs/verification/2026-10-10-batch10-finance-context-review.md",
+  "current_acceptance": "Separate external executions must bind the final full consumed source HEAD/tree/corpus. Frozen full hosted acceptance remains a coordinator gate.",
+  "unchanged_historical_packets": {
+    "docs/admin/implementation/batch10-readiness-evidence/MANIFEST.json": "a30355c1f9ae2da9336432eeae1200e6648008f33c6dc57e5aca887158e3a3b3",
+    "docs/admin/implementation/batch10-readiness-evidence/COPILOT_CORRECTION_2026_10_10.json": "73247ba050efb489e8a774ea3c0c2f2192590512d77e7d869c9b4a7291a46323",
+    "docs/verification/2026-10-09-batch9-finance-context-review.md": "03b2f72c4497d4bb8fd6465e8deb9b747f03ea87aff5dacaa70ec3678e1fd151"
+  }
+}

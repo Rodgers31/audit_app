@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "classification": "historical_tool_snapshot",
+  "current_checkout_acceptance": false,
+  "source_head": "ad4a9f76f944514c414465643a72f2cee0b1bc19",
+  "source_tree": "e82775f2bf7f900027797d3f7c20da468edff052",
+  "original_path": "docs/admin/implementation/batch10-readiness-evidence/record.py",
+  "retained_path": "docs/admin/implementation/batch10-readiness-evidence/history/copilot-2026-10-10/record.py.txt",
+  "sha256": "0516f0eb4436c528ff3dcbf443cf03699bc1b2f42f3a003e8f106426f65eb933",
+  "reason": "Preserve the pre-correction tool bytes without rebinding any historical execution receipt."
+}
