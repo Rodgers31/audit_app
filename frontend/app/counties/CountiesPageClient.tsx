@@ -27,7 +27,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import React, {
   Suspense,
   useCallback,
@@ -1061,6 +1061,15 @@ function Th({
 
 const PAGE_SIZE = 10;
 
+/** Publish client-only list state synchronously through Next's integrated
+ * History API. Pagination needs no server data, so its URL must not wait for
+ * a Flight response while the table already shows the requested rows. */
+function replaceListQuery(params: URLSearchParams): void {
+  const current = new URL(window.location.href);
+  current.search = params.toString();
+  window.history.replaceState(null, '', `${current.pathname}${current.search}${current.hash}`);
+}
+
 const subscribeToNothing = () => () => {};
 
 /**
@@ -1131,9 +1140,6 @@ function CountyRankingsTable({
   // render out to the client up to the nearest Suspense boundary — which was
   // `loading.tsx`'s, so the whole explorer and its LCP element were missing
   // from the served HTML (#221 finding #3).
-  const router = useRouter();
-  const pathname = usePathname();
-
   const readPageFromUrl = useCallback((): number => {
     if (typeof window === 'undefined') return 1;
     const raw = new URLSearchParams(window.location.search).get('p');
@@ -1183,13 +1189,10 @@ function CountyRankingsTable({
       const qs = new URLSearchParams(window.location.search);
       if (clamped === 1) qs.delete('p');
       else qs.set('p', String(clamped));
-      const newSearch = qs.toString();
-      router.replace(newSearch ? `${pathname}?${newSearch}` : pathname, {
-        scroll: false,
-      });
+      replaceListQuery(qs);
       setPageFromUrl(clamped);
     },
-    [page, totalPages, pathname, router]
+    [page, totalPages]
   );
 
   const setShowAll = useCallback(
@@ -1204,13 +1207,10 @@ function CountyRankingsTable({
       } else {
         qs.delete('view');
       }
-      const newSearch = qs.toString();
-      router.replace(newSearch ? `${pathname}?${newSearch}` : pathname, {
-        scroll: false,
-      });
+      replaceListQuery(qs);
       setShowAllLocal(resolved);
     },
-    [showAll, pathname, router]
+    [showAll]
   );
 
   // Normalize an out-of-range URL to the same last page the table renders,
