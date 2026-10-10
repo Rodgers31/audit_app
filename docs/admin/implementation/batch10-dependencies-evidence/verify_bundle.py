@@ -36,7 +36,7 @@ def validate_builder(index_bytes, vector_bytes, reference_bytes):
 
 def verify(archive, manifest_path):
     manifest = json.loads(Path(manifest_path).read_bytes())
-    require(isinstance(manifest, dict) and manifest.get('schema') == 1, 'unknown manifest schema')
+    require(isinstance(manifest, dict) and type(manifest.get('schema')) is int and manifest['schema'] == 1, 'unknown manifest schema')
     require(manifest.get('base') == 'f6c31e271297eece52f34102dc40a1e2ed7069a8', 'wrong base')
     require(manifest.get('base_tree') == '69ddfad6deb814dd08fdaee2db2d512d73e14c78', 'wrong base tree')
     files = manifest.get('files')
@@ -66,11 +66,27 @@ def verify(archive, manifest_path):
         raw_names = {n.removeprefix('raw/').removesuffix('.json') for n in names if n.startswith('raw/') and n.endswith('.json')}
         require(raw_names == set(records), 'record inventory mismatch')
         for name, expected in records.items():
+            require(isinstance(expected, dict), 'expected record must be an object')
+            require(type(expected.get('exit')) is int and type(expected.get('verification_exit')) is int, 'expected exit type')
+            require(type(expected.get('source_stable')) is bool, 'expected stability type')
             record = json.loads(packet.read('raw/' + name + '.json'))
             require(isinstance(record, dict), 'record must be an object')
             require(type(record.get('exit')) is int and type(record.get('verification_exit')) is int, 'record exit type')
             require(type(record.get('source_stable')) is bool, 'record stability type')
             require(record.get('generator_sha256') in generators, 'unknown generator: ' + name)
+            command = record.get('command')
+            require(isinstance(command, list) and bool(command) and all(isinstance(v, str) and bool(v) for v in command), 'missing command provenance')
+            require(isinstance(record.get('cwd'), str) and Path(record['cwd']).is_absolute(), 'missing cwd provenance')
+            signal = record.get('signal')
+            require((record['exit'] >= 0 and signal is None) or
+                    (record['exit'] < 0 and type(signal) is int and signal == -record['exit']), 'exit/signal contradiction')
+            for axis in ('source_before', 'source_after'):
+                source = record.get(axis)
+                require(isinstance(source, dict) and isinstance(source.get('files'), dict) and bool(source['files']), 'missing source inventory')
+                require(source.get('head') == manifest['base'] and source.get('tree') == manifest['base_tree'], 'source identity mismatch')
+                for path in ('frontend/package.json', 'frontend/package-lock.json'):
+                    require(source['files'].get(path) == files['source/' + path], 'source manifest identity mismatch')
+            require(record['source_before']['files'].get(record.get('generated_by')) == record['generator_sha256'], 'starting generator identity mismatch')
             for stream in ('stdout', 'stderr'):
                 require(digest(packet.read('raw/' + name + '.' + stream)) == record.get(stream + '_sha256'), 'stream hash: ' + name)
             for key in ('exit', 'verification_exit', 'source_stable', 'generator_sha256'):
@@ -87,10 +103,27 @@ def verify(archive, manifest_path):
                 packet.read('outputs/' + platform + '-builder.bin'), packet.read('source/embeddings-index.json'))
         for platform in ('mac', 'linux'):
             results = json.loads(packet.read('outputs/' + platform + '-jest.json'))
+            require(isinstance(results, dict) and results.get('success') is True and results.get('wasInterrupted') is False, 'Jest failed/interrupted verdict')
+            counts = {'numPassedTestSuites': 147, 'numFailedTestSuites': 0, 'numPendingTestSuites': 0,
+                'numRuntimeErrorTestSuites': 0, 'numTotalTestSuites': 147, 'numTotalTests': 2078,
+                'numPassedTests': 2077, 'numFailedTests': 0, 'numPendingTests': 1, 'numTodoTests': 0}
+            require(all(type(results.get(k)) is int and results[k] == v for k, v in counts.items()), 'Jest counter type/value')
+            suites = results.get('testResults')
+            require(isinstance(suites, list) and len(suites) == 147, 'Jest suite inventory')
+            # Jest labels the existing BudgetTab suite with its conditional
+            # prerequisite skip as "focused"; assertion counts below still
+            # require every executed case to pass and exactly one pending case.
+            require(all(isinstance(s, dict) and s.get('status') in ('passed', 'focused') and isinstance(s.get('assertionResults'), list) for s in suites), 'Jest suite status')
+            assertions = [a for s in suites for a in s['assertionResults']]
+            require(len(assertions) == 2078 and all(isinstance(a, dict) for a in assertions), 'Jest assertion inventory')
+            require(sum(a.get('status') == 'passed' for a in assertions) == 2077 and sum(a.get('status') == 'pending' for a in assertions) == 1, 'Jest assertion status')
             require(results.get('numPassedTestSuites') == 147 and results.get('numFailedTestSuites') == 0, 'Jest suites: ' + platform)
             require(results.get('numPassedTests') == 2077 and results.get('numFailedTests') == 0 and results.get('numPendingTests') == 1, 'Jest cases: ' + platform)
         for name, total in (('baseline-audit-full', 26), ('linux-audit-full', 27), ('baseline-audit-production', 0), ('linux-audit-production', 0)):
             audit = json.loads(packet.read('raw/' + name + '.stdout'))
+            counts = audit['metadata']['vulnerabilities']
+            require(all(type(counts.get(k)) is int and counts[k] >= 0 for k in ('info', 'low', 'moderate', 'high', 'critical', 'total')), 'audit count type/value')
+            require(counts['total'] == sum(counts[k] for k in ('info', 'low', 'moderate', 'high', 'critical')), 'audit total mismatch')
             require(audit['metadata']['vulnerabilities']['total'] == total, 'audit count: ' + name)
         return {'verified_records': len(records), 'verified_files': len(files), 'builders': builders,
                 'meaning': 'retained evidence integrity; issue acceptance remains unmet'}

@@ -26,19 +26,24 @@ class BundleControls(unittest.TestCase):
         return verify(archive, path)
 
     def forge_record(self, changes):
-        manifest = copy.deepcopy(self.manifest)
         name = 'raw/baseline-install.json'
         with zipfile.ZipFile(ARCHIVE) as original:
             record = json.loads(original.read(name))
             record.update(changes)
             content = json.dumps(record).encode()
-            archive = self.root / 'forged.zip'
-            with zipfile.ZipFile(archive, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as output:
-                for member in original.namelist():
-                    output.writestr(member, content if member == name else original.read(member))
-        manifest['files'][name] = hashlib.sha256(content).hexdigest()
-        manifest['archive_sha256'] = hashlib.sha256(archive.read_bytes()).hexdigest()
+        archive, manifest = self.forge_members({name: content})
         manifest['records']['baseline-install'].update(changes)
+        return archive, manifest
+
+    def forge_members(self, replacements):
+        manifest = copy.deepcopy(self.manifest)
+        archive = self.root / ('forged-' + str(len(list(self.root.glob('*.zip')))) + '.zip')
+        with zipfile.ZipFile(ARCHIVE) as original, zipfile.ZipFile(archive, 'x', zipfile.ZIP_DEFLATED, compresslevel=1) as output:
+            for member in original.namelist():
+                output.writestr(member, replacements.get(member, original.read(member)))
+        for name, content in replacements.items():
+            manifest['files'][name] = hashlib.sha256(content).hexdigest()
+        manifest['archive_sha256'] = hashlib.sha256(archive.read_bytes()).hexdigest()
         return archive, manifest
 
     def test_published_bytes(self):
@@ -75,7 +80,53 @@ class BundleControls(unittest.TestCase):
 
     def test_boolean_exit_rejected(self):
         archive, manifest = self.forge_record({'exit': False})
-        with self.assertRaisesRegex(ValueError, 'record exit type'):
+        with self.assertRaisesRegex(ValueError, 'exit type'):
+            self.with_manifest(manifest, archive)
+
+    def test_strict_manifest_version_and_expected_exit(self):
+        for version in (True, 1.0):
+            manifest = copy.deepcopy(self.manifest)
+            manifest['schema'] = version
+            with self.subTest(version=version), self.assertRaisesRegex(ValueError, 'manifest schema'):
+                self.with_manifest(manifest)
+        self.manifest['records']['baseline-install']['exit'] = False
+        with self.assertRaisesRegex(ValueError, 'expected exit type'):
+            self.with_manifest(self.manifest)
+
+    def test_signal_command_and_source_provenance(self):
+        for changes, diagnostic in [({'signal': 9}, 'exit/signal'), ({'command': []}, 'command provenance'),
+                                    ({'command': None}, 'command provenance')]:
+            archive, manifest = self.forge_record(changes)
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, diagnostic):
+                self.with_manifest(manifest, archive)
+        with zipfile.ZipFile(ARCHIVE) as original:
+            source = json.loads(original.read('raw/baseline-install.json'))['source_before']
+        source['files'] = {}
+        archive, manifest = self.forge_record({'source_before': source, 'source_after': source})
+        with self.assertRaisesRegex(ValueError, 'source inventory'):
+            self.with_manifest(manifest, archive)
+
+    def test_jest_verdict_inventory_and_counters(self):
+        with zipfile.ZipFile(ARCHIVE) as original:
+            results = json.loads(original.read('outputs/mac-jest.json'))
+        for changes in ({'success': {'success': False}}, {'testResults': []}, {'numFailedTests': False},
+                        {'numPassedTests': 2077.0}, {'numTotalTests': -1}):
+            value = dict(results, **changes)
+            archive, manifest = self.forge_members({'outputs/mac-jest.json': json.dumps(value).encode()})
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError, 'Jest'):
+                self.with_manifest(manifest, archive)
+
+    def test_boolean_audit_count(self):
+        name = 'baseline-audit-production'
+        with zipfile.ZipFile(ARCHIVE) as original:
+            audit = json.loads(original.read('raw/' + name + '.stdout'))
+            receipt = json.loads(original.read('raw/' + name + '.json'))
+        audit['metadata']['vulnerabilities']['total'] = False
+        content = json.dumps(audit).encode()
+        receipt['stdout_sha256'] = hashlib.sha256(content).hexdigest()
+        archive, manifest = self.forge_members({'raw/' + name + '.stdout': content,
+                                               'raw/' + name + '.json': json.dumps(receipt).encode()})
+        with self.assertRaisesRegex(ValueError, 'audit count type'):
             self.with_manifest(manifest, archive)
 
     def test_unknown_generator_rejected(self):

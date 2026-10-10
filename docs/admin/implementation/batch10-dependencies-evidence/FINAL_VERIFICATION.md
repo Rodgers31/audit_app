@@ -1,0 +1,35 @@
+# Final verification record for the blocked #494 handoff
+
+The selected application remains the accepted base `f6c31e271297eece52f34102dc40a1e2ed7069a8`, tree `69ddfad6deb814dd08fdaee2db2d512d73e14c78`. No product remediation is selected and #494 remains OPEN. Baseline application checks are retained under their actual tested identity; subsequent source changes repair documentation/evidence validation only.
+
+## Standards
+
+Initial independent Standards review at `041ad89a0a170b4029beb5d9597b55bf934eff7e`, tree `af210e3cf4f30dda6982ad2ac1fa5d999ae28af3`: zero hard violations and zero actionable smell findings. It executed 8 recorder controls, 10 original bundle controls, packet readback (68 records/482 members) and actual declared-caller reproduction. Its pending documentation reference to this file is resolved by this publication. [Initial report](reviews/STANDARDS_INITIAL.md); complete initial command/identity receipts are in validation-history-v2.zip.
+
+## Spec
+
+Initial independent Spec review on the same snapshot identifies four partial requirements: full remediation, candidate/platform acceptance, complete historical provenance and the then-absent final verification file. The first three remain explicitly unmet/limited; this file resolves the delivery-documentation omission. It independently executed optimized packet/controls and real Linux CPU Identity/pinned-model repeat inference, with no canonical scope creep or false remediation claim. [Initial report](reviews/SPEC_INITIAL.md). This is a blocked handoff, not Spec acceptance of issue closure.
+
+## Adversarial and execution review
+
+The first independent execution reviewer saved actual packet/recorder/Chromium results and identified validation defects, but its final-report turn was interrupted twice by an automatic safety filter. It is not counted as an all-clear. Root independently reproduced 13 format-validation false-greens: Boolean/float schema; Boolean expected exit; contradictory signal; empty source inventory; empty/null command; truthy failed Jest verdict; empty Jest inventory; Boolean/float/negative Jest counts; Boolean production-audit total. Their original malformed bytes, outputs, generator identities and later failed validation results are retained in validation-history-v2.zip. Modifying both a trusted manifest and archive is outside original-capture authentication; the additional metadata checks validate structure/consistency and do not authenticate a forged capture.
+
+The repaired verifier rejects all 13 cases, retains the historical 68-record/482-member packet as valid, checks exact starting generator and manifest identities, and validates actual Jest assertion inventories. The existing BudgetTab prerequisite skip appears as a `focused` suite in Jest's formatter because not all tests executed; all 2,077 executed assertions pass and exactly one assertion is pending. No focused test declaration was found in repository search. The repaired controls pass 14/14 bundle tests and 8/8 recorder tests.
+
+A fresh independent reviewer separately ran the repaired pending source with `python -O` and `PYTHONOPTIMIZE=1`, including child processes: 68/482 packet verification, 14/14 bundle tests, 8/8 recorder tests and 30/30 bounded malformed-data CLI cases rejected as expected. [Initial repaired-source report](reviews/EXECUTION_INITIAL.md) explicitly binds pending script hashes instead of pretending the original archive contains the repair. Final axis readbacks follow the committed freeze; their reports will be retained beside the initial reports.
+
+## Published history and replay boundary
+
+`evidence-v1.zip` is immutable original baseline/candidate evidence, SHA256 in its adjacent manifest. Its original generator snapshots remain historical. `validation-history-v2.zip` preserves initial reviewer receipts, independently reproduced red/green records, the repaired verifier/test bytes, final GitHub readback and cleanup. Its adjacent manifest binds every member. Negative packet fixtures are stored as changed-member overlays/deletion lists over evidence-v1.zip; unchanged base copies are omitted. One deliberately unsafe negative member name is stored as JSON metadata with its content at a safe hashed archive path. The first unpublished history-packaging attempt retained that unsafe path; its bytes are preserved externally under unsafe-history-build and the safe v2 publication supersedes it. No archive is presented as a universal remediation gate.
+
+Final replay copies the published current scripts and original packet/manifest to a new owned directory, compares copied bytes, runs the verifier and both optimized control suites there, and records the actual delivery source head/tree and hashes. Rerun commands are in README.md. The final delivery readback remains external to avoid changing the source it measures. Prior hosted CI evidence is not attributed to this lane.
+
+## Readback and cleanup
+
+Fresh GitHub readback: main still `f6c31e271297eece52f34102dc40a1e2ed7069a8`; #494's full body/comments equal the frozen launch snapshot; #494/#545/#583 are OPEN. Final complete census is seven pages `[100,100,100,100,100,100,3]`, 603 issue-or-PR records, 298 actual issues: 15 open / 283 closed. The two newly observed issues belong to sibling work; this lane created no issue or PR and changed no issue state.
+
+Repository Actions permission remains `enabled:false`. All five static workflows remain `disabled_manually`; three GitHub Copilot-generated workflow entries report `active`, while repository-wide Actions remain disabled. No workflow, permission, dispatch or paid review was invoked.
+
+Owned container `batch10-dependencies-linux-494-01a123ab`, ID `f8dbb60d64beda8c9aa0763614947b681195ca2e6fcf9960ef37e1272a56fd9b`, was checked for exact ownership and no active children, removed, and read back absent with successful `docker ps -a --no-trunc --filter id=...`. The first cleanup readback expected “No such object” but Docker returned “No such container”; that failed verification attempt is retained, then superseded by exact-ID absence readback. Port 13014 is free; both preview runs already proved listener cleanup. No named volume/network/database was created. Sibling containers were retained. Primary checkout stayed read only. Managed worktree, owned npm/model caches, disposable candidates, coverage, source archive and all external review logs remain at `/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8b43-7830-9262-8f05ab1b8a60/batch10-dependencies` for coordinator review.
+
+No draft PR was created because the investigation selected no compatible new product fix. The dependency migration/residual advisories already belong to #494; no duplicate routing ticket was warranted. No closure or residual-risk acceptance is implied.
