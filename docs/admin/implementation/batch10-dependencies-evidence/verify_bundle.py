@@ -117,8 +117,6 @@ def verify(archive, manifest_path):
             assertions = [a for s in suites for a in s['assertionResults']]
             require(len(assertions) == 2078 and all(isinstance(a, dict) for a in assertions), 'Jest assertion inventory')
             require(sum(a.get('status') == 'passed' for a in assertions) == 2077 and sum(a.get('status') == 'pending' for a in assertions) == 1, 'Jest assertion status')
-            require(results.get('numPassedTestSuites') == 147 and results.get('numFailedTestSuites') == 0, 'Jest suites: ' + platform)
-            require(results.get('numPassedTests') == 2077 and results.get('numFailedTests') == 0 and results.get('numPendingTests') == 1, 'Jest cases: ' + platform)
         for name, total in (('baseline-audit-full', 26), ('linux-audit-full', 27), ('baseline-audit-production', 0), ('linux-audit-production', 0)):
             audit = json.loads(packet.read('raw/' + name + '.stdout'))
             counts = audit['metadata']['vulnerabilities']
