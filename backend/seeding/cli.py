@@ -326,6 +326,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         # The observation starts once ownership is held, so acquisition latency
         # never counts against the claim/observation timing check.
         started_at = datetime.now(timezone.utc)
+        context.ownership = ownership
 
         try:
             with SessionLocal() as session:

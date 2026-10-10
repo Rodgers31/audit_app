@@ -274,7 +274,11 @@ def test_default_source_selection_and_invalid_shapes(pg, monkeypatch):
     register_worker(factory)
     capabilities = client.get("/api/v1/admin/etl/dispatch", headers=AUTH).json()["sources"]
     assert {s for s,c in capabilities.items() if c["available"]} == {"oag"}
-    for value in ("", "oag,oag", "unknown", "oag,", " oag", "cra", "opendata"):
+    # CRA is a recognized mapping, with its separate native source gate off.
+    monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", "cra")
+    assert selected_sources() == ("cra",)
+    assert capabilities["cra"]["available"] is False
+    for value in ("", "oag,oag", "unknown", "oag,", " oag", "opendata"):
         monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", value)
         with pytest.raises(ValueError, match="source selection"):
             selected_sources()

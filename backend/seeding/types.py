@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from .exclusion import DomainExecution
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -20,6 +23,9 @@ class DomainRunContext:
     audits_source_manifest: Optional[bytes] = None
     audits_source_receipt: Optional[Dict[str, Any]] = None
     audits_observe_listing: bool = False
+    # The entering runner's live, nonce-bearing object; never serialized into
+    # observations. A database reader cannot recreate the entry nonce.
+    ownership: Optional["DomainExecution"] = None
 
 
 class DomainRunResult(BaseModel):

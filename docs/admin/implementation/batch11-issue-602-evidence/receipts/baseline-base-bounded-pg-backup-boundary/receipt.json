@@ -1,0 +1,169 @@
+{
+ "generated_by": "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py",
+ "generator_sha256": "56c8c9e02026f16326437af94b239048a5a93990b5ed227f45eb525849e66e35",
+ "label": "baseline: test_bounded_pg_backup BoundaryTests on pristine accepted base bcb5ff9 (macOS host)",
+ "mode": "pytest",
+ "started_at": "2026-10-10T17:37:05.782363+00:00",
+ "finished_at": "2026-10-10T17:37:07.803102+00:00",
+ "duration_seconds": 1.677,
+ "deadline_seconds": 300,
+ "timed_out": false,
+ "exit_code": 1,
+ "leftover_process_group": false,
+ "command": [
+  "<machine-path>",
+  "-m",
+  "pytest",
+  "tests/test_bounded_pg_backup.py",
+  "-q",
+  "-k",
+  "BoundaryTests",
+  "--junitxml=<out>/junit.xml",
+  "--basetemp=<out>/tmp",
+  "-p",
+  "no:cacheprovider",
+  "-rA"
+ ],
+ "child_environment": {
+  "ADMIN_ETL_DISPATCH_ENABLED": "false",
+  "DATABASE_URL": "postgresql+psycopg2://inert:inert@127.0.0.1:9/inert",
+  "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "PYTHON_DOTENV_DISABLED": "1",
+  "SEED_CACHE_PATH": "<out>/cache",
+  "SEED_CRA_INGESTION_ENABLED": "false",
+  "SEED_ENRICH_WITH_WORLDBANK": "false",
+  "SEED_LIVE_PDF_FETCH_ENABLED": "false",
+  "SEED_LOG_PATH": "<out>/seed.jsonl",
+  "SEED_STORAGE_PATH": "<out>/storage",
+  "SUPABASE_JWT_SECRET": "inert-only",
+  "SUPABASE_KEY": "inert",
+  "SUPABASE_SERVICE_ROLE_KEY": "inert",
+  "SUPABASE_URL": "https://owned.invalid"
+ },
+ "runtime": {
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "executable_name": "python",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+ },
+ "head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+ "tree": "9d0061928c16d173859f98cb6daa5f2f591b257c",
+ "status_before": "",
+ "status_after": "",
+ "source_before_sha256": "42fde13ec79c17071b06dd5a1de05d534cee075f149c7966c9b2978809c6f0af",
+ "source_after_sha256": "42fde13ec79c17071b06dd5a1de05d534cee075f149c7966c9b2978809c6f0af",
+ "source_drift": [],
+ "source_files": {
+  ".github/scripts/prepare_reconciliation_test_fixture.py": "06bd00b7a545aacca5d2768305ee4802a571dc8947ca7f59bd7edbf612efe888",
+  ".github/scripts/tests/test_reconciliation_test_fixture.py": "70c0a34e704c2aa09ab117b5a45585cd22844f56aefec54d0fa2151c998b8489",
+  "backend/admin_etl_dispatch.py": "d37c3b2277ef572bb15e8a452338eccd8bd6adb5b6d008c4c45a27f369a03594",
+  "backend/admin_etl_dispatch_adapter.py": "fe0bd6296f26d0445ebe6d65e708ba86db7ca21774337e72f635797726ae087e",
+  "backend/models.py": "89a0b380b30d36bf6fe809f814e324e35dddecb1b38222599bb09772d52e7c23",
+  "backend/seeding/config.py": "ecc99f91c6d7015c0bace8bb9c92bf27390f8617f4935a06d7ee6c3debb7cb72",
+  "backend/seeding/registries.py": "cc9b7efc10a7e44e736f8adaeb2fcdfa39e1bac3ad64c4e05364a7149be8569c",
+  "backend/seeding/source_registry.py": "ffe8d922b1c99216e54ed9e26277b2f772b03847f09a7d477b943768d609ba4b",
+  "backend/tests/financial_literal_reviewed_inventory.json": "091e166962335a609d3bdf1e6961fc76c3f886866051100207b822d175ba7118",
+  "backend/tests/test_batch10_etl_mappings.py": "2ce03c668cd5ae09f7b96531d49718da320913f1ef8a35f433dd4b16ee7c066f",
+  "backend/tests/test_batch10_etl_mappings_migration.py": "85f0d43b8273075af51000960e7ad3193cc1098176ac5f8015ab7c697a682636",
+  "backend/tests/test_batch10_mapped_reconciliation.py": "a30e81bbe6fa7964adb722f18e4b5b57cb9292e2ce94f75ccad3421f8407ac3e",
+  "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
+  "backend/tests/test_batch9_legacy_etl_sessions.py": "b5987e4c538f3a1b587c4daf8d71fb1798df9d12b83d2db549386b1080037f23",
+  "etl/writer_ownership.py": "7ad676effbb91fe8ade3553fa6794c3b8cfd68fbc74feea8133280e28427b8fe"
+ },
+ "owned_containers_before": [],
+ "owned_containers_after": [],
+ "inventory": {
+  "source": "junit",
+  "unique": true,
+  "nonempty": true
+ },
+ "complete_inventory": true,
+ "counts": {
+  "error": 0,
+  "failed": 1,
+  "xpass": 0,
+  "passed": 18,
+  "xfail": 0,
+  "skipped": 0
+ },
+ "testcases": [
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_absent_empty_corrupt_and_public_archive_refused",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_acquisition_output_requires_caller_owner_and_exact_private_modes",
+   "state": "failed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_default_acl_kinds_and_uninventoried_system_namespaces",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_default_cli_cannot_connect",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_empty_inventory_cannot_certify_restore",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_enum_and_range_definitions_cannot_be_missing_on_both_sides",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_extension_config_preserves_quoted_and_system_identifiers",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_extension_config_relations_must_exist_and_be_unique",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_extension_config_requires_logical_table_identity_and_condition_pair",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_hostile_numeric_bounds_refuse_direct_calls",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_identical_duplicate_catalog_relation_is_not_valid_inventory",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_identical_malformed_extended_catalog_values_refuse",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_identical_null_catalog_metadata_is_not_valid_inventory",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_large_object_catalog_preserves_postgresql_oid_strings",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_missing_catalog_or_table_identity_cannot_certify_restore",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_new_catalog_owner_and_schema_references_must_exist",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_publication_filtered_columns_must_exist",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_receipt_is_exclusive_private_and_read_back",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_bounded_pg_backup.BoundaryTests::test_serialization_failure_leaves_no_receipt",
+   "state": "passed"
+  }
+ ],
+ "published_testcase_ids_compacted": 0,
+ "published_source_files_scope": "paths changed from accepted base bcb5ff99854de595bbe3f7d60cc8796b7ada5a20; the full-set digest is source_before_sha256"
+}
