@@ -271,7 +271,7 @@ def dispatch_scope(execution):
 
 def _enter_dispatch(factory, scope, domain, dry_run):
     """Consume the exact correlated dispatch claim once, before any handler runs."""
-    from admin_etl_dispatch import fresh  # only reachable from the adapter process
+    from admin_etl_dispatch import fresh, mapped  # only reachable from the adapter process
 
     if (type(scope) is not DomainExecution or scope.domain != domain or scope.entered or scope.entry is not None
             or type(dry_run) is not bool
@@ -294,6 +294,7 @@ def _enter_dispatch(factory, scope, domain, dry_run):
                 or row is None or row.command_id != scope.command_id or row.claim_token != scope.identity
                 or command is None or command.status != "running" or command.execution_started is not True
                 or command.domain != domain or command.dry_run is not dry_run
+                or not mapped(command.source, domain)
                 or command.claim_token != scope.identity
                 or command.generation != scope.generation
                 or claim is None or claim.kind != "dispatch" or claim.domain != domain
@@ -316,7 +317,7 @@ def enter_domain(factory, domain, dry_run):
         with factory.begin() as db:
             # Legacy RUNNING observations/retained dispatch rows are uncertainty,
             # not permission to take over during an additive schema transition.
-            legacy = db.get(EtlDispatchDomain, domain) if domain == "audits" else None
+            legacy = db.get(EtlDispatchDomain, domain)
             if legacy is not None and legacy.command_id is not None or unclaimed_running(db, domain) or not reserve(db, domain, execution.identity, entry=entry):
                 raise DomainOwnershipError("Domain ownership unavailable; reconcile retained execution")
         execution.entered, execution.entry = True, entry

@@ -1,0 +1,21 @@
+{
+  "generated_by": "revise_package.py",
+  "generator_sha256": "1294ec5bd1d2bf699b0748ec4f9261c61139d6f86209d6ff6a95e778dc3edb43",
+  "generated_at": 1791602663.861079,
+  "initial_manifest_sha256": "a7cbffd8360ed2e86b10bb96a93626b8eb893158129f79c99dcdaf7fc25b70fa",
+  "initial_verifier_sha256": "822675efce79f778015c32fa2d6f25e5a7cdaf0df37ba9fa79864f9406836b1c",
+  "initial_status": "HISTORICAL_SUPERSEDED",
+  "reason": "Verifier guard repair only. Original four execution receipts, raw logs, original sources and failed diagnostics remain byte-for-byte preserved. Canonical manifest.json is the current publication index.",
+  "red_controls": [
+    {
+      "receipt": "history/packet-review-red/packet-review-428225b95d5d453ebd23417633d0dd00/manifest.json.gz",
+      "status": "HISTORICAL_SUPERSEDED",
+      "reason": "Actual bool-schema, duplicate/pruned-cohort and hidden JUnit failure false-green reproduced; current verifier repairs these guards."
+    },
+    {
+      "receipt": "history/packet-review-red/packet-review-dd5b3afd7a9246bc81774c87ffe66f77/manifest.json.gz",
+      "status": "HISTORICAL_SUPERSEDED",
+      "reason": "Actual bool-schema, duplicate/pruned-cohort and hidden JUnit failure false-green reproduced; current verifier repairs these guards."
+    }
+  ]
+}

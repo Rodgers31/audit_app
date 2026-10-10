@@ -11,12 +11,22 @@ from fastapi import HTTPException
 from pydantic import AfterValidator, BaseModel, ConfigDict, StrictBool, StrictInt, field_validator, model_validator
 from sqlalchemy import func, select, text, update
 
-from models import AdminAuditLog, EtlDispatchCommand, EtlDispatchWorker
+from models import AdminAuditLog, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker
 from routers.admin_operations import DISPATCH_ERROR, PRIVATE_HEADERS, bounded_integer
 from utils.audit_policy import safe_audit_payload
 
 SOURCES = ("treasury", "cob", "oag", "knbs", "opendata", "cra")
-SOURCE_DOMAINS = {"oag": "audits"}
+SOURCE_DOMAINS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population"}
+SOURCE_SCOPE = {
+    "oag": "OAG audit domain.",
+    "treasury": "National fiscal summaries: Treasury, CoB and CBK inputs.",
+    "cob": "CoB county budgets; excludes national budgets and pending bills.",
+    "knbs": "Population: KNBS county census and World Bank national series.",
+}
+SOURCE_GAPS = {
+    "opendata": "OpenData has no supported native ingestion entrypoint.",
+    "cra": "CRA recommendations have no supported native ingestion entrypoint.",
+}
 Source = Literal["treasury", "cob", "oag", "knbs", "opendata", "cra"]
 Status = Literal["queued", "running", "completed", "failed", "interrupted"]
 UNAVAILABLE = "Dedicated worker dispatch is unavailable."
@@ -34,6 +44,18 @@ UtcDatetime = Annotated[datetime, AfterValidator(utc_datetime)]
 
 def enabled():
     return os.environ.get("ADMIN_ETL_DISPATCH_ENABLED") == "true"
+
+
+def selected_sources():
+    """Explicit worker rollout scope; existing OAG activation remains the default."""
+    sources = os.environ.get("ADMIN_ETL_DISPATCH_SOURCES", "oag").split(",")
+    if any(s not in SOURCE_DOMAINS for s in sources) or len(sources) != len(set(sources)):
+        raise ValueError("Invalid dedicated worker source selection")
+    return tuple(sources)
+
+
+def mapped(source, domain):
+    return isinstance(source, str) and source in SOURCE_DOMAINS and SOURCE_DOMAINS[source] == domain
 
 
 def canonical_uuid(value):
@@ -168,6 +190,7 @@ def capability(db):
     worker = None
     available = False
     generation = last_seen_at = expires_at = None
+    ready_domains = set()
     if enabled():
         try:
             db_clock(db)
@@ -175,19 +198,24 @@ def capability(db):
             available = fresh(worker, now)
             if worker is not None:
                 generation, last_seen_at, expires_at = worker.generation, worker.last_seen_at, worker.expires_at
+            ready_domains = set(db.scalars(select(EtlDispatchDomain.domain).where(EtlDispatchDomain.ready.is_(True))))
+            available = available and bool(ready_domains)
             db.commit()
         except Exception:
             db.rollback()
             worker = None
             available = False
             generation = last_seen_at = expires_at = None
+            ready_domains = set()
     reason = "Dedicated worker is ready for supported sources." if available else UNAVAILABLE
     return DispatchCapability(timestamp=now, evidence="worker_dispatch", available=available, reason=reason,
         generation=generation if available else None,
         worker=WorkerCapability(status="ready" if available else "unavailable",
             last_seen_at=last_seen_at, expires_at=expires_at),
-        sources={s: SourceCapability(available=available and s in SOURCE_DOMAINS,
-            reason=reason if s in SOURCE_DOMAINS or not available else UNSUPPORTED) for s in SOURCES})
+        sources={s: SourceCapability(available=available and SOURCE_DOMAINS.get(s) in ready_domains,
+            reason=(SOURCE_SCOPE[s] if SOURCE_DOMAINS.get(s) in ready_domains else
+                SOURCE_GAPS.get(s, "Mapping is disabled or its native handler is unavailable.")) if available else UNAVAILABLE)
+            for s in SOURCES})
 
 
 def accept(db, actor, source, body, key):
@@ -231,6 +259,9 @@ def accept(db, actor, source, body, key):
         if worker.generation != body.dispatch_generation:
             raise HTTPException(409, "Dispatch generation is stale")
         if source not in SOURCE_DOMAINS:
+            unavailable()
+        domain = db.get(EtlDispatchDomain, SOURCE_DOMAINS[source])
+        if domain is None or domain.ready is not True:
             unavailable()
         command_id = uuid4()
         # The legacy helper intentionally commits separately. Acceptance cannot

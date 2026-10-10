@@ -1,0 +1,85 @@
+# Batch 10 ETL mappings handoff — #554
+
+## Current use — 2026-10-10, PR606 review
+
+From any clone, run the packet's read-only verifier:
+
+```sh
+python -B docs/admin/implementation/batch10-mappings-evidence/verify_package.py
+python -B -O docs/admin/implementation/batch10-mappings-evidence/verify_package.py
+```
+
+A passing result certifies historical packet integrity and explicitly reports
+`current_checkout_acceptance=false`; fresh candidate tests have separate external
+receipts. The [active schema2 decision](batch10-mappings-evidence/README.md) and
+[#610 correction](batch10-mappings-evidence/COORDINATOR_610.md) define this scope.
+
+`build_package.py` and `revise_package.py` are immutable historical producer
+artifacts. Their recorded author checkout and exclusive self-copy describe the
+original one-time execution from an external staging directory. They are not
+clone build or repair entrypoints: the packaged revision's self-copy refuses,
+and their original inputs/state cannot be replaced with later checkout bytes.
+Changing those hash-bound producers would invalidate their execution provenance.
+The coordinator publishers are also one-time append-only publication transitions;
+`publish_coordinator_610_v2.py prepare` intentionally refuses an already-final
+schema2 packet. A future publication needs a new versioned producer and preserved
+prior index, rather than rerunning or rewriting a historical producer.
+
+The PR606 maintenance repair addresses the suppressed-write false-success defect
+tracked in [#612](https://github.com/Rodgers31/audit_app/issues/612) and extends
+signed plan/apply reconciliation to
+the selected mapped domain. It verifies the exact source/domain/command/token
+ownership, preserves unrelated retained domains, and releases only after the
+audit, claim, command, domain and required observations all write successfully in
+the same fenced backend transaction. Exact persisted rows are read back after
+pending deferred constraint triggers run; affected-row counts alone cannot prove
+the required values. A missing or changed write or connection loss before
+commit preserves ownership through rollback. A commit acknowledgement failure
+propagates as uncertainty and must not be retried automatically. Admission
+closure, every-writer evidence, full-table freezing,
+continuity locking and default-off activation remain required. Local inert
+PostgreSQL controls do not authorize production reconciliation or activation.
+
+## Original author handoff (historical context)
+
+This draft adds bounded Treasury→fiscal_summary, CoB→counties_budget and KNBS→population dispatch beside the accepted OAG→audits mapping. The native financial writers and their publication contracts are unchanged. CONTRACT.md in [the evidence packet](batch10-mappings-evidence/README.md) states mixed publishers, persistence and exclusions. OpenData/CRA have no implementable native registry entrypoint; deduplicated prerequisite [#602](https://github.com/Rodgers31/audit_app/issues/602) remains open. #554 and production gate #583 remain open.
+
+The accepted base is f6c31e271297eece52f34102dc40a1e2ed7069a8, tree69ddfad6deb814dd08fdaee2db2d512d73e14c78. The dirty primary checkout remained read-only. The isolated managed worktree is /Users/roger/.codex/worktrees/batch10-etl-mappings/audit_app, branch codex/batch10-etl-mappings. No sibling commits are imported. Product ownership is dispatch API/worker/adapter, only the dispatch rows/constraints in models.py, generic native admission in seeding/exclusion.py, and additive migration e554b10a0001. All original tests, financial domains/registries, main/bootstrap, frontend, dependencies and workflows are unchanged.
+
+The default-off activation flag remains unchanged. `ADMIN_ETL_DISPATCH_SOURCES` defaults to `oag`; an explicitly validated subset of four sources is a later rollout decision. Each source advertises the leased worker's durable per-domain readiness, including real shared CLI prerequisites. The API imports no financial domains. The dedicated adapter executes the real native CLI, with one bounded domain import loader, and restores the CLI session/loader globals on return. Shared CLI/config/audit-scope import failure disables all sources before acceptance; missing per-domain handlers disable only their source when the core is importable.
+
+Acceptance/audit writes remain atomic and actor/idempotency replay is preserved. Claim reservation uses the existing atomic per-domain ownership index. Domain locks are ordered; the consumer considers at most one oldest queued candidate per ready/free domain, so retained ownership does not starve independently owned work. Native admission also honors retained dispatch rows for every mapped domain. Exact command/source/domain/token/generation, one-use entry, acknowledged ownership.job_id, coherent native job observations and safe terminal results are revalidated. Death, expiry, duplicate entry, wrong/missing owner, tampered receipts or lost acknowledgments retain uncertain ownership. Every completed result and every new mapping terminal receipt requires exact seeding_claim_id metadata. Accepted historical OAG failed/error receipts alone may omit this redundant tag after exact durable claim/job acknowledgement; explicit null/empty/wrong tags refuse and that compatibility never reports completed.
+
+Migration requires the dedicated worker explicitly stopped (`ready=false`, expiry alone is insufficient), and locks the three dispatch tables before replacing constraints/adding default-false readiness. It preserves OAG history, phantom PENDING observations, indexes, private RLS and revoked anon/authenticated grants. Downgrade refuses new source history or non-audits domain rows, even idle rows; reconciliation/export is separate operator work. Production migration, writer maintenance, every-writer fencing/reconciliation and authorization for activation are deferred to #583. Local fixture migrations do not authorize deployment.
+
+Executed local acceptance uses PostgreSQL17.11 pinned image sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3, author container batch10-mappings-postgres, exact loopback55522 and55485, verified free before reservation. Inert credentials/auth/effects and explicit child environments disable dotenv/provider inputs. Reviewers use separate UUID databases within that owned container; no shared database is a test target. No API/UI servers or source transports were started. The new default fixture instead creates/removes its own UUID container and named volume and refuses foreign targets/ambient PostgreSQL redirects.
+
+The four final executable-source cohorts are519 dispatch/native/admin plus275 legacy/bootstrap cases on each current Python3.13.9/SQLAlchemy2.0.54 and minimum Python3.12.14/SQLAlchemy2.0.23, with zero failures/errors/skips/xfails. The132 new mapping/worker-process/migration controls cover both modes, real child normal/failure/death barriers, exact receipts, successors, same-domain native exclusion, independent progress, lost acknowledgments, configuration/auth/stale leases, full-chain upgrades/downgrades, retained history and real RLS/grant refusals. Financial effects are inert handlers registered at the existing boundary; native CLI orchestration is real. Historical opt-in migration tests expecting pre-Batch9 heads were not selected; their originals are unchanged. The complete current-schema migration acceptance is the three new real-chain controls.
+
+Raw history is append-only and explicitly classified in the packet. The actual pinned-base final-fixture control gives6 intended mapping failures/2 preserved OAG passes. Review-discovered regressions gave8red→8green, then actual cold-import readiness red→green. Earlier setup failures/partial greens and the two OAG compatibility failures remain historical. Current receipt identities bind final executed bytes, rather than relabeling the WIP/base commit as a hosted green. The package verifier and copied-package tamper tests execute under normal and optimized Python, refuse drift/failure/empty inventories, and never overwrite inherited verdicts. Four package verifier guard defects were independently reproduced under normal/optimized Python (8red controls); typed schema, mandatory distinct cohort coverage and actual JUnit testcase outcome/count checks repair them. Initial publication/verifier bytes and those diagnostics are preserved and machine-superseded; only the current manifest index is regenerated, with original execution receipts unchanged. The appended8 metadata guard tests are separately replayed. Final published-corpus replay and final commit/tree/remote readback are external, avoiding a self-changing fixture.
+
+Independent Spec, Standards and adversarial reviewers reproduced defects before repair and reran unchanged controls. Source acceptance includes Spec119 controls per runtime, Standards121 per runtime and adversarial163 unchanged attacks plus2 actual cold import refusals and36 legacy tag/status boundaries. Their generators, raw executions and historical reports are archived in the packet. Final committed-source/packet reports and readbacks reside at:
+
+- /Users/roger/.codex/visualizations/2026/10/10/01a123ab-88be-7b10-98f8-676b125a7313/batch10-mappings/review-spec/
+- /Users/roger/.codex/visualizations/2026/10/10/01a123ab-88be-7b10-98f8-676b125a7313/batch10-mappings/review-standards/
+- /Users/roger/.codex/visualizations/2026/10/10/01a123ab-88be-7b10-98f8-676b125a7313/batch10-mappings/review-adversarial/
+- /Users/roger/.codex/visualizations/2026/10/10/01a123ab-88be-7b10-98f8-676b125a7313/batch10-mappings/final-delivery.json
+
+The coordinator should review the scoped draft PR, preserve unsupported602/operational554/583 criteria, preview integration against the other Batch10 heads, then execute combined immutable acceptance and complete bot-body/thread/request readback. Local isolated acceptance is not combined or deployed acceptance. No merge, production migration/reconciliation, deployment/restart, dispatch activation, Actions mutation, shared-policy edit, issue closure or paid review occurred. Hosted run38014890047 remains bound to its actual historical commit/tree equivalence, not this draft.
+
+## Coordinator correction — 2026-10-10, #610
+
+The original four519/275-case author executions above remain historical and
+retain their original source/recorder identities. Later backend sibling changes
+must not be substituted into their source-bound positive fixtures or represented
+as previously tested. The evidence-only #610 repair archives the exact1160-file
+frozen86 declared source corpus (1158 executed plus2 publication-only files),
+preserves original publication/run bytes, and adds strict actual JUnit identity
+and portable/publication metadata validation. Successful verification now means
+historical packet integrity with `current_checkout_acceptance=false`. Explicit
+extracted-source verification still refuses mutated or incomplete source bytes.
+Fresh current/minimum packet replay and current integration acceptance have
+their own external source-bound receipts. See
+[the correction and replay locations](batch10-mappings-evidence/COORDINATOR_610.md).
+The ETL product files are unchanged. #602, #603, #583 and the remaining #554
+operational/native prerequisites remain pending.

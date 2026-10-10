@@ -1,0 +1,234 @@
+[
+  {
+    "log": "history/cohort-current-final.log.gz",
+    "original_sha256": "a370946af09ec18f066c3b049ae44753744c318af17b5f92488bc6ff371510a7",
+    "raw_log_sha256": "c9caa4cdd141069b24f2413ef4889cfab18636e6d9457fe0eac02c96c9ca1410",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/cohort-current-final.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/cohort-current-repaired.log.gz",
+    "original_sha256": "9dad65180838e31f5dcb06701daf579fae42dfec82240f408c2b29910921ea2f",
+    "raw_log_sha256": "00db5b298dbbda0e8a1b5a91ce9e079003e6832828ee27f6bd10a1c16ea93a8f",
+    "reason": "Portable current record verifies executable sources; raw receipt is unchanged.",
+    "receipt": "history/cohort-current-repaired.json.gz",
+    "status": "CURRENT_EXECUTION_ORIGINAL"
+  },
+  {
+    "log": "history/cohort-current-v2.log.gz",
+    "original_sha256": "f343c35194fe7395ed0b6cc463ecde73c156c33027f7face0ea466c703f60167",
+    "raw_log_sha256": "57c65004418dbe4984d37f93e8624b169c6143dc2f7fc543d040191c41ed3e10",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/cohort-current-v2.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/cohort-current.log.gz",
+    "original_sha256": "98fcf5fb9df1e4e603cdd29e75d7faae71c3b2e008c81b689b3977c78e108a29",
+    "raw_log_sha256": "0d448a73eabf52408a5fefbcfa7e48c1c4606d32e6ea00169a4002a2fc562dfd",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/cohort-current.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/cohort-minimum-final.log.gz",
+    "original_sha256": "8e5dc5d2b0f3b404b15bcac1fd7bcab8146880564641c7379dac500c2fbd6012",
+    "raw_log_sha256": "163cd7298bf8efecbe8e56d852103fb3b908bacd098ca9c3d03a46acb93227bc",
+    "reason": "Portable current record verifies executable sources; raw receipt is unchanged.",
+    "receipt": "history/cohort-minimum-final.json.gz",
+    "status": "CURRENT_EXECUTION_ORIGINAL"
+  },
+  {
+    "log": "history/cohort-minimum-repaired.log.gz",
+    "original_sha256": "dad542e44286e4447c2ba412f6792ec0b3020492214d9c1c7ec7dedf21b96ad3",
+    "raw_log_sha256": "32c6d65ca044e17839230eae0c131347d0138bf155ede5a23b24083a038ad2a6",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/cohort-minimum-repaired.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/cohort-minimum.log.gz",
+    "original_sha256": "e8e12fb3d368ec869b074bf7d9a8d6b2c616cd12fb53c6504b10d967f867d8bb",
+    "raw_log_sha256": "007984e88099277cc5b2ce4a3fa276faad207fb7000fae875bc808b593b07ab3",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/cohort-minimum.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/critical-lint.log.gz",
+    "original_sha256": "4fddc55819c6d0043a2d36615952d471e464c37f84add421ce685bc1d22d4bc8",
+    "raw_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/critical-lint.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/final-fixture-base-red.log.gz",
+    "original_sha256": "52465295200786f458051dfc2bb8cce6eb0a015bd7e5b0cf8d3a494804ea6fbc",
+    "raw_log_sha256": "5141ca671a340d0e3853f57569a8cbb48d9c635a7f0de9dcd65757fb59c929d2",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/final-fixture-base-red.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/legacy-current-repaired.log.gz",
+    "original_sha256": "d250755a75101c2bce1b452b1911f976e514df558ee0acfd20bc37b75af5d504",
+    "raw_log_sha256": "d15a82aba4446a3f2433d32ec2edeac0a2301c28933c595ab4885f935e21de7b",
+    "reason": "Portable current record verifies executable sources; raw receipt is unchanged.",
+    "receipt": "history/legacy-current-repaired.json.gz",
+    "status": "CURRENT_EXECUTION_ORIGINAL"
+  },
+  {
+    "log": "history/legacy-current.log.gz",
+    "original_sha256": "63f532ea3b90f7007ef83c1e86b2cb7aa94b8da321519c2a72bc6470506b0c32",
+    "raw_log_sha256": "6ae6f3cdb8dcab69d7ee83d0180bf070ac46f4c3836f954ed814f316eb6af0e7",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/legacy-current.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/legacy-minimum-repaired.log.gz",
+    "original_sha256": "664eaa81fe16801f056be81387e248d48351077e242ccc3421cbbf291d43d638",
+    "raw_log_sha256": "afce03bfdb481d380a7c763ad7fc71ab69aa584228c815fea6621d8553d9cc74",
+    "reason": "Portable current record verifies executable sources; raw receipt is unchanged.",
+    "receipt": "history/legacy-minimum-repaired.json.gz",
+    "status": "CURRENT_EXECUTION_ORIGINAL"
+  },
+  {
+    "log": "history/legacy-minimum.log.gz",
+    "original_sha256": "e8973e6564a4a2f3fd534b92c37d96e7ed0d0f9f942c0c199fe01cf97ab0862e",
+    "raw_log_sha256": "f8449751e6f9fa8345863917af889cd9ef3c053688493811328ffa407655ee46",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/legacy-minimum.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/mapping-expanded.log.gz",
+    "original_sha256": "9a9bca1cc9b1a741680f2498223f76cbca2f123c93861ef3e70974a770089af1",
+    "raw_log_sha256": "732a563a1433999d3d2ed4e80f46909965cb6efe9f200ccdd7f45b67c1e3e7d1",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/mapping-expanded.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/mapping-green.log.gz",
+    "original_sha256": "b055df9a12fb903fcdf3acc6ef185f4ce8b941a6d15ffd7805b87d1af6494419",
+    "raw_log_sha256": "85e6f923dd50b76546b10fe44d46e45312943dda783d02a6363a379af4e5a30b",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/mapping-green.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/mapping-red.log.gz",
+    "original_sha256": "866320701f0521cba4a7fc8ff548409f707eb876cfe32185b913d2a9811190cb",
+    "raw_log_sha256": "b28c027141739dd2218ad28a4e9103a6602577fa17fe9dc7bdbfe49cc41d65a9",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/mapping-red.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-base-corrected.log.gz",
+    "original_sha256": "7875e1c7913ddfebcc5ba1970a4903ccfa9c5acc02e199e458eae13039b374c1",
+    "raw_log_sha256": "511eaa6b7344826a4275b1d676d51271802d7c29b187103cf7ac7fa518526731",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-base-corrected.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-base.log.gz",
+    "original_sha256": "cff4e9bfe9d08f2ae992eff8405c5fc942a9e79bb203169075fe855b96018aea",
+    "raw_log_sha256": "f875f527f5caaf5bd6878ec3db6e5a0fdba7e1dc5a2d6c69e2fd9a8b89b523da",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-base.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-cohort-corrected.log.gz",
+    "original_sha256": "548b2ca5f618632adcb40c97491f42c13db96cc3ecb7537b5dbf680b5939ab81",
+    "raw_log_sha256": "470c35acb9cf500c2f1db6bc090464e568a57dd83c2f3abf48ba7d6f4597f1f3",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-cohort-corrected.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-cohort.log.gz",
+    "original_sha256": "8894db256af232213178ba99f63aac9c03da986cdcd0efcb6530e572a1e473ce",
+    "raw_log_sha256": "8e45639841fc13653f16665dc1fb2ee8f0334e69a4967270b141ae488f0092d0",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-cohort.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-new-stopped.log.gz",
+    "original_sha256": "dabb8409977e27016923c780df7a7ef237a9cb710eece261342b320c46574ccd",
+    "raw_log_sha256": "6ba447430baa0e6bb1146d9b7d09ae646dac96b709d82b3382b4626f1a1c8240",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-new-stopped.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/migration-new.log.gz",
+    "original_sha256": "383ad0d2aaa82a3e30381d278f792239538da4f4aebb4d564490ea76c9ec73f5",
+    "raw_log_sha256": "d4ef16fba9c6c1691d82f50f474e9339f5ea5d6bc95def5d607a0010dc4f5890",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/migration-new.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/prepare-oag-cohort.log.gz",
+    "original_sha256": "8e234683ea842ad924df02637c9ab636e22d40ab611fb35123ce9d695977fcf6",
+    "raw_log_sha256": "c6c0685a5ed732a992a5b633bab448f89dd27f32b38c443fda76e6d600ad8932",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/prepare-oag-cohort.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/published-fixture-base-red.log.gz",
+    "original_sha256": "f1491f8326b99f849ee31ce39210dcdfcb58cd5afe406eb23bb1fed3726e04e6",
+    "raw_log_sha256": "df38a12f087f3b18e0086674869b8f38da612e670cdfde1d8cd192094a0ae8b9",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/published-fixture-base-red.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/published-mappings-base-red.log.gz",
+    "original_sha256": "329cbd3d4cf56dbd909839183e3752f8ff4d5bf0c5be260c6840f0ca19e2b0b9",
+    "raw_log_sha256": "4c7470c37f6f7d9e00a0c93009acb139afbb51669703f7fceb0b601407535a41",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/published-mappings-base-red.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/registry-cra-refusal.log.gz",
+    "original_sha256": "41f8aa859b9711f8d2fb2305deec2cf1459415d5c66a577e6c540936d110c3ee",
+    "raw_log_sha256": "5ff45ec95ab84c23e275474b39139e31d28656af0dba700b170aea51ea02077b",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/registry-cra-refusal.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/registry-opendata-refusal.log.gz",
+    "original_sha256": "9cc20aab9cbffe60f578bc8758f613ad7fc9c63051fa886cf12e46cf29c69d82",
+    "raw_log_sha256": "e9a11228db80f76250eb8cb2f38d06b7ae492f339588639d1b7f2e3f6a55cbc2",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/registry-opendata-refusal.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/review-regressions-green.log.gz",
+    "original_sha256": "2f4750474f7b33a00b2bdeecbe7f6e135a763c4fb7f2e0c6e6c65c32eceb3f07",
+    "raw_log_sha256": "aaf61dc8b48c16b4930a7ea198014943daa252f4dc46139c2435b569a52326a2",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/review-regressions-green.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  },
+  {
+    "log": "history/review-regressions-red.log.gz",
+    "original_sha256": "d90a3a4ad3352605328e332da05f04095a91c88960bb316967681ebba8a5edb9",
+    "raw_log_sha256": "47988d4cb77e6d4ed80b5e47645e237bc8d292f0e65b2d61e2ad4329b18a74c6",
+    "reason": "Retained actual baseline/red/setup/intermediate execution; no final acceptance inferred.",
+    "receipt": "history/review-regressions-red.json.gz",
+    "status": "HISTORICAL_SUPERSEDED"
+  }
+]
