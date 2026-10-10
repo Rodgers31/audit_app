@@ -131,3 +131,45 @@ def test_receipt_verifier_refuses_removed_historical_output(tmp_path):
     verifier = load(EVIDENCE / "verify_receipts.py", "receipt_verifier_missing_output")
     with pytest.raises(FileNotFoundError):
         verifier.verify(here, root)
+
+
+@pytest.mark.parametrize("optimized", [False, True])
+@pytest.mark.parametrize("mutation", ["source", "output", "verdict"])
+def test_receipt_verifier_retains_integrity_checks_under_optimization(tmp_path, optimized, mutation):
+    import hashlib
+    import json
+    import subprocess
+    import sys
+    root = tmp_path / "root"
+    here = root / "evidence"
+    here.mkdir(parents=True)
+    generator = root / "generator.py"
+    source = root / "source.py"
+    generator.write_text("# owned generator\n")
+    source.write_text("# owned source\n")
+    output = here / "control.txt"
+    output.write_text("owned child output\n")
+    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+    data = {"generated_by": "generator.py", "generator_sha256": sha(generator),
+            "source_sha256": {"source.py": sha(source)}, "exit_code": 0,
+            "verdict": "PASSED", "output_sha256": sha(output)}
+    (here / "historical-provenance.json").write_text(json.dumps({"receipts": {}, "spec_raw": []}))
+    receipt = here / "control.json"
+    receipt.write_text(json.dumps(data))
+    code = ("import importlib.util, pathlib, sys; "
+            "s=importlib.util.spec_from_file_location('owned_verifier',sys.argv[1]); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+            "print(m.verify(pathlib.Path(sys.argv[2]),pathlib.Path(sys.argv[3])))")
+    command = [sys.executable, *(["-O"] if optimized else []), "-c", code,
+               str(EVIDENCE / "verify_receipts.py"), str(here), str(root)]
+    baseline = subprocess.run(command, text=True, capture_output=True, timeout=30)
+    assert baseline.returncode == 0, baseline.stderr
+    if mutation == "source":
+        source.write_text("# changed source\n")
+    elif mutation == "output":
+        output.write_text("changed output\n")
+    else:
+        data["verdict"] = "FAILED"
+        receipt.write_text(json.dumps(data))
+    changed = subprocess.run(command, text=True, capture_output=True, timeout=30)
+    assert changed.returncode != 0, changed.stdout + changed.stderr

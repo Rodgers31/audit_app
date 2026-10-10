@@ -236,9 +236,21 @@ and missed this branch. The coordinator reproduced four actual failures across
 Session/Connection binding and empty/unflushed caller work; four normal-path
 controls already passed. Bootstrap now materializes the borrowed SQLite caller
 transaction before opening its child savepoint, preserving caller authority.
-All 19 caller-session controls pass on Python 3.13.9 / SQLAlchemy 2.0.46 and
+All 19 caller-session controls pass on Python 3.13.9 / SQLAlchemy 2.0.54 and
 Python 3.12.15 / SQLAlchemy 2.0.23, without skips. Other original receipts retain
 their earlier source identities; independent final-source review and combined
 hosted execution follow. Raw red, green and initial missing-runtime setup results
 are retained in the external coordinator `BATCH_9_PR_REVIEW` packet. This repair
 is within #582; production activation and writer census remain separately gated.
+
+The 20 earlier review receipts are now machine-classified as historical in
+`historical-provenance.json`, preserving their exact bytes. The read-only archive
+verifier validates 83 historical receipts and three raw Spec controls; it does
+not claim these are current-source executions. The active verifier also used
+removable assertions: three actual optimized-interpreter tamper controls failed
+before repair. Explicit integrity checks now reject source/output/verdict drift
+under both normal Python and `-O`; 131 caller/fixture/integrity controls pass
+without skips on both coordinator runtimes. The complete historical verifier
+passes on both runtimes in both modes. Its previous exact generator is archived.
+New final-candidate controls and hosted acceptance are retained by the coordinator
+separately from the immutable authored packet.
