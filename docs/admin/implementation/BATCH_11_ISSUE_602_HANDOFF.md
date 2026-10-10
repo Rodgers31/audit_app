@@ -60,9 +60,7 @@ correspond to the tested bytes are in the external append-only postcommit binder
   complete inventories ran there.
 - `fa8f90139feddb1493a530b0815d832b78d94485` (tree `9a796ca0…`) adds only
   evidence and the recorder's CI-parity mode. The CI-parity inventory ran there.
-- Later commits change only `docs/`. `tools/verify_packet_v2.py` reports
-  `current_checkout_acceptance` by re-hashing every #602-owned file the
-  `final-*` receipts recorded.
+- Author evidence after these pins is historical. The coordinator correction below changes the writer boundary and adds versioned current verification; the old v2 verdict must not be used to certify the corrected checkout.
 
 ## Executed red → green (same input, recorded with record_v3)
 
@@ -230,8 +228,8 @@ postcommit binder.
 ## Evidence
 
 - Committed: `docs/admin/implementation/batch11-issue-602-evidence/`. Run
-  `python -B docs/admin/implementation/batch11-issue-602-evidence/tools/verify_packet_v2.py`;
-  it reports `historical_integrity` and, separately, `current_checkout_acceptance`.
+  `python -B docs/admin/implementation/batch11-issue-602-evidence/tools/verify_packet_v3.py`;
+  it reports historical integrity only unless `--current-receipt` names a fresh external record_v4 receipt for the exact clean checkout.
 - External outputs: `/Users/roger/.codex/visualizations/2026/10/10/01a12626-69b6-7d82-9083-54e4bf07a86b/issue602/claude-continuation/`
   holds the raw logs, JUnit, the reviewer logs and the append-only `POSTCOMMIT_BINDER.json`.
 - Proposed skill lessons: `LESSONS.md`.
@@ -256,14 +254,7 @@ postcommit binder.
 - Production (#583) and operator acceptance (#554) are separate. CRA
   activation needs the flag, the dispatch source selection, a production
   migration and every-writer quiescence, none of which is done here.
-- Limit, reproduced by both reviewers (probe P1b): the writer binds the lock
-  holder by transaction start (`xact_start <= claim.entered_at`), not by the
-  runner's pid. A transaction begun before entry that later takes the CRA key
-  after the runner's lock backend died would pass. The shipped
-  `DomainExecution.open()` can't produce that. Acknowledgement re-proves the
-  runner's pid, so such effects stay under a retained, uncertain claim. A full
-  fix needs a handler-visible execution identity in `seeding/exclusion.py`
-  (#603); that request is in the coordination journal.
+- The historical P1b lock-identity limit was repaired during coordinator review: see the exact physical PID, entry nonce and continuity contract below. Historical red receipts remain unchanged.
 - Decisions recorded:
   - A malformed `SEED_CRA_INGESTION_ENABLED` (`1`, `TRUE`, …) stops every seeding
     run (fail closed rather than guess).
@@ -271,3 +262,11 @@ postcommit binder.
     because the domain is unregistered; dispatch gives the specific reason.
   - Any later parser edit changes `parser_sha256`, so replay on an existing
     database refuses until an operator reconciles. It never appends.
+
+## Coordinator review corrections (2026-10-10)
+
+The five Copilot comments and all general review observations were checked against actual execution. The writer now requires the live handler-visible DomainExecution on the same engine, exact physical PID, canonical domain/run/command identity and the claim's entry nonce digest. It re-proves physical continuity, and its observation window begins at the later of acquisition and entry (with the existing clock margin). A preopened transaction that replaces a killed lock holder is refused before effects, as are absent or foreign execution identities. Existing document lookup uses country/publisher/URL before comparing the strict artifact and extraction identity, so changed provenance cannot append a second document under an existing URL. The same owned PostgreSQL controls confirm valid replay and zero effects on refusal.
+
+Evidence versions are append-only: record_v4/run_suite_v3/verify_packet_v3 supersede the archived v3/v2 tools. The current reader checks every tracked and untracked source input (including workflow/dispatcher/config), forbids source links before reading, requires exact clean HEAD/tree and before/after digests, hashes raw output, recomputes actual JUnit or both launcher collection/outcome inventories, and rejects failed/error/xpass, timeout, missing-source or leftover-resource claims. Archived final-* receipts remain history and cannot certify this corrected source. The companion launcher derives its checkout from __file__ and admits only fresh external non-symlink output. The unchanged hosted launcher remains the whole-suite gate.
+
+Current and supported-minimum scoped writer/API/worker/evidence controls passed after the initial correction; the latest expanded current cohort passed all99 cases with zero skips/failures/errors and owned-resource cleanup. Final committed-source runs, both independent review axes and the integrated seven-job hosted verification are coordinator-owned external records, not claims about a future self-containing commit. The bootstrap sibling now fences optional CRA claims even with its flag off. #602 remains open for #621; #554/#583 remain open for production/operator activation.

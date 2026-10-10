@@ -6,11 +6,9 @@ Ownership the writer re-proves on every call, on the writing transaction:
     or hand-made observation is not a native CRA owner);
   * the durable claim is entered, unreturned, unreleased and acquired no later
     than the observation started, and the observation is not from the future;
-  * the shared domain execution lock is still held by the entering runner: a
-    backend holds the CRA key in a transaction that began no later than the
-    claim's one-use entry. A contender can only take the key after the runner's
-    lock ended, so its transaction starts later and does not count (without this
-    the effects would land under a claim that can no longer be acknowledged);
+  * the live runner holds the CRA key on its exact lock backend, and supplies
+    the entry nonce whose digest the durable claim records. Transaction age or
+    another backend holding the same key cannot establish this identity;
   * the supplied fetch time is an aware datetime inside the owned run.
 Refusal raises before any effect; the caller's transaction rolls back. Nothing
 here releases, expires or rewrites a claim.
@@ -21,10 +19,12 @@ import json
 from uuid import UUID
 
 from sqlalchemy import func, select, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from models import Country, DocumentStatus, DocumentType, Extraction, IngestionJob, IngestionStatus, SeedingDomainClaim, SourceDocument
 from .parser import EXTRACTOR, PAGE, parse_publication
 from .source import CraSourceRefused, URL
+from seeding.exclusion import DomainExecution, entry_digest
 
 TOLERANCE = timedelta(seconds=5)
 NATIVE_META = frozenset({"since", "seeding_claim_id"})
@@ -81,15 +81,30 @@ def require_ownership(session, context, lock=True):
     start, now = session.execute(select(
         func.timezone(func.current_setting("TimeZone"), IngestionJob.started_at), func.clock_timestamp())
         .where(IngestionJob.id == job.id)).one()
-    if start is None or not claim.acquired_at - TOLERANCE <= start <= now + TOLERANCE:
+    if start is None or not max(claim.acquired_at, claim.entered_at) - TOLERANCE <= start <= now + TOLERANCE:
         raise CraSourceRefused("CRA observation time is outside its durable ownership")
+    execution = context.ownership
+    if (type(execution) is not DomainExecution or execution.domain != "cra"
+            or execution.identity != identity or execution.entered is not True
+            or not isinstance(execution.entry, UUID)
+            or entry_digest(execution.entry) != claim.entry_id
+            or execution.command_id != claim.command_id
+            or execution.engine is not session.get_bind()
+            or type(execution.pid) is not int):
+        raise CraSourceRefused("CRA execution lock identity is unavailable")
+    try:
+        continuous = execution.continuous()
+    except SQLAlchemyError:
+        continuous = False
+    if continuous is not True:
+        raise CraSourceRefused("CRA execution lock is no longer held by its runner")
     key = execution_lock_key("cra")
     held = session.scalar(text("""SELECT EXISTS (SELECT 1 FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid
-        WHERE l.locktype='advisory' AND l.granted
+        WHERE l.locktype='advisory' AND l.granted AND l.pid=:pid
         AND l.database=(SELECT oid FROM pg_database WHERE datname=current_database())
         AND l.classid=:high AND l.objid=:low AND l.objsubid=1
         AND a.xact_start IS NOT NULL AND a.xact_start <= :entered)"""),
-        {"high": key >> 32, "low": key & 0xffffffff, "entered": claim.entered_at})
+        {"high": key >> 32, "low": key & 0xffffffff, "entered": claim.entered_at, "pid": execution.pid})
     if held is not True:
         raise CraSourceRefused("CRA domain execution lock is not held; durable ownership retained")
     return start, now
@@ -111,7 +126,7 @@ def persist(session, context, payload, parsed, fetched_at):
         return {"created": 0, "unchanged": 0}
     documents = session.scalars(select(SourceDocument).where(
         SourceDocument.country_id == country.id, SourceDocument.publisher == "Commission on Revenue Allocation",
-        SourceDocument.url == URL, SourceDocument.meta["artifact_sha256"].astext == parsed["artifact_sha256"])).all()
+        SourceDocument.url == URL)).all()
     if len(documents) > 1:
         raise CraSourceRefused("CRA existing source document identity is ambiguous")
     document = documents[0] if documents else None

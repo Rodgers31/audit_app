@@ -8,7 +8,7 @@ complete. This runner imports that launcher file unchanged and reuses its own
 ``test_inventory``, ``bind_package``, ``descendant_environment`` and collection
 receipt, so it schedules exactly the launcher's files with exactly its package
 ownership. The only differences: no ``--maxfail``, no coverage, and pytest
-arguments appended by the caller (record_v3 adds ``--junitxml``). It is a
+arguments appended by the caller (record_v4 adds ``--junitxml``). It is a
 completeness companion to the unchanged launcher run, not a replacement for it.
 
     python run_launcher_cohorts_complete.py --cohort backend|legacy --output-dir DIR [pytest args...]
@@ -25,14 +25,16 @@ def main():
     parser.add_argument("--cohort", choices=("backend", "legacy"), required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args, extra = parser.parse_known_args()
-    root = Path.cwd().resolve().parent
+    root = Path(__file__).resolve().parents[5]
     spec = importlib.util.spec_from_file_location("_launcher", root / ".github/scripts/run_backend_tests.py")
     launcher = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(launcher)
     if os.environ.get("PYTEST_ADDOPTS"):
         raise SystemExit("Ambient PYTEST_ADDOPTS refused, as by the launcher")
-    output = args.output_dir.resolve()
-    output.mkdir(parents=True, exist_ok=True)
+    output = args.output_dir.absolute()
+    if output.exists() or output.resolve() != output or root == output or root in output.parents:
+        raise ValueError("Fresh external non-symlink output required")
+    output.mkdir(parents=True)
     files = launcher.test_inventory()[args.cohort]
     sys.path.insert(0, str(launcher.BACKEND))
     launcher.bind_package("seeding", launcher.BACKEND / "seeding")

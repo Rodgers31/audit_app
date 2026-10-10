@@ -27,7 +27,7 @@ EFFECTS = ("source_documents", "extractions", "budget_lines", "economic_indicato
 
 
 @contextmanager
-def owned(cra_url, dry_run=False):
+def owned(cra_url, dry_run=False, before_enter=None):
     name = "batch11_602_" + uuid4().hex
     admin = create_engine(cra_url, isolation_level="AUTOCOMMIT")
     with admin.connect() as c:
@@ -38,6 +38,8 @@ def owned(cra_url, dry_run=False):
     try:
         with factory.begin() as db:
             db.add(Country(iso_code="KEN", name="Kenya", currency="KES", timezone="Africa/Nairobi", default_locale="en"))
+        if before_enter is not None:
+            before_enter(engine)
         execution = enter_domain(factory, "cra", dry_run)
         with factory.begin() as db:
             # The exact observation shape the native CLI writes before a handler.
@@ -47,7 +49,7 @@ def owned(cra_url, dry_run=False):
             db.add(job)
             db.flush()
             job_id = job.id
-        yield engine, factory, execution, DomainRunContext(since=None, dry_run=dry_run, job_id=job_id)
+        yield engine, factory, execution, DomainRunContext(since=None, dry_run=dry_run, job_id=job_id, ownership=execution)
     finally:
         if execution is not None:
             execution.close()
@@ -211,3 +213,68 @@ def test_a_contender_holding_the_lock_key_is_not_the_entering_runner(cra_url):
             assert counts(engine) == dict.fromkeys(EFFECTS, 0)
         finally:
             contender.close()
+
+
+def test_observation_before_dispatch_entry_refuses(cra_url):
+    with owned(cra_url) as (engine, factory, execution, ctx):
+        with engine.begin() as db:
+            db.execute(text("UPDATE seeding_domain_claims SET acquired_at=entered_at-interval '1 minute' WHERE id=:id"),
+                       {"id": execution.identity})
+            db.execute(text("UPDATE ingestion_jobs SET started_at=(SELECT acquired_at FROM seeding_domain_claims WHERE id=:id) WHERE id=:job"),
+                       {"id": execution.identity, "job": ctx.job_id})
+        with pytest.raises(source.CraSourceRefused, match="observation time"):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+def test_same_url_with_different_artifact_refuses_instead_of_append(cra_url):
+    with owned(cra_url) as (engine, factory, _, ctx):
+        persist(factory, ctx)
+        with engine.begin() as db:
+            db.execute(text("UPDATE source_documents SET metadata=jsonb_set(metadata,'{artifact_sha256}','\"different\"')"))
+        before = counts(engine)
+        with pytest.raises(source.CraSourceRefused, match="provenance differs"):
+            persist(factory, ctx)
+        assert counts(engine) == before
+
+
+def test_preopened_contender_cannot_impersonate_dead_runner(cra_url):
+    from sqlalchemy.exc import SQLAlchemyError
+    holders = []
+    def preopen(engine):
+        connection = engine.connect()
+        connection.execute(text("SELECT txid_current()"))
+        holders.append(connection)
+    try:
+        with owned(cra_url, before_enter=preopen) as (engine, factory, execution, ctx):
+            contender = holders[0]
+            with engine.connect() as db:
+                entered = db.scalar(text("SELECT entered_at FROM seeding_domain_claims WHERE id=:id"), {"id": execution.identity})
+                assert db.scalar(text("SELECT xact_start FROM pg_stat_activity WHERE pid=:pid"),
+                                 {"pid": contender.scalar(text("SELECT pg_backend_pid()"))}) <= entered
+                assert db.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": execution.pid}) is True
+            with pytest.raises(SQLAlchemyError):
+                execution.close()
+            assert contender.scalar(text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": execution.key}) is True
+            with pytest.raises(source.CraSourceRefused, match="execution lock"):
+                persist(factory, ctx)
+            assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+            contender.close()
+            holders.clear()
+    finally:
+        for holder in holders:
+            holder.close()
+
+
+@pytest.mark.parametrize("mutation", ["missing", "wrong_nonce", "wrong_owner"])
+def test_claim_reader_cannot_reconstruct_live_ownership(cra_url, mutation):
+    with owned(cra_url) as (engine, factory, execution, ctx):
+        if mutation == "missing":
+            ctx.ownership = None
+        elif mutation == "wrong_nonce":
+            execution.entry = uuid4()
+        else:
+            ctx.ownership = DomainExecution(factory, "cra", execution.identity)
+        with pytest.raises(source.CraSourceRefused, match="execution lock"):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
