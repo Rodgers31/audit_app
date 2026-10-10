@@ -60,9 +60,12 @@ def main():
     parser.add_argument("--minimum", action="store_true")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[4]
-    out = args.out.resolve()
-    if out.exists() or root == out or root in out.parents:
-        raise ValueError("Fresh external output required")
+    # Validate the requested spelling before resolution; resolving first can
+    # silently admit a dangling leaf or an ancestor that redirects the output.
+    out = args.out.absolute()
+    if (".." in out.parts or out.resolve() != out or out.is_symlink()
+            or out.exists() or root == out or root in out.parents):
+        raise ValueError("Fresh external nonsymlink output required")
     out.mkdir()
     import sys
     sys.path.insert(0, str(root / "backend/tests"))
