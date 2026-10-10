@@ -123,7 +123,7 @@ def current_execution(path, repo):
     identity = "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v4.py"
     if record.get("generated_by") != identity or record.get("mode") not in ("pytest", "launcher"):
         raise Refused("Current acceptance requires an executed record_v4 test inventory")
-    for field in ("leftover_process_group", "ci_parity_environment"):
+    for field in ("leftover_process_group", "process_group_absent_after_cleanup", "ci_parity_environment"):
         if type(record.get(field)) is not bool:
             raise Refused("Malformed current execution flag: " + field)
     for field in ("owned_containers_before", "owned_containers_after"):
@@ -156,7 +156,7 @@ def current_execution(path, repo):
     if record["mode"] == "pytest":
         if set(outputs) != {"output.log", "junit.xml"}:
             raise Refused("Current pytest requires its actual JUnit and raw log")
-        observed = recorder.junit_cases(path.parent / "junit.xml")
+        observed = recorder.junit_cases(path.parent / "junit.xml", (path.parent / "output.log").read_text())
     else:
         required = {"core/collection-backend.json", "core/collection-legacy.json"}
         if not required <= set(outputs):
@@ -180,6 +180,7 @@ def current_execution(path, repo):
     green = (record["exit_code"] == 0 and record["complete_inventory"] is True
              and record["timed_out"] is False and record["source_drift"] == []
              and record["leftover_process_group"] is False
+             and record["process_group_absent_after_cleanup"] is True
              and record["owned_containers_before"] == record["owned_containers_after"] == []
              and record["counts"]["passed"] > 0
              and all(record["counts"][state] == 0 for state in ("error", "failed", "xpass")))

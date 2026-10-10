@@ -72,7 +72,7 @@ def owned_containers():
         return None
 
 
-def junit_cases(path):
+def junit_cases(path, log=""):
     cases = []
     for case in ET.parse(path).getroot().iter("testcase"):
         if case.find("failure") is not None:
@@ -85,7 +85,54 @@ def junit_cases(path):
         else:
             state = "passed"
         cases.append({"id": case.get("classname", "") + "::" + case.get("name", ""), "state": state})
+    # Non-strict XPASS has no XML marker. The actual -rA output supplies its
+    # identity; refuse an ambiguous/missing identity instead of calling it PASS.
+    clean = re.sub(r"\x1b\[[0-9;]*m", "", log)
+    unexpected = re.findall(r"(?m)^XPASS(?:\[[^\]]*\])?\s+(.+?)(?:\s+-\s+.*)?$", clean)
+    totals = re.findall(r"\b(\d+) xpassed\b", clean)
+    if totals and int(totals[-1]) != len(unexpected):
+        raise ValueError("XPASS summary lacks a complete outcome identity")
+    for node in unexpected:
+        pieces = node.strip().split("::")
+        module = pieces[0].removesuffix(".py").replace("/", ".")
+        classname = ".".join([module, *pieces[1:-1]])
+        candidates = [case for case in cases if case["id"].split("::", 1)[-1] == pieces[-1]
+                      and (case["id"].split("::", 1)[0] == classname
+                           or classname.endswith("." + case["id"].split("::", 1)[0])
+                           or case["id"].split("::", 1)[0].endswith("." + classname))]
+        if len(candidates) != 1 or candidates[0]["state"] != "passed":
+            raise ValueError("XPASS identity is ambiguous or differs from JUnit")
+        candidates[0]["state"] = "xpass"
     return cases
+
+
+def group_present(identity):
+    try:
+        os.killpg(identity, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def cleanup_group(identity):
+    """Clean only the new session created for this exact command."""
+    if group_present(identity):
+        try:
+            os.killpg(identity, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        deadline = time.monotonic() + 1
+        while group_present(identity) and time.monotonic() < deadline:
+            time.sleep(.05)
+        if group_present(identity):
+            try:
+                os.killpg(identity, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    deadline = time.monotonic() + 2
+    while group_present(identity) and time.monotonic() < deadline:
+        time.sleep(.05)
+    return not group_present(identity)
 
 
 def verbose_cases(log):
@@ -166,20 +213,21 @@ def main():
             code = child.wait(timeout=a.timeout)
         except subprocess.TimeoutExpired:
             timed_out = True
-            os.killpg(child.pid, signal.SIGKILL)
+            cleanup_group(child.pid)
             code = child.wait(timeout=20)
-    try:
-        os.killpg(child.pid, 0)
-        leftover_group = True
-    except ProcessLookupError:
-        leftover_group = False
+    leftover_group = group_present(child.pid)
+    group_absent = cleanup_group(child.pid)
     duration = round(time.monotonic() - t0, 3)
     after = source(repo)
     after_status = git(repo, "status", "--porcelain=v1", "--untracked-files=all")
     log_text = (out / "output.log").read_text(errors="replace")
     inventory = {}
+    inventory_error = None
     if a.mode == "pytest":
-        cases = junit_cases(out / "junit.xml") if (out / "junit.xml").is_file() else []
+        try:
+            cases = junit_cases(out / "junit.xml", log_text) if (out / "junit.xml").is_file() else []
+        except ValueError as exc:
+            cases, inventory_error = [], str(exc)
         ids = [c["id"] for c in cases]
         inventory = {"source": "junit", "unique": len(ids) == len(set(ids)), "nonempty": bool(ids)}
         complete = bool(ids) and len(ids) == len(set(ids)) and not timed_out
@@ -217,6 +265,7 @@ def main():
         "finished_at": datetime.now(timezone.utc).isoformat(), "duration_seconds": duration,
         "deadline_seconds": a.timeout, "timed_out": timed_out, "exit_code": code,
         "leftover_process_group": leftover_group,
+        "owned_process_group": child.pid, "process_group_absent_after_cleanup": group_absent,
         "command": [c.replace(str(repo), "<repo>").replace(str(out), "<out>") for c in command],
         "child_environment": {k: (v.replace(str(out), "<out>").replace(str(repo), "<repo>")) for k, v in sorted(env.items())},
         "runtime": {"python": sys.version, "executable_name": Path(command[0]).name, "platform": platform.platform()},
@@ -225,7 +274,7 @@ def main():
         "source_after_sha256": hashlib.sha256(json.dumps(after, sort_keys=True).encode()).hexdigest(),
         "source_drift": drift, "source_files": before,
         "owned_containers_before": containers_before, "owned_containers_after": owned_containers(),
-        "inventory": inventory, "complete_inventory": complete,
+        "inventory": inventory, "inventory_error": inventory_error, "complete_inventory": complete,
         "counts": counts(cases), "testcases": cases,
         "output_files": {str(path.relative_to(out)): sha(path) for path in outputs},
     }
@@ -238,7 +287,10 @@ def main():
                       "drift": drift, "timed_out": timed_out, "duration": duration,
                       "containers_after": record["owned_containers_after"]}))
     # Green only when the child passed, the inventory is complete and nothing drifted.
-    return 0 if code == 0 and complete and not drift and not timed_out else 1
+    return 0 if (code == 0 and complete and not drift and not timed_out
+                 and not leftover_group and group_absent
+                 and record["owned_containers_before"] == record["owned_containers_after"] == []
+                 and not any(record["counts"][s] for s in ("failed", "error", "xpass"))) else 1
 
 
 if __name__ == "__main__":
