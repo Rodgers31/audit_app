@@ -21,7 +21,7 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
-REVISION = "e583b9c9a001"
+REVISION = "e554b10a0001"
 PREFIX = "batch9-review-592-"
 MAX_SECONDS = 240
 LIBPQ = frozenset({"PGHOST", "PGHOSTADDR", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PGPASSFILE",
@@ -192,7 +192,9 @@ def prepare(path, port, github_env, deadline):
                  "'active_index',(SELECT indisvalid AND indisready AND indisunique FROM pg_index WHERE indexrelid='public.uq_seeding_active_domain'::regclass))"], deadline)
     try:
         expected = {"database": value["database"], "autovacuum": "off", "revision": REVISION, "claim": True, "jobs": True, "audit": True, "rls": True, "active_index": True}
-        if json.loads(proof) != expected:
+        actual = json.loads(proof)
+        if (type(actual) is not dict or actual != expected
+                or any(type(actual[key]) is not type(value) for key, value in expected.items())):
             raise Refused("migrated_template_readback_mismatch")
     except (ValueError, TypeError):
         raise Refused("migrated_template_readback_malformed") from None
