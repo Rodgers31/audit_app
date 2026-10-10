@@ -59,7 +59,7 @@ Cleanup cannot certify unfinished child work: a group that survived its pytest
 parent is retained as NOT_ACCEPTED even after successful exact-group cleanup.
 
 For Chromium, use the owned frontend `npm ci` installation and the
-`frontend/e2e/admin-audit-epoch/playwright.config.ts` config. Provide
+`frontend/browser-fixtures/admin-audit-epoch/playwright.config.ts` config. Provide
 `ISSUE611_BROWSER_PYTHON`, a fresh `ISSUE611_BROWSER_OUTPUT`, and explicit inert
 `NEXT_PUBLIC_API_URL=http://127.0.0.1:18034`,
 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:18034`,
@@ -70,6 +70,10 @@ URLs on18045; the config selects UI13045. Existing, symlinked, Git metadata and
 registered checkout output destinations refuse before server or reporter writes.
 The coordinator reserves the new output directory with an opaque run marker;
 workers require the same inherited marker and directory identity on config reload.
+The owned fixture lives outside the canonical `e2e` testDir, so the original
+browser gate does not discover a test requiring this separately provisioned
+epoch-one API/database. Invoke the standalone config explicitly; the canonical
+configuration, workflow and original assertions are unchanged.
 The fixture performs explicit database cleanup/readback before Playwright exits;
 after an interrupted/failed attempt, inspect and clean only these owned resources.
 

@@ -60,3 +60,9 @@ Shared skills were read only. No shared policy or skill was edited.
     both recorder and reader, even when the group is physically absent. Test
     the actual pytest parent and a coherently altered PASS verdict, alongside
     a normal no-survivor acceptance control.
+11. A separately configured owned browser fixture still joins the normal suite
+    if its spec is under that suite's testDir. Prove discovery with the real
+    canonical list, place dedicated fixtures outside that directory, and run
+    their standalone configuration separately. Keep the original canonical
+    config/workflow and assertions unchanged; retain pre-move inventories and
+    prove both ordinary exclusion and actual owned journey after relocation.
