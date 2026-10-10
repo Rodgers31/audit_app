@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-10T03:42:16.981123+00:00",
+  "scope": "Correction of unsupported architecture label; original archival record retained unchanged",
+  "historical_record_sha256": "fb351baa8a857128a27ad84c5b270a63e5850847f1cba0a760795d4fe4d6a793",
+  "retained_binary_sha256": {
+    "node22.bin": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+    "node22-amd64.bin": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48"
+  },
+  "observations": [
+    {
+      "command": [
+        "docker",
+        "image",
+        "inspect",
+        "sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392",
+        "--format",
+        "{{.Architecture}}"
+      ],
+      "child_exit": 0,
+      "stdout": "arm64\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "file",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin"
+      ],
+      "child_exit": 0,
+      "stdout": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin:       ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "/opt/batch10-scroll-node22/node",
+        "-p",
+        "JSON.stringify({node:process.version,platform:process.platform,arch:process.arch})"
+      ],
+      "child_exit": 0,
+      "stdout": "{\"node\":\"v22.23.3\",\"platform\":\"linux\",\"arch\":\"x64\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "/opt/batch10-scroll-node22-amd/node",
+        "-p",
+        "JSON.stringify({node:process.version,platform:process.platform,arch:process.arch})"
+      ],
+      "child_exit": 0,
+      "stdout": "{\"node\":\"v22.23.3\",\"platform\":\"linux\",\"arch\":\"x64\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "sha256sum",
+        "/opt/batch10-scroll-node22/node",
+        "/opt/batch10-scroll-node22-amd/node"
+      ],
+      "child_exit": 0,
+      "stdout": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48  /opt/batch10-scroll-node22/node\nfde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48  /opt/batch10-scroll-node22-amd/node\n",
+      "stderr": ""
+    }
+  ],
+  "conclusion": "Source image metadata reports arm64; both retained executable copies are ELF x86-64 and both container runtime calls report linux x64. The earlier initial_arm64_copy label is unsupported and withdrawn. No overwrite or missing historical binary is asserted."
+}

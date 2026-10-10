@@ -1,0 +1,4 @@
+Positive control: archive integrity verified; issue unresolved
+Malformed control rejected: zero-count-original-control
+Malformed control rejected: negative-role-relabel
+Malformed control rejected: wrong-precondition-report

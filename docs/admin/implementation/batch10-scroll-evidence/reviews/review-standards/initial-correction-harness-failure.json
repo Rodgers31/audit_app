@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/review-standards/review_correction.py"
+  ],
+  "child_exit": 1,
+  "generator_sha256": "14e242cd176a399940acd6b2fe0b21412a1f0deae303c76d33572620dbe83a93",
+  "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/review-standards/review_correction.py\", line 20, in <module>\n    assert observations[1]['stdout'].count('x86-64') == 2\nAssertionError\n",
+  "interpretation": "Reviewer harness error: x86-64 occurs both in the architecture field and loader filename, four times across two file output lines. The raw subprocess captures were not persisted before this assertion; the fresh corrected execution is separately labeled."
+}
