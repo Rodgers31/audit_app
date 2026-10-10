@@ -233,3 +233,53 @@ from parser acceptance; and bind a successful compatibility verdict to the
 actual caller inputs before replacing those inputs with a synthetic fixture.
 These lessons are recorded here for coordinator consolidation, without changing
 globally installed skills.
+
+## Coordinator CI CPU installation repair — 2026-10-09
+
+Refs [#600](https://github.com/Rodgers31/audit_app/issues/600). The first hosted
+full verification run `38007482133` failed during frontend `npm ci`: locked
+ONNX Node 1.30.0 tried downloading optional Linux x64 CUDA libraries from NuGet
+and received `ETIMEDOUT`. This is an external installation/setup failure, not
+evidence that a dependency boundary rejected an unsafe input. The coordinator
+deduplicated the separate installation defect; #494 remains the residual advisory
+work and stays open.
+
+The actual locked installer documents and implements
+`ONNXRUNTIME_NODE_INSTALL=skip` for its optional, unbundled binary downloader.
+The frontend and both Chromium jobs now set it only on their `npm ci` install
+steps, identically in `ci.yml` and `verification.yml`. Packaged CPU/native
+binaries remain available and normal npm lifecycle scripts continue to run.
+The required lint, types, unit tests, dependency boundaries, builds and browser
+commands remain intact. Production installation defaults and every dependency
+resolution remain unchanged: all 901 original non-root records are identical,
+and the full candidate lock still hashes to
+`ec81954d2635fbceb9af001723a2c3b3948078cfda4567d7b3310729c09a8e40`.
+
+`test_cpu_dependency_install.py` observed the missing flag in both original
+workflows before the repair. Its positive and mutation controls require each of
+the six install steps, reject flag leakage, disabled lifecycle scripts and
+optional installation gates. The complete workflow suite passes 76 tests.
+The separate file avoids the PR592 manual-workflow test changes.
+
+A fresh owned Linux **x64** container used actual Node 22.23.3 and official image
+manifest `sha256:efd0ab5780c2d9ab1f0f869571a00d5edb17793bff4cce4a2792e3eb0ffc7562`.
+Runtime readback confirmed `linux`, `x64` and the explicit install flag. Fresh
+`npm ci --engine-strict --no-audit --no-fund` succeeded; ONNX 1.30.0 loaded its
+bundled native CPU provider and executed a tiny local Identity model, returning
+the exact input `[3, -4]`. No model or provider service was contacted. The full
+dependency-boundary command passed all 45 Node controls and nine pruned-runtime
+controls, with zero failures/skips. The UUID-owned container was removed.
+
+Coordinator receipts, exact command/generator/source hashes and raw output are
+in `BATCH_9_PR_REVIEW/PR593_CI_CPU_INSTALL/`. The first slim-image attempt passed
+installation and CPU inference but lacked Git for six recorder fixtures; its
+39/45 result is retained as a setup failure. The corrected fresh replay installed
+Git only inside its owned ephemeral container, matching the Ubuntu runner's
+prerequisite. An initial harness quoting error is preserved separately. Neither
+attempt substitutes for the final 54 passing controls. Shared installations,
+native author resources, production and GitHub were not modified by this lane.
+
+The coordinator still owns independent review, exact-head hosted verification,
+GitHub replies, issue disposition and merge. This local repair does not close
+#600 or establish production acceptance. Historical author receipts remain
+unchanged; repeat the actual hosted gates before accepting their new outcome.
