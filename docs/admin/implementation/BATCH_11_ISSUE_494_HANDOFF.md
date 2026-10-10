@@ -16,7 +16,7 @@ The primary was intended to remain read-only. One command lacking an explicit wo
 
 ## Repair and install contract
 
-`frontend/scripts/apply-tooling-repairs.cjs` applies ten reviewed source/helper/distribution/map repairs. `tooling-repairs.json` binds the complete 27-file final inventories of braces3.0.3 and sprintf-js1.0.3, including package metadata, entrypoints and unchanged files. All 901 existing lock records and 173 production records equal the accepted predecessor. The only lock metadata delta is the root install-script flag; no dependency range/version/override changed.
+`frontend/scripts/apply-tooling-repairs.cjs` applies ten reviewed source/helper/distribution/map repairs. `tooling-repairs.json` binds the complete 27-file final inventories of braces 3.0.3 and sprintf-js 1.0.3, including package metadata, entrypoints and unchanged files. All 901 existing node_modules lock records, the local ESLint record, and 173 production records equal the accepted predecessor. The only lock metadata delta is the root install-script flag; no dependency range/version/override changed.
 
 The installer checks every root/nested locked copy before mutation, refuses unknown bytes, changed exports, missing/unexpected files, incompatible versions, absolute/traversal paths and package/parent/file symlinks, including dangling links. Exclusive lock and temporary creation, atomic per-file rename, readback and final verification protect publication. Existing lock/temp collisions are preserved. The whole plan is validated first; a later filesystem failure can leave a partially repaired install, which must be reinstalled or completed and checked. This is not a hostile-filesystem sandbox or a transactional multi-file rollback.
 
