@@ -66,3 +66,8 @@ Shared skills were read only. No shared policy or skill was edited.
     their standalone configuration separately. Keep the original canonical
     config/workflow and assertions unchanged; retain pre-move inventories and
     prove both ordinary exclusion and actual owned journey after relocation.
+12. A directory move can escape one runner and enter another runner's broad
+    filename match. Check each configured runner's real discovery inventory,
+    make the smallest explicit partition change, and prove the exact removed
+    foreign test while preserving every intended test. Repeat the full unit
+    command and dedicated browser journey; keep failed hosted runs diagnostic.

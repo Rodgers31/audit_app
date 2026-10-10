@@ -105,3 +105,10 @@ bundle; later rechecks supplement them.
   bytes/assertions; canonical config/workflow remain unchanged. Standalone
   execution and canonical exclusion are separately measured in the external
   binder. Historical source and browser execution paths remain historical.
+- **Jest runner partition (#628):** hosted full CI later showed Jest's broad
+  `*.spec.ts` match discovering the relocated Playwright fixture. Add only the
+  explicit `browser-fixtures` directory to its existing test path ignores.
+  All original unit/browser assertions, canonical Playwright config and
+  workflows remain unchanged. Real Jest discovery before/after must remove
+  exactly that foreign fixture; full Jest and the standalone owned browser
+  journey are separately measured. The failed hosted run remains diagnostic.

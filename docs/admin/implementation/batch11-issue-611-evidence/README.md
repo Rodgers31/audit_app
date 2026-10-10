@@ -74,6 +74,8 @@ The owned fixture lives outside the canonical `e2e` testDir, so the original
 browser gate does not discover a test requiring this separately provisioned
 epoch-one API/database. Invoke the standalone config explicitly; the canonical
 configuration, workflow and original assertions are unchanged.
+Jest explicitly ignores `browser-fixtures`, matching its existing `e2e`
+partition, so its broad `*.spec.ts` discovery cannot load a Playwright fixture.
 The fixture performs explicit database cleanup/readback before Playwright exits;
 after an interrupted/failed attempt, inspect and clean only these owned resources.
 
