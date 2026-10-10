@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +39,7 @@ def current(tmp_path):
               "exit_code": 0, "complete_inventory": True, "timed_out": False, "source_drift": [], "source_files": sources,
               "testcases": [{"id": "owned::case", "state": "passed"}], "counts": dict.fromkeys(verifier.STATES, 0),
               "leftover_process_group": False, "ci_parity_environment": False,
+              "process_group_absent_after_cleanup": True,
               "owned_containers_before": [], "owned_containers_after": [],
               "source_before_sha256": digest, "source_after_sha256": digest,
               "started_at": "2026-10-10T20:00:00+00:00", "finished_at": "2026-10-10T20:00:01+00:00"}
@@ -62,7 +64,7 @@ def test_changed_source_outside_old_filter_is_rejected(current, source):
     (repo / source).write_text("changed source\n")
     assert verifier.current_execution(path, repo)["current_checkout_acceptance"] is False
 
-@pytest.mark.parametrize("mutation", ["missing_source", "empty_source", "failed", "error", "xpass", "leftover", "container", "digest", "head", "tree"])
+@pytest.mark.parametrize("mutation", ["missing_source", "empty_source", "failed", "error", "xpass", "leftover", "cleanup", "container", "digest", "head", "tree"])
 def test_well_typed_false_green_is_rejected(current, mutation):
     repo, path, record = current
     if mutation == "missing_source":
@@ -74,6 +76,8 @@ def test_well_typed_false_green_is_rejected(current, mutation):
         record["counts"]["passed"], record["counts"][mutation] = 0, 1
     elif mutation == "leftover":
         record["leftover_process_group"] = True
+    elif mutation == "cleanup":
+        record["process_group_absent_after_cleanup"] = False
     elif mutation == "container":
         record["owned_containers_after"] = ["owned-residue"]
     elif mutation == "digest":
@@ -135,3 +139,33 @@ def test_launcher_recomputes_collection_outcomes(current, mutation):
     else:
         with pytest.raises(verifier.Refused, match="Current launcher"):
             verifier.current_execution(path, repo)
+
+
+def test_actual_non_strict_xpass_is_not_passed(tmp_path):
+    test = tmp_path / "owned_xpass.py"
+    test.write_text("import pytest\n@pytest.mark.xfail(reason='owned outcome control', strict=False)\ndef test_unexpected():\n    assert True\n")
+    xml = tmp_path / "actual.xml"
+    result = subprocess.run([sys.executable, "-m", "pytest", str(test), "-q", "-rA",
+                             "--junitxml=" + str(xml), "-p", "no:cacheprovider", "-o", "addopts="],
+                            cwd=tmp_path, capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0 and "XPASS" in result.stdout
+    assert recorder.junit_cases(xml, result.stdout)[0]["state"] == "xpass"
+
+
+def test_xpass_without_case_identity_refuses(current):
+    _, path, _ = current
+    with pytest.raises(ValueError, match="XPASS summary lacks"):
+        recorder.junit_cases(path.parent / "junit.xml", "1 xpassed in 0.01s")
+
+
+def test_successful_parent_survivor_is_physically_cleaned(tmp_path):
+    marker = tmp_path / "late-marker"
+    worker = "import time; from pathlib import Path; time.sleep(30); Path(" + repr(str(marker)) + ").write_text('late')"
+    parent = "import subprocess,sys; subprocess.Popen([sys.executable,'-c'," + repr(worker) + "], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)"
+    process = subprocess.Popen([sys.executable, "-c", parent], start_new_session=True)
+    try:
+        assert process.wait(timeout=10) == 0 and recorder.group_present(process.pid)
+        assert recorder.cleanup_group(process.pid) is True
+        assert not recorder.group_present(process.pid) and not marker.exists()
+    finally:
+        recorder.cleanup_group(process.pid)
