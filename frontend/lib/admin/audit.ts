@@ -83,6 +83,15 @@ export function decodeAudit(value: unknown): AuditList {
 }
 export const DAYS = [1, 7, 30, 90, 0];
 export function visibilitySnapshot(value: unknown): string | null {
+  if (typeof value === 'string' && value.startsWith('v2:')) {
+    if (value.length > 4096) return null;
+    const match = /^v2:([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}):([0-9]{1,20}):([0-9]{1,20}):((?:[0-9]{1,20}(?:,[0-9]{1,20})*)?)$/.exec(value);
+    if (!match) return null;
+    const low = BigInt(match[2]), high = BigInt(match[3]);
+    const ids = match[4] ? match[4].split(',').map(id => BigInt(id)) : [];
+    if (low < BigInt(3) || low > high || high > BigInt('18446744073709551615') || ids.some((id, index) => id < low || id >= high || (index > 0 && id <= ids[index - 1]))) return null;
+    return value;
+  }
   if (typeof value !== 'string' || value.length > 4096 || !/^\d{1,10}:\d{1,10}:(?:\d{1,10}(?:,\d{1,10})*)?$/.test(value)) return null;
   const [lowText, highText, active] = value.split(':');
   const low = Number(lowText), high = Number(highText), ids = active ? active.split(',').map(Number) : [];
