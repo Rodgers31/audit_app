@@ -1,0 +1,81 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/behavior_review_acceptance_v1.py",
+  "generator_sha256": "f56d7aa4fbb072b8f8e61acfd848a3258e451a5ca3d6a0703c35c846eadfae19",
+  "generated_at": "2026-10-09T19:31:51.196305+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "command": [
+    "batch9-legacy-etl-evidence/behavior_review_acceptance_v1.py"
+  ],
+  "verdict": "PASSED",
+  "failures": 0,
+  "skips": 0,
+  "examined": [
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-final-minimum.json",
+      "receipt_sha256": "1669d23f461a4df265160f7e9e79e0b075713839feb3f9078ef67b5d337eb8a3",
+      "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+      "sqlalchemy": "2.0.23",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+        "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+        "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4",
+        "etl/scheduler.py": "3f6aabcb33aed050091ea6e1de4a9dee3e7135c55198c8940c8e6a0d87975dd7"
+      }
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-final-current.json",
+      "receipt_sha256": "548412daacd7189056f0618691b21700c9ebb49881e19fc3021c3705da88f5b7",
+      "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+      "sqlalchemy": "2.0.46",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+        "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+        "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4",
+        "etl/scheduler.py": "3f6aabcb33aed050091ea6e1de4a9dee3e7135c55198c8940c8e6a0d87975dd7"
+      }
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-cancellation-final-minimum.json",
+      "receipt_sha256": "3a57d5d8ba6f652f888bd2f26408ca87fa74b7a64f0f46bd6820a0fa1119e15c",
+      "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+      "sqlalchemy": "2.0.23",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043"
+      }
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-cancellation-current.json",
+      "receipt_sha256": "ae5c74511fb65fb46268b3d3044949d681bc9bd5f2ed96e5816d95725b750503",
+      "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+      "sqlalchemy": "2.0.46",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043"
+      }
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-dynamic-binds-final-minimum.json",
+      "receipt_sha256": "7d73f879429ca23c2361336defdc3dc0362e9e0248fe5a03550b9665b96789cf",
+      "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+      "sqlalchemy": "2.0.23",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043"
+      }
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/behavior-review-dynamic-binds-final-current.json",
+      "receipt_sha256": "f93b506f9a95a4db2c8d84cb01a44170db1177b90cdcaee1ff731ba50ea41e26",
+      "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+      "sqlalchemy": "2.0.46",
+      "source_sha256": {
+        "etl/writer_ownership.py": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+        "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043"
+      }
+    }
+  ],
+  "limitation": "Only owned SQLite independent behavioral controls; PostgreSQL process exclusion and deployed state are separate author/coordinator gates."
+}

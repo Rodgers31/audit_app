@@ -1,0 +1,19 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/spec_refusal_control.py",
+  "generator_sha256": "63086c88ddc474499ece7e4379200cfda6aab191ad1a3f84c2e4006593a9135b",
+  "generated_at": "2026-10-09T19:21:16.771962+00:00",
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "etl/kenya_pipeline.py": "29a639367931b197c895bfde9f5f994ceaae656cf6e354f659bc4ef7647051f2",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4",
+    "etl/scheduler.py": "4fb6d58b9bc3b175e356023d03e46e1e750f7912ebe9b8e1c06393dfbd7088c0"
+  },
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "command": [
+    "batch9-legacy-etl-evidence/spec_refusal_control.py",
+    "batch9-legacy-etl-evidence/spec-refusal-green.json"
+  ],
+  "verdict": "PASSED",
+  "monitor_success": false,
+  "refusal_propagated": true
+}

@@ -1,0 +1,6 @@
+Initial independent spec_session_control.py setup attempt, before importing seeding.exclusion and moving the root to precedence for etl:
+Command: env -i PATH=/usr/bin:/bin PYTHON_DOTENV_DISABLED=1 PYTHONDONTWRITEBYTECODE=1 DATABASE_URL=sqlite:// /Users/roger/Documents/projects/audit_app/venv/bin/python batch9-legacy-etl-evidence/spec_session_control.py batch9-legacy-etl-evidence/spec-session-red.json
+Output: ModuleNotFoundError: No module named 'etl.database_loader'
+Exit: 1. This is a harness namespace setup error and does not prove a defect.
+
+Second setup attempt used DATABASE_URL=sqlite://; backend.database rejected pool arguments for SQLite SingletonThreadPool (TypeError: Invalid argument(s) 'max_overflow','pool_timeout'). Exit 1, no runtime ownership control reached. The corrected control uses a file-form SQLite import URL (that engine is never connected) and a separate TemporaryDirectory owned database.

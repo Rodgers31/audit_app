@@ -1,0 +1,145 @@
+{
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current_verifier_controls.py",
+  "generator_sha256": "8c4feb12c71237e0ec6e4fc5742a2d4599f475fcc7926161b928334971356971",
+  "results": [
+    {
+      "optimized": false,
+      "mutation": "valid",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-valid/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 0,
+      "expected_message": "PASSED PR596 scoped review verification",
+      "output": "PASSED PR596 scoped review verification; no hosted or production acceptance: 25 historical receipts/assessments, 200 artifact hashes\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "source",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "candidate source changed",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 112, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'etl/worker.py')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "receipt-exit",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "generator",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "archived execution generator identity",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 122, in <module>\n    require(receipt.get('generator_sha256') == sources['batch9-legacy-etl-evidence/review_receipt_generator.py'], (label, 'archived execution generator identity'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'archived execution generator identity')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "output",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-output/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "raw output bytes",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 120, in <module>\n    require(digest(output_path) == check['output_sha256'], (label, 'raw output bytes'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'raw output bytes')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "source-drift",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "valid",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-valid/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 0,
+      "expected_message": "PASSED PR596 scoped review verification",
+      "output": "PASSED PR596 scoped review verification; no hosted or production acceptance: 25 historical receipts/assessments, 200 artifact hashes\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "source",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "candidate source changed",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 112, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'etl/worker.py')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "receipt-exit",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "generator",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "archived execution generator identity",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 122, in <module>\n    require(receipt.get('generator_sha256') == sources['batch9-legacy-etl-evidence/review_receipt_generator.py'], (label, 'archived execution generator identity'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'archived execution generator identity')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "output",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "raw output bytes",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 120, in <module>\n    require(digest(output_path) == check['output_sha256'], (label, 'raw output bytes'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'raw output bytes')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "source-drift",
+      "command": [
+        "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 37, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    }
+  ],
+  "verdict": "PASSED"
+}

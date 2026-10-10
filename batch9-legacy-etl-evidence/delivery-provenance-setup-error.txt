@@ -1,0 +1,7 @@
+Initial author verify_delivery.py run failed with KeyError('exit_code') because
+independent Spec controls emit their own verdict schema, rather than the author
+wrapper's exit_code schema. It wrote no receipt; no acceptance was claimed.
+The original verifier is preserved in verify_delivery_v1.py. The corrected
+verifier checks each producer's actual generator hash and verdict, and checks
+exit_code when the producer records it. It also corrects the Standards refusal
+receipt filename from hypothetical "refusal-storage" to actual "refusal".

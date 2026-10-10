@@ -1,0 +1,29 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/standards-readiness-probe.py",
+  "generator_sha256": "23f7036fe38dfd4b07fd8842e889f724b3d3645abff520c183e6eedc3b271eeb",
+  "head": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "/Users/roger/.codex/worktrees/af79/audit_app/batch9-legacy-etl-evidence/standards-readiness-probe.py"
+  ],
+  "python": "3.13.9",
+  "sqlalchemy": "2.0.46",
+  "source_sha256": {
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/writer_ownership.py": "c5f7d541364b208768086bd195720548ae55e712456f858f846ad2da4db78852",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6"
+  },
+  "database": "owned temporary SQLite; deleted after probe",
+  "events": [
+    {
+      "check_ready": "returned"
+    },
+    {
+      "next_legacy_writer": "committed"
+    }
+  ],
+  "audit_claim_history": 2,
+  "committed_inert_effects": 1,
+  "acceptance": "readiness refuses storage missing the protocol's unique active-domain index",
+  "verdict": "FAILED"
+}

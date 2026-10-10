@@ -1,0 +1,9 @@
+ERROR:etl.writer_ownership:Legacy writer interrupted; ownership retained across restart
+/Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+  warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/af79/audit_app/batch9-legacy-etl-evidence/behavior_review_controls_v3.py", line 181, in <module>
+    import etl.scheduler as scheduler_module
+  File "/Users/roger/.codex/worktrees/af79/audit_app/etl/scheduler.py", line 25, in <module>
+    import schedule
+ModuleNotFoundError: No module named 'schedule'

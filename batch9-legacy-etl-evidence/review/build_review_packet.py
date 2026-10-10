@@ -1,0 +1,88 @@
+"""Archive completed local PR596 runs without relabeling historical receipts."""
+import ast
+import gzip
+import hashlib
+import io
+import json
+import shutil
+import tarfile
+from pathlib import Path
+
+ROOT = Path('/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app')
+ARTIFACT = Path(__file__).resolve().parent
+DEST = ROOT / 'batch9-legacy-etl-evidence/review'
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def require(condition, detail):
+    if not condition:
+        raise RuntimeError(detail)
+
+tree = ast.parse((ROOT / 'batch9-legacy-etl-evidence/verify_delivery.py').read_text())
+paths = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'CURRENT_SOURCE_PATHS' for t in n.targets))
+sources = {p: digest(ROOT / p) for p in sorted(paths)}
+labels = {'current': 'bound-current', 'minimum': 'bound-minimum', 'launcher-current': 'bound-launcher-current', 'launcher-minimum': 'bound-launcher-minimum', 'complete-collection': 'bound-collection', 'runtime-current': 'bound-runtime-current', 'runtime-minimum': 'bound-runtime-minimum'}
+expected = {'current': '115 passed', 'minimum': '115 passed', 'launcher-current': 'Ran 11 tests', 'launcher-minimum': 'Ran 11 tests', 'complete-collection': '336 tests collected', 'runtime-current': 'SQLAlchemy=2.0.46', 'runtime-minimum': 'SQLAlchemy=2.0.23'}
+checks = {}
+for label, name in labels.items():
+    record = json.loads((ARTIFACT / (name + '.json')).read_text())
+    require(record['exit_code'] == 0 and record['verdict'] == 'PASSED' and record['source_stable'], (name, 'completed stable success required'))
+    require(record['generator_sha256'] == record['generator_after_sha256'] == sources['batch9-legacy-etl-evidence/review_receipt_generator.py'], (name, 'immutable actual generator required'))
+    require(record['target_commit'] == record['target_commit_after'], (name, 'commit changed'))
+    for path, value in sources.items():
+        require(record['source_before'][path] == record['source_after'][path] == value, (name, path))
+    require(record['output_sha256'] == digest(ARTIFACT / (name + '.log')), (name, 'raw output changed'))
+    require(expected[label] in (ARTIFACT / (name + '.log')).read_text(), (name, 'observed execution outcome missing'))
+DEST.mkdir(parents=True, exist_ok=True)
+for label, name in labels.items():
+    for suffix in ('.json', '.log'):
+        shutil.copyfile(ARTIFACT / (name + suffix), DEST / (label + suffix))
+    checks[label] = {'receipt': str((DEST / (label + '.json')).relative_to(ROOT)), 'receipt_sha256': digest(DEST / (label + '.json')), 'output': str((DEST / (label + '.log')).relative_to(ROOT)), 'output_sha256': digest(DEST / (label + '.log')), 'source_paths': sorted(paths), 'expected_output': expected[label]}
+summary = json.loads((ARTIFACT / 'bound-collection/summary.json').read_text())
+require(summary['verdict'] == 'PASSED' and summary['cohort_results'] == {'backend': 0, 'legacy': 0}, 'actual CLI collection required')
+seen = set()
+for cohort in ('backend', 'legacy'):
+    path = ARTIFACT / ('bound-collection/collection-' + cohort + '.json')
+    record = json.loads(path.read_text())
+    ids = record['nodeids']
+    require(len(ids) == len(set(ids)) == summary['collected_counts'][cohort], 'duplicate or missing collection IDs')
+    require(not seen & set(ids), 'collection cohort overlap')
+    seen.update(ids)
+    require(record['package_identities']['seeding'] == str(ROOT / 'backend/seeding/__init__.py'), 'wrong seeding package')
+    require(record['package_identities']['etl'] == str(ROOT / ('backend/etl/__init__.py' if cohort == 'backend' else 'etl/__init__.py')), 'wrong ETL package')
+    require(sum('test_batch9_legacy_etl_sessions.py' in node for node in ids) == (20 if cohort == 'legacy' else 0), 'session cases assigned to incorrect cohort')
+    shutil.copyfile(path, DEST / path.name)
+shutil.copyfile(ARTIFACT / 'bound-collection/summary.json', DEST / 'collection-summary.json')
+archives = []
+for runtime in ('current', 'minimum'):
+    temporary = ARTIFACT / ('pytest-bound-' + runtime)
+    resource = temporary / 'batch9-review-596-resources0/owned-postgres.json'
+    control = json.loads(resource.read_text())
+    require(control['generator_sha256'] == sources['backend/tests/batch9_legacy_fixture/batch9_legacy_target.py'], 'fixture source mismatch')
+    require(control['container_removed'] and control['network_removed'] and control['port_free_after_cleanup'] and not control['cleanup_errors'], 'owned resources not released')
+    require(control['migration_exit'] == 0 and control['migration_revision'] == control['expected_migration_revision'], 'actual migration did not reach current source head')
+    shutil.copyfile(resource, DEST / (runtime + '-owned-postgres.json'))
+    payload = io.BytesIO()
+    members = {}
+    with tarfile.open(fileobj=payload, mode='w') as archive:
+        for path in sorted(temporary.rglob('*')):
+            relative = path.relative_to(temporary)
+            if not path.is_file() or 'app' in relative.parts or '.git' in relative.parts:
+                continue
+            if path.suffix != '.txt' and path.name not in ('seed.jsonl', 'backfill_summary.json'):
+                continue
+            data = path.read_bytes()
+            info = tarfile.TarInfo(str(relative)); info.size = len(data); info.mtime = 0
+            archive.addfile(info, io.BytesIO(data))
+            members[str(relative)] = hashlib.sha256(data).hexdigest()
+    target = DEST / (runtime + '-process-logs.tar.gz')
+    with target.open('wb') as stream:
+        with gzip.GzipFile(fileobj=stream, mode='wb', mtime=0) as compressed:
+            compressed.write(payload.getvalue())
+    archives.append({'runtime': runtime, 'archive': str(target.relative_to(ROOT)), 'archive_sha256': digest(target), 'files': members})
+shutil.copyfile(Path(__file__), DEST / 'build_review_packet.py')
+(DEST / 'process-log-manifest.json').write_text(json.dumps({'generated_by': str(Path(__file__)), 'generator_sha256': digest(Path(__file__)), 'archives': archives}, indent=2) + '\n')
+manifest = {'scope': 'PR596 scoped review verification; no hosted or production acceptance', 'source_sha256': sources, 'checks': checks}
+(ROOT / 'batch9-legacy-etl-evidence/review-verification-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+print(json.dumps({'source_files': len(paths), 'checks': len(checks), 'collection_counts': summary['collected_counts'], 'process_log_files': {r['runtime']: len(r['files']) for r in archives}}, indent=2))

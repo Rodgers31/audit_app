@@ -1,0 +1,104 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_worker_child_failure_reaches_scheduler_without_launching_next_job ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b8de9e0>
+
+    def test_worker_child_failure_reaches_scheduler_without_launching_next_job(monkeypatch):
+        from etl import worker
+        from subprocess import CalledProcessError
+        monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+        monkeypatch.setenv("ETL_RUN_ON_START", "true")
+        monkeypatch.setattr(DatabaseLoader, "check_ownership_ready", lambda self: None)
+        monkeypatch.setattr(worker, "load_config", lambda path: {"countries": {"KE": {"sources": {"oag": {}, "treasury": {}}}}})
+        connection = SimpleNamespace(close=lambda: None)
+        monkeypatch.setattr(worker.psycopg2, "connect", lambda url: connection)
+        monkeypatch.setattr(worker, "pg_advisory_lock", lambda conn: True)
+        unlocked = []
+        monkeypatch.setattr(worker, "pg_advisory_unlock", lambda conn: unlocked.append(True))
+        calls = []
+        def failed(env):
+            calls.append(env["BACKFILL_SOURCES"])
+            raise CalledProcessError(1, ["inert-backfill"])
+        monkeypatch.setattr(worker, "run_once", failed)
+        monkeypatch.setattr(worker.time, "sleep", lambda delay: (_ for _ in ()).throw(RuntimeError("Scheduler continued after child failure")))
+        with pytest.raises(CalledProcessError):
+>           worker.schedule_worker()
+
+backend/tests/test_batch9_legacy_etl_sessions.py:166: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+etl/worker.py:124: in schedule_worker
+    time.sleep(10)
+backend/tests/test_batch9_legacy_etl_sessions.py:164: in <lambda>
+    monkeypatch.setattr(worker.time, "sleep", lambda delay: (_ for _ in ()).throw(RuntimeError("Scheduler continued after child failure")))
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <tuple_iterator object at 0x10c899c00>
+
+>   monkeypatch.setattr(worker.time, "sleep", lambda delay: (_ for _ in ()).throw(RuntimeError("Scheduler continued after child failure")))
+E   RuntimeError: Scheduler continued after child failure
+
+backend/tests/test_batch9_legacy_etl_sessions.py:164: RuntimeError
+----------------------------- Captured stdout call -----------------------------
+[worker] ETL_RUN_ON_START=true — all sources will scrape immediately
+[worker] running KE/oag at 2026-10-09T23:25:51.816245Z
+[worker] running KE/treasury at 2026-10-09T23:25:51.816245Z
+[worker] error: Scheduler continued after child failure
+=============================== warnings summary ===============================
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:65: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:103: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-1 (failed)
+  
+  Traceback (most recent call last):
+    File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 994, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/tests/test_batch9_legacy_etl_sessions.py", line 162, in failed
+      raise CalledProcessError(1, ["inert-backfill"])
+  subprocess.CalledProcessError: Command '['inert-backfill']' returned non-zero exit status 1.
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-2 (failed)
+  
+  Traceback (most recent call last):
+    File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+      self.run()
+      ~~~~~~~~^^
+    File "/opt/homebrew/Cellar/python@3.13/3.13.9_1/Frameworks/Python.framework/Versions/3.13/lib/python3.13/threading.py", line 994, in run
+      self._target(*self._args, **self._kwargs)
+      ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/tests/test_batch9_legacy_etl_sessions.py", line 162, in failed
+      raise CalledProcessError(1, ["inert-backfill"])
+  subprocess.CalledProcessError: Command '['inert-backfill']' returned non-zero exit status 1.
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+1 failed, 19 deselected, 6 warnings in 0.25s

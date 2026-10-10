@@ -1,0 +1,36 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/standards-session-probe.py",
+  "generator_sha256": "d94462bc7f1d8551539f114e4d15ba83742bd18263eb890ac3d95e60ca07f605",
+  "head": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "/Users/roger/.codex/worktrees/af79/audit_app/batch9-legacy-etl-evidence/standards-session-probe.py"
+  ],
+  "python": "3.13.9",
+  "sqlalchemy": "2.0.46",
+  "source_sha256": {
+    "etl/database_loader.py": "1528ab8ea1507de54b58d3ac0aea79c0b093a20e301e79fadf6848c2a098a043",
+    "etl/writer_ownership.py": "0be76c62c4274f91de8e006484e2121d5c95ea33fe4d12c3e28348f2094f592c",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6"
+  },
+  "database": "owned temporary SQLite; deleted after probe",
+  "events": [
+    {
+      "close": "first",
+      "outcome": "DomainOwnershipError",
+      "detail": "Legacy writer return uncertain; ownership retained"
+    },
+    {
+      "close": "second",
+      "outcome": "returned"
+    },
+    {
+      "next_run": "DomainOwnershipError",
+      "detail": "Domain ownership unavailable; reconcile retained execution"
+    }
+  ],
+  "retained_claims": 13,
+  "committed_inert_effects": 2,
+  "acceptance": "normal manual closes permit the next run",
+  "verdict": "FAILED"
+}

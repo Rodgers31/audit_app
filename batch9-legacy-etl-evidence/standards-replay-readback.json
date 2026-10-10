@@ -1,0 +1,34 @@
+{
+  "generated_by": "batch9-legacy-etl-evidence/standards-verify-receipts.py",
+  "generator_sha256": "afa765eeebb948cd21bcc06cfa2f3ac47519b05efe7823285d958f47fb77805e",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "/Users/roger/.codex/worktrees/af79/audit_app/batch9-legacy-etl-evidence/standards-verify-receipts.py"
+  ],
+  "python": "3.13.9",
+  "replay_generator_sha256": "519b548f3760f324c3a44fa2616a2e56ff4819d6fa9f5909a94e0d14868011bd",
+  "writer_source_sha256": "c66e04d352a5782db434bbf508116d144a18af9d3afc93860039e9e194539054",
+  "results": [
+    {
+      "receipt": "standards-session-final-independent.json",
+      "python": "3.13.9",
+      "verified": true
+    },
+    {
+      "receipt": "standards-session-final-minimum-independent.json",
+      "python": "3.12.14",
+      "verified": true
+    },
+    {
+      "receipt": "standards-readiness-final-independent.json",
+      "python": "3.13.9",
+      "verified": true
+    },
+    {
+      "receipt": "standards-readiness-final-minimum-independent.json",
+      "python": "3.12.14",
+      "verified": true
+    }
+  ],
+  "verdict": "PASSED"
+}

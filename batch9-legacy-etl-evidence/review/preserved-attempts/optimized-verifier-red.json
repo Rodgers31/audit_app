@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/Users/roger/.codex/worktrees/af79/audit_app/.local-dev/current/bin/python",
+    "-O",
+    "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/optimized-negative-baseline/batch9-legacy-etl-evidence/verify_delivery.py"
+  ],
+  "exit_code": 0,
+  "output": "PASSED: 25 final receipts/assessments, 171 artifact hashes, unchanged red/green measurements\n",
+  "mutant": "process-final-current verdict FAILED"
+}
