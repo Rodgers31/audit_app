@@ -1,0 +1,46 @@
+{
+  "status": "HISTORICAL_AND_CONTROLLED_ATTEMPTS_ONLY",
+  "entries": [
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/final125-current.json",
+      "sha256": "03d3b9cb55a485ede237553b4b9e99eb600fbd4cad5f0a30087aff0e9bff63a5",
+      "scope": "superseded setup/ownership-observation attempt; not final acceptance"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/final125-current.log",
+      "sha256": "97b0bb4f9d959d58573f96186bf656ccb3326e923fc72181dfb4d7ec2fc8639a",
+      "scope": "superseded setup/ownership-observation attempt; not final acceptance"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch-transfer-controlled-red.json",
+      "sha256": "1b1c57f51938d716e8fa3592a53b0807ec79feda3c761ec5ac903e1364836ad2",
+      "scope": "controlled historical reproduction"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch-transfer-controlled-red.log",
+      "sha256": "e4cbb14b797ec7b54cbdd02eed51c288cb1f34be7ff943ae93249847133d5617",
+      "scope": "controlled historical reproduction"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch-transfer-red-source.json",
+      "sha256": "7b624464969e6115001fb791775c5d3cfc137f5f42c52b6ee18c1830fdc743c3",
+      "scope": "controlled historical reproduction"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch_transfer_red.py.txt",
+      "sha256": "45db1e0ca9129a1a283a552254b442028704cb379421be9f2f6900b407877561",
+      "scope": "controlled historical reproduction"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch-transfer-controlled-green.json",
+      "sha256": "fd53325c6ca9759af537f03516f725408196023017ac93067aa2df86811de950",
+      "scope": "controlled historical reproduction"
+    },
+    {
+      "path": "batch9-legacy-etl-evidence/review/final125/preserved-attempts/dispatch-transfer-controlled-green.log",
+      "sha256": "a1ecedd8eb04bab3c3576ff86600efcecf80b81fbe761c7cbd4f53c3934fd633",
+      "scope": "controlled historical reproduction"
+    }
+  ],
+  "classification": "Old global zero-claim observation raced a legitimate successor acquisition; the original 13 claims were released. Final controls pin exact row identities and assert one successor effect/claim before normal release, then two effects/zero claims."
+}

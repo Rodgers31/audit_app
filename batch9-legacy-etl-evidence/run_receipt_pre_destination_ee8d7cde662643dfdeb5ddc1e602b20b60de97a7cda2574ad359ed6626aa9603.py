@@ -4,21 +4,13 @@ import json
 import os
 from pathlib import Path
 import platform
-import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 
 root = Path(__file__).resolve().parents[1]
-name = sys.argv[1]
-if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*\.json", name):
-    raise ValueError("Use a fresh JSON receipt filename inside the evidence directory")
-out = root / "batch9-legacy-etl-evidence" / name
-if out.exists() or out.is_symlink():
-    raise ValueError("Receipt destinations are append-only and cannot be symlinks")
+out = root / "batch9-legacy-etl-evidence" / sys.argv[1]
 command = sys.argv[2:]
-if not command:
-    raise ValueError("An explicit verification command is required")
 generator_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 def source_snapshot():
     files = subprocess.check_output(["git", "ls-files", "--cached", "--others", "--exclude-standard"], cwd=root, text=True).splitlines()
@@ -43,8 +35,7 @@ for key in ("DATABASE_URL", "BATCH9_LEGACY_DATABASE_URL"):
     value = os.environ.get(key)
     if value:
         receipt["output"] = receipt["output"].replace(value, "[redacted database URL]")
-with out.open("x") as stream:
-    stream.write(json.dumps(receipt, indent=2) + "\n")
+out.write_text(json.dumps(receipt, indent=2) + "\n")
 check = json.loads(out.read_text())
 if check != receipt:
     raise ValueError("Receipt readback failed")

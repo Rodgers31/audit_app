@@ -28,29 +28,53 @@ migration/activation or operator reconciliation was performed.
 
 ## Executed local verification
 
-The fresh source-bound packet is
-`batch9-legacy-etl-evidence/review-verification-manifest.json`. It binds 25 exact
-candidate files, seven executed checks and the archived executed recorder.
-`review/{current,minimum}.json` and their raw `.log` files each record **115 passed,
-zero failures/skips/xfails**: 61 actual PostgreSQL process controls, 20 portable
-legacy session controls, 31 receipt/owned-target controls, and three existing
-native SQLite regressions. The cases and fixture bytes are identical between
-Python 3.13.9 / SQLAlchemy 2.0.46 and Python 3.12.14 / SQLAlchemy 2.0.23.
+The current source-bound packet is
+`batch9-legacy-etl-evidence/review-verification-manifest.json`. It binds 28 exact
+candidate files, including backend/legacy runtime declarations, seven executed
+checks and the archived executed recorder. These seven runs began and ended at
+clean source commit `7d805194127dc6a12fac69cedd26c73151c6df35`; the final evidence
+commit adds only packet/handoff data and retains all 28 measured source bytes.
+`review/final125/{current,minimum}.json` and unchanged raw `.log` files each record
+**125 passed, zero failures/skips/xfails**: 61 actual PostgreSQL process controls,
+20 portable legacy session controls, 41 receipt/owned-target controls including
+the ten destination regressions, and three existing native SQLite regressions.
+The cases and fixture bytes are identical between Python 3.13.9 / SQLAlchemy
+2.0.54 and Python 3.12.14 / SQLAlchemy 2.0.23. Both import declared schedule 1.2.0.
+
+The missing development scheduler prerequisite was proved by a fresh empty
+owned virtual environment, an actual isolated PyPI installation of the exact
+backend/legacy declaration, and import readback from that owned prefix. This is
+a fresh scheduler installation, not a fresh installation of all requirements:
+the current runtime subsequently inherits other dependencies from a read-only
+CI environment through an owned `.pth`; minimum uses the owned cloned runtime.
+`review/final125/fresh-schedule-prerequisite.json` records the declaration and
+installer hashes; actual installer bytes and raw pip logs are archived beside it.
 
 Both launcher suites pass all 11 controls. The actual full CLI collection passes
-14,475 backend cases and 336 legacy cases; all 14,811 node IDs are unique and
+14,509 backend cases and 336 legacy cases; all 14,845 node IDs are unique and
 cohorts are disjoint. Backend uses `backend/etl`; legacy uses root `etl`; both use
 real `backend/seeding`. All 20 new session controls belong only to legacy.
-`review/collection-{backend,legacy}.json` preserve complete IDs and identities.
-Collection is not a full-suite execution claim.
+`review/final125/collection-{backend,legacy}.json` preserve complete IDs and
+identities. Collection is not a full-suite execution claim.
 
-The active delivery verifier passes normally and under `-O`. Twelve additional
-actual candidate-packet controls cover valid readbacks and corrupted source,
-failed receipt exits, changed generator identity, modified raw output and source
-drift under both modes. Invalid copies emit no PASSED provenance. Critical CI
-Python lint E9,F63,F7,F82 and whitespace checks pass. Exact raw logs retain
-their emitted trailing spaces through file-specific whitespace attributes. Raw process logs for both
-runtimes are archived with hashes in `review/process-log-manifest.json`.
+The active delivery verifier passes normally and under `-O`. Twelve actual
+candidate-packet controls cover valid readbacks and corrupted source, failed
+receipt exits, changed generator identity, modified raw output and source drift
+under both modes. Invalid copies emit no PASSED provenance.
+`review/final125/current-verifier-controls.json` binds these controls to the same
+28 sources; the exact external executed generator is archived as plain text.
+Critical CI Python lint E9,F63,F7,F82 and whitespace checks pass. Exact raw logs
+retain emitted trailing spaces through file-specific whitespace attributes.
+Raw process logs for both runtimes have 167 members each, archived with hashes in
+`review/final125/process-log-manifest.json`.
+
+The original seven 115-case checks retain their original bytes and identities.
+Their old manifest is preserved by its SHA-256
+`f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df`
+in `review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/`.
+Its machine-readable index marks the packet HISTORICAL_ONLY, and its archived
+25 exact source snapshots were read from actual original Git objects. No old
+115-case execution is relabeled as 125 or as the current source.
 
 Historical author receipts, failures and original `delivery-provenance.json`
 were not relabeled as these edited sources. `historical-source.tar.gz` contains
@@ -71,7 +95,9 @@ The fixture never pulls an unapproved image or skips by default. It needs no
 author container, author URL or PR592 reconciliation fixture.
 
 Default target is inert database `batch9-review-596` on loopback port 55506;
-`BATCH9_LEGACY_FIXTURE_PORT=55507` permits a separate owned minimum-runtime run.
+`BATCH9_LEGACY_FIXTURE_PORT=55507` permits an independent isolated replay.
+The two final current/minimum runs used the default 55506 sequentially, leaving
+55507 available for independent review.
 Only those two ports are accepted. URL queries, alternate host/database/identity,
 ambient `PG*` redirects and unknown port selectors refuse before connections.
 Child environments forward only the exact selected fixture port. The fixture
@@ -80,7 +106,7 @@ fixed revision, so additive PR592 migration e583b9c9a001 is supported. This lane
 actually replayed e572b8c9a001; the combined-source PR592 replay is the
 coordinator's remaining integration check.
 
-`review/{current,minimum}-owned-postgres.json` confirm PostgreSQL 17.11, successful
+`review/final125/{current,minimum}-owned-postgres.json` confirm PostgreSQL 17.11, successful
 fresh migrations, exact image/container identity and removal of each owned
 container/network with its port free. TCP TIME_WAIT is distinguished from live
 listeners during the bounded cleanup probe. Every process group is stopped in
@@ -99,8 +125,15 @@ errors. Initial synthetic launcher count expectations were corrected to include
 the new file. A first fresh run passed every case but failed its cleanup check on
 TCP TIME_WAIT. The deliberately interrupted obsolete-head run is preserved.
 Earlier successes with source/generator changes or incomplete review bindings
-are superseded; only the seven fully bound checks in the final manifest certify
-this candidate. Six pre-fix snapshots were separately compared to their exact
+are superseded; only the seven fully bound final125 checks in the active manifest
+certify this candidate. The first 125-case attempt caught an assertion race: a
+legitimate dispatch successor could acquire after all 13 original claims were
+released, so observing global zero claims depended on scheduling. The controlled
+red pins those 13 released row identities and the one active dispatch successor;
+the green uses the existing process barrier to assert one effect/one successor
+claim before normal completion, then two effects/zero claims. No product defect
+or interrupted-claim policy change was inferred. Exact red, green and repro
+source bytes remain in `review/final125/preserved-attempts/`. Six pre-fix snapshots were separately compared to their exact
 actual Git objects and archived with hashes.
 
 All fixed findings above stay within #581. The native missing-index issue found
@@ -114,3 +147,22 @@ The coordinator should independently review the finished commit, replay combined
 migration/CI integration, reply to and resolve the three threads with their exact
 regression evidence, and push/merge only after its accepted checks. This lane did
 not push, reply, resolve or merge.
+
+## Independent recorder destination correction
+
+Independent Spec review reproduced the public recorder overwriting its own
+generator during publication while reporting a successful stable run. Ten
+actual normal/optimized subprocess controls reproduced unsafe generator,
+traversal, absolute, symlink and existing-receipt destinations. The recorder
+now requires a fresh simple JSON filename in its evidence directory before
+launching the child, and publishes with exclusive creation. All 41 receipt
+integrity/target controls pass on the coordinator runtime. The prior recorder
+bytes are preserved at `run_receipt_pre_destination_ee8d7cde662643dfdeb5ddc1e602b20b60de97a7cda2574ad359ed6626aa9603.py`.
+Earlier seven-check candidate evidence retains its original hashes and requires
+a fresh candidate replay; author and previous coordinator receipts are historical.
+The mandatory legacy scheduler now has the matching development-only
+`schedule==1.2.0` prerequisite. The final 125-case current/minimum positive worker
+controls actually execute this import and child work; negative controls cannot
+pass solely because that import is missing. Independent Spec and Standards
+reviews accepted the frozen substantive source; combined migration and hosted
+acceptance remain with the coordinator.

@@ -8,3 +8,11 @@ review/preserved-attempts/fresh-current.log whitespace=-blank-at-eol
 review/preserved-attempts/inline-and-sqlite-red.log whitespace=-blank-at-eol
 review/preserved-attempts/process-current-corrected.log whitespace=-blank-at-eol
 review/preserved-attempts/worker-red-corrected.log whitespace=-blank-at-eol
+
+# Preserve SHA-bound original packet copies without altering raw diagnostic bytes.
+review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/original-executions/complete-collection.log whitespace=-blank-at-eol
+review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/original-executions/minimum.log whitespace=-blank-at-eol
+
+# Preserve exact final125 raw execution diagnostics.
+review/final125/complete-collection.log whitespace=-blank-at-eol
+review/final125/minimum.log whitespace=-blank-at-eol

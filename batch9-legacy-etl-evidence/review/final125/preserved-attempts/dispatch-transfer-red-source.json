@@ -1,0 +1,6 @@
+{
+  "scope": "Controlled reproduction of existing test assertion; actual production sources unchanged",
+  "original_sha256": "5c1c600e67908256ea9e3418b5bd5fd395e5b9732f38323099b678ec45e08440",
+  "repro_sha256": "45db1e0ca9129a1a283a552254b442028704cb379421be9f2f6900b407877561",
+  "root": "/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app"
+}

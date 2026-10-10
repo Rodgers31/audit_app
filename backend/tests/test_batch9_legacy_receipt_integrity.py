@@ -89,6 +89,37 @@ def test_receipt_runner_does_not_certify_source_changes_during_execution(tmp_pat
         assert receipt["source_stable"] is True
 
 
+@pytest.mark.parametrize("optimized", [False, True])
+@pytest.mark.parametrize("destination", ["generator", "traversal", "absolute", "symlink", "existing"])
+def test_receipt_destination_refuses_before_child_or_publication(tmp_path, optimized, destination):
+    root = tmp_path / "app"
+    evidence = root / "batch9-legacy-etl-evidence"
+    evidence.mkdir(parents=True)
+    recorder = evidence / "run_receipt.py"
+    shutil.copyfile(EVIDENCE / "run_receipt.py", recorder)
+    (root / "etl").mkdir()
+    source = root / "etl/inert.py"
+    source.write_text("# owned original source\n")
+    existing = evidence / "original.json"
+    existing.write_text('{"historical":true}\n')
+    link = evidence / "linked.json"
+    link.symlink_to(source)
+    names = {"generator": "run_receipt.py", "traversal": "../etl/inert.py",
+             "absolute": str(source), "symlink": "linked.json", "existing": "original.json"}
+    for args in (["init", "-q"], ["add", "."],
+                 ["-c", "user.name=Owned receipt fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "fixture"]):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+    before = {p: p.read_bytes() for p in (recorder, source, existing)}
+    result = subprocess.run([sys.executable, *(["-O"] if optimized else []), str(recorder),
+                             names[destination], sys.executable, "-c",
+                             "from pathlib import Path; Path('child-ran').write_text('ran')"],
+                            cwd=root, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode != 0, result.stdout + result.stderr
+    assert not (root / "child-ran").exists()
+    assert all(p.read_bytes() == contents for p, contents in before.items())
+
+
 @pytest.mark.parametrize("override", ["valid", "hostaddr-query", "service-query", "remote-host", "other-database", "libpq-hostaddr", "unowned-port-selector"])
 @pytest.mark.parametrize("optimized", [False, True])
 def test_destructive_process_target_refuses_redirects_before_any_connection(tmp_path, override, optimized):

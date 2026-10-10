@@ -18,6 +18,7 @@ def read(name):
 HISTORICAL_ARCHIVE_SHA256 = '64fbeba3b51ffac41257609e2513e6537d3db457806de460ee30625078420ef6'
 AUTHOR_COMMIT = 'b4128f7012951d79e0fc4c58305a60a3baafd7aa'
 CURRENT_SOURCE_PATHS = {
+    'backend/requirements.txt', 'backend/requirements-dev.txt', 'etl/requirements.txt',
     'etl/database_loader.py', 'etl/writer_ownership.py', 'etl/worker.py', 'etl/backfill.py',
     'etl/kenya_pipeline.py', 'etl/monitored_runner.py', 'etl/scheduler.py',
     'backend/tests/test_batch9_legacy_etl_ownership.py', 'backend/tests/test_batch9_legacy_etl_sessions.py',

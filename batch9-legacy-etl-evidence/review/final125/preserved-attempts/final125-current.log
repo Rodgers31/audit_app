@@ -1,0 +1,68 @@
+.F...................................................................... [ 57%]
+.....................................................                    [100%]
+=================================== FAILURES ===================================
+_____ test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch] ______
+
+db = (Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), sessionmaker(class_='Session',...postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596), autoflush=True, expire_on_commit=True))
+tmp_path = PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/pytest-final125-current/test_legacy_first_blocks_nativ1')
+native_kind = 'dispatch'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10c2f5f30>
+
+    @pytest.mark.parametrize("native_kind", ["native", "dispatch"])
+    def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, native_kind, monkeypatch):
+        engine, factory = db
+        monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
+        mode(engine, "legacy", "before")
+        legacy = start(tmp_path, "document")
+        other = None
+        try:
+            entered(engine, "legacy")
+            other = start(tmp_path, native_kind)
+            if native_kind == "native":
+                assert other.wait(timeout=15) == 1, "Conflicting native CLI ran while legacy owned writes"
+            else:
+                identity = queue(factory)
+                time.sleep(.6)
+                assert scalar(engine, "SELECT status FROM etl_dispatch_commands WHERE id=:i", i=identity) == "queued"
+            assert effects(engine) == 0
+            mode(engine, "legacy", "normal")
+            assert legacy.wait(timeout=20) == 0
+>           assert effects(engine) == 1 and retained(engine) == 0
+E           assert (1 == 1 and 1 == 0)
+E            +  where 1 = effects(Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596))
+E            +  and   1 = retained(Engine(postgresql+psycopg2://batch9_review_596:***@127.0.0.1:55506/batch9-review-596))
+
+backend/tests/test_batch9_legacy_etl_ownership.py:139: AssertionError
+=============================== warnings summary ===============================
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+tests/test_batch9_legacy_etl_ownership.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[native]
+  /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/alembic/config.py:604: DeprecationWarning: No path_separator found in configuration; falling back to legacy splitting on spaces, commas, and colons for prepend_sys_path.  Consider adding path_separator=os to Alembic config.
+    util.warn_deprecated(
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:65: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_worker_child_failure_reaches_scheduler_without_launching_next_job
+  /Users/roger/.codex/worktrees/batch9-pr596-review/audit_app/etl/worker.py:103: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_batch9_legacy_etl_sessions.py::test_unavailable_writer_refuses_pipeline_and_monitor
+  /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/fuzzywuzzy/fuzz.py:11: UserWarning: Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning
+    warnings.warn('Using slow pure-python SequenceMatcher. Install python-Levenshtein to remove this warning')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_etl_ownership.py::test_legacy_first_blocks_native_or_dispatch_then_next_run[dispatch]
+1 failed, 124 passed, 7 warnings in 155.39s (0:02:35)
