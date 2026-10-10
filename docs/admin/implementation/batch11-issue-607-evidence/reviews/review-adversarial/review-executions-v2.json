@@ -1,0 +1,67 @@
+{
+  "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "executions": [
+    {
+      "producer": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_hostile_v3.py",
+      "producer_sha256": "bf88c8cbbc6a4a21aac570043192c0bfb93668f67d3865fdd7e4c5952f5c3462",
+      "command": [
+        "python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_hostile_v3.py"
+      ],
+      "shell_stdout_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/hostile-v3.stdout.log",
+      "shell_stderr_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/hostile-v3.stderr.log",
+      "observed_process_exit": 0,
+      "stdout_sha256": "c191721e8d0a595e8210b3cf2d4ded9820abff7f8b7eb9b850b96f70534abdd3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v3-20261010T095920/results.json",
+      "results_sha256": "85e9174da8faaaecb1ef1e604319de9b2ca132e44282fd30ebc9393d16533234",
+      "verifier_sha256": "34fb310503e51b0051e902dc929fd76b67c5714e31a92b0a693df0b7dbf65710",
+      "replay_sha256": null,
+      "controlled_git_dependency": true,
+      "controlled_docker_and_child_dependencies": false,
+      "source_inventory_timing": "Post-execution tracked-source readback in hostile runs; verifier and replay snapshots copied and hashed before import."
+    },
+    {
+      "producer": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_guards_v2.py",
+      "producer_sha256": "47683084ef92d095d9d51f7b335d0921d8f51fa39e8917e862d1a2b585160e19",
+      "command": [
+        "python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_guards_v2.py"
+      ],
+      "shell_stdout_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/guards-v2.stdout.log",
+      "shell_stderr_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/guards-v2.stderr.log",
+      "observed_process_exit": 0,
+      "stdout_sha256": "10c06387d407e3753b1ab694277fe2ea296a2fca1267b5012746cbf7149964d3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/guards-v2-20261010T095921/results.json",
+      "results_sha256": "32dcb39cc1f358a4504ef79b1ab2943ff7c7f687fbe381befa9bbfe81d4558b8",
+      "verifier_sha256": "34fb310503e51b0051e902dc929fd76b67c5714e31a92b0a693df0b7dbf65710",
+      "replay_sha256": "46175fd698f5d55bb74eefbbbe0d167bb1c7c1f371dcf0df49c7d6f9a85bbe82",
+      "controlled_git_dependency": false,
+      "controlled_docker_and_child_dependencies": true,
+      "source_inventory_timing": "Post-execution tracked-source readback in hostile runs; verifier and replay snapshots copied and hashed before import."
+    },
+    {
+      "producer": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_substitution_v1.py",
+      "producer_sha256": "c055ccb8fa198764ad6d7dd786313155a70d1aa9027d7d4ddb741f62828f98d8",
+      "command": [
+        "python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_substitution_v1.py"
+      ],
+      "shell_stdout_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/substitution-v1.stdout.log",
+      "shell_stderr_redirect": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/substitution-v1.stderr.log",
+      "observed_process_exit": 0,
+      "stdout_sha256": "6fdf1089a1efd6a5d02674cf8fab545d43ca538cf3926b704c5a7a3579ad6bce",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "results": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/substitution-v1-20261010T100106/results.json",
+      "results_sha256": "2b9f79f3fe2fb7efd70becb302653489db715f2a977856b63b9e588636b78dde",
+      "verifier_sha256": "34fb310503e51b0051e902dc929fd76b67c5714e31a92b0a693df0b7dbf65710",
+      "replay_sha256": null,
+      "controlled_git_dependency": true,
+      "controlled_docker_and_child_dependencies": false,
+      "source_inventory_timing": "Post-execution tracked-source readback in hostile runs; verifier and replay snapshots copied and hashed before import."
+    }
+  ],
+  "real_browser_docker_database_calls": false,
+  "final_published_packet_checked": false
+}

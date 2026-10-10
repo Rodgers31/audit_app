@@ -1,0 +1,22 @@
+{
+  "name": "jest",
+  "command": [
+    "docker",
+    "exec",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "CI=true",
+    "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+    "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+    "node",
+    "node_modules/jest/bin/jest.js",
+    "--runInBand",
+    "--json",
+    "--outputFile=/evidence/author-checks-attempt2/jest-report.json"
+  ],
+  "child_exit": 0,
+  "log_sha256": "a999a88960d1c119b710a52c4892c42158c713daf4d29a73de96491914b8a24d"
+}

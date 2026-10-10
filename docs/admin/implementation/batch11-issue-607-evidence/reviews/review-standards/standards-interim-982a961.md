@@ -1,0 +1,11 @@
+# Standards review — interim at 982a961
+
+Reviewed `git diff bcb5ff99854de595bbe3f7d60cc8796b7ada5a20...HEAD`, comprising `09fd3c1` and `982a961`. HEAD: `982a961a58ed3647ead6bc7900250efa7d882a94`; tree: `5ebb363b208efd159d4b4673a760f111cdd1d629`.
+
+Documented-standard findings: **0**. `frontend/README.md:240–246` requires existing style, TypeScript, responsive design and JSDoc for complex functions. `CountiesPageClient.tsx` preserves structure/styles, types its query helper and documents synchronous publication. Both new browser-test files follow existing Playwright usage. `countiesUrlStateSsr.test.tsx` observes actual native history calls through a pass-through spy; only harness-injected external navigations bypass that observer. Existing row, SSR and hydration assertions remain, and positive URL/no-router assertions are strengthened. `CONTEXT.md` and both ADRs govern data-publication concepts outside these hunks. Tooling-enforced formatting/types are excluded from this axis.
+
+Fowler judgement-call findings: **0**. All twelve required baseline smells were considered. The shared helper retains pathname/fragment while replacing query state, removing duplicated navigation code without introducing an unused abstraction. The unit-test observer and harness-input function have distinct responsibilities and clear names.
+
+Independent execution: 30 actual-report/schema controls passed against frozen verifier `f15582d811f4374a459555e67f03abf0044b818eb02e6f5a92a85e2c3947dbc6`, with no source/checker drift. These cover actual archived focused/original/controlled-red reports and malformed case identities, retries/errors, primitive types, counters, durations, paths and JSON. Original smart-back launch bytes remain unchanged. The new integrity-only branch was inspected; it records failed full-cohort acceptance explicitly and default mode rejects it.
+
+**Limits:** the current public cohort has two unexpected original-case failures; prior full-suite passes use older unit-test bytes and do not establish current acceptance. #601 remains unresolved. Fresh independent browser execution and the final published full-diff/corpus verification remain pending. No overall, hosted or production all-clear is claimed.

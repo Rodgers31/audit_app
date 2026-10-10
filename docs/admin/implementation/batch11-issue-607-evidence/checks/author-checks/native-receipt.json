@@ -1,0 +1,20 @@
+{
+  "name": "native",
+  "command": [
+    "docker",
+    "exec",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "CI=true",
+    "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+    "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+    "npm",
+    "run",
+    "verify:native"
+  ],
+  "child_exit": 0,
+  "log_sha256": "ed195c93a1a092277c8c0c66ae8d7ca5241fcfd75a06293aa4cf1b895a29cc63"
+}

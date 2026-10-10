@@ -1,0 +1,52 @@
+{
+  "head": "09fd3c150032e8595678ddf2046948651a260b96",
+  "base": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+  "completed": 1791645607.5053608,
+  "paths": {
+    "frontend/e2e/smart-back.spec.ts": {
+      "sha256": "0a39e8b46d52cbc8bb932048c847f77488cb4e60fc1c32fb21b07c58c58160ae",
+      "equals_pinned": true
+    },
+    "frontend/playwright.ci-cohorts.config.ts": {
+      "sha256": "d83f9fca831a9a8ed7349b7df8e8e16b516df50d8c4e9a89a8f1a70fcec40ec7",
+      "equals_pinned": true
+    },
+    "frontend/scripts/ci-browser-cohorts.mjs": {
+      "sha256": "5e86e99225a3b8691b608b4cff4f57b00a26bb7c66672782e633608ad76f54ab",
+      "equals_pinned": true
+    },
+    "frontend/lib/navigation/NavTrailTracker.tsx": {
+      "sha256": "f05d190dc75efd6b687fcb4f13877c5ec3ff18a5bfcc8197e5f1fb8e1af331c7",
+      "equals_pinned": true
+    },
+    "frontend/lib/navigation/SmartBackLink.tsx": {
+      "sha256": "7946f748f0e19020ba24e2365a00d1167e702ce039f0abbfddadd0ed01ea1ff2",
+      "equals_pinned": true
+    },
+    "frontend/lib/navigation/trail.ts": {
+      "sha256": "9adb17c7187a1dbf07782ae7d9a74279dafb479c72655dd86891ecf3a8e72ce1",
+      "equals_pinned": true
+    },
+    "frontend/app/globals.css": {
+      "sha256": "c7c7819fc9d812767ec257ffed22c55522573b706a6b75d997c8d475adb99de0",
+      "equals_pinned": true
+    },
+    "frontend/app/counties/CountyExperience.module.css": {
+      "sha256": "6c5683e38e9a4b36efaf29f79891c8ee1d1cd8b2bcd052addcf868377b451455",
+      "equals_pinned": true
+    },
+    "frontend/package.json": {
+      "sha256": "e868ca4fc83415733f4760e8264d2e382fb297e8f43461b7467fdb8c42668380",
+      "equals_pinned": true
+    },
+    "frontend/package-lock.json": {
+      "sha256": "ec81954d2635fbceb9af001723a2c3b3948078cfda4567d7b3310729c09a8e40",
+      "equals_pinned": true
+    }
+  },
+  "exact_changed_paths": [
+    "frontend/app/counties/CountiesPageClient.tsx",
+    "frontend/e2e/county-pagination-boundaries.spec.ts",
+    "frontend/e2e/county-pagination-contract.spec.ts"
+  ]
+}

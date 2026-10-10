@@ -1,0 +1,21 @@
+{
+  "command": [
+    "/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/guard_controls.py",
+    "--checkout",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+    "--output",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/guard-controls.json"
+  ],
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "observed_child_exit": 0,
+  "generator_sha256": "dfd367e1a50be3353c0ef01b47f7d246ef097fd1bf4e0b16a1a9961ed16e2a20",
+  "log_sha256": "2c2fceee04c31244e4e718ba9ac797d4caa5717448f8d6a5b4a8a37d6984b2b2",
+  "receipt_sha256": "a80abb46309db3d1a62601557bbb96f69219606d1d96aba2eb95e30b8811653d",
+  "head": "09fd3c150032e8595678ddf2046948651a260b96",
+  "tree": "f3a254d87655cbba42365684f1c611cae5b1312e",
+  "source_changed": [],
+  "scope": "Independent Standards actual-report and malformed-input controls; no browser, full-packet, hosted or production acceptance"
+}
