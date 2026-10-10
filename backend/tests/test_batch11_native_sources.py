@@ -312,3 +312,14 @@ def test_malformed_flag_refuses_loader_instead_of_guessing(flag):
     code = "from seeding.registries import load_builtin_domains; load_builtin_domains()"
     result = subprocess.run([sys.executable, "-c", code], cwd=BACKEND, env=env, text=True, capture_output=True, timeout=60)
     assert result.returncode != 0 and "CRA opt-in requires true or false" in result.stderr
+
+
+@pytest.mark.parametrize("flag", ["1", "TRUE"])
+def test_worker_readiness_names_an_invalid_cra_flag_instead_of_an_import_failure(monkeypatch, caplog, flag):
+    from admin_etl_dispatch_adapter import ready_domains
+    monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
+    monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", "cra")
+    monkeypatch.setenv("SEED_CRA_INGESTION_ENABLED", flag)
+    with caplog.at_level("WARNING"):
+        assert "cra" not in ready_domains()
+    assert "dispatch_cra_flag_invalid" in caplog.text and "dispatch_domain_import_unavailable" not in caplog.text

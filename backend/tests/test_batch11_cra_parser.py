@@ -42,7 +42,7 @@ def test_hostile_decimal_cell_refuses(value):
 @pytest.mark.parametrize("value", [None, b"", b"not a PDF", b"%PDF-1.7\n%%EOF", b"%PDF-" + b"a" * source.MAX_BYTES],
                          ids=["none", "empty", "not_pdf", "truncated_pdf", "oversized"])
 def test_absent_malformed_or_oversized_pdf_refuses(value):
-    with pytest.raises(Exception):
+    with pytest.raises(source.CraSourceRefused):
         parser.parse_publication(value)
 
 
@@ -160,7 +160,9 @@ def test_recommendations_are_exact_integer_kes_strings():
 
 def test_retained_decimal_context_rounding_input_refuses():
     # Exact retained reviewer input: a 32-digit allocation and 33-digit total
-    # reconciled only because the default Decimal context rounds both.
+    # reconciled only because the default Decimal context rounds both. This
+    # 4-row shape now refuses on layout; the numeric bound itself is pinned by
+    # test_oversized_amount_in_the_real_layout_refuses_without_rounding.
     table = [["National Government", "1", "1", "99999999999999999999999999999999"],
              ["County Government", "1", "1", "1"], ["Equalisation Fund", "1", "0", "1"],
              ["Total Revenue", "1", "100000000000000000000000000000000"]]
@@ -197,3 +199,31 @@ def test_in_bound_amounts_convert_and_reconcile_exactly():
                 assert parser.amount(text_value) == hundredths
         if cents == 0 and whole:
             assert parser.amount(f"{whole:,}") == hundredths
+
+
+def test_uniformly_scaled_table_values_refuse_against_the_page_text(monkeypatch):
+    # Spec-review observation: x10 on every value keeps layout and arithmetic.
+    # The table and the page text are extracted separately; they must agree.
+    table = copy.deepcopy(REAL_TABLE)
+    scaled = {"2,215.1": "22,151", "298.66": "2,986.6", "2,513.76": "25,137.6", "415": "4,150", "43.94": "439.4",
+              "458.94": "4,589.4", "35.00": "350.0", "8.94": "89.4", "9.6": "96", "0": "0", "9.60": "96.0",
+              "2,639.7": "26,397", "2,982.3": "29,823"}
+    for row in table[5:]:
+        for i, cell in enumerate(row):
+            if cell in scaled:
+                row[i] = scaled[cell]
+    with pytest.raises(source.CraSourceRefused, match="page text"):
+        parse_with_table(monkeypatch, table)
+
+
+@pytest.mark.parametrize("change", ["draft_title", "float_page_count", "garbage_pdf"])
+def test_title_page_count_and_reader_errors_refuse(monkeypatch, change):
+    if change == "garbage_pdf":
+        with pytest.raises(source.CraSourceRefused, match="could not be read"):
+            parser.parse_publication(b"%PDF-1.7\n" + b"x" * 64 + b"\n%%EOF")
+    elif change == "draft_title":
+        with pytest.raises(source.CraSourceRefused, match="title"):
+            parser.validate_page(61, "DRAFT - NOT THE " + REAL_TITLE, REAL_TEXT, [REAL_TABLE])
+    else:
+        with pytest.raises(source.CraSourceRefused, match="page count"):
+            parser.validate_page(61.0, REAL_TITLE, REAL_TEXT, [REAL_TABLE])

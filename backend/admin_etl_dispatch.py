@@ -25,7 +25,7 @@ SOURCE_SCOPE = {
     "cra": "CRA FY2026/27 Table 5.2 recommended allocations only; excludes enacted budgets and actual revenue.",
 }
 SOURCE_GAPS = {
-    "opendata": "OpenData has no reviewed dataset contract; its official ArcGIS catalog reported subscription canceled during source validation (#602).",
+    "opendata": "OpenData has no reviewed dataset contract; its official ArcGIS catalog reported subscription canceled during source validation (#621).",
     "cra": "CRA requires explicit SEED_CRA_INGESTION_ENABLED=true and the reviewed native recommendation handler.",
 }
 Source = Literal["treasury", "cob", "oag", "knbs", "opendata", "cra"]

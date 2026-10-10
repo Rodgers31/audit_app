@@ -22,9 +22,10 @@ PAGE = 39  # Printed page 32 in this reviewed edition.
 PRINTED_PAGE = "32"
 PAGE_COUNT = 61
 WIDTH = 15
-TITLE = ("RECOMMENDATION ON THE BASIS FOR EQUITABLE SHARING OF REVENUE BETWEEN THE NATIONAL AND "
-         "COUNTY GOVERNMENTS FOR FINANCIAL YEAR 2026/2027")
-TABLE_TITLE = "Table 5.2: Recommended Equitable Share of Revenue to the two Levels of Government-Ksh. Billion"
+TITLE = ("COMMISSION ON REVENUE ALLOCATION Promoting an Equitable Society RECOMMENDATION ON THE BASIS FOR "
+         "EQUITABLE SHARING OF REVENUE BETWEEN THE NATIONAL AND COUNTY GOVERNMENTS FOR FINANCIAL YEAR "
+         "2026/2027 JANUARY, 2026")
+TABLE_TITLE_LINES = ("Table 5.2: Recommended Equitable Share of Revenue to the two Levels of", "Government-Ksh. Billion")
 
 # Nonempty cells of the reviewed header rows, by column position. Column 13 is
 # the only recommendation column; column 7 is the FY2025/26 baseline.
@@ -119,29 +120,42 @@ def parse_table(table):
 
 
 def validate_page(page_count, title, text, tables):
-    if page_count != PAGE_COUNT:
+    if type(page_count) is not int or page_count != PAGE_COUNT:
         raise CraSourceRefused("CRA unsupported document edition or page count")
-    title = " ".join((title or "").split())
-    if "COMMISSION ON REVENUE ALLOCATION" not in title or TITLE not in title:
-        raise CraSourceRefused("CRA unsupported publisher or fiscal year")
-    lines = (text or "").split("\n")
-    flat = " ".join((text or "").split())
-    if TABLE_TITLE not in flat or "Source of data: CRA" not in flat or lines[-1].strip() != PRINTED_PAGE:
+    if type(title) is not str or " ".join(title.split()) != TITLE:
+        raise CraSourceRefused("CRA unsupported publisher, title or fiscal year")
+    lines = [line.strip() for line in text.split("\n")] if type(text) is str else []
+    pairs = list(zip(lines, lines[1:]))
+    if TABLE_TITLE_LINES not in pairs or "Source of data: CRA" not in lines or not lines or lines[-1] != PRINTED_PAGE:
         raise CraSourceRefused("CRA recommendation table title, units, attribution or printed page missing")
     if type(tables) is not list or len(tables) != 1:
         raise CraSourceRefused("CRA unique recommendation table required")
-    return parse_table(tables[0])
+    amounts = parse_table(tables[0])
+    # The table and the page text are separate extractions of the same page. Every
+    # value cell must also appear in the text, so a table that disagrees with the
+    # printed page (for example uniformly rescaled values) refuses.
+    tokens = set(" ".join(lines).split())
+    if any(cell not in tokens for row in tables[0][len(HEADER):] for i, cell in enumerate(row)
+           if cell and AMOUNT.fullmatch(cell)):
+        raise CraSourceRefused("CRA table values differ from the page text")
+    return amounts
 
 
 def parse_publication(payload):
     if type(payload) is not bytes or not 1 <= len(payload) <= MAX_BYTES or not payload.startswith(b"%PDF-") or b"%%EOF" not in payload[-1024:]:
         raise CraSourceRefused("CRA complete bounded PDF bytes required")
-    with pdfplumber.open(BytesIO(payload)) as pdf:
-        pages = pdf.pages
-        if len(pages) != PAGE_COUNT:
-            raise CraSourceRefused("CRA unsupported document edition or page count")
-        page = pages[PAGE - 1]
-        amounts = validate_page(len(pages), pages[0].extract_text(), page.extract_text(), page.extract_tables())
+    try:
+        with pdfplumber.open(BytesIO(payload)) as pdf:
+            pages = pdf.pages
+            if len(pages) != PAGE_COUNT:
+                raise CraSourceRefused("CRA unsupported document edition or page count")
+            page = pages[PAGE - 1]
+            title, text, tables = pages[0].extract_text(), page.extract_text(), page.extract_tables()
+    except CraSourceRefused:
+        raise
+    except Exception:
+        raise CraSourceRefused("CRA PDF could not be read") from None
+    amounts = validate_page(len(pages), title, text, tables)
     return {
         "schema_version": 1, "dataset": "cra_recommendations", "fiscal_year": "FY2026/27",
         "measure": "recommended_shareable_revenue_allocation", "currency": "KES",

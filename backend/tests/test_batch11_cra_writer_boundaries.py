@@ -164,3 +164,50 @@ def test_writer_lock_key_is_the_shared_execution_key(cra_url):
         assert writer.execution_lock_key("cra") == DomainExecution(sessionmaker(bind=engine), "cra", uuid4()).key
     finally:
         engine.dispose()
+
+
+@pytest.mark.parametrize("mutation", ["tampered_amount_and_parser_hash", "other_parser_version", "foreign_extractor"])
+def test_any_other_extraction_on_the_cra_document_refuses_instead_of_appending(cra_url, mutation):
+    # Spec-review reproduction: replay matched only rows carrying the current
+    # parser hash, so a tampered row with another hash survived beside a new one.
+    with owned(cra_url) as (engine, factory, _, ctx):
+        persist(factory, ctx)
+        with engine.begin() as c:
+            if mutation == "tampered_amount_and_parser_hash":
+                c.execute(text("UPDATE extractions SET extracted_json=jsonb_set(jsonb_set(extracted_json,'{amounts_kes,national_government}','\"9\"'),'{parser_sha256}','\"0000\"')"))
+            elif mutation == "other_parser_version":
+                c.execute(text("UPDATE extractions SET extracted_json=jsonb_set(extracted_json,'{parser_sha256}','\"1111\"')"))
+            else:
+                c.execute(text("UPDATE extractions SET extractor='camelot'"))
+            before = c.execute(text("SELECT id,extractor,extracted_json::text FROM extractions ORDER BY id")).all()
+        with pytest.raises(source.CraSourceRefused, match="existing source-bound extraction differs"):
+            persist(factory, ctx)
+        with engine.connect() as c:
+            assert c.execute(text("SELECT id,extractor,extracted_json::text FROM extractions ORDER BY id")).all() == before
+
+
+def test_a_contender_holding_the_lock_key_is_not_the_entering_runner(cra_url):
+    # Standards-review reproduction: the runner's lock backend dies, a contender
+    # takes the same key (as it would just before its claim insert fails), and the
+    # original runner must not write under a claim it can no longer acknowledge.
+    with owned(cra_url) as (engine, factory, execution, ctx):
+        with engine.connect() as c:
+            assert c.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": execution.pid}) is True
+        with pytest.raises(Exception):
+            execution.close()  # its lock connection is gone; close() reports that and forgets it
+        contender = DomainExecution(factory, "cra", uuid4())
+        deadline = __import__("time").monotonic() + 10
+        while True:
+            try:
+                contender.open()
+                break
+            except Exception:
+                if __import__("time").monotonic() > deadline:
+                    raise
+        try:
+            assert contender.continuous() is True
+            with pytest.raises(source.CraSourceRefused, match="execution lock"):
+                persist(factory, ctx)
+            assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+        finally:
+            contender.close()

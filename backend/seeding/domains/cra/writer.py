@@ -6,10 +6,11 @@ Ownership the writer re-proves on every call, on the writing transaction:
     or hand-made observation is not a native CRA owner);
   * the durable claim is entered, unreturned, unreleased and acquired no later
     than the observation started, and the observation is not from the future;
-  * the shared domain execution lock is still held by a live backend, so writes
-    never begin after the runner's continuity ended (the durable claim alone
-    would still fence other writers, but acknowledgement could then never
-    succeed and the effects would land under a claim already marked uncertain);
+  * the shared domain execution lock is still held by the entering runner: a
+    backend holds the CRA key in a transaction that began no later than the
+    claim's one-use entry. A contender can only take the key after the runner's
+    lock ended, so its transaction starts later and does not count (without this
+    the effects would land under a claim that can no longer be acknowledged);
   * the supplied fetch time is an aware datetime inside the owned run.
 Refusal raises before any effect; the caller's transaction rolls back. Nothing
 here releases, expires or rewrites a claim.
@@ -43,8 +44,12 @@ def canonical(value):
         raise CraSourceRefused("CRA observation is not strict JSON") from None
 
 
-def require_ownership(session, context):
-    """Return the run's (job start, database now) after proving native ownership."""
+def require_ownership(session, context, lock=True):
+    """Return the run's (job start, database now) after proving native ownership.
+
+    ``lock=False`` is the pre-fetch check: it reads the claim without a row lock,
+    so no lock is held across the network fetch; ``persist`` re-proves with it.
+    """
     if type(context.job_id) is not int or context.job_id <= 0 or type(context.dry_run) is not bool:
         raise CraSourceRefused("CRA requires an owned native ingestion observation")
     job = session.get(IngestionJob, context.job_id)
@@ -57,7 +62,7 @@ def require_ownership(session, context):
         identity = UUID(token)
     except ValueError:
         raise CraSourceRefused("CRA observation has no canonical ownership identity") from None
-    claim = session.get(SeedingDomainClaim, identity, with_for_update=True)
+    claim = session.get(SeedingDomainClaim, identity, with_for_update=lock)
     if claim is None or claim.domain != "cra" or claim.entered_at is None or claim.released_at is not None or claim.returned_at is not None:
         raise CraSourceRefused("CRA durable domain ownership is unavailable")
     since = job.meta.get("since")
@@ -79,9 +84,12 @@ def require_ownership(session, context):
     if start is None or not claim.acquired_at - TOLERANCE <= start <= now + TOLERANCE:
         raise CraSourceRefused("CRA observation time is outside its durable ownership")
     key = execution_lock_key("cra")
-    held = session.scalar(text("""SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype='advisory' AND granted
-        AND database=(SELECT oid FROM pg_database WHERE datname=current_database())
-        AND classid=:high AND objid=:low AND objsubid=1)"""), {"high": key >> 32, "low": key & 0xffffffff})
+    held = session.scalar(text("""SELECT EXISTS (SELECT 1 FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid
+        WHERE l.locktype='advisory' AND l.granted
+        AND l.database=(SELECT oid FROM pg_database WHERE datname=current_database())
+        AND l.classid=:high AND l.objid=:low AND l.objsubid=1
+        AND a.xact_start IS NOT NULL AND a.xact_start <= :entered)"""),
+        {"high": key >> 32, "low": key & 0xffffffff, "entered": claim.entered_at})
     if held is not True:
         raise CraSourceRefused("CRA domain execution lock is not held; durable ownership retained")
     return start, now
@@ -127,11 +135,13 @@ def persist(session, context, payload, parsed, fetched_at):
             meta=metadata)
         session.add(document)
         session.flush()
-    existing = session.scalars(select(Extraction).where(Extraction.source_document_id == document.id,
-        Extraction.extractor == EXTRACTOR, Extraction.extracted_json["parser_sha256"].astext == parsed["parser_sha256"])).all()
+    # Any extraction already on this document must be exactly this one. Another
+    # parser version, extractor or a tampered row refuses; it is never appended to.
+    existing = session.scalars(select(Extraction).where(Extraction.source_document_id == document.id)).all()
     if existing:
         stored = existing[0]
-        if (len(existing) != 1 or type(stored.extracted_json) is not dict or canonical(stored.extracted_json) != canonical(parsed)
+        if (len(existing) != 1 or stored.extractor != EXTRACTOR
+                or type(stored.extracted_json) is not dict or canonical(stored.extracted_json) != canonical(parsed)
                 or type(stored.page_number) is not int or stored.page_number != PAGE or stored.confidence is not None):
             raise CraSourceRefused("CRA existing source-bound extraction differs; investigate before retry")
         return {"created": 0, "unchanged": 1}
