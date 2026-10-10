@@ -1,0 +1,1520 @@
+{
+ "generated_by": "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py",
+ "generator_sha256": "56c8c9e02026f16326437af94b239048a5a93990b5ed227f45eb525849e66e35",
+ "label": "final complete launcher inventory without maxfail, minimum runtime, commit eb0989a [legacy cohort]",
+ "mode": "pytest",
+ "started_at": "2026-10-10T18:37:39.212580+00:00",
+ "finished_at": "2026-10-10T18:37:45.501228+00:00",
+ "duration_seconds": 6.053,
+ "deadline_seconds": 9000,
+ "timed_out": false,
+ "exit_code": 0,
+ "leftover_process_group": false,
+ "command": [
+  "<machine-path>",
+  "<repo>/docs/admin/implementation/batch11-issue-602-evidence/tools/run_launcher_cohorts_complete.py",
+  "--cohort",
+  "legacy",
+  "--output-dir",
+  "<machine-path>",
+  "--junitxml=<out>/junit.xml",
+  "--basetemp=<out>/tmp",
+  "-p",
+  "no:cacheprovider",
+  "-rA"
+ ],
+ "child_environment": {
+  "ADMIN_ETL_DISPATCH_ENABLED": "false",
+  "BATCH11_602_API_PORT": "18031",
+  "BATCH11_602_PG_PORT": "55535",
+  "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres@127.0.0.1:55536/batch9-review-592-88574e402d9d4ccca193c5f703627fe4",
+  "DATABASE_URL": "postgresql://postgres:inert-owned-602@127.0.0.1:55531/audit_app_test",
+  "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "PYTHONPATH": "<repo>/backend",
+  "PYTHON_DOTENV_DISABLED": "1",
+  "REDIS_URL": "redis://127.0.0.1:55539",
+  "SEED_CACHE_PATH": "<out>/cache",
+  "SEED_CRA_INGESTION_ENABLED": "false",
+  "SEED_ENRICH_WITH_WORLDBANK": "false",
+  "SEED_LIVE_PDF_FETCH_ENABLED": "false",
+  "SEED_LOG_PATH": "<out>/seed.jsonl",
+  "SEED_STORAGE_PATH": "<out>/storage",
+  "SUPABASE_JWT_SECRET": "inert-only",
+  "SUPABASE_KEY": "inert",
+  "SUPABASE_SERVICE_ROLE_KEY": "inert",
+  "SUPABASE_URL": "https://owned.invalid",
+  "TESTING": "true"
+ },
+ "runtime": {
+  "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "executable_name": "python",
+  "platform": "macOS-27.0.1-arm64-arm-64bit"
+ },
+ "head": "eb0989a5e89f6a7c3feacab416311e7ac4e4f795",
+ "tree": "72d6d9d014144bce531c19980d073440b93edd20",
+ "status_before": "",
+ "status_after": "",
+ "source_before_sha256": "1a7658c60cb7eaa72c9df56a692b86fd70ffaa5c2f0fdf373623e87d9dbe7449",
+ "source_after_sha256": "1a7658c60cb7eaa72c9df56a692b86fd70ffaa5c2f0fdf373623e87d9dbe7449",
+ "source_drift": [],
+ "source_files": {
+  ".github/scripts/prepare_reconciliation_test_fixture.py": "ba09bbc08c83a86a53762f82ea9f5b4eccf33747ab363493d7c0e664ae449281",
+  ".github/scripts/tests/test_reconciliation_test_fixture.py": "3df345b922f2057c7cc2567304140e93322fbf13ca1f0faa650b8164ae49cb64",
+  "backend/admin_etl_dispatch.py": "83e5bffa9ac054c0f893ee2540aecf67df2f91c9f1f48ad6605002293a06dcb3",
+  "backend/admin_etl_dispatch_adapter.py": "17021bab18ed40d7eba9319cbcdfa28711d4c094a7c9606fd19b742866406564",
+  "backend/alembic/versions/e602b11a0001_native_source_domains.py": "c4b2fb323db2f755a5b95b5c72fc66128960c2b47f353efcca93b3ed371c0f65",
+  "backend/models.py": "2a16ec84b797fa93220eb822284ee512e427d1bf3a4918f674c86f79aeef5015",
+  "backend/seeding/config.py": "a8889d3e27846064120bfef259184384c42dd411bcd0897117fc91e87152bd1c",
+  "backend/seeding/domains/cra/__init__.py": "1e290b07d5f507b2c76229a5887dd753ca5a93f8677741a469e9650f55d9bd32",
+  "backend/seeding/domains/cra/parser.py": "8334386c99031ba7477d7db03d4508223426084e21129c8689a6117607e6fd13",
+  "backend/seeding/domains/cra/source.py": "e7200e0e265f00b57f0307a58c774ac0a8292aa602812a2242170ea4b4a2abcd",
+  "backend/seeding/domains/cra/writer.py": "4c917f7d9e0ceabc84691bafbac90070577abb9c281c9a55766304374f155bcd",
+  "backend/seeding/registries.py": "e664ddf4ca0cb0345d9b400c5f5aa4da552e7ae714727d5b86ff2454e075848f",
+  "backend/seeding/source_registry.py": "f45f23eef1bd9d474e7318ebdd942b795d8193bee98384f7b988295b52f75bb4",
+  "backend/tests/batch11_native_sources_fixture/__init__.py": "0709847ad716cbb55b86c6e3e7a97182fae6468176bee7cd31ada45e93be8f7f",
+  "backend/tests/batch11_native_sources_fixture/api.py": "ecb95216a440e43be8d298e2d674af69952091649b539a2b7de0b18acbe62327",
+  "backend/tests/batch11_native_sources_fixture/legacy_entry.py": "2f086f77d9b2dd3775f8d78b780a2dae3b7703f010f135e72d23c262baf41842",
+  "backend/tests/batch11_native_sources_fixture/owned_postgres.py": "7aca99b5b86aa26227b59ccfc2c0a087a578088fc2cd2a6d94a45b8705d9f95b",
+  "backend/tests/batch11_native_sources_fixture/sitecustomize.py": "67b90aad441dd61c22bf8c4d6b5af8d88cf28e839ff536b87941da9a0f3f321a",
+  "backend/tests/financial_literal_reviewed_inventory.json": "5205681f3549f51ecec5adca0cf9d268993f7c96f16355fa1f0c5ecd2c4b4a7a",
+  "backend/tests/test_batch10_etl_mappings.py": "adff39a48cd925600b789a88dd03c6a5a95dca5a5264b45f0691c166a089b580",
+  "backend/tests/test_batch10_etl_mappings_migration.py": "48221542d82079c9982225a1c80321147e7ed490a87f7096102a211f5a72eb6a",
+  "backend/tests/test_batch10_mapped_reconciliation.py": "fb70850125635289ea255daa3556e87b4d13c26f3d1a0aead61f809f6ca2b949",
+  "backend/tests/test_batch11_cra_legacy_ownership.py": "2e2fdbc86e93d3d34a8ad24ee8f6d0bd591f428fd25ed48d84ff0ccfe388f8b4",
+  "backend/tests/test_batch11_cra_parser.py": "548a1965e91027e0b2da9ee2584eb3dcbb9007eaadd1c4f029ee8c84996bda86",
+  "backend/tests/test_batch11_cra_writer_boundaries.py": "bbda18a1a8ec82be88740895d300b8efc7de4b7ddc58b742d536a1705f5e9871",
+  "backend/tests/test_batch11_evidence_packet.py": "46df986419c6383b3a4da30ba5911264c26706e6b8d19cae500941a60a69f49f",
+  "backend/tests/test_batch11_native_sources.py": "1e1b19082c19bf5bdc13d6b28292f322ad593d2fbd25aec737dc0c81beb7bd1b",
+  "backend/tests/test_batch11_native_sources_migration.py": "2a93a35794be7f82777feaf4acfc5bb25d59fd6c5037045b761ec27ab19e6799",
+  "backend/tests/test_batch9_legacy_etl_ownership.py": "bb989d0bd7da3196b52da2de052583ed5d151ec2b89c4814c3694dbcc4f24a46",
+  "backend/tests/test_batch9_legacy_etl_sessions.py": "da579fc57a0c18ed9367ca6a2301afc9a371c68fbf5de6f3d0a9538ac0b3fd15",
+  "docs/admin/implementation/batch11-issue-602-evidence/FINANCIAL_CONTEXT_REVIEW_CONFIG_2026_10_10.md": "27cde8255952451908ed3934ba7caa08c27b838a9ed4bee7f0785d96c47d5776",
+  "docs/admin/implementation/batch11-issue-602-evidence/LESSONS.md": "2c0ad78f4741bfdc015f8e6d0df59b950376f861d360703d010fa53a63c607f9",
+  "docs/admin/implementation/batch11-issue-602-evidence/MANIFEST.json": "ef11060a5fca855235344ad16f4a24993e9acea09a30610bd50475a72c61edf8",
+  "docs/admin/implementation/batch11-issue-602-evidence/REVIEWS.md": "430d2290fef766bd9f62757fd384595c359649266f3892ee34956eb5ba5e5b2b",
+  "docs/admin/implementation/batch11-issue-602-evidence/WRITER_INVENTORY_ADDENDUM_602.md": "50857c1dd5f9893880aa5c354971ee2b1807df7a55d6cea4b3355bd1154172b5",
+  "docs/admin/implementation/batch11-issue-602-evidence/fixtures/cra-fy2026-27.pdf": "38189f669f7014cfd11d0cc7d7215332667772b5cc32a7ccb083ad9976b8498a",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___opendata_go_ke__.err": "04719d8340ebe8409f5837b7e93bc9eca627e71d832c307496df0b1ce74309c7",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___opendata_go_ke__.headers": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___opendata_go_ke__.status": "f850ee6aa93e0c275f1523d2e78f2c7a1d50756c9138cda00db1756fdf7926d8",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___opendata_go_ke__.time": "8b3b43123789de71bc4da635e1e339f2ecbd678e0b2869000c62e3a5c4aa8cee",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke__.body": "e60bf601aa2f703dba4834b05f431657803b58f99809c38750942fb203a956db",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke__.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke__.headers": "7e022d3e7287f9b6aaf33dcdf98088ddc16ce5de7dae8cd9ca6583fb199cc0dc",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke__.status": "d2e986da695057629781bb72d07d5e1c4d9df5b7af0181069ed35f9de4fa1244",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke__.time": "a6e155bd674668f6853e5a52487d0ba51277b75207a9172ddccf200b14060526",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_.body": "54b3d73ae1a1feb143c868ecb5cffc254da18cb321aab2558bc57a4f027c4e05",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_.headers": "2363fef7fae76a0716b0685300a4beb6e858ff81abde832febe332b3910670ca",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_.status": "6e7088a30481138f97dd67a4e96ad239bd2b3174e2d437a0d2ada26ce51c69ba",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_.time": "a6e155bd674668f6853e5a52487d0ba51277b75207a9172ddccf200b14060526",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_collections_.body": "54b3d73ae1a1feb143c868ecb5cffc254da18cb321aab2558bc57a4f027c4e05",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_collections_.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_collections_.headers": "2363fef7fae76a0716b0685300a4beb6e858ff81abde832febe332b3910670ca",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_collections_.status": "213d2956f3d305da037047df53c3cb02e7065a0041a034216f0e9f389707b857",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_search_v1_collections_.time": "a6e155bd674668f6853e5a52487d0ba51277b75207a9172ddccf200b14060526",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_views_json_.body": "ea704a03731fdcc0a836577d5ff3fee3d3999ff16af17fd64bd27f0452c53b41",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_views_json_.err": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_views_json_.headers": "b9de9f4fdc94c623f4bec31247f7b489f222725299f92c421c6a4b9c8161bda7",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_views_json_.status": "f84f2dec03c826dbc1b6cb312d076949ad3184bf1b906d70ed5e535ddf778ef9",
+  "docs/admin/implementation/batch11-issue-602-evidence/opendata-recheck-2026-10-10/https___www_opendata_go_ke_api_views_json_.time": "8b3b43123789de71bc4da635e1e339f2ecbd678e0b2869000c62e3a5c4aa8cee",
+  "docs/admin/implementation/batch11-issue-602-evidence/probes/autovacuum-ab-2026-10-10.json": "ce395d3aefc45cd4a2a7629eb3cb95c41e0ddfbc419ae7c166263c3d461ada15",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-alembic-heads/receipt.json": "6ea95d49c718363c3f98505de2fae9e3a6aa1ed9d9460325f5b2bc04a6ba3985",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-cohort-current/receipt.json": "0f150660bfaee5e7b206d9dd2d767257eacfb901314e4ba32b1849d778f3613d",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-cohort-minimum/receipt.json": "213c01ae3312222b07095515f186b0fe6298546d7787b5a32bb341428214b797",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-lint-ci-critical/receipt.json": "fb3247a24926f10bf96c85dda67066f65193bb500f3c52092b28b90b4aa10b61",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-parser-control-current-normal/receipt.json": "5df2088c49c623d1ae576d8fcb82310b3068c1b54ae8c0318dc6bc326489f157",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-parser-control-current-optimized/receipt.json": "f6f1912232bfe16561a75ea1a01f87e250451879b8e6a12878bb30393d43de1f",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-parser-control-minimum-normal/receipt.json": "053c47c9ab0ccdb30106a2555cb4430c72dffdccd335c6466db3e52a5096131f",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-parser-control-minimum-optimized/receipt.json": "7f600bda6b598fc59c1853f1e058dea00a8560d407e7514667bea2435da0b322",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-preparer-current/receipt.json": "50c25ad024bf73659a30308746db64636625b64bfb77d4e1f6c57dd35c93659a",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/final-preparer-minimum/receipt.json": "355fe604b0834182fcd51a4d1e84d18d4a2b5c5fb919836949d13230e9291570",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/green-03-preparer-current-head/receipt.json": "c898b256d80512c60ef97449b4f6988d0f49b94f90cc806c705f49a5d27579cc",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/intermediate-cohort-current-04/receipt.json": "041f5e3d6152cd8659e0c9b258007f6686803a066481dbe1dba343eee2bdc829",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/intermediate-cohort-current-a1bfd63-drifted/receipt.json": "013bfc9c9f70086b8d30e626129d6972769b02c2041498d43e23873c407d584a",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/intermediate-cohort-current-pre-ids/receipt.json": "7d8c1277f284f17d8040442124719662051bd1e312935e454accb137e3c9c2cd",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/intermediate-cohort-minimum-pre-ids/receipt.json": "ad0e9f7b82b4119e86893f8d6ba1ca2d1c58500222d1733d7bd2f5a10e0bcd9d",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-01-parser-writer-orm-mutation/receipt.json": "b3d66c2f6f741fcde6549bd60b7592da87ec7b25a8f63a96243211d5caea62a4",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-02-parser-writer-sql-mutation/receipt.json": "1918e2a4f812dc760adaa6ab5fe9ee6779262b8aa8a0534c36dcb797ac5f2ab6",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-03-preparer-stale-head/receipt.json": "8037e58f9e5dd2bef22706a1fa3705443a0dd7b6f4dbaef5763dde9521ade0f1",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-04-legacy-cra-not-enrolled/receipt.json": "cb024a64af99ddf9b478a3b6b9a89c205235143d04a35d068f0ba7fb2d682a20",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-05-spec-review-foreign-extraction-and-scaled-table/receipt.json": "7fa48d72b2ad3d870e616ebb8c9091a5e153a8277d4e1d976a639ddb7bf4f6b3",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-06-standards-review-lock-contender/receipt.json": "875741fc9956f6dd4613d27260555456659e50d67048aabfea3a322338656942",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/red-07-adapter-invalid-flag-log/receipt.json": "e3ad05e71bc193fb56db1862857b7760793ff380769460dfe37cfc58855bb2c8",
+  "docs/admin/implementation/batch11-issue-602-evidence/receipts/setup-failure-cohort-unsplit-args/receipt.json": "4f5ed7c91a52a2b18e3d29a5083796c5e6b84db61249dcec718b69f5d08f79a0",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/autovacuum_probe.py": "94e411ecb6161563724115bcb62d9e92f64331e781ed09912d7e80b7fc2761fe",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/optimized_parser_control.py": "4535ec8ef56b6dad4041516398103429f00adb285c647e7486cb85a979991ca4",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/publish_v2.py": "0d05631be10864f212f6e7011e947aec87a48de00ec74ffc87a188b170aae1d6",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py": "56c8c9e02026f16326437af94b239048a5a93990b5ed227f45eb525849e66e35",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/run_launcher_cohorts_complete.py": "fbe56738225e5af746f1cc9ae9b0e7ffe1a9923a6927b9b3b20369e476373285",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/run_suite_v2.py": "79f67f9607479c39ba2a5587187724b76ec314b1f9eb6669ae79a0973a94fe89",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/verify_packet_v2.py": "daa9be8fd4bc7f49f682a9a16e6e97e032fcef762612256a8ba08cda8ead6f00",
+  "docs/admin/implementation/batch11-issue-602-evidence/writer-callsite-search-602.txt": "eb71fa6fd21fa81097f793f680e2114a651ae2cf230d33b08ba11afc47457d7c",
+  "etl/writer_ownership.py": "22108f9c82d0d6e3faf3e486fbdf2894481fb739978d32cad7c2633a6014e65e"
+ },
+ "owned_containers_before": [],
+ "owned_containers_after": [],
+ "inventory": {
+  "source": "junit",
+  "unique": true,
+  "nonempty": true
+ },
+ "complete_inventory": true,
+ "counts": {
+  "error": 0,
+  "failed": 0,
+  "xpass": 0,
+  "passed": 295,
+  "xfail": 0,
+  "skipped": 41
+ },
+ "testcases": [
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_qualified_opinion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_unqualified_opinion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_adverse_opinion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_disclaimer_of_opinion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_disclaimer_takes_priority",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_no_opinion_found",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractOpinion::test_case_insensitive",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_kes_with_commas",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_ksh_notation",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_ksh_million",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_ksh_billion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_sh_notation",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_no_amount",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractKesAmount::test_decimal_amount",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_financial_irregularity",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_asset_management",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_procurement",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_non_compliance",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_payroll_hr",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_revenue_under_collection",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_cash_management",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_weak_internal_controls",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_unclassifiable",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestClassifyQueryType::test_embezzlement",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractManagementResponses::test_management_response_section",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractManagementResponses::test_entity_response_section",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractManagementResponses::test_no_response_found",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestExtractManagementResponses::test_multiple_responses",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_consecutive_years_flagged",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_non_consecutive_not_flagged",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_single_finding_not_recurring",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_empty_input",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_no_query_type_skipped",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestDetectRecurringFindings::test_three_consecutive_years",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestParseIntegration::test_parse_with_opinion_and_query_type",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestParseIntegration::test_parse_with_management_response",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestParseIntegration::test_parse_no_opinion",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_a_kwale_report_is_attributed_to_kwale",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_a_muranga_report_is_attributed_to_muranga",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_a_neighbour_named_on_page_one_does_not_take_the_report",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_page_one_attribution_takes_the_county_named_first",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_muranga_is_recognised_however_it_is_spelled[Murang\\u2019a]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_muranga_is_recognised_however_it_is_spelled[Muranga]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_muranga_is_recognised_however_it_is_spelled[MURANG\\u2019A]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_hyphenated_county_names_are_recognised[Elgeyo-Marakwet-Elgeyo Marakwet]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_hyphenated_county_names_are_recognised[Tharaka-Nithi-Tharaka Nithi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_hyphenated_county_names_are_recognised[Taita-Taveta-Taita Taveta]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_a_muranga_report_naming_nairobi_later_stays_muranga",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_audit_parser.TestInferEntityCoversAll47::test_the_roster_is_all_47",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_manual_sessions_release_only_after_last_normal_close[order0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_manual_sessions_release_only_after_last_normal_close[order1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_external_transaction_bind_cannot_outlive_claim_release",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_raw_connection_escape_and_transferred_sessions_refuse",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_alternate_bind_arguments_cannot_escape_owned_engine",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_session_factory_refuses_another_engine_before_acquisition[call]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_session_factory_refuses_another_engine_before_acquisition[configure]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_session_factory_refuses_another_engine_before_acquisition[mutated-default]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_same_engine_factory_override_remains_supported",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_in_memory_sqlite_retains_schema_across_owned_sessions",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_worker_child_failure_reaches_scheduler_without_launching_next_job",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_closed_session_cannot_commit_another_effect",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_keyboard_interrupt_after_commit_retains_without_return_receipt",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_plain_synchronous_failure_releases_after_all_work_returns",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_refusal_observation_failure_still_propagates_ownership_error",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_missing_unique_active_domain_index_refuses_at_startup_and_write",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_missing_dispatch_seam_table_refuses_startup_and_write",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_independent_domains_and_summary_remain_available[learning_hub]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_independent_domains_and_summary_remain_available[imf_weo]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_batch9_legacy_etl_sessions::test_unavailable_writer_refuses_pipeline_and_monitor",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Mombasa]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kwale]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kilifi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Tana River]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Lamu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Taita-Taveta]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Garissa]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Wajir]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Mandera]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Marsabit]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Isiolo]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Meru]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Tharaka-Nithi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Embu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kitui]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Machakos]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Makueni]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nyandarua]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nyeri]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kirinyaga]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Murang'a]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kiambu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Turkana]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[West Pokot]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Samburu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Trans-Nzoia]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Uasin Gishu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Elgeyo-Marakwet]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nandi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Baringo]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Laikipia]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nakuru]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Narok]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kajiado]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kericho]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Bomet]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kakamega]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Vihiga]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Bungoma]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Busia]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Siaya]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kisumu]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Homa Bay]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Migori]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Kisii]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nyamira]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_canonical_name_resolves[Nairobi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestAll47CountiesPresent::test_exactly_47_counties_in_mapping",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[Muranga]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[Murang'a]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[Murang\\u2019a]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[Murang'a County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[MURANGA]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestMurangaVariants::test_muranga_variants[muranga]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTharakaNithiVariants::test_tharaka_nithi_variants[Tharaka Nithi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTharakaNithiVariants::test_tharaka_nithi_variants[Tharaka-Nithi]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTharakaNithiVariants::test_tharaka_nithi_variants[THARAKA NITHI]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTharakaNithiVariants::test_tharaka_nithi_variants[Tharaka-Nithi County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestElgeyoMarakwetVariants::test_elgeyo_marakwet_variants[Elgeyo Marakwet]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestElgeyoMarakwetVariants::test_elgeyo_marakwet_variants[Elgeyo-Marakwet]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestElgeyoMarakwetVariants::test_elgeyo_marakwet_variants[ELGEYO MARAKWET]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestElgeyoMarakwetVariants::test_elgeyo_marakwet_variants[Elgeyo-Marakwet County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTaitaTavetaVariants::test_taita_taveta_variants[Taita Taveta]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTaitaTavetaVariants::test_taita_taveta_variants[Taita-Taveta]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTaitaTavetaVariants::test_taita_taveta_variants[TAITA TAVETA]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTaitaTavetaVariants::test_taita_taveta_variants[Taita-Taveta County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTransNzoiaVariants::test_trans_nzoia_variants[Trans Nzoia]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTransNzoiaVariants::test_trans_nzoia_variants[Trans-Nzoia]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTransNzoiaVariants::test_trans_nzoia_variants[TRANS NZOIA]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestTransNzoiaVariants::test_trans_nzoia_variants[Trans-Nzoia County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestHomaBayVariants::test_homa_bay_variants[Homa Bay]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestHomaBayVariants::test_homa_bay_variants[HomaBay]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestHomaBayVariants::test_homa_bay_variants[HOMA BAY]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestHomaBayVariants::test_homa_bay_variants[Homabay]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestHomaBayVariants::test_homa_bay_variants[Homa Bay County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestCaseInsensitive::test_uppercase",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestCaseInsensitive::test_mixed_case",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_normalizer.TestCaseInsensitive::test_with_county_suffix",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_every_county_endpoint_serves_the_cob_figure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_county_with_only_a_fixture_row_is_absent_everywhere",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_debt_page_ranks_counties_only_and_by_the_cob_figure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_partial_county_coverage_is_a_reported_sum_not_the_county_total",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_detail_page_names_the_publication_it_printed",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_detail_page_carries_the_date_the_figure_is_stated_at",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_flagged_county_is_published_with_what_the_report_says",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_fixture_run_after_a_cob_run_leaves_the_cob_figure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_brop_writes_no_county_and_the_cob_no_national_row",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_brop_payload_declares_itself",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_gate_publishes_only_a_real_amount[nan]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_gate_publishes_only_a_real_amount[inf]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_gate_publishes_only_a_real_amount[-5000000000.0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_gate_publishes_only_a_real_amount[True]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_newer_report_retires_a_county_it_does_not_state",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_reread_of_the_same_report_retires_a_county_it_now_withholds",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_fixture_county_record_is_not_written_whatever_its_category_spelling[County]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_fixture_county_record_is_not_written_whatever_its_category_spelling[ county]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_fixture_county_record_is_not_written_whatever_its_category_spelling[None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_dataset_cannot_declare_itself_the_brop",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_no_pending_bills_at_all_is_null_not_zero_for_counties",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_the_live_extraction_fallback_does_not_serve_county_figures",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_published_zero_stays_zero_on_the_pending_bills_endpoints",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_a_county_the_report_says_did_not_report_is_told_so",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_no_reason_is_given_for_a_county_the_report_does_not_mention",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_absence_query_count[1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_absence_query_count[10]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_county_pending_bills_one_source::test_absence_query_count[47]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_etl.TestDocumentDownloader::test_successful_download",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_etl.TestDocumentDownloader::test_download_failure_handling",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_etl.TestDocumentDownloader::test_md5_calculation",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_etl.TestDocumentExtractor::test_extractor_has_strategies",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_etl.TestDocumentExtractor::test_extraction_result_structure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_budget_line_readers_preserve_absence_and_sourced_zero[None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_budget_line_readers_preserve_absence_and_sourced_zero[0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_budget_line_readers_preserve_absence_and_sourced_zero[12]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_history_does_not_invent_missing_money_or_ratio[None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_history_does_not_invent_missing_money_or_ratio[0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_history_does_not_invent_missing_money_or_ratio[12]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_county_debt_http_preserves_outstanding_zero[0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_county_debt_http_preserves_outstanding_zero[20]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_sources_sql_count_is_measured",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-20-100-20]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-0-100-0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_final_comprehensive_ratio_requires_same_source_stock_day[None-20-100-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_final_comprehensive_ratio_requires_same_source_stock_day[2024-06-30-20-100-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-20-0-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[metadata0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[True]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[unexpected]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_unknown_fiscal_unit_is_withheld_with_reason",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[0-0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[12-12000000000.0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[--None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[NaN-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[True-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[0,0-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_parser_transport_persists_explicit_gcp_levels[1,2-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[None-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[True-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[False-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[-1-None0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[-1-None1]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[NaN-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[Infinity-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[bad-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[value8-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[value9-None]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[0-0_0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[0-0_1]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_gdp_loader_rejects_hostile_levels_and_preserves_zero[12-12]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_comprehensive_http_reader_capture[KES-2025-06-30-0]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_comprehensive_http_reader_capture[KES-None-20]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_postgres::test_comprehensive_http_reader_capture[USD-2025-06-30-20]",
+   "state": "skipped"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_budget_line_readers_preserve_absence_and_sourced_zero[None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_budget_line_readers_preserve_absence_and_sourced_zero[0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_budget_line_readers_preserve_absence_and_sourced_zero[12]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_history_does_not_invent_missing_money_or_ratio[None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_history_does_not_invent_missing_money_or_ratio[0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_history_does_not_invent_missing_money_or_ratio[12]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_text_growth_is_not_a_zero_level[GDP growth of 5.4% was reported in the Economic Survey for Kenya.-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_text_growth_is_not_a_zero_level[GDP growth of 0% was reported in the Economic Survey for Kenya.-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_text_growth_is_not_a_zero_level[GDP KSh 12.7 trillion was reported in the Economic Survey for Kenya.-12700000000000.0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_table_growth_is_not_a_zero_level[--5.4-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_table_growth_is_not_a_zero_level[0-0-0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_table_growth_is_not_a_zero_level[12-5.4-12000000000.0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[--10---None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[----2-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[--0-0-0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[--10-2-12]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[0-----0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[12-10-2-12]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[11-10-2-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_never_completes_a_partial_total[--NaN-2-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_needs_both_components[National government pending bills stood at KES 10 billion.-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_needs_both_components[National government pending bills stood at KES 10 billion. County pending bills of KES 2 billion. As at 30 June 2025.-12000000000.0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_uses_outstanding_never_original_principal[None-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_uses_outstanding_never_original_principal[0-0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_uses_outstanding_never_original_principal[20-20]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change2]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change3]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change4]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change5]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change6]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change7]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_cannot_publish_a_partial_or_incompatible_total[change8]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_complete_same_account_control",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_http_preserves_outstanding_zero[0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_county_debt_http_preserves_outstanding_zero[20]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_sources_sql_count_is_measured",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-20-100-20]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-0-100-0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_final_comprehensive_ratio_requires_same_source_stock_day[None-20-100-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_final_comprehensive_ratio_requires_same_source_stock_day[2024-06-30-20-100-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_final_comprehensive_ratio_requires_same_source_stock_day[2025-06-30-20-0-None]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[metadata0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[True]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_fiscal_unknown_metadata_shape_does_not_destroy_sourced_amounts[unexpected]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_unknown_fiscal_unit_is_withheld_with_reason",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_conflicting_or_unreported_debt_metadata_cannot_certify_total[metadata0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_conflicting_or_unreported_debt_metadata_cannot_certify_total[metadata1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_ambiguous_lender_date_is_not_complete_instrument_identity[county government debt]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_ambiguous_lender_date_is_not_complete_instrument_identity[County Government Debt ]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_malformed_row_is_not_source_zero[A0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_malformed_row_is_not_source_zero[row1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_malformed_row_is_not_source_zero[20]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_malformed_row_is_not_source_zero[row1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_cannot_duplicate_scope_or_mix_dates[County pending bills of KES 2 billion.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_cannot_duplicate_scope_or_mix_dates[National government pending bills stood at KES 10 million. County pending bills of KES 2 billion. As at 30 June 2024. As at 30 June 2025.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_does_not_combine_incompatible_accounts[Eligible (USD)]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_does_not_combine_incompatible_accounts[Eligible projected 2023]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_does_not_combine_incompatible_accounts[Eligible (2023/24)]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_component_contexts_must_agree[headers0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_table_component_contexts_must_agree[headers1]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_conflicting_observations_are_absent[National government pending bills stood at KES 10 billion. National government pending bills stood at KES 11 billion. County pending bills of KES 2 billion.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_conflicting_observations_are_absent[National government pending bills stood at KES 10 billion on a projected basis. County pending bills of KES 2 billion on an actual basis.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_conflicting_observations_are_absent[National government pending bills stood at KES 10 billion on a cash basis. County pending bills of KES 2 billion on an accrual basis.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_conflicting_observations_are_absent[For FY2023/24, national government pending bills stood at KES 10 billion. For FY2024/25, county pending bills of KES 2 billion.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_summary_conflicting_observations_are_absent[Values denominated in USD. National government pending bills stood at 10 billion. County pending bills of 2 billion.]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_debt_ratio_respects_explicit_amount_rejection[debt]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_debt_ratio_respects_explicit_amount_rejection[budget]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_gdp_loader_supports_existing_direct_module_import",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gdp-0,0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gdp-0 0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gdp-1,2]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gdp-1 2]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gcp-0,0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gcp-0 0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gcp-1,2]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_malformed_gdp_grouping_cannot_become_reported_zero[gcp-1 2]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_valid_gdp_grouping_and_zero_survive[0-0]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_valid_gdp_grouping_and_zero_survive[1,234-1234]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_valid_gdp_grouping_and_zero_survive[1 234-1234]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_financial_absence_publication::test_pending_extraction_keeps_null_total_without_formatting_crash",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_age_column_is_not_a_year_column",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[130-129,696]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[135-26,754]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[220-67,912]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[232-64,070]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[252-127,668]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[335-31,068]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[396-28,690]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[399-69,938]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[531-55,446]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[621-137,852]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_none_of_the_eleven_db_years_can_be_written[897-33,002]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_a_real_year_column_still_works",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestYearColumnHoldsAYear::test_out_of_range_year_cell_falls_back_to_the_document_year",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestCountyPopulationIsACountyPopulation::test_national_scale_figure_is_not_a_county_population",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestCountyPopulationIsACountyPopulation::test_an_area_in_square_kilometres_is_not_a_population",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_knbs_parser_year_column.TestCountyPopulationIsACountyPopulation::test_national_document_still_parses_from_text",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_public_totals_reject_declarations_for_the_wrong_entity[county]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_public_totals_reject_declarations_for_the_wrong_entity[national]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_brop_without_a_stated_date_preserves_published_rows",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_the_national_rows_sum_to_the_brops_printed_total[brop_then_fixture]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_the_national_rows_sum_to_the_brops_printed_total[fixture_then_brop]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_the_totals_are_the_sources_and_nothing_else",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_no_total_and_no_trend_across_two_dates",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_a_fixture_payload_writes_no_national_row",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_rows_already_written_from_the_fixture_are_not_counted",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_no_total_without_a_published_national_figure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_no_total_across_two_dates_even_within_one_fiscal_year_label",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_no_total_when_a_row_states_no_date",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_nothing_published_is_no_data_not_zero",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_the_live_scrape_serves_no_national_figure",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_the_live_cob_extraction_cannot_declare_itself_the_brop",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_national_pending_bills_one_source::test_a_failed_read_is_not_no_data",
+   "state": "passed"
+  }
+ ],
+ "published_testcase_ids_compacted": 0,
+ "published_source_files_scope": "paths changed from accepted base bcb5ff99854de595bbe3f7d60cc8796b7ada5a20; the full-set digest is source_before_sha256"
+}

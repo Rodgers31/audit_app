@@ -54,6 +54,7 @@ def main():
     p.add_argument("--redis-port", type=int, default=55539)
     p.add_argument("--api-port", type=int, default=18031)
     p.add_argument("--timeout", type=int, default=3600)
+    p.add_argument("--ci-parity", action="store_true", help="pass --ci-parity to record_v3")
     p.add_argument("tests", nargs="*")
     a = p.parse_args()
     repo, out = a.repo.resolve(strict=True), a.out.absolute()
@@ -102,6 +103,8 @@ def main():
         def record(run, mode, command, label, extra_env=()):
             argv = [str(a.python), "-I", str(Path(__file__).resolve().parent / "record_v3.py"), "--repo", str(repo),
                     "--out", str(out / run), "--label", label, "--timeout", str(a.timeout), "--mode", mode]
+            if a.ci_parity:
+                argv.append("--ci-parity")
             for item in (*env, *extra_env):
                 argv += ["--env", item]
             return subprocess.run([*argv, "--", *command], cwd=repo, timeout=a.timeout + 120, env={"PATH": PATH}).returncode

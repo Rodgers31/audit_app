@@ -30,8 +30,8 @@ receipt that demonstrated it.
    preparer forces `autovacuum=off` because autovacuum workers appear in
    `pg_stat_activity` and trip the fenced-maintenance refusal. It also pointed
    `DATABASE_URL` at an inert port, turning a mandatory PostgreSQL case into a
-   connection-refused error. Receipt: full-core-current-01 (historical) vs the
-   autovacuum A/B probe and the final full run.
+   connection-refused error. Receipt: full-core-current-01 (historical) vs
+   `probes/autovacuum-ab-2026-10-10.json` (on: 13 failed; off: 138 passed).
 6. **A hard-coded "current head" goes stale on every new migration** (#613
    recurred one PR later). Derive readiness from the repository's single ordered
    head and refuse two heads. Receipt: red-03 → green-03.
@@ -40,3 +40,17 @@ receipt that demonstrated it.
 8. **A recorder must return nonzero unless the run is green, complete and
    drift-free**; printing `complete: false` while exiting 0 let a wrapper report
    success. Receipt: cohort-current-03 `suite.json` (historical) vs record_v3 fix.
+9. **A count literal that encodes a shared tuple breaks far from the edit**
+   (regression-fixture-on-fix: search every caller). Enrolling one domain in
+   `LEGACY_DOMAINS` broke `== 13` assertions in two historical test files, one of
+   them in the legacy cohort that a focused cohort never runs. Grep for the
+   tuple's length as a literal, and run the cohort the launcher assigns to each
+   touched file. Receipt: `launcher-unchanged-truncated-*` (legacy sessions
+   failures) vs the complete runs.
+10. **A hard-coded `--maxfail` plus host-only failures means the local launcher
+    can never complete** (verify-test-prod-parity, claims-need-receipts).
+    `test_bounded_pg_backup` fails on the pristine base on macOS, which uses up
+    the launcher's 5-failure budget. Diff the failure list against a pristine-base
+    run of the same complete inventory before attributing anything, and never cite
+    the truncated run as complete. Receipts:
+    `baseline-base-bounded-pg-backup-*`, `final-complete-*`, `baseline-complete-current`.

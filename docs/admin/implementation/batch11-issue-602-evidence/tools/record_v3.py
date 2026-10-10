@@ -104,6 +104,8 @@ def main():
     p.add_argument("--env", action="append", default=[])
     p.add_argument("--timeout", type=int, default=600)
     p.add_argument("--cwd", choices=("backend", "repo"), default="backend")
+    p.add_argument("--ci-parity", action="store_true",
+                   help="child env mirrors ci.yml test-backend: only PATH, dotenv off and explicit --env values")
     p.add_argument("command", nargs=argparse.REMAINDER)
     a = p.parse_args()
     repo = a.repo.resolve(strict=True)
@@ -124,6 +126,12 @@ def main():
            "SEED_LIVE_PDF_FETCH_ENABLED": "false", "SEED_ENRICH_WITH_WORLDBANK": "false",
            "SEED_STORAGE_PATH": str(out / "storage"), "SEED_CACHE_PATH": str(out / "cache"),
            "SEED_LOG_PATH": str(out / "seed.jsonl")}
+    if a.ci_parity:
+        # ci.yml sets DATABASE_URL, REDIS_URL, TESTING and PYTHON_DOTENV_DISABLED only;
+        # the inert SEED_/ADMIN_/SUPABASE_ defaults above would change tested defaults.
+        env = {"PATH": env["PATH"], "PYTHON_DOTENV_DISABLED": "1", "PYTHONDONTWRITEBYTECODE": "1",
+               "HOME": str(out / "home")}
+        (out / "home").mkdir()
     for item in a.env:
         key, value = item.split("=", 1)
         if not key.startswith(ALLOWED_PREFIXES) and key not in ALLOWED_KEYS:
@@ -189,7 +197,7 @@ def main():
     record = {
         "generated_by": "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py",
         "generator_sha256": sha(Path(__file__)),
-        "label": a.label, "mode": a.mode, "started_at": started,
+        "label": a.label, "mode": a.mode, "ci_parity_environment": a.ci_parity, "started_at": started,
         "finished_at": datetime.now(timezone.utc).isoformat(), "duration_seconds": duration,
         "deadline_seconds": a.timeout, "timed_out": timed_out, "exit_code": code,
         "leftover_process_group": leftover_group,
