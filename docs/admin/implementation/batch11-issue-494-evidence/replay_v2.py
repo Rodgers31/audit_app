@@ -39,9 +39,16 @@ def relative(value):
 
 
 def source_file(root, name):
+    reject_dotenv(name)
     target = real_path(root / relative(name))
     need(target.is_relative_to(root) and target.is_file(), 'regular source member required')
     return target
+
+
+def reject_dotenv(name):
+    filename = Path(name).name
+    need(not filename.startswith('.env') or filename.endswith(('.example', '.sample', '.template')),
+         'runtime dotenv refused')
 
 
 def git(root, *args):
@@ -56,6 +63,8 @@ def identity(root):
     names = sorted(set(git(root, 'ls-files', '-z').decode().split('\0') +
                        git(root, 'ls-files', '--others', '--exclude-standard', '-z').decode().split('\0')) - {''})
     need(bool(names), 'nonempty source inventory required')
+    for name in names:
+        reject_dotenv(name)
     return {'head': git(root, 'rev-parse', 'HEAD').decode().strip(),
             'tree': git(root, 'rev-parse', 'HEAD^{tree}').decode().strip(),
             'status': git(root, 'status', '--porcelain=v1').decode(),
@@ -98,6 +107,30 @@ def child_environment(destination, executable, mode):
     return environment
 
 
+def group_exists(group):
+    try:
+        os.killpg(group, 0)
+        return True
+    except ProcessLookupError:
+        return False
+
+
+def cleanup_group(group):
+    survivors = group_exists(group)
+    if survivors:
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            try:
+                os.killpg(group, sig)
+            except ProcessLookupError:
+                break
+            deadline = time.monotonic() + 5
+            while group_exists(group) and time.monotonic() < deadline:
+                time.sleep(0.05)
+            if not group_exists(group):
+                break
+    return {'group': group, 'survivors_detected': survivors, 'group_absent': not group_exists(group)}
+
+
 def run(root, destination, cwd, mode, command, timeout=1200):
     need(command and Path(command[0]).is_absolute(), 'absolute executable required')
     cwd = real_path(cwd)
@@ -120,6 +153,11 @@ def run(root, destination, cwd, mode, command, timeout=1200):
                 child.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 os.killpg(child.pid, signal.SIGKILL); child.wait(timeout=10)
+    cleanup = cleanup_group(child.pid)
+    if cleanup['survivors_detected']:
+        error = error or 'owned process group survived parent exit; cleanup required'
+    if not cleanup['group_absent']:
+        error = 'owned process group cleanup failed'
     try:
         after = identity(root)
     except Exception as failure:
@@ -127,7 +165,7 @@ def run(root, destination, cwd, mode, command, timeout=1200):
     result = {'schema': 2, 'classification': 'CURRENT_COMMAND_CAPTURE', 'current_checkout_acceptance': False,
               'generator_sha256': generator, 'source_before': before, 'source_after': after,
               'source_stable': before == after, 'command': command, 'cwd': str(cwd), 'mode': mode,
-              'environment': env, 'exit': child.returncode, 'error': error, 'pid': child.pid,
+              'environment': env, 'exit': child.returncode, 'error': error, 'pid': child.pid, 'cleanup': cleanup,
               'started_at': started, 'ended_at': time.time(),
               'stdout_sha256': sha((destination / 'stdout.log').read_bytes()),
               'stderr_sha256': sha((destination / 'stderr.log').read_bytes())}
@@ -162,7 +200,8 @@ def pack(root, corpus, destination):
         real_path(target)
         need(target.is_file() or target.is_dir(), 'regular corpus member required')
         if target.is_file():
-            selected[relative(target.relative_to(corpus).as_posix())] = target.read_bytes()
+            name = relative(target.relative_to(corpus).as_posix())
+            selected[name] = source_file(corpus, name).read_bytes()
     need(bool(selected), 'nonempty corpus required')
     with zipfile.ZipFile(destination / 'replay.zip', 'x', compression=zipfile.ZIP_DEFLATED) as archive:
         for name, data in selected.items():

@@ -27,4 +27,4 @@ const child=spawn(command[0],command.slice(1),{cwd:path.join(root,'frontend'),en
 let timeout=false;
 const timer=setTimeout(()=>{timeout=true;process.kill(-child.pid,'SIGKILL');},1100000);
 child.on('error',error=>{console.error(error);clearTimeout(timer);process.exitCode=1;});
-child.on('close',(code,signal)=>{clearTimeout(timer);try{const after=measure();assert.deepEqual(after,before);console.log(JSON.stringify({check:'linux-command-readback',exit:code,signal,timeout,sourceStable:true,sourceAfter:after}));process.exitCode=code===0&&!signal&&!timeout?0:1;}catch(error){console.error(error);process.exitCode=1;}});
+child.on('close',async(code,signal)=>{clearTimeout(timer);try{const cleanup=await boundary.cleanupGroup(child.pid);const after=measure();assert.deepEqual(after,before);console.log(JSON.stringify({check:'linux-command-readback',exit:code,signal,timeout,cleanup,sourceStable:true,sourceAfter:after}));process.exitCode=code===0&&!signal&&!timeout&&!cleanup.survivorsDetected&&cleanup.groupAbsent?0:1;}catch(error){console.error(error);process.exitCode=1;}});

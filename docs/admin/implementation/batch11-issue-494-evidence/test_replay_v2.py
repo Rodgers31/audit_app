@@ -3,10 +3,12 @@ import hashlib
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -53,6 +55,8 @@ class ReplayControls(unittest.TestCase):
         record = json.loads((out / 'receipt.json').read_text())
         self.assertEqual(record['schema'], 2)
         self.assertIs(record['source_stable'], True)
+        self.assertIs(record['cleanup']['survivors_detected'], False)
+        self.assertIs(record['cleanup']['group_absent'], True)
         self.assertIs(record['current_checkout_acceptance'], False)
         self.assertEqual(record['generator_sha256'], hashlib.sha256(ENTRY.read_bytes()).hexdigest())
         actual = json.loads((out / 'stdout.log').read_text())
@@ -163,6 +167,34 @@ class ReplayControls(unittest.TestCase):
         self.refused(self.cli('run', out, '--', '/usr/bin/true'), 'runtime dotenv refused', out)
         self.assertNotIn(TOY.encode(), self.cli('run', self.base / 'second', '--', '/usr/bin/true').stderr)
 
+    def test_runtime_dotenv_refused_by_all_source_operations(self):
+        (self.root / '.env').write_text(TOY)
+        for operation in ('run', 'export', 'pack'):
+            with self.subTest(operation=operation):
+                out = self.base / (operation + '-dotenv')
+                self.refused(self.cli(operation, out), 'runtime dotenv refused', out)
+                self.assertFalse(out.exists())
+
+    def test_corpus_runtime_dotenv_refused_before_archive(self):
+        corpus = self.base / 'corpus'; corpus.mkdir(); (corpus / '.env').write_text(TOY)
+        out = self.base / 'pack'
+        self.refused(self.cli('pack', out, '--corpus', str(corpus)), 'runtime dotenv refused', out)
+
+    def test_immediate_parent_exit_cleans_owned_group_and_fails_capture(self):
+        out = self.base / 'run'
+        child = 'import json,os,subprocess,sys;p=subprocess.Popen([sys.executable,"-c","import time;time.sleep(60)"]);print(json.dumps({"child_pid":p.pid,"group":os.getpgrp()}),flush=True)'
+        result = self.cli('run', out, '--', sys.executable, '-c', child)
+        self.assertEqual(result.returncode, 1, result.stderr.decode())
+        record = json.loads((out / 'receipt.json').read_text())
+        observed = json.loads((out / 'stdout.log').read_text())
+        self.assertEqual(observed['group'], record['pid'])
+        self.assertEqual(record['exit'], 0)
+        self.assertIn('survived parent exit', record['error'])
+        self.assertIs(record['cleanup']['survivors_detected'], True)
+        self.assertIs(record['cleanup']['group_absent'], True)
+        with self.assertRaises(ProcessLookupError):
+            os.killpg(record['pid'], 0)
+
     def test_pack_corpus_symlink_refused(self):
         corpus = self.base / 'corpus'; corpus.mkdir(); (corpus / 'escaped').symlink_to(self.root / 'source.txt')
         out = self.base / 'pack'
@@ -191,6 +223,44 @@ class ReplayControls(unittest.TestCase):
         self.assertNotIn(TOY.encode(), result.stdout)
         self.assertNotIn(b'PROVIDER_TOKEN', result.stdout)
         self.assertIn(b'actual-baseline-readback', result.stdout)
+
+    def test_baseline_and_linux_detect_detached_owned_group_survivors(self):
+        frontend = self.root / 'frontend'; frontend.mkdir(); (frontend / 'input.txt').write_text('input')
+        manifest = self.base / 'manifest.json'
+        manifest.write_text(json.dumps({'files': {'frontend/input.txt': hashlib.sha256(b'input').hexdigest()}}))
+        child = 'const p=require("child_process").spawn(process.execPath,["-e","setTimeout(()=>{},60000)"],{stdio:"ignore"});p.unref();console.log(JSON.stringify({child_pid:p.pid,group:process.pid}));process.exit(0)'
+        for name, args in [('baseline-child.cjs', [str(frontend), str(self.base / 'baseline')]),
+                           ('linux-run.cjs', [str(self.root), str(manifest), str(self.base / 'linux'), 'plain'])]:
+            with self.subTest(entry=name):
+                result = subprocess.run([NODE, str(ENTRY.parent / 'replay-v2' / name), *args, NODE, '-e', child],
+                                        env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
+                records = [json.loads(line) for line in result.stdout.decode().splitlines() if line.startswith('{')]
+                final = records[-1]
+                observed = next(record for record in records if 'child_pid' in record)
+                try:
+                    self.assertEqual(result.returncode, 1, result.stderr.decode())
+                    self.assertEqual(final['exit'], 0)
+                    self.assertIs(final['cleanup']['survivorsDetected'], True)
+                    self.assertIs(final['cleanup']['groupAbsent'], True)
+                    with self.assertRaises(ProcessLookupError):
+                        os.killpg(final['cleanup']['group'], 0)
+                finally:
+                    # This same fixture is also run against the old producer; clean only its observed owned group.
+                    try:
+                        group = os.getpgid(observed['child_pid'])
+                    except ProcessLookupError:
+                        group = None
+                    if group is not None:
+                        self.assertEqual(group, observed['group'])
+                        os.killpg(group, signal.SIGTERM)
+                        for _ in range(100):
+                            try:
+                                os.killpg(group, 0)
+                            except ProcessLookupError:
+                                break
+                            time.sleep(.05)
+                        else:
+                            self.fail('owned fixture group survived cleanup')
 
     def test_native_and_preview_refuse_output_ancestor_before_fixture_creation(self):
         (self.root / 'frontend').mkdir()

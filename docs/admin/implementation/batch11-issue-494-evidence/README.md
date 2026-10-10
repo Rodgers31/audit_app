@@ -16,6 +16,8 @@ python3 -O /clone/docs/admin/implementation/batch11-issue-494-evidence/test_repl
 
 Command capture supplies an explicit environment with owned home/tmp/npm settings and caches. It forwards no ambient credentials, proxies, loaders or provider endpoints. `--mode build` supplies only the documented inert loopback18048 public/API inputs. Unit mode leaves those inputs absent, matching the existing unit fixtures. The receipt records the environment supplied to `Popen`; interpreters can add their own locale/platform variables afterward. Child exit, source mutation and timeout are separate facts. A successful child with changed source fails capture. Capture/export/byte archive do not infer product acceptance from exit zero.
 
+Every selected source/corpus member refuses runtime dotenv filenames before reading their bytes. After the immediate command exits, capture physically checks its owned process group. Any surviving descendants cause failure, exact group termination and an absence readback recorded separately from the child exit. This is process-group ownership, not a sandbox: deliberately detached sessions and separately created service resources require their own explicit ownership/cleanup controls.
+
 Versioned Node entrypoints in `replay-v2/` share ancestor/source/environment guards and bind their helper hash:
 
 Run these Node entrypoints through `replay_v2.py run` when recording current evidence, so the entire selected Git source is measured before/after, including the generators/helpers. Their own stdout reports their narrower native/baseline/browser control results; a standalone stdout record is not complete checkout acceptance.

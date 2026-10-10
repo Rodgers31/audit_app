@@ -9,4 +9,4 @@ const before=measure();console.log(JSON.stringify({check:'actual-baseline-inputs
 const child=spawn(command[0],command.slice(1),{cwd:root,env,detached:true,stdio:'inherit'});let timedOut=false;
 const timer=setTimeout(()=>{timedOut=true;process.kill(-child.pid,'SIGKILL');},180000);
 child.on('error',e=>{clearTimeout(timer);console.error(e);process.exitCode=1;});
-child.on('close',(code,signal)=>{clearTimeout(timer);try{const after=measure();assert.deepEqual(after,before);console.log(JSON.stringify({check:'actual-baseline-readback',sourceStable:true,exit:code,signal,timedOut,files:after}));process.exitCode=code===0&&!signal&&!timedOut?0:1;}catch(e){console.error(e);process.exitCode=1;}});
+child.on('close',async(code,signal)=>{clearTimeout(timer);try{const cleanup=await boundary.cleanupGroup(child.pid);const after=measure();assert.deepEqual(after,before);console.log(JSON.stringify({check:'actual-baseline-readback',sourceStable:true,exit:code,signal,timedOut,cleanup,files:after}));process.exitCode=code===0&&!signal&&!timedOut&&!cleanup.survivorsDetected&&cleanup.groupAbsent?0:1;}catch(e){console.error(e);process.exitCode=1;}});

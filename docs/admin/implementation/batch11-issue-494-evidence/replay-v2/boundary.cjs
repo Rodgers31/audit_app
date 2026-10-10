@@ -15,6 +15,7 @@ function realPath(input) {
 }
 function sourceFile(root, name) {
  assert.ok(name && !path.isAbsolute(name) && !name.includes('\\') && name.split('/').every(p => p && p !== '.' && p !== '..'), 'unsafe source member');
+ assert.ok(!path.basename(name).startsWith('.env') || /\.(example|sample|template)$/.test(name), 'runtime dotenv refused');
  const target = realPath(path.join(root, name));
  assert.ok(fs.lstatSync(target).isFile(), 'regular source member required');
  return target;
@@ -50,4 +51,20 @@ function sourceInventory(root) {
  }
  walk(''); assert.ok(Object.keys(files).length, 'nonempty source required'); return files;
 }
-module.exports = {realPath, sourceFile, externalFresh, environment, sourceInventory, hash};
+function groupExists(group) {
+ try { process.kill(-group, 0); return true; }
+ catch (error) { if (error.code !== 'ESRCH') throw error; return false; }
+}
+async function cleanupGroup(group) {
+ const survivorsDetected = groupExists(group);
+ if (survivorsDetected) {
+  for (const signal of ['SIGTERM', 'SIGKILL']) {
+   try { process.kill(-group, signal); } catch (error) { if (error.code !== 'ESRCH') throw error; }
+   const deadline = Date.now() + 5000;
+   while (groupExists(group) && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 50));
+   if (!groupExists(group)) break;
+  }
+ }
+ return {group, survivorsDetected, groupAbsent:!groupExists(group)};
+}
+module.exports = {realPath, sourceFile, externalFresh, environment, sourceInventory, hash, cleanupGroup};
