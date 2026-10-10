@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy import CheckConstraint, MetaData, create_engine, text
 
 from models import AdminAuditLog, EtlDispatchCommand, IngestionJob, SeedingDomainClaim
+from test_alembic_has_one_head import _script
 from test_batch9_reconciliation import native, read, ROOT
 from test_batch9_reconciliation import owned  # noqa: F401 -- registers the owned pytest fixture
 from test_batch9_reconciliation_constraints import jsonb_sqlite  # noqa: F401 -- registers SQLite JSONB DDL compiler
@@ -26,6 +27,8 @@ def migrate(db, *args):
 
 @pytest.mark.parametrize("owned", ["e572b8c9a001"], indirect=True)
 def test_actual_upgrade_preserves_claim_history_rls_and_grants(owned):
+    expected_head = _script().get_current_head()
+    assert expected_head is not None
     selected = native(owned)
     original = read(owned, "SELECT * FROM seeding_domain_claims")[0]
     with owned.connection.begin():
@@ -34,14 +37,14 @@ def test_actual_upgrade_preserves_claim_history_rls_and_grants(owned):
     result = migrate(owned, "upgrade", "head")
     assert result.returncode == 0, result.stderr
     assert read(owned, "SELECT * FROM seeding_domain_claims")[0] == original
-    assert read(owned, "SELECT version_num FROM alembic_version")[0]["version_num"] == "e583b9c9a001"
+    assert read(owned, "SELECT version_num FROM alembic_version") == [{"version_num": expected_head}]
     assert read(owned, "SELECT relrowsecurity FROM pg_class WHERE oid='seeding_domain_claims'::regclass")[0]["relrowsecurity"] is True
     for role in ("anon", "authenticated"):
         privileges = read(owned, f"SELECT has_table_privilege('{role}','seeding_domain_claims','SELECT,INSERT,UPDATE,DELETE,TRUNCATE') AS allowed")[0]
         assert privileges["allowed"] is False
     assert read(owned, "SELECT coalesce(array_length(relacl,1),0) AS acl_size FROM pg_class WHERE oid='seeding_domain_claims'::regclass")[0]["acl_size"] == 1
     result = migrate(owned, "heads")
-    assert result.returncode == 0 and result.stdout.count("(head)") == 1 and "e583b9c9a001" in result.stdout
+    assert result.returncode == 0 and result.stdout.splitlines() == [f"{expected_head} (head)"]
     result = migrate(owned, "history", "-r", "e572b8c9a001:head")
     assert result.returncode == 0 and "e572b8c9a001 -> e583b9c9a001" in result.stdout
     result = migrate(owned, "downgrade", "e572b8c9a001")

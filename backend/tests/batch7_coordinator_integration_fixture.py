@@ -287,7 +287,7 @@ def fixture_state():
             ("jobs", "ingestion_jobs"), ("effects", "batch7_coordinator_effects"))}
         observations = db.execute(text("SELECT id,status::text,dry_run,metadata->>'dispatch_command_id' AS command_id,items_created FROM ingestion_jobs ORDER BY id")).mappings().all()
         audits = db.execute(text("SELECT actor_id,action,target_id,payload FROM admin_audit_log ORDER BY id")).mappings().all()
-        domains = db.execute(text("SELECT domain,command_id::text,claim_token::text FROM etl_dispatch_domains")).mappings().all()
+        domains = db.execute(text("SELECT domain,command_id::text,claim_token::text FROM etl_dispatch_domains ORDER BY domain")).mappings().all()
         markers = db.execute(text("SELECT stage,job_id FROM batch7_coordinator_markers")).mappings().all()
         commands = db.execute(text("SELECT id::text,actor_id,idempotency_key::text,source,dry_run,generation::text,claim_token::text,execution_started,status,version,job_id,audit_id,outcome FROM etl_dispatch_commands ORDER BY created_at,id")).mappings().all()
         return {"counts": counts, "observations": [dict(v) for v in observations], "audits": [dict(v) for v in audits],
