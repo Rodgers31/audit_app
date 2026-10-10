@@ -1,0 +1,251 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:13:58.828472+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_bootstrap_is_observable.py",
+    "backend/tests/test_bootstrap_supersession.py",
+    "backend/tests/test_bootstrap_defers_to_a_live_seed.py",
+    "backend/tests/test_bootstrap_leaves_live_indicators_alone.py",
+    "backend/tests/test_bootstrap_withholds_modelled_pending_bills.py",
+    "backend/tests/test_reference_writer_ownership.py",
+    "backend/tests/test_population_writer_ownership.py",
+    "backend/tests/test_stored_county_metrics_are_cleared.py",
+    "-q"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  }
+}
+
+........................................................................ [ 61%]
+............................F................                            [100%]
+=================================== FAILURES ===================================
+_ test_census_writer_updates_counties_and_replaces_source_links[bootstrap_slugs] _
+
+db_session = <sqlalchemy.orm.session.Session object at 0x10e7bb020>
+seed_country = <models.Country object at 0x10f497bb0>
+tmp_path = PosixPath('/private/tmp/pytest-of-roger/pytest-203/test_census_writer_updates_cou1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10ecbda20>
+bootstrap_entities = True
+
+    @pytest.mark.parametrize(
+        "bootstrap_entities", [False, True], ids=["legacy_slugs", "bootstrap_slugs"]
+    )
+    def test_census_writer_updates_counties_and_replaces_source_links(
+        db_session, seed_country, tmp_path, monkeypatch, bootstrap_entities
+    ):
+        if bootstrap_entities:
+            import bootstrap
+    
+            monkeypatch.setattr(bootstrap, "SessionLocal", lambda: db_session)
+            monkeypatch.setattr(db_session, "close", lambda: None)
+            monkeypatch.setattr(bootstrap, "_seed_national_data", lambda *a, **k: None)
+            monkeypatch.setattr(bootstrap, "_seed_national_budget", lambda *a, **k: None)
+            bootstrap.initialize_reference_data(force=True)
+            entities = (
+                db_session.execute(
+                    select(Entity)
+                    .where(Entity.type == EntityType.COUNTY)
+                    .order_by(Entity.canonical_name)
+                )
+                .scalars()
+                .all()
+            )
+            assert len(entities) == 47
+            assert (
+                next(e for e in entities if e.canonical_name == "Mandera County").slug
+                == "mandera-009"
+            )
+            assert all("governor" not in (e.meta or {}) for e in entities)
+            assert all("economic_profile" not in (e.meta or {}) for e in entities)
+            assert db_session.query(PopulationData).count() == 0
+            monkeypatch.setattr(
+                bootstrap,
+                "_load_json",
+                lambda _: pytest.fail(
+                    "Complete county set must skip reference county writes"
+                ),
+            )
+            bootstrap.initialize_reference_data(force=False)
+            assert db_session.query(PopulationData).count() == 0
+        else:
+            entities = []
+            for name in KENYAN_COUNTIES:
+                entity = Entity(
+                    country_id=seed_country.id,
+                    type=EntityType.COUNTY,
+                    canonical_name=name,
+                    slug=name.lower().replace(" ", "-").replace("'", "") + "-county",
+                )
+                db_session.add(entity)
+                entities.append(entity)
+        db_session.flush()
+        old_row = PopulationData(
+>           entity_id=entities[0].id,
+                      ^^^^^^^^^^^^^^
+            year=2019,
+            total_population=999_999,
+            source_page=3,
+            page_ref="p. 3",
+            source_hash="a" * 64,
+            confidence_score=1.0,
+            publishable=True,
+            meta={"source": "old fixture"},
+        )
+
+backend/tests/test_population_writer_ownership.py:492: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/attributes.py:569: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/attributes.py:1096: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/attributes.py:1126: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/state.py:828: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+mapper = <Mapper at 0x10b8dee90; Entity>
+state = <sqlalchemy.orm.state.InstanceState object at 0x10e6e0e90>
+attribute_names = {'alt_names', 'audits', 'budget_lines', 'canonical_name', 'country', 'country_id', ...}
+passive = symbol('PASSIVE_OFF')
+
+    def load_scalar_attributes(mapper, state, attribute_names, passive):
+        """initiate a column-based attribute refresh operation."""
+    
+        # assert mapper is _state_mapper(state)
+        session = state.session
+        if not session:
+            raise orm_exc.DetachedInstanceError(
+                "Instance %s is not bound to a Session; "
+                "attribute refresh operation cannot proceed" % (state_str(state))
+            )
+    
+        no_autoflush = bool(passive & attributes.NO_AUTOFLUSH)
+    
+        # in the case of inheritance, particularly concrete and abstract
+        # concrete inheritance, the class manager might have some keys
+        # of attributes on the superclass that we didn't actually map.
+        # These could be mapped as "concrete, don't load" or could be completely
+        # excluded from the mapping and we know nothing about them.  Filter them
+        # here to prevent them from coming through.
+        if attribute_names:
+            attribute_names = attribute_names.intersection(mapper.attrs.keys())
+    
+        if mapper.inherits and not mapper.concrete:
+            # load based on committed attributes in the object, formed into
+            # a truncated SELECT that only includes relevant tables.  does not
+            # currently use state.key
+            statement = mapper._optimized_get_statement(state, attribute_names)
+            if statement is not None:
+                # undefer() isn't needed here because statement has the
+                # columns needed already, this implicitly undefers that column
+                stmt = FromStatement(mapper, statement)
+    
+                return load_on_ident(
+                    session,
+                    stmt,
+                    None,
+                    only_load_props=attribute_names,
+                    refresh_state=state,
+                    no_autoflush=no_autoflush,
+                )
+    
+        # normal load, use state.key as the identity to SELECT
+        has_key = bool(state.key)
+    
+        if has_key:
+            identity_key = state.key
+        else:
+            # this codepath is rare - only valid when inside a flush, and the
+            # object is becoming persistent but hasn't yet been assigned
+            # an identity_key.
+            # check here to ensure we have the attrs we need.
+            pk_attrs = [
+                mapper._columntoproperty[col].key for col in mapper.primary_key
+            ]
+            if state.expired_attributes.intersection(pk_attrs):
+                raise sa_exc.InvalidRequestError(
+                    "Instance %s cannot be refreshed - it's not "
+                    " persistent and does not "
+                    "contain a full primary key." % state_str(state)
+                )
+            identity_key = mapper._identity_key_from_state(state)
+    
+        if (
+            _none_set.issubset(identity_key) and not mapper.allow_partial_pks
+        ) or _none_set.issuperset(identity_key):
+            util.warn_limited(
+                "Instance %s to be refreshed doesn't "
+                "contain a full primary key - can't be refreshed "
+                "(and shouldn't be expired, either).",
+                state_str(state),
+            )
+            return
+    
+        result = load_on_ident(
+            session,
+            select(mapper).set_label_style(LABEL_STYLE_TABLENAME_PLUS_COL),
+            identity_key,
+            refresh_state=state,
+            only_load_props=attribute_names,
+            no_autoflush=no_autoflush,
+        )
+    
+        # if instance is pending, a refresh operation
+        # may not complete (even if PK attributes are assigned)
+        if has_key and result is None:
+>           raise orm_exc.ObjectDeletedError(state)
+E           sqlalchemy.orm.exc.ObjectDeletedError: Instance '<Entity at 0x10f747930>' has been deleted, or its row is otherwise not present.
+
+../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py:1686: ObjectDeletedError
+----------------------------- Captured stderr call -----------------------------
+2026-10-09 14:14:01,726 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 14:14:01,742 - bootstrap - INFO - Reference county data initialized (47 counties)
+2026-10-09 14:14:01,743 - bootstrap - INFO - County data present (47 counties) — skipping county loop; still refreshing national-level data
+2026-10-09 14:14:01,744 - bootstrap - WARNING - national_budget bootstrap skipped: Domain ownership unavailable; reconcile retained execution
+2026-10-09 14:14:01,745 - bootstrap - INFO - Created fiscal period FY2025/26
+2026-10-09 14:14:01,750 - bootstrap - INFO - National-level data refreshed (GDP, economic indicators, national budget)
+------------------------------ Captured log call -------------------------------
+INFO     bootstrap:bootstrap.py:540 Created fiscal period FY2025/26
+INFO     bootstrap:bootstrap.py:1165 Reference county data initialized (47 counties)
+INFO     bootstrap:bootstrap.py:1001 County data present (47 counties) — skipping county loop; still refreshing national-level data
+WARNING  bootstrap:bootstrap.py:1035 national_budget bootstrap skipped: Domain ownership unavailable; reconcile retained execution
+INFO     bootstrap:bootstrap.py:540 Created fiscal period FY2025/26
+INFO     bootstrap:bootstrap.py:1160 National-level data refreshed (GDP, economic indicators, national budget)
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/1183/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/test_population_writer_ownership.py::test_census_writer_updates_counties_and_replaces_source_links[bootstrap_slugs]
+1 failed, 116 passed, 2 warnings in 2.93s

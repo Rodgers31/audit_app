@@ -1,0 +1,61 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py",
+  "generator_sha256": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+  "generated_at": "2026-10-09T23:34:26.331735+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_bootstrap_fixture_safety.py",
+    "backend/tests/test_batch9_bootstrap_sessions.py",
+    "-q"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app",
+  "environment": {
+    "PATH": "/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_review_590:batch9-review-590-inert@127.0.0.1:55590/batch9-review-590-base",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "ENABLE_ETL_SCHEDULER": "false",
+    "JWT_SECRET_KEY": "batch9-review-590-inert"
+  },
+  "target_commit": "cfc77b7615c3c0bb8af110edf22beca8cc15abe8",
+  "source_state": "working_tree_bound_by_source_sha256",
+  "source_sha256": {
+    "backend/bootstrap.py": "a513689c2c5458783470128ae5019a77db3fad55f2f66ada058f9398387311cf",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_bootstrap_fixture/owned_database.py": "26574554d49c6b012454ce7fa0f76ae1f71064e281805e6a211cadd4e7c7e62f",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "802a83dc93ab8f7a673c7b53694308fdf02f0e61cbf9f6b394286742a070b05d",
+    "backend/tests/test_batch9_bootstrap_fixture_safety.py": "6e140aa5dce28a893c50cc086e38c9b421356e56247ef5a68d26dd68843057b3",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "9519c8dc1d08658d9722b9ef9f5b910f5485af785b436143d7f85632531b3f9b",
+    "backend/tests/test_batch9_bootstrap_sessions.py": "98ac3f0fc02027d89c73b5a53a6108d11d04acb7a65929697089b055f8a3f0ce",
+    "docs/admin/implementation/batch9-bootstrap-evidence/cleanup_probe.py": "9f06ca2198e8d4091aead6bf6b7790cd693b10d7044761c89123d2a06c59b9ac",
+    "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py": "e1036693912e6af5683692bbed62c0c0ed6e84705809016294b024659219cca0",
+    "docs/admin/implementation/batch9-bootstrap-evidence/other_domain_readiness.py": "cbc77f4ba5836902673caa885856dc4961f4f42e5e1b9fd967e47b91c4dc328f",
+    "docs/admin/implementation/batch9-bootstrap-evidence/record.py": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_borrowed_postgres.py": "30ec487c96660bf4a83c0ff03e3209a86c14a08f0fc50286a229995140263736",
+    "docs/admin/implementation/batch9-bootstrap-evidence/review_record.py": "0f7fba41f5006f62d3d6fef52e99dac29c9fb8b985ec493b60fe6ffa0e0814e3",
+    "docs/admin/implementation/batch9-bootstrap-evidence/spec-readiness-control.py": "4aaf36e92279e757622f37878ce335baa8d860af3224a76f399f2e8c58b47b2b",
+    "docs/admin/implementation/batch9-bootstrap-evidence/standards-session-control.py": "429708768a4979ac33587f63bd6cfa1a9709488008c5778382b2394582fed0a4",
+    "docs/admin/implementation/batch9-bootstrap-evidence/verify_receipts.py": "a4c0205d0c88d256bab085b0ef4048fea09e6da40e8d6bf1d6be189aa5cb14f1",
+    "docs/admin/implementation/batch9-bootstrap-evidence/adversarial/control.py": "3f1cb45949de60316bf5f55cc098cec898375d5964fd82289eacbc61010871b8"
+  }
+}
+
+........................................................................ [ 61%]
+.............................................                            [100%]
+=============================== warnings summary ===============================
+backend/database.py:64
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/models.py:28
+  /Users/roger/.codex/worktrees/batch9-pr590-review/audit_app/backend/models.py:28: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+117 passed, 2 warnings in 1.19s

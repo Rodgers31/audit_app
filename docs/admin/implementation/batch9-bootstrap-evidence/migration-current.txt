@@ -1,0 +1,64 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:20:35.634330+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "docs/admin/implementation/batch9-bootstrap-evidence/migration_probe.py"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "4d28994ffa3e1b8564e7969b2f105633f6e93a8f40fefe2c142ed5913570f12d",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "369f5bad8d5c004367f4130bdd37c1aa897510c235403fe0ab58990f857b52d0",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  }
+}
+
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 21d0394c1d6b, baseline: full schema from models.py
+INFO  [alembic.runtime.migration] Running upgrade 21d0394c1d6b -> b3d8ab47bf3b, stage1: provenance and publication-gate columns
+INFO  [alembic.runtime.migration] Running upgrade b3d8ab47bf3b -> 6ce655115689, stage1 3a: raw-KES units for debt_timeline and fiscal_summaries
+INFO  [alembic.runtime.migration] Running upgrade 6ce655115689 -> 9f033e9c86d3, stage1 3b: backfill publishable from the publication gate
+INFO  [alembic.runtime.migration] Running upgrade 9f033e9c86d3 -> cdfb80379a29, stage1 3c: AVAILABLE requires a url
+INFO  [alembic.runtime.migration] Running upgrade cdfb80379a29 -> d1a7c9e40b12, stage1 3d: restore the three users columns production never got
+INFO  [alembic.runtime.migration] Running upgrade d1a7c9e40b12 -> a7e2b91c4f38, instrument-level debt register: the debt_instruments table
+INFO  [alembic.stage1] created debt_instruments
+INFO  [alembic.runtime.migration] Running upgrade a7e2b91c4f38 -> ce6ed007f696, clear the modelled county metrics from entity.meta
+INFO  [alembic.runtime.migration] Running upgrade ce6ed007f696 -> f4a1c07b9e52, a year column must hold a year
+INFO  [alembic.runtime.migration] Running upgrade f4a1c07b9e52 -> a2f7c1b48d90, a national population of 82
+INFO  [alembic.runtime.migration] Running upgrade a2f7c1b48d90 -> b8c4e2d17a90, refile the nine-month CBIRR under FY2025/26 9M
+INFO  [alembic.runtime.migration] Running upgrade b8c4e2d17a90 -> 62a9f4131819, delete the pending-bills fixture's eleven national rows
+INFO  [alembic.runtime.migration] Running upgrade 62a9f4131819 -> ea1645a4c0b5, drop the five tables nothing ever wrote (#137 P6)
+INFO  [alembic.runtime.migration] Running upgrade ea1645a4c0b5 -> c415a10d2026, Explicit county borrowing identities and dated observations; no backfill.
+INFO  [alembic.runtime.migration] Running upgrade c415a10d2026 -> f38c61a9d203, Add immutable manual social workflow and durable queue; no operational seeds.
+INFO  [alembic.runtime.migration] Running upgrade f38c61a9d203 -> c96d13e2f411, Encrypted Meta grants and durable session-bound account connection flows.
+INFO  [alembic.runtime.migration] Running upgrade c96d13e2f411 -> a42b86e1d310, Private inspected media intake and bounded storage reservations.
+INFO  [alembic.runtime.migration] Running upgrade a42b86e1d310 -> b73e19a4f602, Durable upload grants and once-only pending accounting; no runtime enablement.
+INFO  [alembic.runtime.migration] Running upgrade b73e19a4f602 -> d8f4a619b203, Private indexed ownership and immutable callback receipts; no backfill/enablement.
+INFO  [alembic.runtime.migration] Running upgrade d8f4a619b203 -> e554d7c9a001, Add dedicated ETL commands, worker lease and durable domain exclusion.
+INFO  [alembic.runtime.migration] Running upgrade e554d7c9a001 -> e572b8c9a001, Shared native/dispatch domain ownership; no activation or claim clearing.
+generator_sha256 b15574f22c4b47db02065636e1760e031926c3448a387a647c912e0dea29473c
+runtime 3.13.9 2.0.46 database batch9-bootstrap-migration-b023c7d54e25441cb8c78a5ebcfc3f8b
+publishable backfill: 0 published, 0 withheld
+3c: 0 AVAILABLE-without-url document(s) re-statused to FAILED
+modelled county metrics cleared: 0 counties, 0 metric field(s), 0 meta key(s)
+population_data: removed 0 row(s) whose year was not a calendar year and 0 county row(s) above 6,000,000
+population_data: removed 0 national-scope row(s) below 5,000,000
+nine-month CBIRR not in this database; nothing to refile
+pending-bills fixture national rows: none in this database
+migration_head e572b8c9a001 claims_RLS True claim_rows 0
+owned_database_removed batch9-bootstrap-migration-b023c7d54e25441cb8c78a5ebcfc3f8b

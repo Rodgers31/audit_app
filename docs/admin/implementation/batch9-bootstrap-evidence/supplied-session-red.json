@@ -1,0 +1,37 @@
+{
+  "generated_by": "docs/admin/implementation/batch9-bootstrap-evidence/record.py",
+  "generator_sha256": "9dae10f5f6e9f32342f421e0961d336066fa9044021ef9b7ad357981f3626201",
+  "generated_at": "2026-10-09T19:16:01.510238+00:00",
+  "command": [
+    "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+    "-m",
+    "pytest",
+    "backend/tests/test_batch9_bootstrap_sessions.py",
+    "-q",
+    "-s",
+    "-k",
+    "refused_second"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/1183/audit_app",
+  "environment": {
+    "PATH": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/opt/homebrew/opt/ruby/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/roger/.codex/tmp/arg0/codex-arg0P7AzYX:/Applications/ChatGPT.app/Contents/Resources/codex-cli/codex-path:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/override:/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/3.4.0/bin:/Users/roger/.nvm/versions/node/v22.19.0/bin:/Users/roger/tools/flutter/bin:/Users/roger/.docker/bin:/Users/roger/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback:/Applications/ChatGPT.app/Contents/Resources:/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS:/Users/roger/.docker/bin",
+    "PYTHON_DOTENV_DISABLED": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONPATH": "/Users/roger/.codex/worktrees/1183/audit_app/backend",
+    "DATABASE_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "JWT_SECRET_KEY": "batch9-bootstrap-inert-key",
+    "BATCH9_BOOTSTRAP_POSTGRES_URL": "postgresql+psycopg2://batch9_bootstrap:batch9-inert-local@127.0.0.1:55492/batch9-bootstrap-1183"
+  },
+  "target_commit": "9e97ca3f1ca43f103a8655447a86d889456a218a",
+  "source_sha256": {
+    "backend/bootstrap.py": "51fe8db458e211ca20331f293ac691f4c14287bea68f7b0bd1ac42c3fd37ec68",
+    "backend/seeding/exclusion.py": "a62033df887862e34bca064a3ddd2aace56730a4f573aced8e07ceb3b8a257a6",
+    "backend/tests/test_batch9_bootstrap_ownership.py": "ae1a1ee0dfc0357f1b6829a2558bbc08a890140e86c76dcf92099c16c93204c8",
+    "backend/tests/batch9_bootstrap_fixture/sitecustomize.py": "1fa4a8c281eada8de0fbcc718db44e9d7e3e6de62b69fececfc1e9c83d8c8be5"
+  },
+  "exit_code": 1,
+  "verdict": "FAILED",
+  "output_sha256": "ad18efc189fa6c1749fd00436802bc18c5b610e0cd56101c862dc5d01f3a3664"
+}
