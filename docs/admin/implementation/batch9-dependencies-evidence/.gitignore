@@ -1,0 +1,5 @@
+# Immutable raw files are retained locally and in the committed archive.
+*.stdout
+*.stderr
+*.json
+!summary.json

@@ -13,7 +13,6 @@ const autoprefixer = require('autoprefixer');
 const tailwindRequire = createRequire(require.resolve('tailwindcss/package.json'));
 const nested = tailwindRequire('postcss-nested');
 const appConfig = require('../tailwind.config.js');
-const { verifyToolingInputs } = require('./verify-tooling-inputs.cjs');
 
 function expectDeclaration(root, selector, property, value) {
   let found = false;
@@ -27,7 +26,6 @@ function expectDeclaration(root, selector, property, value) {
 }
 
 async function main() {
-  await verifyToolingInputs();
   // Each caller has its own dependency range; a root-only parser upgrade can
   // leave vulnerable nested copies installed without breaking an ordinary build.
   for (const [caller, callerRequire] of [

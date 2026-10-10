@@ -4,9 +4,12 @@
   "description": "Government Financial Transparency Audit Application Frontend",
   "private": true,
   "scripts": {
+    "predev": "node scripts/verify-tooling-inputs.cjs",
     "dev": "next dev",
+    "prebuild": "node scripts/verify-tooling-inputs.cjs",
     "build": "next build",
     "start": "next start",
+    "prelint": "node scripts/verify-tooling-inputs.cjs",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -16,9 +19,10 @@
     "test:e2e:legacy": "node scripts/run-legacy-e2e.mjs",
     "verify:native": "node scripts/verify-native-dependencies.mjs",
     "verify:dependency-tooling": "node scripts/verify-dependency-tooling.cjs",
+    "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
+    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
@@ -66,7 +70,8 @@
     "jest": "30.5.2",
     "jest-environment-jsdom": "^30.3.0",
     "picomatch": "4.0.7",
-    "tailwindcss": "^3.3.0"
+    "tailwindcss": "^3.3.0",
+    "validate-npm-package-name": "6.0.2"
   },
   "engines": {
     "node": "^20.9.0 || ^22.0.0 || >=24.0.0"
