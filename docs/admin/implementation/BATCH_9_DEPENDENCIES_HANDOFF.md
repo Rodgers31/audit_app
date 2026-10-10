@@ -283,3 +283,27 @@ The coordinator still owns independent review, exact-head hosted verification,
 GitHub replies, issue disposition and merge. This local repair does not close
 #600 or establish production acceptance. Historical author receipts remain
 unchanged; repeat the actual hosted gates before accepting their new outcome.
+
+## Coordinator full backend capacity repair — 2026-10-09
+
+Existing [#502](https://github.com/Rodgers31/audit_app/issues/502) was reopened after
+full immutable run `38012121550` at `79e0d898c19fb4796447509a08f9dfa3d0ccb348`
+exhausted the backend whole-job 30-minute budget. Its complete official log
+records all 15,466 pytest executions: 13,990 passes, 1,476 existing prerequisite
+skips and no failed/error/xfail outcomes. Coverage and owned fixture cleanup
+completed; cancellation occurred during the later workflow controls, before API
+import smoke. This cancelled run remains diagnostic evidence, not acceptance.
+
+The administrative cohort took 1,585.22 seconds; legacy took 22.63 seconds.
+Both canonical CI and bounded manual verification now allow a finite 45-minute
+backend job budget for setup, both cohorts, coverage, controls and API smoke.
+All other job budgets and individual step/request deadlines remain intact.
+The existing deadline and full/manual parity controls reject the old 30-minute
+cap, an excessive 60-minute cap, absent/invalid limits, and relaxed other jobs
+or image preparation. No tests, assertions, skips, retries or quality gates
+change. Actual red/green receipts are archived externally in
+`BATCH_9_PR_REVIEW/CI_V3/BUDGET_RED.log` and `BUDGET_GREEN.log`.
+
+A fresh immutable full seven-job hosted attempt, independent review, and Actions
+OFF readback are still required before merge and issue #502 disposition.
+Historical verification inputs and failed/cancelled receipts stay unchanged.

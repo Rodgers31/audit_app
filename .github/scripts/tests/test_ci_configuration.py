@@ -18,7 +18,7 @@ class ConfigurationTests(unittest.TestCase):
 
     def assert_job_deadlines(self, workflow):
         expected = {
-            "test-backend": 30, "test-frontend": 20, "test-etl": 10,
+            "test-backend": 45, "test-frontend": 20, "test-etl": 10,
             "security-scan": 10, "test-browser": 20,
             "test-browser-legacy": 20, "quality-gate": 5,
         }
@@ -37,8 +37,8 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(preparation["timeout-minutes"], 5)
 
     def test_complete_backend_has_finite_budget_without_relaxing_other_deadlines(self):
-        # The complete hosted cohort exhausted the old 20-minute whole-job
-        # budget before coverage and smoke, without a failed test verdict.
+        # Run 38012121550 completed 15,466 pytest cases, coverage and cleanup,
+        # then exhausted 30 minutes during controls before API smoke.
         for name, workflow in self.workflows():
             with self.subTest(workflow=name):
                 self.assert_job_deadlines(workflow)
@@ -46,9 +46,9 @@ class ConfigurationTests(unittest.TestCase):
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
             valid = deepcopy(workflow)
-            valid["jobs"]["test-backend"]["timeout-minutes"] = 30
+            valid["jobs"]["test-backend"]["timeout-minutes"] = 45
             self.assert_job_deadlines(valid)
-            for minutes in (20, 0, -1, True, 30.0, "30", None,
+            for minutes in (20, 30, 60, 0, -1, True, 45.0, "45", None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
                     mutated = deepcopy(valid)
