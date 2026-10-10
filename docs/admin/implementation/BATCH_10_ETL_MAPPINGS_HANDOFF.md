@@ -24,3 +24,20 @@ Independent Spec, Standards and adversarial reviewers reproduced defects before 
 - /Users/roger/.codex/visualizations/2026/10/10/01a123ab-88be-7b10-98f8-676b125a7313/batch10-mappings/final-delivery.json
 
 The coordinator should review the scoped draft PR, preserve unsupported602/operational554/583 criteria, preview integration against the other Batch10 heads, then execute combined immutable acceptance and complete bot-body/thread/request readback. Local isolated acceptance is not combined or deployed acceptance. No merge, production migration/reconciliation, deployment/restart, dispatch activation, Actions mutation, shared-policy edit, issue closure or paid review occurred. Hosted run38014890047 remains bound to its actual historical commit/tree equivalence, not this draft.
+
+## Coordinator correction — 2026-10-10, #610
+
+The original four519/275-case author executions above remain historical and
+retain their original source/recorder identities. Later backend sibling changes
+must not be substituted into their source-bound positive fixtures or represented
+as previously tested. The evidence-only #610 repair archives the exact1160-file
+frozen86 declared source corpus (1158 executed plus2 publication-only files),
+preserves original publication/run bytes, and adds strict actual JUnit identity
+and portable/publication metadata validation. Successful verification now means
+historical packet integrity with `current_checkout_acceptance=false`. Explicit
+extracted-source verification still refuses mutated or incomplete source bytes.
+Fresh current/minimum packet replay and current integration acceptance have
+their own external source-bound receipts. See
+[the correction and replay locations](batch10-mappings-evidence/COORDINATOR_610.md).
+The ETL product files are unchanged. #602, #603, #583 and the remaining #554
+operational/native prerequisites remain pending.

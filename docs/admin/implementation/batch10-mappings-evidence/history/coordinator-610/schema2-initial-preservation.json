@@ -1,0 +1,8 @@
+{
+  "generated_at": 1791623138.7310028,
+  "generated_by": "publish_coordinator_610_v2.py",
+  "generator_sha256": "2bdfe6fc29ccf631558b3b597cf71b3377c3485b9956d711f49ac54e1ebeef95",
+  "previous_manifest_sha256": "7becca24508813946755280ef4a5b08566951ca1ec2ab5bafe894efa524e6c52",
+  "reason": "Tighten complete asset census to exempt only the canonical root manifest; original execution identity and retained archive stay unchanged.",
+  "status": "HISTORICAL_SUPERSEDED_VALIDATOR"
+}

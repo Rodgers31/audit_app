@@ -1,0 +1,12 @@
+{
+  "current_checkout_acceptance": false,
+  "generated_at": 1791623186.452283,
+  "generated_by": "publish_coordinator_610_v2.py",
+  "generator_sha256": "2bdfe6fc29ccf631558b3b597cf71b3377c3485b9956d711f49ac54e1ebeef95",
+  "intermediate_manifest_sha256": "7becca24508813946755280ef4a5b08566951ca1ec2ab5bafe894efa524e6c52",
+  "intermediate_publication_status": "HISTORICAL_SUPERSEDED_VALIDATOR",
+  "issue": 610,
+  "original_execution_status": "HISTORICAL_EXECUTION_PACKET",
+  "previous_manifest_sha256": "2c946719ccedeca661165acfcd6b34b433532002f20b62d2518c270d59177ff4",
+  "reason": "Complete asset-census refinement; two actual normal/-O nested-manifest rejection controls ran red. Earlier publications and all original runs remain unchanged."
+}
