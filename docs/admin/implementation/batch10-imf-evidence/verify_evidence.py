@@ -19,6 +19,14 @@ from run_evidence import source_names, source_state
 PACKET = "docs/admin/implementation/batch10-imf-evidence/"
 GENERATOR = PACKET + "run_evidence.py"
 ENTRY = PACKET + "pytest_entry.py"
+ENTRY_ENVIRONMENT = {
+    "REDIS_URL": "redis://127.0.0.1:55521/15",
+    "ENVIRONMENT": "test",
+    "SECRET_BACKEND": "env",
+    "AUTO_SEEDER_ENABLED": "false",
+    "AUTO_WARMUP_ENABLED": "false",
+    "PYTHON_DOTENV_DISABLED": "1",
+}
 
 
 def digest(path):
@@ -71,6 +79,7 @@ def execution_provenance(receipt):
     require(
         isinstance(env, dict)
         and bool(env)
+        and (set(ENTRY_ENVIRONMENT) | {"DATABASE_URL"}).issubset(env)
         and all(isinstance(k, str) and isinstance(v, str) for k, v in env.items())
         and env.get("PYTHON_DOTENV_DISABLED") == "1",
         "Malformed environment",
@@ -186,6 +195,13 @@ def verify(checkout, artifacts, current=None):
             receipt["environment"].get("DATABASE_URL")
             == "sqlite:///" + str(current.parent / "batch10-imf-import.sqlite"),
             "Current database fixture differs",
+        )
+        require(
+            all(
+                receipt["environment"][key] == value
+                for key, value in ENTRY_ENVIRONMENT.items()
+            ),
+            "Current entry environment differs",
         )
         require(
             source_state(checkout, source_names(checkout)) == receipt["start"],
