@@ -14,12 +14,14 @@ import sys
 from tempfile import TemporaryDirectory
 from sqlalchemy import Table
 from tests import batch7_coordinator_integration_fixture as fixture
+from admin_etl_dispatch import SOURCE_DOMAINS
 
 mode = sys.argv[1]
 dispatch = 'e554d7c9a001_etl_dedicated_dispatch.py'
 shared = 'e572b8c9a001_shared_seeding_exclusion.py'
 reconciliation = 'e583b9c9a001_reconciliation_evidence.py'
 mapping = 'e554b10a0001_bounded_dispatch_mappings.py'
+native = 'e602b11a0001_native_source_domains.py'
 def require(value, detail):
     if not value:
         raise AssertionError(detail)
@@ -32,6 +34,8 @@ if mode == 'actual-model':
     domains = fixture.Base.metadata.tables.get('etl_dispatch_domains')
     if domains is not None and 'ready' in domains.columns:
         expected.append(('etl_dispatch_domains', mapping))
+    if SOURCE_DOMAINS.get('cra') == 'cra':
+        expected.append(('etl_dispatch_domains', native))
     require([(table, path.name) for table, path in required] == expected, 'Actual model migrations omitted or reordered')
     require(all(path.is_file() for _, path in required), 'Selected migration is absent')
     print('actual declared migrations:', expected)
@@ -48,12 +52,16 @@ else:
         if mode == 'unrelated-head':
             # A genuine unrelated migration cannot replace the exact required one.
             shutil.copy2(original / 'alembic/versions' / dispatch, versions / 'unrelated_head.py')
-        if mode in ('missing-reconciliation', 'missing-mapping', 'unrelated-mapping'):
+        if mode in ('missing-reconciliation', 'missing-mapping', 'unrelated-mapping', 'missing-native', 'unrelated-native'):
             shutil.copy2(original / 'alembic/versions' / shared, versions / shared)
-        if mode in ('missing-mapping', 'unrelated-mapping'):
+        if mode in ('missing-mapping', 'unrelated-mapping', 'missing-native', 'unrelated-native'):
             shutil.copy2(original / 'alembic/versions' / reconciliation, versions / reconciliation)
         if mode == 'unrelated-mapping':
             shutil.copy2(original / 'alembic/versions' / mapping, versions / 'unrelated_mapping.py')
+        if mode in ('missing-native', 'unrelated-native'):
+            shutil.copy2(original / 'alembic/versions' / mapping, versions / mapping)
+        if mode == 'unrelated-native':
+            shutil.copy2(original / 'alembic/versions' / native, versions / 'unrelated_native.py')
         class NoDatabase:
             def __getattr__(self, attribute):
                 raise AssertionError('Database used before migration inventory validation')
@@ -62,7 +70,8 @@ else:
             fixture.prepare_database()
         except RuntimeError as error:
             expected = {'missing-dispatch': dispatch, 'missing-reconciliation': reconciliation,
-                        'missing-mapping': mapping, 'unrelated-mapping': mapping}.get(mode, shared)
+                        'missing-mapping': mapping, 'unrelated-mapping': mapping,
+                        'missing-native': native, 'unrelated-native': native}.get(mode, shared)
             require(str(error) == 'Missing required coordinator fixture migration: ' + expected,
                     'Wrong missing-migration refusal: ' + str(error))
             print('missing exact migration refused before database access:', expected)
@@ -105,6 +114,12 @@ class CoordinatorSchemaTests(unittest.TestCase):
 
     def test_unrelated_mapping_cannot_replace_the_required_alteration(self):
         self.run_control("unrelated-mapping")
+
+    def test_native_mapping_migration_required_before_database_access(self):
+        self.run_control("missing-native")
+
+    def test_unrelated_native_mapping_cannot_replace_the_required_alteration(self):
+        self.run_control("unrelated-native")
 
 
 if __name__ == "__main__":

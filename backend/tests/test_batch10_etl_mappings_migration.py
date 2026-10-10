@@ -40,7 +40,7 @@ def test_complete_chain_and_empty_round_trip_preserves_private_schema(migrated):
     result = migrate('upgrade','head')
     assert result.returncode == 0, result.stderr
     with engine.begin() as c:
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'e554b10a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'e602b11a0001'
         for role in ('anon','authenticated'):
             c.execute(text(f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='{role}') THEN CREATE ROLE {role}; END IF; END $$"))
         c.execute(text("INSERT INTO ingestion_jobs(domain,status,dry_run,started_at,items_processed,items_created,items_updated,errors,metadata) VALUES ('audits','PENDING',false,now(),0,0,0,'[]',jsonb_build_object('manual_trigger',true))"))
@@ -105,4 +105,4 @@ def test_schema_enforces_all_source_domain_pairs_and_downgrade_retains_history(m
     assert refused.returncode!=0 and 'New mapping history exists' in refused.stderr
     with engine.connect() as c:
         assert c.scalar(text('SELECT count(*) FROM etl_dispatch_commands'))==4
-        assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e554b10a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e602b11a0001'

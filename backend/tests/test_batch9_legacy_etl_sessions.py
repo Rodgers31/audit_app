@@ -50,7 +50,7 @@ def test_manual_sessions_release_only_after_last_normal_close(loader, order):
         session.execute(text("INSERT INTO inert_effects VALUES(1)"))
         session.commit()
     sessions[order[0]].close()
-    assert counts(loader) == (2, 13)
+    assert counts(loader) == (2, 14)
     sessions[order[1]].close()
     assert counts(loader) == (2, 0)
     with loader.get_db_session() as session:
@@ -80,7 +80,7 @@ def test_raw_connection_escape_and_transferred_sessions_refuse(loader):
             with pytest.raises(DomainOwnershipError):
                 session.commit()
         asyncio.run(other_task())
-        assert counts(loader) == (0, 13)
+        assert counts(loader) == (0, 14)
     assert counts(loader) == (0, 0)
 
 
@@ -185,7 +185,7 @@ def test_keyboard_interrupt_after_commit_retains_without_return_receipt(loader):
             raise KeyboardInterrupt()
         finally:
             session.close()
-    assert counts(loader) == (1, 13)
+    assert counts(loader) == (1, 14)
     with loader.engine.connect() as conn:
         assert conn.scalar(text("SELECT count(*) FROM seeding_domain_claims WHERE returned_at IS NOT NULL")) == 0
     with pytest.raises(DomainOwnershipError):

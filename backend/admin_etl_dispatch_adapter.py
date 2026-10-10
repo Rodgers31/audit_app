@@ -29,6 +29,15 @@ def ready_domains():
     for source in selected_sources():
         domain = SOURCE_DOMAINS[source]
         try:
+            if source == "cra":
+                from seeding.config import SeedingSettings
+                try:
+                    cra_enabled = SeedingSettings().cra_ingestion_enabled is True
+                except ValueError:
+                    logging.getLogger(__name__).warning("dispatch_cra_flag_invalid", extra={"domain": domain})
+                    continue
+                if not cra_enabled:
+                    continue
             import_module("seeding.domains." + domain)
         except Exception:
             logging.getLogger(__name__).warning("dispatch_domain_import_unavailable", extra={"domain": domain})

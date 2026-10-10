@@ -43,6 +43,7 @@ socket.socket.connect = local_only
 
 from database import SessionLocal, engine  # noqa: E402
 from models import AdminAuditLog, Base, IngestionJob  # noqa: E402
+from admin_etl_dispatch import SOURCE_DOMAINS  # noqa: E402
 from routers import admin, etl_admin  # noqa: E402
 import supabase_auth  # noqa: E402
 
@@ -64,6 +65,8 @@ def required_coordinator_migrations():
     domains = Base.metadata.tables.get("etl_dispatch_domains")
     if domains is not None and "ready" in domains.columns:
         migrations.append(("etl_dispatch_domains", "e554b10a0001_bounded_dispatch_mappings.py"))
+    if SOURCE_DOMAINS.get("cra") == "cra":
+        migrations.append(("etl_dispatch_domains", "e602b11a0001_native_source_domains.py"))
     paths = [(table, BACKEND / "alembic/versions" / name) for table, name in migrations]
     for _, path in paths:
         if not path.is_file():
@@ -71,30 +74,71 @@ def required_coordinator_migrations():
     return paths
 
 
-def validate_mapping_schema(connection, migration):
-    """Refuse a partial alteration; fixture startup is not permission to repair it."""
+def model_mapping_checks():
+    mapping = str(next(constraint.sqltext for constraint in
+        Base.metadata.tables["etl_dispatch_commands"].constraints
+        if constraint.name == "ck_etl_dispatch_mapping"))
+    domains = str(next(constraint.sqltext for constraint in
+        Base.metadata.tables["etl_dispatch_domains"].constraints
+        if constraint.name == "ck_etl_dispatch_domain"))
+    return mapping, domains
+
+
+def mapping_check_definitions(connection, mapping=None, domains=None, suffix=None):
+    # Let the same PostgreSQL parser render the two declared checks. Comparing
+    # canonical definitions avoids guessing whether casts/parentheses agree.
+    if suffix is not None:
+        if suffix not in ("previous", "native", "validated"):
+            raise RuntimeError("Unknown coordinator schema comparison")
+        command_table = "batch7_expected_command_" + suffix
+        domain_table = "batch7_expected_domain_" + suffix
+        connection.execute(text("CREATE TEMP TABLE " + command_table + " "
+            "(source varchar(20),domain varchar(100), "
+            "CONSTRAINT ck_etl_dispatch_mapping CHECK (" + mapping + ")) ON COMMIT DROP"))
+        connection.execute(text("CREATE TEMP TABLE " + domain_table + " "
+            "(domain varchar(100), CONSTRAINT ck_etl_dispatch_domain CHECK (" + domains + ")) ON COMMIT DROP"))
+        tables = ("pg_temp." + command_table, "pg_temp." + domain_table)
+    else:
+        tables = ("public.etl_dispatch_commands", "public.etl_dispatch_domains")
+    result = []
+    for table, constraint in (
+        (tables[0], "ck_etl_dispatch_mapping"),
+        (tables[1], "ck_etl_dispatch_domain"),
+    ):
+        query = text("""SELECT pg_get_constraintdef(oid),convalidated FROM pg_constraint
+            WHERE conrelid=to_regclass(:table) AND conname=:constraint AND contype='c'""")
+        row = connection.execute(query, {"table": table, "constraint": constraint}).one_or_none()
+        result.append(tuple(row) if row is not None else None)
+    return result
+
+
+def native_upgrade_required(connection, migration):
+    validate_ready_column(connection)
+    observed = mapping_check_definitions(connection)
+    previous = mapping_check_definitions(connection, migration.PREVIOUS_MAPPING,
+        migration.PREVIOUS_DOMAINS, "previous")
+    current = mapping_check_definitions(connection, *model_mapping_checks(), "native")
+    if observed == previous:
+        return True
+    if observed == current:
+        return False
+    raise RuntimeError("Coordinator fixture native schema mismatch")
+
+
+def validate_ready_column(connection):
     column = connection.execute(text("""SELECT data_type,is_nullable,column_default
         FROM information_schema.columns WHERE table_schema='public'
         AND table_name='etl_dispatch_domains' AND column_name='ready'""")).one_or_none()
     if column is None or tuple(column) != ("boolean", "NO", "false"):
         raise RuntimeError("Coordinator fixture mapping schema mismatch")
-    # Let the same PostgreSQL parser render the two declared checks. Comparing
-    # canonical definitions avoids guessing whether casts/parentheses agree.
-    connection.execute(text("CREATE TEMP TABLE batch7_expected_command_mapping "
-        "(source varchar(20),domain varchar(100), "
-        "CONSTRAINT ck_etl_dispatch_mapping CHECK (" + migration.MAPPING + ")) ON COMMIT DROP"))
-    connection.execute(text("CREATE TEMP TABLE batch7_expected_domain_mapping "
-        "(domain varchar(100), CONSTRAINT ck_etl_dispatch_domain CHECK (" + migration.DOMAINS + ")) ON COMMIT DROP"))
-    for actual, expected, constraint in (
-        ("public.etl_dispatch_commands", "pg_temp.batch7_expected_command_mapping", "ck_etl_dispatch_mapping"),
-        ("public.etl_dispatch_domains", "pg_temp.batch7_expected_domain_mapping", "ck_etl_dispatch_domain"),
-    ):
-        query = text("""SELECT pg_get_constraintdef(oid),convalidated FROM pg_constraint
-            WHERE conrelid=to_regclass(:table) AND conname=:constraint AND contype='c'""")
-        observed = connection.execute(query, {"table": actual, "constraint": constraint}).one_or_none()
-        declared = connection.execute(query, {"table": expected, "constraint": constraint}).one()
-        if observed is None or tuple(observed) != tuple(declared) or observed[1] is not True:
-            raise RuntimeError("Coordinator fixture mapping schema mismatch")
+
+
+def validate_mapping_schema(connection):
+    """Refuse a partial alteration; fixture startup is not permission to repair it."""
+    validate_ready_column(connection)
+    declared = mapping_check_definitions(connection, *model_mapping_checks(), "validated")
+    if mapping_check_definitions(connection) != declared:
+        raise RuntimeError("Coordinator fixture mapping schema mismatch")
 
 
 def prepare_database():
@@ -111,7 +155,9 @@ def prepare_database():
     Base.metadata.create_all(engine, tables=[IngestionJob.__table__, AdminAuditLog.__table__])
     with engine.begin() as connection:
         for table, migration in migrations:
-            if migration.revision == "e583b9c9a001":
+            if migration.revision == "e602b11a0001":
+                required = native_upgrade_required(connection, migration)
+            elif migration.revision == "e583b9c9a001":
                 # The validated CHECK alteration is repeatable. Revalidate
                 # retained fixture history without converting or clearing it.
                 required = True
@@ -127,9 +173,8 @@ def prepare_database():
             if required:
                 with Operations.context(MigrationContext.configure(connection)):
                     migration.upgrade()
-        for _, migration in migrations:
-            if migration.revision == "e554b10a0001":
-                validate_mapping_schema(connection, migration)
+        if any(migration.revision == "e554b10a0001" for _, migration in migrations):
+            validate_mapping_schema(connection)
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_control (mode text NOT NULL CHECK (mode IN ('normal','failure','before','after')))"))
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_effects (job_id integer NOT NULL REFERENCES ingestion_jobs(id))"))
         connection.execute(text("CREATE TABLE IF NOT EXISTS batch7_coordinator_markers (stage text NOT NULL, job_id integer NOT NULL REFERENCES ingestion_jobs(id))"))
