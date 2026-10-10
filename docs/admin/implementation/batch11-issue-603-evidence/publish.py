@@ -1,4 +1,4 @@
-"""Publish a fresh external execution packet using the preserved recorder."""
+"""Publish fresh current execution using the owned-process recorder."""
 import argparse
 import hashlib
 import json
@@ -30,7 +30,8 @@ def main():
     if any(not t.startswith("tests/") or ".." in Path(t).parts or not (root / "backend" / t).is_file() for t in args.tests):
         raise ValueError("Actual backend test files required")
     out.mkdir()
-    command = [sys.executable, str(root / "docs/admin/implementation/batch10-readiness-evidence/record.py"),
+    command = [sys.executable, *(["-O"] if sys.flags.optimize else []),
+        str(root / "docs/admin/implementation/batch11-issue-603-evidence/record_v2.py"),
         "--root", str(root), "--output", str(out / "receipt.json"), "--timeout", str(args.timeout),
         "--", sys.executable, "-m", "pytest", *args.tests, "-vv", "-s", "--junitxml=" + str(out / "results.xml"),
         "--basetemp=" + str(out / "tmp"), "-o", "cache_dir=" + str(out / "pytest-cache")]
@@ -43,7 +44,7 @@ def main():
         generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         portable_command=["<python>", "-m", "pytest", *args.tests, "-vv", "-s", "--junitxml=<output>/results.xml"],
         files={name: sha(external(out / name, root)) for name in ("receipt.json", "receipt.txt", "results.xml")},
-        testcases=inventory(out / "results.xml"))
+        testcases=inventory(out / "results.xml", out / "receipt.txt"))
     index = out / "INDEX.json"
     with index.open("x") as stream:
         json.dump(packet, stream, indent=2)

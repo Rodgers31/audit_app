@@ -9,7 +9,8 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-RECORDER = "docs/admin/implementation/batch10-readiness-evidence/record.py"
+RECORDER = "docs/admin/implementation/batch11-issue-603-evidence/record_v2.py"
+HISTORICAL_RECORDER = "docs/admin/implementation/batch10-readiness-evidence/record.py"
 
 
 def require(value, message):
@@ -29,13 +30,47 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def inventory(path):
+def unexpected_successes(cases, raw_path):
+    """JUnit omits non-strict XPASS; bind actual console outcomes to XML cases.
+
+    A test that prints output can split its node and outcome onto different
+    lines. If the terminal summary reports an XPASS we cannot identify, refuse
+    rather than turn that marker-free XML case into a passing observation.
+    """
+    raw = re.sub(r"\x1b\[[0-?]*[ -/]*[@-~]", "", Path(raw_path).read_text(errors="replace"))
+    summaries = re.findall(r"^=+[^\n]*\bin [0-9.]+s[^\n]*=+$", raw, re.M)
+    require(bool(summaries), "Missing actual pytest terminal summary")
+    count = re.search(r"\b([0-9]+) xpassed\b", summaries[-1])
+    declared = int(count[1]) if count else 0
+    resolved = set()
+    for match in re.finditer(r"^(tests/.*) XPASS(?:\s.*)?$", raw, re.M):
+        node = match[1]
+        for case in cases:
+            name, classname = case.attrib.get("name", ""), case.attrib.get("classname", "")
+            suffix = "::" + name
+            if not name or not node.endswith(suffix):
+                continue
+            prefix = node[:-len(suffix)]
+            filename, *classes = prefix.split("::")
+            if not filename.endswith(".py"):
+                continue
+            observed_class = ".".join([filename[:-3].replace("/", "."), *classes])
+            if observed_class == classname:
+                require(all(case.find(kind) is None for kind in ("failure", "error", "skipped")),
+                        "XPASS console/XML outcome mismatch")
+                resolved.add(classname + "::" + name)
+    require(len(resolved) == declared, "Unresolved pytest XPASS identity or summary mismatch")
+    return resolved
+
+
+def inventory(path, raw_path=None):
     tree = ET.parse(path)
     cases = list(tree.iter("testcase"))
     identities = [t.attrib.get("classname", "") + "::" + t.attrib.get("name", "") for t in cases]
     require(bool(identities) and len(set(identities)) == len(identities)
         and all(t.attrib.get("classname") and t.attrib.get("name") for t in cases), "Empty/duplicate testcase inventory")
-    counts = dict(passed=0, failed=0, errors=0, skipped=0, xfailed=0)
+    xpasses = unexpected_successes(cases, raw_path) if raw_path is not None else set()
+    counts = dict(passed=0, failed=0, errors=0, skipped=0, xfailed=0, xpassed=0)
     skips = []
     for identity, case in zip(identities, cases):
         if case.find("failure") is not None:
@@ -46,9 +81,11 @@ def inventory(path):
             node = case.find("skipped")
             counts["xfailed" if node.attrib.get("type") == "pytest.xfail" else "skipped"] += 1
             skips.append(dict(identity=identity, reason=node.attrib.get("message", "")))
+        elif identity in xpasses:
+            counts["xpassed"] += 1
         else:
             counts["passed"] += 1
-    require(counts["passed"] > 0, "No passing executed testcases")
+    require(counts["passed"] + counts["xpassed"] > 0, "No passing executed testcases")
     suites = list(tree.iter("testsuite"))
     for key, actual in (("tests", len(cases)), ("failures", counts["failed"]),
             ("errors", counts["errors"]), ("skipped", counts["skipped"] + counts["xfailed"])):
@@ -67,7 +104,20 @@ def validate(root, index_path, *, current=True):
         path = external(index_path.parent / name, root)
         require(type(digest) is str and re.fullmatch("[0-9a-f]{64}", digest) and sha(path) == digest, "Output hash mismatch")
     receipt = json.loads((index_path.parent / "receipt.json").read_text())
-    require(type(receipt) is dict and receipt.get("generated_by") == RECORDER, "Wrong execution recorder")
+    recorder = receipt.get("generated_by") if type(receipt) is dict else None
+    require(recorder == RECORDER or (not current and recorder == HISTORICAL_RECORDER), "Wrong execution recorder")
+    if recorder == RECORDER:
+        require(type(receipt.get("capture_schema")) is int and receipt["capture_schema"] == 2, "Wrong capture version")
+        require(type(receipt.get("pid")) is int and receipt["pid"] > 0, "Invalid owned child identity")
+        cleanup = receipt.get("process_cleanup")
+        require(type(cleanup) is dict and set(cleanup) == {"group", "survivors_detected", "group_absent", "signals"},
+            "Missing owned process cleanup readback")
+        require(type(cleanup["group"]) is int and cleanup["group"] == receipt["pid"], "Wrong owned process group")
+        require(type(cleanup["survivors_detected"]) is bool and cleanup["survivors_detected"] is False,
+            "Surviving owned child cannot certify repair")
+        require(type(cleanup["group_absent"]) is bool and cleanup["group_absent"] is True,
+            "Owned process group absence required")
+        require(type(cleanup["signals"]) is list and cleanup["signals"] == [], "Owned cleanup was required")
     require(type(receipt.get("child_exit")) is int and receipt["child_exit"] == 0, "Invalid child exit")
     require(type(receipt.get("timed_out")) is bool and receipt["timed_out"] is False, "Timeout metadata invalid")
     require(type(receipt.get("source_stable")) is bool and receipt["source_stable"] is True, "Source stability invalid")
@@ -79,6 +129,9 @@ def validate(root, index_path, *, current=True):
         require(key in receipt, "Missing execution metadata: " + key)
     require(type(receipt["runtime"]) is dict and all(type(receipt["runtime"].get(k)) is str and receipt["runtime"][k]
         for k in ("executable", "python", "platform")), "Runtime metadata invalid")
+    if recorder == RECORDER:
+        require(type(receipt["runtime"].get("recorder_optimization")) is int
+            and receipt["runtime"]["recorder_optimization"] in (0, 1, 2), "Recorder optimization metadata invalid")
     require(receipt["runtime"]["executable"] == receipt["command"][0], "Wrong executed runtime")
     require(type(receipt["secret_environment_present"]) is dict and
         set(receipt["secret_environment_present"]) == {"DATABASE_URL", "JWT_SECRET_KEY", "BATCH9_BOOTSTRAP_POSTGRES_URL"}
@@ -108,7 +161,7 @@ def validate(root, index_path, *, current=True):
     for path, digest in source["sources"].items():
         require(type(path) is str and not Path(path).is_absolute() and ".." not in Path(path).parts, "Invalid source identity")
         require(type(digest) is str and re.fullmatch("[0-9a-f]{64}", digest), "Malformed source hash")
-    require(receipt.get("generator_sha256") == source["sources"].get(RECORDER), "Recorder identity mismatch")
+    require(receipt.get("generator_sha256") == source["sources"].get(recorder), "Recorder identity mismatch")
     require(packet.get("generator_sha256") == source["sources"].get(packet["generated_by"]), "Publisher identity mismatch")
     require(receipt.get("log_sha256") == packet["files"]["receipt.txt"], "Raw execution output mismatch")
     command = receipt["command"]
@@ -123,12 +176,19 @@ def validate(root, index_path, *, current=True):
         and source["sources"].get("backend/" + t) for t in tests), "Executed test selection identity invalid")
     portable = ["<python>", *command[1:-6], "-vv", "-s", "--junitxml=<output>/results.xml"]
     require(packet.get("portable_command") == portable, "Portable invocation differs from execution")
-    observed = inventory(index_path.parent / "results.xml")
+    observed = inventory(index_path.parent / "results.xml", index_path.parent / "receipt.txt")
     declared = packet.get("testcases")
+    # Original packets predate the explicit XPASS field. Preserve their byte
+    # histories, but accept an omitted zero only when the actual log also has
+    # zero unexpected successes. Current publishers always include the field.
+    if (not current and recorder == HISTORICAL_RECORDER and type(declared) is dict and type(declared.get("counts")) is dict
+            and "xpassed" not in declared["counts"] and observed["counts"]["xpassed"] == 0):
+        declared = {**declared, "counts": {**declared["counts"], "xpassed": 0}}
     require(type(declared) is dict and set(declared) == {"identities", "counts", "skips"}
         and type(declared["counts"]) is dict and set(declared["counts"]) == set(observed["counts"])
         and all(type(v) is int and v >= 0 for v in declared["counts"].values()), "Malformed testcase counts")
-    require(observed == packet.get("testcases"), "Testcase metadata mismatch")
+    require(observed == declared, "Testcase metadata mismatch")
+    require(observed["counts"]["xpassed"] == 0, "Unexpected pytest success cannot certify repair")
     require(observed["counts"]["failed"] == observed["counts"]["errors"] == observed["counts"]["xfailed"] == 0,
         "Failed/error/xfail execution cannot certify repair")
     if current:
