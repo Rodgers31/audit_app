@@ -43,6 +43,11 @@ def evidence_package(tmp_path):
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHON_DOTENV_DISABLED": "1",
         "DATABASE_URL": "sqlite:///" + str(replay / "batch10-imf-import.sqlite"),
+        "REDIS_URL": "redis://127.0.0.1:55521/15",
+        "ENVIRONMENT": "test",
+        "SECRET_BACKEND": "env",
+        "AUTO_SEEDER_ENABLED": "false",
+        "AUTO_WARMUP_ENABLED": "false",
     }
     command = [
         sys.executable,
@@ -213,7 +218,7 @@ def test_evidence_rejects_incomplete_or_changed_execution(
         receipt["start"]["status"] = "synthetic changed state"
         receipt["end"]["status"] = "synthetic changed state"
     elif mutation == "source_drift":
-        (checkout / "generator.py").write_text("# changed\n")
+        (checkout / receipt["generated_by"]).write_text("# changed\n")
     elif mutation == "output_drift":
         (replay / "raw.log").write_text("changed\n")
     else:
@@ -251,13 +256,20 @@ def test_evidence_rejects_incomplete_or_changed_execution(
         "wrong_command_entry",
         "wrong_junit_destination",
         "manifest_schema_bool",
+        "missing_env_REDIS_URL",
+        "missing_env_ENVIRONMENT",
+        "missing_env_SECRET_BACKEND",
+        "missing_env_AUTO_SEEDER_ENABLED",
+        "missing_env_AUTO_WARMUP_ENABLED",
     ],
 )
 def test_evidence_rejects_malformed_execution_provenance(
     evidence_package, optimized, mutation
 ):
     checkout, _, _, receipt = evidence_package
-    if mutation.startswith("missing_"):
+    if mutation.startswith("missing_env_"):
+        receipt["environment"].pop(mutation[len("missing_env_") :])
+    elif mutation.startswith("missing_"):
         receipt.pop({"missing_entry": "entry_sha256"}.get(mutation, mutation[8:]))
     elif mutation == "child_bool":
         receipt["child_exit"] = False
