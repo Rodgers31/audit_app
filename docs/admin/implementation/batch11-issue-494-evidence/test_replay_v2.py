@@ -1,5 +1,6 @@
 """Execute portable replay boundaries with toy secrets and real relocated Git fixtures."""
 import hashlib
+import importlib.util
 import json
 import os
 import shutil
@@ -10,6 +11,7 @@ import tarfile
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ENTRY = Path(__file__).resolve().with_name('replay_v2.py')
@@ -274,6 +276,43 @@ class ReplayControls(unittest.TestCase):
                 self.assertEqual(result.returncode, 1)
                 self.assertIn(b'symlink ancestor refused', result.stderr)
                 self.assertFalse((self.root / ('native' if name.startswith('native') else 'preview')).exists())
+
+
+class CacheAuthorityControls(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.fixture = Path(self.temp.name).resolve() / 'fixture'
+        self.fixture.mkdir()
+        spec = importlib.util.spec_from_file_location('owned_cache_control', ENTRY.with_name('npm_cache_control_v2.py'))
+        self.cache = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.cache)
+
+    def test_regular_cached_package_bytes_remain_measured(self):
+        member = self.fixture / 'node_modules' / 'sprintf-js' / 'package.json'
+        member.parent.mkdir(parents=True)
+        member.write_text('{"name":"sprintf-js"}')
+        self.assertEqual(self.cache.files(self.fixture), {
+            'node_modules/sprintf-js/package.json': hashlib.sha256(member.read_bytes()).hexdigest()})
+
+    def test_npm_configuration_and_alternate_lock_refuse_before_read(self):
+        original_read = Path.read_bytes
+        for name in ('.npmrc', '.NPMRC', '.NpMrC', 'npm-shrinkwrap.json',
+                     'NPM-SHRINKWRAP.JSON', 'Npm-Shrinkwrap.Json'):
+            for parent in (self.fixture, self.fixture / 'node_modules' / 'sprintf-js'):
+                with self.subTest(name=name, parent=str(parent.relative_to(self.fixture))):
+                    parent.mkdir(parents=True, exist_ok=True)
+                    member = parent / name
+                    member.write_text(TOY)
+                    def checked_read(path):
+                        self.assertNotEqual(path, member, 'Supplemental npm authority bytes were read')
+                        return original_read(path)
+                    try:
+                        with patch.object(Path, 'read_bytes', checked_read):
+                            with self.assertRaisesRegex(ValueError, 'Supplemental npm authority refused'):
+                                self.cache.files(self.fixture)
+                    finally:
+                        member.unlink()
 
 
 if __name__ == '__main__':

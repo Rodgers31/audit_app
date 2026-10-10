@@ -32,6 +32,7 @@ def files(root):
     for path in root.rglob('*'):
         require(path.resolve() == path and not path.is_symlink(), 'Fixture alias refused')
         require(path.is_dir() or path.is_file(), 'Regular fixture required')
+        require(path.name.casefold() not in ('.npmrc', 'npm-shrinkwrap.json'), 'Supplemental npm authority refused')
         if path.is_file():
             require(not path.name.startswith('.env') and not path.name.endswith('.env'), 'Fixture dotenv refused')
             result[path.relative_to(root).as_posix()] = sha(path)
