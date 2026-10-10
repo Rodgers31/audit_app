@@ -1,0 +1,151 @@
+{
+  "source_verifier_sha256": "34beb8a50a24a81acf29fbd640569e8fc7b9ab5d82528709e8e218510b303b48",
+  "source_parser_sha256": "5e86e99225a3b8691b608b4cff4f57b00a26bb7c66672782e633608ad76f54ab",
+  "events": [
+    {
+      "kind": "package-positive",
+      "diagnostic": {
+        "archive_integrity": "verified",
+        "issue_601": "unresolved",
+        "original_inventory": 323,
+        "passed": 312,
+        "existing_fixmes": 11,
+        "targeted_records": 6
+      }
+    },
+    {
+      "kind": "package-control",
+      "name": "missing-target",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Missing targeted controls"
+    },
+    {
+      "kind": "package-control",
+      "name": "false-green-pagination",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Wrong targeted control identity"
+    },
+    {
+      "kind": "package-control",
+      "name": "truncated-sources",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Incomplete or changed source census"
+    },
+    {
+      "kind": "package-control",
+      "name": "historical-trace-substitution",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Wrong original trace"
+    },
+    {
+      "kind": "package-control",
+      "name": "zero-count",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Wrong targeted control identity"
+    },
+    {
+      "kind": "package-control",
+      "name": "duplicate-cohort",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "Duplicate cohort records"
+    },
+    {
+      "kind": "package-control",
+      "name": "claimed-resolution",
+      "expected_reject": true,
+      "rejected": true,
+      "diagnostic": "The issue must remain unresolved"
+    },
+    {
+      "kind": "package-control",
+      "name": "recompressed-equivalent",
+      "expected_reject": false,
+      "rejected": false,
+      "diagnostic": {
+        "archive_integrity": "verified",
+        "issue_601": "unresolved",
+        "original_inventory": 323,
+        "passed": 312,
+        "existing_fixmes": 11,
+        "targeted_records": 6
+      }
+    },
+    {
+      "kind": "parser-positive",
+      "passed": true,
+      "count": 269
+    },
+    {
+      "kind": "parser-control",
+      "name": "empty-suites",
+      "rejected": true,
+      "diagnostic": "Empty or duplicate browser inventory"
+    },
+    {
+      "kind": "parser-control",
+      "name": "infrastructure-error",
+      "rejected": true,
+      "diagnostic": "Invalid browser collection report"
+    },
+    {
+      "kind": "parser-control",
+      "name": "absent-source",
+      "rejected": true,
+      "diagnostic": "Browser case source is absent or outside the suite"
+    },
+    {
+      "kind": "parser-control",
+      "name": "boolean-counter",
+      "rejected": true,
+      "diagnostic": "Invalid browser execution accounting"
+    },
+    {
+      "kind": "parser-control",
+      "name": "nonzero-child",
+      "rejected": true,
+      "diagnostic": false
+    },
+    {
+      "kind": "parser-control",
+      "name": "missing-result",
+      "rejected": true,
+      "diagnostic": "Missing or malformed browser execution result"
+    },
+    {
+      "kind": "parser-control",
+      "name": "error-on-pass",
+      "rejected": true,
+      "diagnostic": "Missing or malformed browser execution result"
+    },
+    {
+      "kind": "parser-control",
+      "name": "omitted-case",
+      "rejected": true,
+      "diagnostic": "Browser execution omitted or substituted collected cases"
+    },
+    {
+      "kind": "parser-control",
+      "name": "case-status-contradiction",
+      "rejected": true,
+      "diagnostic": "Missing or malformed browser execution result"
+    },
+    {
+      "kind": "partition-control",
+      "name": "missing-cohort",
+      "rejected": true,
+      "diagnostic": "Incomplete browser cohort partition"
+    },
+    {
+      "kind": "partition-control",
+      "name": "duplicate-partition",
+      "rejected": true,
+      "diagnostic": "Browser partition has missing, substituted or duplicate cases"
+    }
+  ]
+}

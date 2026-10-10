@@ -1,0 +1,24 @@
+{"node":"v22.19.0","root":"/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence","repo":"/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app","sourceBefore":{"verify.mjs":"34beb8a50a24a81acf29fbd640569e8fc7b9ab5d82528709e8e218510b303b48","verify.test.mjs":"6dc6f96df70c0a81bb4d01e4cfde22ec9cc3005f07e953c4c8048c70b1ecf6de","create_package.py":"f19563817e100aafbfa3a62eb8832285151a302f1f5ab2ae2024a989cd8688a5","manifest.json":"51a12f94f2bad7754f294871d9646ac393c4af6ac4f81bf9b4633c14436b7959"},"harnessBefore":"c08891abaf9600874956b3d9a3961bc41e0ff633199be9895b7da8f4dba81ab8"}
+{"name":"extended-valid-baseline","expect":"verify","actual":"verified","verdict":{"archive_integrity":"verified","issue_601":"unresolved","original_inventory":323,"passed":312,"existing_fixmes":11,"targeted_records":6}}
+{"name":"target-command-absent","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-command-empty","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-command-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-command-null","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"inventory-command-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"cohort-command-wrong","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-command-changed-but-source-key-valid","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"probe-source-byte-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"probe-hook-byte-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"probe-hook-v1-byte-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"probe-config-byte-drift","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"target-generator-conflicts-consumed-source","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"remove-required-runtime-inputs","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"negative-error-is-unrelated-location","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"negative-diagnostic-observed-events-empty","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"negative-capture-absent","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-probe-capture-absent","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"full-existing-fixmes-relabelled-runtime-skips","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"positive-contradictory-spec-status","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"negative-contradictory-spec-status","expect":"reject","actual":"rejected","error":"Frozen raw-input census changed"}
+{"name":"missing-optional-positive-record","expect":"reject","actual":"rejected","error":"Missing targeted controls"}
+{"attempts":22,"false_successes":[],"unexpected_rejections":[],"source_unchanged":true}

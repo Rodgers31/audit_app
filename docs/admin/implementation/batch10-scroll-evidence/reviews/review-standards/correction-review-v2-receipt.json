@@ -1,0 +1,63 @@
+{
+  "head": "d3be02e6ed10830d0722d8696f911714cf7b56af",
+  "scope": "Runtime correction docs pending follow-up commit, no modified archive/checker",
+  "source_before": {
+    "docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md": "e9960284c02b0a71ee265a9d6a1f8f545a89a87e0dbb5a8dfa6e78ea29ce50a4",
+    "docs/admin/implementation/batch10-scroll-evidence/LESSONS.md": "7349b0920d5f254aab2be9b00c2169e3a7f4839beed070a12a4074c8bf67d84c",
+    "docs/admin/implementation/batch10-scroll-evidence/RUNTIME_CORRECTION.md": "3c1ab7f169bdffd0fa499d3e9359b563e610629c517f3f8fde301312c5f7a767"
+  },
+  "source_after": {
+    "docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md": "e9960284c02b0a71ee265a9d6a1f8f545a89a87e0dbb5a8dfa6e78ea29ce50a4",
+    "docs/admin/implementation/batch10-scroll-evidence/LESSONS.md": "7349b0920d5f254aab2be9b00c2169e3a7f4839beed070a12a4074c8bf67d84c",
+    "docs/admin/implementation/batch10-scroll-evidence/RUNTIME_CORRECTION.md": "3c1ab7f169bdffd0fa499d3e9359b563e610629c517f3f8fde301312c5f7a767"
+  },
+  "source_changed": [],
+  "generator": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/review-standards/review_correction_v2.py",
+  "generator_sha256": "fcb330bb39005ad4d17876fd1543d25c62483a3381e6ed83b441e69e99ac1bc7",
+  "retained_binary_sha256": {
+    "node22.bin": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+    "node22-amd64.bin": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48"
+  },
+  "correction_receipt_sha256": "0ae9f90b3f8ae9891e89501041b973c99deeb7ca55cb07bbdfa326724ea685ee",
+  "observations": [
+    {
+      "command": [
+        "git",
+        "diff",
+        "--",
+        "docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md",
+        "docs/admin/implementation/batch10-scroll-evidence/LESSONS.md",
+        "docs/admin/implementation/batch10-scroll-evidence/RUNTIME_CORRECTION.md"
+      ],
+      "child_exit": 0,
+      "stdout": "diff --git a/docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md b/docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md\nindex 2499a49..b30e674 100644\n--- a/docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md\n+++ b/docs/admin/implementation/BATCH_10_SCROLL_HANDOFF.md\n@@ -28,7 +28,7 @@ The 100-attempt record's raw report, log, trace, screenshot, error context and v\n \n ## Runtime, ownership and limits\n \n-The owned Linux AMD64 container ran under Docker Desktop emulation on a macOS ARM64 host, using pinned Playwright image digest `6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d`. Earlier/full diagnostic runs used its Node 24.13.0. The 100-attempt replay used verified Linux x64 Node 22.23.3, matching the original hosted Node version. An initially copied ARM64 Node binary was identified and never used for browser execution. Local Python was 3.12.3; historical hosted Python was 3.12.15. Resolved backend packages and actual runtime/environment/build readbacks are archived. Linux browser identity does not establish equivalence to native hosted CPU, fonts, kernel or scheduling.\n+The owned Linux AMD64 container ran under Docker Desktop emulation on a macOS ARM64 host, using pinned Playwright image digest `6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d`. Earlier/full diagnostic runs used its Node 24.13.0. The 100-attempt replay used verified Linux x64 Node 22.23.3, matching the original hosted Node version. The initial setup record incorrectly labeled the first copied executable ARM64 from source-image metadata. Fresh executable/runtime checks show both retained copies are Linux x64 with identical SHA-256; that earlier label is withdrawn in [RUNTIME_CORRECTION.md](batch10-scroll-evidence/RUNTIME_CORRECTION.md). The original record remains preserved. Local Python was 3.12.3; historical hosted Python was 3.12.15. Resolved backend packages and actual runtime/environment/build readbacks are archived. Linux browser identity does not establish equivalence to native hosted CPU, fonts, kernel or scheduling.\n \n The production public fixture uses real application readers with disposable SQLite, disabled dotenv/config loading, inert secrets and blocked external HTTP. Other original cohorts used their actual inert fixture contracts and owned PostgreSQL. There were no `.env` files in the author checkout. Reserved host ports 55523/18013/13013 were checked free and remained unused. Original internal ports (public 55494/8141/3141, then the original cohort ports) ran entirely in the owned container namespace with no host publication. This is an explicit resource substitution. `run_full.py` adapts resource ownership only; the original runner's inventory, six production cohort configurations and `executionPassed`/partition checks were executed. It is not represented as a byte-identical invocation of the original runner's Docker resource-creation path.\n \ndiff --git a/docs/admin/implementation/batch10-scroll-evidence/LESSONS.md b/docs/admin/implementation/batch10-scroll-evidence/LESSONS.md\nindex 36fc57c..e57e267 100644\n--- a/docs/admin/implementation/batch10-scroll-evidence/LESSONS.md\n+++ b/docs/admin/implementation/batch10-scroll-evidence/LESSONS.md\n@@ -4,7 +4,7 @@ Shared skills were read-only. These are local proposals for coordinator review.\n \n - A detector failure is not a causal reproduction. Setting native restoration to `manual` made the real scroll assertion fail at Y=0, but did not reproduce the native-auto hosted Y=100 failure. Keep those claims separate.\n - A green aggregate cannot erase a prior failure. The full 323-case run was green apart from 11 existing fixmes; a later 100-repeat run exposed a different pagination prerequisite failure. Preserve each attempt and its exact diagnostic.\n-- Verify executable architecture, not just version. A cached Docker tag initially supplied an ARM64 Node binary. The actual matching Node 22 replay used independently checked Linux x64 bytes; earlier Node 24 runs remain labeled as such.\n+- Verify executable architecture, not just version or image metadata. The first setup record labeled a copied Node binary ARM64 from the source image's metadata. Fresh executed checks show both retained copies are Linux x64 with the same hash; the unsupported earlier label is withdrawn in RUNTIME_CORRECTION.md. Earlier Node 24 runs remain labeled as such.\n - With `docker exec`, Python code supplied on stdin needs `-i`. A zero exit with blank output from an invocation without `-i` did not prove cleanup code ran. The corrected invocation checked process identities and printed the actual action.\n - Portable parser checks need explicit source-root translation. The first archive check failed because original report roots were `/app/frontend/e2e`. Translate only the known container mount prefix for source-existence checks; retain raw report bytes and reject unexpected roots.\n - Record source, generator, child exit and verification exit separately. Exclusive outputs plus post-run source checks prevent inherited or mutated evidence from silently becoming acceptance. Successful hashing still does not authenticate a receipt or resolve the defect.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "file",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin"
+      ],
+      "child_exit": 0,
+      "stdout": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin:       ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "docs/admin/implementation/batch10-scroll-evidence/verify.mjs"
+      ],
+      "child_exit": 0,
+      "stdout": "{\"archive_integrity\":\"verified\",\"issue_601\":\"unresolved\",\"original_inventory\":323,\"passed\":312,\"existing_fixmes\":11,\"targeted_records\":6}\n",
+      "stderr": ""
+    }
+  ],
+  "verification_exit": 0,
+  "not_executed": [
+    "container runtime checks (author receipt read only)",
+    "browser replay",
+    "build",
+    "publisher regeneration"
+  ]
+}

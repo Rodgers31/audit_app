@@ -1,0 +1,18 @@
+{
+  "reviewed_commit": "d3be02e6ed10830d0722d8696f911714cf7b56af",
+  "files": {
+    "package-tests.log": "12d503ed69113446324f89eb41d196ab7f2050a00ef0884934467226db5be3c5",
+    "trace_inspect.py": "e23d5b3742fb17bdf641e4605f6140ae01bb86dfa62e1ec1c4deb7aac4daedae",
+    "package-cli.log": "51a6cb1272e244094bf0a4d95dc0c518cc571609f6083d50f1ec73dcbefe7c4c",
+    "live-607.log": "2749b0fd979aa5075f5223b8bc930ca62976fb28efa25fb47286a5f17d8abd70",
+    "live-601.log": "3586f626d55c393358656d23479f237a039c7ea42603880875eeae3ccb149949",
+    "direct-controls.log": "1e8ac6cfca0a2e451db8e471c08cfd8b89324880c80aec382b6abee779fb97de",
+    "correction-check.json": "051fbf382cce0e5086e0d400f0b68478ca06de4673afac2bc5969e4baa1b5051",
+    "review_runner.py": "c8ca47c355f699e8d1096518e138476889a3317f1d82718cd915619b901c36e7",
+    "correction_check.py": "4e5a8f24cad90f335d043edfac2739d09a38a43a9fbb91f1e0a641acdaf09096",
+    "trace-inspection.json": "c57dc8b2119a3007fcfdad5ca6605308eda26ef21209013155f0f53f1a1fff03",
+    "SPEC_REVIEW_D3.md": "7809519c959ae38ad0b3c79a3d01af4f3a074e06e0aca33f6d40238495aa21e6",
+    "direct_controls.mjs": "182e2ece11ccb3bb99c88f37487cc094256a37cb3e95c4b039ef4b1b60835439",
+    "execution.json": "8e1c4bb5672daeb647235b1963d40b9f6ff40468ad678ed7f0b6ebfda8edd172"
+  }
+}

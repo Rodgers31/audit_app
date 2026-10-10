@@ -1,0 +1,89 @@
+{
+  "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "source_path": "/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence/create_package.py",
+  "source_before": "f19563817e100aafbfa3a62eb8832285151a302f1f5ab2ae2024a989cd8688a5",
+  "source_after": "f19563817e100aafbfa3a62eb8832285151a302f1f5ab2ae2024a989cd8688a5",
+  "harness_sha256": "1078036e0cdfdab53c6c52ec2942dfa082c157b45d55051dc70069e535aa6346",
+  "records": [
+    {
+      "name": "valid-publisher",
+      "expected": "publish",
+      "exact_call": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/valid-publisher/publication/create_package.py",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/valid-publisher/artifacts"
+      ],
+      "exit": 0,
+      "actual": "published",
+      "stdout": "{\"files\": 62, \"sources\": 386, \"status\": \"unresolved\"}\n",
+      "stderr": "",
+      "data_exists": true,
+      "manifest_exists": true
+    },
+    {
+      "name": "absent-required-report",
+      "expected": "reject",
+      "exact_call": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/publication/create_package.py",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/artifacts"
+      ],
+      "exit": 1,
+      "actual": "rejected",
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/publication/create_package.py\", line 95, in <module>\n    publish(sys.argv[1])\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/publication/create_package.py\", line 55, in publish\n    originals = {name: path.read_bytes() for name, path in inputs.items()}\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/publication/create_package.py\", line 55, in <dictcomp>\n    originals = {name: path.read_bytes() for name, path in inputs.items()}\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1249, in read_bytes\n    with self.open(mode='rb') as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/absent-required-report/artifacts/original-linux-20-results.json'\n",
+      "data_exists": false,
+      "manifest_exists": false
+    },
+    {
+      "name": "existing-data",
+      "expected": "reject",
+      "exact_call": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-data/publication/create_package.py",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-data/artifacts"
+      ],
+      "exit": 1,
+      "actual": "rejected",
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-data/publication/create_package.py\", line 95, in <module>\n    publish(sys.argv[1])\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-data/publication/create_package.py\", line 59, in publish\n    raise RuntimeError('Refusing inherited publication outputs')\nRuntimeError: Refusing inherited publication outputs\n",
+      "data_exists": true,
+      "manifest_exists": false
+    },
+    {
+      "name": "existing-manifest",
+      "expected": "reject",
+      "exact_call": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-manifest/publication/create_package.py",
+        "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-manifest/artifacts"
+      ],
+      "exit": 1,
+      "actual": "rejected",
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-manifest/publication/create_package.py\", line 95, in <module>\n    publish(sys.argv[1])\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch10-scroll-publisher-attack-l7jrofef/existing-manifest/publication/create_package.py\", line 59, in publish\n    raise RuntimeError('Refusing inherited publication outputs')\nRuntimeError: Refusing inherited publication outputs\n",
+      "data_exists": false,
+      "manifest_exists": true
+    },
+    {
+      "name": "input-changes-during-publish",
+      "expected": "reject",
+      "exact_call": "publish(owned_artifacts)",
+      "exit": 1,
+      "actual": "rejected",
+      "diagnostic": "Input changed during publication: probe-hooks.ts",
+      "data_exists": true,
+      "manifest_exists": false
+    },
+    {
+      "name": "producer-changes-during-publish",
+      "expected": "reject",
+      "exact_call": "publish(owned_artifacts)",
+      "exit": 1,
+      "actual": "rejected",
+      "diagnostic": "Publisher changed during archive creation",
+      "data_exists": true,
+      "manifest_exists": false
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "generator_sha256": "4e5a8f24cad90f335d043edfac2739d09a38a43a9fbb91f1e0a641acdaf09096",
+  "correction_sha256": "3c1ab7f169bdffd0fa499d3e9359b563e610629c517f3f8fde301312c5f7a767",
+  "correction_changed_during_execution": false,
+  "observations": [
+    {
+      "command": [
+        "docker",
+        "image",
+        "inspect",
+        "sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392",
+        "--format",
+        "{{.Architecture}}"
+      ],
+      "child_exit": 0,
+      "stdout": "arm64\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "/opt/batch10-scroll-node22/node",
+        "-p",
+        "JSON.stringify({node:process.version,platform:process.platform,arch:process.arch})"
+      ],
+      "child_exit": 0,
+      "stdout": "{\"node\":\"v22.23.3\",\"platform\":\"linux\",\"arch\":\"x64\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "/opt/batch10-scroll-node22-amd/node",
+        "-p",
+        "JSON.stringify({node:process.version,platform:process.platform,arch:process.arch})"
+      ],
+      "child_exit": 0,
+      "stdout": "{\"node\":\"v22.23.3\",\"platform\":\"linux\",\"arch\":\"x64\"}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "docker",
+        "exec",
+        "batch10-scroll-linux",
+        "sha256sum",
+        "/opt/batch10-scroll-node22/node",
+        "/opt/batch10-scroll-node22-amd/node"
+      ],
+      "child_exit": 0,
+      "stdout": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48  /opt/batch10-scroll-node22/node\nfde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48  /opt/batch10-scroll-node22-amd/node\n",
+      "stderr": ""
+    }
+  ],
+  "conclusion": "Correction is supported; original archived annotation remains historical and withdrawn."
+}
