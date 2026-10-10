@@ -1,5 +1,34 @@
 # Retained evidence protocol
 
+## Current replay protocol (review correction, 10 October 2026)
+
+**All files in `producers/`, and `pack.py`, are immutable historical generators. Do not execute them for new evidence.** Their exact hashes are recorded in `REPLAY_STATUS_V2.json`; the original source/archive/manifests remain unchanged. Some historical generators inherit ambient environment, follow source links, lack output isolation, or contain original author-machine paths. The earlier replay instructions below describe the original capture protocol and are superseded for current execution by this section. `verify_bundle.py` remains supported for historical integrity only and always reports `current_checkout_acceptance:false`.
+
+Use the portable `replay_v2.py` with an absolute real checkout path and a fresh output directory whose real parent is outside the checkout. Symlinked ancestors, traversal, hidden `.git` outputs, outputs above the checkout, selected source symlinks and inherited outputs are refused. Outputs must also be separate from an archived corpus. Supply the command after `--`; option arguments precede that separator. Python3.9+ is required:
+
+```sh
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/replay_v2.py run /clone /owned/fresh-unit --cwd /clone/frontend --mode unit -- /absolute/node /absolute/npm-cli.js test -- --runInBand
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/replay_v2.py export /clone /owned/fresh-source
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/replay_v2.py pack /clone /owned/fresh-archive --corpus /owned/retained-corpus
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/test_replay_v2.py
+python3 -O /clone/docs/admin/implementation/batch11-issue-494-evidence/test_replay_v2.py
+```
+
+Command capture supplies an explicit environment with owned home/tmp/npm settings and caches. It forwards no ambient credentials, proxies, loaders or provider endpoints. `--mode build` supplies only the documented inert loopback18048 public/API inputs. Unit mode leaves those inputs absent, matching the existing unit fixtures. The receipt records the environment supplied to `Popen`; interpreters can add their own locale/platform variables afterward. Child exit, source mutation and timeout are separate facts. A successful child with changed source fails capture. Capture/export/byte archive do not infer product acceptance from exit zero.
+
+Versioned Node entrypoints in `replay-v2/` share ancestor/source/environment guards and bind their helper hash:
+
+Run these Node entrypoints through `replay_v2.py run` when recording current evidence, so the entire selected Git source is measured before/after, including the generators/helpers. Their own stdout reports their narrower native/baseline/browser control results; a standalone stdout record is not complete checkout acceptance.
+
+- `baseline-child.cjs SOURCE_DIRECTORY FRESH_EXTERNAL_SCRATCH ABSOLUTE_EXECUTABLE [ARGS...]` executes an actual baseline command with explicit configuration.
+- `native-builder.cjs CHECKOUT FRESH_EXTERNAL_OUTPUT FIXED_MODEL_CACHE` executes the unchanged actual embedding builder and native controls. It copies four real files at the documented fixed model revision into an owned fixture. Source/model file links refuse; generated vectors stay external. The intended fixture-only node_modules link is created by the producer itself and points to the selected checkout's owned install.
+- `preview.cjs FRONTEND 13048 FRESH_EXTERNAL_SCRATCH FIXED_MODEL_CACHE OWNED_BROWSER_CACHE` runs the unchanged actual browser preview and proves exact process-group/listener cleanup. Those caches must exist and contain the actual required prerequisites.
+- `linux-run.cjs IMPORTED_CHECKOUT SOURCE_MANIFEST FRESH_EXTERNAL_SCRATCH MODE ABSOLUTE_EXECUTABLE [ARGS...]` checks a nonempty digest-bound imported source inventory and runs with owned Linux paths. Model/browser prerequisites for a native replay must be placed in its owned scratch cache paths before the child needs them; the ordinary capture command can perform that preparation. It does not certify native Linux parity with an emulated container.
+
+The two original source exporters are replaced by `replay_v2.py export`, which exports the caller's complete checked Git source without creating a new baseline or pretending that new files belong to an old source. Explicit prerequisite files can be included as ordinary measured source. The original patch preparation/revision/distribution scripts are historical construction snapshots, not supported replay commands; installation uses the reviewed current manifest. Changes to that manifest require a fresh `npm ci`, because previously repaired bytes deliberately refuse unknown drift. No old receipt is rebound to the corrected precision or Docker source.
+
+The original platform/review counts below and in the original handoff/index describe the original implementation only. Current results and their limits are in `REVIEW_CORRECTION_V2.md` and the coordinator's separate source-bound acceptance records. #494 remains OPEN_UNRESOLVED.
+
 `evidence-v1.zip` and `evidence-v1.manifest.json` contain original command receipts/streams, source inventories, original producers, baseline failures, actual native builder outputs, complete independent review controls and the initial publication packet. The final manifest uses schema2 and binds its archived `producers/pack.py`; the retained initial schema1 packet lacks that pack-producer binding. Both are historical integrity checks, not authenticated attestations or current acceptance.
 
 Run with Python3.9 or newer, using absolute paths from any clone:

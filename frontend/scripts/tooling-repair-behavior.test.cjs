@@ -86,6 +86,35 @@ test('format snapshots precision before caller-controlled getters or callbacks c
 });
 
 for (const entry of ['src/sprintf.js', 'dist/sprintf.min.js']) {
+ for (const conversion of ['e', 'f']) {
+  test(`sprintf ${entry}: captured numeric and parsed zero precision preserve native rounding`, () => {
+   const { sprintf: format, vsprintf: vectorFormat } = argparse(`sprintf-js/${entry}`);
+   const value = 1.75, pattern = `%.0${conversion}`;
+   const expected = conversion === 'e' ? value.toExponential(0) : value.toFixed(0);
+   assert.equal(format(pattern, value), expected);
+   assert.equal(vectorFormat(pattern, [value]), expected);
+   for (const precision of [0, '0']) {
+    const tree = format.parse(pattern); tree[0][7] = precision;
+    assert.equal(format.format(tree, [pattern, value]), expected);
+    assert.equal(format.format(tree, [pattern, () => { tree[0][7] = 1000; return value; }]), expected);
+   }
+   const tree = format.parse(pattern); let reads = 0;
+   Object.defineProperty(tree[0], 7, { get() { return ++reads === 1 ? 0 : 1000; } });
+   assert.equal(format.format(tree, [pattern, value]), expected);
+   assert.equal(reads, 1);
+  });
+ }
+ test(`sprintf ${entry}: zero significant-digit precision rejects before callbacks`, () => {
+  const { sprintf: format } = argparse(`sprintf-js/${entry}`);
+  for (const precision of [0, '0']) {
+   const tree = format.parse('%.1g'); tree[0][7] = precision; let called = false;
+   assert.throws(() => format.format(tree, ['', () => { called = true; return 1; }]), e => e.code === 'ERR_SPRINTF_PRECISION');
+   assert.equal(called, false);
+  }
+  assert.equal(format('%e', 1.75), (1.75).toExponential());
+  assert.equal(format('%f', 1.75), '1.75');
+  assert.equal(format('%g', 1.75), '1.75');
+ });
  test(`sprintf ${entry}: distributed formatter retains valid output and rejects excessive precision`, () => {
   const { sprintf: format, vsprintf: vectorFormat } = argparse(`sprintf-js/${entry}`);
   for (const conversion of ['e', 'f', 'g']) {

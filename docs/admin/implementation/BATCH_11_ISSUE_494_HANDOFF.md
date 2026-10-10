@@ -1,5 +1,7 @@
 # Batch 11 dependency tooling handoff: issue 494
 
+**Review correction, 10 October 2026:** the original platform/case claims below remain historical for the original implementation. Current source additionally repairs Docker install ordering and numeric precision0, and supersedes unsafe historical producer replay with versioned portable tools. See [the correction](batch11-issue-494-evidence/REVIEW_CORRECTION_V2.md), [current replay protocol](batch11-issue-494-evidence/README.md) and [machine classification](batch11-issue-494-evidence/REPLAY_STATUS_V2.json). Final published source acceptance requires the external frozen replay and coordinator reviews. No original capture/archive/generator was rebound to this correction.
+
 This lane supplies a bounded local repair for the actual locked braces and sprintf tooling callers. It retains the published package versions and the two audit advisory roots. **Issue #494 remains OPEN; coordinator acceptance and any residual-risk decision are pending.** This draft lane result is separate from integrated, hosted and production acceptance. Production remains #583.
 
 ## Measured source and ownership
