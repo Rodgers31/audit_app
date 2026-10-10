@@ -100,6 +100,12 @@ const mockNavigation = {
   cache: null as { key: string; value: URLSearchParams } | null,
 };
 
+// Simulated external navigations bypass the observer. Product list changes
+// are observed through the native History API, which Next integrates without
+// a server navigation. Keep the original implementation for harness inputs.
+const replaceHistoryInput = window.history.replaceState.bind(window.history);
+let listHistoryReplace: jest.SpyInstance;
+
 jest.mock('next/navigation', () => ({
   usePathname: () => '/counties',
   useRouter: () => ({ replace: mockNavigation.replace, push: mockNavigation.push }),
@@ -162,7 +168,7 @@ function renderExplorer() {
 }
 
 function goTo(url: string) {
-  window.history.replaceState(null, '', url);
+  replaceHistoryInput(null, '', url);
 }
 
 function rankingTable(root: ParentNode = document): HTMLTableElement {
@@ -191,7 +197,10 @@ beforeEach(() => {
   mockNavigation.push.mockClear();
   mockNavigation.cache = null;
   goTo('/counties');
+  listHistoryReplace = jest.spyOn(window.history, 'replaceState');
 });
+
+afterEach(() => listHistoryReplace.mockRestore());
 
 /* ── 1. regression guards: the URL state as it already works ────────── */
 
@@ -217,7 +226,7 @@ describe('/counties URL state — normalization and regression guards', () => {
     goTo('/counties?p=99&from=test');
     renderExplorer();
     expect(rankedNames()).toEqual(PAGE_3);
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties?p=3&from=test', { scroll: false });
+    expect(listHistoryReplace).toHaveBeenLastCalledWith(null, '', '/counties?p=3&from=test');
     expect(window.location.search).toBe('?p=3&from=test');
   });
 
@@ -240,7 +249,7 @@ describe('/counties URL state — normalization and regression guards', () => {
     rerender(<React.StrictMode><Page client={newClient()} /></React.StrictMode>);
     expect(rankedNames()).toEqual(NAMES.slice((next - 1) * 10, Math.min(next * 10, 15)));
     expect(window.location.search).toBe(`?p=${next}&from=navigation`);
-    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(listHistoryReplace).not.toHaveBeenCalled();
   });
 
   it('preserves a new View All navigation when a smaller list arrives in the same commit', () => {
@@ -251,7 +260,7 @@ describe('/counties URL state — normalization and regression guards', () => {
     rerender(<React.StrictMode><Page client={newClient()} /></React.StrictMode>);
     expect(rankedNames()).toEqual(NAMES.slice(0, 15));
     expect(window.location.search).toBe('?view=all&from=navigation');
-    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(listHistoryReplace).not.toHaveBeenCalled();
   });
 
   it('keeps the requested page while search has zero matches, then restores it when cleared', () => {
@@ -261,7 +270,7 @@ describe('/counties URL state — normalization and regression guards', () => {
     fireEvent.change(search, { target: { value: 'no-such-county' } });
     expect(rankedNames()).toEqual([]);
     expect(window.location.search).toBe('?p=3');
-    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(listHistoryReplace).not.toHaveBeenCalled();
     fireEvent.change(search, { target: { value: '' } });
     expect(rankedNames()).toEqual(PAGE_3);
   });
@@ -270,16 +279,18 @@ describe('/counties URL state — normalization and regression guards', () => {
     goTo('/counties?view=all&p=99');
     renderExplorer();
     expect(rankedNames()).toEqual(NAMES);
-    expect(mockNavigation.replace).not.toHaveBeenCalled();
+    expect(listHistoryReplace).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /show paginated/i }));
     expect(rankedNames()).toEqual(PAGE_3);
     expect(window.location.search).toBe('?p=3');
   });
 
-  it('writes ?p=N with router.replace when a page is picked, and shows that page', () => {
+  it('writes ?p=N with native replaceState when a page is picked, and shows that page', () => {
     renderExplorer();
     fireEvent.click(pageButton(2));
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties?p=2', { scroll: false });
+    expect(listHistoryReplace).toHaveBeenLastCalledWith(null, '', '/counties?p=2');
+    expect(window.location.search).toBe('?p=2');
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
     expect(rankedNames()).toEqual(PAGE_2);
   });
 
@@ -287,11 +298,14 @@ describe('/counties URL state — normalization and regression guards', () => {
     goTo('/counties?p=2');
     renderExplorer();
     fireEvent.click(screen.getByRole('button', { name: /view all counties/i }));
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties?view=all', { scroll: false });
+    expect(listHistoryReplace).toHaveBeenLastCalledWith(null, '', '/counties?view=all');
+    expect(window.location.search).toBe('?view=all');
     expect(rankedNames()).toEqual(NAMES);
 
     fireEvent.click(screen.getByRole('button', { name: /show paginated/i }));
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties', { scroll: false });
+    expect(listHistoryReplace).toHaveBeenLastCalledWith(null, '', '/counties');
+    expect(window.location.search).toBe('');
+    expect(mockNavigation.replace).not.toHaveBeenCalled();
     expect(rankedNames()).toEqual(PAGE_1);
   });
 
@@ -337,7 +351,8 @@ describe('/counties URL state — normalization and regression guards', () => {
     const search = screen.getByRole('searchbox', { name: 'Search County' });
     fireEvent.change(search, { target: { value: 'Testcounty 0' } }); // 01–09: one page
     expect(rankedNames()).toEqual(NAMES.slice(0, 9));
-    expect(mockNavigation.replace).toHaveBeenLastCalledWith('/counties', { scroll: false });
+    expect(listHistoryReplace).toHaveBeenLastCalledWith(null, '', '/counties');
+    expect(window.location.search).toBe('');
   });
 
   it('paints a client-side mount (back from a county page) in its URL state on the first commit', () => {
