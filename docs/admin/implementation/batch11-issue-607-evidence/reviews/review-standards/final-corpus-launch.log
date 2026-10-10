@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/corpus_recheck.py", line 58, in <module>
+    assert all(name in allowed_frontend or name == 'docs/admin/implementation/BATCH_11_ISSUE_607_HANDOFF.md' or name.startswith('docs/admin/implementation/batch11-issue-607-evidence/') for name in changed_paths)
+AssertionError

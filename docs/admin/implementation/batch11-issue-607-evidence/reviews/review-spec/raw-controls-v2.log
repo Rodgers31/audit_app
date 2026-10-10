@@ -1,0 +1,104 @@
+{
+  "head": "09fd3c150032e8595678ddf2046948651a260b96",
+  "tree": "f3a254d87655cbba42365684f1c611cae5b1312e",
+  "started": 1791645105.913982,
+  "ended": 1791645106.38644,
+  "runtime": {
+    "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+    "executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "platform": "macOS-27.0.1-arm64-arm-64bit"
+  },
+  "generator_sha256": "ae62e5f63ddcbef1f73118efede6b57c7c1549c9b973e4396e7755007d6f35ea",
+  "checks": [
+    "Original smart-back test bytes and appended controlled-test prefix equal the pinned test exactly.",
+    "All 323 original descriptors remain; exactly six additional descriptors exist.",
+    "Same three original-case identities fail at unchanged line 38 under pending delivery, then pass after repair with no pagination Flight response.",
+    "Raw baseline 100-repeat and six focused acceptance reports reconcile without retries/skips."
+  ],
+  "original_control": [
+    {
+      "label": "red",
+      "id": "7d5163b0bd2a88b22ea4-c8b0d41d63d3c4677359",
+      "status": "failed",
+      "url": "http://127.0.0.1:3141/counties",
+      "rows": 10,
+      "y": 2488,
+      "server_responses": [
+        {
+          "kind": "real-server-response",
+          "url": "http://127.0.0.1:3141/counties?p=2&_rsc=kG_jAnatkCmRQjDx",
+          "status": 200
+        }
+      ],
+      "event_count": 128
+    },
+    {
+      "label": "red",
+      "id": "7d5163b0bd2a88b22ea4-742aa09d8ecf73649c62",
+      "status": "failed",
+      "url": "http://127.0.0.1:3141/counties",
+      "rows": 10,
+      "y": 2488,
+      "server_responses": [
+        {
+          "kind": "real-server-response",
+          "url": "http://127.0.0.1:3141/counties?p=2&_rsc=kG_jAnatkCmRQjDx",
+          "status": 200
+        }
+      ],
+      "event_count": 128
+    },
+    {
+      "label": "red",
+      "id": "7d5163b0bd2a88b22ea4-c9d7456583330f934c58",
+      "status": "failed",
+      "url": "http://127.0.0.1:3141/counties",
+      "rows": 10,
+      "y": 2488,
+      "server_responses": [
+        {
+          "kind": "real-server-response",
+          "url": "http://127.0.0.1:3141/counties?p=2&_rsc=kG_jAnatkCmRQjDx",
+          "status": 200
+        }
+      ],
+      "event_count": 129
+    },
+    {
+      "label": "green",
+      "id": "7d5163b0bd2a88b22ea4-c8b0d41d63d3c4677359",
+      "status": "passed",
+      "url": "http://127.0.0.1:3141/counties?p=2",
+      "rows": 10,
+      "y": 890,
+      "server_responses": [],
+      "event_count": 192
+    },
+    {
+      "label": "green",
+      "id": "7d5163b0bd2a88b22ea4-742aa09d8ecf73649c62",
+      "status": "passed",
+      "url": "http://127.0.0.1:3141/counties?p=2",
+      "rows": 10,
+      "y": 894,
+      "server_responses": [],
+      "event_count": 191
+    },
+    {
+      "label": "green",
+      "id": "7d5163b0bd2a88b22ea4-c9d7456583330f934c58",
+      "status": "passed",
+      "url": "http://127.0.0.1:3141/counties?p=2",
+      "rows": 10,
+      "y": 894,
+      "server_responses": [],
+      "event_count": 187
+    }
+  ],
+  "limitations": [
+    "These controls independently inspect archived executions; they are not a fresh browser run.",
+    "The red run source recorder omitted the external pending-test directory; its separate generated-source record preserves the prefix and helper identities.",
+    "The pending-delivery red is not a reproduction of the historical naturally completed-200 failure.",
+    "No causal red or explanation for the historical native-auto Y=100 scroll failure exists in these records."
+  ]
+}

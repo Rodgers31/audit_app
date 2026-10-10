@@ -1,0 +1,37 @@
+{
+  "head": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "tree": "958d72062130267d0916ad14f9ab7ab6afb0af71",
+  "started": 1791649686.363263,
+  "ended": 1791649689.819286,
+  "source_changed": [],
+  "helper_hashes_before": {
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v5_remaining.py": "ce10bf8de1b0c71f98e09d54b0805a18f1131d9481e2287879d64caa57703e2d",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/jest.config.cjs": "442c3e09079728ff74c385e0f4c44db6072da0047b87461075d28813dadc3db8",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/noop.test.tsx": "4e8d2b3df30ad61e706cb898fa01c2babea24858a6dad9af95573cf87e861b15",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/same-url-write.test.tsx": "672ec9e91b8785909005e0dd5f0c2f1f84d301bd923d553e787b7fe71670d2ca",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/valid.test.tsx": "c3ed6d872b35b6459a7208b1f41363fec9a7285924cf4ac84b236b343f7d870b"
+  },
+  "helper_hashes_after": {
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v5_remaining.py": "ce10bf8de1b0c71f98e09d54b0805a18f1131d9481e2287879d64caa57703e2d",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/jest.config.cjs": "442c3e09079728ff74c385e0f4c44db6072da0047b87461075d28813dadc3db8",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/noop.test.tsx": "4e8d2b3df30ad61e706cb898fa01c2babea24858a6dad9af95573cf87e861b15",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/same-url-write.test.tsx": "672ec9e91b8785909005e0dd5f0c2f1f84d301bd923d553e787b7fe71670d2ca",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4/valid.test.tsx": "c3ed6d872b35b6459a7208b1f41363fec9a7285924cf4ac84b236b343f7d870b"
+  },
+  "container": {
+    "id": "3f947fe7ad040d6cb7c99d9bdacce56ce7aec11510a0a31a17a6fe663ccb14f1",
+    "image": "sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d",
+    "labels": {
+      "audit_app.owner": "batch11-navigation",
+      "org.opencontainers.image.ref.name": "ubuntu",
+      "org.opencontainers.image.version": "24.04"
+    },
+    "ports": {}
+  },
+  "reviewer_runtime": {
+    "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+    "executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "platform": "macOS-27.0.1-arm64-arm-64bit"
+  },
+  "scope": "Synthetic unit-harness detector checks only; intentional failed/skipped copies are excluded from browser inventory and product causal evidence."
+}

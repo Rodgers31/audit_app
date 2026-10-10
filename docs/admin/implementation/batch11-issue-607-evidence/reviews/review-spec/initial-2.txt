@@ -1,0 +1,220 @@
+diff --git a/frontend/app/counties/CountiesPageClient.tsx b/frontend/app/counties/CountiesPageClient.tsx
+index e837adb..1b71c45 100644
+--- a/frontend/app/counties/CountiesPageClient.tsx
++++ b/frontend/app/counties/CountiesPageClient.tsx
+@@ -27,7 +27,7 @@ import {
+   TrendingUp,
+ } from 'lucide-react';
+ import Link from 'next/link';
+-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
++import { useRouter, useSearchParams } from 'next/navigation';
+ import React, {
+   Suspense,
+   useCallback,
+@@ -1061,6 +1061,15 @@ function Th({
+ 
+ const PAGE_SIZE = 10;
+ 
++/** Publish client-only list state synchronously through Next's integrated
++ * History API. Pagination needs no server data, so its URL must not wait for
++ * a Flight response while the table already shows the requested rows. */
++function replaceListQuery(params: URLSearchParams): void {
++  const current = new URL(window.location.href);
++  current.search = params.toString();
++  window.history.replaceState(null, '', `${current.pathname}${current.search}${current.hash}`);
++}
++
+ const subscribeToNothing = () => () => {};
+ 
+ /**
+@@ -1131,9 +1140,6 @@ function CountyRankingsTable({
+   // render out to the client up to the nearest Suspense boundary — which was
+   // `loading.tsx`'s, so the whole explorer and its LCP element were missing
+   // from the served HTML (#221 finding #3).
+-  const router = useRouter();
+-  const pathname = usePathname();
+-
+   const readPageFromUrl = useCallback((): number => {
+     if (typeof window === 'undefined') return 1;
+     const raw = new URLSearchParams(window.location.search).get('p');
+@@ -1183,13 +1189,10 @@ function CountyRankingsTable({
+       const qs = new URLSearchParams(window.location.search);
+       if (clamped === 1) qs.delete('p');
+       else qs.set('p', String(clamped));
+-      const newSearch = qs.toString();
+-      router.replace(newSearch ? `${pathname}?${newSearch}` : pathname, {
+-        scroll: false,
+-      });
++      replaceListQuery(qs);
+       setPageFromUrl(clamped);
+     },
+-    [page, totalPages, pathname, router]
++    [page, totalPages]
+   );
+ 
+   const setShowAll = useCallback(
+@@ -1204,13 +1207,10 @@ function CountyRankingsTable({
+       } else {
+         qs.delete('view');
+       }
+-      const newSearch = qs.toString();
+-      router.replace(newSearch ? `${pathname}?${newSearch}` : pathname, {
+-        scroll: false,
+-      });
++      replaceListQuery(qs);
+       setShowAllLocal(resolved);
+     },
+-    [showAll, pathname, router]
++    [showAll]
+   );
+ 
+   // Normalize an out-of-range URL to the same last page the table renders,
+diff --git a/frontend/e2e/county-pagination-boundaries.spec.ts b/frontend/e2e/county-pagination-boundaries.spec.ts
+new file mode 100644
+index 0000000..65bc7e7
+--- /dev/null
++++ b/frontend/e2e/county-pagination-boundaries.spec.ts
+@@ -0,0 +1,64 @@
++import { expect, test } from '@playwright/test';
++import { waitForAppReady } from './utils/selectors';
++
++for (const delivery of ['pending', 'failed'] as const) {
++  test(`pagination keeps URL and rows together with a ${delivery} server navigation`, async ({ page }) => {
++    let release!: () => void;
++    const gate = new Promise<void>(resolve => { release = resolve; });
++    const responses: number[] = [];
++    await page.route(url => url.pathname === '/counties' && url.searchParams.has('p') && url.searchParams.has('_rsc'), async route => {
++      if (delivery === 'failed') return route.abort('failed');
++      const response = await route.fetch();
++      responses.push(response.status());
++      await gate;
++      await route.fulfill({ response });
++    });
++    try {
++      await page.goto('/counties');
++      await waitForAppReady(page);
++      await expect(page.locator('table tbody tr')).toHaveCount(10);
++      const documentOrigin = await page.evaluate(() => performance.timeOrigin);
++      const historyLength = await page.evaluate(() => history.length);
++      await page.getByRole('button', { name: '2', exact: true }).click();
++      await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++      await expect(page).toHaveURL(/[?&]p=2/, { timeout: 5000 });
++      expect(await page.evaluate(() => history.length)).toBe(historyLength);
++      expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
++      expect(responses).toEqual([]);
++    } finally {
++      release();
++      await page.unrouteAll({ behavior: 'wait' });
++    }
++  });
++}
++
++test('rapid pagination and view-all keep the latest list state without a server navigation', async ({ page }) => {
++  let release!: () => void;
++  const gate = new Promise<void>(resolve => { release = resolve; });
++  let navigations = 0;
++  await page.route(url => url.pathname === '/counties' && url.searchParams.has('_rsc'), async route => {
++    navigations++;
++    const response = await route.fetch();
++    await gate;
++    await route.fulfill({ response });
++  });
++  try {
++    await page.goto('/counties');
++    await waitForAppReady(page);
++    await expect(page.locator('table tbody tr')).toHaveCount(10);
++    await page.getByRole('button', { name: '2', exact: true }).click();
++    await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++    await page.getByRole('button', { name: '3', exact: true }).click();
++    await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible();
++    await page.getByRole('button', { name: /View All Counties|Kaunti Zote/i }).click();
++    await expect(page.locator('table tbody tr')).toHaveCount(47);
++    await expect(page).toHaveURL(/[?&]view=all/);
++    expect(new URL(page.url()).searchParams.has('p')).toBe(false);
++    expect(navigations).toBe(0);
++  } finally {
++    release();
++    await page.unrouteAll({ behavior: 'wait' });
++  }
++  await expect(page).toHaveURL(/[?&]view=all/);
++  await expect(page.locator('table tbody tr')).toHaveCount(47);
++});
+diff --git a/frontend/e2e/county-pagination-contract.spec.ts b/frontend/e2e/county-pagination-contract.spec.ts
+new file mode 100644
+index 0000000..2b3864f
+--- /dev/null
++++ b/frontend/e2e/county-pagination-contract.spec.ts
+@@ -0,0 +1,73 @@
++import { expect, test } from '@playwright/test';
++import { waitForAppReady } from './utils/selectors';
++
++test('pagination and view-all retain duplicate query values, hash and history depth', async ({ page }) => {
++  await page.goto('/counties?p=2&retained=one&retained=two&from=probe#county-list-anchor');
++  await waitForAppReady(page);
++  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++  const historyLength = await page.evaluate(() => history.length);
++  const documentOrigin = await page.evaluate(() => performance.timeOrigin);
++  await page.getByRole('button', { name: '3', exact: true }).press('Enter');
++  await expect(page).toHaveURL(/[?&]p=3/);
++  await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible();
++  let url = new URL(page.url());
++  expect(url.searchParams.getAll('retained')).toEqual(['one', 'two']);
++  expect(url.searchParams.get('from')).toBe('probe');
++  expect(url.hash).toBe('#county-list-anchor');
++  await page.getByRole('button', { name: /View All Counties/i }).click();
++  await expect(page.locator('table tbody tr')).toHaveCount(47);
++  await expect(page).toHaveURL(/[?&]view=all/);
++  url = new URL(page.url());
++  expect(url.searchParams.has('p')).toBe(false);
++  expect(url.searchParams.getAll('retained')).toEqual(['one', 'two']);
++  expect(url.hash).toBe('#county-list-anchor');
++  await page.getByRole('button', { name: /Show Paginated/i }).click();
++  await expect(page.locator('table tbody tr')).toHaveCount(10);
++  expect(new URL(page.url()).searchParams.has('view')).toBe(false);
++  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
++  expect(new URL(page.url()).hash).toBe('#county-list-anchor');
++  expect(await page.evaluate(() => history.length)).toBe(historyLength);
++  expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
++});
++
++test('deep-link clamping and shrinking or empty filters keep URL and rows consistent', async ({ page }) => {
++  await page.goto('/counties?p=999&retained=one');
++  await waitForAppReady(page);
++  await expect(page.getByText(/Showing\s+41[–\-]47\s+of/)).toBeVisible();
++  await expect(page).toHaveURL(/[?&]p=5/);
++  await expect(page.locator('table tbody tr')).toHaveCount(7);
++  const search = page.getByRole('searchbox', { name: /Search County/i });
++  await search.fill('Nairobi');
++  await expect(page.locator('table tbody tr')).toHaveCount(1);
++  await expect.poll(() => new URL(page.url()).searchParams.has('p')).toBe(false);
++  expect(new URL(page.url()).searchParams.get('retained')).toBe('one');
++  await search.fill('no-county-matches-this');
++  await expect(page.locator('table tbody tr')).toHaveCount(0);
++  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
++  await search.clear();
++  await expect(page.locator('table tbody tr')).toHaveCount(10);
++  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
++});
++
++test('browser back and forward retain the page-2 URL and a legitimate saved list position', async ({ page }) => {
++  await page.goto('/counties?p=2&retained=one');
++  await waitForAppReady(page);
++  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
++  await expect.poll(() => page.evaluate(() => scrollY)).toBe(900);
++  const before = await page.evaluate(() => scrollY);
++  await page.locator('table tbody tr').first().getByRole('link').first().click();
++  await page.waitForURL(/\/counties\/[\w-]+/);
++  const detailUrl = page.url();
++  await page.getByRole('link', { name: /All counties/i }).first().click();
++  await expect(page).toHaveURL(/[?&]p=2/);
++  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++  await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - before)).toBeLessThan(100);
++  expect(new URL(page.url()).searchParams.get('retained')).toBe('one');
++  await page.goForward();
++  await expect(page).toHaveURL(detailUrl);
++  await page.goBack();
++  await expect(page).toHaveURL(/[?&]p=2/);
++  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
++  await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - before)).toBeLessThan(100);
++});

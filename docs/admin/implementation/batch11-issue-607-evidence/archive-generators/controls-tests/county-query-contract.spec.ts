@@ -1,0 +1,73 @@
+import { expect, test } from '@playwright/test';
+import { waitForAppReady } from './utils/selectors';
+
+test('pagination and view-all retain duplicate query values, hash and history depth', async ({ page }) => {
+  await page.goto('/counties?p=2&retained=one&retained=two&from=probe#county-list-anchor');
+  await waitForAppReady(page);
+  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
+  const historyLength = await page.evaluate(() => history.length);
+  const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+  await page.getByRole('button', { name: '3', exact: true }).press('Enter');
+  await expect(page).toHaveURL(/[?&]p=3/);
+  await expect(page.getByText(/Showing\s+21[–\-]30\s+of/)).toBeVisible();
+  let url = new URL(page.url());
+  expect(url.searchParams.getAll('retained')).toEqual(['one', 'two']);
+  expect(url.searchParams.get('from')).toBe('probe');
+  expect(url.hash).toBe('#county-list-anchor');
+  await page.getByRole('button', { name: /View All Counties/i }).click();
+  await expect(page.locator('table tbody tr')).toHaveCount(47);
+  await expect(page).toHaveURL(/[?&]view=all/);
+  url = new URL(page.url());
+  expect(url.searchParams.has('p')).toBe(false);
+  expect(url.searchParams.getAll('retained')).toEqual(['one', 'two']);
+  expect(url.hash).toBe('#county-list-anchor');
+  await page.getByRole('button', { name: /Show Paginated/i }).click();
+  await expect(page.locator('table tbody tr')).toHaveCount(10);
+  expect(new URL(page.url()).searchParams.has('view')).toBe(false);
+  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
+  expect(new URL(page.url()).hash).toBe('#county-list-anchor');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+});
+
+test('deep-link clamping and shrinking or empty filters keep URL and rows consistent', async ({ page }) => {
+  await page.goto('/counties?p=999&retained=one');
+  await waitForAppReady(page);
+  await expect(page.getByText(/Showing\s+41[–\-]47\s+of/)).toBeVisible();
+  await expect(page).toHaveURL(/[?&]p=5/);
+  await expect(page.locator('table tbody tr')).toHaveCount(7);
+  const search = page.getByRole('textbox', { name: /Search County/i });
+  await search.fill('Nairobi');
+  await expect(page.locator('table tbody tr')).toHaveCount(1);
+  await expect.poll(() => new URL(page.url()).searchParams.has('p')).toBe(false);
+  expect(new URL(page.url()).searchParams.get('retained')).toBe('one');
+  await search.fill('no-county-matches-this');
+  await expect(page.locator('table tbody tr')).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
+  await search.clear();
+  await expect(page.locator('table tbody tr')).toHaveCount(10);
+  expect(new URL(page.url()).searchParams.has('p')).toBe(false);
+});
+
+test('browser back and forward retain the page-2 URL and a legitimate saved list position', async ({ page }) => {
+  await page.goto('/counties?p=2&retained=one');
+  await waitForAppReady(page);
+  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
+  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(900);
+  const before = await page.evaluate(() => scrollY);
+  await page.locator('table tbody tr').first().getByRole('link').first().click();
+  await page.waitForURL(/\/counties\/[\w-]+/);
+  const detailUrl = page.url();
+  await page.getByRole('link', { name: /All counties/i }).first().click();
+  await expect(page).toHaveURL(/[?&]p=2/);
+  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
+  await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - before)).toBeLessThan(100);
+  expect(new URL(page.url()).searchParams.get('retained')).toBe('one');
+  await page.goForward();
+  await expect(page).toHaveURL(detailUrl);
+  await page.goBack();
+  await expect(page).toHaveURL(/[?&]p=2/);
+  await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
+  await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - before)).toBeLessThan(100);
+});

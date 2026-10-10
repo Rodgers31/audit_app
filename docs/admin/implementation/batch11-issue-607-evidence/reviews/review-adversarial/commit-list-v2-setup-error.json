@@ -1,0 +1,9 @@
+{
+  "scope": "Reviewer artifact list setup; not a product/helper finding",
+  "observed_process_exit": 1,
+  "tool_chunk_id": "ef091f",
+  "operation": "paths=[root/e['relative_path'] for e in old['finite_artifacts']]",
+  "error": "KeyError: 'relative_path'",
+  "cause": "Existing list uses path rather than relative_path",
+  "no_prior_artifact_mutation": true
+}
