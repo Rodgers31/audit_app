@@ -10,10 +10,15 @@ import hashlib
 import json
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from xml.etree import ElementTree
 
 from run_evidence import source_names, source_state
+
+PACKET = "docs/admin/implementation/batch10-imf-evidence/"
+GENERATOR = PACKET + "run_evidence.py"
+ENTRY = PACKET + "pytest_entry.py"
 
 
 def digest(path):
@@ -26,11 +31,57 @@ def require(condition, message):
 
 
 def owned_file(root, name):
+    require(isinstance(name, str) and bool(name), "Malformed artifact path")
     path = root / name
     require(not Path(name).is_absolute(), "Absolute artifact path")
     require(path.resolve().is_relative_to(root), "Artifact escapes package")
     require(path.is_file() and not path.is_symlink(), "Missing or symlink artifact")
     return path
+
+
+def execution_provenance(receipt):
+    """Validate shared execution fields without rebinding historical identities."""
+    require(isinstance(receipt, dict), "Malformed receipt")
+    require(type(receipt["child_exit"]) is int, "Malformed child exit")
+    require(type(receipt["verification_exit"]) is int, "Malformed verification exit")
+    require(receipt["source_stable"] is True, "Source stability is not true")
+    require(receipt["start"] == receipt["end"], "Source changed during run")
+    require(receipt["generated_by"] == GENERATOR, "Unexpected recorder path")
+    for key in ("generator_sha256", "entry_sha256"):
+        value = receipt[key]
+        require(
+            isinstance(value, str)
+            and len(value) == 64
+            and all(c in "0123456789abcdef" for c in value),
+            "Malformed " + key,
+        )
+    command = receipt["command"]
+    require(
+        isinstance(command, list)
+        and len(command) >= 3
+        and all(isinstance(v, str) and v.strip() for v in command),
+        "Malformed command",
+    )
+    for key in ("runtime", "platform", "checkout"):
+        require(
+            isinstance(receipt[key], str) and bool(receipt[key].strip()),
+            "Malformed " + key,
+        )
+    env = receipt["environment"]
+    require(
+        isinstance(env, dict)
+        and bool(env)
+        and all(isinstance(k, str) and isinstance(v, str) for k, v in env.items())
+        and env.get("PYTHON_DOTENV_DISABLED") == "1",
+        "Malformed environment",
+    )
+    started, ended = (
+        datetime.fromisoformat(receipt[k]) for k in ("started_at", "ended_at")
+    )
+    require(
+        started.tzinfo is not None and ended.tzinfo is not None and ended >= started,
+        "Invalid execution timestamps",
+    )
 
 
 def cases(path):
@@ -63,6 +114,14 @@ def verify(checkout, artifacts, current=None):
             checkout / "docs/admin/implementation/batch10-imf-evidence/manifest.json"
         ).read_text()
     )
+    require(
+        type(manifest["schema"]) is int and manifest["schema"] == 1,
+        "Unsupported manifest schema",
+    )
+    require(
+        type(manifest["issue"]) is int and manifest["issue"] == 595,
+        "Wrong issue identity",
+    )
     require(bool(manifest["artifacts"]), "Empty artifact inventory")
     for item in manifest["artifacts"]:
         require(
@@ -72,11 +131,16 @@ def verify(checkout, artifacts, current=None):
     for item in manifest["runs"]:
         receipt_path = owned_file(artifacts, item["receipt"])
         receipt = json.loads(receipt_path.read_text())
+        execution_provenance(receipt)
         require(
             receipt["source_stable"] and receipt["start"] == receipt["end"],
             "Source changed during run",
         )
-        require(receipt["child_exit"] == item["child_exit"], "Wrong child exit")
+        require(
+            type(item["child_exit"]) is int
+            and receipt["child_exit"] == item["child_exit"],
+            "Wrong child exit",
+        )
         for name, expected in receipt["outputs"].items():
             require(
                 digest(owned_file(artifacts, str(Path(item["receipt"]).parent / name)))
@@ -89,6 +153,7 @@ def verify(checkout, artifacts, current=None):
         )
     if current is not None:
         receipt = json.loads(current.read_text())
+        execution_provenance(receipt)
         require(
             receipt["child_exit"] == 0 and receipt["verification_exit"] == 0,
             "Current replay did not pass",
@@ -101,6 +166,26 @@ def verify(checkout, artifacts, current=None):
             digest(owned_file(checkout, receipt["generated_by"]))
             == receipt["generator_sha256"],
             "Current generator drift",
+        )
+        require(
+            digest(owned_file(checkout, ENTRY)) == receipt["entry_sha256"],
+            "Current entry drift",
+        )
+        require(receipt["checkout"] == str(checkout), "Current checkout differs")
+        command = receipt["command"]
+        require(
+            command[1:3] == ["-B", str(checkout / ENTRY)],
+            "Unexpected current entry command",
+        )
+        require(
+            command.count("--junitxml=" + str(current.parent / "cases.xml")) == 1
+            and sum(v.startswith("--junitxml") for v in command) == 1,
+            "Current JUnit destination differs",
+        )
+        require(
+            receipt["environment"].get("DATABASE_URL")
+            == "sqlite:///" + str(current.parent / "batch10-imf-import.sqlite"),
+            "Current database fixture differs",
         )
         require(
             source_state(checkout, source_names(checkout)) == receipt["start"],
