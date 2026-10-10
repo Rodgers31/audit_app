@@ -10282,6 +10282,18 @@ async def get_national_loans(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+def _imf_observations_available(db):
+    """Discover optional IMF storage before querying a borrowed transaction.
+
+    A missing table is absence. Catalog/connection failures remain errors, and
+    must not be mistaken for an empty IMF vintage or abort the caller's work.
+    """
+    from models import ImfWeoObservation
+    from sqlalchemy import inspect
+
+    return inspect(db.connection()).has_table(ImfWeoObservation.__tablename__)
+
+
 def _latest_imf_debt_to_gdp(db):
     """Latest IMF GGXWDG_NGDP (general-government gross debt, % of GDP) for Kenya.
 
@@ -10294,6 +10306,8 @@ def _latest_imf_debt_to_gdp(db):
     debt-to-GDP measure (same-year debt and GDP) and avoids the prior bug
     of dividing a current debt stock by a stale/low nominal-GDP year.
     """
+    if not _imf_observations_available(db):
+        return None
     try:
         from models import ImfWeoObservation
         from services.fiscal_outturns import finite_number
@@ -11751,6 +11765,9 @@ async def get_debt_broader(db: Session = Depends(get_db)):
     if not DATABASE_AVAILABLE:
         return {"status": "unavailable", "reason": "database_not_configured"}
 
+    if not _imf_observations_available(db):
+        return {"status": "unavailable", "reason": "not_seeded_yet"}
+
     from sqlalchemy import func  # local — main.py uses local imports for sqla
 
     from models import ImfWeoObservation  # local import — avoids circular
@@ -11885,27 +11902,12 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
 
         latest_fs = latest_publishable_fiscal_summary(db)
 
-        # An unseeded schema previously returned no_data here. Check table
-        # presence before either IMF read on that path, so PostgreSQL does not
-        # enter an aborted transaction. Catalog/query failures still reach the
-        # endpoint's existing error handler.
-        from models import ImfWeoObservation
-        from sqlalchemy import inspect
-
-        imf_unseeded = (
-            not latest_dt and not latest_fs
-            and not inspect(db.connection()).has_table(ImfWeoObservation.__tablename__)
+        # Each optional IMF reader checks storage independently of the other
+        # seeded datasets, before querying this shared PostgreSQL transaction.
+        _imf_headline = _latest_imf_debt_to_gdp(db)
+        projections, projections_source, projections_absent_reason = (
+            _published_debt_projections(db)
         )
-        if imf_unseeded:
-            _imf_headline = None
-            projections, projections_source, projections_absent_reason = (
-                [], None, "no_published_projection_seeded"
-            )
-        else:
-            _imf_headline = _latest_imf_debt_to_gdp(db)
-            projections, projections_source, projections_absent_reason = (
-                _published_debt_projections(db)
-            )
         if not latest_dt and not latest_fs and _imf_headline is None and not projections:
             return {
                 "status": "no_data",
@@ -12080,6 +12082,9 @@ def _published_debt_projections(db: Session) -> tuple:
     from sqlalchemy import func as _func  # local — main.py imports sqla locally
 
     from models import ImfWeoObservation
+
+    if not _imf_observations_available(db):
+        return [], None, "no_published_projection_seeded"
 
     latest_vintage = (
         db.query(_func.max(ImfWeoObservation.vintage))

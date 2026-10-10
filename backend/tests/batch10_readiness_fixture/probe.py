@@ -77,7 +77,7 @@ def references(mode):
                     meta={},
                 )
             )
-        if mode == "count_decoy":
+        if mode in {"count_decoy", "valid_plus_unknown"}:
             db.add(
                 Entity(
                     country_id=country.id,

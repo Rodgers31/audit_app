@@ -33,3 +33,34 @@ Coordinator: preview final #589/#595 heads with merge-tree, integrate #589 first
 At the documentation freeze, the final repaired submitted fixture passes52 controls; the previous broader source cohort passes493. These are historical precommit executions. Delivery requires fresh complete source-bound current/minimum/Linux replay and independent reports at review-standards/FINAL.md, review-spec/FINAL.md and review-adversarial/FINAL.md under the external root. Final actual committed-corpus results are in CURRENT_ACCEPTANCE.json there; compare its HEAD/tree/corpus with the published draft before relying on them.
 
 Readiness503 response: status=starting, reason is one of starting/stopped/database_unavailable/reference_initialization_failed/reference_check_failed/required_county_references_unavailable, retry=next_normal_start_after_writer_completion_or_reference_repair. Exceptions stay in server logs; response text has no arbitrary database diagnostics. Health live remains200 during actual blocked database startup.
+
+## Coordinator correction — 2026-10-10 (PR604)
+
+Copilot comment 4237305207 identified a mismatch between the intended contract
+above and the county check: it skipped unknown Kenyan county names. All 47
+supported names plus an unknown row could therefore become ready. The check now
+refuses that population. The actual audits-writer fixture covers both an already
+complete population plus an unknown row and a 46-name/count-decoy population
+that becomes 47 supported names plus the retained decoy after writer completion.
+Both remain 503; the decoy is preserved for explicit reference repair.
+
+Comment 4237305236 identified credential values persisted by the recorder.
+`DATABASE_URL`, `JWT_SECRET_KEY` and `BATCH9_BOOTSTRAP_POSTGRES_URL` are now
+redacted in portable environment metadata and have boolean presence fields.
+The real child still receives the required inputs. Toy-secret controls execute
+under ordinary Python and `-O`, prove unchanged child values without echoing
+those values, and check that portable metadata/logs contain none of them. This
+changes environment metadata; commands and raw child output remain records of
+what was executed, so recording commands that deliberately echo secrets is
+outside that redaction guarantee.
+
+The pre-correction recorder bytes and identity are retained in
+`history/copilot-2026-10-10/`. `COPILOT_CORRECTION_2026_10_10.json` declares the
+old tool/receipts historical and superseded for current checkout acceptance.
+MANIFEST.json, its archive and all original execution histories are unchanged.
+Fresh current/minimum acceptance is external under the coordinator's
+`BATCH_10_MERGE/604` evidence directory after the final committed corpus is
+frozen. The recorder snapshots the complete source, command, interpreter,
+environment metadata and actual exit; the receipt verifier must accept that
+exact current source, rather than rebinding an old author run. #603, #583 and
+the broader operational gates remain separate pending work.

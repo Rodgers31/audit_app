@@ -79,6 +79,7 @@ def probe(tmp_path, mode, url=None):
         "wrong_country",
         "blank_slug",
         "count_decoy",
+        "valid_plus_unknown",
     ],
 )
 def test_nonbudget_writer_readiness_and_next_normal_start(
@@ -115,9 +116,12 @@ def test_nonbudget_writer_readiness_and_next_normal_start(
         assert all(
             row[8] != "None" for row in result["finished"]["claims"]
         )  # released_at
-        if mode in {"empty", "partial", "valid", "count_decoy"}:
+        if mode in {"empty", "partial", "valid"}:
             assert result["second"]["code"] == 200
-            assert result["after"]["counties"] == (48 if mode == "count_decoy" else 47)
+            assert result["after"]["counties"] == 47
+        if mode in {"count_decoy", "valid_plus_unknown"}:
+            assert result["second"]["code"] == 503, "FALSE_READY: unknown persisted county was accepted"
+            assert result["after"]["counties"] == 48
         # Independent observer uses a new connection after child process exit.
         observer = create_engine(scoped)
         try:

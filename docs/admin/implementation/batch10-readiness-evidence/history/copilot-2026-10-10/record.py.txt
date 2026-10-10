@@ -12,9 +12,6 @@ import subprocess
 import sys
 
 
-SECRET_ENVIRONMENT = ("DATABASE_URL", "JWT_SECRET_KEY", "BATCH9_BOOTSTRAP_POSTGRES_URL")
-
-
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -127,13 +124,7 @@ def main():
         runtime=dict(
             executable=sys.executable, python=sys.version, platform=platform.platform()
         ),
-        # Preserve child inputs, but portable receipts must not persist their
-        # credentials. Presence metadata carries no secret or derived digest.
-        environment={
-            key: "<redacted>" if key in SECRET_ENVIRONMENT else value
-            for key, value in env.items()
-        },
-        secret_environment_present={key: key in env for key in SECRET_ENVIRONMENT},
+        environment=env,
         before=before,
         after=after,
         child_exit=proc.returncode,
