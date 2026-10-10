@@ -27,3 +27,15 @@ test.each([
 test('epoch-zero bookmark contract remains available', () => {
   expect(visibilitySnapshot('3:4294967295:4')).toBe('3:4294967295:4');
 });
+
+const signed = `v3:${scope}:4294967294:4294967299:4294967295,4294967297:${'a'.repeat(64)}`;
+test('signed xid8 bookmarks preserve every authentication byte through URL parsing', () => {
+  expect(visibilitySnapshot(signed)).toBe(signed);
+  const params = new URLSearchParams({ snapshot_id: '2', as_of: new Date().toISOString(), visibility_snapshot: signed });
+  expect(auditFilters(params).visibility_snapshot).toBe(signed);
+});
+test.each([signed.slice(0, -1), `${signed}a`, signed.replace(/a{64}$/, 'A'.repeat(64)), signed.replace(/a{64}$/, 'z'.repeat(64))])('malformed authentication tag discards the whole bookmark (%s)', value => {
+  const params = new URLSearchParams({ snapshot_id: '2', as_of: new Date().toISOString(), visibility_snapshot: value });
+  expect(visibilitySnapshot(value)).toBeNull();
+  expect(auditFilters(params).snapshot_id).toBeUndefined();
+});

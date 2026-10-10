@@ -38,12 +38,23 @@ does not provide durable full transaction provenance.
 
 ## Bookmarks and unavailable states
 
-Use `v2:<canonical dataset UUID>:<xmin>:<xmax>:<active root IDs>` in the existing
+Use `v3:<canonical dataset UUID>:<xmin>:<xmax>:<active root IDs>:<HMAC>` in the existing
 `visibility_snapshot` string. Transport it atomically with `snapshot_id` and
 `as_of`. Parse decimal xid8 values with exact integer arithmetic (Python int /
 JavaScript BigInt), bounded to uint64 and the existing 4096-character budget.
 The client preserves all bytes through URL/history and sends no fragment of a
 malformed bookmark. The existing unversioned parser retains its epoch-zero bound.
+
+The server issues a SHA256 HMAC over canonical scope, full snapshot, UTC `as_of`,
+ID ceiling and authenticated admin identity. An altered component or an unsigned
+v2 token gets private 422 before pagination. The client treats the 64-hex tag as
+opaque and preserves it through URL/history; its v2 parser remains for historical
+compatibility. The prototype uses one random process key, so restarts and other
+worker processes require Refresh. This is bounded single-process authentication,
+not durable production incarnation authority. Replayed valid tokens and parallel
+reads preserve the same captured population until expiry. Filters remain outside
+the signature because the existing API permits queries over that population;
+authorization is checked on each request and UI filter changes capture anew.
 
 An old unversioned bookmark presented to the prototype gets private 422 with
 Refresh guidance; a scope mismatch, future horizon after counter rollback, or
@@ -71,11 +82,13 @@ unmet capability, rather than manufacturing a successful historical backfill.
 
 ## Authority and supported operations
 
-The executable installer is restricted to loopback PG55534 / database issue611 /
+The executable installer is restricted to loopback PG55534 (original lane) or
+PG55545 (coordinator review lane) / database issue611 /
 owner inert. It is test scaffolding, not a deployment entrypoint. Fixtures use
 distinct actual LOGIN reader/writer roles without owner, superuser or BYPASSRLS
 authority. Column INSERT privileges exclude provenance and IDs. Reader policy
-and privileges are checked; no UPDATE column grant, DELETE, TRUNCATE or TRIGGER
+and privileges are checked; no effective table or column INSERT/UPDATE grant,
+including inherited writer membership, DELETE, TRUNCATE or TRIGGER
 authority is accepted. Unknown extra/disabled/changed trigger bodies and changed
 RLS policy definitions refuse. Raw INSERT, ORM INSERT and savepoint INSERT all
 reach the same database trigger. ALWAYS triggers also run in replica mode.
@@ -133,6 +146,14 @@ NOT_ACCEPTED. Independent Spec replay at dce1991 passed 52 current and minimum
 cases. The browser/API journey later passed with explicit zero-table/zero-role
 cleanup. Final external replays and independent rechecks bind published bytes;
 historical passes remain historical.
+
+Coordinator review additionally reproduced reader INSERT and unsigned-bookmark
+population changes on the initial PR head. The repaired complete cohort passed
+92 cases on each current and minimum runtime with no skips/errors. Its real
+lower-ID late commit controls cover active IDs, xmin/xmax, ceiling, as_of, scope,
+unsigned tokens, admin identity, process restart, concurrent replay and filter
+transfer. New recorder source-link refusals supplement the preserved historical
+producer; see the additive review dispositions and external final source binder.
 
 ## Integration still required
 

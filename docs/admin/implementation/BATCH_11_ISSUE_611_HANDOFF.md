@@ -103,3 +103,26 @@ maintenance authority, production model/router integration and actual roles,
 full applicable backend/SQLAlchemy and hosted acceptance. Root owns shared
 integration, issue disposition and merge. No ready transition, merge, deployment,
 paid review request or workflow enable/dispatch is part of this delivery.
+
+## Coordinator PR618 repair addendum, 2026-10-10
+
+Initial review target `f64a1f338f3996158aeb751e57d5c5d1fae9c018` is retained
+separately from this repair. Effective reader INSERT (table, column and inherited
+writer), full issued bookmark authentication and source inventory link guards
+are repaired. The client preserves opaque v3 signatures while retaining legacy
+v2 parsing. Prototype-only process keys invalidate on restart/worker change;
+production durable authority is still pending. Filters intentionally query the
+same authenticated population; authorization is checked each request.
+
+The new supported producer is `record_v2.py` with `verify_run_v2.py`; historical
+producer/archive bytes are unchanged. New actual regression cases and the
+existing prototype/caller/router cohort passed92 current and92 minimum with no
+skips/errors, immutable source readback and zero owned tables/roles. The first
+green attempt included one wrong fixture port and three wrong error assertions;
+those failures remain diagnostic, and the corrected cohort was freshly rerun.
+The completed source identity and independently reviewed final receipts are
+recorded in the coordinator's external binder, not retrofitted into this handoff.
+
+Reserved coordinator resources are PG55545/API18045/UI13045, distinct from the
+historical author lane. No provider, publisher, production or workflow operation
+is performed. Full #611 and #583 integration requirements above remain unmet.

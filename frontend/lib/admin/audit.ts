@@ -83,9 +83,13 @@ export function decodeAudit(value: unknown): AuditList {
 }
 export const DAYS = [1, 7, 30, 90, 0];
 export function visibilitySnapshot(value: unknown): string | null {
-  if (typeof value === 'string' && value.startsWith('v2:')) {
+  if (typeof value === 'string' && (value.startsWith('v2:') || value.startsWith('v3:'))) {
     if (value.length > 4096) return null;
-    const match = /^v2:([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}):([0-9]{1,20}):([0-9]{1,20}):((?:[0-9]{1,20}(?:,[0-9]{1,20})*)?)$/.exec(value);
+    // Authentication belongs to the server; preserve the complete signed
+    // bookmark without interpreting or trimming its tag.
+    const body = value.startsWith('v3:') ? value.slice(0, -65) : value;
+    if (value.startsWith('v3:') && !/:[0-9a-f]{64}$/.test(value)) return null;
+    const match = /^v[23]:([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}):([0-9]{1,20}):([0-9]{1,20}):((?:[0-9]{1,20}(?:,[0-9]{1,20})*)?)$/.exec(body);
     if (!match) return null;
     const low = BigInt(match[2]), high = BigInt(match[3]);
     const ids = match[4] ? match[4].split(',').map(id => BigInt(id)) : [];

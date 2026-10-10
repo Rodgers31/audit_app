@@ -20,13 +20,15 @@ Select an owned Python runtime with the declared backend dependencies installed.
 From the repository root:
 
 ```sh
-python3 docs/admin/implementation/batch11-issue-611-evidence/record.py \
+python3 docs/admin/implementation/batch11-issue-611-evidence/record_v2.py \
   --python /absolute/owned/venv/bin/python \
   --out /absolute/fresh/external/output \
   tests/admin_audit_epoch/test_prototype.py \
+  tests/admin_audit_epoch/test_prototype_review_boundaries.py \
+  tests/admin_audit_epoch/test_recorder_boundaries.py \
   tests/admin_overview_audit/test_review_boundaries.py \
   tests/admin_overview_audit/test_audit_boundary.py
-python3 docs/admin/implementation/batch11-issue-611-evidence/verify_run.py \
+python3 docs/admin/implementation/batch11-issue-611-evidence/verify_run_v2.py \
   /absolute/fresh/external/output/run.json
 ```
 
@@ -34,7 +36,7 @@ The recorder refuses existing or symlinked outputs, common Git metadata and
 all registered checkouts. It rechecks destination identity after execution and
 before publishing. It records all tracked and nonignored source, actual child
 exit, raw logs, JUnit identity
-counts and runtime. It accepts no skipped cases. `verify_run.py` requires exact
+counts and runtime. It accepts no skipped cases. `verify_run_v2.py` requires exact
 scalar types, complete retained execution metadata, exact raw JUnit identities,
 captured runtime output, current Git/source status, and raw output hashes. Normal
 and optimized verifier runs disable source bytecode writes themselves. These are
@@ -44,6 +46,16 @@ cannot become current by editing their HEAD/hash fields. Historical receipts,
 failures and setup attempts are kept separately; this verifier intentionally
 refuses them when source or generator identity has moved.
 
+The supported v2 producer rejects source file/directory links and missing source
+files before hashing. `record.py` / `verify_run.py` retain historical producer
+bytes; use the v2 pair for new execution. `--port 55545` selects the reserved review
+fixture and exports `ISSUE611_PG_PORT=55545` to owned children; the default remains
+55534. Other ports and malformed programmatic values refuse. The child has a
+bounded deadline, isolated process group and external pytest temporary directory.
+After every pytest exit, including a successful parent, the recorder closes only
+its owned group and records surviving-parent detection, signals and absent
+readback. The verifier requires that lifecycle metadata before accepting PASS.
+
 For Chromium, use the owned frontend `npm ci` installation and the
 `frontend/e2e/admin-audit-epoch/playwright.config.ts` config. Provide
 `ISSUE611_BROWSER_PYTHON`, a fresh `ISSUE611_BROWSER_OUTPUT`, and explicit inert
@@ -51,6 +63,11 @@ For Chromium, use the owned frontend `npm ci` installation and the
 `NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:18034`,
 `NEXT_PUBLIC_SUPABASE_ANON_KEY=inert`. Launch from an allowlisted environment.
 The API and UI use18034/13034, and the browser blocks nonloopback requests.
+For the reserved review fixture, set `ISSUE611_PG_PORT=55545` and use inert API
+URLs on18045; the config selects UI13045. Existing, symlinked, Git metadata and
+registered checkout output destinations refuse before server or reporter writes.
+The coordinator reserves the new output directory with an opaque run marker;
+workers require the same inherited marker and directory identity on config reload.
 The fixture performs explicit database cleanup/readback before Playwright exits;
 after an interrupted/failed attempt, inspect and clean only these owned resources.
 

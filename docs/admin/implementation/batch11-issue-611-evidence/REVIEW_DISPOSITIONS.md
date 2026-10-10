@@ -41,3 +41,53 @@ bundle; later rechecks supplement them.
   not reclassified as passes. The final browser/API journey passed with explicit
   zero-table/zero-role cleanup; independent Spec reviewed that fixture but did not
   execute the browser.
+
+## Coordinator PR618 review, 2026-10-10
+
+- **Valid / repaired:** table INSERT, column INSERT and inherited writer role
+  allowed an unsafe reader. Effective table and column privilege checks now refuse
+  each case with sanitized private/no-store503 before pagination.
+- **Valid / repaired:** an altered issued snapshot could admit a late lower-ID
+  commit. v3 authenticates the full snapshot, scope, UTC capture, ID ceiling and
+  admin identity. Unchanged database controls refuse altered active/xmin/xmax,
+  ceiling/as_of/scope, unsigned v2 and another actor. A process key change requires
+  Refresh; authenticated concurrent replay and API filter transfer remain valid.
+- **Valid / repaired:** source inventory followed an untracked symlink outside
+  the repository. The additive `record_v2.py` / `verify_run_v2.py` pair rejects
+  file/directory links and missing inventoried files; original producer and
+  historical archive bytes remain unchanged. Explicit owned port choices, inert
+  Git environment, bounded child lifecycle and external pytest temporary files
+  preserve the evidence boundary.
+- **Body-only / repaired:** browser output freshness was described but not
+  enforced. Ordinary existing outputs and dangling destination symlinks now
+  refuse before any report write; ancestor and checkout/common-Git guards remain.
+- **Measured, bounded:** 92 cases pass on current and minimum SQLAlchemy/Python;
+  the unchanged original implementation produced10 bookmark/privilege failures
+  plus one source-link failure in the corrected pre-code replay. A first replay
+  had collection/setup failures and is retained as NOT_ACCEPTED. Final source
+  correspondence and browser execution belong in the separate external binder.
+- **Remaining:** persistent/multiworker bookmark authority, legacy provenance,
+  real migration/router/model activation, restore/retention and hosted admission
+  remain #611/#583. These are not closed by prototype authentication.
+- **Independent follow-up / repaired:** a successful pytest parent could leave
+  a delayed descendant in its isolated process group. The v2 recorder now closes
+  and reads back that exact group after normal and timeout exits, recording
+  whether it survived the parent and each cleanup signal. Acceptance requires
+  absent=true; the verifier requires the complete strictly typed lifecycle
+  metadata. Real normal and SIGTERM-resistant child controls pass. Original
+  false-PASS execution and any setup failures remain external diagnostics.
+- **Browser lifecycle:** fresh output reservation records a random run nonce
+  and directory identity for Playwright worker reloads. Existing/dangling output,
+  linked ancestor, checkout/Git metadata and altered/fabricated worker markers
+  refuse; a fresh coordinator and its inherited worker remain valid. This is
+  local run identity, not authentication of an operator able to forge all files
+  and process state.
+- **Cross-lane evidence finding / repaired:** actual nonstrict pytest XPASS
+  had a markerless passing JUnit testcase and was falsely accepted. The current
+  recorder retains unexpected-pass status/summary lines from actual verbose
+  stdout, including colored and interleaved output, and refuses acceptance.
+  The reader independently recomputes those markers from retained stdout;
+  recataloguing a false PASS with empty metadata still refuses under normal
+  and optimized Python. An ordinary parameter named XPASS remains valid.
+  Historical producers and archives remain unchanged; current final counts
+  and source correspondence belong in the external publication binder.

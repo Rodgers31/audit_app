@@ -30,3 +30,27 @@ Shared skills were read only. No shared policy or skill was edited.
    invented receipt is not execution evidence. Preserve original false passes
    and repair replays separately. Local hashes do not authenticate a party who
    can rewrite the entire packet; retain an external source/publication binder.
+
+6. A syntactically valid snapshot is not an issued bookmark. Authenticate the
+   full visibility state, capture and ceiling together with scope and principal;
+   test an actual lower-ID writer committed after capture and tamper one field
+   at a time. Capability admission must include inherited table and column INSERT
+   authority. Keep bounded prototype keys separate from durable production
+   incarnation authority, and verify invalidation explicitly.
+7. Preserve archived producer bytes when repairing provenance tools. Version
+   the new producer/verifier, reject inventoried source links before hashing,
+   and freshly replay instead of rewriting past receipts. Enforce advertised
+   output freshness before launching browser servers or reporters.
+8. A successful parent exit does not imply its descendants stopped. Scope all
+   cleanup signals to the process group the recorder launched, include normal
+   completion, escalate boundedly for resistant children and record actual group
+   absence before acceptance. Test a detached harmless delayed effect as well
+   as timeout. Fresh browser outputs also need an explicit same-run identity
+   because Playwright workers reload configuration after output creation.
+9. A zero child exit and markerless JUnit testcase can hide a nonstrict XPASS.
+   Retain verbose pytest stdout and independently reconcile unexpected-pass
+   status and summary evidence in both producer and reader. Exercise actual
+   pytest-generated XML/output, color and interleaved prints, plus a passing
+   parameter named XPASS and a recatalogued false-PASS receipt under normal
+   and optimized Python. Local packet consistency is still not authentication
+   against a party able to rewrite all raw outputs.

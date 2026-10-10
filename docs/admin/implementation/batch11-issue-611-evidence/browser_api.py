@@ -28,12 +28,14 @@ import prototype
 from supabase_auth import _decode_supabase_jwt
 
 ACTOR = "00000000-0000-4000-8000-000000000001"
-owner = create_engine("postgresql+psycopg2://inert:inert@127.0.0.1:55534/issue611")
+PG_PORT = prototype.owned_pg_port()
+API_PORT, UI_PORT = (18045, 13045) if PG_PORT == 55545 else (18034, 13034)
+owner = create_engine(f"postgresql+psycopg2://inert:inert@127.0.0.1:{PG_PORT}/issue611")
 reader = create_engine(
-    "postgresql+psycopg2://issue611_reader:inert@127.0.0.1:55534/issue611"
+    f"postgresql+psycopg2://issue611_reader:inert@127.0.0.1:{PG_PORT}/issue611"
 )
 writer = create_engine(
-    "postgresql+psycopg2://issue611_writer:inert@127.0.0.1:55534/issue611"
+    f"postgresql+psycopg2://issue611_writer:inert@127.0.0.1:{PG_PORT}/issue611"
 )
 AdminAuditLog.__table__.create(owner)
 prototype.install_owned(owner)
@@ -91,7 +93,7 @@ async def lifespan(app):
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:13034"],
+    allow_origins=[f"http://127.0.0.1:{UI_PORT}"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
@@ -180,4 +182,4 @@ def cleanup_endpoint():
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=18034)
+    uvicorn.run(app, host="127.0.0.1", port=API_PORT)

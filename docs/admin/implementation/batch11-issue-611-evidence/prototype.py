@@ -7,6 +7,11 @@ separate requirements; the existing product xmin guard is unchanged.
 
 from datetime import datetime, timedelta, timezone
 import re
+import hashlib
+import hmac
+import json
+import os
+import secrets
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -29,6 +34,33 @@ IMMUTABLE_BODY = """BEGIN
   RAISE EXCEPTION 'audit history is append only';
 END"""
 TOKEN_ID = "61100000-0000-4000-8000-000000000001"
+# Prototype-only process authority. Restarting or changing workers invalidates
+# bookmarks and requires Refresh; this is not durable incarnation certification.
+# The immutable key supports simultaneous readers without mutable token state.
+BOOKMARK_KEY = secrets.token_bytes(32)
+
+
+def owned_pg_port():
+    value = os.getenv("ISSUE611_PG_PORT", "55534")
+    if value not in ("55534", "55545"):
+        raise RuntimeError("Explicit issue611 owned PostgreSQL port required")
+    return int(value)
+
+
+def signature(scope, visible, captured, ceiling, actor_id):
+    fields = json.dumps(
+        {"scope": scope, "snapshot": visible, "as_of": utc(captured).isoformat(),
+         "ceiling": ceiling, "actor": actor_id},
+        sort_keys=True, separators=(",", ":"),
+    ).encode()
+    return hmac.new(BOOKMARK_KEY, fields, hashlib.sha256).hexdigest()
+
+
+def issue_bookmark(scope, visible, captured, ceiling, actor_id):
+    value = f"v3:{scope}:{visible}:{signature(scope, visible, captured, ceiling, actor_id)}"
+    if len(value) > 4096:
+        raise HTTPException(503, "Audit visibility evidence is unavailable.")
+    return value
 
 
 def snapshot8(value):
@@ -56,21 +88,24 @@ def bookmark(value):
     if type(value) is not str or len(value) > 4096:
         raise HTTPException(422, "Invalid audit visibility snapshot.")
     parts = value.split(":", 2)
-    if len(parts) != 3 or parts[0] != "v2":
+    if len(parts) != 3 or parts[0] != "v3":
         raise HTTPException(422, "Refresh to obtain an audit visibility snapshot.")
     try:
         if str(UUID(parts[1])) != parts[1]:
             raise ValueError("Noncanonical scope")
     except ValueError:
         raise HTTPException(422, "Invalid audit visibility snapshot.") from None
-    return parts[1], snapshot8(parts[2])
+    signed = parts[2].rsplit(":", 1)
+    if len(signed) != 2 or not re.fullmatch(r"[0-9a-f]{64}", signed[1]):
+        raise HTTPException(422, "Invalid audit visibility snapshot.")
+    return parts[1], snapshot8(signed[0]), signed[1]
 
 
 def install_owned(engine):
     url = engine.url
     if (url.host, url.port, url.database, url.username) != (
         "127.0.0.1",
-        55534,
+        owned_pg_port(),
         "issue611",
         "inert",
     ):
@@ -189,8 +224,8 @@ def capability(db):
     checks = db.execute(text("""SELECT c.relrowsecurity,
         c.relowner = (SELECT oid FROM pg_roles WHERE rolname=current_user) AS owns,
         a.atttypid = 'xid8'::regtype AND NOT a.attisdropped AS xid8,
-        has_table_privilege('public.admin_audit_log','UPDATE,DELETE,TRUNCATE,TRIGGER') AS mutates,
-        has_any_column_privilege('public.admin_audit_log','UPDATE') AS updates_column,
+        has_table_privilege('public.admin_audit_log','INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER') AS mutates,
+        has_any_column_privilege('public.admin_audit_log','INSERT,UPDATE') AS updates_column,
         row_security_active('public.admin_audit_log') AS rls
         FROM pg_class c JOIN pg_attribute a ON a.attrelid=c.oid AND a.attname='root_xid'
         WHERE c.oid='public.admin_audit_log'::regclass""")).one()
@@ -288,6 +323,7 @@ async def read(
     visibility_snapshot: str | None = Query(None, max_length=4096),
     since: datetime | None = None,
     until: datetime | None = None,
+    actor=Depends(require_admin),
     db=Depends(get_db),
 ):
     now = datetime.now(timezone.utc)
@@ -314,6 +350,10 @@ async def read(
     scope = capability(db)
     current = snapshot8(db.scalar(text("SELECT pg_current_snapshot()::text")))
     if supplied and supplied[0] != scope:
+        raise HTTPException(422, "Audit snapshot changed. Refresh the log.")
+    if supplied and not hmac.compare_digest(
+        supplied[2], signature(scope, supplied[1], captured, snapshot_id, actor.id)
+    ):
         raise HTTPException(422, "Audit snapshot changed. Refresh the log.")
     visible = supplied[1] if supplied else current
     if int(visible.split(":")[1]) > int(current.split(":")[1]):
@@ -380,5 +420,5 @@ async def read(
         has_more=page * page_size < total,
         snapshot_id=ceiling,
         as_of=captured,
-        visibility_snapshot=f"v2:{scope}:{visible}",
+        visibility_snapshot=issue_bookmark(scope, visible, captured, ceiling, actor.id),
     )

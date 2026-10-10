@@ -45,7 +45,8 @@ test_durable_capability_at_real_current_epoch = (
 def storage(request):
     if os.getenv("ISSUE611_OWNED_POSTGRES") != "1":
         pytest.skip("issue611 owned PostgreSQL on 55534 required")
-    owner = create_engine("postgresql+psycopg2://inert:inert@127.0.0.1:55534/issue611")
+    port = prototype.owned_pg_port()
+    owner = create_engine(f"postgresql+psycopg2://inert:inert@127.0.0.1:{port}/issue611")
     AdminAuditLog.__table__.create(owner)
     if getattr(request, "param", None) == "legacy":
         with sessionmaker(bind=owner)() as db:
@@ -53,10 +54,10 @@ def storage(request):
             db.commit()
     prototype.install_owned(owner)
     reader = create_engine(
-        "postgresql+psycopg2://issue611_reader:inert@127.0.0.1:55534/issue611"
+        f"postgresql+psycopg2://issue611_reader:inert@127.0.0.1:{port}/issue611"
     )
     writer = create_engine(
-        "postgresql+psycopg2://issue611_writer:inert@127.0.0.1:55534/issue611"
+        f"postgresql+psycopg2://issue611_writer:inert@127.0.0.1:{port}/issue611"
     )
     factory = sessionmaker(bind=writer)
     reader_factory = sessionmaker(bind=reader)
@@ -216,7 +217,7 @@ def test_untrusted_rls_and_anonymous_api(storage):
     with owner.begin() as db:
         db.execute(text("GRANT SELECT ON admin_audit_log TO issue611_untrusted"))
     untrusted = create_engine(
-        "postgresql+psycopg2://issue611_untrusted:inert@127.0.0.1:55534/issue611"
+        f"postgresql+psycopg2://issue611_untrusted:inert@127.0.0.1:{prototype.owned_pg_port()}/issue611"
     )
     try:
         with untrusted.connect() as db:
