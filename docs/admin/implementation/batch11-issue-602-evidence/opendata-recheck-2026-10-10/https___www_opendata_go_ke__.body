@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><title>ArcGIS Hub</title><meta name="twitter:title" content="ArcGIS Hub"><meta property="og:title" content="ArcGIS Hub"><meta name="description" content="Discover, analyze and download data from ArcGIS Hub. Download in CSV, KML, Zip, GeoJSON, GeoTIFF or PNG. Find API links for GeoServices, WMS, and WFS. Analyze with charts and thematic maps. Take the next step and create StoryMaps and Web Maps."><meta name="twitter:description" content="Discover, analyze and download data from ArcGIS Hub. Download in CSV, KML, Zip, GeoJSON, GeoTIFF or PNG. Find API links for GeoServices, WMS, and WFS. Analyze with charts and thematic maps. Take the next step and create StoryMaps and Web Maps."><meta property="og:description" content="Discover, analyze and download data from ArcGIS Hub. Download in CSV, KML, Zip, GeoJSON, GeoTIFF or PNG. Find API links for GeoServices, WMS, and WFS. Analyze with charts and thematic maps. Take the next step and create StoryMaps and Web Maps."><meta name="twitter:card" content="summary"><meta property="og:url" content="https://www.opendata.go.ke/"><meta property="og:type" content="website">
+    <meta name="hub-site-head-content">
+    <meta charset="utf-8">
+    <meta name="google-site-verification" content="V9SzvB895BKr2ff7JVvaJQM1CIgPqOL5FPooX1aqENo">
+    <meta name="msvalidate.01" content="217F0EED65C5B131219477CE2CEAAF8E">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+      (function () {
+        // check for unsupported browsers
+        function isIE () {
+          return (
+            (navigator.appName === 'Microsoft Internet Explorer') ||
+            ((navigator.appName === 'Netscape') && (new RegExp('Trident/.*rv:([0-9]{1,}[.0-9]{0,})').exec(navigator.userAgent) != null))
+          );
+        }
+        function isEdge () {
+          return navigator.userAgent.toLowerCase().includes('edge');
+        }
+        if (isIE() || isEdge()) {
+          window.location.replace('./unsupported.html');
+        }
+      })();
+    </script>
+    
+<meta name="layout-editor-engine/config/environment" content="%7B%22modulePrefix%22%3A%22layout-editor-engine%22%2C%22environment%22%3A%22production%22%2C%22ember-do-forms%22%3A%7B%22defaultClasses%22%3A%7B%22field%22%3A%5B%22field%22%5D%2C%22label%22%3A%5B%22label%22%5D%2C%22control%22%3A%5B%22control%22%5D%2C%22feedback%22%3A%5B%22feedback%22%5D%2C%22hint%22%3A%5B%22hint%22%5D%7D%2C%22validationClasses%22%3A%7B%22fieldSuccess%22%3A%5B%22field-success%22%5D%2C%22fieldError%22%3A%5B%22field-error%22%5D%2C%22controlSuccess%22%3A%5B%22control-success%22%5D%2C%22controlError%22%3A%5B%22control-error%22%5D%7D%7D%7D">
+    <link rel="stylesheet" href="https://hubcdn.arcgis.com/opendata-ui/assets/assets/vendor-4e67da638136388d59ddf99b8e586359.css">
+<link rel="stylesheet" href="https://hubcdn.arcgis.com/opendata-ui/assets/assets/chunk.33524.cfed42549e3954c397da.css">
+    <!-- [begin custom site css injection point] - please do not remove this -->
+
+    <!-- FOR LTR DEVELOPMENT/TESTING: Un-Comment the next section -->
+    <!-- <link rel="stylesheet" href="/assets/opendata-base.css"> -->
+    <!-- FOR RTL TESTING: Un-Comment the next section -->
+    <!-- <link rel="stylesheet" href="https://hubcdn.arcgis.com/opendata-ui/assets/assets/opendata-rtl-12741978cb2ef7ab913a9f96af57db59.css">
+    <link rel="stylesheet" href="//cdn.rawgit.com/morteza/bootstrap-rtl/v3.3.4/dist/css/bootstrap-rtl.min.css"> -->
+
+    <!-- [end custom site css injection point] - please do not remove this -->
+
+    <script type="module" src="https://hubcdn.arcgis.com/opendata-ui/assets/calcite-components/5.1.1/cdn/index.js"></script>
+<meta name="opendata-ui/config/asset-manifest" content="%7B%22bundles%22%3A%7B%22layout-editor-engine%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22https%3A//hubcdn.arcgis.com/opendata-ui/assets/engines-dist/layout-editor-engine/assets/engine-eee7b86bf7a3807b35076942f2f49504.js%22%2C%22type%22%3A%22js%22%7D%2C%7B%22uri%22%3A%22https%3A//hubcdn.arcgis.com/opendata-ui/assets/engines-dist/layout-editor-engine/assets/engine-vendor-39c58838e72528ccebe6ce81c86c73c0.js%22%2C%22type%22%3A%22js%22%7D%2C%7B%22uri%22%3A%22https%3A//hubcdn.arcgis.com/opendata-ui/assets/engines-dist/layout-editor-engine/config/environment-b61dbd70182cd4ee7d523d670df243b7.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%7D%7D">
+
+    <script id="site-injection">
+      window.__SITE="%7B%22site%22%3A%7B%22domainInfo%22%3A%7B%22id%22%3A%2221104%22%2C%22hostname%22%3A%22www.opendata.go.ke%22%2C%22siteId%22%3A%225e9f10eba21643f5a3531a60fa275c19%22%2C%22clientKey%22%3A%22fmiogNsbQTMmYuru%22%2C%22orgKey%22%3A%22KenyaOpenData%22%2C%22siteTitle%22%3A%22Kenya%20Open%20Data%20%22%2C%22orgId%22%3A%22um8CA8KcKChzWgPS%22%2C%22orgTitle%22%3A%22ICT%20Authority%22%2C%22createdAt%22%3A%222018-09-28T09%3A06%3A29.000Z%22%2C%22updatedAt%22%3A%222018-09-28T09%3A06%3A29.000Z%22%2C%22sslOnly%22%3Afalse%2C%22permanentRedirect%22%3Afalse%2C%22redirectTo%22%3Anull%2C%22domain%22%3A%22www.opendata.go.ke%22%7D%2C%22status%22%3A403%7D%2C%22status%22%3A403%7D"
+    </script>
+    <script id="domain-injection">
+      window.__DOMAIN={"domainInfo":{"id":"21104","hostname":"www.opendata.go.ke","siteId":"5e9f10eba21643f5a3531a60fa275c19","clientKey":"fmiogNsbQTMmYuru","orgKey":"KenyaOpenData","siteTitle":"Kenya Open Data ","orgId":"um8CA8KcKChzWgPS","orgTitle":"ICT Authority","createdAt":"2018-09-28T09:06:29.000Z","updatedAt":"2018-09-28T09:06:29.000Z","sslOnly":false,"permanentRedirect":false,"redirectTo":null,"domain":"www.opendata.go.ke"}}
+    </script>    <!-- [ga injection point] - please do not remove this -->
+  </head>
+  <body class="calcite a11y-underlines">
+    
+    <calcite-loader active="" type="indeterminate" scale="m" id="base-loader" unthemed=""></calcite-loader>
+    <!-- crossorigin options added because otherwise we cannot see error messages from unhandled errors and rejections -->
+    <script crossorigin="anonymous" src="https://hubcdn.arcgis.com/opendata-ui/assets/assets/vendor-8fc73120dc4bd0b5b7e2935c27d5aefd.js"></script>
+<script src="https://hubcdn.arcgis.com/opendata-ui/assets/assets/chunk.70287.53019f4acd63ec1e2137.js"></script>
+<script src="https://hubcdn.arcgis.com/opendata-ui/assets/assets/chunk.33524.cfed42549e3954c397da.js"></script>
+    <script crossorigin="anonymous" src="https://hubcdn.arcgis.com/opendata-ui/assets/assets/opendata-ui-0b567382b3291a690a347af91dac339c.js"></script>
+
+    
+
+    <!-- opendata-ui version: 5.444.0+7ad78f2a44 - Thu, 08 Oct 2026 11:23:44 GMT -->
+  
+
+</body></html>

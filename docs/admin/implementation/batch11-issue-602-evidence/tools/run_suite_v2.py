@@ -47,7 +47,7 @@ def main():
     p.add_argument("--out", type=Path, required=True)
     p.add_argument("--python", type=Path, required=True)
     p.add_argument("--label", required=True)
-    p.add_argument("--suite", choices=("full", "tests"), required=True)
+    p.add_argument("--suite", choices=("full", "complete", "tests"), required=True)
     p.add_argument("--service-port", type=int, default=55531)
     p.add_argument("--fixture-port", type=int, default=55536)
     p.add_argument("--native-port", type=int, default=55535)
@@ -99,17 +99,24 @@ def main():
                "REDIS_URL=redis://127.0.0.1:%d" % a.redis_port, "TESTING=true",
                "BATCH9_RECONCILIATION_DATABASE_URL=" + fixture_url[0],
                "BATCH11_602_PG_PORT=%d" % a.native_port, "BATCH11_602_API_PORT=%d" % a.api_port]
-        record = [str(a.python), "-I", str(Path(__file__).resolve().parent / "record_v3.py"), "--repo", str(repo),
-                  "--out", str(out / "run"), "--label", a.label, "--timeout", str(a.timeout)]
-        for item in env:
-            record += ["--env", item]
+        def record(run, mode, command, label, extra_env=()):
+            argv = [str(a.python), "-I", str(Path(__file__).resolve().parent / "record_v3.py"), "--repo", str(repo),
+                    "--out", str(out / run), "--label", label, "--timeout", str(a.timeout), "--mode", mode]
+            for item in (*env, *extra_env):
+                argv += ["--env", item]
+            return subprocess.run([*argv, "--", *command], cwd=repo, timeout=a.timeout + 120, env={"PATH": PATH}).returncode
         if a.suite == "full":
-            record += ["--mode", "launcher", "--", str(a.python), str(repo / ".github/scripts/run_backend_tests.py")]
+            rc = record("run", "launcher", [str(a.python), str(repo / ".github/scripts/run_backend_tests.py")], a.label)
+        elif a.suite == "complete":
+            runner = str(Path(__file__).resolve().parent / "run_launcher_cohorts_complete.py")
+            rc = 0
+            for cohort in ("backend", "legacy"):
+                rc |= record("run-" + cohort, "pytest",
+                             [str(a.python), runner, "--cohort", cohort, "--output-dir", str(out / ("launcher-" + cohort))],
+                             a.label + " [" + cohort + " cohort]", ("PYTHONPATH=%s" % (repo / "backend"),))
         else:
-            record += ["--env", "PYTHONPATH=%s:%s" % (repo / "backend", repo / "backend/tests"),
-                       "--mode", "pytest", "--", str(a.python), "-m", "pytest", *a.tests, "-q", "-o", "addopts="]
-        result = subprocess.run(record, cwd=repo, timeout=a.timeout + 120, env={"PATH": PATH})
-        rc = result.returncode
+            rc = record("run", "pytest", [str(a.python), "-m", "pytest", *a.tests, "-q", "-o", "addopts="], a.label,
+                        ("PYTHONPATH=%s:%s" % (repo / "backend", repo / "backend/tests"),))
     finally:
         if prepared or state.exists():
             cleanup = subprocess.run([str(a.python), str(repo / ".github/scripts/prepare_reconciliation_test_fixture.py"),

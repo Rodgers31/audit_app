@@ -3,12 +3,28 @@
   "generated_by": "tools/publish_v2.py",
   "generator_sha256": "0d05631be10864f212f6e7011e947aec87a48de00ec74ffc87a188b170aae1d6",
   "files": {
+    "receipts/final-alembic-heads/receipt.json": "6ea95d49c718363c3f98505de2fae9e3a6aa1ed9d9460325f5b2bc04a6ba3985",
+    "receipts/final-cohort-current/receipt.json": "0f150660bfaee5e7b206d9dd2d767257eacfb901314e4ba32b1849d778f3613d",
+    "receipts/final-cohort-minimum/receipt.json": "213c01ae3312222b07095515f186b0fe6298546d7787b5a32bb341428214b797",
+    "receipts/final-lint-ci-critical/receipt.json": "fb3247a24926f10bf96c85dda67066f65193bb500f3c52092b28b90b4aa10b61",
+    "receipts/final-parser-control-current-normal/receipt.json": "5df2088c49c623d1ae576d8fcb82310b3068c1b54ae8c0318dc6bc326489f157",
+    "receipts/final-parser-control-current-optimized/receipt.json": "f6f1912232bfe16561a75ea1a01f87e250451879b8e6a12878bb30393d43de1f",
+    "receipts/final-parser-control-minimum-normal/receipt.json": "053c47c9ab0ccdb30106a2555cb4430c72dffdccd335c6466db3e52a5096131f",
+    "receipts/final-parser-control-minimum-optimized/receipt.json": "7f600bda6b598fc59c1853f1e058dea00a8560d407e7514667bea2435da0b322",
+    "receipts/final-preparer-current/receipt.json": "50c25ad024bf73659a30308746db64636625b64bfb77d4e1f6c57dd35c93659a",
+    "receipts/final-preparer-minimum/receipt.json": "355fe604b0834182fcd51a4d1e84d18d4a2b5c5fb919836949d13230e9291570",
     "receipts/green-03-preparer-current-head/receipt.json": "c898b256d80512c60ef97449b4f6988d0f49b94f90cc806c705f49a5d27579cc",
     "receipts/intermediate-cohort-current-04/receipt.json": "041f5e3d6152cd8659e0c9b258007f6686803a066481dbe1dba343eee2bdc829",
+    "receipts/intermediate-cohort-current-a1bfd63-drifted/receipt.json": "013bfc9c9f70086b8d30e626129d6972769b02c2041498d43e23873c407d584a",
+    "receipts/intermediate-cohort-current-pre-ids/receipt.json": "7d8c1277f284f17d8040442124719662051bd1e312935e454accb137e3c9c2cd",
+    "receipts/intermediate-cohort-minimum-pre-ids/receipt.json": "ad0e9f7b82b4119e86893f8d6ba1ca2d1c58500222d1733d7bd2f5a10e0bcd9d",
     "receipts/red-01-parser-writer-orm-mutation/receipt.json": "b3d66c2f6f741fcde6549bd60b7592da87ec7b25a8f63a96243211d5caea62a4",
     "receipts/red-02-parser-writer-sql-mutation/receipt.json": "1918e2a4f812dc760adaa6ab5fe9ee6779262b8aa8a0534c36dcb797ac5f2ab6",
     "receipts/red-03-preparer-stale-head/receipt.json": "8037e58f9e5dd2bef22706a1fa3705443a0dd7b6f4dbaef5763dde9521ade0f1",
     "receipts/red-04-legacy-cra-not-enrolled/receipt.json": "cb024a64af99ddf9b478a3b6b9a89c205235143d04a35d068f0ba7fb2d682a20",
+    "receipts/red-05-spec-review-foreign-extraction-and-scaled-table/receipt.json": "7fa48d72b2ad3d870e616ebb8c9091a5e153a8277d4e1d976a639ddb7bf4f6b3",
+    "receipts/red-06-standards-review-lock-contender/receipt.json": "875741fc9956f6dd4613d27260555456659e50d67048aabfea3a322338656942",
+    "receipts/red-07-adapter-invalid-flag-log/receipt.json": "e3ad05e71bc193fb56db1862857b7760793ff380769460dfe37cfc58855bb2c8",
     "receipts/setup-failure-cohort-unsplit-args/receipt.json": "4f5ed7c91a52a2b18e3d29a5083796c5e6b84db61249dcec718b69f5d08f79a0"
   }
 }
