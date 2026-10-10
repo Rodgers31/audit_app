@@ -108,7 +108,7 @@ class FixtureControls(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True), patch.object(subject, "inspect", side_effect=[self.container, self.network]), patch.object(subject, "run", return_value="") as run:
             result = subject.cleanup(self.state, time.monotonic()+30)
             self.assertEqual(result["status"], "cleaned")
-            self.assertEqual([c.args[0] for c in run.call_args_list], [["docker", "rm", "-f", "b"*64], ["docker", "network", "rm", "c"*64]])
+            self.assertEqual([c.args[0] for c in run.call_args_list], [["docker", "rm", "-f", "--volumes", "b"*64], ["docker", "network", "rm", "c"*64]])
         self.assertTrue(subject.state_read(self.state)["cleaned"])
         self.assertFalse(subject.state_read(self.state)["ready"])
 

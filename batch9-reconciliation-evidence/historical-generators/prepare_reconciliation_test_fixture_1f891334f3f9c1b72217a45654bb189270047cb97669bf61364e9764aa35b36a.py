@@ -216,7 +216,7 @@ def cleanup(path, deadline):
         return {"status": "already_cleaned"}
     verify_resources(value, deadline)
     if value["container_id"]:
-        run(["docker", "rm", "-f", "--volumes", value["container_id"]], deadline)
+        run(["docker", "rm", "-f", value["container_id"]], deadline)
     if value["network_id"]:
         run(["docker", "network", "rm", value["network_id"]], deadline)
     value.update(ready=False, cleaned=True)
