@@ -164,6 +164,9 @@ jobs:
         npm ci
 
         '
+      env:
+        # CPU binaries are packaged; these jobs do not need optional CUDA downloads.
+        ONNXRUNTIME_NODE_INSTALL: skip
     - name: Lint (REQUIRED - No Warnings)
       run: 'cd frontend
 
@@ -303,6 +306,8 @@ jobs:
         npx playwright install --with-deps chromium
 
         '
+      env:
+        ONNXRUNTIME_NODE_INSTALL: skip
     - name: Exercise published, absent, partial and refreshed data in Chromium
       working-directory: frontend
       run: npx playwright test --config playwright.acceptance.config.ts
@@ -351,6 +356,8 @@ jobs:
         npx playwright install --with-deps chromium
 
         '
+      env:
+        ONNXRUNTIME_NODE_INSTALL: skip
     - name: Run original cases against built Next.js and synthetic API
       working-directory: frontend
       run: npm run test:e2e:legacy
