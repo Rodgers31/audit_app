@@ -1,0 +1,16 @@
+test_a_failing_legacy_case_keeps_the_complete_gate_red (test_backend_test_launcher.LauncherTests.test_a_failing_legacy_case_keeps_the_complete_gate_red) ... ok
+test_ambient_selectors_or_collect_only_cannot_turn_execution_green (test_backend_test_launcher.LauncherTests.test_ambient_selectors_or_collect_only_cannot_turn_execution_green) ... ok
+test_descendant_package_selection_preserves_configuration_before_import (test_backend_test_launcher.LauncherTests.test_descendant_package_selection_preserves_configuration_before_import) ... ok
+test_descendants_keep_their_real_packages_even_from_repository_root (test_backend_test_launcher.LauncherTests.test_descendants_keep_their_real_packages_even_from_repository_root) ... ok
+test_empty_backend_cohort_cannot_pass_and_stale_receipts_are_removed (test_backend_test_launcher.LauncherTests.test_empty_backend_cohort_cannot_pass_and_stale_receipts_are_removed) ... ok
+test_missing_legacy_file_refuses_the_inventory_and_removes_stale_summary (test_backend_test_launcher.LauncherTests.test_missing_legacy_file_refuses_the_inventory_and_removes_stale_summary) ... ok
+test_missing_real_seeding_does_not_fall_back_to_root_stub (test_backend_test_launcher.LauncherTests.test_missing_real_seeding_does_not_fall_back_to_root_stub) ... ok
+test_new_undeclared_etl_importer_requires_an_explicit_owner (test_backend_test_launcher.LauncherTests.test_new_undeclared_etl_importer_requires_an_explicit_owner) ... ok
+test_original_combined_imports_fail_but_both_owned_cohorts_execute (test_backend_test_launcher.LauncherTests.test_original_combined_imports_fail_but_both_owned_cohorts_execute) ... ok
+test_public_legacy_session_regressions_have_explicit_cohort_ownership (test_backend_test_launcher.LauncherTests.test_public_legacy_session_regressions_have_explicit_cohort_ownership) ... ok
+test_receipts_cannot_certify_wrong_package_identity_or_uncollected_cases (test_backend_test_launcher.LauncherTests.test_receipts_cannot_certify_wrong_package_identity_or_uncollected_cases) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 6.328s
+
+OK
