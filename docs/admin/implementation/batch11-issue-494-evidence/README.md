@@ -31,6 +31,19 @@ The two original source exporters are replaced by `replay_v2.py export`, which e
 
 The original platform/review counts below and in the original handoff/index describe the original implementation only. Current results and their limits are in `REVIEW_CORRECTION_V2.md` and the coordinator's separate source-bound acceptance records. #494 remains OPEN_UNRESOLVED.
 
+### Restored install cache control (#627)
+
+The Vercel install command is `npm ci --include=dev --include=optional`. A previously repaired `node_modules` cache can contain an older accepted minified file; ordinary `npm install` can retain it and the current installer correctly refuses those different bytes. A fresh locked install replaces that cache before applying the current repair. The repair hashes and dependency lock remain unchanged.
+
+`npm_cache_control_v2.py` reproduces this boundary using five public packages whose exact versions, URLs and integrity values match the current lock. Red installs the known historical repair from commit `eb456efd5d96b4073609489f7a2cd41b18db157b`, switches to the current repair, and requires the actual cached-install failure. Green consumes that preserved, hash-bound fixture and executes the configured install command; it requires removal of an owned stale marker, an unchanged lock, the complete repaired file inventory and a valid installed graph. Use absolute real Node and npm CLI paths. The helper uses only empty owned npm configuration, an owned cache/home and the public npm registry. Run both commands through `replay_v2.py run` for source and owned process-group readback:
+
+```sh
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/replay_v2.py run /clone /owned/red-capture --cwd /clone/frontend -- /absolute/python3 -B /clone/docs/admin/implementation/batch11-issue-494-evidence/npm_cache_control_v2.py red --root /clone --node /absolute/node --npm-cli /absolute/npm-cli.js --out /owned/red
+python3 /clone/docs/admin/implementation/batch11-issue-494-evidence/replay_v2.py run /clone /owned/green-capture --cwd /clone/frontend -- /absolute/python3 -B /clone/docs/admin/implementation/batch11-issue-494-evidence/npm_cache_control_v2.py green --root /clone --node /absolute/node --npm-cli /absolute/npm-cli.js --out /owned/green --cached /owned/red
+```
+
+Each output must be fresh and external. Changed fixture bytes, installer bytes or public package resolutions refuse before installation. The bounded receipt reports `current_checkout_acceptance:false`: it proves the controlled install mechanism, not a full application install or hosted deployment. The actual failed Vercel cache bytes were unavailable, so their identity remains unknown. Historical captures and generators retain their original classifications. Hosted preview acceptance and the broader #494 dependency work remain separate gates.
+
 `evidence-v1.zip` and `evidence-v1.manifest.json` contain original command receipts/streams, source inventories, original producers, baseline failures, actual native builder outputs, complete independent review controls and the initial publication packet. The final manifest uses schema2 and binds its archived `producers/pack.py`; the retained initial schema1 packet lacks that pack-producer binding. Both are historical integrity checks, not authenticated attestations or current acceptance.
 
 Run with Python3.9 or newer, using absolute paths from any clone:
