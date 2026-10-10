@@ -1,0 +1,84 @@
+{
+  "schema": 2,
+  "classification": "HISTORICAL_V1_SUPERSEDED_FOR_CURRENT_BEHAVIOR",
+  "current_checkout_acceptance": false,
+  "issue_494": "OPEN_UNRESOLVED",
+  "original_source_commit": "eb456efd5d96b4073609489f7a2cd41b18db157b",
+  "reason": "Docker install ordering and numeric precision0 defects repaired after original captures. V1 producers retained solely as exact historical generator bytes; never execute them for new acceptance.",
+  "preserved_originals": {
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/baseline-child.cjs": {
+      "sha256": "625d5593a2931083f69fd5f90721ef244f1caa3a5f09219cb7a9ca7074f3f79a",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/export-final-source.py": {
+      "sha256": "495632c707fb3582e9eb316beb3f8c82bc928dcaf0836ba1788930b4debd8209",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/export-linux-prerequisites.py": {
+      "sha256": "d6d7123444517456f86e70df7bdbed3103ae5d6e2ec6cde71d9355d51eed08f5",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/linux-run.cjs": {
+      "sha256": "de69aa6994b8fc387cc3d5a1757dca9458357673830f99984aa298b817e575ee",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/native-builder.cjs": {
+      "sha256": "c28ce52adae805f41b00841bfbd3e8fa232502649004311d7bfca3a723b94904",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/prepare-patches.py": {
+      "sha256": "594dfdc468bed66199c2a1c4842e66af1cc62deedff5f05c1a9361403bfa073a",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/preview.cjs": {
+      "sha256": "4396550dfed6f7eacb9caaa95de5da2f0fea63b72f41a8fee6024d6f8be5b25a",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/publication-control.py": {
+      "sha256": "26d5f8d98f12b5cd13055966cf907568ef88ba1f0f9e641caca99fce66721455",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/repair-distribution.cjs": {
+      "sha256": "67ddb35d5f191b12f8d1f26bd4aff069658ceb8d085ab71ce726586a61db6843",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/revise-patches.py": {
+      "sha256": "fe09c82deab7146eb2473f9470bfdb8495a9c731b6a354e395e5d6c886f97a11",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/producers/run.py": {
+      "sha256": "06c640f3e69183509de2dd69d1b96c2a1f30e05cf91d79f36ab79ed327e03478",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/pack.py": {
+      "sha256": "fe334cd0700fb5b50b7a48d25809d0e39fdeda02bb0c761e17c0bd5d64ceb069",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/acceptance-index.json": {
+      "sha256": "30fc96f653f797784e434da6796c0d0cf600c74e86a06e78a977bd192238cc25",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/evidence-v1.zip": {
+      "sha256": "d7f95f831cb49b03eee0b10bf85f3af6f73ebc9b5ebccd730f2938dcb407817c",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    },
+    "docs/admin/implementation/batch11-issue-494-evidence/evidence-v1.manifest.json": {
+      "sha256": "914c1e6459c06e63586170fff70c487d9b2f96ed6a18195b687f364112603822",
+      "classification": "HISTORICAL_IMMUTABLE_DO_NOT_REPLAY"
+    }
+  },
+  "supported_entrypoints": [
+    "verify_bundle.py (historical integrity only)",
+    "replay_v2.py (run/export/pack)",
+    "replay-v2/baseline-child.cjs",
+    "replay-v2/native-builder.cjs",
+    "replay-v2/preview.cjs",
+    "replay-v2/linux-run.cjs"
+  ],
+  "superseded_current_behavior_claims": [
+    "acceptance-index.json",
+    "BATCH_11_ISSUE_494_HANDOFF.md original platform counts",
+    "README.md original producer replay instructions"
+  ],
+  "current_verification_requirement": "Fresh source-bound current replay and coordinator/independent acceptance. Original histories remain intact; no counts are rebound to new source."
+}

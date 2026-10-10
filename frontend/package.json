@@ -4,12 +4,12 @@
   "description": "Government Financial Transparency Audit Application Frontend",
   "private": true,
   "scripts": {
-    "predev": "node scripts/verify-tooling-inputs.cjs",
+    "predev": "node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
     "dev": "next dev",
-    "prebuild": "node scripts/verify-tooling-inputs.cjs",
+    "prebuild": "node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
     "build": "next build",
     "start": "next start",
-    "prelint": "node scripts/verify-tooling-inputs.cjs",
+    "prelint": "node scripts/verify-tooling-inputs.cjs && node scripts/apply-tooling-repairs.cjs --check",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -22,7 +22,10 @@
     "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs"
+    "test:dependency-boundaries": "node --test scripts/tooling-repair-behavior.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
+    "postinstall": "node scripts/apply-tooling-repairs.cjs",
+    "pretest": "node scripts/apply-tooling-repairs.cjs --check",
+    "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
