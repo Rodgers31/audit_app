@@ -6,8 +6,8 @@ The original author statements that no repair PR was appropriate remain historic
 
 | Session | Published author commit | Review disposition |
 | --- | --- | --- |
-| #589 startup readiness | `7395a7acebaa38b3b641249ac31fddcc1aab249e` | PR #604; combine with #595 because both modify `backend/main.py` and its behavior. |
-| #595 IMF actual-year behavior | `6ec8870d08fd800363530dc6f26d2f3d429bcba0` | Preserve both author commits in #604; #605 becomes superseded after verified publication. |
+| #589 startup readiness | `7395a7acebaa38b3b641249ac31fddcc1aab249e` | Consolidated in PR #604 with #595 because both modify `backend/main.py` and its behavior. |
+| #595 IMF actual-year behavior | `6ec8870d08fd800363530dc6f26d2f3d429bcba0` | Both author commits preserved in #604; #605 closed as superseded after verified publication, without merging. |
 | #554 bounded ETL mappings | `86aa4c3a7a29383ed256273bd0097cfc81b3336d` | Keep PR #606 separate: worker/dispatch/native exclusion/models/migration. Activation remains off. |
 | #494 dependencies | `b9b03339f93fd67da6566ea58fe93c2e8ea9961e` | This documentation PR; compatibility/remediation acceptance remains pending. |
 | #601 county scroll | `44e2b0a2fb0bc9fcd7ae2153bd9f6101760fac47` | This documentation PR; causal reproduction and repair remain pending. |
@@ -34,13 +34,88 @@ GitHub Actions remain disabled. Historical hosted acceptance is bound to its ori
 
 The initial all-state census contained 607 issue-or-PR rows across seven pages: 299 actual issues (16 open), excluding 308 PR entries. Five author finals, handoffs, local lessons and relevant prior Batch9 acceptance were reviewed for concrete missed follow-ups. Existing #602, #603 and #607 already cover the discovered blockers. The coordinator subsequently opened #608 for the newly reproduced IMF verifier defect; issue totals above remain timestamped historical counts.
 
-1. Complete review of #604 and #606, including #608's verified receipt fix. Neither acceptance nor issue closure is inferred from an open draft PR.
+1. Complete human review of #604, #606 and this documentation PR #609, including the verified #608/#610 receipt fixes. Neither merge nor issue closure is inferred from an open draft PR.
 2. #603: make durable retained non-budget writer claims take precedence over bootstrap's one-hour scheduling boundary. Prove actual interrupted-writer exclusion and safe normal successors; #589 readiness does not resolve this inherited defect.
 3. #602: implement bounded real OpenData and CRA native entrypoints before wiring their admin mappings. CRA is Commission on Revenue Allocation; KRA revenue data cannot substitute. #554 stays partially open for these prerequisites and deployed operator acceptance.
 4. Coordinate #607 and #601 under one navigation owner, retaining their distinct failure phases and original browser assertions. Obtain a causal red/green reproduction for each actual symptom.
 5. #494: choose a scoped compatible residual-root/style migration strategy with explicit template ownership, valid fresh package graphs and real platform/native/model/build/page acceptance.
+6. #611: implement durable epoch-aware audit pagination storage. Preserve the existing fail-closed guard until real PostgreSQL late-commit/wrap/freeze/rewrite/restore and role/browser acceptance establishes supported replacement semantics. This is a previously documented follow-up whose dedicated GitHub issue was missing; it is now tracked under #545.
 
 Other prior gates remain routed to #583 (production writer fencing/reconciliation/migrations/activation), #545 (entire-admin completion and intended-host acceptance), #525 (telemetry/exporter custody), #488 (Meta authorization), #490 (private storage/maintenance), #481/#476 (hosting/operating evidence), and #599 (old zero-job Actions record). No duplicate unresolved issues are needed for repaired historical fixture/verifier defects.
+
+## Final coordinator review and publication
+
+The five author deliveries are covered by three draft review PRs:
+[startup/IMF #604](https://github.com/Rodgers31/audit_app/pull/604),
+[bounded ETL #606](https://github.com/Rodgers31/audit_app/pull/606), and
+[investigations #609](https://github.com/Rodgers31/audit_app/pull/609).
+The former [IMF #605](https://github.com/Rodgers31/audit_app/pull/605) is closed as
+superseded, not merged. Its branch and original delivery are preserved. The two
+investigation sessions were not missing unpushed product changes: their published
+evidence established limitations and next work, without a supported repair.
+
+Final #604 source is `ad4a9f76f944514c414465643a72f2cee0b1bc19`, tree
+`e82775f2bf7f900027797d3f7c20da468edff052`. Both original author heads are
+ancestors. The final offline financial/readiness-receipt cohort passed 864 tests
+on each supported runtime, with six unchanged PostgreSQL-prerequisite skips each;
+the real 17 startup controls passed separately on both runtimes at `fd681f5`,
+whose main/bootstrap product bytes are identical to the final head. Independent
+final adversarial review passed 121 controls and rejected 222 malformed CLI
+receipts plus 34 direct-call variants. #608 is repaired but stays open for review
+and merge. Original historical receipt/generator identities remain unchanged.
+
+Final #606 evidence repair is `bebfba0813ccaf39327d5d6f37be10769caee699`, tree
+`b726ed79fd3e5a3580ae769f4749b2b9cb798d7b`. All six ETL product files are
+byte-identical to the reviewed original author head. #610 records the actual
+historical-fixture integration failure and malformed JUnit/provenance acceptance.
+The repaired final packet passed 100 controls on each supported runtime, zero
+skips/failures/errors. Its deterministic archive preserves all 1,160 original
+declared source files; 1,158 were measured in the original executions and two
+were later publication-only files. Active validation explicitly means historical
+packet integrity and reports `current_checkout_acceptance=false`; it does not
+relabel old executions as fresh acceptance. Original and intermediate
+publications, real red controls and the recorder-only setup error are retained.
+
+Fresh combined-candidate acceptance used actual merged source
+`6a5dd1886a0ef343398ac6efe80e67cba55fc9b0`, tree
+`f97f602a56c171527056340cf68ff9882a0c46fc`, containing both final backend and
+mapping commits. The earlier integration receipt retains its two failures and
+ten passes. The repaired integration passed 284 ETL/startup/PG/migration/receipt
+controls on each of Python3.13.9/SQLAlchemy2.0.54 and
+Python3.12.14/SQLAlchemy2.0.23, with zero skips/errors/failures. Separate actual
+offline IMF runs passed 121 controls on each runtime, and their final current
+receipts verified under normal and optimized Python against the unchanged
+historical corpus. All 3,423 tracked integration inputs remained stable. Exact
+owned ETL container/volume absence, readiness cleanup and free loopback ports
+55520/55522 were checked. Overlapping cohort counts are not added together.
+
+Final command/raw/JUnit/source/generator/runtime/readback records and independent
+Standards/Spec reports are external under:
+
+`/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_10_REVIEW/`
+
+Newly confirmed findings are tracked by [#608](https://github.com/Rodgers31/audit_app/issues/608),
+[#610](https://github.com/Rodgers31/audit_app/issues/610) and
+[#611](https://github.com/Rodgers31/audit_app/issues/611). The last is the missed
+prior audit pagination capability: actual inert helper/route controls confirmed
+the current guard refuses nonzero server epochs before row reads, including old
+bookmarks. No production epoch was queried or production outage asserted. The
+separate inherited blockers #602/#603/#607 were already tracked and were not
+duplicated. #494/#601 remain unresolved. No PR was merged or issue closed in this
+review; #605's superseding closure is the only PR closure.
+
+The primary checkout's 20 pre-existing tracked modifications were compared with
+their launch hashes and remained byte-identical. This does not claim that its
+entire untracked/status inventory stayed identical. Review work used isolated
+managed checkouts and append-only external evidence. Actions remain disabled;
+no fresh hosted/deployed acceptance, production database/provider operation or
+dispatch activation is claimed.
+
+The reusable receipt-provenance skill was updated narrowly for the #608/#610
+lessons: exact primitive types, original producer versus later publication,
+unique actual JUnit identities, complete consumed execution metadata and a
+retained source corpus for historical integrity. The skill validator passed;
+prior bytes, final hash and readback are preserved in the coordinator evidence.
 
 ## Reusable lessons
 
