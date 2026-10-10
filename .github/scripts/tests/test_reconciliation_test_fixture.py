@@ -36,6 +36,73 @@ class FixtureControls(unittest.TestCase):
     def test_actual_immutable_pin_matches_approved_fixture(self):
         self.assertEqual(subject.IMAGE, "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675")
 
+    def test_migrated_revision_matches_the_actual_migration_head(self):
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+
+        backend = SCRIPT.parents[2] / "backend"
+        config = Config(str(backend / "alembic.ini"))
+        config.set_main_option("script_location", str(backend / "alembic"))
+        self.assertEqual(subject.REVISION, ScriptDirectory.from_config(config).get_current_head())
+
+    def prepare_with_proof(self, proof_change):
+        def inspect(kind, target, deadline):
+            if kind == "image":
+                return {"Os": "linux", "Architecture": "arm64", "Id": "sha256:" + "a" * 64,
+                        "RepoDigests": [subject.IMAGE]}
+            value = json.loads(self.state.read_text())
+            labels = {"audit.review": "592", "audit.fixture.nonce": value["nonce"]}
+            if kind == "container":
+                return {"Id": value["container_id"], "Name": "/" + value["container_name"],
+                        "Config": {"Labels": labels, "Image": subject.IMAGE},
+                        "HostConfig": {"PortBindings": {"5432/tcp": [{"HostIp": "127.0.0.1", "HostPort": str(value["port"])}]}},
+                        "NetworkSettings": {"Networks": {value["network_name"]: {}}}}
+            if kind == "network":
+                return {"Id": value["network_id"], "Name": value["network_name"], "Labels": labels,
+                        "Containers": {value["container_id"]: {}}}
+            raise AssertionError("Unexpected resource inspection")
+
+        def run(command, deadline, **kwargs):
+            if command[:2] == ["docker", "version"]:
+                return json.dumps({"Os": "linux", "Arch": "arm64"})
+            if command[:3] == ["docker", "network", "create"]:
+                return "c" * 64
+            if command[:2] == ["docker", "run"]:
+                return "b" * 64
+            if "pg_isready" in command:
+                return ""
+            if "alembic" in command:
+                self.assertEqual(command[-2:], ["upgrade", "head"])
+                return ""
+            if "psql" in command:
+                value = json.loads(self.state.read_text())
+                proof = {"database": value["database"], "autovacuum": "off", "revision": subject.REVISION,
+                         "claim": True, "jobs": True, "audit": True, "rls": True, "active_index": True}
+                return json.dumps(proof_change(proof))
+            raise AssertionError("Unexpected fixture command")
+
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            port = probe.getsockname()[1]
+        with patch.dict(os.environ, {}, clear=True), patch.object(subject, "inspect", side_effect=inspect), patch.object(subject, "run", side_effect=run):
+            return subject.prepare(self.state, port, self.export, time.monotonic() + 30)
+
+    def test_valid_migration_proof_exports_owned_database(self):
+        result = self.prepare_with_proof(lambda proof: proof)
+        self.assertEqual(result["status"], "ready")
+        self.assertTrue(self.export.is_file())
+        self.assertTrue(subject.state_read(self.state)["ready"])
+
+    def test_numeric_capabilities_refuse_before_database_export(self):
+        for capability in ("claim", "jobs", "audit", "rls", "active_index"):
+            with self.subTest(capability=capability):
+                if self.state.exists():
+                    self.state.unlink()
+                with self.assertRaisesRegex(subject.Refused, "migrated_template_readback_mismatch"):
+                    self.prepare_with_proof(lambda proof: {**proof, capability: 1})
+                self.assertFalse(self.export.exists())
+                self.assertFalse(subject.state_read(self.state)["ready"])
+
     def test_every_ambient_libpq_input_refuses_before_mutation(self):
         for name in subject.LIBPQ:
             with self.subTest(name=name), patch.dict(os.environ, {name: "synthetic-private-input"}, clear=True), patch.object(subject, "run") as run:
