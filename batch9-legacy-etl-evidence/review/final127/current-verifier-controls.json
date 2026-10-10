@@ -1,0 +1,208 @@
+{
+  "source_before": {
+    ".github/scripts/run_backend_tests.py": "fe81faf28e50df0d6396b2a1f025cadacb226d3dc48970cac8e8f92437688587",
+    ".github/scripts/tests/test_backend_test_launcher.py": "10fe5710c0e0a6082aef3c59cd57752929447061d52aac2f09b31dcfee8424c4",
+    "backend/admin_etl_dispatch.py": "6c32396382da5663d43f73ae0ac995265f1366250e9d105a6e68ccef9fcd959c",
+    "backend/admin_etl_dispatch_worker.py": "2e4d3341795efc1072d326b0aa402ad955380c15b7e5f340a47b77a7063bb141",
+    "backend/database.py": "22b8946d6439206362f59e71e4c801a1e24cb48540c911241a29e407e6c6a095",
+    "backend/models.py": "251a139df8990b8de2e0b2d53b342b67b49119bc48dba25cf99b1a588a5be66e",
+    "backend/requirements-dev.txt": "fb67df1d926146e2abeea5ba936c05b8c57cf62301dba6eb8eba695fca3f2fe5",
+    "backend/requirements.txt": "a61a9ec40cdcc78b75dd2a08fb835feafe61a3baf1f5916b123d5198b7907e09",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_legacy_fixture/batch9_legacy_target.py": "b45b9bde731e56c0e7f394d2663e3ccf2cb522a37653afde2e86b2b16d8fb6c5",
+    "backend/tests/batch9_legacy_fixture/entry.py": "2055495bbcdd952129139f7a7f0848195ca67461f0931cfbbc25ff15a6311f55",
+    "backend/tests/batch9_legacy_fixture/sitecustomize.py": "697fb6b99a14c7c38206cd8b000f0a868cb4407f2a406a35092e1a2cca9fd1df",
+    "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
+    "backend/tests/test_batch9_legacy_etl_sessions.py": "b5987e4c538f3a1b587c4daf8d71fb1798df9d12b83d2db549386b1080037f23",
+    "backend/tests/test_batch9_legacy_receipt_integrity.py": "aa19f0bbf0ad5350eca24c70562493fa96646fa22aaeaa25c4b38c41325a0c38",
+    "batch9-legacy-etl-evidence/historical-source-manifest.json": "60e45dc95d029064eb44f79ed1c0e3a4294646cc97b9114af3cf81d72e6e5532",
+    "batch9-legacy-etl-evidence/historical-source.tar.gz": "64fbeba3b51ffac41257609e2513e6537d3db457806de460ee30625078420ef6",
+    "batch9-legacy-etl-evidence/review_receipt_generator.py": "cd2f07586225e5c6e7ea658b5b77548014f7d4656432dad6fa42d8def9100a64",
+    "batch9-legacy-etl-evidence/run_receipt.py": "b71d5812cf1f7358b51ca5c9196d0f8efa6bc6f491dceb6bd53a4d9e3ef97b29",
+    "batch9-legacy-etl-evidence/verify_delivery.py": "69a1103fce57c45392803dfef0db996d8e0520d3dafd1770761ec0bfefcf48dd",
+    "etl/backfill.py": "01d285fb0da2d44f38dd712f7828fa81ba3d65cbfa9b49d77fb1ec07648bbaf8",
+    "etl/database_loader.py": "17171c2839d2615b212d2608d987f9374fbad22cd496d7358a125603ec8e2727",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4",
+    "etl/requirements.txt": "e3677d0076262f08019b8a845772fcbd79620ad1b0c36f7f65409a17ea574f9c",
+    "etl/scheduler.py": "3f6aabcb33aed050091ea6e1de4a9dee3e7135c55198c8940c8e6a0d87975dd7",
+    "etl/worker.py": "561e13df89ed27ca3a60723b5905c38813902af86a19e1a209a854b56e3e97d7",
+    "etl/writer_ownership.py": "7ad676effbb91fe8ade3553fa6794c3b8cfd68fbc74feea8133280e28427b8fe"
+  },
+  "source_after": {
+    ".github/scripts/run_backend_tests.py": "fe81faf28e50df0d6396b2a1f025cadacb226d3dc48970cac8e8f92437688587",
+    ".github/scripts/tests/test_backend_test_launcher.py": "10fe5710c0e0a6082aef3c59cd57752929447061d52aac2f09b31dcfee8424c4",
+    "backend/admin_etl_dispatch.py": "6c32396382da5663d43f73ae0ac995265f1366250e9d105a6e68ccef9fcd959c",
+    "backend/admin_etl_dispatch_worker.py": "2e4d3341795efc1072d326b0aa402ad955380c15b7e5f340a47b77a7063bb141",
+    "backend/database.py": "22b8946d6439206362f59e71e4c801a1e24cb48540c911241a29e407e6c6a095",
+    "backend/models.py": "251a139df8990b8de2e0b2d53b342b67b49119bc48dba25cf99b1a588a5be66e",
+    "backend/requirements-dev.txt": "fb67df1d926146e2abeea5ba936c05b8c57cf62301dba6eb8eba695fca3f2fe5",
+    "backend/requirements.txt": "a61a9ec40cdcc78b75dd2a08fb835feafe61a3baf1f5916b123d5198b7907e09",
+    "backend/seeding/exclusion.py": "711c028e0cf704cf2b3c47aed07f82447832472488470ca15d73317cf17166b7",
+    "backend/tests/batch9_legacy_fixture/batch9_legacy_target.py": "b45b9bde731e56c0e7f394d2663e3ccf2cb522a37653afde2e86b2b16d8fb6c5",
+    "backend/tests/batch9_legacy_fixture/entry.py": "2055495bbcdd952129139f7a7f0848195ca67461f0931cfbbc25ff15a6311f55",
+    "backend/tests/batch9_legacy_fixture/sitecustomize.py": "697fb6b99a14c7c38206cd8b000f0a868cb4407f2a406a35092e1a2cca9fd1df",
+    "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
+    "backend/tests/test_batch9_legacy_etl_sessions.py": "b5987e4c538f3a1b587c4daf8d71fb1798df9d12b83d2db549386b1080037f23",
+    "backend/tests/test_batch9_legacy_receipt_integrity.py": "aa19f0bbf0ad5350eca24c70562493fa96646fa22aaeaa25c4b38c41325a0c38",
+    "batch9-legacy-etl-evidence/historical-source-manifest.json": "60e45dc95d029064eb44f79ed1c0e3a4294646cc97b9114af3cf81d72e6e5532",
+    "batch9-legacy-etl-evidence/historical-source.tar.gz": "64fbeba3b51ffac41257609e2513e6537d3db457806de460ee30625078420ef6",
+    "batch9-legacy-etl-evidence/review_receipt_generator.py": "cd2f07586225e5c6e7ea658b5b77548014f7d4656432dad6fa42d8def9100a64",
+    "batch9-legacy-etl-evidence/run_receipt.py": "b71d5812cf1f7358b51ca5c9196d0f8efa6bc6f491dceb6bd53a4d9e3ef97b29",
+    "batch9-legacy-etl-evidence/verify_delivery.py": "69a1103fce57c45392803dfef0db996d8e0520d3dafd1770761ec0bfefcf48dd",
+    "etl/backfill.py": "01d285fb0da2d44f38dd712f7828fa81ba3d65cbfa9b49d77fb1ec07648bbaf8",
+    "etl/database_loader.py": "17171c2839d2615b212d2608d987f9374fbad22cd496d7358a125603ec8e2727",
+    "etl/kenya_pipeline.py": "36e0f2fd9db7d080180745ae976d846933e0f54e4c1c69228599a4211eb77401",
+    "etl/monitored_runner.py": "38fdaadc7b8ffbb9dab8d4e1922ead5e2f4d5d57e1c32457f7c5ae4e922674d4",
+    "etl/requirements.txt": "e3677d0076262f08019b8a845772fcbd79620ad1b0c36f7f65409a17ea574f9c",
+    "etl/scheduler.py": "3f6aabcb33aed050091ea6e1de4a9dee3e7135c55198c8940c8e6a0d87975dd7",
+    "etl/worker.py": "561e13df89ed27ca3a60723b5905c38813902af86a19e1a209a854b56e3e97d7",
+    "etl/writer_ownership.py": "7ad676effbb91fe8ade3553fa6794c3b8cfd68fbc74feea8133280e28427b8fe"
+  },
+  "target_commit": "a7b3c0d9a31435c9fb6b83ce37265ec5f1703104",
+  "target_commit_after": "a7b3c0d9a31435c9fb6b83ce37265ec5f1703104",
+  "source_stable": true,
+  "generated_by": "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current_verifier_controls_final127.py",
+  "generator_sha256": "8f03551c8728570d022ec6e43726d8cadacf6796630b91ba50d194d995ebddb9",
+  "results": [
+    {
+      "optimized": false,
+      "mutation": "valid",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-valid/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 0,
+      "expected_message": "PASSED PR596 scoped review verification",
+      "output": "PASSED PR596 scoped review verification; no hosted or production acceptance: 25 historical receipts/assessments, 326 artifact hashes\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "source",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "candidate source changed",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 113, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'etl/worker.py')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "receipt-exit",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 124, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "generator",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "archived execution generator identity",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('generator_sha256') == sources['batch9-legacy-etl-evidence/review_receipt_generator.py'], (label, 'archived execution generator identity'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'archived execution generator identity')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "output",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-output/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "raw output bytes",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 121, in <module>\n    require(digest(output_path) == check['output_sha256'], (label, 'raw output bytes'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'raw output bytes')\n"
+    },
+    {
+      "optimized": false,
+      "mutation": "source-drift",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 124, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/normal-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "valid",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-valid/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 0,
+      "expected_message": "PASSED PR596 scoped review verification",
+      "output": "PASSED PR596 scoped review verification; no hosted or production acceptance: 25 historical receipts/assessments, 326 artifact hashes\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "source",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "candidate source changed",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 113, in <module>\n    require(digest(root / relative) == expected, ('candidate source changed', relative))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('candidate source changed', 'etl/worker.py')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "receipt-exit",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 124, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-receipt-exit/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "generator",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "archived execution generator identity",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 123, in <module>\n    require(receipt.get('generator_sha256') == sources['batch9-legacy-etl-evidence/review_receipt_generator.py'], (label, 'archived execution generator identity'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-generator/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'archived execution generator identity')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "output",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "raw output bytes",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 121, in <module>\n    require(digest(output_path) == check['output_sha256'], (label, 'raw output bytes'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-output/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'raw output bytes')\n"
+    },
+    {
+      "optimized": true,
+      "mutation": "source-drift",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/bin/python",
+        "-O",
+        "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py"
+      ],
+      "exit_code": 1,
+      "expected_message": "successful stable execution required",
+      "output": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 124, in <module>\n    require(receipt.get('exit_code') == 0 and receipt.get('source_stable') is True and receipt.get('verdict') == 'PASSED', (label, 'successful stable execution required'))\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/current-verifier-controls-final127/optimized-source-drift/batch9-legacy-etl-evidence/verify_delivery.py\", line 38, in require\n    raise ValueError(f'Delivery verification failed: {detail}')\nValueError: Delivery verification failed: ('current', 'successful stable execution required')\n"
+    }
+  ],
+  "verdict": "PASSED"
+}

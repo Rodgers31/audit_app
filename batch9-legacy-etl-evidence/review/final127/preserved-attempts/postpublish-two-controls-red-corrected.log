@@ -1,0 +1,48 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks[False] _
+
+tmp_path = PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/postpublish-two-controls-red-corrected/test_historical_success_cannot0')
+optimized = False
+
+    @pytest.mark.parametrize("optimized", [False, True])
+    def test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks(tmp_path, optimized):
+        owned = tmp_path / "app"
+        evidence = owned / "batch9-legacy-etl-evidence"
+        shutil.copytree(EVIDENCE, evidence)
+        (evidence / "review-verification-manifest.json").unlink(missing_ok=True)
+        result = subprocess.run([sys.executable, *(["-O"] if optimized else []), str(evidence / "verify_delivery.py")],
+                                cwd=owned, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        assert result.returncode != 0
+        assert "fresh source-bound candidate verification manifest required" in result.stderr
+>       assert not (evidence / "review-delivery-provenance.json").exists()
+E       AssertionError: assert not True
+E        +  where True = exists()
+E        +    where exists = (PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/postpublish-two-controls-red-corrected/test_historical_success_cannot0/app/batch9-legacy-etl-evidence') / 'review-delivery-provenance.json').exists
+
+backend/tests/test_batch9_legacy_receipt_integrity.py:62: AssertionError
+_ test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks[True] _
+
+tmp_path = PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/postpublish-two-controls-red-corrected/test_historical_success_cannot1')
+optimized = True
+
+    @pytest.mark.parametrize("optimized", [False, True])
+    def test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks(tmp_path, optimized):
+        owned = tmp_path / "app"
+        evidence = owned / "batch9-legacy-etl-evidence"
+        shutil.copytree(EVIDENCE, evidence)
+        (evidence / "review-verification-manifest.json").unlink(missing_ok=True)
+        result = subprocess.run([sys.executable, *(["-O"] if optimized else []), str(evidence / "verify_delivery.py")],
+                                cwd=owned, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
+        assert result.returncode != 0
+        assert "fresh source-bound candidate verification manifest required" in result.stderr
+>       assert not (evidence / "review-delivery-provenance.json").exists()
+E       AssertionError: assert not True
+E        +  where True = exists()
+E        +    where exists = (PosixPath('/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/postpublish-two-controls-red-corrected/test_historical_success_cannot1/app/batch9-legacy-etl-evidence') / 'review-delivery-provenance.json').exists
+
+backend/tests/test_batch9_legacy_receipt_integrity.py:62: AssertionError
+=========================== short test summary info ============================
+FAILED backend/tests/test_batch9_legacy_receipt_integrity.py::test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks[False]
+FAILED backend/tests/test_batch9_legacy_receipt_integrity.py::test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks[True]
+2 failed, 39 deselected in 0.27s
