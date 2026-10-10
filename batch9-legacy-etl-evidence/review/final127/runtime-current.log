@@ -1,0 +1,7 @@
+3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]
+SQLAlchemy=2.0.54
+Alembic=1.20.0
+pytest=8.3.3
+schedule=1.2.0
+schedule_source=/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime/lib/python3.13/site-packages/schedule/__init__.py
+runtime_prefix=/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/596/final-current-runtime

@@ -1,0 +1,64 @@
+"""Execute final-corpus checks externally; never mutate the published checkout."""
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+
+ROOT = Path('/Users/roger/.codex/worktrees/batch9-pr596-review/audit_app')
+OUT = Path(__file__).resolve().parent
+NAME, COMMAND = sys.argv[1], sys.argv[2:]
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def git(*args):
+    return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
+
+
+def snapshot():
+    evidence = ROOT / 'batch9-legacy-etl-evidence'
+    paths = git('ls-files').splitlines()
+    inventory = {p: digest(ROOT / p) for p in paths if (ROOT / p).is_file()}
+    corpus = {str(p.relative_to(ROOT)): digest(p) for p in sorted(evidence.rglob('*')) if p.is_file()}
+    manifest = json.loads((evidence / 'review-verification-manifest.json').read_text())
+    if any(inventory.get(p) != expected for p, expected in manifest['source_sha256'].items()):
+        raise RuntimeError('Published candidate source differs from fresh active manifest')
+    return {'head': git('rev-parse', 'HEAD'), 'tree': git('rev-parse', 'HEAD^{tree}'),
+            'status': git('status', '--porcelain'), 'tracked_file_sha256': inventory,
+            'consumed_evidence_file_sha256': corpus,
+            'consumed_evidence_corpus_sha256': hashlib.sha256(json.dumps(corpus, sort_keys=True).encode()).hexdigest()}
+
+
+before = snapshot()
+if before['status']:
+    raise RuntimeError('Final committed corpus must be clean before execution')
+generator_before = digest(Path(__file__))
+started = datetime.now(timezone.utc).isoformat()
+clock = time.monotonic()
+log = OUT / (NAME + '.log')
+environment = {key: os.environ.get(key) for key in ('PATH', 'PYTHONDONTWRITEBYTECODE', 'PYTHON_DOTENV_DISABLED',
+               'TESTING', 'PYTHONPATH', 'DATABASE_URL', 'BATCH9_LEGACY_DATABASE_URL', 'BATCH9_LEGACY_FIXTURE_PORT')}
+with log.open('x') as stream:
+    result = subprocess.run(COMMAND, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT)
+after = snapshot()
+generator_after = digest(Path(__file__))
+stable = before == after and generator_before == generator_after
+record = {'generated_by': str(Path(__file__)), 'generator_sha256': generator_before,
+          'generator_after_sha256': generator_after, 'started_at': started,
+          'duration_seconds': time.monotonic() - clock, 'cwd': str(ROOT),
+          'command': COMMAND, 'selected_environment': environment,
+          'source_before': before, 'source_after': after, 'source_stable': stable,
+          'exit_code': result.returncode, 'verdict': 'PASSED' if not result.returncode and stable else 'FAILED',
+          'output_path': str(log), 'output_sha256': digest(log),
+          'scope': 'Actual execution after final source/evidence commit; complete tracked source and consumed evidence corpus before/after'}
+with (OUT / (NAME + '.json')).open('x') as stream:
+    stream.write(json.dumps(record, indent=2) + '\n')
+print(NAME, result.returncode, 'stable', stable, 'corpus_files', len(before['consumed_evidence_file_sha256']))
+print(log.read_text()[-1100:])
+sys.exit(result.returncode or (0 if stable else 90))

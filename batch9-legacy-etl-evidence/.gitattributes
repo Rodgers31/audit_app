@@ -16,3 +16,7 @@ review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f
 # Preserve exact final125 raw execution diagnostics.
 review/final125/complete-collection.log whitespace=-blank-at-eol
 review/final125/minimum.log whitespace=-blank-at-eol
+
+# Preserve exact final127 raw execution diagnostics.
+review/final127/complete-collection.log whitespace=-blank-at-eol
+review/final127/minimum.log whitespace=-blank-at-eol

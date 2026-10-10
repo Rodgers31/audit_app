@@ -214,7 +214,7 @@
   "expected_baseline_failures": 3,
   "final_passes_each_runtime": 77,
   "artifact_sha256": {
-    "batch9-legacy-etl-evidence/.gitattributes": "a97e4d100e472d2e23b3a204b0b31d724bfd805e1b0ed236736eeee6b5ed7a48",
+    "batch9-legacy-etl-evidence/.gitattributes": "4bb3b4ca4ed2767408fa327648af508f73af26e9792646e7b535623f53dc3105",
     "batch9-legacy-etl-evidence/README.md": "09ca9795d834eef80c209dae16809a1fb51f60b85fba0c22f431c1818250f26a",
     "batch9-legacy-etl-evidence/alive-plan.md": "ed312d6623c772f259a64e884a11d012d973cbdb80e032cc8beeeac97eddd8cf",
     "batch9-legacy-etl-evidence/archive-process-logs.json": "3e5088ab8442371f81b645a0b24ee601d0590bc87f77a2904c4a19f0027389f5",
@@ -343,8 +343,6 @@
     "batch9-legacy-etl-evidence/review/current.log": "b6dd1fbd77679f6a2898e102c233be4a2f319d0add2c440b0730a29159dcb617",
     "batch9-legacy-etl-evidence/review/current_verifier_controls.py": "8c4feb12c71237e0ec6e4fc5742a2d4599f475fcc7926161b928334971356971",
     "batch9-legacy-etl-evidence/review/final125/active-verifier-normal.log": "72e409b2b0f5cf9633d382527b588bd08948a2ee1c9f31c3e3143765a028e82b",
-    "batch9-legacy-etl-evidence/review/final125/active-verifier-optimized.log": "f00f5118d49b7e94656bb06ae36cc0109286f4c199a3e20ffb421f0c8631a5f6",
-    "batch9-legacy-etl-evidence/review/final125/active-verifier-readback.json": "075ea2fa04a9cd00f7a6b077b2aa73d8ea96a0df892b0477162f1cbef737e171",
     "batch9-legacy-etl-evidence/review/final125/build_review_packet.py.txt": "af2ad5213ac77bbfe820f3bb1b2e40dca9b097c1be48dfce11679101ac888518",
     "batch9-legacy-etl-evidence/review/final125/collection-backend.json": "b0792d82de8707fdeb8bceb91b6cbbf078d4c30578dd4e277d4cdec9177bdc6f",
     "batch9-legacy-etl-evidence/review/final125/collection-legacy.json": "10ae5dd36860181c3139326af6c23f97b68deb46472b321bf7dbac7b21221907",
@@ -383,46 +381,6 @@
     "batch9-legacy-etl-evidence/review/final125/runtime-current.log": "1ad10f0dc88ac32c38f81582ca2247d75b796d1717f14dd928e449bb20013473",
     "batch9-legacy-etl-evidence/review/final125/runtime-minimum.json": "dbe9adc6d45d5089eae34f994f709c21857e8a706f8dea4a91dd78198e5bdbae",
     "batch9-legacy-etl-evidence/review/final125/runtime-minimum.log": "514cab8705d455d719ccae0f49ed369657b219d5550288d5aa4fe3569bf22f4c",
-    "batch9-legacy-etl-evidence/review/final127/active-verifier-normal.log": "ec7458a33cf4d470944310100dbe6bd69ae781bbcd556909d7b4ad50613eafa2",
-    "batch9-legacy-etl-evidence/review/final127/active-verifier-optimized.log": "4d8d371071983aa055b125be5714c23f577a708df160caadb8361eb28cb9a481",
-    "batch9-legacy-etl-evidence/review/final127/active-verifier-readback.json": "3c055551951660f61d009dfa0259655ea31fce39eb1c71267639b755f92d1134",
-    "batch9-legacy-etl-evidence/review/final127/build_review_packet.py.txt": "982605bae0545f75caad371bc95a55bb1c32d827fd10ad075f583eb8a1ad9d63",
-    "batch9-legacy-etl-evidence/review/final127/collection-backend.json": "c2107813c2072ccf20c91fee8c309000d63044c6cee6b0d9de8b39cd636e7180",
-    "batch9-legacy-etl-evidence/review/final127/collection-legacy.json": "74147677a8070429ded9e410dc78c5c9cff4c9591a70f633cdbdb9d8a94aead5",
-    "batch9-legacy-etl-evidence/review/final127/collection-summary.json": "daa353bf73a8b535d561064f60425a374701729340971d102bfc8a71ce4d9c1c",
-    "batch9-legacy-etl-evidence/review/final127/complete-collection.json": "f9262271c5415592f16b6bb26efa32e9397d811c134c70268f0749f9940aafd6",
-    "batch9-legacy-etl-evidence/review/final127/complete-collection.log": "b87caf6259438784127da7e7db37fbb369cc910396dccd1248352ac84a618cb7",
-    "batch9-legacy-etl-evidence/review/final127/current-owned-postgres.json": "0d55632a151c5f7c7c87af52e9afddf0340c5fe263f602c057b09e3ad25950ec",
-    "batch9-legacy-etl-evidence/review/final127/current-process-logs.tar.gz": "5b9825aa1b5a23f5df18bafb1156c6fc9b1f2e2ed164fd440ec4fa0a1454fea7",
-    "batch9-legacy-etl-evidence/review/final127/current-verifier-controls.json": "41bf638aab8b9818df614ffd74c9ad873ce8b3cb1eaf5b433598c3c3975cbe8b",
-    "batch9-legacy-etl-evidence/review/final127/current.json": "1408bf5e5bc9cb1c2ff4ddbdd4afcdcec162aa754ec6b5d49aa211cb39ab1fad",
-    "batch9-legacy-etl-evidence/review/final127/current.log": "e465c3bfbc5268e03341c79fab8d36e6bb35e1c5b2f6b143b6bcd5b80e3d191d",
-    "batch9-legacy-etl-evidence/review/final127/current_verifier_controls.py.txt": "8f03551c8728570d022ec6e43726d8cadacf6796630b91ba50d194d995ebddb9",
-    "batch9-legacy-etl-evidence/review/final127/fresh-schedule-install.log": "6a28c81e17b48110ce5aab4cb34903c54a34265f25d7112cca1a1ef4e87b942f",
-    "batch9-legacy-etl-evidence/review/final127/fresh-schedule-prerequisite.json": "3de60be93d30a110aec9e917b1d0da94f583e454effa0d816140b534d792a2b8",
-    "batch9-legacy-etl-evidence/review/final127/install_schedule_prerequisite.py.txt": "ca9a2e174c33a7c7edec597c085cd43eda80f2848fd03245a160d880ab6de593",
-    "batch9-legacy-etl-evidence/review/final127/launcher-current.json": "9e372d4b577244082d2142c56820d9022a7afd7d8e0cdb8e4c5be733f3650f56",
-    "batch9-legacy-etl-evidence/review/final127/launcher-current.log": "a38f29f337f22e0c840515c7b0f96f0542d95e91032ff1e9827e15a2cf2d9da4",
-    "batch9-legacy-etl-evidence/review/final127/launcher-minimum.json": "7492ad4270d4e3bce0ce010cd671f8d0b0ccddbf32f885baac37f091166802bd",
-    "batch9-legacy-etl-evidence/review/final127/launcher-minimum.log": "6221f78c9ccc411a6b18ba9629c90b28ec319c0b28787a72f83a9e94c10cc04c",
-    "batch9-legacy-etl-evidence/review/final127/minimum-owned-postgres.json": "c9a5ef3094eb5e513c706e728bfd2120ae8c7c0f78eb5b331a37c5a8bfb22e24",
-    "batch9-legacy-etl-evidence/review/final127/minimum-process-logs.tar.gz": "d59ebd4176ab6b156aea3ff804577c5c474464bae86a795c31a0e97d8ff6004a",
-    "batch9-legacy-etl-evidence/review/final127/minimum-schedule-install.log": "54dc4904556ed45a2dceb6f038842a634338e1453e703f1d3f5ac43012ac6024",
-    "batch9-legacy-etl-evidence/review/final127/minimum.json": "5972773b6a1fec1c20fd9c00fc4c2785099332aec5b5fbac51bda8678ce77d62",
-    "batch9-legacy-etl-evidence/review/final127/minimum.log": "dcbb41ee9815df9b427413ec7da5267e34969d90b6983c3175fced5d514a4bb6",
-    "batch9-legacy-etl-evidence/review/final127/planned-postpublication-recorder.py.txt": "0bebcbe9904c7197b03fd4ab7f8d78e4b59299e325ef4b35e3b98df485a4c292",
-    "batch9-legacy-etl-evidence/review/final127/preserved-attempts/index.json": "b991b64b90da8299213f67f2b9067944eedb24517f92de3305faa7f6444d3d62",
-    "batch9-legacy-etl-evidence/review/final127/preserved-attempts/postfix127-stale-index-refusal.json": "60cb9f00ba2056ec512844ff359a6f8d7e6b17915f6bc9b550d6d0a2882543db",
-    "batch9-legacy-etl-evidence/review/final127/preserved-attempts/postpublish-two-controls-red-corrected.json": "49196494f21e9eb494acc2de24d9db5db17ae5404ef171f24feeff996befb252",
-    "batch9-legacy-etl-evidence/review/final127/preserved-attempts/postpublish-two-controls-red-corrected.log": "6acedef7d098748583c0ebf504012944b66862c7a563dc790454dae0e452e515",
-    "batch9-legacy-etl-evidence/review/final127/process-log-manifest.json": "de8462b8d56a194007f7366c9736c7d4a7da1eb2b9f9ff07af0a8df8dd2b7227",
-    "batch9-legacy-etl-evidence/review/final127/runtime-current.json": "bb4337200aeb1e62566a7f1a514eac541720d8c828f234844e0f5ae226e35f76",
-    "batch9-legacy-etl-evidence/review/final127/runtime-current.log": "1ad10f0dc88ac32c38f81582ca2247d75b796d1717f14dd928e449bb20013473",
-    "batch9-legacy-etl-evidence/review/final127/runtime-minimum.json": "e1158656b468abb6f208923270410fe1b7c66d03b8ea623456a886bb536372cd",
-    "batch9-legacy-etl-evidence/review/final127/runtime-minimum.log": "514cab8705d455d719ccae0f49ed369657b219d5550288d5aa4fe3569bf22f4c",
-    "batch9-legacy-etl-evidence/review/historical-packets/045b603-c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129/archive-index.json": "3ffd7a19efe3ae03b07d124176f5abf6af30accdcbf69ae53af1c643e25b0c3d",
-    "batch9-legacy-etl-evidence/review/historical-packets/045b603-c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129/original-sources.tar.gz": "2ebadaf8a32479be195089fcd59e52d714d1863d1f58bc267ffde7401579d0aa",
-    "batch9-legacy-etl-evidence/review/historical-packets/045b603-c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129/review-verification-manifest.json": "c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129",
     "batch9-legacy-etl-evidence/review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/archive-index.json": "854e8cceae750d1bc7ff250c9e62405c169b7598de08d634ebfd0353c2a63e4e",
     "batch9-legacy-etl-evidence/review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/original-executions/collection-backend.json": "1f691312a72aa535eafb90afb17d43d11fe72e74c3a9f9152afa3bd89559304f",
     "batch9-legacy-etl-evidence/review/historical-packets/08b6244-f2b962ccc43d50bdae828bf458939da40411a8a5f78a4f18c3b1fe8e320782df/original-executions/collection-legacy.json": "5d35a4072594b7a0b3bbae7134e4d931a253613c01caea6744f2a5d9d60786d2",
@@ -485,7 +443,7 @@
     "batch9-legacy-etl-evidence/review/runtime-current.log": "6c1c7813daa65c0c4afa1fa53f61361342e90e3307f7bfcb5280e7971af2ae18",
     "batch9-legacy-etl-evidence/review/runtime-minimum.json": "2154fbfd6f77ed639089996fbcd4dd4c48d9605e0915354c291c07938767631e",
     "batch9-legacy-etl-evidence/review/runtime-minimum.log": "6ffa8a8b1657e8d78f84636c55867e789615eec5eb2f41ffc2b8748eb7a16542",
-    "batch9-legacy-etl-evidence/review-verification-manifest.json": "344a17a859cb5af383596229fc900fd66ff35fcd03d07bac559b3f2d47589dc9",
+    "batch9-legacy-etl-evidence/review-verification-manifest.json": "c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129",
     "batch9-legacy-etl-evidence/review_receipt_generator-2fd2ec4d3af8b7099ca017fe12d114f77b6a320a99fb9aeaabf9509e6d788b9a.py": "2fd2ec4d3af8b7099ca017fe12d114f77b6a320a99fb9aeaabf9509e6d788b9a",
     "batch9-legacy-etl-evidence/review_receipt_generator.py": "cd2f07586225e5c6e7ea658b5b77548014f7d4656432dad6fa42d8def9100a64",
     "batch9-legacy-etl-evidence/run_receipt.py": "b71d5812cf1f7358b51ca5c9196d0f8efa6bc6f491dceb6bd53a4d9e3ef97b29",
@@ -567,7 +525,7 @@
     "backend/tests/batch9_legacy_fixture/sitecustomize.py": "697fb6b99a14c7c38206cd8b000f0a868cb4407f2a406a35092e1a2cca9fd1df",
     "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
     "backend/tests/test_batch9_legacy_etl_sessions.py": "b5987e4c538f3a1b587c4daf8d71fb1798df9d12b83d2db549386b1080037f23",
-    "backend/tests/test_batch9_legacy_receipt_integrity.py": "aa19f0bbf0ad5350eca24c70562493fa96646fa22aaeaa25c4b38c41325a0c38",
+    "backend/tests/test_batch9_legacy_receipt_integrity.py": "506dd5272501b66056ee930269411d5ddf6bdd8f8b37a6bd1a710120f414e0cb",
     "batch9-legacy-etl-evidence/historical-source-manifest.json": "60e45dc95d029064eb44f79ed1c0e3a4294646cc97b9114af3cf81d72e6e5532",
     "batch9-legacy-etl-evidence/historical-source.tar.gz": "64fbeba3b51ffac41257609e2513e6537d3db457806de460ee30625078420ef6",
     "batch9-legacy-etl-evidence/review_receipt_generator.py": "cd2f07586225e5c6e7ea658b5b77548014f7d4656432dad6fa42d8def9100a64",
@@ -584,10 +542,10 @@
   },
   "candidate_checks": {
     "current": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/current.json",
-      "receipt_sha256": "1408bf5e5bc9cb1c2ff4ddbdd4afcdcec162aa754ec6b5d49aa211cb39ab1fad",
-      "output": "batch9-legacy-etl-evidence/review/final127/current.log",
-      "output_sha256": "e465c3bfbc5268e03341c79fab8d36e6bb35e1c5b2f6b143b6bcd5b80e3d191d",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/current.json",
+      "receipt_sha256": "b7dca0f192fe3aec0c19e19a02043b7e247f9258cd0d327ba6294bc8c843494c",
+      "output": "batch9-legacy-etl-evidence/review/final125/current.log",
+      "output_sha256": "b39f4a5b5c3848ce83f1380ff25010eec88eee86869a9cf51136754238c6b201",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
         ".github/scripts/tests/test_backend_test_launcher.py",
@@ -618,13 +576,13 @@
         "etl/worker.py",
         "etl/writer_ownership.py"
       ],
-      "expected_output": "127 passed"
+      "expected_output": "125 passed"
     },
     "minimum": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/minimum.json",
-      "receipt_sha256": "5972773b6a1fec1c20fd9c00fc4c2785099332aec5b5fbac51bda8678ce77d62",
-      "output": "batch9-legacy-etl-evidence/review/final127/minimum.log",
-      "output_sha256": "dcbb41ee9815df9b427413ec7da5267e34969d90b6983c3175fced5d514a4bb6",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/minimum.json",
+      "receipt_sha256": "c431affb2a77c46fbc4c72339bfaa31641a6d1ace8301f9470503622b66355a3",
+      "output": "batch9-legacy-etl-evidence/review/final125/minimum.log",
+      "output_sha256": "e07e7e32460048629cdf6e07ffe5cb25ad8fc737b82e630808dc6ba895d5c3bc",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
         ".github/scripts/tests/test_backend_test_launcher.py",
@@ -655,13 +613,13 @@
         "etl/worker.py",
         "etl/writer_ownership.py"
       ],
-      "expected_output": "127 passed"
+      "expected_output": "125 passed"
     },
     "launcher-current": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/launcher-current.json",
-      "receipt_sha256": "9e372d4b577244082d2142c56820d9022a7afd7d8e0cdb8e4c5be733f3650f56",
-      "output": "batch9-legacy-etl-evidence/review/final127/launcher-current.log",
-      "output_sha256": "a38f29f337f22e0c840515c7b0f96f0542d95e91032ff1e9827e15a2cf2d9da4",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/launcher-current.json",
+      "receipt_sha256": "26afd7bf6a6791d1b368496e97e2c4ec3b255f5491c22a432a7c743aa636b271",
+      "output": "batch9-legacy-etl-evidence/review/final125/launcher-current.log",
+      "output_sha256": "485af1bd14e5f64d80c73a1df8fa7d09f38d0e3bccd297df324a94a84be25d98",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
         ".github/scripts/tests/test_backend_test_launcher.py",
@@ -695,10 +653,10 @@
       "expected_output": "Ran 11 tests"
     },
     "launcher-minimum": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/launcher-minimum.json",
-      "receipt_sha256": "7492ad4270d4e3bce0ce010cd671f8d0b0ccddbf32f885baac37f091166802bd",
-      "output": "batch9-legacy-etl-evidence/review/final127/launcher-minimum.log",
-      "output_sha256": "6221f78c9ccc411a6b18ba9629c90b28ec319c0b28787a72f83a9e94c10cc04c",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/launcher-minimum.json",
+      "receipt_sha256": "8064b74a2c6b47e07b18636298f3e2a28fca1e63fc38bfeaeb68c6c104886303",
+      "output": "batch9-legacy-etl-evidence/review/final125/launcher-minimum.log",
+      "output_sha256": "a48db07f3f8ca9441370b8ebe8c057f4b3fe6dda7366cb59a9849e39b2122bd2",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
         ".github/scripts/tests/test_backend_test_launcher.py",
@@ -732,10 +690,10 @@
       "expected_output": "Ran 11 tests"
     },
     "complete-collection": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/complete-collection.json",
-      "receipt_sha256": "f9262271c5415592f16b6bb26efa32e9397d811c134c70268f0749f9940aafd6",
-      "output": "batch9-legacy-etl-evidence/review/final127/complete-collection.log",
-      "output_sha256": "b87caf6259438784127da7e7db37fbb369cc910396dccd1248352ac84a618cb7",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/complete-collection.json",
+      "receipt_sha256": "b983a40693bd5cdb73472d03931ac64880e314ecdfe4421a645ccc1192c81c79",
+      "output": "batch9-legacy-etl-evidence/review/final125/complete-collection.log",
+      "output_sha256": "3ef4c108292121dcf90b9cc7bbdec77050eb458ec9cfd986ef7f0aaae7de1d8d",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
         ".github/scripts/tests/test_backend_test_launcher.py",
@@ -769,9 +727,9 @@
       "expected_output": "336 tests collected"
     },
     "runtime-current": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/runtime-current.json",
-      "receipt_sha256": "bb4337200aeb1e62566a7f1a514eac541720d8c828f234844e0f5ae226e35f76",
-      "output": "batch9-legacy-etl-evidence/review/final127/runtime-current.log",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/runtime-current.json",
+      "receipt_sha256": "5275c8ca60aae144ef32ebaae8050e28ba441b31e2f2eeb0be8b488f44153b0f",
+      "output": "batch9-legacy-etl-evidence/review/final125/runtime-current.log",
       "output_sha256": "1ad10f0dc88ac32c38f81582ca2247d75b796d1717f14dd928e449bb20013473",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",
@@ -806,9 +764,9 @@
       "expected_output": "SQLAlchemy=2.0.54"
     },
     "runtime-minimum": {
-      "receipt": "batch9-legacy-etl-evidence/review/final127/runtime-minimum.json",
-      "receipt_sha256": "e1158656b468abb6f208923270410fe1b7c66d03b8ea623456a886bb536372cd",
-      "output": "batch9-legacy-etl-evidence/review/final127/runtime-minimum.log",
+      "receipt": "batch9-legacy-etl-evidence/review/final125/runtime-minimum.json",
+      "receipt_sha256": "dbe9adc6d45d5089eae34f994f709c21857e8a706f8dea4a91dd78198e5bdbae",
+      "output": "batch9-legacy-etl-evidence/review/final125/runtime-minimum.log",
       "output_sha256": "514cab8705d455d719ccae0f49ed369657b219d5550288d5aa4fe3569bf22f4c",
       "source_paths": [
         ".github/scripts/run_backend_tests.py",

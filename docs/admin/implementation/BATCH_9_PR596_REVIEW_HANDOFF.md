@@ -32,11 +32,11 @@ The current source-bound packet is
 `batch9-legacy-etl-evidence/review-verification-manifest.json`. It binds 28 exact
 candidate files, including backend/legacy runtime declarations, seven executed
 checks and the archived executed recorder. These seven runs began and ended at
-clean source commit `7d805194127dc6a12fac69cedd26c73151c6df35`; the final evidence
+clean source commit `a7b3c0d9a31435c9fb6b83ce37265ec5f1703104`; the final evidence
 commit adds only packet/handoff data and retains all 28 measured source bytes.
-`review/final125/{current,minimum}.json` and unchanged raw `.log` files each record
-**125 passed, zero failures/skips/xfails**: 61 actual PostgreSQL process controls,
-20 portable legacy session controls, 41 receipt/owned-target controls including
+`review/final127/{current,minimum}.json` and unchanged raw `.log` files each record
+**127 passed, zero failures/skips/xfails**: 61 actual PostgreSQL process controls,
+20 portable legacy session controls, 43 receipt/owned-target controls including
 the ten destination regressions, and three existing native SQLite regressions.
 The cases and fixture bytes are identical between Python 3.13.9 / SQLAlchemy
 2.0.54 and Python 3.12.14 / SQLAlchemy 2.0.23. Both import declared schedule 1.2.0.
@@ -47,26 +47,26 @@ backend/legacy declaration, and import readback from that owned prefix. This is
 a fresh scheduler installation, not a fresh installation of all requirements:
 the current runtime subsequently inherits other dependencies from a read-only
 CI environment through an owned `.pth`; minimum uses the owned cloned runtime.
-`review/final125/fresh-schedule-prerequisite.json` records the declaration and
+`review/final127/fresh-schedule-prerequisite.json` records the declaration and
 installer hashes; actual installer bytes and raw pip logs are archived beside it.
 
 Both launcher suites pass all 11 controls. The actual full CLI collection passes
-14,509 backend cases and 336 legacy cases; all 14,845 node IDs are unique and
+14,511 backend cases and 336 legacy cases; all 14,847 node IDs are unique and
 cohorts are disjoint. Backend uses `backend/etl`; legacy uses root `etl`; both use
 real `backend/seeding`. All 20 new session controls belong only to legacy.
-`review/final125/collection-{backend,legacy}.json` preserve complete IDs and
+`review/final127/collection-{backend,legacy}.json` preserve complete IDs and
 identities. Collection is not a full-suite execution claim.
 
 The active delivery verifier passes normally and under `-O`. Twelve actual
 candidate-packet controls cover valid readbacks and corrupted source, failed
 receipt exits, changed generator identity, modified raw output and source drift
 under both modes. Invalid copies emit no PASSED provenance.
-`review/final125/current-verifier-controls.json` binds these controls to the same
+`review/final127/current-verifier-controls.json` binds these controls to the same
 28 sources; the exact external executed generator is archived as plain text.
 Critical CI Python lint E9,F63,F7,F82 and whitespace checks pass. Exact raw logs
 retain emitted trailing spaces through file-specific whitespace attributes.
 Raw process logs for both runtimes have 167 members each, archived with hashes in
-`review/final125/process-log-manifest.json`.
+`review/final127/process-log-manifest.json`.
 
 The original seven 115-case checks retain their original bytes and identities.
 Their old manifest is preserved by its SHA-256
@@ -106,7 +106,7 @@ fixed revision, so additive PR592 migration e583b9c9a001 is supported. This lane
 actually replayed e572b8c9a001; the combined-source PR592 replay is the
 coordinator's remaining integration check.
 
-`review/final125/{current,minimum}-owned-postgres.json` confirm PostgreSQL 17.11, successful
+`review/final127/{current,minimum}-owned-postgres.json` confirm PostgreSQL 17.11, successful
 fresh migrations, exact image/container identity and removal of each owned
 container/network with its port free. TCP TIME_WAIT is distinguished from live
 listeners during the bounded cleanup probe. Every process group is stopped in
@@ -125,7 +125,7 @@ errors. Initial synthetic launcher count expectations were corrected to include
 the new file. A first fresh run passed every case but failed its cleanup check on
 TCP TIME_WAIT. The deliberately interrupted obsolete-head run is preserved.
 Earlier successes with source/generator changes or incomplete review bindings
-are superseded; only the seven fully bound final125 checks in the active manifest
+are superseded; only the seven fully bound final127 checks in the active manifest
 certify this candidate. The first 125-case attempt caught an assertion race: a
 legitimate dispatch successor could acquire after all 13 original claims were
 released, so observing global zero claims depended on scheduling. The controlled
@@ -161,8 +161,41 @@ bytes are preserved at `run_receipt_pre_destination_ee8d7cde662643dfdeb5ddc1e602
 Earlier seven-check candidate evidence retains its original hashes and requires
 a fresh candidate replay; author and previous coordinator receipts are historical.
 The mandatory legacy scheduler now has the matching development-only
-`schedule==1.2.0` prerequisite. The final 125-case current/minimum positive worker
+`schedule==1.2.0` prerequisite. The fresh 127-case current/minimum positive worker
 controls actually execute this import and child work; negative controls cannot
 pass solely because that import is missing. Independent Spec and Standards
 reviews accepted the frozen substantive source; combined migration and hosted
 acceptance remain with the coordinator.
+
+## Post-publication hosted fixture correction
+
+Hosted run 38009357220 on combined b70996e9e1e28f7e6b445f0d3c41be3681fadd61
+found two failures after the final evidence commit added an inherited derived
+provenance file. The verifier correctly refused the missing fresh manifest; the
+test incorrectly required a copied historical file to be absent. The exact
+045b603 source reproduces both failures. Tests now cover both empty and inherited
+outputs under normal and optimized Python, require nonzero refusal with no PASSED
+output, and require every copied evidence byte to remain unchanged. Corrupt
+historical-only verification also preserves any inherited output. No verifier or
+writer product behavior changed.
+
+The original125 manifest and derived provenance are preserved byte-for-byte in
+`review/historical-packets/045b603-c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129/`, with
+a HISTORICAL_ONLY index and all28 source snapshots verified against actual045b603
+Git bytes. Original125 execution files remain unchanged. The fresh internal acceptance index now binds seven127 checks on frozen a7b3c0d
+source: current127 in150.57s, minimum127 in122.89s, launcher11 each, actual
+fullCLI14511 backend/336 legacy and current/minimum runtime import readbacks.
+Both default55506 fixture resources were removed. The active verifier passes
+normal/-O, with12 actual corruption controls refusing under both modes.
+
+A mandatory additional127 current/minimum replay follows the final evidence
+commit and writes only external coordinator receipts `596/postpub127-{current,minimum}.json/log`.
+Its executed external generator records exact final HEAD/tree/clean status,
+every Git-tracked file, and every consumed EVIDENCE file plus an aggregate
+corpus digest before/after. No repository mutation may follow that replay.
+Those external checks establish post-publication acceptance; the internal
+pre-publication packet alone is a scoped source/evidence measurement.
+
+Lesson: equivalence checks must bind all fixture inputs, including copied
+receipts and derived output files, in addition to executable source. Publishing
+metadata can change test behavior even when all declared product bytes match.
