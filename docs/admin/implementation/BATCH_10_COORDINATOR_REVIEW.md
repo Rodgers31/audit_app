@@ -1,5 +1,11 @@
 # Batch 10 delivery and investigation review — 2026-10-10
 
+For any new investigation replay, follow the [current safe replay guide](batch10-investigation-replay/README.md).
+It supersedes the retained packet READMEs' original recorder/preview procedures.
+The original ambient-inheriting producers and author-specific review harnesses
+are archival-only and remain byte-for-byte unchanged; use the new portable tools
+with owned inert fixtures and fresh external output.
+
 All five author sessions published their commits. The initial three PRs represented three implemented repairs. The other two sessions completed and pushed investigations, but did not identify a supported product repair. This documentation PR publishes both investigation handoffs for review. It closes neither #494 nor #601 and changes no application, dependency manifest/lock, workflow or original browser assertion.
 
 The original author statements that no repair PR was appropriate remain historical delivery facts. The coordinator is now making their completed evidence and recommendations reviewable at the user's request. The missing dependency author's former local checkout is absent; its pushed objects and evidence were recovered into an owned review checkout. No unpushed product fix was found.
