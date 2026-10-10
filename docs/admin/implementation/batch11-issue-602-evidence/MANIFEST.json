@@ -1,0 +1,14 @@
+{
+  "schema": 2,
+  "generated_by": "tools/publish_v2.py",
+  "generator_sha256": "0d05631be10864f212f6e7011e947aec87a48de00ec74ffc87a188b170aae1d6",
+  "files": {
+    "receipts/green-03-preparer-current-head/receipt.json": "c898b256d80512c60ef97449b4f6988d0f49b94f90cc806c705f49a5d27579cc",
+    "receipts/intermediate-cohort-current-04/receipt.json": "041f5e3d6152cd8659e0c9b258007f6686803a066481dbe1dba343eee2bdc829",
+    "receipts/red-01-parser-writer-orm-mutation/receipt.json": "b3d66c2f6f741fcde6549bd60b7592da87ec7b25a8f63a96243211d5caea62a4",
+    "receipts/red-02-parser-writer-sql-mutation/receipt.json": "1918e2a4f812dc760adaa6ab5fe9ee6779262b8aa8a0534c36dcb797ac5f2ab6",
+    "receipts/red-03-preparer-stale-head/receipt.json": "8037e58f9e5dd2bef22706a1fa3705443a0dd7b6f4dbaef5763dde9521ade0f1",
+    "receipts/red-04-legacy-cra-not-enrolled/receipt.json": "cb024a64af99ddf9b478a3b6b9a89c205235143d04a35d068f0ba7fb2d682a20",
+    "receipts/setup-failure-cohort-unsplit-args/receipt.json": "4f5ed7c91a52a2b18e3d29a5083796c5e6b84db61249dcec718b69f5d08f79a0"
+  }
+}

@@ -1,0 +1,163 @@
+{
+ "generated_by": "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py",
+ "generator_sha256": "c8b40625c61d09291240d03126cb9809745ba05cf65fc0d068d5adcecd68f546",
+ "label": "red: accepted-base preparer+tests against the lane migration tree (head e602b11a0001)",
+ "mode": "pytest",
+ "started_at": "2026-10-10T15:58:09.801101+00:00",
+ "finished_at": "2026-10-10T15:58:10.472348+00:00",
+ "duration_seconds": 0.439,
+ "deadline_seconds": 120,
+ "timed_out": false,
+ "exit_code": 1,
+ "leftover_process_group": false,
+ "command": [
+  "<machine-path>",
+  "-m",
+  "pytest",
+  "<machine-path>",
+  "-q",
+  "--junitxml=<out>/junit.xml",
+  "--basetemp=<out>/tmp",
+  "-p",
+  "no:cacheprovider",
+  "-rA"
+ ],
+ "child_environment": {
+  "ADMIN_ETL_DISPATCH_ENABLED": "false",
+  "DATABASE_URL": "postgresql+psycopg2://inert:inert@127.0.0.1:9/inert",
+  "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "PYTHON_DOTENV_DISABLED": "1",
+  "SEED_CACHE_PATH": "<out>/cache",
+  "SEED_CRA_INGESTION_ENABLED": "false",
+  "SEED_ENRICH_WITH_WORLDBANK": "false",
+  "SEED_LIVE_PDF_FETCH_ENABLED": "false",
+  "SEED_LOG_PATH": "<out>/seed.jsonl",
+  "SEED_STORAGE_PATH": "<out>/storage",
+  "SUPABASE_JWT_SECRET": "inert-only",
+  "SUPABASE_KEY": "inert",
+  "SUPABASE_SERVICE_ROLE_KEY": "inert",
+  "SUPABASE_URL": "https://owned.invalid"
+ },
+ "runtime": {
+  "python": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "executable_name": "python",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+ },
+ "head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+ "tree": "9d0061928c16d173859f98cb6daa5f2f591b257c",
+ "status_before": " M .github/scripts/prepare_reconciliation_test_fixture.py\n M .github/scripts/tests/test_reconciliation_test_fixture.py\n M backend/admin_etl_dispatch.py\n M backend/admin_etl_dispatch_adapter.py\n M backend/models.py\n M backend/seeding/config.py\n M backend/seeding/registries.py\n M backend/seeding/source_registry.py\n M backend/tests/financial_literal_reviewed_inventory.json\n M backend/tests/test_batch10_etl_mappings.py\n M backend/tests/test_batch10_etl_mappings_migration.py\n M backend/tests/test_batch10_mapped_reconciliation.py\nA  docs/admin/implementation/batch11-issue-602-evidence/fixtures/cra-fy2026-27.pdf\n?? backend/alembic/versions/e602b11a0001_native_source_domains.py\n?? backend/coverage.xml\n?? backend/seeding/domains/cra/__init__.py\n?? backend/seeding/domains/cra/parser.py\n?? backend/seeding/domains/cra/source.py\n?? backend/seeding/domains/cra/writer.py\n?? backend/tests/batch11_native_sources_fixture/__init__.py\n?? backend/tests/batch11_native_sources_fixture/api.py\n?? backend/tests/batch11_native_sources_fixture/owned_postgres.py\n?? backend/tests/batch11_native_sources_fixture/sitecustomize.py\n?? backend/tests/test_batch11_cra_parser.py\n?? backend/tests/test_batch11_cra_writer_boundaries.py\n?? backend/tests/test_batch11_native_sources.py\n?? backend/tests/test_batch11_native_sources_migration.py\n?? docs/admin/implementation/batch11-issue-602-evidence/FINANCIAL_CONTEXT_REVIEW_CONFIG_2026_10_10.md\n?? docs/admin/implementation/batch11-issue-602-evidence/run_cohort.py\n?? docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py\n",
+ "status_after": " M .github/scripts/prepare_reconciliation_test_fixture.py\n M .github/scripts/tests/test_reconciliation_test_fixture.py\n M backend/admin_etl_dispatch.py\n M backend/admin_etl_dispatch_adapter.py\n M backend/models.py\n M backend/seeding/config.py\n M backend/seeding/registries.py\n M backend/seeding/source_registry.py\n M backend/tests/financial_literal_reviewed_inventory.json\n M backend/tests/test_batch10_etl_mappings.py\n M backend/tests/test_batch10_etl_mappings_migration.py\n M backend/tests/test_batch10_mapped_reconciliation.py\nA  docs/admin/implementation/batch11-issue-602-evidence/fixtures/cra-fy2026-27.pdf\n?? backend/alembic/versions/e602b11a0001_native_source_domains.py\n?? backend/coverage.xml\n?? backend/seeding/domains/cra/__init__.py\n?? backend/seeding/domains/cra/parser.py\n?? backend/seeding/domains/cra/source.py\n?? backend/seeding/domains/cra/writer.py\n?? backend/tests/batch11_native_sources_fixture/__init__.py\n?? backend/tests/batch11_native_sources_fixture/api.py\n?? backend/tests/batch11_native_sources_fixture/owned_postgres.py\n?? backend/tests/batch11_native_sources_fixture/sitecustomize.py\n?? backend/tests/test_batch11_cra_parser.py\n?? backend/tests/test_batch11_cra_writer_boundaries.py\n?? backend/tests/test_batch11_native_sources.py\n?? backend/tests/test_batch11_native_sources_migration.py\n?? docs/admin/implementation/batch11-issue-602-evidence/FINANCIAL_CONTEXT_REVIEW_CONFIG_2026_10_10.md\n?? docs/admin/implementation/batch11-issue-602-evidence/run_cohort.py\n?? docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py\n",
+ "source_before_sha256": "d083607fc58deb978d940a446de0eaab44ca72e559a919b00646b175157d1089",
+ "source_after_sha256": "d083607fc58deb978d940a446de0eaab44ca72e559a919b00646b175157d1089",
+ "source_drift": [],
+ "source_files": {
+  ".github/scripts/prepare_reconciliation_test_fixture.py": "ba09bbc08c83a86a53762f82ea9f5b4eccf33747ab363493d7c0e664ae449281",
+  ".github/scripts/tests/test_reconciliation_test_fixture.py": "3df345b922f2057c7cc2567304140e93322fbf13ca1f0faa650b8164ae49cb64",
+  "backend/admin_etl_dispatch.py": "0fbaea38bf634db26096d3f3c0c5ab8cfa9ea29d5c3f385206b640c1e52ef2a9",
+  "backend/admin_etl_dispatch_adapter.py": "93b1def01fa182cd0c70b43c80dd5cfbb3a10a574357ab09610a4b3cf96ac44f",
+  "backend/alembic/versions/e602b11a0001_native_source_domains.py": "c4b2fb323db2f755a5b95b5c72fc66128960c2b47f353efcca93b3ed371c0f65",
+  "backend/coverage.xml": "d07b6584faaf50a69bf37b4b3c12b23b9264d56355f42f3c13ea206ad0a7b7b6",
+  "backend/models.py": "2a16ec84b797fa93220eb822284ee512e427d1bf3a4918f674c86f79aeef5015",
+  "backend/seeding/config.py": "a8889d3e27846064120bfef259184384c42dd411bcd0897117fc91e87152bd1c",
+  "backend/seeding/domains/cra/__init__.py": "216f8f0b6e7afb499aa68a2dcfbde06714699288d684dc1f7f1c5f588ab24f06",
+  "backend/seeding/domains/cra/parser.py": "e6067e29a413613cbbd24064b77f12d2f416e36777332cc901d1624e7d4cf993",
+  "backend/seeding/domains/cra/source.py": "e7200e0e265f00b57f0307a58c774ac0a8292aa602812a2242170ea4b4a2abcd",
+  "backend/seeding/domains/cra/writer.py": "56108a516a03349f493c2d5618097f8b720c4c651175ea92d966340d16600c11",
+  "backend/seeding/registries.py": "e664ddf4ca0cb0345d9b400c5f5aa4da552e7ae714727d5b86ff2454e075848f",
+  "backend/seeding/source_registry.py": "f45f23eef1bd9d474e7318ebdd942b795d8193bee98384f7b988295b52f75bb4",
+  "backend/tests/batch11_native_sources_fixture/__init__.py": "0709847ad716cbb55b86c6e3e7a97182fae6468176bee7cd31ada45e93be8f7f",
+  "backend/tests/batch11_native_sources_fixture/api.py": "ecb95216a440e43be8d298e2d674af69952091649b539a2b7de0b18acbe62327",
+  "backend/tests/batch11_native_sources_fixture/owned_postgres.py": "7aca99b5b86aa26227b59ccfc2c0a087a578088fc2cd2a6d94a45b8705d9f95b",
+  "backend/tests/batch11_native_sources_fixture/sitecustomize.py": "67b90aad441dd61c22bf8c4d6b5af8d88cf28e839ff536b87941da9a0f3f321a",
+  "backend/tests/financial_literal_reviewed_inventory.json": "5205681f3549f51ecec5adca0cf9d268993f7c96f16355fa1f0c5ecd2c4b4a7a",
+  "backend/tests/test_batch10_etl_mappings.py": "adff39a48cd925600b789a88dd03c6a5a95dca5a5264b45f0691c166a089b580",
+  "backend/tests/test_batch10_etl_mappings_migration.py": "48221542d82079c9982225a1c80321147e7ed490a87f7096102a211f5a72eb6a",
+  "backend/tests/test_batch10_mapped_reconciliation.py": "fb70850125635289ea255daa3556e87b4d13c26f3d1a0aead61f809f6ca2b949",
+  "backend/tests/test_batch11_cra_parser.py": "a5f41f241c822963ae12c352580a376a63cc9cb5aee77b1fe58a94db663a4c0b",
+  "backend/tests/test_batch11_cra_writer_boundaries.py": "ed65da39d9ad9d99830eb309bbab7e1bc15c42fb004518366bd5265a275ca81a",
+  "backend/tests/test_batch11_native_sources.py": "aa7bcba3b308106202f6bdaf0cdedd35645c784adb21644b467eedf23ce7403f",
+  "backend/tests/test_batch11_native_sources_migration.py": "2b6063c9ce0432313c0ef4af369f8a3201db5990c0a00a739a32ab8f5af8831e",
+  "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
+  "docs/admin/implementation/batch11-issue-602-evidence/FINANCIAL_CONTEXT_REVIEW_CONFIG_2026_10_10.md": "27cde8255952451908ed3934ba7caa08c27b838a9ed4bee7f0785d96c47d5776",
+  "docs/admin/implementation/batch11-issue-602-evidence/run_cohort.py": "166865cd7f432236d79bef27972ef52fc3d7f4d20ce961a985da1ec4fc8516f3",
+  "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py": "c8b40625c61d09291240d03126cb9809745ba05cf65fc0d068d5adcecd68f546",
+  "etl/writer_ownership.py": "7ad676effbb91fe8ade3553fa6794c3b8cfd68fbc74feea8133280e28427b8fe"
+ },
+ "owned_containers_before": [],
+ "owned_containers_after": [],
+ "inventory": {
+  "source": "junit",
+  "unique": true,
+  "nonempty": true
+ },
+ "complete_inventory": true,
+ "counts": {
+  "error": 0,
+  "failed": 1,
+  "xpass": 0,
+  "passed": 13,
+  "xfail": 0,
+  "skipped": 0
+ },
+ "testcases": [
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_actual_immutable_pin_matches_approved_fixture",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_busy_loopback_port_refuses_without_export",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_cleanup_refuses_foreign_container_without_any_delete",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_cleanup_refuses_foreign_network_member_without_any_delete",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_every_ambient_libpq_input_refuses_before_mutation",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_existing_state_refuses_before_docker_or_environment_export",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_invalid_ports_refuse_direct_api",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_migrated_revision_matches_the_actual_migration_head",
+   "state": "failed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_mutable_wrong_architecture_and_mixed_digest_images_refuse",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_numeric_capabilities_refuse_before_database_export",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_state_shape_identity_and_permissions_are_required",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_symlinks_refuse_both_state_and_export",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_valid_cleanup_deletes_only_bound_ids_and_reads_final_state",
+   "state": "passed"
+  },
+  {
+   "id": "visualizations.2026.10.10.01a12626-69b6-7d82-9083-54e4bf07a86b.issue602.claude-continuation.base-preparer-tree..github.scripts.tests.test_reconciliation_test_fixture.FixtureControls::test_valid_migration_proof_exports_owned_database",
+   "state": "passed"
+  }
+ ],
+ "published_testcase_ids_compacted": 0,
+ "published_source_files_scope": "paths changed from accepted base bcb5ff99854de595bbe3f7d60cc8796b7ada5a20; the full-set digest is source_before_sha256"
+}
