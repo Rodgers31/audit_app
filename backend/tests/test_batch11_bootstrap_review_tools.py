@@ -112,3 +112,44 @@ def test_linux_cleanup_requires_exact_owned_absence(tmp_path, monkeypatch, capsy
     else:
         assert "OWNED_LINUX_NOT_CREATED" in output
         assert not any(args[0] == "rm" for args, _ in calls)
+
+
+@pytest.mark.parametrize("mode", ["fresh", "ancestor_link", "dangling_leaf", "source_internal", "traversal", "inherited"])
+def test_linux_output_refuses_alias_before_docker(tmp_path, monkeypatch, mode):
+    calls = []
+    def docker(*args, check=True):
+        calls.append(args)
+        if args[0] == "run":
+            return subprocess.CompletedProcess(args, 0, "owned safe execution", "")
+        assert args[0] == "inspect"
+        return subprocess.CompletedProcess(args, 1, "[]", "error: no such object: " + args[1])
+    monkeypatch.setitem(sys.modules, "batch11_bootstrap_fixture.postgres", types.SimpleNamespace(docker=docker))
+    module = load("linux_replay")
+    output = tmp_path / "fresh-output"
+    target = output
+    if mode == "ancestor_link":
+        parent = tmp_path / "alias-parent"
+        parent.symlink_to(tmp_path, target_is_directory=True)
+        output = parent / "fresh-output"
+    elif mode == "dangling_leaf":
+        output = tmp_path / "alias-leaf"
+        output.symlink_to(target, target_is_directory=True)
+    elif mode == "source_internal":
+        output = module.Path(__file__).resolve().parents[2] / "forbidden-owned-output"
+        target = output
+    elif mode == "traversal":
+        output = tmp_path / "missing-parent" / ".." / "fresh-output"
+    elif mode == "inherited":
+        output.mkdir()
+        (output / "preserved.txt").write_text("owned previous output")
+    monkeypatch.setattr(sys, "argv", ["linux_replay.py", "--runtime-root", str(tmp_path), "--out", str(output)])
+    if mode == "fresh":
+        module.main()
+        assert calls and (target / "execution.log").read_text() == "owned safe execution"
+    else:
+        with pytest.raises(ValueError, match="Fresh external nonsymlink output required"):
+            module.main()
+        assert calls == [], "SOURCE_OR_OUTPUT_ALIAS_LAUNCHED_DOCKER"
+        assert not target.exists() or mode == "inherited"
+        if mode == "inherited":
+            assert (target / "preserved.txt").read_text() == "owned previous output"
