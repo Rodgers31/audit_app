@@ -1,0 +1,39 @@
+{"name":"valid sealed package","expected":"accepted","actual":"accepted","result":{"archive_integrity":"verified","issue_601":"unresolved","original_inventory":323,"passed":312,"existing_fixmes":11,"targeted_records":6}}
+{"name":"null root","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received null"}
+{"name":"null repo","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received null"}
+{"name":"empty root","expected":"rejected","actual":"rejected","error":"ENOENT: no such file or directory, open '/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/frontend/manifest.json'"}
+{"name":"missing root","expected":"rejected","actual":"rejected","error":"ENOENT: no such file or directory, open '/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence/absent/manifest.json'"}
+{"name":"root bool","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received type boolean (true)"}
+{"name":"root number","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received type number (0)"}
+{"name":"root object","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received an instance of Object"}
+{"name":"repo bool","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received type boolean (true)"}
+{"name":"repo object","expected":"rejected","actual":"rejected","error":"The \"paths[0]\" argument must be of type string. Received an instance of Object"}
+{"name":"repo empty","expected":"rejected","actual":"rejected","error":"ENOENT: no such file or directory, lstat '/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/frontend/backend'"}
+{"name":"real original execution parser baseline","expected":"accepted","actual":"accepted","result":true}
+{"name":"actual parser counter NaN","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter +Inf","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter -Inf","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter negative","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter zero","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter bool","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter null","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter string","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser counter fraction","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit NaN","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit +Inf","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit negative","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit bool","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit null","expected":"rejected","actual":"rejected","error":"Invalid browser execution accounting"}
+{"name":"actual parser exit failed","expected":"rejected","actual":"rejected","result":false}
+{"name":"actual parser duration NaN","expected":"rejected","actual":"rejected","error":"Missing or malformed browser execution result"}
+{"name":"actual parser duration +Inf","expected":"rejected","actual":"rejected","error":"Missing or malformed browser execution result"}
+{"name":"actual parser duration negative","expected":"rejected","actual":"rejected","error":"Missing or malformed browser execution result"}
+{"name":"actual parser duration bool","expected":"rejected","actual":"rejected","error":"Missing or malformed browser execution result"}
+{"name":"actual parser duration null","expected":"rejected","actual":"rejected","error":"Missing or malformed browser execution result"}
+{"name":"actual parser duration zero","expected":"accepted","actual":"accepted","result":true}
+{"name":"actual parser report null","expected":"rejected","actual":"rejected","error":"Invalid browser collection report"}
+{"name":"actual parser report empty","expected":"rejected","actual":"rejected","error":"Invalid browser collection report"}
+{"name":"actual parser report missing-errors","expected":"rejected","actual":"rejected","error":"Invalid browser collection report"}
+{"name":"actual parser report zero-cases","expected":"rejected","actual":"rejected","error":"Empty or duplicate browser inventory"}
+{"name":"actual parser report unknown-shape","expected":"rejected","actual":"rejected","error":"Invalid browser collection report"}
+{"count":38,"unexpected":[],"source_unchanged":true}

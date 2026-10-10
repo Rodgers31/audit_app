@@ -1,0 +1,195 @@
+{
+  "inspected_commit": "d3be02e6ed10830d0722d8696f911714cf7b56af",
+  "source_hashes": {
+    "/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence/data/historical-trace.zip.gz": "f48a0d3a04bfaa4c1b3ce69af738405780bad799faf4286d3a3ae574540962fa",
+    "/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence/data/node22-precondition-trace.zip.gz": "7f63d517df90e36ae5a69a2c3c1a64a17c2a5e227a18db9dfdf2d32c4be35621",
+    "/Users/roger/.codex/worktrees/batch10-county-scroll/audit_app/docs/admin/implementation/batch10-scroll-evidence/data/node22-runtime.json.gz": "04f5ad37f946357e8f5592d09faef05d843bdafeb8939e697164ed2f8dc54eb8",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/review-spec/trace_inspect.py": "e23d5b3742fb17bdf641e4605f6140ae01bb86dfa62e1ec1c4deb7aac4daedae"
+  },
+  "traces": [
+    {
+      "archive": "historical-trace.zip.gz",
+      "raw_sha256": "75522647fc9dbe493b54c8670e79baabf8c67e1a2fc86f17886e9e67963572b4",
+      "contexts": [
+        {
+          "version": 8,
+          "type": "context-options",
+          "origin": "library",
+          "browserName": "chromium",
+          "playwrightVersion": "1.58.2",
+          "options": {
+            "noDefaultViewport": false,
+            "viewport": {
+              "width": 1280,
+              "height": 720
+            },
+            "ignoreHTTPSErrors": false,
+            "javaScriptEnabled": true,
+            "bypassCSP": false,
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36",
+            "locale": "en-US",
+            "offline": false,
+            "deviceScaleFactor": 1,
+            "isMobile": false,
+            "hasTouch": false,
+            "colorScheme": "light",
+            "acceptDownloads": "accept",
+            "baseURL": "http://127.0.0.1:3141",
+            "recordVideo": {
+              "dir": "/home/runner/work/audit_app/audit_app/frontend/legacy-results/public/.playwright-artifacts-1",
+              "size": {
+                "width": 800,
+                "height": 450
+              }
+            },
+            "serviceWorkers": "allow",
+            "selectorEngines": [],
+            "testIdAttributeName": "data-testid"
+          },
+          "platform": "linux",
+          "wallTime": 1791592648965,
+          "monotonicTime": 313933.855,
+          "sdkLanguage": "javascript",
+          "testIdAttributeName": "data-testid",
+          "contextId": "browser-context@e192cad7fb1a97494db3dcf9c6b31082",
+          "title": "smart-back.spec.ts:72 \u203a Smart back link \u2014 counties list \u2194 detail \u203a scroll position is roughly preserved after smart-back"
+        }
+      ],
+      "assertion_failures": [
+        {
+          "type": "after",
+          "callId": "expect@44",
+          "endTime": 317681.37,
+          "annotations": [],
+          "error": {
+            "name": "",
+            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m100\u001b[39m\nReceived:   \u001b[31m100\u001b[39m",
+            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m100\u001b[39m\nReceived:   \u001b[31m100\u001b[39m\n    at /home/runner/work/audit_app/audit_app/frontend/e2e/smart-back.spec.ts:100:20"
+          }
+        }
+      ],
+      "scroll_calls": 2,
+      "numeric_evaluations": [
+        {
+          "type": "after",
+          "callId": "call@11085",
+          "endTime": 315785.299,
+          "result": {
+            "value": {
+              "n": 750
+            }
+          },
+          "afterSnapshot": "after@call@11085"
+        },
+        {
+          "type": "after",
+          "callId": "call@11100",
+          "endTime": 317664.143,
+          "result": {
+            "value": {
+              "n": 100
+            }
+          },
+          "afterSnapshot": "after@call@11100"
+        }
+      ]
+    },
+    {
+      "archive": "node22-precondition-trace.zip.gz",
+      "raw_sha256": "632bd83708061ba281d908c4b1ad40acb4db5707277ce8f88ca5b150b8cc9585",
+      "contexts": [
+        {
+          "version": 8,
+          "type": "context-options",
+          "origin": "library",
+          "browserName": "chromium",
+          "playwrightVersion": "1.58.2",
+          "options": {
+            "noDefaultViewport": false,
+            "viewport": {
+              "width": 1280,
+              "height": 720
+            },
+            "ignoreHTTPSErrors": false,
+            "javaScriptEnabled": true,
+            "bypassCSP": false,
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36",
+            "locale": "en-US",
+            "offline": false,
+            "deviceScaleFactor": 1,
+            "isMobile": false,
+            "hasTouch": false,
+            "colorScheme": "light",
+            "acceptDownloads": "accept",
+            "baseURL": "http://127.0.0.1:3141",
+            "recordVideo": {
+              "dir": "/evidence/original-node22-linux-100-output/.playwright-artifacts-79",
+              "size": {
+                "width": 800,
+                "height": 450
+              }
+            },
+            "serviceWorkers": "allow",
+            "selectorEngines": [],
+            "testIdAttributeName": "data-testid"
+          },
+          "platform": "linux",
+          "wallTime": 1791602293866,
+          "monotonicTime": 399253.819,
+          "sdkLanguage": "javascript",
+          "testIdAttributeName": "data-testid",
+          "contextId": "browser-context@a4a48a64449d234e763be977234fb773",
+          "title": "smart-back.spec.ts:72 \u203a Smart back link \u2014 counties list \u2194 detail \u203a scroll position is roughly preserved after smart-back"
+        }
+      ],
+      "assertion_failures": [
+        {
+          "type": "after",
+          "callId": "expect@41",
+          "endTime": 407049.329,
+          "annotations": [],
+          "error": {
+            "name": "",
+            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/[?&]p=2/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:3141/counties\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    9 \u00d7 unexpected value \"http://127.0.0.1:3141/counties\"\u001b[22m\n",
+            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mpage\u001b[39m\u001b[2m).\u001b[22mtoHaveURL\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nExpected pattern: \u001b[32m/[?&]p=2/\u001b[39m\nReceived string:  \u001b[31m\"http://127.0.0.1:3141/counties\"\u001b[39m\nTimeout: 5000ms\n\nCall log:\n\u001b[2m  - Expect \"toHaveURL\" with timeout 5000ms\u001b[22m\n\u001b[2m    9 \u00d7 unexpected value \"http://127.0.0.1:3141/counties\"\u001b[22m\n\n    at gotoPageNOfCountiesList (/app/frontend/e2e/smart-back.spec.ts:38:22)\n    at gotoPage2OfCountiesList (/app/frontend/e2e/smart-back.spec.ts:45:3)\n    at /app/frontend/e2e/smart-back.spec.ts:73:5"
+          }
+        }
+      ],
+      "scroll_calls": 0,
+      "numeric_evaluations": []
+    }
+  ],
+  "archived_runtime": {
+    "scope": "runtime comparison, not behavioral control",
+    "initial_arm64_copy_unused_for_tests": {
+      "image": "sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392",
+      "binary_sha256": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48"
+    },
+    "final_linux_x64": {
+      "image": "sha256:1f5423e576118833d098951b9629311a8ba15eae8a6a83a43e4f885a8ec3b128",
+      "binary_sha256": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+      "runtime": {
+        "node": "v22.23.3",
+        "arch": "x64",
+        "platform": "linux"
+      }
+    },
+    "original_job_node": "v22.23.3",
+    "original_job_python": "3.12.15",
+    "local_python": "3.12.3",
+    "host": "macOS ARM64 Docker emulation; not a hosted runner replica"
+  },
+  "retained_binary_checks": [
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin",
+      "sha256": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+      "file_diagnostic": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22.bin: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n"
+    },
+    {
+      "path": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin",
+      "sha256": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+      "file_diagnostic": "/Users/roger/.codex/visualizations/2026/10/10/01a123ab-8dbe-78d1-9583-521af8091fa1/batch10-scroll-evidence/node22-amd64.bin: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=a9b42ba41811e1291145304b7c278c5d3fbaca71, for GNU/Linux 3.2.0, with debug_info, not stripped, too many notes (256)\n"
+    }
+  ],
+  "source_changed_during_read": []
+}

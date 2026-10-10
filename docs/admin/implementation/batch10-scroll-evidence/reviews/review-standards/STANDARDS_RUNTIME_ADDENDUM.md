@@ -1,0 +1,7 @@
+# Standards addendum — runtime correction
+
+Read the pending three-document change after the Spec finding: the handoff and lessons withdraw the unsupported ARM64-executable claim; `RUNTIME_CORRECTION.md` distinguishes source-image metadata from retained executable identity and preserves the original archival record. These changes introduce **zero Standards breaches or actionable smells**.
+
+Independently ran `file` and SHA-256 readbacks against both retained host files: each is ELF x86-64, with SHA-256 `fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48`. Read the author's exact container command/results in `node22-runtime-correction.json`; did not re-execute container runtime commands or browser builds. The current archive verifier still passed and reported #601 unresolved. Documentation source bytes remained stable during these checks.
+
+Commands, output, source/generator identities and readback: [correction-review-v2-receipt.json](correction-review-v2-receipt.json). The first reviewer harness failed an overly broad occurrence-count assertion because `x86-64` also occurs in the ELF loader filename; [that harness failure](initial-correction-harness-failure.json) and original generator remain retained. The corrected check matches the architecture field and passed. This addendum reviews the pending documents at parent HEAD `d3be02e6ed10830d0722d8696f911714cf7b56af`; a final committed diff recheck remains required. The initial Standards review and receipts remain unchanged.

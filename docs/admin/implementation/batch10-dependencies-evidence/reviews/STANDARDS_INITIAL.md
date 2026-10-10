@@ -1,0 +1,13 @@
+Initial Standards review: **zero hard violations; zero actionable heuristic findings**.
+
+Reviewed `041ad89a0a170b4029beb5d9597b55bf934eff7e`, tree `af210e3cf4f30dda6982ad2ac1fa5d999ae28af3`, with `git diff f6c31e271297eece52f34102dc40a1e2ed7069a8...041ad89`. The commit list contains only `041ad89 docs(deps): retain Batch 10 blocked-path evidence for #494`.
+
+I read the complete changed source corpus, current/historical generators and frozen contracts, and inspected the manifest and all 482 archive members (97,610,487 uncompressed bytes). Archived generators match committed bytes; retained application source matches both accepted base and checkout; candidate overlays/deletions agree with their inventories. No general repository coding standard applies. The archived `spec/SPEC.md` requires “preserved raw history/source/generator identities” and “no fabricated completion or empty PR.” Failed historical receipts remain failed, rejected migrations remain snapshots, and #494 remains explicitly pending.
+
+All twelve smell heuristics were assessed: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man, Refused Bequest. Historical duplication preserves required executed bytes; caller traversal exercises the declared dependency chain. Neither warrants refactoring. Detailed dispositions are in `identities.json`; tooling-enforced concerns were excluded.
+
+Executed under Python 3.9.6/Node 22.19.0/npm 11.6.0: `python3 -O test_recorder.py` (8 controls), `python3 -O test_bundle.py ZIP MANIFEST` (10 controls), `python3 -O verify_bundle.py ZIP MANIFEST` (68 receipts/482 members), and the real `node probe-current-callers.cjs FRONTEND` (three expected RangeErrors). All exited 0; every captured command preserved the clean reviewed identity. No frontend/workflow diff exists.
+
+Packet SHA256: `6d6cb63a4c4e14acd08d7c5efdd688b98d3d5cd43a6300b1ad411c9c8787028b`; manifest: `47ac26620c864613b2abd2c8718467da5aa14fcda74451587d9e91349f5e1fdf`. Exact script hashes, command arrays/exits, complete stdout/stderr and before/after identities are bound by `identities.json` SHA256 `e85c72556c0fd9ceb3321d8983e1b2dd8ae546b33f0a3d632cb1a81d79b079c1` and `raw/`.
+
+Limitations: this is the initial review. Referenced `FINAL_VERIFICATION.md` is intentionally pending independent reviews/cleanup, as the coordinator confirmed. I did not repeat full native/model/build/browser/platform acceptance. Packet integrity and primitive reproduction do not establish complete remediation or grant issue acceptance.

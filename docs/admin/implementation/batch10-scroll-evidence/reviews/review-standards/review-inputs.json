@@ -1,0 +1,18 @@
+{
+  "diff_command": [
+    "git",
+    "diff",
+    "f6c31e271297eece52f34102dc40a1e2ed7069a8...HEAD"
+  ],
+  "diff_sha256": "c25bb3470c5a1130f29932527ef4149793031d2607418f7bb4471a780f2c8e61",
+  "standards_sources": {
+    "README.md": "f7578239aa7a03ba9beff5623fe2d7fd52ba80f017ccda1e6aedb456cb0fd338",
+    "frontend/README.md": "b86dfe1fd8d6d0d732fc977771680a11c6b30a26185fd0b422021c62c95fbdea",
+    "docs/README.md": "e602a9f8edbdad1909a956204e9b998696c1b142b50ff1de0207ff1184e8c8e5",
+    "CONTEXT.md": "acf72df180b19611d2b93c0baed511216a25723727b50c910c3a7e5f7044b93e",
+    "TESTING_GATES.md": "79fc375013547061ba766f69288e35d3141f5b1b9218899e20f356bd75af8275",
+    "TESTING_QUICK_REFERENCE.md": "de55e9933649d6f31debbcb0b56dc0bb1f096f3c8d10d56d0f46da50f55734b4"
+  },
+  "skill_sha256": "6a65cc61114f96db07ec41e3920e67c9c5bf70dd6e0901eb9460ebcb2bdc209f",
+  "frozen_contract_sha256": "6df07b4f056e8a9b630d7024da6edbaf34cbe282ce2a60032911e9db15c4e1c6"
+}
