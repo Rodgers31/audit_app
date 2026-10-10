@@ -1,0 +1,10 @@
+{
+  "classification": "reviewer wrapper metadata assumption error; actual default and integrity packet commands executed correctly",
+  "cause": "755 total packet files includes the manifest; catalogue files mapping contains754 entries",
+  "observed_wrapper_child_exit": 1,
+  "preserved_generator": "corpus_recheck_v2.py",
+  "replacement_generator": "corpus_recheck_v3.py",
+  "launched_packet_checker": true,
+  "default_packet_child_exit": 1,
+  "integrity_packet_child_exit": 0
+}

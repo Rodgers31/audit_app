@@ -1,0 +1,16 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/replay.py",
+    "--help"
+  ],
+  "child_exit": 0,
+  "stdout": "usage: replay.py [-h] --checkout CHECKOUT --output OUTPUT --container\n                 CONTAINER --docker-host DOCKER_HOST [--cohort COHORT]\n                 [--mode {focused,original-100,cohort}]\n\nCapture a fresh production-config replay in an explicitly owned container.\nPrepare the pinned Linux runtime as documented in README.md; mount the\ncheckout at /app and an external artifact directory at /evidence. This\nentrypoint never installs into shared runtimes, forwards credentials, or\nenables hosted workflows.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  --checkout CHECKOUT\n  --output OUTPUT\n  --container CONTAINER\n  --docker-host DOCKER_HOST\n  --cohort COHORT\n  --mode {focused,original-100,cohort}\n",
+  "stderr": "",
+  "helper_hashes": {
+    "verify_packet.py": "13af0a0087e632bd88f622990cdaea4519d5a8607bdce719d7f22eab35511ef7",
+    "replay.py": "be16b7b91f6578457b2fec44295c8d6ed77286adba2d1d5bf09315d3755e3f95"
+  },
+  "completed": 1791645876.651194,
+  "scope": "Entrypoint preflight only; no Docker, browser or database call."
+}

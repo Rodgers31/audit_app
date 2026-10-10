@@ -1,0 +1,48 @@
+{
+  "verifier_sha256": "34fb310503e51b0051e902dc929fd76b67c5714e31a92b0a693df0b7dbf65710",
+  "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "script_sha256": "c055ccb8fa198764ad6d7dd786313155a70d1aa9027d7d4ddb741f62828f98d8",
+  "controlled_git_dependency": true,
+  "real_browser_docker_database_calls": false,
+  "results": [
+    {
+      "name": "valid-control",
+      "rejected": false,
+      "value": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 9
+      }
+    },
+    {
+      "name": "focused-replaced-by-six-operations-cases",
+      "rejected": false,
+      "value": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 9
+      }
+    },
+    {
+      "name": "diagnostic-positive-has-failed-case",
+      "rejected": false,
+      "value": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 10
+      }
+    }
+  ]
+}

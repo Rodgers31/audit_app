@@ -1,0 +1,51 @@
+{
+  "head": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "tree": "958d72062130267d0916ad14f9ab7ab6afb0af71",
+  "completed": 1791649749.144515,
+  "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "records": {
+    "diff": {
+      "command": [
+        "git",
+        "diff",
+        "--full-index",
+        "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20...HEAD"
+      ],
+      "child_exit": 0,
+      "output": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/final-diff.txt",
+      "sha256": "2b47644906afa99caca42918824b0940934af66c3c256e220fd65697788b7019"
+    },
+    "commit-list": {
+      "command": [
+        "git",
+        "log",
+        "--format=fuller",
+        "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20..HEAD"
+      ],
+      "child_exit": 0,
+      "output": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/final-commit-list.txt",
+      "sha256": "92a08f19c9faaa51c19cfbd6163ad7244d7481c0e7faa1d57034a41fbccefb06"
+    },
+    "status": {
+      "command": [
+        "git",
+        "status",
+        "--porcelain=v1"
+      ],
+      "child_exit": 0,
+      "output": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/final-status.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20...HEAD"
+      ],
+      "child_exit": 2,
+      "output": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/final-diff-check.txt",
+      "sha256": "42c47672c26102908a433c64effb8196f7bb17912bd6631a3baeb1d8e1297bc2"
+    }
+  }
+}

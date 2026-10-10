@@ -1,0 +1,26 @@
+{
+  "checks": [
+    "Boundary pre-change helper bytes equal the committed regression source.",
+    "Corrected contract source hashes are identical before/after and equal the committed file.",
+    "Corrected pre-change contract had one actual fragment failure and two passes; initial incorrect textbox selector is separate."
+  ],
+  "consumed": {
+    "boundary-red-attempt2.json": "eaaab814acdc0d537bc61d103ab046037718795452c2b4168e4ebe5aca1ffc44",
+    "contracts-corrected-before-fix.json": "a914e2eb2c4061053de2732153c60fc744585f73e1f7f4a45322ea0662e3965a",
+    "focused-green.json": "57a67920228315c2a10c85c1b96eb229eedabaab81400afbbb84f578938dbf43",
+    "contracts-corrected-before-fix-report.json": "bc2a071abb243f6cae1ca3afc49be8a8a65e50b94dde3b4a5c9a4f2185527488"
+  },
+  "fragment_failure": {
+    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"#county-list-anchor\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m",
+    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m\"#county-list-anchor\"\u001b[39m\nReceived: \u001b[31m\"\"\u001b[39m\n    at /app/frontend/e2e/county-pagination-contract.spec.ts:16:20",
+    "location": {
+      "file": "/app/frontend/e2e/county-pagination-contract.spec.ts",
+      "column": 20,
+      "line": 16
+    },
+    "snippet": "\u001b[0m \u001b[90m 14 |\u001b[39m   expect(url\u001b[33m.\u001b[39msearchParams\u001b[33m.\u001b[39mgetAll(\u001b[32m'retained'\u001b[39m))\u001b[33m.\u001b[39mtoEqual([\u001b[32m'one'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'two'\u001b[39m])\u001b[33m;\u001b[39m\n \u001b[90m 15 |\u001b[39m   expect(url\u001b[33m.\u001b[39msearchParams\u001b[33m.\u001b[39m\u001b[36mget\u001b[39m(\u001b[32m'from'\u001b[39m))\u001b[33m.\u001b[39mtoBe(\u001b[32m'probe'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 16 |\u001b[39m   expect(url\u001b[33m.\u001b[39mhash)\u001b[33m.\u001b[39mtoBe(\u001b[32m'#county-list-anchor'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m    |\u001b[39m                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 17 |\u001b[39m   \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mgetByRole(\u001b[32m'button'\u001b[39m\u001b[33m,\u001b[39m { name\u001b[33m:\u001b[39m \u001b[35m/View All Counties/i\u001b[39m })\u001b[33m.\u001b[39mclick()\u001b[33m;\u001b[39m\n \u001b[90m 18 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'table tbody tr'\u001b[39m))\u001b[33m.\u001b[39mtoHaveCount(\u001b[35m47\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 19 |\u001b[39m   \u001b[36mawait\u001b[39m expect(page)\u001b[33m.\u001b[39mtoHaveURL(\u001b[35m/[?&]view=all/\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+  },
+  "head": "09fd3c150032e8595678ddf2046948651a260b96",
+  "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "completed": 1791645233.9188402
+}

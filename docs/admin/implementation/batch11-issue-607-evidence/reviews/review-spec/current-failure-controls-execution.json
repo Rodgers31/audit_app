@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/check_current_failures.py"
+  ],
+  "child_exit": 0,
+  "started": 1791647634.0801332,
+  "ended": 1791647634.1808698,
+  "generator_sha256": "64cdac6e62d37855975b05e23a86fd0e2c7c4fc2a60d5cc65cbdd9d3cf8bcb9b",
+  "raw_output_sha256": "978baa64959d5799e90fde67e157a5a0cdd11ed4d510c4b584afe18933cc70a0"
+}

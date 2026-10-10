@@ -1,0 +1,1 @@
+{"verified_archive_files": 62, "failure_traces": {"data/historical-trace.zip.gz": "75522647fc9dbe493b54c8670e79baabf8c67e1a2fc86f17886e9e67963572b4", "data/node22-precondition-trace.zip.gz": "632bd83708061ba281d908c4b1ad40acb4db5707277ce8f88ca5b150b8cc9585"}, "scope": "Historical archive integrity and equality to pinned base only; no new execution or resolution of #601/#607."}

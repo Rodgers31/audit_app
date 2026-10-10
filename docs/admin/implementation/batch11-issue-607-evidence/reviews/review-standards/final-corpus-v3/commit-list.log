@@ -1,0 +1,4 @@
+6fcaed1 docs(counties): include ignored raw browser evidence in the packet
+ee9edb4 docs(counties): preserve source-bound navigation evidence and failed gates
+982a961 test(counties): observe native pagination history writes
+09fd3c1 fix(counties): publish pagination URLs without server navigation

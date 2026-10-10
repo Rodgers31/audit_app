@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v4.py",
+    "--checkout",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+    "--output",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v4-execution",
+    "--container",
+    "batch11-navigation-linux",
+    "--docker-host",
+    "unix:///Users/roger/.docker/run/docker.sock"
+  ],
+  "child_exit": 1,
+  "started": 1791649598.559453,
+  "ended": 1791649609.330901,
+  "producer_sha256_before": "d23861910802379b0dff06a800704ec738a94debc05ca551404d3831239568bd",
+  "producer_sha256_after": "d23861910802379b0dff06a800704ec738a94debc05ca551404d3831239568bd",
+  "log_sha256": "771ef1d7f4084679dc80d5e0f744f3b7e6f4d029cb8e661dcfbbed78c2cf7bc5",
+  "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3"
+}

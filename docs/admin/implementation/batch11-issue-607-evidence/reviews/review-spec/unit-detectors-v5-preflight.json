@@ -1,0 +1,5 @@
+{
+  "producer": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v5_remaining.py",
+  "sha256": "ce10bf8de1b0c71f98e09d54b0805a18f1131d9481e2287879d64caa57703e2d",
+  "purpose": "Execute only remaining same-URL synthetic cases; v4 valid21 and no-op target1 already executed and preserved. v4 driver aborted on expecting source code in JSON failureMessages; JSON contains stack while console contains code frame. No tracked assertions or sources changed."
+}

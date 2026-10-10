@@ -1,0 +1,18 @@
+usage: replay.py [-h] --checkout CHECKOUT --output OUTPUT --container
+                 CONTAINER --docker-host DOCKER_HOST [--cohort COHORT]
+                 [--mode {focused,original-100,cohort}]
+
+Capture a fresh production-config replay in an explicitly owned container.
+Prepare the pinned Linux runtime as documented in README.md; mount the
+checkout at /app and an external artifact directory at /evidence. This
+entrypoint never installs into shared runtimes, forwards credentials, or
+enables hosted workflows.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --checkout CHECKOUT
+  --output OUTPUT
+  --container CONTAINER
+  --docker-host DOCKER_HOST
+  --cohort COHORT
+  --mode {focused,original-100,cohort}

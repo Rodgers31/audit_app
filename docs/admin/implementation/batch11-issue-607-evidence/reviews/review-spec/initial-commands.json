@@ -1,0 +1,70 @@
+[
+  {
+    "argv": [
+      "git",
+      "rev-parse",
+      "HEAD",
+      "HEAD^{tree}"
+    ],
+    "exit": 0,
+    "output": "initial-0.txt",
+    "sha256": "8eb9c5f292400b6349a56a8af58b000802bf8fbdafa4f9e9f7c27466a9c02b7e"
+  },
+  {
+    "argv": [
+      "git",
+      "status",
+      "--short"
+    ],
+    "exit": 0,
+    "output": "initial-1.txt",
+    "sha256": "48761daf2d22a11161ee75ae54cf1eeb6409b424bf478fcb43d0eba66dd10a1f"
+  },
+  {
+    "argv": [
+      "git",
+      "diff",
+      "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20...HEAD"
+    ],
+    "exit": 0,
+    "output": "initial-2.txt",
+    "sha256": "1553ed260b2caddf6a89285978a3286ba2322e2979cd3c7c21d0763012c09409"
+  },
+  {
+    "argv": [
+      "git",
+      "log",
+      "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20..HEAD",
+      "--oneline"
+    ],
+    "exit": 0,
+    "output": "initial-3.txt",
+    "sha256": "250f3226be649000da08a7fcfcc3733df7864dfa5c70caa92fd4c7e2f0a6ddda"
+  },
+  {
+    "argv": [
+      "gh",
+      "issue",
+      "view",
+      "607",
+      "--json",
+      "title,body,comments,url"
+    ],
+    "exit": 0,
+    "output": "initial-4.txt",
+    "sha256": "0583e75a04d66b2ae949bc587e0611447488a77f695f93aa8af3be240638f646"
+  },
+  {
+    "argv": [
+      "gh",
+      "issue",
+      "view",
+      "601",
+      "--json",
+      "title,body,comments,url"
+    ],
+    "exit": 0,
+    "output": "initial-5.txt",
+    "sha256": "761a08abde657105681a029e5eab9146f0af72e4592ef9bfa3682021913aae0d"
+  }
+]

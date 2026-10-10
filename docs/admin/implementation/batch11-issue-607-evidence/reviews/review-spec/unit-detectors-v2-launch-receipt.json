@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit_detector_driver_v2.py",
+    "--checkout",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+    "--output",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/unit-detectors-v2-execution",
+    "--container",
+    "batch11-navigation-linux",
+    "--docker-host",
+    "unix:///Users/roger/.docker/run/docker.sock"
+  ],
+  "child_exit": 1,
+  "started": 1791649433.8667572,
+  "ended": 1791649444.3915882,
+  "producer_sha256_before": "45c70049b714c8aeb315d89d2643aae223baeadeaec5cd751b0e11b450502de3",
+  "producer_sha256_after": "45c70049b714c8aeb315d89d2643aae223baeadeaec5cd751b0e11b450502de3",
+  "log_sha256": "035fc2a7612991e4c54dbcd9937b91aa0f9ce4d52b4d2caa5eab3ea74b29d9e3",
+  "python": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3"
+}
