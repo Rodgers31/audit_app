@@ -1,0 +1,12 @@
+# Author lessons and proposed shared-skill additions
+
+Shared skills were read-only. These are local proposals for coordinator review.
+
+- A detector failure is not a causal reproduction. Setting native restoration to `manual` made the real scroll assertion fail at Y=0, but did not reproduce the native-auto hosted Y=100 failure. Keep those claims separate.
+- A green aggregate cannot erase a prior failure. The full 323-case run was green apart from 11 existing fixmes; a later 100-repeat run exposed a different pagination prerequisite failure. Preserve each attempt and its exact diagnostic.
+- Verify executable architecture, not just version. A cached Docker tag initially supplied an ARM64 Node binary. The actual matching Node 22 replay used independently checked Linux x64 bytes; earlier Node 24 runs remain labeled as such.
+- With `docker exec`, Python code supplied on stdin needs `-i`. A zero exit with blank output from an invocation without `-i` did not prove cleanup code ran. The corrected invocation checked process identities and printed the actual action.
+- Portable parser checks need explicit source-root translation. The first archive check failed because original report roots were `/app/frontend/e2e`. Translate only the known container mount prefix for source-existence checks; retain raw report bytes and reject unexpected roots.
+- Record source, generator, child exit and verification exit separately. Exclusive outputs plus post-run source checks prevent inherited or mutated evidence from silently becoming acceptance. Successful hashing still does not authenticate a receipt or resolve the defect.
+- Archive checks must bind mandatory control roles, actual case identities, the complete source census, command-receipt logs/generators and contradictory parent/child outcomes. Independent execution found 14 false-success paths in the first checker. The original checker and first publication remain preserved; observed-red regressions cover the amended checker.
+- A frozen historical archive should bind every required raw input, including command arguments, measurement scripts, runtime records and diagnostic annotations. Expanded independent attacks found 18 additional malformed acceptances after the first repair. The final checker pins the complete 62-input census; the pre-seal checker and actual red regressions remain preserved. This checksum boundary does not authenticate receipts.
