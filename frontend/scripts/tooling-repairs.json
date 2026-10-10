@@ -1,0 +1,366 @@
+{
+  "schema": 2,
+  "packages": [
+    {
+      "name": "braces",
+      "version": "3.0.3",
+      "files": {
+        "LICENSE": {
+          "original_sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2",
+          "repaired_sha256": "35bdd8a44339719441900fb50fbefc5e2dca1ca662cbaed7a687de842c8b70f2"
+        },
+        "README.md": {
+          "original_sha256": "947b0fc3cc12eaaa070207126213fbdf9ab2bf8cd13dcc6e4007b36b79309866",
+          "repaired_sha256": "947b0fc3cc12eaaa070207126213fbdf9ab2bf8cd13dcc6e4007b36b79309866"
+        },
+        "index.js": {
+          "original_sha256": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4",
+          "repaired_sha256": "332ea07c7b006361aad12aa994ca75dc1db8e8382b884909e2f38f10b85c88a4"
+        },
+        "lib/audit-bounds.js": {
+          "original_sha256": null,
+          "repaired_sha256": "5804e14026a1db541b9201136e0fc0ea1c285b454d1f6b9baf878fc23990a987"
+        },
+        "lib/compile.js": {
+          "original_sha256": "dc98f22eee3d511785d92a00758d5f0d48efed5f5813bdecc2de430c529b5c9f",
+          "repaired_sha256": "0250137bc448127fa805c286efe78b0bc0c23deddbc86c50220760801fa5a00f"
+        },
+        "lib/constants.js": {
+          "original_sha256": "c18ac5adb57308f1ce42a28552da3a31f5d83709743ebd9a636336813a744d4b",
+          "repaired_sha256": "c18ac5adb57308f1ce42a28552da3a31f5d83709743ebd9a636336813a744d4b"
+        },
+        "lib/expand.js": {
+          "original_sha256": "41ccc196ebfa7b7781a634e721eb744e4e7bcb54cba427a7e3d6806a1b9e58f7",
+          "repaired_sha256": "0c36d707568e8cf8e82440f05e280f21fe76585089b1860cba4b8bd8252fcfe4"
+        },
+        "lib/parse.js": {
+          "original_sha256": "e572166565f15fa6ad9865ae49d678218e32aabfd1b3720f6d0d43d39800d310",
+          "repaired_sha256": "1db1e0e039e48b2ef211a6de917bd2747e1db301e5131a198d692899d331b47f"
+        },
+        "lib/stringify.js": {
+          "original_sha256": "379f22d77bfa1478341ccd49c5e4267464aabcbba03558bab332aac23fc6f23a",
+          "repaired_sha256": "5a996a16d454a62601cde68c4c15d33d99d9b94685d2ce70bda7fe8d833c3cac"
+        },
+        "lib/utils.js": {
+          "original_sha256": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7",
+          "repaired_sha256": "2ea626adf29dfa45b09a927be8c78ab8679ed3a4fe194261aedd32de73578abc"
+        },
+        "package.json": {
+          "original_sha256": "56f08b888a4f30dc7cf8a7dbb36ffe92b737912ba36abe9d069d32167c957ac7",
+          "repaired_sha256": "56f08b888a4f30dc7cf8a7dbb36ffe92b737912ba36abe9d069d32167c957ac7"
+        }
+      }
+    },
+    {
+      "name": "sprintf-js",
+      "version": "1.0.3",
+      "files": {
+        ".npmignore": {
+          "original_sha256": "d9a932e7dc044d3b42259f40298f31d60f6b59d6f21b15b5b3c8bb7f40e52d50",
+          "repaired_sha256": "d9a932e7dc044d3b42259f40298f31d60f6b59d6f21b15b5b3c8bb7f40e52d50"
+        },
+        "LICENSE": {
+          "original_sha256": "a4cdda44b5adea4731d53dcae78fb5124f8fd853e994f01e25d8c33a7daf818b",
+          "repaired_sha256": "a4cdda44b5adea4731d53dcae78fb5124f8fd853e994f01e25d8c33a7daf818b"
+        },
+        "README.md": {
+          "original_sha256": "72990421c3b73394c9c63f3ac90525c1b6a9e91157f5f3d132fc0b7b32ab4856",
+          "repaired_sha256": "72990421c3b73394c9c63f3ac90525c1b6a9e91157f5f3d132fc0b7b32ab4856"
+        },
+        "bower.json": {
+          "original_sha256": "8b3e0492f6fe368ec15547f409effc86dd933509e0e6fd49135ab6809b1ebc83",
+          "repaired_sha256": "8b3e0492f6fe368ec15547f409effc86dd933509e0e6fd49135ab6809b1ebc83"
+        },
+        "demo/angular.html": {
+          "original_sha256": "bd0e5eb64136fd2c4572aa48217925bc04527ee62967e9d88c6dac1e86791019",
+          "repaired_sha256": "bd0e5eb64136fd2c4572aa48217925bc04527ee62967e9d88c6dac1e86791019"
+        },
+        "dist/angular-sprintf.min.js": {
+          "original_sha256": "c3d132c5d7490e900008f71ec5b206bd8f685a4483065bd451ef8390b8ff7fda",
+          "repaired_sha256": "c3d132c5d7490e900008f71ec5b206bd8f685a4483065bd451ef8390b8ff7fda"
+        },
+        "dist/angular-sprintf.min.js.map": {
+          "original_sha256": "3d6885b5d3ebce0c1119d558c8784806cc79f076a5af8279051b7e94c412b697",
+          "repaired_sha256": "3d6885b5d3ebce0c1119d558c8784806cc79f076a5af8279051b7e94c412b697"
+        },
+        "dist/angular-sprintf.min.map": {
+          "original_sha256": "3d6885b5d3ebce0c1119d558c8784806cc79f076a5af8279051b7e94c412b697",
+          "repaired_sha256": "3d6885b5d3ebce0c1119d558c8784806cc79f076a5af8279051b7e94c412b697"
+        },
+        "dist/sprintf.min.js": {
+          "original_sha256": "e127ce7c8b5c2557881b9953dd9c659bf7ac18248a1146433c48137d2e0327d0",
+          "repaired_sha256": "7b3f54d49ea44e746cbf4843486318e77006f5ecd6a7d3bdce6f0c6bad1a1cd4"
+        },
+        "dist/sprintf.min.js.map": {
+          "original_sha256": "94f5142380f3d2b7d40e09d5bc842c636dad41686a46e1222420cbf871240797",
+          "repaired_sha256": "aaf7c7e9570f04faa734caac120c6b4ea9b06431c8613647defc9ffc3c9be57d"
+        },
+        "dist/sprintf.min.map": {
+          "original_sha256": "e96507611c87bae738240ae7b3239b9f0661ae124c1838ce29668288dc24e969",
+          "repaired_sha256": "aaf7c7e9570f04faa734caac120c6b4ea9b06431c8613647defc9ffc3c9be57d"
+        },
+        "gruntfile.js": {
+          "original_sha256": "9ec2accc7e5e32d0ae9a3378107eba05c30ef648eb66e388236204c3f87d9587",
+          "repaired_sha256": "9ec2accc7e5e32d0ae9a3378107eba05c30ef648eb66e388236204c3f87d9587"
+        },
+        "package.json": {
+          "original_sha256": "f7ed5a0dc9b4c939e92be6acdf3bd83abc3d7e5def9c1307f3c9f53bd7cb2f8c",
+          "repaired_sha256": "f7ed5a0dc9b4c939e92be6acdf3bd83abc3d7e5def9c1307f3c9f53bd7cb2f8c"
+        },
+        "src/angular-sprintf.js": {
+          "original_sha256": "0d3fe03f4a50d8f3247f4a2938e53638e11975189fa031cb21289bbac7b9753a",
+          "repaired_sha256": "0d3fe03f4a50d8f3247f4a2938e53638e11975189fa031cb21289bbac7b9753a"
+        },
+        "src/sprintf.js": {
+          "original_sha256": "9904b0d448280bfdfcb0329bdac995883033597727404f9c058d051d9174b7c7",
+          "repaired_sha256": "52e8843b7e4ea7daa61582942dea76af3fd9961bfc7f0be0af387803d6a9ca7f"
+        },
+        "test/test.js": {
+          "original_sha256": "ce862ab4f6311cdc2ea1d238ecd71951cc374462d0052f7d98f834e5c493f584",
+          "repaired_sha256": "ce862ab4f6311cdc2ea1d238ecd71951cc374462d0052f7d98f834e5c493f584"
+        }
+      }
+    }
+  ],
+  "patches": [
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/audit-bounds.js",
+      "original_sha256": null,
+      "repaired_sha256": "5804e14026a1db541b9201136e0fc0ea1c285b454d1f6b9baf878fc23990a987",
+      "edits": [],
+      "addition": "'use strict';\n// Fixed policy: no caller option can disable the recursion ceiling.\nexports.parseDepth = depth => {\n  if (depth > 64) {\n    throw Object.assign(new SyntaxError('braces nesting exceeds the reviewed 64-level limit'), { code: 'ERR_BRACES_DEPTH' });\n  }\n};\nexports.walkDepth = depth => {\n  if (depth > 128) {\n    throw Object.assign(new SyntaxError('braces AST exceeds the reviewed 128-level walk limit'), { code: 'ERR_BRACES_DEPTH' });\n  }\n};\n"
+    },
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/parse.js",
+      "original_sha256": "e572166565f15fa6ad9865ae49d678218e32aabfd1b3720f6d0d43d39800d310",
+      "repaired_sha256": "1db1e0e039e48b2ef211a6de917bd2747e1db301e5131a198d692899d331b47f",
+      "edits": [
+        {
+          "before": "'use strict';",
+          "after": "'use strict';\n\nconst bounds = require('./audit-bounds');"
+        },
+        {
+          "before": "      block = push({ type: 'paren', nodes: [] });",
+          "after": "      bounds.parseDepth(stack.length);\n      block = push({ type: 'paren', nodes: [] });"
+        },
+        {
+          "before": "      block = push(brace);",
+          "after": "      bounds.parseDepth(stack.length);\n      block = push(brace);"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/stringify.js",
+      "original_sha256": "379f22d77bfa1478341ccd49c5e4267464aabcbba03558bab332aac23fc6f23a",
+      "repaired_sha256": "5a996a16d454a62601cde68c4c15d33d99d9b94685d2ce70bda7fe8d833c3cac",
+      "edits": [
+        {
+          "before": "'use strict';",
+          "after": "'use strict';\n\nconst bounds = require('./audit-bounds');"
+        },
+        {
+          "before": "  const stringify = (node, parent = {}) => {",
+          "after": "  const stringify = (node, parent = {}, depth = 0) => {\n    bounds.walkDepth(depth);"
+        },
+        {
+          "before": "stringify(child)",
+          "after": "stringify(child, {}, depth + 1)"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/compile.js",
+      "original_sha256": "dc98f22eee3d511785d92a00758d5f0d48efed5f5813bdecc2de430c529b5c9f",
+      "repaired_sha256": "0250137bc448127fa805c286efe78b0bc0c23deddbc86c50220760801fa5a00f",
+      "edits": [
+        {
+          "before": "'use strict';",
+          "after": "'use strict';\n\nconst bounds = require('./audit-bounds');"
+        },
+        {
+          "before": "  const walk = (node, parent = {}) => {",
+          "after": "  const walk = (node, parent = {}, depth = 0) => {\n    bounds.walkDepth(depth);"
+        },
+        {
+          "before": "walk(child, node)",
+          "after": "walk(child, node, depth + 1)"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/expand.js",
+      "original_sha256": "41ccc196ebfa7b7781a634e721eb744e4e7bcb54cba427a7e3d6806a1b9e58f7",
+      "repaired_sha256": "0c36d707568e8cf8e82440f05e280f21fe76585089b1860cba4b8bd8252fcfe4",
+      "edits": [
+        {
+          "before": "'use strict';",
+          "after": "'use strict';\n\nconst bounds = require('./audit-bounds');"
+        },
+        {
+          "before": "  const walk = (node, parent = {}) => {",
+          "after": "  const walk = (node, parent = {}, depth = 0) => {\n    bounds.walkDepth(depth);"
+        },
+        {
+          "before": "walk(child, node)",
+          "after": "walk(child, node, depth + 1)"
+        },
+        {
+          "before": "    while (p.type",
+          "after": "    let parentDepth = 0;\n    while (p.type"
+        },
+        {
+          "before": "      p = p.parent;",
+          "after": "      bounds.walkDepth(++parentDepth);\n      p = p.parent;"
+        },
+        {
+          "before": "    while (block.type",
+          "after": "    parentDepth = 0;\n    while (block.type"
+        },
+        {
+          "before": "      block = block.parent;",
+          "after": "      bounds.walkDepth(++parentDepth);\n      block = block.parent;"
+        },
+        {
+          "before": "const append = (queue = '', stash = '', enclose = false) => {",
+          "after": "const append = (queue = '', stash = '', enclose = false, depth = 0) => {\n  bounds.walkDepth(depth);"
+        },
+        {
+          "before": "append(value, stash, enclose)",
+          "after": "append(value, stash, enclose, depth + 1)"
+        },
+        {
+          "before": "append(item, ele, enclose)",
+          "after": "append(item, ele, enclose, depth + 1)"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "braces",
+      "version": "3.0.3",
+      "file": "lib/utils.js",
+      "original_sha256": "b5a7596aa67730412b3c029ef09e84e6b67b8e445cffd35d1d295549c89066c7",
+      "repaired_sha256": "2ea626adf29dfa45b09a927be8c78ab8679ed3a4fe194261aedd32de73578abc",
+      "edits": [
+        {
+          "before": "'use strict';",
+          "after": "'use strict';\n\nconst bounds = require('./audit-bounds');"
+        },
+        {
+          "before": "  const flat = arr => {",
+          "after": "  const flat = (arr, depth = 0) => {\n    bounds.walkDepth(depth);"
+        },
+        {
+          "before": "        flat(ele);",
+          "after": "        flat(ele, depth + 1);"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "sprintf-js",
+      "version": "1.0.3",
+      "file": "src/sprintf.js",
+      "original_sha256": "9904b0d448280bfdfcb0329bdac995883033597727404f9c058d051d9174b7c7",
+      "repaired_sha256": "52e8843b7e4ea7daa61582942dea76af3fd9961bfc7f0be0af387803d6a9ca7f",
+      "edits": [
+        {
+          "before": "                match = parse_tree[i] // convenience purposes only",
+          "after": "                match = parse_tree[i] // convenience purposes only\n                var conversion = match[8], precision = match[7]\n                if (/[efg]/.test(conversion) && precision !== undefined) {\n                    if (!((typeof precision === 'string' && /^\\d+$/.test(precision)) || typeof precision === 'number') ||\n                        !Number.isInteger(Number(precision)) || Number(precision) < (conversion === 'g' ? 1 : 0) || Number(precision) > 100) {\n                        throw Object.assign(new SyntaxError('[sprintf] precision outside ECMAScript bounds'), { code: 'ERR_SPRINTF_PRECISION' })\n                    }\n                }\n"
+        },
+        {
+          "before": "re.not_string.test(match[8])",
+          "after": "re.not_string.test(conversion)"
+        },
+        {
+          "before": "re.not_json.test(match[8])",
+          "after": "re.not_json.test(conversion)"
+        },
+        {
+          "before": "switch (match[8])",
+          "after": "switch (conversion)"
+        },
+        {
+          "before": "re.json.test(match[8])",
+          "after": "re.json.test(conversion)"
+        },
+        {
+          "before": "if (re.number.test(match[8]))",
+          "after": "if (re.number.test(conversion))"
+        },
+        {
+          "before": "if (re.number.test(match[8]) &&",
+          "after": "if (re.number.test(conversion) &&"
+        },
+        {
+          "before": "match[7] ? arg.toExponential(match[7])",
+          "after": "precision ? arg.toExponential(precision)"
+        },
+        {
+          "before": "match[7] ? parseFloat(arg).toFixed(match[7])",
+          "after": "precision ? parseFloat(arg).toFixed(precision)"
+        },
+        {
+          "before": "match[7] ? parseFloat(arg).toPrecision(match[7])",
+          "after": "precision ? parseFloat(arg).toPrecision(precision)"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "sprintf-js",
+      "version": "1.0.3",
+      "file": "dist/sprintf.min.js",
+      "original_sha256": "e127ce7c8b5c2557881b9953dd9c659bf7ac18248a1146433c48137d2e0327d0",
+      "repaired_sha256": "7b3f54d49ea44e746cbf4843486318e77006f5ecd6a7d3bdce6f0c6bad1a1cd4",
+      "edits": [
+        {
+          "before": "/*! sprintf-js | Alexandru Marasteanu <hello@alexei.ro> (http://alexei.ro/) | BSD-3-Clause */\n\n!function(a){function b(){var a=arguments[0],c=b.cache;return c[a]&&c.hasOwnProperty(a)||(c[a]=b.parse(a)),b.format.call(null,c[a],arguments)}function c(a){return Object.prototype.toString.call(a).slice(8,-1).toLowerCase()}function d(a,b){return Array(b+1).join(a)}var e={not_string:/[^s]/,number:/[diefg]/,json:/[j]/,not_json:/[^j]/,text:/^[^\\x25]+/,modulo:/^\\x25{2}/,placeholder:/^\\x25(?:([1-9]\\d*)\\$|\\(([^\\)]+)\\))?(\\+)?(0|'[^$])?(-)?(\\d+)?(?:\\.(\\d+))?([b-gijosuxX])/,key:/^([a-z_][a-z_\\d]*)/i,key_access:/^\\.([a-z_][a-z_\\d]*)/i,index_access:/^\\[(\\d+)\\]/,sign:/^[\\+\\-]/};b.format=function(a,f){var g,h,i,j,k,l,m,n=1,o=a.length,p=\"\",q=[],r=!0,s=\"\";for(h=0;o>h;h++)if(p=c(a[h]),\"string\"===p)q[q.length]=a[h];else if(\"array\"===p){if(j=a[h],j[2])for(g=f[n],i=0;i<j[2].length;i++){if(!g.hasOwnProperty(j[2][i]))throw new Error(b(\"[sprintf] property '%s' does not exist\",j[2][i]));g=g[j[2][i]]}else g=j[1]?f[j[1]]:f[n++];if(\"function\"==c(g)&&(g=g()),e.not_string.test(j[8])&&e.not_json.test(j[8])&&\"number\"!=c(g)&&isNaN(g))throw new TypeError(b(\"[sprintf] expecting number but found %s\",c(g)));switch(e.number.test(j[8])&&(r=g>=0),j[8]){case\"b\":g=g.toString(2);break;case\"c\":g=String.fromCharCode(g);break;case\"d\":case\"i\":g=parseInt(g,10);break;case\"j\":g=JSON.stringify(g,null,j[6]?parseInt(j[6]):0);break;case\"e\":g=j[7]?g.toExponential(j[7]):g.toExponential();break;case\"f\":g=j[7]?parseFloat(g).toFixed(j[7]):parseFloat(g);break;case\"g\":g=j[7]?parseFloat(g).toPrecision(j[7]):parseFloat(g);break;case\"o\":g=g.toString(8);break;case\"s\":g=(g=String(g))&&j[7]?g.substring(0,j[7]):g;break;case\"u\":g>>>=0;break;case\"x\":g=g.toString(16);break;case\"X\":g=g.toString(16).toUpperCase()}e.json.test(j[8])?q[q.length]=g:(!e.number.test(j[8])||r&&!j[3]?s=\"\":(s=r?\"+\":\"-\",g=g.toString().replace(e.sign,\"\")),l=j[4]?\"0\"===j[4]?\"0\":j[4].charAt(1):\" \",m=j[6]-(s+g).length,k=j[6]&&m>0?d(l,m):\"\",q[q.length]=j[5]?s+g+k:\"0\"===l?s+k+g:k+s+g)}return q.join(\"\")},b.cache={},b.parse=function(a){for(var b=a,c=[],d=[],f=0;b;){if(null!==(c=e.text.exec(b)))d[d.length]=c[0];else if(null!==(c=e.modulo.exec(b)))d[d.length]=\"%\";else{if(null===(c=e.placeholder.exec(b)))throw new SyntaxError(\"[sprintf] unexpected placeholder\");if(c[2]){f|=1;var g=[],h=c[2],i=[];if(null===(i=e.key.exec(h)))throw new SyntaxError(\"[sprintf] failed to parse named argument key\");for(g[g.length]=i[1];\"\"!==(h=h.substring(i[0].length));)if(null!==(i=e.key_access.exec(h)))g[g.length]=i[1];else{if(null===(i=e.index_access.exec(h)))throw new SyntaxError(\"[sprintf] failed to parse named argument key\");g[g.length]=i[1]}c[2]=g}else f|=2;if(3===f)throw new Error(\"[sprintf] mixing positional and named placeholders is not (yet) supported\");d[d.length]=c}b=b.substring(c[0].length)}return d};var f=function(a,c,d){return d=(c||[]).slice(0),d.splice(0,0,a),b.apply(null,d)};\"undefined\"!=typeof exports?(exports.sprintf=b,exports.vsprintf=f):(a.sprintf=b,a.vsprintf=f,\"function\"==typeof define&&define.amd&&define(function(){return{sprintf:b,vsprintf:f}}))}(\"undefined\"==typeof window?this:window);\n//# sourceMappingURL=sprintf.min.map",
+          "after": "!function(e){var t={not_string:/[^s]/,number:/[diefg]/,json:/[j]/,not_json:/[^j]/,text:/^[^\\x25]+/,modulo:/^\\x25{2}/,placeholder:/^\\x25(?:([1-9]\\d*)\\$|\\(([^\\)]+)\\))?(\\+)?(0|'[^$])?(-)?(\\d+)?(?:\\.(\\d+))?([b-gijosuxX])/,key:/^([a-z_][a-z_\\d]*)/i,key_access:/^\\.([a-z_][a-z_\\d]*)/i,index_access:/^\\[(\\d+)\\]/,sign:/^[\\+\\-]/};function r(){var e=arguments[0],t=r.cache;return t[e]&&t.hasOwnProperty(e)||(t[e]=r.parse(e)),r.format.call(null,t[e],arguments)}r.format=function(e,n){var o,i,a,l,c,f,p,u,d=1,g=e.length,h=\"\",b=[],x=!0,y=\"\";for(i=0;i<g;i++)if(\"string\"===(h=s(e[i])))b[b.length]=e[i];else if(\"array\"===h){var m=(l=e[i])[8],w=l[7];if(/[efg]/.test(m)&&void 0!==w&&(!(\"string\"==typeof w&&/^\\d+$/.test(w)||\"number\"==typeof w)||!Number.isInteger(Number(w))||Number(w)<(\"g\"===m?1:0)||Number(w)>100))throw Object.assign(new SyntaxError(\"[sprintf] precision outside ECMAScript bounds\"),{code:\"ERR_SPRINTF_PRECISION\"});if(l[2])for(o=n[d],a=0;a<l[2].length;a++){if(!o.hasOwnProperty(l[2][a]))throw new Error(r(\"[sprintf] property '%s' does not exist\",l[2][a]));o=o[l[2][a]]}else o=l[1]?n[l[1]]:n[d++];if(\"function\"==s(o)&&(o=o()),t.not_string.test(m)&&t.not_json.test(m)&&\"number\"!=s(o)&&isNaN(o))throw new TypeError(r(\"[sprintf] expecting number but found %s\",s(o)));switch(t.number.test(m)&&(x=o>=0),m){case\"b\":o=o.toString(2);break;case\"c\":o=String.fromCharCode(o);break;case\"d\":case\"i\":o=parseInt(o,10);break;case\"j\":o=JSON.stringify(o,null,l[6]?parseInt(l[6]):0);break;case\"e\":o=w?o.toExponential(w):o.toExponential();break;case\"f\":o=w?parseFloat(o).toFixed(w):parseFloat(o);break;case\"g\":o=w?parseFloat(o).toPrecision(w):parseFloat(o);break;case\"o\":o=o.toString(8);break;case\"s\":o=(o=String(o))&&l[7]?o.substring(0,l[7]):o;break;case\"u\":o>>>=0;break;case\"x\":o=o.toString(16);break;case\"X\":o=o.toString(16).toUpperCase()}t.json.test(m)?b[b.length]=o:(!t.number.test(m)||x&&!l[3]?y=\"\":(y=x?\"+\":\"-\",o=o.toString().replace(t.sign,\"\")),f=l[4]?\"0\"===l[4]?\"0\":l[4].charAt(1):\" \",p=l[6]-(y+o).length,c=l[6]&&p>0?(u=f,Array(p+1).join(u)):\"\",b[b.length]=l[5]?y+o+c:\"0\"===f?y+c+o:c+y+o)}return b.join(\"\")},r.cache={},r.parse=function(e){for(var r=e,n=[],s=[],o=0;r;){if(null!==(n=t.text.exec(r)))s[s.length]=n[0];else if(null!==(n=t.modulo.exec(r)))s[s.length]=\"%\";else{if(null===(n=t.placeholder.exec(r)))throw new SyntaxError(\"[sprintf] unexpected placeholder\");if(n[2]){o|=1;var i=[],a=n[2],l=[];if(null===(l=t.key.exec(a)))throw new SyntaxError(\"[sprintf] failed to parse named argument key\");for(i[i.length]=l[1];\"\"!==(a=a.substring(l[0].length));)if(null!==(l=t.key_access.exec(a)))i[i.length]=l[1];else{if(null===(l=t.index_access.exec(a)))throw new SyntaxError(\"[sprintf] failed to parse named argument key\");i[i.length]=l[1]}n[2]=i}else o|=2;if(3===o)throw new Error(\"[sprintf] mixing positional and named placeholders is not (yet) supported\");s[s.length]=n}r=r.substring(n[0].length)}return s};var n=function(e,t,n){return(n=(t||[]).slice(0)).splice(0,0,e),r.apply(null,n)};function s(e){return Object.prototype.toString.call(e).slice(8,-1).toLowerCase()}\"undefined\"!=typeof exports?(exports.sprintf=r,exports.vsprintf=n):(e.sprintf=r,e.vsprintf=n,\"function\"==typeof define&&define.amd&&define((function(){return{sprintf:r,vsprintf:n}})))}(\"undefined\"==typeof window?this:window);\n//# sourceMappingURL=sprintf.min.map\n"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "sprintf-js",
+      "version": "1.0.3",
+      "file": "dist/sprintf.min.map",
+      "original_sha256": "e96507611c87bae738240ae7b3239b9f0661ae124c1838ce29668288dc24e969",
+      "repaired_sha256": "aaf7c7e9570f04faa734caac120c6b4ea9b06431c8613647defc9ffc3c9be57d",
+      "edits": [
+        {
+          "before": "{\"version\":3,\"file\":\"sprintf.min.js\",\"sources\":[\"../src/sprintf.js\"],\"names\":[\"window\",\"sprintf\",\"key\",\"arguments\",\"cache\",\"hasOwnProperty\",\"parse\",\"format\",\"call\",\"get_type\",\"variable\",\"Object\",\"prototype\",\"toString\",\"slice\",\"toLowerCase\",\"str_repeat\",\"input\",\"multiplier\",\"Array\",\"join\",\"re\",\"not_string\",\"number\",\"json\",\"not_json\",\"text\",\"modulo\",\"placeholder\",\"key_access\",\"index_access\",\"sign\",\"parse_tree\",\"argv\",\"arg\",\"i\",\"k\",\"match\",\"pad\",\"pad_character\",\"pad_length\",\"cursor\",\"tree_length\",\"length\",\"node_type\",\"output\",\"is_positive\",\"Error\",\"test\",\"isNaN\",\"TypeError\",\"String\",\"fromCharCode\",\"parseInt\",\"JSON\",\"stringify\",\"toExponential\",\"parseFloat\",\"toFixed\",\"toPrecision\",\"substring\",\"toUpperCase\",\"replace\",\"charAt\",\"fmt\",\"_fmt\",\"arg_names\",\"exec\",\"SyntaxError\",\"field_list\",\"replacement_field\",\"field_match\",\"vsprintf\",\"_argv\",\"splice\",\"apply\",\"exports\",\"define\",\"amd\",\"this\"],\"mappings\":\"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\"}",
+          "after": "{\"version\":3,\"file\":\"sprintf.min.js\",\"names\":[\"window\",\"re\",\"not_string\",\"number\",\"json\",\"not_json\",\"text\",\"modulo\",\"placeholder\",\"key\",\"key_access\",\"index_access\",\"sign\",\"sprintf\",\"arguments\",\"cache\",\"hasOwnProperty\",\"parse\",\"format\",\"call\",\"parse_tree\",\"argv\",\"arg\",\"i\",\"k\",\"match\",\"pad\",\"pad_character\",\"pad_length\",\"input\",\"cursor\",\"tree_length\",\"length\",\"node_type\",\"output\",\"is_positive\",\"get_type\",\"conversion\",\"precision\",\"test\",\"undefined\",\"Number\",\"isInteger\",\"Object\",\"assign\",\"SyntaxError\",\"code\",\"Error\",\"isNaN\",\"TypeError\",\"toString\",\"String\",\"fromCharCode\",\"parseInt\",\"JSON\",\"stringify\",\"toExponential\",\"parseFloat\",\"toFixed\",\"toPrecision\",\"substring\",\"toUpperCase\",\"replace\",\"charAt\",\"Array\",\"join\",\"fmt\",\"_fmt\",\"arg_names\",\"exec\",\"field_list\",\"replacement_field\",\"field_match\",\"vsprintf\",\"_argv\",\"slice\",\"splice\",\"apply\",\"variable\",\"prototype\",\"toLowerCase\",\"exports\",\"define\",\"amd\",\"this\"],\"sources\":[\"../src/sprintf.js\"],\"sourcesContent\":[\"(function(window) {\\n    var re = {\\n        not_string: /[^s]/,\\n        number: /[diefg]/,\\n        json: /[j]/,\\n        not_json: /[^j]/,\\n        text: /^[^\\\\x25]+/,\\n        modulo: /^\\\\x25{2}/,\\n        placeholder: /^\\\\x25(?:([1-9]\\\\d*)\\\\$|\\\\(([^\\\\)]+)\\\\))?(\\\\+)?(0|'[^$])?(-)?(\\\\d+)?(?:\\\\.(\\\\d+))?([b-gijosuxX])/,\\n        key: /^([a-z_][a-z_\\\\d]*)/i,\\n        key_access: /^\\\\.([a-z_][a-z_\\\\d]*)/i,\\n        index_access: /^\\\\[(\\\\d+)\\\\]/,\\n        sign: /^[\\\\+\\\\-]/\\n    }\\n\\n    function sprintf() {\\n        var key = arguments[0], cache = sprintf.cache\\n        if (!(cache[key] && cache.hasOwnProperty(key))) {\\n            cache[key] = sprintf.parse(key)\\n        }\\n        return sprintf.format.call(null, cache[key], arguments)\\n    }\\n\\n    sprintf.format = function(parse_tree, argv) {\\n        var cursor = 1, tree_length = parse_tree.length, node_type = \\\"\\\", arg, output = [], i, k, match, pad, pad_character, pad_length, is_positive = true, sign = \\\"\\\"\\n        for (i = 0; i < tree_length; i++) {\\n            node_type = get_type(parse_tree[i])\\n            if (node_type === \\\"string\\\") {\\n                output[output.length] = parse_tree[i]\\n            }\\n            else if (node_type === \\\"array\\\") {\\n                match = parse_tree[i] // convenience purposes only\\n                var conversion = match[8], precision = match[7]\\n                if (/[efg]/.test(conversion) && precision !== undefined) {\\n                    if (!((typeof precision === 'string' && /^\\\\d+$/.test(precision)) || typeof precision === 'number') ||\\n                        !Number.isInteger(Number(precision)) || Number(precision) < (conversion === 'g' ? 1 : 0) || Number(precision) > 100) {\\n                        throw Object.assign(new SyntaxError('[sprintf] precision outside ECMAScript bounds'), { code: 'ERR_SPRINTF_PRECISION' })\\n                    }\\n                }\\n\\n                if (match[2]) { // keyword argument\\n                    arg = argv[cursor]\\n                    for (k = 0; k < match[2].length; k++) {\\n                        if (!arg.hasOwnProperty(match[2][k])) {\\n                            throw new Error(sprintf(\\\"[sprintf] property '%s' does not exist\\\", match[2][k]))\\n                        }\\n                        arg = arg[match[2][k]]\\n                    }\\n                }\\n                else if (match[1]) { // positional argument (explicit)\\n                    arg = argv[match[1]]\\n                }\\n                else { // positional argument (implicit)\\n                    arg = argv[cursor++]\\n                }\\n\\n                if (get_type(arg) == \\\"function\\\") {\\n                    arg = arg()\\n                }\\n\\n                if (re.not_string.test(conversion) && re.not_json.test(conversion) && (get_type(arg) != \\\"number\\\" && isNaN(arg))) {\\n                    throw new TypeError(sprintf(\\\"[sprintf] expecting number but found %s\\\", get_type(arg)))\\n                }\\n\\n                if (re.number.test(conversion)) {\\n                    is_positive = arg >= 0\\n                }\\n\\n                switch (conversion) {\\n                    case \\\"b\\\":\\n                        arg = arg.toString(2)\\n                    break\\n                    case \\\"c\\\":\\n                        arg = String.fromCharCode(arg)\\n                    break\\n                    case \\\"d\\\":\\n                    case \\\"i\\\":\\n                        arg = parseInt(arg, 10)\\n                    break\\n                    case \\\"j\\\":\\n                        arg = JSON.stringify(arg, null, match[6] ? parseInt(match[6]) : 0)\\n                    break\\n                    case \\\"e\\\":\\n                        arg = precision ? arg.toExponential(precision) : arg.toExponential()\\n                    break\\n                    case \\\"f\\\":\\n                        arg = precision ? parseFloat(arg).toFixed(precision) : parseFloat(arg)\\n                    break\\n                    case \\\"g\\\":\\n                        arg = precision ? parseFloat(arg).toPrecision(precision) : parseFloat(arg)\\n                    break\\n                    case \\\"o\\\":\\n                        arg = arg.toString(8)\\n                    break\\n                    case \\\"s\\\":\\n                        arg = ((arg = String(arg)) && match[7] ? arg.substring(0, match[7]) : arg)\\n                    break\\n                    case \\\"u\\\":\\n                        arg = arg >>> 0\\n                    break\\n                    case \\\"x\\\":\\n                        arg = arg.toString(16)\\n                    break\\n                    case \\\"X\\\":\\n                        arg = arg.toString(16).toUpperCase()\\n                    break\\n                }\\n                if (re.json.test(conversion)) {\\n                    output[output.length] = arg\\n                }\\n                else {\\n                    if (re.number.test(conversion) && (!is_positive || match[3])) {\\n                        sign = is_positive ? \\\"+\\\" : \\\"-\\\"\\n                        arg = arg.toString().replace(re.sign, \\\"\\\")\\n                    }\\n                    else {\\n                        sign = \\\"\\\"\\n                    }\\n                    pad_character = match[4] ? match[4] === \\\"0\\\" ? \\\"0\\\" : match[4].charAt(1) : \\\" \\\"\\n                    pad_length = match[6] - (sign + arg).length\\n                    pad = match[6] ? (pad_length > 0 ? str_repeat(pad_character, pad_length) : \\\"\\\") : \\\"\\\"\\n                    output[output.length] = match[5] ? sign + arg + pad : (pad_character === \\\"0\\\" ? sign + pad + arg : pad + sign + arg)\\n                }\\n            }\\n        }\\n        return output.join(\\\"\\\")\\n    }\\n\\n    sprintf.cache = {}\\n\\n    sprintf.parse = function(fmt) {\\n        var _fmt = fmt, match = [], parse_tree = [], arg_names = 0\\n        while (_fmt) {\\n            if ((match = re.text.exec(_fmt)) !== null) {\\n                parse_tree[parse_tree.length] = match[0]\\n            }\\n            else if ((match = re.modulo.exec(_fmt)) !== null) {\\n                parse_tree[parse_tree.length] = \\\"%\\\"\\n            }\\n            else if ((match = re.placeholder.exec(_fmt)) !== null) {\\n                if (match[2]) {\\n                    arg_names |= 1\\n                    var field_list = [], replacement_field = match[2], field_match = []\\n                    if ((field_match = re.key.exec(replacement_field)) !== null) {\\n                        field_list[field_list.length] = field_match[1]\\n                        while ((replacement_field = replacement_field.substring(field_match[0].length)) !== \\\"\\\") {\\n                            if ((field_match = re.key_access.exec(replacement_field)) !== null) {\\n                                field_list[field_list.length] = field_match[1]\\n                            }\\n                            else if ((field_match = re.index_access.exec(replacement_field)) !== null) {\\n                                field_list[field_list.length] = field_match[1]\\n                            }\\n                            else {\\n                                throw new SyntaxError(\\\"[sprintf] failed to parse named argument key\\\")\\n                            }\\n                        }\\n                    }\\n                    else {\\n                        throw new SyntaxError(\\\"[sprintf] failed to parse named argument key\\\")\\n                    }\\n                    match[2] = field_list\\n                }\\n                else {\\n                    arg_names |= 2\\n                }\\n                if (arg_names === 3) {\\n                    throw new Error(\\\"[sprintf] mixing positional and named placeholders is not (yet) supported\\\")\\n                }\\n                parse_tree[parse_tree.length] = match\\n            }\\n            else {\\n                throw new SyntaxError(\\\"[sprintf] unexpected placeholder\\\")\\n            }\\n            _fmt = _fmt.substring(match[0].length)\\n        }\\n        return parse_tree\\n    }\\n\\n    var vsprintf = function(fmt, argv, _argv) {\\n        _argv = (argv || []).slice(0)\\n        _argv.splice(0, 0, fmt)\\n        return sprintf.apply(null, _argv)\\n    }\\n\\n    /**\\n     * helpers\\n     */\\n    function get_type(variable) {\\n        return Object.prototype.toString.call(variable).slice(8, -1).toLowerCase()\\n    }\\n\\n    function str_repeat(input, multiplier) {\\n        return Array(multiplier + 1).join(input)\\n    }\\n\\n    /**\\n     * export to either browser or node.js\\n     */\\n    if (typeof exports !== \\\"undefined\\\") {\\n        exports.sprintf = sprintf\\n        exports.vsprintf = vsprintf\\n    }\\n    else {\\n        window.sprintf = sprintf\\n        window.vsprintf = vsprintf\\n\\n        if (typeof define === \\\"function\\\" && define.amd) {\\n            define(function() {\\n                return {\\n                    sprintf: sprintf,\\n                    vsprintf: vsprintf\\n                }\\n            })\\n        }\\n    }\\n})(typeof window === \\\"undefined\\\" ? this : window);\\n\"],\"mappings\":\"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\"}\n"
+        }
+      ],
+      "addition": null
+    },
+    {
+      "package": "sprintf-js",
+      "version": "1.0.3",
+      "file": "dist/sprintf.min.js.map",
+      "original_sha256": "94f5142380f3d2b7d40e09d5bc842c636dad41686a46e1222420cbf871240797",
+      "repaired_sha256": "aaf7c7e9570f04faa734caac120c6b4ea9b06431c8613647defc9ffc3c9be57d",
+      "edits": [
+        {
+          "before": "{\"version\":3,\"file\":\"sprintf.min.js\",\"sources\":[\"../src/sprintf.js\"],\"names\":[\"window\",\"sprintf\",\"key\",\"arguments\",\"cache\",\"hasOwnProperty\",\"parse\",\"format\",\"call\",\"get_type\",\"variable\",\"Object\",\"prototype\",\"toString\",\"slice\",\"toLowerCase\",\"str_repeat\",\"input\",\"multiplier\",\"Array\",\"join\",\"re\",\"not_string\",\"number\",\"json\",\"not_json\",\"text\",\"modulo\",\"placeholder\",\"key_access\",\"index_access\",\"sign\",\"parse_tree\",\"argv\",\"arg\",\"i\",\"k\",\"match\",\"pad\",\"pad_character\",\"pad_length\",\"cursor\",\"tree_length\",\"length\",\"node_type\",\"output\",\"is_positive\",\"Error\",\"test\",\"isNaN\",\"TypeError\",\"String\",\"fromCharCode\",\"parseInt\",\"JSON\",\"stringify\",\"toExponential\",\"parseFloat\",\"toFixed\",\"substring\",\"toUpperCase\",\"replace\",\"charAt\",\"fmt\",\"_fmt\",\"arg_names\",\"exec\",\"SyntaxError\",\"field_list\",\"replacement_field\",\"field_match\",\"vsprintf\",\"_argv\",\"splice\",\"apply\",\"exports\",\"define\",\"amd\",\"this\"],\"mappings\":\"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\"}",
+          "after": "{\"version\":3,\"file\":\"sprintf.min.js\",\"names\":[\"window\",\"re\",\"not_string\",\"number\",\"json\",\"not_json\",\"text\",\"modulo\",\"placeholder\",\"key\",\"key_access\",\"index_access\",\"sign\",\"sprintf\",\"arguments\",\"cache\",\"hasOwnProperty\",\"parse\",\"format\",\"call\",\"parse_tree\",\"argv\",\"arg\",\"i\",\"k\",\"match\",\"pad\",\"pad_character\",\"pad_length\",\"input\",\"cursor\",\"tree_length\",\"length\",\"node_type\",\"output\",\"is_positive\",\"get_type\",\"conversion\",\"precision\",\"test\",\"undefined\",\"Number\",\"isInteger\",\"Object\",\"assign\",\"SyntaxError\",\"code\",\"Error\",\"isNaN\",\"TypeError\",\"toString\",\"String\",\"fromCharCode\",\"parseInt\",\"JSON\",\"stringify\",\"toExponential\",\"parseFloat\",\"toFixed\",\"toPrecision\",\"substring\",\"toUpperCase\",\"replace\",\"charAt\",\"Array\",\"join\",\"fmt\",\"_fmt\",\"arg_names\",\"exec\",\"field_list\",\"replacement_field\",\"field_match\",\"vsprintf\",\"_argv\",\"slice\",\"splice\",\"apply\",\"variable\",\"prototype\",\"toLowerCase\",\"exports\",\"define\",\"amd\",\"this\"],\"sources\":[\"../src/sprintf.js\"],\"sourcesContent\":[\"(function(window) {\\n    var re = {\\n        not_string: /[^s]/,\\n        number: /[diefg]/,\\n        json: /[j]/,\\n        not_json: /[^j]/,\\n        text: /^[^\\\\x25]+/,\\n        modulo: /^\\\\x25{2}/,\\n        placeholder: /^\\\\x25(?:([1-9]\\\\d*)\\\\$|\\\\(([^\\\\)]+)\\\\))?(\\\\+)?(0|'[^$])?(-)?(\\\\d+)?(?:\\\\.(\\\\d+))?([b-gijosuxX])/,\\n        key: /^([a-z_][a-z_\\\\d]*)/i,\\n        key_access: /^\\\\.([a-z_][a-z_\\\\d]*)/i,\\n        index_access: /^\\\\[(\\\\d+)\\\\]/,\\n        sign: /^[\\\\+\\\\-]/\\n    }\\n\\n    function sprintf() {\\n        var key = arguments[0], cache = sprintf.cache\\n        if (!(cache[key] && cache.hasOwnProperty(key))) {\\n            cache[key] = sprintf.parse(key)\\n        }\\n        return sprintf.format.call(null, cache[key], arguments)\\n    }\\n\\n    sprintf.format = function(parse_tree, argv) {\\n        var cursor = 1, tree_length = parse_tree.length, node_type = \\\"\\\", arg, output = [], i, k, match, pad, pad_character, pad_length, is_positive = true, sign = \\\"\\\"\\n        for (i = 0; i < tree_length; i++) {\\n            node_type = get_type(parse_tree[i])\\n            if (node_type === \\\"string\\\") {\\n                output[output.length] = parse_tree[i]\\n            }\\n            else if (node_type === \\\"array\\\") {\\n                match = parse_tree[i] // convenience purposes only\\n                var conversion = match[8], precision = match[7]\\n                if (/[efg]/.test(conversion) && precision !== undefined) {\\n                    if (!((typeof precision === 'string' && /^\\\\d+$/.test(precision)) || typeof precision === 'number') ||\\n                        !Number.isInteger(Number(precision)) || Number(precision) < (conversion === 'g' ? 1 : 0) || Number(precision) > 100) {\\n                        throw Object.assign(new SyntaxError('[sprintf] precision outside ECMAScript bounds'), { code: 'ERR_SPRINTF_PRECISION' })\\n                    }\\n                }\\n\\n                if (match[2]) { // keyword argument\\n                    arg = argv[cursor]\\n                    for (k = 0; k < match[2].length; k++) {\\n                        if (!arg.hasOwnProperty(match[2][k])) {\\n                            throw new Error(sprintf(\\\"[sprintf] property '%s' does not exist\\\", match[2][k]))\\n                        }\\n                        arg = arg[match[2][k]]\\n                    }\\n                }\\n                else if (match[1]) { // positional argument (explicit)\\n                    arg = argv[match[1]]\\n                }\\n                else { // positional argument (implicit)\\n                    arg = argv[cursor++]\\n                }\\n\\n                if (get_type(arg) == \\\"function\\\") {\\n                    arg = arg()\\n                }\\n\\n                if (re.not_string.test(conversion) && re.not_json.test(conversion) && (get_type(arg) != \\\"number\\\" && isNaN(arg))) {\\n                    throw new TypeError(sprintf(\\\"[sprintf] expecting number but found %s\\\", get_type(arg)))\\n                }\\n\\n                if (re.number.test(conversion)) {\\n                    is_positive = arg >= 0\\n                }\\n\\n                switch (conversion) {\\n                    case \\\"b\\\":\\n                        arg = arg.toString(2)\\n                    break\\n                    case \\\"c\\\":\\n                        arg = String.fromCharCode(arg)\\n                    break\\n                    case \\\"d\\\":\\n                    case \\\"i\\\":\\n                        arg = parseInt(arg, 10)\\n                    break\\n                    case \\\"j\\\":\\n                        arg = JSON.stringify(arg, null, match[6] ? parseInt(match[6]) : 0)\\n                    break\\n                    case \\\"e\\\":\\n                        arg = precision ? arg.toExponential(precision) : arg.toExponential()\\n                    break\\n                    case \\\"f\\\":\\n                        arg = precision ? parseFloat(arg).toFixed(precision) : parseFloat(arg)\\n                    break\\n                    case \\\"g\\\":\\n                        arg = precision ? parseFloat(arg).toPrecision(precision) : parseFloat(arg)\\n                    break\\n                    case \\\"o\\\":\\n                        arg = arg.toString(8)\\n                    break\\n                    case \\\"s\\\":\\n                        arg = ((arg = String(arg)) && match[7] ? arg.substring(0, match[7]) : arg)\\n                    break\\n                    case \\\"u\\\":\\n                        arg = arg >>> 0\\n                    break\\n                    case \\\"x\\\":\\n                        arg = arg.toString(16)\\n                    break\\n                    case \\\"X\\\":\\n                        arg = arg.toString(16).toUpperCase()\\n                    break\\n                }\\n                if (re.json.test(conversion)) {\\n                    output[output.length] = arg\\n                }\\n                else {\\n                    if (re.number.test(conversion) && (!is_positive || match[3])) {\\n                        sign = is_positive ? \\\"+\\\" : \\\"-\\\"\\n                        arg = arg.toString().replace(re.sign, \\\"\\\")\\n                    }\\n                    else {\\n                        sign = \\\"\\\"\\n                    }\\n                    pad_character = match[4] ? match[4] === \\\"0\\\" ? \\\"0\\\" : match[4].charAt(1) : \\\" \\\"\\n                    pad_length = match[6] - (sign + arg).length\\n                    pad = match[6] ? (pad_length > 0 ? str_repeat(pad_character, pad_length) : \\\"\\\") : \\\"\\\"\\n                    output[output.length] = match[5] ? sign + arg + pad : (pad_character === \\\"0\\\" ? sign + pad + arg : pad + sign + arg)\\n                }\\n            }\\n        }\\n        return output.join(\\\"\\\")\\n    }\\n\\n    sprintf.cache = {}\\n\\n    sprintf.parse = function(fmt) {\\n        var _fmt = fmt, match = [], parse_tree = [], arg_names = 0\\n        while (_fmt) {\\n            if ((match = re.text.exec(_fmt)) !== null) {\\n                parse_tree[parse_tree.length] = match[0]\\n            }\\n            else if ((match = re.modulo.exec(_fmt)) !== null) {\\n                parse_tree[parse_tree.length] = \\\"%\\\"\\n            }\\n            else if ((match = re.placeholder.exec(_fmt)) !== null) {\\n                if (match[2]) {\\n                    arg_names |= 1\\n                    var field_list = [], replacement_field = match[2], field_match = []\\n                    if ((field_match = re.key.exec(replacement_field)) !== null) {\\n                        field_list[field_list.length] = field_match[1]\\n                        while ((replacement_field = replacement_field.substring(field_match[0].length)) !== \\\"\\\") {\\n                            if ((field_match = re.key_access.exec(replacement_field)) !== null) {\\n                                field_list[field_list.length] = field_match[1]\\n                            }\\n                            else if ((field_match = re.index_access.exec(replacement_field)) !== null) {\\n                                field_list[field_list.length] = field_match[1]\\n                            }\\n                            else {\\n                                throw new SyntaxError(\\\"[sprintf] failed to parse named argument key\\\")\\n                            }\\n                        }\\n                    }\\n                    else {\\n                        throw new SyntaxError(\\\"[sprintf] failed to parse named argument key\\\")\\n                    }\\n                    match[2] = field_list\\n                }\\n                else {\\n                    arg_names |= 2\\n                }\\n                if (arg_names === 3) {\\n                    throw new Error(\\\"[sprintf] mixing positional and named placeholders is not (yet) supported\\\")\\n                }\\n                parse_tree[parse_tree.length] = match\\n            }\\n            else {\\n                throw new SyntaxError(\\\"[sprintf] unexpected placeholder\\\")\\n            }\\n            _fmt = _fmt.substring(match[0].length)\\n        }\\n        return parse_tree\\n    }\\n\\n    var vsprintf = function(fmt, argv, _argv) {\\n        _argv = (argv || []).slice(0)\\n        _argv.splice(0, 0, fmt)\\n        return sprintf.apply(null, _argv)\\n    }\\n\\n    /**\\n     * helpers\\n     */\\n    function get_type(variable) {\\n        return Object.prototype.toString.call(variable).slice(8, -1).toLowerCase()\\n    }\\n\\n    function str_repeat(input, multiplier) {\\n        return Array(multiplier + 1).join(input)\\n    }\\n\\n    /**\\n     * export to either browser or node.js\\n     */\\n    if (typeof exports !== \\\"undefined\\\") {\\n        exports.sprintf = sprintf\\n        exports.vsprintf = vsprintf\\n    }\\n    else {\\n        window.sprintf = sprintf\\n        window.vsprintf = vsprintf\\n\\n        if (typeof define === \\\"function\\\" && define.amd) {\\n            define(function() {\\n                return {\\n                    sprintf: sprintf,\\n                    vsprintf: vsprintf\\n                }\\n            })\\n        }\\n    }\\n})(typeof window === \\\"undefined\\\" ? this : window);\\n\"],\"mappings\":\"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\"}\n"
+        }
+      ],
+      "addition": null
+    }
+  ]
+}
