@@ -54,3 +54,9 @@ Shared skills were read only. No shared policy or skill was edited.
    parameter named XPASS and a recatalogued false-PASS receipt under normal
    and optimized Python. Local packet consistency is still not authentication
    against a party able to rewrite all raw outputs.
+10. Physical cleanup and completed test work are different observations. An
+    exited passing parent with a live child must be cleaned, but cannot certify
+    completion afterward. Preserve survived-parent detection as refusal in
+    both recorder and reader, even when the group is physically absent. Test
+    the actual pytest parent and a coherently altered PASS verdict, alongside
+    a normal no-survivor acceptance control.

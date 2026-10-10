@@ -91,3 +91,10 @@ bundle; later rechecks supplement them.
   and optimized Python. An ordinary parameter named XPASS remains valid.
   Historical producers and archives remain unchanged; current final counts
   and source correspondence belong in the external publication binder.
+- **Completion follow-up:** the first repaired recorder accepted a passing
+  parent after closing its surviving group. Coordinator review tightened this
+  bounded completion contract: unfinished child work cannot become acceptance
+  through cleanup. Producer and reader now require survived_parent=false as
+  well as absent=true. The actual pytest-parent regression was observed red
+  against45236cc, then freshly rerun; that commit and its97-case receipts remain
+  historical. Normal completion without survivors remains accepted.

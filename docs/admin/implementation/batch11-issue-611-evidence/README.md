@@ -55,6 +55,8 @@ bounded deadline, isolated process group and external pytest temporary directory
 After every pytest exit, including a successful parent, the recorder closes only
 its owned group and records surviving-parent detection, signals and absent
 readback. The verifier requires that lifecycle metadata before accepting PASS.
+Cleanup cannot certify unfinished child work: a group that survived its pytest
+parent is retained as NOT_ACCEPTED even after successful exact-group cleanup.
 
 For Chromium, use the owned frontend `npm ci` installation and the
 `frontend/e2e/admin-audit-epoch/playwright.config.ts` config. Provide

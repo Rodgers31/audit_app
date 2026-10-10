@@ -1,5 +1,6 @@
 """Source binding in the supported v2 recorder rejects external source bytes."""
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import os
@@ -124,3 +125,50 @@ def test_actual_pytest_stdout_prevents_junit_xpass_false_acceptance(tmp_path, un
     assert module.junit_cases(xml) == [{"id": "tests.test_outcome::test_outcome" +
                                        ("" if unexpected else "[XPASS]"), "state": "passed"}]
     assert bool(module.unexpected_passes(completed.stdout)) is unexpected
+
+
+def test_actual_successful_pytest_parent_with_unfinished_child_cannot_certify_completion(tmp_path):
+    root = tmp_path / "source"
+    tools = root / "docs/admin/implementation/batch11-issue-611-evidence"
+    tools.mkdir(parents=True)
+    for name in ("record_v2.py", "verify_run_v2.py"):
+        (tools / name).write_bytes((PACKET / name).read_bytes())
+    test = root / "backend/tests/test_incomplete.py"
+    test.parent.mkdir(parents=True)
+    test.write_text('''import os,subprocess,sys
+from pathlib import Path
+def test_incomplete():
+    out=Path(__file__).resolve().parents[3]
+    worker="import sys,time;from pathlib import Path;time.sleep(8);Path(sys.argv[1]).write_text('INERT_DELAYED_EFFECT');time.sleep(20)"
+    child=subprocess.Popen([sys.executable,"-c",worker,str(out/"marker")],stdin=subprocess.DEVNULL,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    (out/"worker").write_text(str(child.pid)+","+str(os.getpgrp()))
+    assert True
+''')
+    env = {"PATH": os.defpath, "HOME": "/dev/null", "GIT_CONFIG_NOSYSTEM": "1", "PYTHONDONTWRITEBYTECODE": "1",
+        "GIT_AUTHOR_NAME": "Owned control", "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+        "GIT_COMMITTER_NAME": "Owned control", "GIT_COMMITTER_EMAIL": "fixture@example.invalid"}
+    for args in (["init", "-q"], ["add", "."], ["-c", "commit.gpgsign=false", "commit", "-qm", "Freeze completion control"]):
+        subprocess.run(["git", *args], cwd=root, env=env, capture_output=True, timeout=10, check=True)
+    output = tmp_path / "recorded"
+    done = subprocess.run([sys.executable, "-B", str(tools / "record_v2.py"), "--python", sys.executable,
+        "--out", str(output), "tests/test_incomplete.py"], cwd=root, env=env, capture_output=True, timeout=30)
+    receipt = json.loads((output / "run.json").read_text())
+    _, group = map(int, (tmp_path / "worker").read_text().split(","))
+    try:
+        assert receipt["child_exit"] == 0 and receipt["cases"] == [{"id": "tests.test_incomplete::test_incomplete", "state": "passed"}]
+        assert receipt["process_group"]["survived_parent"] is True
+        assert receipt["process_group"]["absent"] is True and recorder().group_alive(group) is False
+        assert not (tmp_path / "marker").exists()
+        assert done.returncode == 1 and receipt["verdict"] == "NOT_ACCEPTED"
+        # A coherent false verdict cannot hide recorded unfinished work.
+        receipt.update(verdict="PASS", verification_exit=0)
+        (output / "run.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        for optimized in (False, True):
+            read = subprocess.run([sys.executable, *(["-O"] if optimized else []), str(tools / "verify_run_v2.py"),
+                str(output / "run.json")], cwd=root, env=env, capture_output=True, timeout=20)
+            assert read.returncode == 1 and b"Closed owned process group readback required" in read.stderr
+    finally:
+        try:
+            os.killpg(group, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
