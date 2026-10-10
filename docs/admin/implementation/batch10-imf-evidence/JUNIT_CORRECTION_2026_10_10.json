@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "generated_by": "docs/admin/implementation/batch10-imf-evidence/publish_junit_correction.py",
+  "generator_sha256": "943f887b8ba27b586fe2a189581e97c2113b78427b3624d3bb1b280b95605db7",
+  "generated_at": "2026-10-10",
+  "issue": 608,
+  "classification": "current_junit_admission_correction",
+  "superseded_publication": {
+    "path": "docs/admin/implementation/batch10-imf-evidence/COPILOT_CORRECTION_2026_10_10.json",
+    "sha256": "0b0e8bf545f841919f994a9b03f9d8ae8c87ed43b029e05183071276ab634ce4",
+    "current_checkout_acceptance": false
+  },
+  "original_tool": {
+    "schema": 1,
+    "classification": "historical_tool_snapshot",
+    "current_checkout_acceptance": false,
+    "source_head": "b50af5924550affaf3cf5ce3c2377559f327b371",
+    "source_tree": "6a4052abbbc6745f06c1cb89d83c397041509d90",
+    "original_path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+    "retained_path": "docs/admin/implementation/batch10-imf-evidence/history/junit-2026-10-10/verify_evidence.py.txt",
+    "sha256": "fe3b1f6c92eef38b52e18b15afc02ef743dac79f3c0cd9b4c20193eceb911333",
+    "reason": "Preserve the output-boundary verifier before current JUnit identity correction."
+  },
+  "replacement_tool": {
+    "path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+    "sha256": "90a1b693547757514f2e115790429ae581d6bf24088b4799382cd78fe609f3b7"
+  },
+  "change": "Current acceptance requires unique nonempty classname/name pairs. Historical recorded selections retain honest counts without being relabelled current.",
+  "historical_duplicate_selection_limitations": [
+    "full-cohort/receipt.json",
+    "spec-repaired-1/receipt.json"
+  ],
+  "current_acceptance": "A separate external final source-bound execution and real producer/verifier check is required; prior b50 runs retain their original HEAD/tree/corpus.",
+  "original_manifest_sha256": "9aee4b506a8e8024e30c15a664235f92eddfebc25f29584460b121a558481c2b"
+}

@@ -194,3 +194,24 @@ identity. Current acceptance requires a separate external final replay against
 the complete committed corpus. The coordinator records current/minimum focused
 startup, IMF, PostgreSQL and evidence controls in `BATCH_10_MERGE/604`; immutable
 hosted acceptance and production observations retain their separate gates.
+
+### Additional #608 correction — current JUnit identities
+
+A later coordinator check executed a real two-case child and reproduced current
+acceptance of blank/duplicate testcase identities in both ordinary Python and
+`-O`. Expanded controls include missing names/classnames, whitespace-only values,
+duplicates and a valid executed two-case record: ten malformed cases failed
+before repair, while two positive cases passed. Current admission now requires
+a unique, nonempty `(classname, name)` pair for every testcase.
+
+The current-output correction and its 360-case current/minimum passes remain
+bound to commit `b50af5924550affaf3cf5ce3c2377559f327b371`; they are historical
+for a later candidate. No original publication or execution record is rewritten.
+`batch10-imf-evidence/JUNIT_CORRECTION_2026_10_10.json` supersedes that verifier
+publication for current acceptance and retains its exact tool snapshot. The
+historical `full-cohort` and `spec-repaired-1` selections contain duplicate IDs
+that were actually executed. Historical hash/count integrity remains verifiable;
+those runs do not establish current unique-inventory acceptance. Fresh final
+current/minimum affected-cohort and real producer/verifier checks are external
+under `BATCH_10_MERGE/604` and must match the final committed corpus. #608 tracks
+this correction; it is not a new product or roadmap feature.
