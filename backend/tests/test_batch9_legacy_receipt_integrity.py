@@ -12,6 +12,12 @@ ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / "batch9-legacy-etl-evidence"
 
 
+def evidence_bytes(directory):
+    """Include inherited outputs as well as the source/receipt inputs."""
+    return {str(path.relative_to(directory)): path.read_bytes()
+            for path in directory.rglob("*") if path.is_file()}
+
+
 @pytest.mark.parametrize("optimized", [False, True])
 @pytest.mark.parametrize("mutation", ["valid", "verdict", "exit", "generator", "source", "archive"])
 def test_delivery_integrity_is_enforced_under_python_optimization(tmp_path, optimized, mutation):
@@ -33,6 +39,7 @@ def test_delivery_integrity_is_enforced_under_python_optimization(tmp_path, opti
         elif mutation == "source":
             receipt["source_sha256"]["etl/writer_ownership.py"] = "0" * 64
         path.write_text(json.dumps(receipt))
+    before = evidence_bytes(evidence)
     command = [sys.executable, *(["-O"] if optimized else []), str(evidence / "verify_delivery.py"), "--historical-only"]
     result = subprocess.run(command, cwd=owned,
                             env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"},
@@ -46,20 +53,31 @@ def test_delivery_integrity_is_enforced_under_python_optimization(tmp_path, opti
     else:
         assert result.returncode != 0, result.stdout + result.stderr
         assert "Delivery verification failed" in result.stderr
-        assert not (evidence / "historical-delivery-provenance.json").exists()
+        assert "PASSED" not in result.stdout
+        assert evidence_bytes(evidence) == before
 
 
 @pytest.mark.parametrize("optimized", [False, True])
-def test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks(tmp_path, optimized):
+@pytest.mark.parametrize("inherited_provenance", [False, True])
+def test_historical_success_cannot_certify_an_edited_candidate_without_fresh_checks(tmp_path, optimized, inherited_provenance):
     owned = tmp_path / "app"
     evidence = owned / "batch9-legacy-etl-evidence"
     shutil.copytree(EVIDENCE, evidence)
     (evidence / "review-verification-manifest.json").unlink(missing_ok=True)
+    provenance = evidence / "review-delivery-provenance.json"
+    if not inherited_provenance:
+        # Establish a fresh output destination only inside this owned copy.
+        provenance.unlink(missing_ok=True)
+    elif not provenance.exists():
+        provenance.write_text('{"verdict":"PASSED","scope":"previous candidate snapshot"}\n')
+    before = evidence_bytes(evidence)
     result = subprocess.run([sys.executable, *(["-O"] if optimized else []), str(evidence / "verify_delivery.py")],
                             cwd=owned, env={"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}, capture_output=True, text=True)
     assert result.returncode != 0
     assert "fresh source-bound candidate verification manifest required" in result.stderr
-    assert not (evidence / "review-delivery-provenance.json").exists()
+    assert "PASSED" not in result.stdout
+    assert evidence_bytes(evidence) == before
+    assert provenance.exists() is inherited_provenance
 
 
 @pytest.mark.parametrize("mutates", [False, True, "generator"])

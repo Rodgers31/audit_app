@@ -166,3 +166,22 @@ controls actually execute this import and child work; negative controls cannot
 pass solely because that import is missing. Independent Spec and Standards
 reviews accepted the frozen substantive source; combined migration and hosted
 acceptance remain with the coordinator.
+
+## Post-publication hosted fixture correction
+
+Hosted run 38009357220 on combined b70996e9e1e28f7e6b445f0d3c41be3681fadd61
+found two failures after the final evidence commit added an inherited derived
+provenance file. The verifier correctly refused the missing fresh manifest; the
+test incorrectly required a copied historical file to be absent. The exact
+045b603 source reproduces both failures. Tests now cover both empty and inherited
+outputs under normal and optimized Python, require nonzero refusal with no PASSED
+output, and require every copied evidence byte to remain unchanged. Corrupt
+historical-only verification also preserves any inherited output. No verifier or
+writer product behavior changed.
+
+The original125 manifest and derived provenance are preserved byte-for-byte in
+`review/historical-packets/045b603-c5fc75a45b3b1150ed552fe10856a4647033054ba4736b9f40cf75d882b13129/`, with
+a HISTORICAL_ONLY index and all28 source snapshots verified against actual045b603
+Git bytes. Original125 execution files remain unchanged. Current acceptance
+requires fresh127 checks and a separate final post-publication replay of the
+committed evidence corpus; the coordinator is completing those scoped gates.
