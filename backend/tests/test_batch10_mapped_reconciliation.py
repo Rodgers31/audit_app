@@ -170,6 +170,63 @@ def test_mapped_suppressed_release_is_refused_and_rolled_back(owned, source, dom
     assert rows(owned) == before
 
 
+@pytest.mark.parametrize("source,domain", MAPPINGS)
+@pytest.mark.parametrize("table", TABLES)
+def test_mapped_required_values_are_read_back_before_commit(owned, source, domain, table):
+    selected, _ = retained(owned, source, domain)
+    stop(owned)
+    before = rows(owned)
+    changed = {
+        "admin_audit_log": "NEW.payload := jsonb_build_object('tampered',true);",
+        "seeding_domain_claims": "NEW.released_at := OLD.released_at; NEW.reconciled_by := OLD.reconciled_by; NEW.reconciliation := OLD.reconciliation;",
+        "etl_dispatch_commands": "NEW.status := OLD.status; NEW.finished_at := OLD.finished_at; NEW.outcome := OLD.outcome;",
+        "etl_dispatch_domains": "NEW.command_id := OLD.command_id; NEW.claim_token := OLD.claim_token;",
+        "ingestion_jobs": "NEW.status := OLD.status; NEW.finished_at := OLD.finished_at;",
+    }[table]
+    with owned.connection.begin():
+        owned.connection.execute(text("CREATE FUNCTION batch10_change_release() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN " + changed + " RETURN NEW; END $$"))
+        event = "INSERT" if table == "admin_audit_log" else "UPDATE"
+        owned.connection.execute(text(f"CREATE TRIGGER batch10_change_release BEFORE {event} ON {table} FOR EACH ROW EXECUTE FUNCTION batch10_change_release()"))
+    policy, evidence, _ = signed(owned, selected)
+    owned.admission(False)
+    plan = make_plan(owned.connection, policy, evidence)
+    with pytest.raises(ReconciliationRefused, match="readback"):
+        apply_plan(owned.connection, policy, evidence, plan)
+    assert rows(owned) == before
+
+
+@pytest.mark.parametrize("source,domain", MAPPINGS)
+def test_mapped_deferred_release_change_is_checked_before_commit(owned, source, domain):
+    selected, _ = retained(owned, source, domain)
+    stop(owned)
+    before = rows(owned)
+    with owned.connection.begin():
+        owned.connection.execute(text("CREATE FUNCTION batch10_defer_release() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN UPDATE seeding_domain_claims SET released_at=NULL,reconciled_by=NULL,reconciliation=NULL WHERE id=NEW.id; RETURN NEW; END $$"))
+        owned.connection.execute(text("CREATE CONSTRAINT TRIGGER batch10_defer_release AFTER UPDATE ON seeding_domain_claims DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.released_at IS NOT NULL) EXECUTE FUNCTION batch10_defer_release()"))
+    policy, evidence, _ = signed(owned, selected)
+    owned.admission(False)
+    plan = make_plan(owned.connection, policy, evidence)
+    with pytest.raises(ReconciliationRefused, match="readback"):
+        apply_plan(owned.connection, policy, evidence, plan)
+    assert rows(owned) == before
+
+
+@pytest.mark.parametrize("source,domain", MAPPINGS)
+def test_mapped_audit_readback_preserves_exact_json_types(owned, source, domain):
+    selected, _ = retained(owned, source, domain)
+    stop(owned)
+    before = rows(owned)
+    with owned.connection.begin():
+        owned.connection.execute(text("CREATE FUNCTION batch10_change_audit_type() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.payload := jsonb_set(NEW.payload,'{version}','true'::jsonb); RETURN NEW; END $$"))
+        owned.connection.execute(text("CREATE TRIGGER batch10_change_audit_type BEFORE INSERT ON admin_audit_log FOR EACH ROW EXECUTE FUNCTION batch10_change_audit_type()"))
+    policy, evidence, _ = signed(owned, selected)
+    owned.admission(False)
+    plan = make_plan(owned.connection, policy, evidence)
+    with pytest.raises(ReconciliationRefused, match="readback"):
+        apply_plan(owned.connection, policy, evidence, plan)
+    assert rows(owned) == before
+
+
 @pytest.mark.parametrize("source,domain", NEW_MAPPINGS)
 @pytest.mark.parametrize("fence", ["open_admission", "live_writer", "ready_worker"])
 def test_mapped_release_requires_every_existing_writer_fence(owned, source, domain, fence):

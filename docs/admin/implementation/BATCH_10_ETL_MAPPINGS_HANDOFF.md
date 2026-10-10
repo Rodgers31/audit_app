@@ -31,8 +31,12 @@ signed plan/apply reconciliation to
 the selected mapped domain. It verifies the exact source/domain/command/token
 ownership, preserves unrelated retained domains, and releases only after the
 audit, claim, command, domain and required observations all write successfully in
-the same fenced backend transaction. Any missing write or connection loss rolls
-back release. Admission closure, every-writer evidence, full-table freezing,
+the same fenced backend transaction. Exact persisted rows are read back after
+pending deferred constraint triggers run; affected-row counts alone cannot prove
+the required values. A missing or changed write or connection loss before
+commit preserves ownership through rollback. A commit acknowledgement failure
+propagates as uncertainty and must not be retried automatically. Admission
+closure, every-writer evidence, full-table freezing,
 continuity locking and default-off activation remain required. Local inert
 PostgreSQL controls do not authorize production reconciliation or activation.
 
