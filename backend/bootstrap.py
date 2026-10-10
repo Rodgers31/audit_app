@@ -6,7 +6,7 @@ import hashlib
 import json
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -28,6 +28,7 @@ from models import (
     PopulationData,
     PovertyIndex,
     SourceDocument,
+    SeedingDomainClaim,
 )
 from county_metrics_purge import (  # noqa: F401 - re-exported
     PURGED_META_KEYS,
@@ -36,7 +37,9 @@ from county_metrics_purge import (  # noqa: F401 - re-exported
 )
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.engine import Connection
-from seeding.exclusion import DomainExecution, DomainOwnershipError, enter_domain
+from seeding.exclusion import (
+    DomainBusyError, DomainExecution, DomainOwnershipError, enter_domain, enter_domains,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +98,17 @@ COUNTY_DATA_PATH = DATA_DIR / "enhanced_county_data.json"
 # report a year-old fixture as fresh — an observability bug inside the
 # observability fix.
 BOOTSTRAP_DOMAIN = "bootstrap_reference_data"
+# Shared Country/FiscalPeriod/Entity/SourceDocument identities, county metadata,
+# entity-linked GDP replacement/pruning and bootstrap Loan cleanup overlap the
+# native writer inventory. Acquire the entire non-budget reference fence before
+# even the early country/period commits. Budget keeps its separate refusal path.
+# New native domains require an explicit overlap review here (see lane handoff).
+BOOTSTRAP_EFFECT_DOMAINS = (
+    BOOTSTRAP_DOMAIN, "audits", "counties_budget", "county_officials",
+    "debt_timeline", "economic_indicators", "fiscal_summary", "imf_weo",
+    "learning_hub", "national_debt", "national_gdp", "pending_bills",
+    "population", "revenue_by_source", "stalled_projects",
+)
 STALE_AFTER_DAYS = 180
 
 # Where each file states its own date, and what supersedes it if anything.
@@ -910,42 +924,27 @@ def _seed_national_budget(
     return job
 
 
-#: How long a RUNNING ingestion row is taken at its word. The seeding CLI's own
-#: ceiling is SEED_TOTAL_TIMEOUT_SECONDS (1320s = 22 min in seed.yml), so an
-#: hour is comfortably past any healthy run. Beyond it the row is assumed to be
-#: the debris of a crashed run: a process that died mid-domain leaves RUNNING
-#: behind forever, and honouring that would wedge every future boot into a
-#: no-op — trading a timeout for a silent, permanent one.
-DEFER_TO_SEED_WITHIN_MINUTES = 60
-
-
 def _seed_run_in_flight(session: Session) -> Optional[str]:
-    """The domain of a seeding run currently writing, if there is one.
+    """Scheduling hint only; age never proves an uncertain writer returned.
 
-    Bootstrap and the nightly both write ``audits``. When they overlap, one
-    blocks on the other's row locks until the database's statement timeout
-    fires — see ``test_bootstrap_defers_to_a_live_seed`` for the run this comes
-    from. Bootstrap is the side that yields: its input is a git-tracked file
-    that will still be there in twenty minutes, while the seed run is fetching
-    from publishers on a clock it cannot restart.
-
-    ``BOOTSTRAP_DOMAIN`` is excluded deliberately. Two web processes starting
-    together would otherwise each see the other's RUNNING row and both defer,
-    turning a race into a guaranteed no-op.
+    Admission below closes the compliant-writer race with durable uniqueness.
+    Unknown/legacy observations and retained claims fail closed without expiry.
+    Query failures propagate; inability to establish ownership is not absence.
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(
-        minutes=DEFER_TO_SEED_WITHIN_MINUTES
-    )
+    claim = (session.query(SeedingDomainClaim)
+        .filter(SeedingDomainClaim.released_at.is_(None),
+                SeedingDomainClaim.domain != "national_budget")
+        .order_by(SeedingDomainClaim.domain).first())
+    if claim is not None:
+        return claim.domain
     row = (
         session.query(IngestionJob)
         .filter(
             IngestionJob.status == IngestionStatus.RUNNING,
-            IngestionJob.domain != BOOTSTRAP_DOMAIN,
             # Budget now yields atomically at its shared claim. Deferring the
             # whole bootstrap here would skip empty-DB reference initialization
             # while web startup still marks reference readiness.
             IngestionJob.domain != "national_budget",
-            IngestionJob.started_at >= cutoff.replace(tzinfo=None),
         )
         .order_by(IngestionJob.started_at.desc())
         .first()
@@ -1004,13 +1003,13 @@ def required_county_references_available(session: Session) -> bool:
 
 def initialize_reference_data(
     code_lookup: Optional[Dict[str, str]] = None, *, force: bool = False
-) -> None:
-    """Seed canonical county + audit data into the database if missing.
+) -> bool:
+    """Admit and seed reference data; return permission for startup writers.
 
     The per-county loop is the expensive part (~3 min on a cold DB); once
     all supported county identities exist it's skipped on subsequent boots. The
-    national-level reference seeders are cheap
-    and idempotent, so they always run without needing `--force`.
+    National reference refresh still runs on admitted boots. Force bypasses
+    only the county fast path; retained ownership always defers execution.
     """
     # Yield to a seed run that is already writing. Nothing here is urgent —
     # these are git-tracked files — and the alternative is a row-lock wait that
@@ -1022,22 +1021,14 @@ def initialize_reference_data(
     # No IngestionJob is recorded: this run did not happen, and a fixture-mode
     # row saying otherwise would be read by check_ingestion_freshness as a
     # bootstrap that served a fixture.
-    if not force:
-        probe, _ = _bootstrap_session()
-        try:
-            busy = _seed_run_in_flight(probe)
-        except Exception:  # noqa: BLE001 - a probe must never be the failure
-            busy = None
-        finally:
-            probe.close()
-        if busy:
-            logger.warning(
-                "bootstrap: deferring — the '%s' seeding domain is writing "
-                "now, and both write `audits`. The weekly bootstrap job owns "
-                "this refresh; nothing here is time-critical.",
-                busy,
-            )
-            return
+    probe, _ = _bootstrap_session()
+    try:
+        busy = _seed_run_in_flight(probe)
+    finally:
+        probe.close()
+    if busy:
+        logger.warning("bootstrap: deferring to active/retained domain '%s'; reconcile uncertainty", busy)
+        return False
 
     # Fast-path check — skip the expensive county loop only. National
     # seeders further down still run so newly added data files get picked
@@ -1070,6 +1061,7 @@ def initialize_reference_data(
     session, owns_transaction = _bootstrap_session()
     budget_ownership = None
     budget_job = None
+    reference_ownership = None
     try:
         # Acquire before reference mutations as well: supplied SQLite sessions
         # may share a single connection, so a claim commit must not accidentally
@@ -1083,6 +1075,11 @@ def initialize_reference_data(
             # its supplied connection remains authoritative for the test.
             join_transaction_mode="create_savepoint",
         )
+        try:
+            reference_ownership = enter_domains(factory, BOOTSTRAP_EFFECT_DOMAINS, BOOTSTRAP_DOMAIN)
+        except DomainBusyError as exc:
+            logger.warning("bootstrap: atomic reference admission deferred: %s", exc)
+            return False
         try:
             budget_ownership = enter_domain(factory, "national_budget", False)
         except DomainOwnershipError as exc:
@@ -1177,6 +1174,10 @@ def initialize_reference_data(
             budget_job.meta = {**budget_job.meta, "ownership_retained": True,
                                "outer_commit_pending": True}
         provenance = bootstrap_provenance(session)
+        provenance["seeding_claim_ids"] = reference_ownership.claim_ids
+        if not owns_transaction:
+            provenance["ownership_retained"] = True
+            provenance["outer_commit_pending"] = True
         if budget_job is not None:
             session.flush()
             provenance["national_budget"] = {
@@ -1185,17 +1186,18 @@ def initialize_reference_data(
                 "ownership_retained": budget_job.meta.get("ownership_retained") is True,
                 "job_id": budget_job.id,
             }
-        session.add(
-            IngestionJob(
-                domain=BOOTSTRAP_DOMAIN,
-                status=IngestionStatus.COMPLETED,
-                dry_run=False,
-                started_at=started_at,
-                finished_at=datetime.now(timezone.utc),
-                meta=provenance,
-            )
+        reference_job = IngestionJob(
+            domain=BOOTSTRAP_DOMAIN,
+            status=IngestionStatus.COMPLETED,
+            dry_run=False,
+            started_at=started_at,
+            finished_at=datetime.now(timezone.utc),
+            meta=provenance,
         )
+        session.add(reference_job)
         session.commit()
+        if owns_transaction:
+            reference_ownership.acknowledge(reference_job.id)
         # Only a successful, persisted budget receipt permits release. The
         # shared seam proves continuity and mutates on its lock-holding backend.
         # Any failure (including an ambiguous commit) retains the durable claim.
@@ -1224,9 +1226,15 @@ def initialize_reference_data(
                 "Reference county data initialized (%d counties)",
                 len(county_records),
             )
+        return (owns_transaction and budget_ownership is not None and budget_job is not None
+                and budget_job.status == IngestionStatus.COMPLETED)
     except Exception as exc:
         session.rollback()
         logger.error("Failed to initialize reference data: %s", exc)
+        if reference_ownership is None:
+            # Admission failed before effects: even an error observation would
+            # be an unauthorized bootstrap write to uncertain storage.
+            raise
         # The failure must be visible too — a job row that only appears on
         # success makes an outage look like a run that never happened.
         try:
@@ -1256,3 +1264,5 @@ def initialize_reference_data(
         session.close()
         if budget_ownership is not None:
             budget_ownership.close()
+        if reference_ownership is not None:
+            reference_ownership.close()

@@ -33,6 +33,10 @@ class DomainOwnershipError(RuntimeError):
     """A safe bounded diagnostic: no database/provider exception payload."""
 
 
+class DomainBusyError(DomainOwnershipError):
+    """Established contention; storage failures are not scheduling deferrals."""
+
+
 def _require_claim_storage(connection):
     """Prove the actual active-domain arbiter, on the admission transaction.
 
@@ -138,6 +142,10 @@ def terminal_observation(db, claim, job_id):
     job = db.get(IngestionJob, job_id)
     if job is None or job.domain != claim.domain or type(job.meta) is not dict or job.meta.get("seeding_claim_id") != str(claim.id):
         return None
+    return _coherent_terminal_job(db, job, claim.acquired_at)
+
+
+def _coherent_terminal_job(db, job, acquired_at):
     if job.status not in (IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS, IngestionStatus.FAILED):
         return None
     if type(job.errors) is not list or (job.status == IngestionStatus.COMPLETED and job.errors) or not all(type(v) is int and 0 <= v <= 2147483647 for v in (job.items_processed, job.items_created, job.items_updated)):
@@ -146,12 +154,12 @@ def terminal_observation(db, claim, job_id):
         start, end = db.execute(select(
             func.timezone(func.current_setting("TimeZone"), IngestionJob.started_at),
             func.timezone(func.current_setting("TimeZone"), IngestionJob.finished_at))
-            .where(IngestionJob.id == job_id)).one()
+            .where(IngestionJob.id == job.id)).one()
     else:
         start, end = job.started_at, job.finished_at
     def aware(value):
         return value.replace(tzinfo=timezone.utc) if value is not None and value.tzinfo is None else value
-    start, end, acquired = aware(start), aware(end), aware(claim.acquired_at)
+    start, end, acquired = aware(start), aware(end), aware(acquired_at)
     tolerance = timedelta(seconds=5)
     if start is None or end is None or not acquired - tolerance <= start <= end <= clock(db) + tolerance:
         return None
@@ -183,7 +191,7 @@ class DomainExecution:
             self.pid = self.connection.scalar(text("SELECT pg_backend_pid()"))
             if not self.connection.scalar(text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": self.key}):
                 self.close()
-                raise DomainOwnershipError("Domain execution is already owned")
+                raise DomainBusyError("Domain execution is already owned")
             if not self.continuous():  # e.g. an autocommit engine already dropped it
                 self.close()
                 raise DomainOwnershipError("Domain execution lock is not held")
@@ -325,3 +333,119 @@ def enter_domain(factory, domain, dry_run):
     except BaseException:
         execution.close()
         raise
+
+
+class DomainExecutionSet:
+    """One atomic bootstrap admission and one fenced terminal acknowledgement.
+
+    Reference writes share identities with several source domains. Committing
+    claims one at a time leaves partial retained ownership on ordinary refusal.
+    All reservations here commit together, before any product effect. All locks
+    live on one physical PostgreSQL transaction; uncertain return retains every
+    claim. This receipt describes bootstrap execution, never source ingestion.
+    """
+
+    def __init__(self, factory, domains, receipt_domain):
+        if (type(domains) is not tuple or not domains
+                or any(type(d) is not str or not 1 <= len(d) <= 100 for d in domains)
+                or len(set(domains)) != len(domains)
+                or receipt_domain not in domains or _dispatch_scope.get() is not None):
+            raise DomainOwnershipError("Invalid bootstrap ownership set")
+        self.members = {d: DomainExecution(factory, d, uuid4()) for d in sorted(domains)}
+        self.guard = self.members[receipt_domain]
+        self.receipt_domain = receipt_domain
+        self.factory = factory
+
+    @property
+    def claim_ids(self):
+        return {d: str(e.identity) for d, e in self.members.items()}
+
+    def open(self):
+        try:
+            self.guard.open()
+            if self.guard.connection is not None:
+                for domain, execution in self.members.items():
+                    if domain != self.receipt_domain and not self.guard.connection.scalar(
+                            text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": execution.key}):
+                        raise DomainBusyError("Bootstrap execution domain is already owned")
+            with self.factory.begin() as db:
+                for domain, execution in self.members.items():
+                    legacy = db.get(EtlDispatchDomain, domain)
+                    if (legacy is not None and legacy.command_id is not None
+                            or unclaimed_running(db, domain)):
+                        raise DomainBusyError("Bootstrap domain uncertain; reconcile retained execution")
+                    execution.entry = uuid4()
+                    if not reserve(db, domain, execution.identity, entry=execution.entry):
+                        raise DomainBusyError("Bootstrap domain retained; reconcile retained execution")
+            for execution in self.members.values():
+                execution.entered = True
+            return self
+        except BaseException:
+            self.close()
+            raise
+
+    def continuous(self):
+        if not self.guard.continuous():
+            return False
+        if self.guard.connection is None:
+            return True  # SQLite is supplementary caller-transaction coverage.
+        for execution in self.members.values():
+            if self.guard.connection.scalar(text("""SELECT EXISTS (
+                SELECT 1 FROM pg_locks WHERE locktype='advisory' AND pid=:pid AND granted
+                AND classid=:high AND objid=:low AND objsubid=1)"""),
+                    {"pid": self.guard.pid, "high": execution.key >> 32,
+                     "low": execution.key & 0xffffffff}) is not True:
+                return False
+        return True
+
+    def acknowledge(self, job_id):
+        if type(job_id) is not int or job_id <= 0 or not self.continuous():
+            raise DomainOwnershipError("Bootstrap execution unverified; ownership retained")
+        with self.guard._acknowledgement_transaction() as db:
+            job = db.get(IngestionJob, job_id)
+            if (job is None or job.domain != self.receipt_domain
+                    or job.status != IngestionStatus.COMPLETED or job.dry_run is not False
+                    or type(job.meta) is not dict
+                    or job.meta.get("seeding_claim_ids") != self.claim_ids):
+                raise DomainOwnershipError("Bootstrap receipt unverified; ownership retained")
+            expected = {}
+            table = SeedingDomainClaim.__table__
+            with db.no_autoflush:
+                for domain, execution in self.members.items():
+                    claim = db.get(SeedingDomainClaim, execution.identity, with_for_update=True)
+                    if (not execution.entered or not isinstance(execution.entry, UUID)
+                            or claim is None or claim.domain != domain or claim.kind != "native"
+                            or claim.command_id is not None or claim.entered_at is None
+                            or claim.entry_id != entry_digest(execution.entry)
+                            or claim.returned_at is not None or claim.released_at is not None
+                            or _coherent_terminal_job(db, job, claim.acquired_at) is None):
+                        raise DomainOwnershipError("Bootstrap member unverified; ownership retained")
+                    claim.returned_at = clock(db)
+                    claim.released_at = claim.returned_at
+                    claim.job_id = job_id
+                    expected[claim.id] = {c.name: getattr(claim, c.name) for c in table.columns}
+            db.flush()
+            if self.guard.engine.dialect.name == "postgresql":
+                # Fire deferred effects while rollback can still retain the
+                # whole group. ORM state alone cannot prove the stored release.
+                db.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+            stored = db.execute(select(table).where(table.c.id.in_(expected))).mappings().all()
+            def normalized(value):
+                if isinstance(value, datetime) and value.tzinfo is None:
+                    return value.replace(tzinfo=timezone.utc)
+                return value
+            if len(stored) != len(expected) or any(
+                    row["id"] not in expected or any(
+                        type(row[name]) is not type(value)
+                        or normalized(row[name]) != normalized(value)
+                        for name, value in expected[row["id"]].items())
+                    for row in stored):
+                raise DomainOwnershipError("Bootstrap stored release unverified; ownership retained")
+
+    def close(self):
+        self.guard.close()
+
+
+def enter_domains(factory, domains, receipt_domain):
+    """Acquire a nonempty reference effect-domain set, with no partial commit."""
+    return DomainExecutionSet(factory, domains, receipt_domain).open()

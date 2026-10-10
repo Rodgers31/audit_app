@@ -115,8 +115,9 @@ def test_refused_second_bootstrap_preserves_supplied_connection_reference_rows(
     assert {row.id for row in db_session.scalars(select(Entity).where(Entity.type == EntityType.COUNTY))} == expected
     failures = db_session.scalars(select(IngestionJob).where(
         IngestionJob.domain == "national_budget", IngestionJob.status == IngestionStatus.FAILED)).all()
-    assert len(failures) == 2
-    assert failures[-1].meta["ownership_refused"] is True
+    assert len(failures) == 1
+    # The retained caller-owned reference set blocks the entire second run.
+    assert failures[0].meta["ownership_retained"] is True
 
 
 @pytest.mark.parametrize("fault", [None, "errors", "wrong_domain", "dry_run", "bool_count", "negative_count"])
