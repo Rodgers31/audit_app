@@ -191,7 +191,7 @@ class DomainExecution:
             self.pid = self.connection.scalar(text("SELECT pg_backend_pid()"))
             if not self.connection.scalar(text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": self.key}):
                 self.close()
-                raise DomainBusyError("Domain execution is already owned")
+                raise DomainBusyError(f"Domain execution is already owned: {self.domain}")
             if not self.continuous():  # e.g. an autocommit engine already dropped it
                 self.close()
                 raise DomainOwnershipError("Domain execution lock is not held")
@@ -367,16 +367,16 @@ class DomainExecutionSet:
                 for domain, execution in self.members.items():
                     if domain != self.receipt_domain and not self.guard.connection.scalar(
                             text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": execution.key}):
-                        raise DomainBusyError("Bootstrap execution domain is already owned")
+                        raise DomainBusyError(f"Bootstrap execution domain is already owned: {domain}")
             with self.factory.begin() as db:
                 for domain, execution in self.members.items():
                     legacy = db.get(EtlDispatchDomain, domain)
                     if (legacy is not None and legacy.command_id is not None
                             or unclaimed_running(db, domain)):
-                        raise DomainBusyError("Bootstrap domain uncertain; reconcile retained execution")
+                        raise DomainBusyError(f"Bootstrap domain uncertain: {domain}; reconcile retained execution")
                     execution.entry = uuid4()
                     if not reserve(db, domain, execution.identity, entry=execution.entry):
-                        raise DomainBusyError("Bootstrap domain retained; reconcile retained execution")
+                        raise DomainBusyError(f"Bootstrap domain retained: {domain}; reconcile retained execution")
             for execution in self.members.values():
                 execution.entered = True
             return self
@@ -418,7 +418,8 @@ class DomainExecutionSet:
                             or claim.command_id is not None or claim.entered_at is None
                             or claim.entry_id != entry_digest(execution.entry)
                             or claim.returned_at is not None or claim.released_at is not None
-                            or _coherent_terminal_job(db, job, claim.acquired_at) is None):
+                            or _coherent_terminal_job(db, job, claim.acquired_at) is None
+                            or _coherent_terminal_job(db, job, claim.entered_at) is None):
                         raise DomainOwnershipError("Bootstrap member unverified; ownership retained")
                     claim.returned_at = clock(db)
                     claim.released_at = claim.returned_at

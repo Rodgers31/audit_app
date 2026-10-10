@@ -102,12 +102,15 @@ BOOTSTRAP_DOMAIN = "bootstrap_reference_data"
 # entity-linked GDP replacement/pruning and bootstrap Loan cleanup overlap the
 # native writer inventory. Acquire the entire non-budget reference fence before
 # even the early country/period commits. Budget keeps its separate refusal path.
-# New native domains require an explicit overlap review here (see lane handoff).
+# CRA shares Country and SourceDocument identities. Its coordinated Batch 11
+# opt-in entrypoint is fenced even while disabled; other new domains need explicit
+# overlap review here, enforced by the closed writer-inventory test.
 BOOTSTRAP_EFFECT_DOMAINS = (
     BOOTSTRAP_DOMAIN, "audits", "counties_budget", "county_officials",
     "debt_timeline", "economic_indicators", "fiscal_summary", "imf_weo",
     "learning_hub", "national_debt", "national_gdp", "pending_bills",
     "population", "revenue_by_source", "stalled_projects",
+    "cra",
 )
 STALE_AFTER_DAYS = 180
 

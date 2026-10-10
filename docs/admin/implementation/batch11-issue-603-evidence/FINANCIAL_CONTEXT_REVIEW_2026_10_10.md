@@ -53,5 +53,5 @@ before, and suppresses automatic writer/scheduler/warmup startup on an explicit
 False result. Existing reference readers can still serve during retained
 ownership; missing references remain unavailable. This affects permission to
 start writers, not the origin, selection, units or fallback of financial values.
-Provider flags stay off in owned execution. Financial detector/misuse controls,+health-score, unit, pending-bill, fiscal and IMF publication cohorts are required
+Provider flags stay off in owned execution. Financial detector/misuse controls, health-score, unit, pending-bill, fiscal and IMF publication cohorts are required
 after this narrowly refreshed pin; final source-bound results live externally.

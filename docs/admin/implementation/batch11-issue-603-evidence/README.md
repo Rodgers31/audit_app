@@ -17,7 +17,7 @@ env PATH='<runtime-bin>:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin' \
   PYTHONPATH='<checkout>/backend' \
   <python> docs/admin/implementation/batch11-issue-603-evidence/publish.py \
   --root '<checkout>' --out '<fresh-external-output>' \
-  tests/test_batch11_bootstrap_admission.py tests/test_batch11_bootstrap_evidence.py
+  tests/test_batch11_bootstrap_admission.py tests/test_batch11_bootstrap_review_tools.py tests/test_batch11_bootstrap_evidence.py
 <python> docs/admin/implementation/batch11-issue-603-evidence/verify.py \
   --root '<checkout>' --index '<fresh-external-output>/INDEX.json'
 ```

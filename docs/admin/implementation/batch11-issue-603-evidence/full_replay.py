@@ -1,10 +1,20 @@
 """Run the complete canonical core inventory with explicit ETL package ownership."""
 import argparse
 import importlib.util
+import ipaddress
 import os
 from pathlib import Path
 import socket
 import sys
+
+
+def loopback_literal(host):
+    if type(host) is not str:
+        return False
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def main():
@@ -21,8 +31,9 @@ def main():
     # fixtures use loopback; Docker is controlled through its local CLI/socket.
     original = socket.socket.connect
     def local_connect(sock, address):
-        if sock.family in (socket.AF_INET, socket.AF_INET6) and address[0] not in ("127.0.0.1", "::1", "localhost"):
-            raise RuntimeError("Core replay external transport refused")
+        if sock.family in (socket.AF_INET, socket.AF_INET6):
+            if not loopback_literal(address[0]):
+                raise RuntimeError("Core replay external transport refused")
         return original(sock, address)
     socket.socket.connect = local_connect
     path = root / ".github/scripts/run_backend_tests.py"

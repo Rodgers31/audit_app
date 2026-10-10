@@ -41,7 +41,7 @@ def snapshot():
 
 def writer():
     child = subprocess.Popen(
-        [sys.executable, "-m", "seeding.cli", "seed", "--domain", "audits", "--no-dry-run"],
+        [sys.executable, "-m", "seeding.cli", "seed", "--domain", "cra" if mode == "retained_cra" else "audits", "--no-dry-run"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, start_new_session=True, env={k: os.environ[k] for k in (
             "PATH", "DATABASE_URL", "PYTHONPATH", "PYTHON_DOTENV_DISABLED",

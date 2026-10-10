@@ -43,13 +43,17 @@ def main():
         if result.returncode:
             raise RuntimeError("Linux replay failed; raw output preserved")
     finally:
-        state = json.loads(docker("inspect", name).stdout)[0]
-        if state["Name"] != "/" + name or state["Config"]["Labels"]["audit.owner"] != "batch11-bootstrap":
-            raise RuntimeError("Linux cleanup ownership mismatch")
-        docker("rm", "-f", "-v", state["Id"])
-        if docker("inspect", name, check=False).returncode == 0:
-            raise RuntimeError("Linux container survived cleanup")
-        print("OWNED_LINUX_REMOVED", state["Id"], name)
+        inspected = docker("inspect", name, check=False)
+        if inspected.returncode == 0:
+            state = json.loads(inspected.stdout)[0]
+            if state["Name"] != "/" + name or state["Config"]["Labels"]["audit.owner"] != "batch11-bootstrap":
+                raise RuntimeError("Linux cleanup ownership mismatch")
+            docker("rm", "-f", "-v", state["Id"])
+            if docker("inspect", name, check=False).returncode == 0:
+                raise RuntimeError("Linux container survived cleanup")
+            print("OWNED_LINUX_REMOVED", state["Id"], name)
+        else:
+            print("OWNED_LINUX_NOT_CREATED", name)
 
 
 if __name__ == "__main__":

@@ -59,7 +59,7 @@ def run_probe(tmp_path, url, mode):
     return rows[0]
 
 
-@pytest.mark.parametrize("mode", ["retained_fresh", "retained_stale", "untagged", "active_ready", "race", "race_force"])
+@pytest.mark.parametrize("mode", ["retained_fresh", "retained_stale", "retained_cra", "untagged", "active_ready", "race", "race_force"])
 def test_startup_retains_nonbudget_ownership_without_any_effect(tmp_path, admission_database, mode):
     result = run_probe(tmp_path, admission_database, mode)
     assert result["after"] == result["before"], "CONFLICTING_BOOTSTRAP_EFFECT: retained owner was bypassed"
@@ -143,7 +143,7 @@ def test_atomic_claim_set_rolls_back_partial_reservations(admission_database, mo
         return value
     monkeypatch.setattr(exclusion, "reserve", observed)
     try:
-        with pytest.raises(exclusion.DomainBusyError, match="retained"):
+        with pytest.raises(exclusion.DomainBusyError, match="retained: zz-owned"):
             exclusion.enter_domains(factory, ("aa-owned", "zz-owned"), "aa-owned")
         assert len(seen) == 2 and seen[0][1] == seen[1][1]
         with factory() as observer:
@@ -183,7 +183,7 @@ def test_group_receipt_refusal_preserves_lock_then_valid_release(admission_datab
         engine.dispose()
 
 
-@pytest.mark.parametrize("fault", ["dry_run", "missing_claim", "entry_nonce", "backend_loss"])
+@pytest.mark.parametrize("fault", ["dry_run", "missing_claim", "entry_nonce", "backend_loss", "started_before_entry"])
 def test_group_release_refuses_uncertain_members(admission_database, monkeypatch, fault):
     from datetime import datetime, timezone
     from sqlalchemy.orm import sessionmaker
@@ -204,6 +204,12 @@ def test_group_release_refuses_uncertain_members(admission_database, monkeypatch
             job_id = job.id
             if fault == "missing_claim":
                 db.delete(db.get(SeedingDomainClaim, group.members["audits"].identity))
+            elif fault == "started_before_entry":
+                from datetime import timedelta
+                now = datetime.now(timezone.utc)
+                claim = db.get(SeedingDomainClaim, group.members["audits"].identity)
+                claim.acquired_at, claim.entered_at = now - timedelta(seconds=60), now - timedelta(seconds=20)
+                job.started_at, job.finished_at = now - timedelta(seconds=40), now - timedelta(seconds=30)
         if fault == "entry_nonce":
             group.members["audits"].entry = uuid4()
         if fault == "backend_loss":
@@ -230,7 +236,8 @@ def test_group_release_refuses_uncertain_members(admission_database, monkeypatch
 def test_current_builtin_writer_inventory_is_fenced():
     from bootstrap import BOOTSTRAP_EFFECT_DOMAINS, BOOTSTRAP_DOMAIN
     from seeding.registries import _BUILTIN_DOMAIN_PACKAGES
-    domains = {name.rsplit(".", 1)[1] for name in _BUILTIN_DOMAIN_PACKAGES}
+    # CRA's reviewed opt-in entrypoint is deliberately outside scheduled --all.
+    domains = {name.rsplit(".", 1)[1] for name in _BUILTIN_DOMAIN_PACKAGES} | {"cra"}
     assert domains == (set(BOOTSTRAP_EFFECT_DOMAINS) - {BOOTSTRAP_DOMAIN}) | {"national_budget"}
 
 

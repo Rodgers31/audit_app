@@ -30,7 +30,8 @@ def sha(path):
 
 
 def inventory(path):
-    cases = list(ET.parse(path).iter("testcase"))
+    tree = ET.parse(path)
+    cases = list(tree.iter("testcase"))
     identities = [t.attrib.get("classname", "") + "::" + t.attrib.get("name", "") for t in cases]
     require(bool(identities) and len(set(identities)) == len(identities)
         and all(t.attrib.get("classname") and t.attrib.get("name") for t in cases), "Empty/duplicate testcase inventory")
@@ -48,7 +49,7 @@ def inventory(path):
         else:
             counts["passed"] += 1
     require(counts["passed"] > 0, "No passing executed testcases")
-    suites = list(ET.parse(path).iter("testsuite"))
+    suites = list(tree.iter("testsuite"))
     for key, actual in (("tests", len(cases)), ("failures", counts["failed"]),
             ("errors", counts["errors"]), ("skipped", counts["skipped"] + counts["xfailed"])):
         require(sum(int(s.attrib[key]) for s in suites) == actual, "JUnit summary mismatch")

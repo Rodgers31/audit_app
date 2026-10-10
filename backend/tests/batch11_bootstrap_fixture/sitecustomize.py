@@ -56,6 +56,8 @@ if os.environ.get("BATCH11_BOOTSTRAP_INERT") == "1":
         REGISTRY._handlers.clear()
         REGISTRY.register("national_budget", inert_budget)
         REGISTRY.register("audits", inert_audits)
+        REGISTRY.register("cra", lambda session, settings, context:
+            inert_audits(session, settings, context).model_copy(update={"domain": "cra"}))
     except BaseException:
         import traceback
 
