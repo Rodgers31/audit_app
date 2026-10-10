@@ -973,13 +973,42 @@ def _bootstrap_session() -> Tuple[Session, bool]:
     return candidate, True
 
 
+def required_county_references_available(session: Session) -> bool:
+    """Prove the same Kenyan identities the county readers can resolve.
+
+    Counts alone admit foreign, unknown or duplicate counties. Read only the
+    identity columns; reference readiness says nothing about financial coverage.
+    Query failure propagates to the startup gate instead of becoming absence.
+    """
+    from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
+
+    rows = (
+        session.query(Entity.canonical_name, Entity.slug)
+        .join(Country, Entity.country_id == Country.id)
+        .filter(Entity.type == EntityType.COUNTY, Country.iso_code == "KEN")
+        .limit(2 * len(OFFICIAL_COUNTY_CODES) + 1)
+        .all()
+    )
+    if len(rows) > 2 * len(OFFICIAL_COUNTY_CODES):
+        return False
+    found = set()
+    for name, slug in rows:
+        code = official_county_code(name)
+        if code is None:
+            continue
+        if code in found or not isinstance(slug, str) or not slug.strip():
+            return False
+        found.add(code)
+    return found == set(OFFICIAL_COUNTY_CODES)
+
+
 def initialize_reference_data(
     code_lookup: Optional[Dict[str, str]] = None, *, force: bool = False
 ) -> None:
     """Seed canonical county + audit data into the database if missing.
 
     The per-county loop is the expensive part (~3 min on a cold DB); once
-    47 county entities exist it's skipped on subsequent boots. The
+    all supported county identities exist it's skipped on subsequent boots. The
     national-level reference seeders are cheap
     and idempotent, so they always run without needing `--force`.
     """
@@ -1017,16 +1046,10 @@ def initialize_reference_data(
     if not force:
         quick_session, _ = _bootstrap_session()
         try:
-            county_count = (
-                quick_session.query(Entity)
-                .filter(Entity.type == EntityType.COUNTY)
-                .count()
-            )
-            if county_count >= 47:
+            if required_county_references_available(quick_session):
                 logger.info(
-                    "County data present (%d counties) — skipping county loop; "
-                    "still refreshing national-level data",
-                    county_count,
+                    "Canonical county references present — skipping county loop; "
+                    "still refreshing national-level data"
                 )
                 skip_county_loop = True
         except Exception:
