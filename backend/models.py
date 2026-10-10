@@ -34,7 +34,7 @@ class EtlDispatchCommand(Base):
     __tablename__ = "etl_dispatch_commands"
     __table_args__ = (
         UniqueConstraint("actor_id", "idempotency_key", name="uq_etl_dispatch_actor_key"),
-        CheckConstraint("source = 'oag' AND domain = 'audits'", name="ck_etl_dispatch_mapping"),
+        CheckConstraint("(source = 'oag' AND domain = 'audits') OR (source = 'treasury' AND domain = 'fiscal_summary') OR (source = 'cob' AND domain = 'counties_budget') OR (source = 'knbs' AND domain = 'population')", name="ck_etl_dispatch_mapping"),
         CheckConstraint("version BETWEEN 1 AND 9007199254740991", name="ck_etl_dispatch_version"),
         CheckConstraint("created_at <= updated_at AND (started_at IS NULL OR created_at <= started_at) AND (finished_at IS NULL OR (finished_at <= updated_at AND (started_at IS NULL OR started_at <= finished_at)))", name="ck_etl_dispatch_times"),
         CheckConstraint("(status='queued' AND started_at IS NULL AND finished_at IS NULL AND job_id IS NULL AND outcome IS NULL AND claim_token IS NULL AND NOT execution_started) OR (status='running' AND started_at IS NOT NULL AND finished_at IS NULL AND outcome IS NULL AND claim_token IS NOT NULL) OR (status='completed' AND started_at IS NOT NULL AND finished_at IS NOT NULL AND job_id IS NOT NULL AND job_id > 0 AND outcome IS NOT NULL AND outcome='completed') OR (status='failed' AND finished_at IS NOT NULL AND outcome IS NOT NULL AND outcome='failed') OR (status='interrupted' AND started_at IS NOT NULL AND finished_at IS NOT NULL AND outcome IS NOT NULL AND outcome='execution_unverified')", name="ck_etl_dispatch_state"),
@@ -79,10 +79,11 @@ class EtlDispatchDomain(Base):
 
     __tablename__ = "etl_dispatch_domains"
     __table_args__ = (
-        CheckConstraint("domain = 'audits'", name="ck_etl_dispatch_domain"),
+        CheckConstraint("domain IN ('audits', 'fiscal_summary', 'counties_budget', 'population')", name="ck_etl_dispatch_domain"),
         CheckConstraint("(command_id IS NULL) = (claim_token IS NULL)", name="ck_etl_dispatch_domain_claim"),
     )
     domain = Column(String(100), primary_key=True)
+    ready = Column(Boolean, nullable=False, server_default=sa_false())
     command_id = Column(Uuid(as_uuid=True), ForeignKey("etl_dispatch_commands.id"), unique=True)
     claim_token = Column(Uuid(as_uuid=True))
 

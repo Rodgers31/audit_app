@@ -14,7 +14,7 @@ from uuid import uuid4
 from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 
-from admin_etl_dispatch import db_clock, enabled, fresh
+from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh, mapped
 from seeding.exclusion import reserve, unclaimed_running
 from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
 
@@ -24,6 +24,8 @@ OBSERVATION_CLOCK_SKEW_SECONDS = 5
 
 
 def register_worker(factory):
+    from admin_etl_dispatch_adapter import ready_domains
+    ready = ready_domains()
     generation = uuid4()
     with factory.begin() as db:
         now = db_clock(db)
@@ -42,11 +44,15 @@ def register_worker(factory):
         worker.ready = True
         worker.last_seen_at = now
         worker.expires_at = now + timedelta(seconds=LEASE_SECONDS)
-        db.execute(insert(EtlDispatchDomain).values(domain="audits").on_conflict_do_nothing())
+        for name in sorted(set(SOURCE_DOMAINS.values())):
+            db.execute(insert(EtlDispatchDomain).values(domain=name, ready=name in ready).on_conflict_do_nothing())
+            db.get(EtlDispatchDomain, name, with_for_update=True).ready = name in ready
     return generation
 
 
 def heartbeat(factory, generation):
+    from admin_etl_dispatch_adapter import ready_domains
+    ready = ready_domains()
     with factory.begin() as db:
         worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
         now = db_clock(db)
@@ -54,6 +60,8 @@ def heartbeat(factory, generation):
             return False
         worker.last_seen_at = now
         worker.expires_at = now + timedelta(seconds=LEASE_SECONDS)
+        for row in db.scalars(select(EtlDispatchDomain).with_for_update()):
+            row.ready = row.domain in ready
     return True
 
 
@@ -70,18 +78,22 @@ def claim(factory, generation):
         now = db_clock(db)
         if not fresh(worker, now) or worker.generation != generation:
             return None
-        domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
-        if domain is None or domain.command_id is not None:
-            return None
-        # Preserve pre-migration RUNNING observations conservatively. New native
-        # invocations also acquire the atomic shared ownership index below.
-        if unclaimed_running(db, "audits"):
-            return None
-        command = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "queued").order_by(EtlDispatchCommand.created_at, EtlDispatchCommand.id).limit(1).with_for_update(skip_locked=True))
+        domains = {row.domain: row for row in db.scalars(select(EtlDispatchDomain).order_by(EtlDispatchDomain.domain).with_for_update())}
+        candidates = []
+        for name, domain in domains.items():
+            if domain.ready is not True or domain.command_id is not None or unclaimed_running(db, name):
+                continue
+            candidate = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "queued", EtlDispatchCommand.domain == name).order_by(EtlDispatchCommand.created_at, EtlDispatchCommand.id).limit(1).with_for_update(skip_locked=True))
+            if candidate is not None and mapped(candidate.source, name):
+                candidates.append(candidate)
+        command = None
+        for candidate in sorted(candidates, key=lambda c: (c.created_at, c.id)):
+            domain = domains.get(candidate.domain)
+            token = uuid4()
+            if reserve(db, candidate.domain, token, candidate.id):
+                command = candidate
+                break
         if command is None:
-            return None
-        token = uuid4()
-        if not reserve(db, "audits", token, command.id):
             return None
         command.status = "running"
         command.started_at = command.updated_at = now
@@ -96,7 +108,11 @@ def finish(factory, generation, command_id, token, exit_code):
     with factory.begin() as db:
         worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
         now = db_clock(db)
-        domain = db.scalar(select(EtlDispatchDomain).where(EtlDispatchDomain.domain == "audits").with_for_update())
+        # Worker row serializes domain lookup with claim/adapter/CLI entry.
+        command = db.get(EtlDispatchCommand, command_id)
+        if command is None or not mapped(command.source, command.domain):
+            return False
+        domain = db.get(EtlDispatchDomain, command.domain, with_for_update=True)
         command = db.get(EtlDispatchCommand, command_id, with_for_update=True)
         if command is None or command.status != "running" or command.generation != generation or command.claim_token != token or domain is None or domain.command_id != command_id or domain.claim_token != token:
             return False
@@ -104,7 +120,7 @@ def finish(factory, generation, command_id, token, exit_code):
             interrupt(command, now)
             return False
         ownership = db.get(SeedingDomainClaim, token, with_for_update=True)
-        if (ownership is not None and ownership.kind == "dispatch" and ownership.command_id == command_id
+        if (ownership is not None and ownership.kind == "dispatch" and ownership.domain == command.domain and ownership.command_id == command_id
                 and ownership.entered_at is None and ownership.returned_at is None and ownership.released_at is None
                 # Defence in depth: any correlated run observation other than an
                 # ownership refusal means something ran; keep it uncertain.
@@ -136,11 +152,19 @@ def finish(factory, generation, command_id, token, exit_code):
             interrupt(command, now)
             return False
         job, observed_start, observed_finish = observations[0]
-        if ownership is None or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.released_at is not None or ownership.returned_at is None or ownership.job_id != job.id:
+        if ownership is None or ownership.domain != command.domain or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.released_at is not None or ownership.returned_at is None or ownership.job_id != job.id:
             interrupt(command, now)
             return False
         tolerance = timedelta(seconds=OBSERVATION_CLOCK_SKEW_SECONDS)
+        # Accepted OAG failure observations predating the native claim tag may
+        # omit it. Exact durable claim/job acknowledgement above still applies;
+        # an explicit bad tag, any completed job, and every new mapping refuse.
+        tagged_claim = (type(job.meta) is dict and (
+            job.meta.get("seeding_claim_id") == str(token) or (
+                command.source == "oag" and "seeding_claim_id" not in job.meta
+                and job.status in (IngestionStatus.FAILED, IngestionStatus.COMPLETED_WITH_ERRORS))))
         coherent = (job.domain == command.domain and job.dry_run == command.dry_run
+            and tagged_claim
             and observed_start is not None and observed_finish is not None
             and command.started_at - tolerance <= observed_start <= observed_finish <= now + tolerance
             and all(type(value) is int and 0 <= value <= 2147483647 for value in (job.items_processed, job.items_created, job.items_updated))
