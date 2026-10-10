@@ -75,7 +75,7 @@ def test_cra_gate_requires_explicit_boolean(value):
         SeedingSettings(cra_ingestion_enabled=value, _env_file=None)
 
 
-@pytest.mark.parametrize("status,kind,body", [(404, "application/pdf", b"%PDF-"), (302, "application/pdf", b"%PDF-"), (200, "text/html", b"error"), (200, "application/pdf", b"a" * (source.MAX_BYTES + 1))])
+@pytest.mark.parametrize("status,kind,body", [(404, "application/pdf", b"%PDF-"), (302, "application/pdf", b"%PDF-"), (200, "text/html", b"error"), (200, "application/pdf", b"a" * (source.MAX_BYTES + 1))], ids=['http_404', 'http_302', 'html_content_type', 'oversized_body'])
 def test_real_transport_rejects_bad_response(monkeypatch, status, kind, body):
     actual_client = httpx.Client
     seen = []
