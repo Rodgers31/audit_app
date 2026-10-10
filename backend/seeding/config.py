@@ -15,6 +15,18 @@ from .utils import parse_rate_limit
 class SeedingSettings(BaseSettings):
     """Configuration options controlling seeding behaviour."""
 
+    cra_ingestion_enabled: bool = Field(
+        default=False,
+        description="Explicit opt-in to the reviewed CRA FY2026/27 Table 5.2 edition; no automatic source rollout.",
+    )
+
+    @field_validator("cra_ingestion_enabled", mode="before")
+    @classmethod
+    def explicit_cra_opt_in(cls, value):
+        if type(value) is not bool and (type(value) is not str or value not in ("true", "false")):
+            raise ValueError("CRA opt-in requires true or false")
+        return value
+
     rate_limit: str = Field(
         default="60/min",
         description="Requests per time window e.g. '60/min' or '5/sec'.",

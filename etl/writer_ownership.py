@@ -1,6 +1,6 @@
 """Legacy loader authority using the reviewed native domain claim protocol.
 
-Reference rows are shared by thirteen native domains. Acquire that conservative
+Reference rows are shared by fourteen native domains. Acquire that conservative
 set in lexical order before any loader effect, regardless of the document kind.
 Learning hub and IMF WEO write independent tables and remain concurrent.
 """
@@ -23,7 +23,7 @@ from seeding.exclusion import DomainOwnershipError, enter_domain
 
 logger = logging.getLogger(__name__)
 LEGACY_DOMAINS = (
-    "audits", "counties_budget", "county_officials", "debt_timeline",
+    "audits", "counties_budget", "county_officials", "cra", "debt_timeline",
     "economic_indicators", "fiscal_summary", "national_budget", "national_debt",
     "national_gdp", "pending_bills", "population", "revenue_by_source", "stalled_projects",
 )

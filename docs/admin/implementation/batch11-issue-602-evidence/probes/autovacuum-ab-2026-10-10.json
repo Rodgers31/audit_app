@@ -1,0 +1,20 @@
+{
+  "autovacuum_on_naptime_1s": {
+    "server_setting": "on,1s",
+    "exit": 1,
+    "other_sessions_refusals": 48,
+    "summary_line": [
+      "13 failed, 125 passed, 4 warnings in 30.86s"
+    ],
+    "cleanup_leftover": ""
+  },
+  "autovacuum_off": {
+    "server_setting": "off,1min",
+    "exit": 0,
+    "other_sessions_refusals": 0,
+    "summary_line": [
+      "138 passed, 4 warnings in 31.68s"
+    ],
+    "cleanup_leftover": ""
+  }
+}

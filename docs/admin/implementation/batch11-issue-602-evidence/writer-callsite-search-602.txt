@@ -1,0 +1,32 @@
+# Executed 2026-10-10T16:05:08Z in the #602 lane checkout (base bcb5ff99854de595bbe3f7d60cc8796b7ada5a20 + #602 working tree)
+$ grep -rlnE "SourceDocument\(|Extraction\(|INSERT INTO (source_documents|extractions)|insert\(SourceDocument|insert\(Extraction" --include=*.py backend etl scripts tools | grep -v "/tests/|alembic/versions|__pycache__" | sort
+backend/bootstrap.py
+backend/conftest.py
+backend/models.py
+backend/scripts/reproduce_reconciliation_stale_session.py
+backend/scripts/verify_county_identity_postgres.py
+backend/seeding/domains/audits/__init__.py
+backend/seeding/domains/audits/writer.py
+backend/seeding/domains/counties_budget/writer.py
+backend/seeding/domains/county_officials/__init__.py
+backend/seeding/domains/cra/writer.py
+backend/seeding/domains/debt_timeline/writer.py
+backend/seeding/domains/economic_indicators/writer.py
+backend/seeding/domains/fiscal_summary/writer.py
+backend/seeding/domains/national_budget/writer.py
+backend/seeding/domains/national_debt/instrument_writer.py
+backend/seeding/domains/national_debt/writer.py
+backend/seeding/domains/national_gdp/__init__.py
+backend/seeding/domains/pending_bills/writer.py
+backend/seeding/domains/population/census_counties.py
+backend/seeding/domains/revenue_by_source/writer.py
+backend/seeding/extractors/oag_blue_book.py
+backend/seeding/extractors/oag_county_audit.py
+backend/seeding/extractors/oag_county_volume.py
+backend/seeding/extractors/reconciliation.py
+backend/seeding/fetch_documents.py
+backend/seeding/pdf_artifact.py
+backend/services/response_receipts.py
+etl/database_loader.py
+etl/parliament_pipeline.py
+tools/verify_sourced_record_cleanup.py
