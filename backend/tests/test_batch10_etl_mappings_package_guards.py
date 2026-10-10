@@ -2,26 +2,18 @@
 import hashlib
 import json
 from pathlib import Path
-import shutil
-import subprocess
-import sys
 import xml.etree.ElementTree as ET
 
 import pytest
 from test_batch10_etl_mappings_receipts import ROOT, PACKET
+from batch10_packet_fixture import copy_packet, invoke, snapshot
 
 
 @pytest.mark.parametrize('optimized', [False, True])
 @pytest.mark.parametrize('attack', ['schema_bool', 'duplicate', 'pruned', 'hidden_failure'])
 def test_published_package_refuses_false_coverage(tmp_path, optimized, attack):
-    manifest = json.loads((ROOT / PACKET / 'manifest.json').read_text())
     copy = tmp_path / 'copy'
-    shutil.copytree(ROOT / PACKET, copy / PACKET)
-    for name in manifest['source_sha256']:
-        target = copy / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / name, target)
-    packet = copy / PACKET
+    packet, manifest = copy_packet(copy)
     if attack == 'schema_bool':
         manifest['schema'] = True
     elif attack == 'duplicate':
@@ -50,10 +42,7 @@ def test_published_package_refuses_false_coverage(tmp_path, optimized, attack):
     (packet / 'manifest.json').write_text(json.dumps(manifest))
     inherited = packet / 'inherited-verdict.json'
     inherited.write_bytes(b'{"historical":true}')
-    def snapshot():
-        return {str(p.relative_to(copy)): hashlib.sha256(p.read_bytes()).hexdigest() for p in copy.rglob('*') if p.is_file()}
-    before = snapshot()
-    result = subprocess.run([sys.executable, *(['-O'] if optimized else []), str(packet / 'verify_package.py'), str(copy)],
-        capture_output=True, text=True, timeout=15)
+    before = snapshot(copy)
+    result = invoke(packet, copy, optimized, retained_source=True)
     assert result.returncode != 0 and 'PASSED' not in result.stdout
-    assert snapshot() == before
+    assert snapshot(copy) == before

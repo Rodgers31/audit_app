@@ -1,0 +1,12 @@
+{
+  "current_checkout_acceptance": false,
+  "generated_at": 1791622946.4129632,
+  "generated_by": "publish_coordinator_610.py",
+  "generator_sha256": "987af9dc5c35d56cff328d21090852eb408b72e27bc268f0b648b983962ce5f4",
+  "issue": 610,
+  "original_execution_status": "HISTORICAL_EXECUTION_PACKET",
+  "previous_manifest_sha256": "2c946719ccedeca661165acfcd6b34b433532002f20b62d2518c270d59177ff4",
+  "previous_publication_status": "HISTORICAL_SUPERSEDED_VALIDATOR",
+  "previous_verifier_sha256": "4e3b2ab3715866f206dab27bbc5df87df0cdbb0aa4d73b303a598b1cca669c2a",
+  "reason": "Strict metadata/JUnit guards and retained-source archive repair; old source identities, receipts, generators and outputs are unchanged. Fresh candidate execution is recorded externally."
+}

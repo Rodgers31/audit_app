@@ -38,10 +38,6 @@ publication provenance are in `history/coordinator-610/`; all original execution
 receipts, generators, logs, JUnit and earlier history remain unchanged. The
 current verifier and index supersede the old validator, not the old run identity.
 See `COORDINATOR_610.md` for scope, actual red controls and final replay locations.
-`publish_coordinator_610.py` preserved the frozen source and first schema2
-publication. `publish_coordinator_610_v2.py` separately publishes the final census
-refinement; its generator and intermediate publication identity are bound in the
-active index. The intermediate manifest/verifier/README are retained as well.
 
 ## Original author handoff (historical context)
 

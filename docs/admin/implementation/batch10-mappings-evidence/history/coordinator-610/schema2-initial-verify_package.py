@@ -18,7 +18,7 @@ FROZEN = '86aa4c3a7a29383ed256273bd0097cfc81b3336d'
 TREE = '051cd539ef2219e9659dd339c720b3ba9e2596c7'
 PREVIOUS_MANIFEST = 'history/coordinator-610/previous-manifest.json'
 PREVIOUS_SHA256 = '2c946719ccedeca661165acfcd6b34b433532002f20b62d2518c270d59177ff4'
-PUBLISHER = 'publish_coordinator_610_v2.py'
+PUBLISHER = 'publish_coordinator_610.py'
 RECORDER = 'generators/record_v2.py'
 REQUIRED_RECEIPTS = {
     'receipts/cohort-current-repaired.json': 519,
@@ -148,7 +148,6 @@ def retained_sources(packet, manifest, old, source_root):
                     'Retained source mismatch: ' + member.filename)
     if source_root is not None:
         # Explicit extracted historical fixture; never implicitly use ROOT.
-        require(source_root.is_dir() and not source_root.is_symlink(), 'Invalid retained source fixture root')
         actual = set()
         for path in source_root.rglob('*'):
             require(not path.is_symlink(), 'Symlink retained source fixture')
@@ -244,12 +243,12 @@ def verify(root, source_root=None):
     actual_assets = set()
     for path in packet.rglob('*'):
         require(not path.is_symlink(), 'Symlink package asset')
-        if path.is_file() and path not in (packet / 'manifest.json', packet / 'inherited-verdict.json'):
+        if path.is_file() and path.name != 'manifest.json' and path != packet / 'inherited-verdict.json':
             actual_assets.add(str(path.relative_to(packet)))
     require(actual_assets == set(manifest['assets_sha256']), 'Asset census mismatch')
     for name, expected in manifest['assets_sha256'].items():
         require(sha(located(packet, name)) == expected, 'Asset mismatch: ' + name)
-    require(manifest.get('publication_history') == 'history/coordinator-610/publication-v2.json',
+    require(manifest.get('publication_history') == 'history/coordinator-610/publication.json',
             'Publication history path mismatch')
     publication = load(located(packet, manifest['publication_history']).read_bytes())
     require(publication.get('generated_by') == PUBLISHER
@@ -257,10 +256,6 @@ def verify(root, source_root=None):
             and publication.get('previous_manifest_sha256') == PREVIOUS_SHA256
             and publication.get('original_execution_status') == 'HISTORICAL_EXECUTION_PACKET'
             and publication.get('current_checkout_acceptance') is False, 'Publication history mismatch')
-    require(manifest.get('intermediate_publication') == 'history/coordinator-610/schema2-initial-manifest.json'
-            and manifest.get('intermediate_publication_status') == 'HISTORICAL_SUPERSEDED_VALIDATOR'
-            and manifest.get('intermediate_publication_sha256') == publication.get('intermediate_manifest_sha256')
-            == sha(located(packet, manifest['intermediate_publication'])), 'Intermediate publication mismatch')
     return {'verdict': 'PASSED', 'classification': 'HISTORICAL_EXECUTION_PACKET',
             'current_checkout_acceptance': False, 'checks': len(checks),
             'source_files': 1160, 'executed_source_files': 1158, 'publication_only_source_files': 2}

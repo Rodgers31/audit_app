@@ -1,10 +1,8 @@
 {
   "assets_sha256": {
-    "CENSUS_REFINEMENT_610.md": "95717134cf8fe2a77c5d991d0a36ccebef36d230505b91d3b9e13b475b7799de",
     "CONTRACT.md": "04ccd7ef6ebcd1ef16ec6d5454bb3daccc2d5dfeae8adaf225eed3cc35def69a",
-    "COORDINATOR_610.md": "573b4ca62cb155b2d174196be572d23930bf44202c79b010e512049752502ac1",
     "LESSONS.md": "dc7d4eff128704ac1d7e27e48655a5c3e19d9950289f77a02f19e0841a8c91d0",
-    "README.md": "f9d954a553abf3f363b5b82f9c0a9db6942ae2125bde9238c0e44ffc4ee57ed6",
+    "README.md": "278b9a64d339df4c969e22a3b503c42dabd844ae51b95f28a617a5222e8da700",
     "build_package.py": "4045bd1ea7aaca51099b563cf4cffb18ecfd75f3e081b0fb0821a56197c58a4c",
     "generators/record.py": "e2904b6f7e0da69d768fe148624918b5ec8b1d711f54b13a7356da60b3db3879",
     "generators/record_v2.py": "5c7a2d839e5ad6c15110acff7c0ee3a555f58149ac88575dd3f9e0f27f6255c3",
@@ -30,16 +28,6 @@
     "history/cohort-minimum-repaired.log.gz": "ba5101e93d3467867b04d2ed83c2efa9728d06dd4a848b87cb737192f97194a5",
     "history/cohort-minimum.json.gz": "e1f8f783b19ac295979ca0c2ffb89607b630203e08d57c29a5bfda788f32c4d5",
     "history/cohort-minimum.log.gz": "d27484d5c425b0151158a03ea1b7efdd837902b5f628364b092035f8854e1974",
-    "history/coordinator-610/preservation.json": "f4c1ade855e9f4ddf3c4e22cb451f3a6d87f877a10c1fc23ef40afbce7879c40",
-    "history/coordinator-610/previous-README.md": "278b9a64d339df4c969e22a3b503c42dabd844ae51b95f28a617a5222e8da700",
-    "history/coordinator-610/previous-manifest.json": "2c946719ccedeca661165acfcd6b34b433532002f20b62d2518c270d59177ff4",
-    "history/coordinator-610/previous-verify_package.py": "4e3b2ab3715866f206dab27bbc5df87df0cdbb0aa4d73b303a598b1cca669c2a",
-    "history/coordinator-610/publication-v2.json": "de150df79f84c525f96035940db9ab29bbfdb213a5881c3ef020acb5de6bb01c",
-    "history/coordinator-610/publication.json": "af1f11e79eee17563fa228373013b379de407605656b1f582fec217e0949ac29",
-    "history/coordinator-610/schema2-initial-README.md": "a20db4635d770c895ac885c453b5f8e19d9d38303e1fdcca30740913a904c6de",
-    "history/coordinator-610/schema2-initial-manifest.json": "7becca24508813946755280ef4a5b08566951ca1ec2ab5bafe894efa524e6c52",
-    "history/coordinator-610/schema2-initial-preservation.json": "25c7df1e6dfc10d69db40e04e43836d8f70123ea88b7cbb34d58b8e80e71cfb3",
-    "history/coordinator-610/schema2-initial-verify_package.py": "ee370128aa1aadf0e92fad2fac2d0945c404656aa813ed0ce990b21eeec8902e",
     "history/critical-lint.json.gz": "453868fba71343525ded1bfab20d4eacd564a6d896958b27b2058d02a648beb5",
     "history/critical-lint.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
     "history/final-fixture-base-red.json.gz": "b18a847daf915195d42773ac9d2f3113896e0c2e305919891bd146d87957f7cb",
@@ -138,13 +126,10 @@
     "history/review-regressions-red.json.gz": "6d6994274549a36ad4c8678110fd435cf77c50a9b42da56271fa2dae857bb9ea",
     "history/review-regressions-red.log.gz": "35386d8572bec1522c5e7e2527ba1086786c91b4a5d9e3cb3f07f43d50b1208a",
     "publication-history.json": "f8931a8f6ec95b861018605fc6bcbf2bb864ac40ad64f6e094bbceac7c5a030d",
-    "publish_coordinator_610.py": "987af9dc5c35d56cff328d21090852eb408b72e27bc268f0b648b983962ce5f4",
-    "publish_coordinator_610_v2.py": "2bdfe6fc29ccf631558b3b597cf71b3377c3485b9956d711f49ac54e1ebeef95",
     "receipts/cohort-current-repaired.json": "ff1552bfff6ca1b46437b2455b8ded32c1b20845f3595aab09250521756e8d73",
     "receipts/cohort-minimum-final.json": "f23116d879d04678dbc0169add13f1c260aefe39af61dd3479c35735686a51e6",
     "receipts/legacy-current-repaired.json": "1cc5cacb80c37dc90f13573dd8cb26532617f3d1195862339e6ec457ad426c02",
     "receipts/legacy-minimum-repaired.json": "c74fb3340a831c65dc581046ccbca4c1ef756fda96a014a2568ee42abb0a5c88",
-    "retained-source-86aa4c3.zip": "6352ca240b35135fd3727a15d8bda42130af6eb2048c21881f3b3899f1811bb7",
     "review/review-adversarial.tar.gz": "9cdc6bda181b7432264b0bc0dab7bf6ae091584fdd3f78ff6020126c62e09101",
     "review/review-spec.tar.gz": "5470d00e1461de009c6febc8f71809895e3b551c1a1acaaaa70fa3659168df08",
     "review/review-standards.tar.gz": "7a81f70144899aed8705df174a94e97a31ae34ab04cbb44e32500ffa3d4a3491",
@@ -162,7 +147,7 @@
     "runs/legacy-current-repaired.log.gz": "dbab7cb0fa1bf9ced668f3fc29cec83391ce9654ec4c625b98754cd864300f3c",
     "runs/legacy-minimum-repaired-junit.xml": "cd81e9eb31142c02229a2a455e30c2f8f95b6e0854ef530464d63922eccf631d",
     "runs/legacy-minimum-repaired.log.gz": "c81f180eb1f1c7d0c50ac93689a077aa4796c519ae58e3ad7de2bf75d450f7ab",
-    "verify_package.py": "0e1461884d2ebf8b985388b194c8e48e762cbdba8d64b9dadb35764122cafd07"
+    "verify_package.py": "4e3b2ab3715866f206dab27bbc5df87df0cdbb0aa4d73b303a598b1cca669c2a"
   },
   "checks": [
     {
@@ -182,36 +167,14 @@
       "receipt": "receipts/legacy-minimum-repaired.json"
     }
   ],
-  "classification": "HISTORICAL_EXECUTION_PACKET",
-  "current_checkout_acceptance": false,
-  "generated_at": 1791623186.452839,
-  "generated_by": "publish_coordinator_610_v2.py",
-  "generator_sha256": "2bdfe6fc29ccf631558b3b597cf71b3377c3485b9956d711f49ac54e1ebeef95",
-  "historical_asset_replacements": {
-    "README.md": "history/coordinator-610/previous-README.md",
-    "verify_package.py": "history/coordinator-610/previous-verify_package.py"
-  },
+  "generated_at": 1791602663.9973629,
+  "generated_by": "revise_package.py",
+  "generator_sha256": "1294ec5bd1d2bf699b0748ec4f9261c61139d6f86209d6ff6a95e778dc3edb43",
   "history_index": "history-index.json",
-  "intermediate_publication": "history/coordinator-610/schema2-initial-manifest.json",
-  "intermediate_publication_sha256": "7becca24508813946755280ef4a5b08566951ca1ec2ab5bafe894efa524e6c52",
-  "intermediate_publication_status": "HISTORICAL_SUPERSEDED_VALIDATOR",
   "limitations": "Local inert dispatch ownership acceptance only. Financial handlers, deployed role/UI acceptance, production reconciliation and activation remain pending.",
-  "original_publication": "history/coordinator-610/previous-manifest.json",
-  "previous_publication_sha256": "2c946719ccedeca661165acfcd6b34b433532002f20b62d2518c270d59177ff4",
-  "publication_history": "history/coordinator-610/publication-v2.json",
-  "retained_source": {
-    "archive": "retained-source-86aa4c3.zip",
-    "commit": "86aa4c3a7a29383ed256273bd0097cfc81b3336d",
-    "executed_source_files": 1158,
-    "publication_only_sources": [
-      "backend/tests/test_batch10_etl_mappings_package_guards.py",
-      "docs/admin/implementation/batch10-mappings-evidence/verify_package.py"
-    ],
-    "sha256": "6352ca240b35135fd3727a15d8bda42130af6eb2048c21881f3b3899f1811bb7",
-    "source_files": 1160,
-    "tree": "051cd539ef2219e9659dd339c720b3ba9e2596c7"
-  },
-  "schema": 2,
+  "previous_publication_sha256": "a7cbffd8360ed2e86b10bb96a93626b8eb893158129f79c99dcdaf7fc25b70fa",
+  "publication_history": "publication-history.json",
+  "schema": 1,
   "source_sha256": {
     ".github/scripts/coverage_upload.py": "44c06c2ac945f1c4b5f594c81c86ddf0b01f75dd1fce9fe7c98f2dca2f596523",
     ".github/scripts/pdf_cache_fingerprint.py": "1e5ae196bce77442bfe8c8dc0a00a324a30d377c497aebc14ba3c45c254e7a17",

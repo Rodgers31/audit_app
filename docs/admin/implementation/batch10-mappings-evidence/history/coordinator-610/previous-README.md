@@ -1,50 +1,5 @@
 # Bounded ETL dispatch evidence
 
-## Coordinator correction — 2026-10-10, #610
-
-The active schema2 index validates **historical execution packet integrity** and
-always reports `classification=HISTORICAL_EXECUTION_PACKET` and
-`current_checkout_acceptance=false`. References below to “current” executions or
-the “final executable source” describe the original author's historical packet,
-not a later checkout or integrated candidate. Original 519/275-case runs have
-not been rerun or rebound to sibling startup/IMF changes by this publication.
-
-`retained-source-86aa4c3.zip` retains the exact 1,160 declared source files from
-commit `86aa4c3a7a29383ed256273bd0097cfc81b3336d`, tree
-`051cd539ef2219e9659dd339c720b3ba9e2596c7`. Of these, 1,158 were measured by the
-four original executions. The old verifier and package-guard test were two later
-publication-only additions; their presence in the archive does not add executed
-cases. The archive is deterministic, built from frozen Git blobs, and verified
-against the complete original inventory. Safe relative paths, regular members,
-complete membership, unique names and content hashes are required.
-
-`python -B docs/admin/implementation/batch10-mappings-evidence/verify_package.py`
-checks that archive and every original execution/asset. It deliberately does
-not compare later live backend source to old hashes. To verify an **explicitly
-materialized historical corpus**, pass
-`--retained-source-root /absolute/path/to/extracted-historical-source`; every
-retained source file, hash and complete census must then match. Source tampering
-still refuses. Copied tests materialize the archived source and use this mode,
-so valid sibling changes cannot contaminate their positive fixture. Both modes
-are read-only and work under normal/optimized Python; neither certifies the
-current checkout. Fresh candidate and integration pytest runs are external.
-
-Strict validation requires nonempty unique JUnit identities, actual nonempty
-green counts with exact primitive types, the expected publication generator,
-recorder aliases and hashes, and portable execution command/environment/runtime/
-cwd/timestamps/source/exit metadata matching the unchanged archived original.
-History is append-only. The previous manifest/verifier/README bytes and new
-publication provenance are in `history/coordinator-610/`; all original execution
-receipts, generators, logs, JUnit and earlier history remain unchanged. The
-current verifier and index supersede the old validator, not the old run identity.
-See `COORDINATOR_610.md` for scope, actual red controls and final replay locations.
-`publish_coordinator_610.py` preserved the frozen source and first schema2
-publication. `publish_coordinator_610_v2.py` separately publishes the final census
-refinement; its generator and intermediate publication identity are bound in the
-active index. The intermediate manifest/verifier/README are retained as well.
-
-## Original author handoff (historical context)
-
 The implemented native units are OAG→audits (preserved), Treasury→fiscal_summary, CoB→counties_budget and KNBS→population. CONTRACT.md states their actual mixed-publisher and persistence scope. OpenData and CRA are unavailable prerequisites tracked in #602. Dispatch is default-off; the worker source selection defaults to OAG. This packet is local ownership/dispatch acceptance with inert effects, not financial-source or production acceptance.
 
 `python docs/admin/implementation/batch10-mappings-evidence/verify_package.py` performs a read-only check of the complete current receipt inventory, executed source hashes, archived generators, raw logs and nonempty JUnit results. It also works under `python -O`; it writes no verdict. Run `pytest backend/tests/test_batch10_etl_mappings_receipts.py` for actual copied-package source/output/generator/exit/empty tampering and inherited-verdict preservation controls in both modes. test_batch10_etl_mappings_package_guards.py adds the8 boolean-schema, duplicate/pruned-coverage and hidden JUnit failure controls reproduced by the independent reviewer.
