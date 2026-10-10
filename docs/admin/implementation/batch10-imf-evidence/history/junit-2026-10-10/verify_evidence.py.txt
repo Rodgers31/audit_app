@@ -93,7 +93,7 @@ def execution_provenance(receipt):
     )
 
 
-def cases(path, *, require_identities=False):
+def cases(path):
     suites = ElementTree.parse(path).getroot().findall("testsuite")
     require(bool(suites), "No test suites")
     counts = {
@@ -101,20 +101,6 @@ def cases(path, *, require_identities=False):
         for key in ("tests", "failures", "errors", "skipped")
     }
     executed = [case for suite in suites for case in suite.findall("testcase")]
-    if require_identities:
-        identities = [(case.get("classname"), case.get("name")) for case in executed]
-        require(
-            all(
-                isinstance(value, str) and value.strip()
-                for identity in identities
-                for value in identity
-            ),
-            "Current testcase identity is missing or blank",
-        )
-        require(
-            len(set(identities)) == len(identities),
-            "Duplicate current testcase identity",
-        )
     actual = {"tests": len(executed)}
     actual.update(
         {
@@ -259,7 +245,7 @@ def verify(checkout, artifacts, current=None):
                 ["git", "-C", str(checkout), "rev-parse", ref], text=True
             ).strip()
             require(actual == receipt["start"][key], "Current Git identity differs")
-        counts = cases(current.parent / "cases.xml", require_identities=True)
+        counts = cases(current.parent / "cases.xml")
         require(
             counts["failures"] == 0 and counts["errors"] == 0, "Current cases failed"
         )

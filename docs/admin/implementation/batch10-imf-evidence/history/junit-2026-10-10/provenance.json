@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "classification": "historical_tool_snapshot",
+  "current_checkout_acceptance": false,
+  "source_head": "b50af5924550affaf3cf5ce3c2377559f327b371",
+  "source_tree": "6a4052abbbc6745f06c1cb89d83c397041509d90",
+  "original_path": "docs/admin/implementation/batch10-imf-evidence/verify_evidence.py",
+  "retained_path": "docs/admin/implementation/batch10-imf-evidence/history/junit-2026-10-10/verify_evidence.py.txt",
+  "sha256": "fe3b1f6c92eef38b52e18b15afc02ef743dac79f3c0cd9b4c20193eceb911333",
+  "reason": "Preserve the output-boundary verifier before current JUnit identity correction."
+}

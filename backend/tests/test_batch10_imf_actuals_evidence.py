@@ -439,3 +439,77 @@ def test_evidence_refuses_fixture_database_symlink_into_checkout(
     assert result.returncode != 0, "CURRENT_DATABASE_RESOLVES_INTO_CHECKOUT_ACCEPTED"
     assert "symlink" in result.stderr or "external" in result.stderr, result.stderr
     assert hidden.read_bytes() == before
+
+
+@pytest.mark.parametrize("optimized", [False, True])
+@pytest.mark.parametrize(
+    "identity",
+    [
+        "valid",
+        "blank_name",
+        "blank_classname",
+        "missing_name",
+        "missing_classname",
+        "duplicate",
+    ],
+)
+def test_evidence_requires_unique_nonempty_executed_case_identities(
+    evidence_package, optimized, identity
+):
+    checkout, _, replay, receipt = evidence_package
+    test = checkout / "test_control.py"
+    test.write_text(
+        "def test_control():\n    assert 1+1==2\ndef test_second():\n    assert 2+2==4\n"
+    )
+    receipt["started_at"] = datetime.now(timezone.utc).isoformat()
+    child = subprocess.run(
+        receipt["command"],
+        cwd=checkout,
+        env=receipt["environment"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert child.returncode == 0, child.stdout + child.stderr
+    (replay / "raw.log").write_text(child.stdout + child.stderr)
+    receipt["ended_at"] = datetime.now(timezone.utc).isoformat()
+    import importlib.util
+    from xml.etree import ElementTree
+
+    spec = importlib.util.spec_from_file_location(
+        "imf_identity_recorder", VERIFIER.with_name("run_evidence.py")
+    )
+    recorder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(recorder)
+    state = recorder.source_state(checkout, recorder.source_names(checkout))
+    receipt["start"] = state
+    receipt["end"] = json.loads(json.dumps(state))
+    xml = replay / "cases.xml"
+    tree = ElementTree.parse(xml)
+    cases = list(tree.getroot().iter("testcase"))
+    assert len(cases) == 2, "Two real cases were not executed"
+    if identity == "duplicate":
+        for key in ("name", "classname"):
+            cases[1].set(key, cases[0].get(key))
+    elif identity.startswith("blank_"):
+        cases[0].set(identity.removeprefix("blank_"), "   ")
+    elif identity.startswith("missing_"):
+        cases[0].attrib.pop(identity.removeprefix("missing_"))
+    tree.write(xml, encoding="utf-8", xml_declaration=True)
+    receipt["outputs"] = {
+        name: digest(replay / name) for name in ("raw.log", "cases.xml")
+    }
+    (replay / "receipt.json").write_text(json.dumps(receipt))
+    before = {
+        name: digest(replay / name) for name in ("raw.log", "cases.xml", "receipt.json")
+    }
+    result = verify(evidence_package, optimized)
+    if identity == "valid":
+        assert result.returncode == 0, result.stderr
+        assert json.loads(result.stdout)["current_checked"] is True
+    else:
+        assert result.returncode != 0, "MALFORMED_JUNIT_IDENTITY_ACCEPTED"
+        assert "testcase identity" in result.stderr, result.stderr
+    assert before == {
+        name: digest(replay / name) for name in before
+    }, "Verifier rewrote inherited record bytes"
