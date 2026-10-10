@@ -1,0 +1,474 @@
+PASS __tests__/admin-auth/session-lifecycle.test.tsx (5.062 s)
+PASS __tests__/admin/social/review-extra-gates.test.tsx
+PASS __tests__/countiesUrlStateSsr.test.tsx
+PASS __tests__/admin/social/gates.adversarial.test.tsx
+PASS __tests__/batch7_etl_ui_adversarial.test.tsx
+PASS __tests__/admin/social/review-ui.test.tsx
+PASS __tests__/batch7_etl_ui.test.tsx
+PASS __tests__/admin/social/composer.test.tsx
+PASS __tests__/countySortControls.test.tsx
+  ● Console
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+PASS __tests__/countyExplorerMapReadout.test.tsx
+PASS __tests__/components/DebtPagePendingBills.disclosure.test.tsx
+PASS __tests__/transparencyPresentation.test.tsx
+PASS __tests__/countyExplorerGradeRegions.test.tsx
+PASS __tests__/transparencyReviewStates.test.tsx
+PASS __tests__/components/DebtPageClaims.test.tsx
+PASS __tests__/countyDetailRedesign.contracts.test.tsx
+PASS __tests__/admin/operations/operations-adversarial.test.tsx
+PASS __tests__/admin/social/receipts.adversarial.test.tsx
+PASS __tests__/components/AuditReportsSection.test.tsx
+PASS __tests__/admin/social/media-ui.test.tsx
+PASS __tests__/admin/social/composer-media-integration.test.tsx
+PASS __tests__/admin/social/schedules.test.tsx
+PASS __tests__/components/MoneyFlowTab.states.test.tsx
+PASS __tests__/admin/overview-audit/pages.test.tsx
+PASS __tests__/hydratedStaleRefetch.test.tsx
+PASS __tests__/admin/operations/operations-ui.test.tsx
+PASS __tests__/countyListPopulationAbsence.test.tsx
+  ● Console
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+    console.error
+      ❌ API Error: {
+        url: '/data/freshness',
+        method: 'get',
+        status: undefined,
+        message: 'canceled',
+        retries: 0
+      }
+
+    [0m [90m 163 |[39m
+     [90m 164 |[39m     [36mif[39m (process[33m.[39menv[33m.[39m[33mNODE_ENV[39m [33m===[39m [32m'development'[39m [33m||[39m [33m![39misExpectedFailure) {
+    [31m[1m>[22m[39m[90m 165 |[39m       logFn([32m`${prefix}:`[39m[33m,[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 166 |[39m         url[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39murl[33m,[39m
+     [90m 167 |[39m         method[33m:[39m error[33m.[39mconfig[33m?[39m[33m.[39mmethod[33m,[39m
+     [90m 168 |[39m         status[33m,[39m[0m
+
+      at logFn (lib/api/axios.ts:165:7)
+      at Axios.request (node_modules/axios/dist/browser/axios.cjs:5245:14)
+      at queryFn (components/DataFreshnessBadge.tsx:98:24)
+
+PASS __tests__/transparencySsrHydration.test.tsx
+PASS __tests__/components/FigureEvidence.callers.test.tsx
+PASS __tests__/admin-auth/adversarial.test.tsx
+PASS __tests__/components/InfoTip.language.test.tsx
+PASS __tests__/components/InfoTip.accessibility.test.tsx
+PASS __tests__/admin-users/users-pages.test.tsx
+PASS __tests__/lib/api/retryBudget.test.ts
+PASS __tests__/sourcesLoadingReserve.test.tsx
+PASS __tests__/social-connections/connections.test.tsx
+PASS __tests__/admin/social/pr514-review.test.tsx
+PASS __tests__/homeAuditsPayload.test.tsx
+PASS __tests__/admin/social/delivery-history.test.tsx
+PASS __tests__/admin/social/media-parsers.adversarial.test.ts
+PASS __tests__/admin/overview-audit/review-boundaries.test.tsx
+PASS __tests__/components/RevenueMix.provenance.test.tsx
+PASS __tests__/components/InteractiveGlossary.test.tsx
+PASS __tests__/admin/social/media-review-492.test.tsx
+PASS __tests__/components/FigureEvidence.localization.test.tsx
+PASS __tests__/debtSsrPrefetch.test.tsx
+PASS __tests__/components/DataFreshnessBadge.absence.test.tsx
+PASS __tests__/admin/social/visual.test.tsx
+PASS __tests__/components/RevenueMix.sourceLocator.test.tsx
+PASS __tests__/admin/social/parsers.adversarial.test.tsx
+PASS __tests__/social-connections/status-review.test.tsx
+PASS __tests__/components/NationalDebtCard.split.test.tsx
+  ● Console
+
+    console.error
+      React does not recognize the `whileInView` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whileinview` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+    [0m [90m 108 |[39m       isLoading[33m:[39m [36mfalse[39m[33m,[39m
+     [90m 109 |[39m     })[33m;[39m
+    [31m[1m>[22m[39m[90m 110 |[39m     [36mconst[39m { container } [33m=[39m render([33m<[39m[33mNationalDebtCard[39m [33m/[39m[33m>[39m)[33m;[39m
+     [90m     |[39m                                 [31m[1m^[22m[39m
+     [90m 111 |[39m     expect(screen[33m.[39mgetByText([32m'KES 11.86T'[39m))[33m.[39mtoBeInTheDocument()[33m;[39m
+     [90m 112 |[39m     expect(container)[33m.[39mnot[33m.[39mtoHaveTextContent([32m'null%'[39m)[33m;[39m
+     [90m 113 |[39m   })[33m;[39m[0m
+
+      at validateProperty (node_modules/react-dom/cjs/react-dom-client.development.js:3001:19)
+      at warnUnknownProperties (node_modules/react-dom/cjs/react-dom-client.development.js:3146:9)
+      at validatePropertiesInDevelopment (node_modules/react-dom/cjs/react-dom-client.development.js:19868:9)
+      at setInitialProperties (node_modules/react-dom/cjs/react-dom-client.development.js:20491:7)
+      at completeWork (node_modules/react-dom/cjs/react-dom-client.development.js:12662:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at completeUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17777:19)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17658:11)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:46:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:189:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:291:10)
+      at Object.<anonymous> (__tests__/components/NationalDebtCard.split.test.tsx:110:33)
+
+PASS __tests__/admin/social/review-status-monotonic.test.tsx
+PASS __tests__/countyFiscalYearsFreshness.test.tsx
+PASS __tests__/social-connections/review-navigation.test.tsx
+PASS __tests__/components/FigureEvidence.test.tsx
+PASS __tests__/components/NationalDebtCard.units.test.tsx
+  ● Console
+
+    console.error
+      React does not recognize the `whileInView` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whileinview` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+    [0m [90m 145 |[39m       isLoading[33m:[39m [36mfalse[39m[33m,[39m
+     [90m 146 |[39m     })[33m;[39m
+    [31m[1m>[22m[39m[90m 147 |[39m     render([33m<[39m[33mNationalDebtCard[39m [33m/[39m[33m>[39m)[33m;[39m
+     [90m     |[39m           [31m[1m^[22m[39m
+     [90m 148 |[39m
+     [90m 149 |[39m     [90m// 10.7T rendered honestly. The pre-fix code produced 10.7e21 -> "KES 10700000000.00T".[39m
+     [90m 150 |[39m     expect(screen[33m.[39mgetByText([32m'KES 10.70T'[39m))[33m.[39mtoBeInTheDocument()[33m;[39m[0m
+
+      at validateProperty (node_modules/react-dom/cjs/react-dom-client.development.js:3001:19)
+      at warnUnknownProperties (node_modules/react-dom/cjs/react-dom-client.development.js:3146:9)
+      at validatePropertiesInDevelopment (node_modules/react-dom/cjs/react-dom-client.development.js:19868:9)
+      at setInitialProperties (node_modules/react-dom/cjs/react-dom-client.development.js:20491:7)
+      at completeWork (node_modules/react-dom/cjs/react-dom-client.development.js:12662:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at completeUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17777:19)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17658:11)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:46:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:189:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:291:10)
+      at Object.<anonymous> (__tests__/components/NationalDebtCard.units.test.tsx:147:11)
+
+PASS __tests__/admin/social/parsers.remaining-adversarial.test.tsx
+PASS __tests__/components/BudgetTab.aging.test.tsx
+PASS __tests__/components/Navigation.test.tsx
+PASS __tests__/sourceHealthAttribution.test.tsx
+PASS __tests__/components/HeroSection.units.test.tsx
+PASS __tests__/components/UnaccountedFunds.test.tsx
+PASS __tests__/components/NationalDebtCard.modelled.test.ts
+PASS __tests__/components/RevenueMix.qualifications.test.tsx
+PASS __tests__/lib/budgetHook.test.tsx
+PASS __tests__/compareSuspenseReserve.test.tsx
+PASS __tests__/components/HeroSection.registerRows.test.tsx
+PASS __tests__/components/MoneyFlowSourceReconciliation.stages.test.tsx
+PASS __tests__/components/OfficialsCard.sourced.test.tsx
+PASS __tests__/components/CountyCashAbsence.test.tsx
+PASS __tests__/components/NationalLoansCard.interest.test.tsx
+PASS __tests__/batch7_etl_ui_parsers.test.ts
+PASS __tests__/admin/social/parsers.review.test.ts
+PASS __tests__/countyCompareValidation.test.tsx
+PASS __tests__/admin-users/users-contracts.test.ts
+PASS __tests__/components/NationalDebtCard.tooltip.test.tsx
+PASS __tests__/components/ModelledDataNote.provenance.test.tsx
+PASS __tests__/components/AccountabilityPulseCard.amountCoverage.test.tsx
+PASS __tests__/components/DebtServiceObservations.test.tsx
+PASS __tests__/auditsSsrHydration.test.tsx
+PASS __tests__/admin/operations/etl-review-regressions.test.ts
+PASS __tests__/components/BudgetFlowHero.framework.test.tsx
+PASS __tests__/components/AccountabilityPulseCard.scope.test.tsx
+PASS __tests__/countySignals.test.tsx
+PASS __tests__/social-connections/admin-runtime-native.test.tsx
+PASS __tests__/components/MoneyFlowAmountCoverage.test.tsx
+PASS __tests__/lib/api/counties.validation.test.ts
+PASS __tests__/components/CountyFigureEvidence.test.tsx
+PASS __tests__/api/revalidateManifest.test.ts
+PASS __tests__/components/StyledGeography.test.tsx
+PASS __tests__/lib/counties/pendingBillsNotes.test.ts
+PASS __tests__/admin-auth/middleware.test.ts
+PASS __tests__/components/HeroSection.govcard.framework.test.tsx
+PASS __tests__/lib/api/retryBudgetServer.test.ts
+PASS __tests__/components/MoneyFlowHero.provenance.test.tsx
+PASS __tests__/components/BudgetTab.debtAbsence.test.tsx
+PASS __tests__/transparencyLanguage.test.tsx
+PASS __tests__/components/ExecutionAuditLens.provenance.test.tsx
+PASS __tests__/admin/social/polling.test.tsx
+PASS __tests__/admin-auth/guard.test.tsx
+PASS __tests__/components/LenderTreemap.shares.test.ts
+PASS __tests__/components/AuditListWithSources.test.tsx
+PASS __tests__/api/budgetAllocation.test.ts
+PASS __tests__/federalTopStatedFindings.test.ts
+PASS __tests__/components/CountyRevenueTranslations.test.tsx
+PASS __tests__/admin/overview-audit/parsers.test.ts
+PASS __tests__/countiesSsrHydration.test.tsx
+PASS __tests__/lib/api/counties.test.ts
+PASS __tests__/components/BudgetSourceReconciliation.apdr.test.tsx
+PASS __tests__/lib/debt/pendingBillsAging.test.ts
+PASS __tests__/admin/social/mutation-intent.test.tsx
+PASS __tests__/admin-auth/provider.test.tsx
+PASS __tests__/lib/api/counties.absence.test.ts
+PASS __tests__/lib/api/endpoints.test.ts
+PASS __tests__/lib/utils.test.ts
+PASS __tests__/components/SummaryStrip.test.tsx
+PASS __tests__/lib/debt/dsaRating.test.ts
+PASS __tests__/lib/debt/loanInterest.test.ts
+PASS __tests__/lib/countyExplorerYear.test.ts
+PASS __tests__/social-connections/callback-middleware.test.ts
+PASS __tests__/admin/social/media-visual.test.tsx
+PASS __tests__/lib/debt/externalDomesticSplit.test.ts
+PASS __tests__/admin/social/schedule-contract.test.ts
+PASS __tests__/lib/countyFigures.test.ts
+PASS __tests__/lib/debt/registerScope.test.ts
+PASS __tests__/lib/countyDebtAbsence.test.ts
+PASS __tests__/lib/debt/lenderName.test.ts
+PASS __tests__/lib/api/debtSustainability.types.test.ts
+PASS __tests__/lib/debtAnchor.test.ts
+PASS __tests__/lib/countyPopulationAbsence.test.ts
+PASS __tests__/lib/debt/revenueAllocation.test.ts
+PASS __tests__/lib/api/axios.test.ts
+PASS __tests__/components/MapTooltip.figures.test.ts
+PASS __tests__/lib/api/audits.test.ts
+PASS __tests__/lib/fiscal/framework.test.ts
+PASS __tests__/admin/social/contract.test.ts
+PASS __tests__/api/revalidate.test.ts
+PASS __tests__/ssrPrefetchCancellation.test.tsx
+PASS __tests__/lib/debtServiceSeries.test.ts
+PASS __tests__/lib/debtCardBasis.test.ts
+PASS __tests__/social-connections/callback-route.test.ts
+PASS __tests__/lib/counties/revenueNotes.test.ts
+PASS __tests__/countyDetailMetadata.test.ts
+PASS __tests__/components/BudgetDataSources.credit.test.ts
+PASS __tests__/lib/countyDebtContract.test.ts
+PASS __tests__/auditOpinionWording.test.ts
+
+Test Suites: 147 passed, 147 total
+Tests:       1 skipped, 2077 passed, 2078 total
+Snapshots:   0 total
+Time:        61.43 s, estimated 69 s
+Ran all test suites.
+Test results written to: ../../evidence/author-checks-attempt2/jest-report.json

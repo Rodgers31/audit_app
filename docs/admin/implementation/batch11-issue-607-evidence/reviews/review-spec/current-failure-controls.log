@@ -1,0 +1,24 @@
+{
+  "counts": {
+    "passed": 262,
+    "skipped": 11,
+    "failed": 2
+  },
+  "failures": [
+    {
+      "id": "ddd864604af8a6a0198f-49fac738e65206ddda96",
+      "source": "frontend/e2e/accessibility.spec.ts",
+      "line": 24,
+      "title": "/counties \u2014 has exactly one h1",
+      "source_sha256": "f0f3ebbb14f1b5ddb2fe095059c22bbae05305471ed0b928d15f6db8be80b7b4"
+    },
+    {
+      "id": "85883b71df8d657c76cd-d31097c68f869f0caad4",
+      "source": "frontend/e2e/county-response-validation.spec.ts",
+      "line": 66,
+      "title": "normal 47-county list and legacy 001/047 detail routes remain usable",
+      "source_sha256": "34620121689b9ad4689a1fbf6174a65d6bd85c02cefbff3f11bab4071d8c4342"
+    }
+  ],
+  "current_full_acceptance": false
+}

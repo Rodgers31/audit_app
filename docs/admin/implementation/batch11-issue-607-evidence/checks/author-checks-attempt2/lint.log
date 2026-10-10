@@ -1,0 +1,15 @@
+
+> audit-app-frontend@1.0.0 prelint
+> node scripts/verify-tooling-inputs.cjs
+
+{"check":"bounded-tooling-inputs","tailwindPatterns":["./pages/**/*.{js,ts,jsx,tsx,mdx}","./components/**/*.{js,ts,jsx,tsx,mdx}","./app/**/*.{js,ts,jsx,tsx,mdx}","./src/**/*.{js,ts,jsx,tsx,mdx}"],"nextRoot":"literal working directory","lintFilesChecked":315}
+
+> audit-app-frontend@1.0.0 lint
+> next lint
+
+`next lint` is deprecated and will be removed in Next.js 16.
+For new projects, use create-next-app to choose your preferred linter.
+For existing projects, migrate to the ESLint CLI:
+npx @next/codemod@canary next-lint-to-eslint-cli .
+
+✔ No ESLint warnings or errors
