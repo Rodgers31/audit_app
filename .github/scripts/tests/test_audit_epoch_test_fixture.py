@@ -47,6 +47,9 @@ SPEC.loader.exec_module(helper)
 
 class AuditEpochFixtureBoundaryTests(unittest.TestCase):
     def setUp(self):
+        environment = patch.dict(os.environ, {"PATH": os.defpath}, clear=True)
+        environment.start()
+        self.addCleanup(environment.stop)
         self.temp = tempfile.TemporaryDirectory(dir=Path(tempfile.gettempdir()).resolve())
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name)
