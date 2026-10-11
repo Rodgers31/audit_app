@@ -83,6 +83,9 @@ jobs:
     - name: Prepare owned reconciliation test fixture
       timeout-minutes: 5
       run: python .github/scripts/prepare_reconciliation_test_fixture.py prepare --state "$RUNNER_TEMP/reconciliation-fixture-state.json" --port 55496
+    - name: Prepare owned audit epoch test fixture
+      timeout-minutes: 5
+      run: python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state "$RUNNER_TEMP/audit-epoch-fixture-state.json" --port 55534
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: python .github/scripts/run_backend_tests.py
@@ -91,6 +94,13 @@ jobs:
         REDIS_URL: redis://localhost:6379
         TESTING: true
         PYTHON_DOTENV_DISABLED: '1'
+    - name: Remove owned audit epoch test fixture
+      if: always()
+      timeout-minutes: 5
+      run: |
+        if [ -f "$RUNNER_TEMP/audit-epoch-fixture-state.json" ]; then
+          python .github/scripts/prepare_audit_epoch_test_fixture.py cleanup --state "$RUNNER_TEMP/audit-epoch-fixture-state.json"
+        fi
     - name: Remove owned reconciliation test fixture
       if: always()
       timeout-minutes: 5
