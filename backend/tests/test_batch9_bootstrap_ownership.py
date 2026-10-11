@@ -117,7 +117,7 @@ def entered(engine, n=1):
 def claims(engine):
     with engine.connect() as db:
         return tuple(db.execute(text("SELECT count(*) FILTER (WHERE released_at IS NULL), "
-                                     "count(*) FILTER (WHERE released_at IS NOT NULL) FROM seeding_domain_claims")).one())
+                                     "count(*) FILTER (WHERE released_at IS NOT NULL) FROM seeding_domain_claims WHERE domain='national_budget'")).one())
 
 
 def budget_sentinel(engine):
@@ -231,8 +231,10 @@ def test_bootstrap_connection_death_retains_claim_even_after_writer_commit(owned
     with engine.begin() as db:
         pids = db.scalars(text("SELECT DISTINCT pid FROM pg_locks WHERE locktype='advisory' AND granted "
                               "AND database=(SELECT oid FROM pg_database WHERE datname=current_database())")).all()
-        assert len(pids) == 1
-        assert db.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": pids[0]}) is True
+        assert len(pids) == 2
+        # Both owned continuity backends die; neither claim set may release.
+        for pid in pids:
+            assert db.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": pid}) is True
     assert launch("native", "--all", "--no-dry-run").wait(timeout=15) == 1
     set_mode(engine, "normal")
     assert bootstrap.wait(timeout=15) != 0
