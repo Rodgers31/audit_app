@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "classification": "MEASURED_LANE_RESULTS_NOT_COMPLETE_ISSUE_ACCEPTANCE",
+  "issue_494": "OPEN_UNRESOLVED",
+  "accepted_predecessor": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+  "implementation_commit": "be1df5f3289d40a52703295a8a68efc054121662",
+  "implementation_tree": "e6e3bc020698e81312b8fb5b85c76e56f8f057d7",
+  "seven_file_correspondence": {
+    "frontend/package.json": "070a524898004fca220a909f822328a39485f45dce68339270df0b106d4e0553",
+    "frontend/package-lock.json": "46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc",
+    "frontend/scripts/apply-tooling-repairs.cjs": "acd61ee77794572624afa1cfdb030ca80bf482148a3b4a213681e1bc453956fa",
+    "frontend/scripts/test-runtime-dependencies.cjs": "2c4eec50deaa010240e81f5faf554f1ce9009390a13d0bd43eb9da984b77674d",
+    "frontend/scripts/tooling-repair-behavior.test.cjs": "34d47adcd4076508e08bd6b014079e4df9315c0de7d464c06f1ff17e5cd11d32",
+    "frontend/scripts/tooling-repair-install.test.cjs": "f2c3a54cc1e7a66e94b49d2d4c8d460aee961ee8a98ea4287e551dd351787ed4",
+    "frontend/scripts/tooling-repairs.json": "e592d387fab60573cd11f5565f838b06f5d3551fa136a433fa7db1262ac4c8a5"
+  },
+  "checks": {
+    "distribution-baseline-red": {
+      "receipt": "commands/distribution-baseline-red.json",
+      "exit": 1,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "d7079a7cf5a55768474567ce30aa1a3668db31eec98ff7eec4a8d95369221264",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-focused": {
+      "receipt": "commands/distribution-host-focused.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "50a88bafbbfe7cddb61a532a2b22c3efa53c9c3e6655e960f50f0723b160d997",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-focused": {
+      "receipt": "commands/distribution-linux-focused.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "9165cb79eed04a4112bfa9d760a2269502c73a339e93be95e9f8a29ef7b38f59",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-cohort": {
+      "receipt": "commands/distribution-host-cohort.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "5c24639a61a70af8f3e87006e94dc0e17dd6fe2104c2bba4334026725e692e07",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-cohort-complete": {
+      "receipt": "commands/distribution-linux-cohort-complete.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "dc4f6cba37083275c693ab448ec14a8c8f450af882fbaabfaa81d48b93cf660e",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-boundaries": {
+      "receipt": "commands/distribution-host-boundaries.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "507585b2af02f7003c3cbedca239d9d33784c2b155408924b801323049e4f96e",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-boundaries-git-complete": {
+      "receipt": "commands/distribution-linux-boundaries-git-complete.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "950aed6f0d9d1d855e245d65d078f16bb8237cf94172687c25bd32105a90ff4e",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-build": {
+      "receipt": "commands/distribution-host-build.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "3594595305479393fbe848af67cd1c0674032e5e9dc5aab0504adb4f426dc07f",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-build": {
+      "receipt": "commands/distribution-linux-build.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "f6f56307c0ee41179e9fdb83f9bca629a605e6bff4454af58da75124de2a5481",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-native": {
+      "receipt": "commands/distribution-host-native.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "856fa924ae411873276e4b5cfd7e18b25a04759b3448d4d4f47997c3cbdbfd34",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-native": {
+      "receipt": "commands/distribution-linux-native.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "0d0862001a13482614a11896382aa99f4bb58de669999964be3eead03ed470a1",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-builder": {
+      "receipt": "commands/distribution-host-builder.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "2c61ac81b8edf0680efbd3fc2c8d8d81af14c683c84527205936fc09c887b24c",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-builder": {
+      "receipt": "commands/distribution-linux-builder.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "7cab7c2eae49256bd76faf8db91072c68b1030d6d983d00b6bc50403beca39b9",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-preview": {
+      "receipt": "commands/distribution-host-preview.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "9712f8b52341e457f140f1db4a2f471cdf1a93f6be9c2093eeabc4f58a7d484e",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-preview": {
+      "receipt": "commands/distribution-linux-preview.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "41fc0428cfd2142a83d6c80511dbe3f874f709e2b669c0b9feb4aa5dcc84c899",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-host-audit": {
+      "receipt": "commands/distribution-host-audit.json",
+      "exit": 1,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "2666f7490151607cd2ab4083778251e577431d25bc894115bdc2875b1bd8fb5a",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-audit": {
+      "receipt": "commands/distribution-linux-audit.json",
+      "exit": 1,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "20584ed724f6cc7aa0a6ecbb3cebd81f669b2c43de49034755d043e73f22be4f",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "final-host-audit-production": {
+      "receipt": "commands/final-host-audit-production.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "a468c5e87898f0b652e658944fe0a4fdd7077babba935ae4f637c05ebf472c2f",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "distribution-linux-audit-production": {
+      "receipt": "commands/distribution-linux-audit-production.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "163fc9be35891f7b71e6adb416d6a0159e5ea6784b65916a63db5e798c742799",
+      "measured_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+      "measured_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c"
+    },
+    "postreview-host-install": {
+      "receipt": "commands/postreview-host-install.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "35d090bd044d4c244502bdea31b32c7a7d0480db5dc8fd663ae8bb9c4998db9e",
+      "measured_head": "be1df5f3289d40a52703295a8a68efc054121662",
+      "measured_tree": "e6e3bc020698e81312b8fb5b85c76e56f8f057d7"
+    },
+    "postreview-linux-install": {
+      "receipt": "commands/postreview-linux-install.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "1f45c1ebdbb94a648bf964316cbf56fd21ccfba51c2b0c9353f873cf7cc0ee3a",
+      "measured_head": "be1df5f3289d40a52703295a8a68efc054121662",
+      "measured_tree": "e6e3bc020698e81312b8fb5b85c76e56f8f057d7"
+    },
+    "postreview-host-tree": {
+      "receipt": "commands/postreview-host-tree.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "98f926f3072e0cd8696f623c880778f7e1891fa7019e8a3ef00fa573d91368dc",
+      "measured_head": "be1df5f3289d40a52703295a8a68efc054121662",
+      "measured_tree": "e6e3bc020698e81312b8fb5b85c76e56f8f057d7"
+    },
+    "postreview-linux-tree": {
+      "receipt": "commands/postreview-linux-tree.json",
+      "exit": 0,
+      "error": null,
+      "source_stable": true,
+      "receipt_sha256": "5dcbb5df376e6d4b5909f36102a5fad379200341f1bb368bd6e2d191fdca00f7",
+      "measured_head": "be1df5f3289d40a52703295a8a68efc054121662",
+      "measured_tree": "e6e3bc020698e81312b8fb5b85c76e56f8f057d7"
+    }
+  },
+  "per_platform_case_counts": {
+    "repair_behavior": 40,
+    "repair_installer": 21,
+    "frontend": {
+      "suites": 147,
+      "pass": 2077,
+      "pending": 1,
+      "fail": 0,
+      "total": 2078
+    },
+    "boundaries": 106,
+    "runtime": 9
+  },
+  "independent_distinct_axes": {
+    "adversarial": 551,
+    "spec": 133,
+    "standards": {
+      "committed_cases": 61,
+      "additional_controls": 258
+    },
+    "publication_modes": {
+      "normal": 45,
+      "optimized": 45
+    }
+  },
+  "limitations": [
+    "Emulated Linux x64 is not native Linux equivalence",
+    "Two optional extraneous entries remain in actual candidate npm graph output despite exit0; baseline has no diagnostics",
+    "Full audit has 26 macOS/27 Linux propagation entries across two unpatched roots",
+    "Original323-case Chromium suite collected only; two-query actual preview executed",
+    "No residual-risk exception, integrated/hosted/production acceptance"
+  ]
+}

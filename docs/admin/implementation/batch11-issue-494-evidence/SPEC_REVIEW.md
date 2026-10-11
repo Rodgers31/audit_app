@@ -1,0 +1,13 @@
+# Independent Spec review
+
+Reviewed `git diff bcb5ff99854de595bbe3f7d60cc8796b7ada5a20...be1df5f3289d40a52703295a8a68efc054121662`; implementation tree `e6e3bc020698e81312b8fb5b85c76e56f8f057d7`. Sources: published Batch 11 SPEC, frozen current issue #494 body/comments, and accepted Batch 10 dependency/coordinator handoffs.
+
+**Scoped implementation: no defect found.** The assignment permits a strong bounded repair. The SPEC requires “#494 performs disjoint dependency/config/native work first” and reserves navigation/style overlap for accepted integration. All seven changed paths concern frontend manifests or tooling scripts; no application templates, navigation, workflows or shared skills change. The patch preserves all 901 existing locked dependency records and 173 production records. Fixed parse/walk ceilings and snapshotted numeric precision match the stated repair; unknown installed bytes fail visibly.
+
+**Known broader acceptance gap:** issue #494 asks to “Select supported native/framework upgrades or remove unused dependencies” and to “explain any residual exposure or accepted exception.” This local source patch retains published braces/sprintf versions and their audit roots. It supplies reviewed bounded mitigation, not supported complete upstream remediation or an owner risk exception. Keeping #494 OPEN is therefore required by the SPEC: “#554/#494/#601/#607 remain open until actual criteria are accepted.” This is an acknowledged limit, not a newly found defect in the authorized scoped repair.
+
+**Independent execution:** `launch3.json` records the actual exit 0, finite deadline, minimal environment, executable/producer hashes and raw stdout/stderr. `run-3/receipt.json` records 133 satisfied controls, zero failures/skips, unchanged complete checkout inventory and installed target hashes. Controls exercise both actual declared fast-glob callers; braces parsing, AST and queue recursion; source/minified sprintf public APIs, valid limits and callback/getter mutation; cold upstream repair, idempotence, full file readback, omission, changed exports, missing/unexpected files, symlinks and lock preservation. Temporary fixture directories are absent afterward.
+
+The first runner had a syntax setup error; version 2 had reviewer fixture/regex errors. Their original producers and exits remain retained; neither is a product failure or acceptance result. `fixture-cleanup.json` records removal of version 2's exact owned temporary fixtures.
+
+Final additive handoff/evidence publication is not yet part of this reviewed commit and requires the requested recheck. Spec findings: zero scoped implementation defects; one known complete-issue acceptance gap.
