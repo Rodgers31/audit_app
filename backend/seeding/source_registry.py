@@ -126,6 +126,15 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
     d.dataset_id: d
     for d in [
         SourceDataset(
+            dataset_id="cra_recommendations",
+            publisher="Commission on Revenue Allocation",
+            publisher_url="https://cra.go.ke",
+            doc_type="REPORT",
+            description="Recommended shareable revenue allocations; native support is limited to FY2026/27 Table 5.2",
+            parser_id="cra_table_5_2_v1",
+            match_keywords=("recommendation", "equitable", "2026-27"),
+        ),
+        SourceDataset(
             dataset_id="oag_national_audits",
             publisher="Office of the Auditor-General",
             publisher_url="https://www.oagkenya.go.ke",

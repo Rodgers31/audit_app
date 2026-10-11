@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Sat, 10 Oct 2026 16:03:57 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 6570
+Connection: keep-alive
+ETag: W/"19aa-HEcMAI/imHz60arOMTLsDMhRqQY"
+Strict-Transport-Security: max-age=31536000
+X-Content-Type-Options: nosniff
+Content-Security-Policy: upgrade-insecure-requests
+

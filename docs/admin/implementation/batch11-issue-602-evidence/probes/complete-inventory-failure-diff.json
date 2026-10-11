@@ -1,0 +1,138 @@
+{
+ "generated_by": "inline analysis in the #602 handoff session (see BATCH_11_ISSUE_602_HANDOFF.md)",
+ "runs": {
+  "commit_current": {
+   "label": "final complete launcher inventory without maxfail, current runtime, commit eb0989a [backend cohort]",
+   "counts": {
+    "error": 16,
+    "failed": 19,
+    "xpass": 0,
+    "passed": 14800,
+    "xfail": 0,
+    "skipped": 1426
+   },
+   "head": "eb0989a5e89f6a7c3feacab416311e7ac4e4f795",
+   "source_before_sha256": "1a7658c60cb7eaa72c9df56a692b86fd70ffaa5c2f0fdf373623e87d9dbe7449"
+  },
+  "base_current": {
+   "label": "baseline complete launcher inventory without maxfail, current runtime, pristine base bcb5ff9 [backend cohort]",
+   "counts": {
+    "error": 16,
+    "failed": 19,
+    "xpass": 0,
+    "passed": 14538,
+    "xfail": 0,
+    "skipped": 1426
+   },
+   "head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+   "source_before_sha256": "42fde13ec79c17071b06dd5a1de05d534cee075f149c7966c9b2978809c6f0af"
+  },
+  "commit_minimum": {
+   "label": "final complete launcher inventory without maxfail, minimum runtime, commit eb0989a [backend cohort]",
+   "counts": {
+    "error": 16,
+    "failed": 20,
+    "xpass": 0,
+    "passed": 14799,
+    "xfail": 0,
+    "skipped": 1426
+   },
+   "head": "eb0989a5e89f6a7c3feacab416311e7ac4e4f795",
+   "source_before_sha256": "1a7658c60cb7eaa72c9df56a692b86fd70ffaa5c2f0fdf373623e87d9dbe7449"
+  }
+ },
+ "failures_commit_current": [
+  "tests.test_bounded_pg_backup.BoundaryTests::test_acquisition_output_requires_caller_owner_and_exact_private_modes",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_acquired_archive_is_caller_owned_private_and_reloadable",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_child_cannot_publish_public_or_readonly_acquisition_file",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_child_failure_credentials_are_not_in_public_result",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_expired_snapshot_refuses_without_archive",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_full_archive_restore_inventory_permissions_constraints_allocation",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_inspector_failure_removes_daemon_owned_child",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_inventory_shape_sequence_and_coverage_mutants_refuse",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_missing_roles_and_corrupt_digests_refuse",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_operator_cli_inspection_and_restore_remain_explicitly_unverified",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_original_plan_has_no_wall_or_transport_enforcement",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_partial_archive_is_not_a_backup_or_equal_restore",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_same_snapshot_excludes_later_rows_and_drift_refuses",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_stall_is_killed_and_no_archive_is_published",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_transport_breach_refuses_compressed_archive",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_truncated_data_archive_refuses_restore_even_if_toc_is_readable",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_unavailable_snapshot_and_noninternal_network_refuse",
+  "tests.test_cpi_publication::test_fixture_supplement_cannot_reintroduce_bad_cpi",
+  "tests.test_healthcheck_is_bounded::test_a_cancelled_health_check_is_not_reported_as_all_reachable",
+  "tests.test_healthcheck_is_bounded::test_a_complete_clean_health_check_is_still_green",
+  "tests.test_healthcheck_is_bounded::test_a_partial_health_check_says_so",
+  "tests.test_healthcheck_is_bounded::test_missing_or_malformed_health_verdict_is_not_success[]",
+  "tests.test_healthcheck_is_bounded::test_missing_or_malformed_health_verdict_is_not_success[wat]",
+  "tests.test_healthcheck_is_bounded::test_refresh_failure_is_in_the_failure_issue",
+  "tests.test_inflation_monthly_live.TestFetcher::test_both_sources_live",
+  "tests.test_inflation_monthly_live.TestFetcher::test_world_bank_rows_declare_world_bank",
+  "tests.test_inflation_monthly_live::test_domain_run_puts_august_2026_on_the_budget_strip",
+  "tests.test_receipt_ingress_trust::test_other_actual_typed_producers_on_owned_sqlite[worldbank]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_any_download_error_refuses_rather_than_escaping",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_captions_without_rows_refuses",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_incomplete_download_refuses_and_names_the_edition",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_live_run_names_the_edition",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[captions_as_prose]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[no_reconciliation]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[rows_as_text]"
+ ],
+ "failures_base_current": [
+  "tests.test_bounded_pg_backup.BoundaryTests::test_acquisition_output_requires_caller_owner_and_exact_private_modes",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_acquired_archive_is_caller_owned_private_and_reloadable",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_child_cannot_publish_public_or_readonly_acquisition_file",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_child_failure_credentials_are_not_in_public_result",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_expired_snapshot_refuses_without_archive",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_full_archive_restore_inventory_permissions_constraints_allocation",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_inspector_failure_removes_daemon_owned_child",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_inventory_shape_sequence_and_coverage_mutants_refuse",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_missing_roles_and_corrupt_digests_refuse",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_operator_cli_inspection_and_restore_remain_explicitly_unverified",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_original_plan_has_no_wall_or_transport_enforcement",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_partial_archive_is_not_a_backup_or_equal_restore",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_same_snapshot_excludes_later_rows_and_drift_refuses",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_stall_is_killed_and_no_archive_is_published",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_transport_breach_refuses_compressed_archive",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_truncated_data_archive_refuses_restore_even_if_toc_is_readable",
+  "tests.test_bounded_pg_backup.PostgreSQLTests::test_unavailable_snapshot_and_noninternal_network_refuse",
+  "tests.test_cpi_publication::test_fixture_supplement_cannot_reintroduce_bad_cpi",
+  "tests.test_healthcheck_is_bounded::test_a_cancelled_health_check_is_not_reported_as_all_reachable",
+  "tests.test_healthcheck_is_bounded::test_a_complete_clean_health_check_is_still_green",
+  "tests.test_healthcheck_is_bounded::test_a_partial_health_check_says_so",
+  "tests.test_healthcheck_is_bounded::test_missing_or_malformed_health_verdict_is_not_success[]",
+  "tests.test_healthcheck_is_bounded::test_missing_or_malformed_health_verdict_is_not_success[wat]",
+  "tests.test_healthcheck_is_bounded::test_refresh_failure_is_in_the_failure_issue",
+  "tests.test_inflation_monthly_live.TestFetcher::test_both_sources_live",
+  "tests.test_inflation_monthly_live.TestFetcher::test_world_bank_rows_declare_world_bank",
+  "tests.test_inflation_monthly_live::test_domain_run_puts_august_2026_on_the_budget_strip",
+  "tests.test_receipt_ingress_trust::test_other_actual_typed_producers_on_owned_sqlite[worldbank]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_any_download_error_refuses_rather_than_escaping",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_captions_without_rows_refuses",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_incomplete_download_refuses_and_names_the_edition",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_live_run_names_the_edition",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[captions_as_prose]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[no_reconciliation]",
+  "tests.test_stalled_projects_pipeline.TestFetch::test_malformed_parse_output_refuses[rows_as_text]"
+ ],
+ "commit_only_failures_current": [],
+ "base_only_failures_current": [],
+ "minimum_only_failures_vs_current": [
+  "tests.test_budget_qualification_transfer::test_budget_qualification_does_not_transfer_unrelated_context_payloads"
+ ],
+ "skip_sets_identical_current": true,
+ "new_testcases_on_commit": 270,
+ "new_testcase_states": {
+  "passed": 270
+ },
+ "removed_testcases_random_uuid_params": [
+  "tests.social.test_connections_api::test_read_routes_require_existing_admin_and_have_no_store[/accounts/b48b6d1e-e6d5-4e71-b228-d06d921215ba/health]",
+  "tests.social.test_media_api::test_every_route_requires_admin_and_private_errors[get-/assets/8fca51b9-dff0-455c-80de-4e23a66e8efb/preview-None]",
+  "tests.social.test_media_api::test_every_route_requires_admin_and_private_errors[post-/uploads/6a837ff7-10b1-4713-8eb6-653ab38de022/complete-body4]",
+  "tests.social.test_media_operator::test_direct_report_cursor_is_strict_before_session[28292163-2fd4-491c-ab19-1708773ffe6a]",
+  "tests.social.test_privacy_adversarial::test_status_lookup_hostile_and_unknown_are_indistinguishable[?receipt_id=a4cdd8c8-b24a-4783-8547-fcf08759b5fc]",
+  "tests.social.test_privacy_http::test_hostile_status_lookup_opaque_miss[fd8b234e-f7fd-4b00-8ed9-72e888602081]",
+  "tests.test_batch7_etl_review::test_disabled_trigger_rejects_every_key_without_database_access[False-f9dfd47c-4183-4b6f-8bf1-42f01aab5cea]",
+  "tests.test_batch7_etl_review::test_disabled_trigger_rejects_every_key_without_database_access[True-f9dfd47c-4183-4b6f-8bf1-42f01aab5cea]"
+ ]
+}
