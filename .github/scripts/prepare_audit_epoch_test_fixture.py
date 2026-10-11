@@ -95,24 +95,42 @@ def absence(kind, identity, deadline):
         raise Refused("resource_absence_unverified")
 
 
+def postgres_environment(config):
+    if type(config) is not dict:
+        return False
+    env = config.get("Env")
+    return (type(env) is list and all(type(value) is str for value in env)
+            and env.count("PGDATA=" + PGDATA) == 1)
+
+
+def volume_shape(mount):
+    return (type(mount) is dict
+            and all(type(mount.get(key)) is str for key in ("Type", "Name", "Source", "Destination", "Driver"))
+            and mount["Type"] == "volume" and mount["Destination"] == PGDATA and mount["Driver"] == "local"
+            and base.IDENTITY.fullmatch(mount["Name"]) is not None
+            and mount["Source"].startswith("/") and "\x00" not in mount["Source"] and mount.get("RW") is True)
+
+
 def container(value, deadline, *, running):
-    base.verify_resources(value, deadline)
     result = base.inspect("container", value["container_id"], deadline)
     state = result.get("State", {})
-    if (type(state.get("Running")) is not bool or state["Running"] is not running
+    if (type(state) is not dict or type(state.get("Running")) is not bool or state["Running"] is not running
             or state.get("Error") != "" or state.get("Status") != ("running" if running else "exited")
             or (not running and (type(state.get("ExitCode")) is not int or state["ExitCode"] != 0))):
         raise Refused("owned_postgres_running_state_unverified")
+    config = result.get("Config")
+    host = result.get("HostConfig")
+    if type(config) is not dict or type(host) is not dict:
+        raise Refused("owned_anonymous_postgres_volume_unverified")
     mounts = result.get("Mounts")
     if (type(mounts) is not list or len(mounts) != 1 or type(mounts[0]) is not dict
-            or mounts[0].get("Type") != "volume" or mounts[0].get("Destination") != PGDATA
-            or mounts[0].get("Driver") != "local" or mounts[0].get("RW") is not True
-            or type(mounts[0].get("Name")) is not str or not base.IDENTITY.fullmatch(mounts[0]["Name"])
+            or not volume_shape(mounts[0])
             or result.get("HostConfig", {}).get("Binds")
             or result.get("HostConfig", {}).get("VolumesFrom")
             or result.get("HostConfig", {}).get("Mounts")
-            or result.get("Config", {}).get("Env", []).count("PGDATA=" + PGDATA) != 1):
+            or not postgres_environment(config)):
         raise Refused("owned_anonymous_postgres_volume_unverified")
+    base.verify_resources(value, deadline)
     return mounts[0]
 
 
@@ -125,7 +143,7 @@ def verify_reset(value, identity, mount, deadline):
     host = result.get("HostConfig", {})
     config = result.get("Config", {})
     actual = result.get("Mounts")
-    if (result.get("Id") != identity or result.get("Name") != "/" + reset_name(value)
+    if (type(host) is not dict or type(config) is not dict or result.get("Id") != identity or result.get("Name") != "/" + reset_name(value)
             or config.get("Image") != base.IMAGE or config.get("User") != "postgres"
             or config.get("Entrypoint") != ["/bin/sh"] or config.get("Cmd") != ["-ceu", RESET]
             or config.get("Labels") != {"audit.review": "592", "audit.fixture.nonce": value["nonce"],
@@ -133,8 +151,8 @@ def verify_reset(value, identity, mount, deadline):
             or host.get("NetworkMode") != "none" or host.get("PortBindings") or host.get("Binds")
             or host.get("Privileged") is not False or host.get("ReadonlyRootfs") is not True
             or host.get("VolumesFrom") != [value["container_id"] + ":rw"]
-            or config.get("Env", []).count("PGDATA=" + PGDATA) != 1
-            or type(actual) is not list or len(actual) != 1 or type(actual[0]) is not dict
+            or not postgres_environment(config)
+            or type(actual) is not list or len(actual) != 1 or not volume_shape(actual[0]) or not volume_shape(mount)
             or any(actual[0].get(k) != mount.get(k) for k in ("Type", "Name", "Source", "Destination", "Driver", "RW"))):
         raise Refused("epoch_utility_ownership_mismatch")
     return result

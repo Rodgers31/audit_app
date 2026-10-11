@@ -142,7 +142,11 @@ class AuditEpochFixtureBoundaryTests(unittest.TestCase):
         for mutate in (lambda v: v["State"].update(Running=True), lambda v: v["State"].update(ExitCode=1),
                        lambda v: v["State"].update(ExitCode=False), lambda v: v["Mounts"][0].update(Type="bind"),
                        lambda v: v["Mounts"][0].update(Name="foreign"), lambda v: v["Mounts"][0].update(RW=False),
-                       lambda v: v["HostConfig"].update(VolumesFrom=["foreign:rw"]), lambda v: v["Config"].update(Env=[])):
+                       lambda v: v["HostConfig"].update(VolumesFrom=["foreign:rw"]), lambda v: v["Config"].update(Env=[]),
+                       lambda v: v["Config"].update(Env="PGDATA=" + helper.PGDATA),
+                       lambda v: v["Config"].update(Env=["PGDATA=" + helper.PGDATA, 1]),
+                       lambda v: v["Mounts"][0].update(Source=None), lambda v: v["Mounts"][0].update(Source="")):
+
             bad = deepcopy(self.container); mutate(bad)
             with patch.object(helper.base, "verify_resources"), patch.object(helper.base, "inspect", return_value=bad):
                 with self.assertRaises(helper.Refused):
@@ -157,7 +161,9 @@ class AuditEpochFixtureBoundaryTests(unittest.TestCase):
                        lambda v: v["HostConfig"].update(NetworkMode="default"),
                        lambda v: v["HostConfig"].update(VolumesFrom=["foreign:rw"]),
                        lambda v: v["HostConfig"].update(Privileged=True), lambda v: v["Mounts"][0].update(Name="f" * 64),
-                       lambda v: v.update(Mounts=[None])):
+                       lambda v: v.update(Mounts=[None]), lambda v: v["Config"].update(Env="PGDATA=" + helper.PGDATA),
+                       lambda v: v["Mounts"][0].update(RW=1), lambda v: v["Mounts"][0].update(Source=None)):
+
             bad = deepcopy(self.utility); mutate(bad)
             with patch.object(helper.base, "inspect", return_value=bad):
                 with self.assertRaisesRegex(helper.Refused, "epoch_utility_ownership_mismatch"):
