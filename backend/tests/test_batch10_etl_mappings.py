@@ -28,13 +28,23 @@ def mapping_url(tmp_path_factory):
         yield url
 
 
+@pytest.fixture(scope="module")
+def mapping_template(mapping_url):
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    template = EmptyTemplate(mapping_url)
+    try:
+        yield template
+    finally:
+        template.close()
+
+
 @pytest.fixture
-def pg(monkeypatch, mapping_url):
-    url = mapping_url
-    engine = create_engine(url)
+def pg(monkeypatch, mapping_template, request):
+    case = mapping_template.database()
+    engine = case.__enter__()
+    request.addfinalizer(lambda: case.__exit__(None, None, None))
     factory = sessionmaker(bind=engine)
     with engine.begin() as c:
-        c.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
         c.execute(text("CREATE TABLE IF NOT EXISTS batch10_effects(domain text, job_id integer)"))
         c.execute(text("TRUNCATE batch10_effects"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
