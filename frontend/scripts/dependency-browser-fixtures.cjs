@@ -1,13 +1,13 @@
 'use strict';
 
-const modelPrefix = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/';
+const modelPrefix = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/';
 const modelFiles = ['config.json', 'tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx'];
 const runtimeFiles = ['ort-wasm-simd-threaded.asyncify.mjs', 'ort-wasm-simd-threaded.asyncify.wasm'];
 
 /**
  * Select only a complete approved HTTPS resource URL. The runtime version comes
- * from the installed locked package, never from the requested URL. Main-model
- * downloads are deliberately fulfilled with the verifier's pinned cache bytes.
+ * from the installed locked package, never from the requested URL. Model
+ * downloads must name the exact revision used by the verifier's cache bytes.
  * @param {string} value Complete requested URL.
  * @param {string} runtimeVersion Exact installed ONNX Web version.
  * @returns {{kind: string, relative: string, contentType: string}|null} Fixture or refusal.
