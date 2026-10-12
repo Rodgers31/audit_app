@@ -23,6 +23,10 @@ export const metadata: Metadata = {
 
 const SSR_TIMEOUT_MS = 5000;
 
+// Keep this prefetched explorer in the initial document. A route-level
+// loading.tsx boundary would put its heading and table into a hidden streamed
+// segment; hydration can render another table before that segment is promoted.
+
 /**
  * ISR: regenerate at most once an hour, matching the homepage.
  *

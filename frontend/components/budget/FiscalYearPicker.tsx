@@ -13,6 +13,7 @@
 
 import { motion } from 'framer-motion';
 import { CalendarRange, Radio } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export interface FiscalYearOption {
   fiscal_year: string;
@@ -26,6 +27,11 @@ interface Props {
 }
 
 export default function FiscalYearPicker({ years, selected, onSelect }: Props) {
+  // The server-rendered year controls are visible before React attaches their
+  // handlers. Accepting a click then silently loses the reader's selection.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
   if (!years || years.length < 2) return null;
 
   return (
@@ -56,6 +62,7 @@ export default function FiscalYearPicker({ years, selected, onSelect }: Props) {
             <button
               key={y.fiscal_year}
               type='button'
+              disabled={!hydrated}
               onClick={() => onSelect(y.fiscal_year)}
               aria-pressed={isActive}
               className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-all tabular-nums ${
