@@ -20,16 +20,21 @@ from routers import etl_admin
 URL = os.environ.get("BATCH7_ETL_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not URL, reason="Owned PostgreSQL required")
 AUTH = {"Authorization": "Bearer admin"}
+_TEMPLATE = pytest.StashKey()
 
 
 @pytest.fixture
-def pg(monkeypatch, worker_template, request):
+def pg(monkeypatch, request):
     assert URL == "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
-    case = worker_template.database()
+    # Imported consumers keep the original static URL/child target guard.
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    if _TEMPLATE not in request.session.stash:
+        template = EmptyTemplate(URL)
+        request.session.addfinalizer(template.close)
+        request.session.stash[_TEMPLATE] = template
+    case = request.session.stash[_TEMPLATE].database(fixed_name=True)
     engine = case.__enter__()
     request.addfinalizer(lambda: case.__exit__(None, None, None))
-    # Secondary connections in the unchanged cases use this same owned DB.
-    monkeypatch.setitem(globals(), "URL", engine.url.render_as_string(hide_password=False))
     factory = sessionmaker(bind=engine)
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
     monkeypatch.setattr(database, "SessionLocal", factory)
@@ -42,16 +47,6 @@ def pg(monkeypatch, worker_template, request):
             yield client, factory, engine
     finally:
         engine.dispose()
-
-
-@pytest.fixture(scope="module")
-def worker_template():
-    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
-    template = EmptyTemplate(URL)
-    try:
-        yield template
-    finally:
-        template.close()
 
 
 def post(client, generation, key=None, dry_run=False, source="oag", actor="admin"):

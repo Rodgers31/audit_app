@@ -19,6 +19,7 @@ from seeding.types import DomainRunResult
 
 MAPPINGS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population"}
 AUTH = {"Authorization": "Bearer batch10-admin"}
+_TEMPLATE = pytest.StashKey()
 
 
 @pytest.fixture(scope="module")
@@ -28,19 +29,16 @@ def mapping_url(tmp_path_factory):
         yield url
 
 
-@pytest.fixture(scope="module")
-def mapping_template(mapping_url):
-    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
-    template = EmptyTemplate(mapping_url)
-    try:
-        yield template
-    finally:
-        template.close()
-
-
 @pytest.fixture
-def pg(monkeypatch, mapping_template, request):
-    case = mapping_template.database()
+def pg(monkeypatch, mapping_url, request):
+    # Imported process fixtures retain their static URL and exported fixture pair.
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    module = request.node.getparent(pytest.Module)
+    if _TEMPLATE not in module.stash:
+        template = EmptyTemplate(mapping_url)
+        module.addfinalizer(template.close)
+        module.stash[_TEMPLATE] = template
+    case = module.stash[_TEMPLATE].database(fixed_name=True)
     engine = case.__enter__()
     request.addfinalizer(lambda: case.__exit__(None, None, None))
     factory = sessionmaker(bind=engine)
