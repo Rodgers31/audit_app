@@ -21,7 +21,6 @@ from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
-REVISION = "e554b10a0001"
 PREFIX = "batch9-review-592-"
 MAX_SECONDS = 240
 LIBPQ = frozenset({"PGHOST", "PGHOSTADDR", "PGPORT", "PGDATABASE", "PGUSER", "PGPASSWORD", "PGPASSFILE",
@@ -32,6 +31,28 @@ IDENTITY = re.compile(r"[0-9a-f]{64}")
 
 class Refused(RuntimeError):
     """Fixed diagnostics must not publish child output or ambient secrets."""
+
+
+def repository_head():
+    """The checkout's single ordered Alembic head; readiness is bound to it.
+
+    Read from the repository's own migration scripts before any resource is
+    created, so a stale hard-coded revision cannot certify an older schema and
+    two heads (a parallel guessed migration) refuse instead of picking one.
+    """
+    try:
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+
+        config = Config(str(ROOT / "backend" / "alembic.ini"))
+        config.set_main_option("script_location", str(ROOT / "backend" / "alembic"))
+        heads = ScriptDirectory.from_config(config).get_heads()
+    except Exception:
+        raise Refused("repository_migration_head_unavailable") from None
+    if (type(heads) not in (list, tuple) or len(heads) != 1 or type(heads[0]) is not str
+            or not re.fullmatch(r"[0-9a-z_]{1,32}", heads[0])):
+        raise Refused("repository_migration_head_unverified")
+    return heads[0]
 
 
 def guard_environment():
@@ -138,6 +159,7 @@ def prepare(path, port, github_env, deadline):
     validate_port(port)
     if path.exists() or path.is_symlink():
         raise Refused("existing_state_refused")
+    revision = repository_head()
     private_path(github_env)
     with socket.socket() as probe:
         try:
@@ -191,7 +213,7 @@ def prepare(path, port, github_env, deadline):
                  "'audit',to_regclass('public.admin_audit_log') IS NOT NULL,'rls',(SELECT relrowsecurity FROM pg_class WHERE oid='public.seeding_domain_claims'::regclass),"
                  "'active_index',(SELECT indisvalid AND indisready AND indisunique FROM pg_index WHERE indexrelid='public.uq_seeding_active_domain'::regclass))"], deadline)
     try:
-        expected = {"database": value["database"], "autovacuum": "off", "revision": REVISION, "claim": True, "jobs": True, "audit": True, "rls": True, "active_index": True}
+        expected = {"database": value["database"], "autovacuum": "off", "revision": revision, "claim": True, "jobs": True, "audit": True, "rls": True, "active_index": True}
         actual = json.loads(proof)
         if (type(actual) is not dict or actual != expected
                 or any(type(actual[key]) is not type(value) for key, value in expected.items())):
@@ -207,7 +229,7 @@ def prepare(path, port, github_env, deadline):
         raise Refused("environment_export_readback_mismatch")
     value["ready"] = True
     state_write(path, value)
-    return {"status": "ready", "revision": REVISION, "loopback_port": port,
+    return {"status": "ready", "revision": revision, "loopback_port": port,
             "container_id": value["container_id"], "network_id": value["network_id"], "state_file": str(path)}
 
 

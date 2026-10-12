@@ -82,11 +82,11 @@ class TestItDefers:
         )
 
 
-class TestItDoesNotDeferForever:
-    def test_a_stale_running_row_does_not_block(self, db_session):
-        """A crashed run must not wedge every future boot."""
-        _running(db_session, minutes_ago=bootstrap.DEFER_TO_SEED_WITHIN_MINUTES + 5)
-        assert bootstrap._seed_run_in_flight(db_session) is None
+class TestOwnershipMustBeEstablished:
+    def test_a_stale_running_row_remains_uncertain(self, db_session):
+        """Age cannot establish that a crashed writer returned."""
+        _running(db_session, minutes_ago=65)
+        assert bootstrap._seed_run_in_flight(db_session) == "audits"
 
     def test_an_idle_database_does_not_defer(self, db_session):
         assert bootstrap._seed_run_in_flight(db_session) is None
@@ -106,21 +106,16 @@ class TestItDoesNotDeferForever:
         db_session.commit()
         assert bootstrap._seed_run_in_flight(db_session) is None
 
-    def test_bootstrap_does_not_defer_to_itself(self, db_session):
-        """Otherwise two bootstrap boots deadlock each other into no-ops."""
+    def test_untagged_bootstrap_is_uncertain(self, db_session):
+        """An interrupted bootstrap observation requires explicit reconciliation."""
         _running(db_session, domain=bootstrap.BOOTSTRAP_DOMAIN)
-        assert bootstrap._seed_run_in_flight(db_session) is None
+        assert bootstrap._seed_run_in_flight(db_session) == bootstrap.BOOTSTRAP_DOMAIN
 
-    def test_force_overrides_the_deferral(self, db_session, monkeypatch):
-        """The weekly job must still be able to insist."""
+    def test_force_cannot_override_uncertain_ownership(self, db_session, monkeypatch):
+        """Force refresh changes the county fast path, never writer authority."""
         _running(db_session)
         monkeypatch.setattr(bootstrap, "SessionLocal", lambda: db_session)
         reached = []
-        monkeypatch.setattr(
-            bootstrap, "_ensure_country", lambda *a, **k: reached.append(True)
-        )
-        with pytest.raises(Exception):
-            # It gets past the deferral and into the real work, which this
-            # stub cannot complete — reaching it at all is the assertion.
-            bootstrap.initialize_reference_data(force=True)
-        assert reached
+        monkeypatch.setattr(bootstrap, "_ensure_country", lambda *a, **k: reached.append(True))
+        assert bootstrap.initialize_reference_data(force=True) is False
+        assert reached == []

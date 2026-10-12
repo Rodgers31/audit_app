@@ -1,0 +1,256 @@
+{
+ "generated_by": "docs/admin/implementation/batch11-issue-602-evidence/tools/record_v3.py",
+ "generator_sha256": "d05888ba0230cb4c0757f6b1bdb46cc0dbb0ccfa54ebcbebbf9882fe3227a029",
+ "label": "baseline: test_budget_qualification_transfer on pristine base bcb5ff9, minimum runtime",
+ "mode": "pytest",
+ "ci_parity_environment": false,
+ "started_at": "2026-10-10T18:38:09.388217+00:00",
+ "finished_at": "2026-10-10T18:38:11.224708+00:00",
+ "duration_seconds": 1.615,
+ "deadline_seconds": 600,
+ "timed_out": false,
+ "exit_code": 1,
+ "leftover_process_group": false,
+ "command": [
+  "<machine-path>",
+  "-m",
+  "pytest",
+  "tests/test_budget_qualification_transfer.py",
+  "-q",
+  "-o",
+  "addopts=",
+  "--junitxml=<out>/junit.xml",
+  "--basetemp=<out>/tmp",
+  "-p",
+  "no:cacheprovider",
+  "-rA"
+ ],
+ "child_environment": {
+  "ADMIN_ETL_DISPATCH_ENABLED": "false",
+  "BATCH11_602_API_PORT": "18031",
+  "BATCH11_602_PG_PORT": "55535",
+  "BATCH9_RECONCILIATION_DATABASE_URL": "postgresql+psycopg2://postgres@127.0.0.1:55536/batch9-review-592-6588574344cc4a348c4f70f601911e20",
+  "DATABASE_URL": "postgresql://postgres:inert-owned-602@127.0.0.1:55531/audit_app_test",
+  "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  "PYTHONDONTWRITEBYTECODE": "1",
+  "PYTHONPATH": "<repo>/backend:<repo>/backend/tests",
+  "PYTHON_DOTENV_DISABLED": "1",
+  "REDIS_URL": "redis://127.0.0.1:55539",
+  "SEED_CACHE_PATH": "<out>/cache",
+  "SEED_CRA_INGESTION_ENABLED": "false",
+  "SEED_ENRICH_WITH_WORLDBANK": "false",
+  "SEED_LIVE_PDF_FETCH_ENABLED": "false",
+  "SEED_LOG_PATH": "<out>/seed.jsonl",
+  "SEED_STORAGE_PATH": "<out>/storage",
+  "SUPABASE_JWT_SECRET": "inert-only",
+  "SUPABASE_KEY": "inert",
+  "SUPABASE_SERVICE_ROLE_KEY": "inert",
+  "SUPABASE_URL": "https://owned.invalid",
+  "TESTING": "true"
+ },
+ "runtime": {
+  "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "executable_name": "python",
+  "platform": "macOS-27.0.1-arm64-arm-64bit"
+ },
+ "head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+ "tree": "9d0061928c16d173859f98cb6daa5f2f591b257c",
+ "status_before": "",
+ "status_after": "",
+ "source_before_sha256": "42fde13ec79c17071b06dd5a1de05d534cee075f149c7966c9b2978809c6f0af",
+ "source_after_sha256": "42fde13ec79c17071b06dd5a1de05d534cee075f149c7966c9b2978809c6f0af",
+ "source_drift": [],
+ "source_files": {
+  ".github/scripts/prepare_reconciliation_test_fixture.py": "06bd00b7a545aacca5d2768305ee4802a571dc8947ca7f59bd7edbf612efe888",
+  ".github/scripts/tests/test_reconciliation_test_fixture.py": "70c0a34e704c2aa09ab117b5a45585cd22844f56aefec54d0fa2151c998b8489",
+  "backend/admin_etl_dispatch.py": "d37c3b2277ef572bb15e8a452338eccd8bd6adb5b6d008c4c45a27f369a03594",
+  "backend/admin_etl_dispatch_adapter.py": "fe0bd6296f26d0445ebe6d65e708ba86db7ca21774337e72f635797726ae087e",
+  "backend/models.py": "89a0b380b30d36bf6fe809f814e324e35dddecb1b38222599bb09772d52e7c23",
+  "backend/seeding/config.py": "ecc99f91c6d7015c0bace8bb9c92bf27390f8617f4935a06d7ee6c3debb7cb72",
+  "backend/seeding/registries.py": "cc9b7efc10a7e44e736f8adaeb2fcdfa39e1bac3ad64c4e05364a7149be8569c",
+  "backend/seeding/source_registry.py": "ffe8d922b1c99216e54ed9e26277b2f772b03847f09a7d477b943768d609ba4b",
+  "backend/tests/financial_literal_reviewed_inventory.json": "091e166962335a609d3bdf1e6961fc76c3f886866051100207b822d175ba7118",
+  "backend/tests/test_batch10_etl_mappings.py": "2ce03c668cd5ae09f7b96531d49718da320913f1ef8a35f433dd4b16ee7c066f",
+  "backend/tests/test_batch10_etl_mappings_migration.py": "85f0d43b8273075af51000960e7ad3193cc1098176ac5f8015ab7c697a682636",
+  "backend/tests/test_batch10_mapped_reconciliation.py": "a30e81bbe6fa7964adb722f18e4b5b57cb9292e2ce94f75ccad3421f8407ac3e",
+  "backend/tests/test_batch9_legacy_etl_ownership.py": "9275ea1f72af01e5c0052418e8f0c23e8a2e6fb690c0ea1611b0b0bf09f5a859",
+  "backend/tests/test_batch9_legacy_etl_sessions.py": "b5987e4c538f3a1b587c4daf8d71fb1798df9d12b83d2db549386b1080037f23",
+  "etl/writer_ownership.py": "7ad676effbb91fe8ade3553fa6794c3b8cfd68fbc74feea8133280e28427b8fe"
+ },
+ "owned_containers_before": [],
+ "owned_containers_after": [],
+ "inventory": {
+  "source": "junit",
+  "unique": true,
+  "nonempty": true
+ },
+ "complete_inventory": true,
+ "counts": {
+  "error": 0,
+  "failed": 1,
+  "xpass": 0,
+  "passed": 38,
+  "xfail": 0,
+  "skipped": 0
+ },
+ "testcases": [
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[valid-verified-retained_source_and_observation_matched]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-null-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-list-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-string-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-number-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-bool-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[root-empty-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[payload-null-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[payload-list-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[payload-string-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[payload-number-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[payload-empty-qualified-invalid_source_kind]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[missing-extraction-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[wrong-extractor-qualified-receipt_missing]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[modelled-origin-modelled-explicit_model_origin]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[projected-origin-projected-explicit_projection]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[source-classification-modelled-explicit_model_origin]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[estimate-classification-modelled-explicit_model_origin]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[malformed-meta-list-verified-retained_source_and_observation_matched]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[malformed-meta-string-verified-retained_source_and_observation_matched]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[country-conflicting-source_country_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[entity-country-conflicting-source_country_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[missing-country-conflicting-source_country_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[missing-period-conflicting-observation_identity_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[receipt-association-conflicting-receipt_source_document_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[mixed-sources-conflicting-receipt_source_document_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[ambiguity-conflicting-multiple_observation_evidence]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[period-conflicting-observation_identity_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[transport-qualified-unsuccessful_response]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[byte-check-conflicting-retained_bytes_not_matched]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[observation-conflicting-receipt_observation_mismatch]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_complete_budget_qualification_matches_pre_projection_contract[many-observations-verified-retained_source_and_observation_matched]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_budget_qualification_does_not_transfer_unrelated_context_payloads",
+   "state": "failed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[loans]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[gdp_data]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[economic_indicators]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[poverty_indices]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[debt_timeline]",
+   "state": "passed"
+  },
+  {
+   "id": "tests.test_budget_qualification_transfer::test_other_qualification_tables_keep_full_publication_context[revenue_by_source]",
+   "state": "passed"
+  }
+ ],
+ "published_testcase_ids_compacted": 0,
+ "published_source_files_scope": "paths changed from accepted base bcb5ff99854de595bbe3f7d60cc8796b7ada5a20; the full-set digest is source_before_sha256"
+}

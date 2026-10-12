@@ -7,6 +7,8 @@ FROM base AS dependencies
 # npm ci needs the lockfile's peer policy and the local ESLint package.
 COPY package.json package-lock.json .npmrc ./
 COPY eslint-rules ./eslint-rules
+# The root postinstall executes before the later application source copy.
+COPY scripts/apply-tooling-repairs.cjs scripts/tooling-repairs.json ./scripts/
 # Keep build tools and native optional packages. Only skip ONNX's extra GPU
 # download; its bundled CPU binaries and other dependency scripts remain intact.
 RUN ONNXRUNTIME_NODE_INSTALL=skip npm ci --include=dev --include=optional --no-audit --no-fund

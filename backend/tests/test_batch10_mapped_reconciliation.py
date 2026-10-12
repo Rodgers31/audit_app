@@ -25,6 +25,7 @@ TABLES = ("admin_audit_log", "seeding_domain_claims", "etl_dispatch_commands",
 def inert_registry(monkeypatch):
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", ",".join(SOURCE_DOMAINS))
+    monkeypatch.setenv("SEED_CRA_INGESTION_ENABLED", "true")
     def forbidden(*args, **kwargs):
         raise AssertionError("Reconciliation fixture must never execute a financial handler")
     load_builtin_domains()

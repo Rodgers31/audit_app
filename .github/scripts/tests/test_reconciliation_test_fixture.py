@@ -43,7 +43,22 @@ class FixtureControls(unittest.TestCase):
         backend = SCRIPT.parents[2] / "backend"
         config = Config(str(backend / "alembic.ini"))
         config.set_main_option("script_location", str(backend / "alembic"))
-        self.assertEqual(subject.REVISION, ScriptDirectory.from_config(config).get_current_head())
+        self.assertEqual(subject.repository_head(), ScriptDirectory.from_config(config).get_current_head())
+
+    def test_readiness_refuses_a_stale_or_ambiguous_migration_head(self):
+        # The previous hard-coded head is a stale schema once a successor exists.
+        with self.assertRaisesRegex(subject.Refused, "migrated_template_readback_mismatch"):
+            self.prepare_with_proof(lambda proof: {**proof, "revision": "e554b10a0001"})
+        self.assertFalse(self.export.exists())
+        self.state.unlink()
+        from alembic.script import ScriptDirectory
+        for heads in (("a1", "b2"), (), ("BAD HEAD",)):
+            with self.subTest(heads=heads), patch.object(ScriptDirectory, "get_heads", return_value=list(heads)), \
+                    patch.object(subject, "run", side_effect=AssertionError("no resource before head proof")):
+                with self.assertRaisesRegex(subject.Refused, "repository_migration_head_unverified"):
+                    subject.prepare(self.state, 55496, self.export, time.monotonic() + 30)
+                self.assertFalse(self.state.exists())
+                self.assertFalse(self.export.exists())
 
     def prepare_with_proof(self, proof_change):
         def inspect(kind, target, deadline):
@@ -76,7 +91,7 @@ class FixtureControls(unittest.TestCase):
                 return ""
             if "psql" in command:
                 value = json.loads(self.state.read_text())
-                proof = {"database": value["database"], "autovacuum": "off", "revision": subject.REVISION,
+                proof = {"database": value["database"], "autovacuum": "off", "revision": subject.repository_head(),
                          "claim": True, "jobs": True, "audit": True, "rls": True, "active_index": True}
                 return json.dumps(proof_change(proof))
             raise AssertionError("Unexpected fixture command")

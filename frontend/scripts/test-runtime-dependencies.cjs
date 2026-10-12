@@ -20,12 +20,17 @@ function main() {
       for (const name of ['package.json', 'package-lock.json', 'eslint-rules']) {
         fs.cpSync(path.join(frontend, name), path.join(root, name), { recursive: true });
       }
+      fs.mkdirSync(path.join(root, 'scripts'));
+      for (const name of ['apply-tooling-repairs.cjs', 'tooling-repairs.json']) fs.copyFileSync(path.join(__dirname, name), path.join(root, 'scripts', name));
+      const home = path.join(root, '.npm-home'); fs.mkdirSync(home);
+      const userConfig = path.join(home, 'user-npmrc'), globalConfig = path.join(home, 'global-npmrc');
+      fs.writeFileSync(userConfig, ''); fs.writeFileSync(globalConfig, '');
       const npmCli = process.env.npm_execpath;
       assert.ok(npmCli && path.isAbsolute(npmCli) && fs.statSync(npmCli).isFile(),
         'Run fresh installation through npm run test:dependency-boundaries');
       const install = spawnSync(process.execPath, [npmCli, 'ci', '--omit=dev', '--include=optional', '--no-audit', '--no-fund'], {
         cwd: root, stdio: 'inherit', timeout: 180000,
-        env: { PATH: process.env.PATH, npm_config_cache: path.join(root, '.npm-cache'), npm_config_update_notifier: 'false' },
+        env: { PATH: process.env.PATH, HOME: home, npm_config_userconfig: userConfig, npm_config_globalconfig: globalConfig, npm_config_cache: path.join(root, '.npm-cache'), npm_config_update_notifier: 'false', npm_config_engine_strict: 'true', ONNXRUNTIME_NODE_INSTALL: 'skip' },
       });
       assert.equal(install.status, 0, `Owned production install failed: ${install.error || install.signal || install.status}`);
     }
