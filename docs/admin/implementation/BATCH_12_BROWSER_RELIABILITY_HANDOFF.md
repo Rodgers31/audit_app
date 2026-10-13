@@ -208,3 +208,21 @@ three causality/publication-wording corrections and found no other material
 overclaim; it did not independently certify publication-v2 or native cleanup.
 
 These are proposals for coordinator consolidation; no shared skill was edited.
+
+## Coordinator review: hosted test boundary (#645)
+
+The first combined hosted candidate (`7c803a1`, run38341871807) passed all
+2,098 unit cases with the existing one skip, but Jest also selected the two
+Playwright-only readiness files and failed to load them. The scoped repair
+excludes only `browser-regressions/` from Jest and adds the unchanged four
+controls to the existing Chromium publication job in both CI definitions.
+Their reports are retained beside publication receipts; the original329
+inventory and all seven mandatory jobs remain required.
+
+On this PR source, all148 actual Jest suites passed (2,095 cases, one existing
+skip). After correcting the manual workflow's multiline artifact path, all112
+workflow controls passed. These are local scoped receipts under the
+coordinator's `BATCH_12_REVIEW`; fresh complete hosted acceptance is pending.
+The failed combined run is preserved and does not certify merge readiness.
+The separate coordinator PostgreSQL bootstrap failure belongs to #641 and
+requires actual canonical-role verification before that candidate can pass.
