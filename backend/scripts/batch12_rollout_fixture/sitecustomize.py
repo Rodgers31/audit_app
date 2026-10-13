@@ -10,7 +10,7 @@ try:
     parsed = urlsplit(os.environ["DATABASE_URL"])
     if (os.environ.get("BATCH12_INERT_PROCESS") != "true" or
             parsed.scheme != "postgresql+psycopg2" or parsed.hostname != "127.0.0.1" or
-            parsed.port != 55560 or parsed.username != "postgres" or parsed.password is not None or
+            parsed.port not in (55496, 55560) or parsed.username != "postgres" or parsed.password is not None or
             parsed.query or parsed.fragment or
             parsed.path != "/" + os.environ["BATCH12_EXPECTED_DATABASE"] or
             not parsed.path.startswith("/batch9-reconciliation-") or
@@ -32,7 +32,7 @@ try:
     original_connect_ex = socket.socket.connect_ex
 
     def permitted(address):
-        return isinstance(address, tuple) and address[:2] == ("127.0.0.1", 55560)
+        return isinstance(address, tuple) and address[:2] == ("127.0.0.1", parsed.port)
 
     def local_connect(sock, address):
         if not permitted(address):

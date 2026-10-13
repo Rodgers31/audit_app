@@ -57,6 +57,9 @@ def process(tmp_path, env, module, *args):
         try:
             yield child, path
         finally:
+            # Reap only our exact Popen child first. An exited root appears as
+            # a zombie with no module argv on Linux; it is not a foreign child.
+            child.poll()
             members = group_members(child.pid)
             if members:
                 if any(int(row[0]) != os.getuid() or not any(name in row[3] for name in (module, "admin_etl_dispatch_adapter")) for row in members):
@@ -96,11 +99,13 @@ def test_http_acceptance_correlates_one_actual_worker_execution(owned, tmp_path,
     env = environment(owned, tmp_path, nonce, admin_subject)
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 18060))
-    with process(tmp_path, env, "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "18060"), httpx.Client(base_url="http://127.0.0.1:18060", trust_env=False) as client:
+    with process(tmp_path, env, "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "18060") as (server, server_log), httpx.Client(base_url="http://127.0.0.1:18060", trust_env=False) as client:
         def server_response():
             try:
                 return client.get("/api/v1/admin/etl/dispatch", headers=headers(admin_subject))
             except httpx.TransportError:
+                if server.poll() is not None:
+                    raise RuntimeError(f"Owned HTTP fixture exited {server.returncode}: {server_log.read_text()}")
                 return None
         unavailable = wait_for(server_response, lambda r: r is not None)
         assert unavailable.status_code == 200 and unavailable.json()["available"] is False

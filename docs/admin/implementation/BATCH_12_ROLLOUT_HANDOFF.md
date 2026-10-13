@@ -396,3 +396,26 @@ boolean/float aliases reproduce the original dictionary-comparison gap and
 are refused by the new guard. Production authority remains false. This is
 part of #642, with final combined current/minimum native proof recorded before
 merge. The earlier 54-case-per-mode packets remain historical, unchanged.
+
+## Coordinator review: hosted worker fixture parity (#647)
+
+The first complete combined hosted candidate (`7c803a1`, run38341871807)
+failed all three new worker correlations. The startup guard accepted only
+local55560; the canonical hosted reconciliation fixture uses55496. Its early
+exit was then masked by cleanup treating a known exited root's zombie command
+as a foreign process. The complete failed run is retained.
+
+The rehearsal now permits only those two established owned ports and binds
+the socket restriction to the validated selected port. Exact native database,
+principal, cluster and nonce checks remain required. Cleanup first polls its
+exact owned Popen handle, then retains independent process-group membership
+and foreign-member refusals. An early HTTP child exit now reports its actual
+exit and inert startup log. No production connection or provider path changed.
+
+An exact native55496 reproduction fails the original unchanged worker case;
+a separate native exited-root control fails original cleanup. With the repair,
+all three actual HTTP/supervisor/adapter/native-CLI correlations and the exited
+root control pass on current/minimum SQLAlchemy, normal and optimized runtimes
+(four cases per execution). This scoped run's source is this PR and its template
+uses e602b11a0001; fresh complete combined full-head/native hosted acceptance
+remains required. These results do not certify production rollout or activation.
