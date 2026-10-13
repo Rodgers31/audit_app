@@ -101,6 +101,8 @@ class Catalog:
 
     def execute(self, sql, params=None):
         value = str(sql)
+        if value == 'SET LOCAL row_security = off':
+            return Rows([])
         if value == "SELECT version_num FROM public.alembic_version":
             return Rows([("a611b12a0001",)])
         if "SELECT current_database(),current_user,current_schema()" in value:
@@ -120,6 +122,8 @@ class Catalog:
 
     def scalar(self, sql, params=None):
         value = str(sql)
+        if value == 'SHOW row_security':
+            return 'off'
         if value == "SELECT current_user":
             return self.actual_user
         if 'rolsuper' in value:
@@ -292,3 +296,18 @@ def test_template_requires_exact_single_revision_population(versions, monkeypatc
             return super().execute(sql, params)
     with pytest.raises(RuntimeError, match="actual full migration head"):
         fixture.empty_full_head(MultipleVersions())
+
+
+@pytest.mark.parametrize('setting', ['on', None, False, 0])
+def test_population_visibility_must_be_verified_before_history_reads(setting, monkeypatch):
+    class FilteredCatalog(FullCatalog):
+        def scalar(self, sql, params=None):
+            if str(sql) == 'SHOW row_security':
+                return setting
+            raise AssertionError('History read before visibility was verified')
+        def execute(self, sql, params=None):
+            if str(sql) == 'SET LOCAL row_security = off':
+                return Rows([])
+            raise AssertionError('History read before visibility was verified')
+    with pytest.raises(RuntimeError, match='population visibility'):
+        fixture.empty_full_head(FilteredCatalog())

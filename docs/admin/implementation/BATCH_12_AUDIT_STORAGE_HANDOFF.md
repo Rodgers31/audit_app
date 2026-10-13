@@ -372,3 +372,33 @@ caller execution and uncertainty controls; these are not native database proof.
 Final integrated hosted acceptance and owned browser replay are recorded by the
 coordinator before merge. No production certification, role update, migration
 or worker activation is performed by these review repairs.
+
+## Coordinator review: canonical role parity (#646)
+
+The first complete combined hosted candidate (`7c803a1`, run38341871807)
+failed the unchanged coordinator Chromium bootstrap: the canonical restricted
+login could not CREATE ROLE for the new full migration. The ancillary local
+harness's superuser did not establish canonical compatibility. Source review
+also found that the template guard required a superuser and the canonical
+login lacked the CREATEDB permission needed for owned per-case copies.
+
+The canonical runner now precreates only the exact safe audit group roles
+through its owned container administrator. Migration/runtime ownership remains
+with the coordinator; its login is explicitly NOSUPERUSER, NOBYPASSRLS,
+NOCREATEROLE and NOREPLICATION. Its isolated fixture now explicitly permits
+CREATEDB. Native role flags and absence of inherited memberships are checked
+and retained in the database receipt before any browser cohort starts.
+
+The complete population guard sets transaction-local row_security=off and
+verifies readback before every history read. PostgreSQL refuses reads that
+would apply RLS filtering; this grants no bypass privilege. All full-head,
+storage identity, table inventory and retained-row refusals remain. Native
+controls exercise a restricted table owner passing with an empty population,
+and ordinary nonowner/forced-owner RLS refusing known retained rows without
+erasing them. All52 scoped controls passed on both current and minimum
+SQLAlchemy. The literal original population function fails the empty-owner
+control, with exact source/function and native cleanup evidence retained.
+These controls are separate from actual canonical CLI/hosted acceptance,
+which remains pending and must use the complete original browser inventory.
+
+No production role, connection, migration or storage certification was changed.

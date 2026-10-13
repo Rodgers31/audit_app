@@ -25,6 +25,7 @@ from routers.admin_audit_log import router
 from services import admin_audit_storage as storage
 from supabase_auth import AdminUser, get_current_user
 from tests.admin_audit_epoch.resource_cleanup import cleanup_owned, database_identity, role_identity
+from tests.admin_audit_epoch.ephemeral_database import empty_full_head
 
 BACKEND = Path(__file__).resolve().parents[2]
 MIGRATION = BACKEND / 'alembic/versions/a611b12a0001_durable_admin_audit.py'
@@ -124,6 +125,41 @@ def insert(factory):
 
 def fields(value):
     return {k: value[k] for k in ('snapshot_id','as_of','visibility_snapshot')}
+
+
+@pytest.mark.parametrize('mode', ['empty-owner', 'forced-owner', 'filtered-nonowner'])
+def test_template_population_under_actual_restricted_roles(durable, mode):
+    owner, _, _, _, _, _, _, _, reader_name, writer_name = durable
+    with owner.begin() as c:
+        c.execute(text('UPDATE public.admin_audit_storage SET certified=false'))
+        c.execute(text('CREATE TABLE public.batch12_template_history(id integer NOT NULL)'))
+        tables = c.execute(text("""SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+            WHERE n.nspname='public' AND c.relkind IN ('r','p')""")).scalars().all()
+        for name in tables:
+            c.execute(text(f'ALTER TABLE public."{name}" OWNER TO "{reader_name}"'))
+        c.execute(text(f'GRANT SELECT ON ALL TABLES IN SCHEMA public TO "{writer_name}"'))
+        if mode != 'empty-owner':
+            c.execute(text('INSERT INTO public.batch12_template_history VALUES(1)'))
+            # Other existing audit policies remain independently covered by
+            # route tests. This control isolates one known hidden row.
+            for name in ('admin_audit_log','admin_audit_storage','admin_audit_provenance'):
+                c.execute(text(f'ALTER TABLE public.{name} DISABLE ROW LEVEL SECURITY'))
+            c.execute(text('ALTER TABLE public.batch12_template_history ENABLE ROW LEVEL SECURITY'))
+            c.execute(text('CREATE POLICY hidden ON public.batch12_template_history USING(false)'))
+            if mode == 'forced-owner':
+                c.execute(text('ALTER TABLE public.batch12_template_history FORCE ROW LEVEL SECURITY'))
+    principal = writer_name if mode == 'filtered-nonowner' else reader_name
+    with owner.begin() as c:
+        c.execute(text(f'SET LOCAL ROLE "{principal}"'))
+        assert c.execute(text('SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb FROM pg_roles WHERE rolname=current_user')).one() == (False,False,False,False)
+        if mode == 'empty-owner':
+            assert empty_full_head(c)[6] is False
+        else:
+            # off refuses a filtered population; it never bypasses RLS.
+            with pytest.raises(DBAPIError, match='row-level security'):
+                empty_full_head(c)
+    with owner.connect() as c:
+        assert c.scalar(text('SELECT count(*) FROM public.batch12_template_history')) == (0 if mode == 'empty-owner' else 1)
 
 
 def private_unavailable(response):

@@ -92,11 +92,15 @@ def owned_connection(connection, name, user, expected=None):
 
 
 def empty_full_head(connection, expected_storage=None):
+    # Do not infer visibility from role flags. A restricted table owner can
+    # read all rows, but RLS must never turn retained history into an empty
+    # template. PostgreSQL's off setting raises if filtering would apply.
+    connection.execute(text('SET LOCAL row_security = off'))
+    if connection.scalar(text('SHOW row_security')) != 'off':
+        raise RuntimeError('Complete fixture population visibility required')
     versions = connection.execute(text("SELECT version_num FROM public.alembic_version")).all()
     if [tuple(row) for row in versions] != [(head(),)]:
         raise RuntimeError("Fixture template must use the actual full migration head")
-    if connection.scalar(text('SELECT rolsuper FROM pg_roles WHERE rolname=current_user')) is not True:
-        raise RuntimeError('Fixture population requires actual unrestricted owner authority')
     tables = connection.execute(text("""SELECT c.relname,c.relkind,c.relpersistence
         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
         WHERE n.nspname='public' AND c.relkind IN ('r','p','f','m') ORDER BY c.relname""")).all()
