@@ -27,31 +27,23 @@ from database import get_db
 from models import AdminAuditLog
 from routers.admin_audit_log import PRIVATE, router
 from supabase_auth import _decode_supabase_jwt
+from tests.admin_audit_epoch.resource_cleanup import cleanup_owned,database_identity,role_identity
 
 ACTOR='00000000-0000-4000-8000-000000000001'
 name='batch12_audit_browser_'+uuid4().hex
 roles=[name+'_r',name+'_w']
-created_roles=[]
+created_roles={}
 admin=create_engine(f'postgresql+psycopg2://inert:inert@127.0.0.1:{port}/issue611',isolation_level='AUTOCOMMIT')
 owner=reader=writer=None
 created=False
+expected_database=None
 cleaned=False
 
 
 def cleanup():
     global cleaned
     if cleaned:return
-    for engine in (reader,writer,owner):
-        if engine is not None:engine.dispose()
-    with admin.connect() as c:
-        if created:c.execute(text(f'DROP DATABASE "{name}"'))
-        for role in created_roles:
-            if c.scalar(text('SELECT EXISTS(SELECT FROM pg_roles WHERE rolname=:r)'),{'r':role}):
-                c.execute(text(f'DROP ROLE "{role}"'))
-        if c.scalar(text('SELECT EXISTS(SELECT FROM pg_database WHERE datname=:n)'),{'n':name}):
-            raise RuntimeError('Owned browser database cleanup unverified')
-        if c.scalar(text('SELECT EXISTS(SELECT FROM pg_roles WHERE rolname=ANY(:roles))'),{'roles':roles}):
-            raise RuntimeError('Owned browser role cleanup unverified')
+    cleanup_owned(admin,(reader,writer,owner),name,created,expected_database,created_roles)
     cleaned=True
 
 
@@ -60,7 +52,9 @@ try:
         identity=c.execute(text("SELECT current_database(),current_user,pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()")).one()
         if identity!=('issue611','inert','inert'):raise RuntimeError('Owned epoch database identity required')
         if int(c.scalar(text('SELECT pg_current_xact_id()::text')))<=2**32:raise RuntimeError('Actual epoch one required')
-        c.execute(text(f'CREATE DATABASE "{name}" OWNER inert'));created=True
+        created=True  # Record an uncertain CREATE before crossing transport.
+        c.execute(text(f'CREATE DATABASE "{name}" OWNER inert'))
+        expected_database=database_identity(c,name)
     url=admin.url.set(database=name).render_as_string(hide_password=False)
     result=subprocess.run([sys.executable,'-m','alembic','upgrade','head'],cwd=BACKEND,
         env={'PATH':os.environ['PATH'],'DATABASE_URL':url,'PYTHON_DOTENV_DISABLED':'1','PYTHONDONTWRITEBYTECODE':'1','PYTHONPATH':str(BACKEND)},
@@ -74,8 +68,9 @@ try:
         c.execute(text('UPDATE admin_audit_storage SET certified=true'))
     with admin.connect() as c:
         for role,group in zip(roles,('audit_log_reader','audit_log_writer')):
+            created_roles[role]=None  # Retain uncertain creation outcomes.
             c.execute(text(f'CREATE ROLE "{role}" LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD \'inert\''))
-            created_roles.append(role)
+            created_roles[role]=role_identity(c,role)
             c.execute(text(f'GRANT {group} TO "{role}"'))
     reader=create_engine(make_url(url).set(username=roles[0]),isolation_level='REPEATABLE READ')
     writer=create_engine(make_url(url).set(username=roles[1]))
@@ -88,7 +83,7 @@ try:
                 payload={'job_id':i+1,'dry_run':True,'access_token':'INERT_SECRET'},created_at=datetime.now(timezone.utc)))
         db.commit()
 except BaseException:
-    cleanup();admin.dispose();raise
+    cleanup();raise
 
 supabase_admin.get_profile=lambda uid:{'id':uid,'roles':['admin'] if uid==ACTOR else ['citizen'],'email':'admin@example.invalid'}
 
@@ -96,7 +91,7 @@ supabase_admin.get_profile=lambda uid:{'id':uid,'roles':['admin'] if uid==ACTOR 
 @asynccontextmanager
 async def lifespan(app):
     try:yield
-    finally:cleanup();admin.dispose()
+    finally:cleanup()
 
 
 app=FastAPI(lifespan=lifespan)

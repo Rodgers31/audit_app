@@ -145,6 +145,11 @@ def capability(db):
         unavailable()
     if db.scalar(text("SELECT has_schema_privilege('public','CREATE')")) is not False:
         unavailable()
+    if (db.scalar(text("SELECT has_sequence_privilege('public.admin_audit_log_id_seq','USAGE,SELECT,UPDATE')")) is not False
+            or db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r
+              WHERE r.rolname IN ('anon','authenticated')
+              AND has_sequence_privilege(r.oid,'public.admin_audit_log_id_seq','USAGE,SELECT,UPDATE'))""")) is not False):
+        unavailable()
     if db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r, pg_class c
       WHERE r.rolname IN ('anon','authenticated')
       AND c.oid IN ('public.admin_audit_log'::regclass,'public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)

@@ -8,6 +8,8 @@ from pathlib import Path
 from uuid import uuid4
 import json
 import os
+import re
+from uuid import UUID
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
@@ -89,17 +91,57 @@ def owned_connection(connection, name, user, expected=None):
     return actual
 
 
-def empty_full_head(connection):
-    if connection.scalar(text("SELECT version_num FROM public.alembic_version")) != head():
+def empty_full_head(connection, expected_storage=None):
+    versions = connection.execute(text("SELECT version_num FROM public.alembic_version")).all()
+    if [tuple(row) for row in versions] != [(head(),)]:
         raise RuntimeError("Fixture template must use the actual full migration head")
-    for table in ("admin_audit_log", "admin_audit_provenance", "etl_dispatch_commands",
-                  "etl_dispatch_worker", "ingestion_jobs", "seeding_domain_claims"):
-        if connection.scalar(text("SELECT EXISTS(SELECT FROM public." + table + ")")) is not False:
+    if connection.scalar(text('SELECT rolsuper FROM pg_roles WHERE rolname=current_user')) is not True:
+        raise RuntimeError('Fixture population requires actual unrestricted owner authority')
+    tables = connection.execute(text("""SELECT c.relname,c.relkind,c.relpersistence
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relkind IN ('r','p','f','m') ORDER BY c.relname""")).all()
+    names = [r[0] for r in tables]
+    required = {'alembic_version','admin_audit_storage','admin_audit_log','admin_audit_provenance',
+                'etl_dispatch_commands','etl_dispatch_worker','ingestion_jobs','seeding_domain_claims',
+                'etl_dispatch_domains','countries'}
+    if (not required <= set(names) or len(names) != len(set(names))
+            or any(len(r)!=3 or type(r[0]) is not str or not re.fullmatch('[a-z][a-z0-9_]*',r[0])
+                   or r[1] not in ('r','p') or r[2]!='p' for r in tables)):
+        raise RuntimeError('Complete ordinary fixture table inventory required')
+    for table in names:
+        if table in ('alembic_version','admin_audit_storage'):
+            continue
+        if table=='batch7_coordinator_control':
+            columns=connection.execute(text("""SELECT attname,format_type(atttypid,atttypmod),attnotnull
+                FROM pg_attribute WHERE attrelid='public.batch7_coordinator_control'::regclass
+                AND attnum>0 AND NOT attisdropped ORDER BY attnum""")).all()
+            rows=connection.execute(text('SELECT * FROM public.batch7_coordinator_control')).all()
+            if [tuple(r) for r in columns]!=[('mode','text',True)] or [tuple(r) for r in rows]!=[('normal',)]:
+                raise RuntimeError('Refusing to copy or erase retained fixture history')
+            continue
+        if connection.scalar(text('SELECT EXISTS(SELECT FROM public."' + table + '")')) is not False:
             raise RuntimeError("Refusing to copy or erase retained fixture history")
-    rows = connection.execute(text("SELECT singleton,certified FROM public.admin_audit_storage")).all()
+    rows = connection.execute(text("SELECT singleton,schema_version,incarnation::text,system_identifier,database_oid::bigint,timeline,certified FROM public.admin_audit_storage")).all()
     state = tuple(rows[0]) if len(rows) == 1 else ()
-    if len(state) != 2 or state[0] is not True or state[1] is not False:
-        raise RuntimeError("Only an empty uncertified fixture may be copied")
+    try:
+        valid = (len(state)==7 and state[0] is True and type(state[1]) is int and state[1]==1
+            and type(state[2]) is str and str(UUID(state[2]))==state[2]
+            and type(state[3]) is str and state[3].isascii() and state[3].isdigit()
+            and 0<int(state[3])<2**64 and type(state[4]) is int and 0<state[4]<2**32
+            and type(state[5]) is int and 0<state[5]<2**32 and state[6] is False)
+    except (ValueError,TypeError,AttributeError):
+        valid=False
+    if not valid:
+        raise RuntimeError('Uncertified fixture storage identity required')
+    if expected_storage is None:
+        actual=tuple(connection.execute(text('SELECT * FROM public.audit_log_identity()')).one())
+        if (len(actual)!=4 or type(actual[0]) is not str or type(actual[1]) is not int
+                or type(actual[2]) is not int or actual[3] is not False
+                or actual!=(state[3],state[4],state[5],False)):
+            raise RuntimeError('Actual fixture storage identity mismatch')
+    elif state != expected_storage:
+        raise RuntimeError('Copied fixture storage identity mismatch')
+    return state
 
 
 class EmptyTemplate:
@@ -112,12 +154,13 @@ class EmptyTemplate:
         self.created = {}
         self.pending = set()
         self.original = None
+        self.storage_identity = {}
         base = create_engine(self.url, poolclass=NullPool,
             connect_args={"hostaddr": "127.0.0.1", "connect_timeout": 5})
         try:
             with base.connect() as c:
                 self.original = owned_connection(c, self.url.database, self.url.username)
-                empty_full_head(c)
+                self.original_storage = empty_full_head(c)
             with self.control.connect() as c:
                 bound_connection(c, "postgres", self.url.username)
                 if c.scalar(text("SELECT current_user")) != self.url.username:
@@ -143,11 +186,13 @@ class EmptyTemplate:
         try:
             with engine.begin() as c:
                 owned_connection(c, name, self.url.username, self.created[name])
-                empty_full_head(c)
+                expected = self.original_storage if name==self.template else self.storage_identity[self.template]
+                empty_full_head(c, expected)
                 c.execute(text("""UPDATE public.admin_audit_storage SET incarnation=:scope,
                     system_identifier=i.system_identifier,database_oid=i.database_oid,
                     timeline=i.timeline,certified=false FROM public.audit_log_identity() i"""),
                     {"scope": uuid4()})
+                self.storage_identity[name] = empty_full_head(c)
         finally:
             engine.dispose()
 
@@ -162,7 +207,7 @@ class EmptyTemplate:
             try:
                 with original.connect() as c:
                     owned_connection(c, name, self.url.username, registered)
-                    empty_full_head(c)
+                    empty_full_head(c, self.original_storage)
             finally:
                 original.dispose()
         with self.control.connect() as c:

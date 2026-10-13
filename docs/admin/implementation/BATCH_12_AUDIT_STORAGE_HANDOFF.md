@@ -326,3 +326,49 @@ fixture, while final export controls prove the preserved minimal dependency
 closure/static URLs and actual cleanup ordering. Also require native
 boolean identity/row arity for privilege evidence and distinguish transport
 doubles from actual SQL acceptance. No shared skill file was edited.
+
+
+## Coordinator review repairs — PR641
+
+The author acceptance counts above describe the original published candidate,
+not the later review edits. The coordinator preserved those packets unchanged.
+Review findings and fixture defects are tracked in #643; #611 and #545 remain
+open for deployed storage custody, epoch, actual roles and all-writer acceptance.
+
+The migration now clears existing PUBLIC, anon/authenticated, reader and writer
+sequence ACLs before granting only writer USAGE. PostgreSQL does not grant
+PUBLIC sequence rights by default; an explicit retained PUBLIC grant reproduces
+the reported defect. Both migration postconditions and runtime reader admission
+refuse forbidden effective sequence privileges. A real PostgreSQL regression
+first fails on the original revision and passes after the repair, retaining a
+working restricted writer and private reader route.
+
+The three older opt-in audit PostgreSQL controls now reuse the fully migrated
+canonical durable fixture while preserving their original assertions and opt-in
+contract. Original table-only fixture execution reproduces sanitized HTTP503 in
+two route controls; updated real PostgreSQL controls pass.
+
+The full-head template guard inventories every public ordinary table under
+actual unrestricted owner authority, refuses any retained product/history rows,
+and requires exactly one Alembic-version row and one correctly typed,
+uncertified storage identity. It verifies the native storage identity before
+copy/removal. The only populated static control allowed is the established
+single normal-mode coordinator control with its exact column definition;
+worker effects and every other table remain required empty.
+
+Durable API and browser fixtures share independent owned-resource cleanup.
+They register creation before transport, preserve uncertain outcomes without
+deleting unverified resources, and bind every database/role cleanup to the
+registered native cluster identity. A failure or interruption still attempts
+other resources and control disposal. Setup and cleanup errors remain visible
+together; cleanup success is never inferred from a partial attempt.
+
+Fresh coordinator evidence is external under BATCH_12_REVIEW.
+`641_SCOPED_V2` passes 166 cases on each supported SQLAlchemy runtime, including
+the native migration/old audit controls. `641_FINAL_GUARDS` separately checks
+final guard/interruption bytes on current/minimum normal and optimized Python.
+Independent original/candidate cleanup transport-double receipts retain actual
+caller execution and uncertainty controls; these are not native database proof.
+Final integrated hosted acceptance and owned browser replay are recorded by the
+coordinator before merge. No production certification, role update, migration
+or worker activation is performed by these review repairs.

@@ -80,7 +80,7 @@ class Rows:
 
 
 class Catalog:
-    def __init__(self, row=(123, "batch10_mappings", "111"), *, actual_user="batch10_mappings", actual_database="batch10_mappings", state=(True, False)):
+    def __init__(self, row=(123, "batch10_mappings", "111"), *, actual_user="batch10_mappings", actual_database="batch10_mappings", state=(True,1,'61100000-0000-4000-8000-000000000001','111',123,1,False)):
         self.row, self.actual_user, self.actual_database, self.state = row, actual_user, actual_database, state
         self.destructive = []
 
@@ -101,12 +101,18 @@ class Catalog:
 
     def execute(self, sql, params=None):
         value = str(sql)
+        if value == "SELECT version_num FROM public.alembic_version":
+            return Rows([("a611b12a0001",)])
         if "SELECT current_database(),current_user,current_schema()" in value:
             return Rows([(self.actual_database, self.actual_user, "public")])
         if "FROM pg_database WHERE datname=:name" in value:
             return Rows([self.row])
-        if "SELECT singleton,certified" in value:
+        if "SELECT singleton,schema_version" in value:
             return Rows([self.state])
+        if 'SELECT * FROM public.audit_log_identity()' in value:
+            return Rows([('111',123,1,False)])
+        if 'SELECT c.relname,c.relkind,c.relpersistence' in value:
+            return Rows([(name,'r','p') for name in sorted(['alembic_version','admin_audit_storage','admin_audit_log','admin_audit_provenance','etl_dispatch_commands','etl_dispatch_worker','ingestion_jobs','seeding_domain_claims','countries','etl_dispatch_domains'])])
         if value.startswith(("DROP DATABASE", "UPDATE public.admin_audit_storage")):
             self.destructive.append(value)
             return Rows([])
@@ -116,6 +122,8 @@ class Catalog:
         value = str(sql)
         if value == "SELECT current_user":
             return self.actual_user
+        if 'rolsuper' in value:
+            return True
         if "SELECT version_num" in value:
             return "a611b12a0001"
         if "SELECT EXISTS" in value:
@@ -236,3 +244,51 @@ def test_close_checks_independent_resources_after_changed_identity(monkeypatch, 
     assert observed == ["batch12_audit_template_inert", "batch12_audit_case_safe"]
     assert list(value.created) == ["batch12_audit_template_inert"]
     assert '"cleanup": false' in capsys.readouterr().out
+
+
+class FullCatalog(Catalog):
+    def __init__(self, *, retained=None, state=None):
+        super().__init__()
+        self.retained = retained
+        self.full_state = state or (True, 1, '61100000-0000-4000-8000-000000000001', '111', 123, 1, False)
+    def execute(self, sql, params=None):
+        value = str(sql)
+        if 'SELECT singleton,schema_version' in value:
+            return Rows([self.full_state])
+        if 'SELECT * FROM public.audit_log_identity()' in value:
+            return Rows([('111',123,1,False)])
+        if 'SELECT c.relname,c.relkind,c.relpersistence' in value:
+            return Rows([(name,'r','p') for name in sorted(['alembic_version','admin_audit_storage','admin_audit_log','admin_audit_provenance','etl_dispatch_commands','etl_dispatch_worker','ingestion_jobs','seeding_domain_claims','countries','etl_dispatch_domains'])])
+        return super().execute(sql, params)
+    def scalar(self, sql, params=None):
+        value = str(sql)
+        if 'rolsuper' in value:return True
+        if 'SELECT EXISTS' in value and self.retained and self.retained in value:return True
+        return super().scalar(sql, params)
+
+
+@pytest.mark.parametrize('table', ['countries', 'etl_dispatch_domains'])
+def test_original_template_retained_product_rows_are_refused(table, monkeypatch):
+    monkeypatch.setattr(fixture,'head',lambda:'a611b12a0001')
+    with pytest.raises(RuntimeError, match='retained fixture history'):
+        fixture.empty_full_head(FullCatalog(retained=table))
+
+
+@pytest.mark.parametrize('index,bad', [(1,2),(3,'222'),(4,456),(5,2),(6,True)])
+def test_template_storage_identity_drift_is_refused(index,bad,monkeypatch):
+    monkeypatch.setattr(fixture,'head',lambda:'a611b12a0001')
+    state=list(FullCatalog().full_state);state[index]=bad
+    with pytest.raises(RuntimeError,match='storage identity'):
+        fixture.empty_full_head(FullCatalog(state=tuple(state)))
+
+
+@pytest.mark.parametrize("versions", [[], [("a611b12a0001",), ("retained_branch",)]])
+def test_template_requires_exact_single_revision_population(versions, monkeypatch):
+    monkeypatch.setattr(fixture, "head", lambda: "a611b12a0001")
+    class MultipleVersions(FullCatalog):
+        def execute(self, sql, params=None):
+            if str(sql) == "SELECT version_num FROM public.alembic_version":
+                return Rows(versions)
+            return super().execute(sql, params)
+    with pytest.raises(RuntimeError, match="actual full migration head"):
+        fixture.empty_full_head(MultipleVersions())

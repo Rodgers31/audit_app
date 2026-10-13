@@ -38,7 +38,7 @@ class CatalogTransport:
             Constraint('admin_audit_provenance_pkey','p',True,'{1}','-',None,True)]
         self.policy_permissive = True
         self.state = State(True,1,SCOPE,'111',1,1,True)
-        self.prepared = self.unknown = self.public_authority = False
+        self.prepared = self.unknown = self.public_authority = self.sequence_authority = False
         self.isolation='repeatable read'
         self.triggers = [
             Trigger('admin_audit_log','audit_log_capture','A',5,storage.CAPTURE_BODY,True,['search_path=pg_catalog'],True,True,True),
@@ -51,6 +51,7 @@ class CatalogTransport:
         if 'pg_prepared_xacts' in sql: return self.prepared
         if 'LEFT JOIN public.admin_audit_provenance' in sql: return self.unknown
         if 'has_schema_privilege' in sql: return False
+        if 'has_sequence_privilege' in sql:return self.sequence_authority
         if "r.rolname IN ('anon','authenticated')" in sql: return self.public_authority
         raise AssertionError('Unexpected transport query: ' + sql)
 
@@ -91,6 +92,13 @@ def authority(monkeypatch):
 
 def test_literal_catalog_transport_control(authority):
     assert storage.capability(CatalogTransport()) == (SCOPE, KEY)
+
+
+def test_later_sequence_authority_drift_refuses(authority):
+    catalog=CatalogTransport();catalog.sequence_authority=True
+    with pytest.raises(HTTPException) as failure:
+        storage.capability(catalog)
+    assert failure.value.status_code==503
 
 
 @pytest.mark.parametrize('surface', ['validated','ready','policy','role','version','prepared','unknown','public'])

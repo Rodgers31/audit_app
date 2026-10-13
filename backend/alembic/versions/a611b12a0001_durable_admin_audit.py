@@ -126,7 +126,15 @@ def upgrade():
     op.execute("CREATE POLICY audit_storage_read ON public.admin_audit_storage FOR SELECT TO audit_log_reader USING(true)")
     op.execute("GRANT SELECT ON public.admin_audit_log TO audit_log_writer")
     op.execute("GRANT INSERT(actor_id,actor_email,action,target_type,target_id,payload,created_at) ON public.admin_audit_log TO audit_log_writer")
+    op.execute("REVOKE ALL ON SEQUENCE public.admin_audit_log_id_seq FROM PUBLIC,audit_log_reader,audit_log_writer")
+    for role in ('anon','authenticated'):
+        if db.scalar(text('SELECT EXISTS(SELECT FROM pg_roles WHERE rolname=:role)'),{'role':role}):
+            op.execute(f'REVOKE ALL ON SEQUENCE public.admin_audit_log_id_seq FROM {role}')
     op.execute("GRANT USAGE ON SEQUENCE public.admin_audit_log_id_seq TO audit_log_writer")
+    if db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r
+      WHERE r.rolname IN ('anon','authenticated','audit_log_reader')
+      AND has_sequence_privilege(r.oid,'public.admin_audit_log_id_seq','USAGE,SELECT,UPDATE'))""")) is not False:
+        raise RuntimeError('Public application roles inherit private audit sequence authority')
     if db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r, pg_class c
       WHERE r.rolname IN ('anon','authenticated')
       AND c.oid IN ('public.admin_audit_log'::regclass,'public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)

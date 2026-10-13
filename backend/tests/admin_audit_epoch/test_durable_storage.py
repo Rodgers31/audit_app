@@ -24,6 +24,7 @@ from models import AdminAuditLog
 from routers.admin_audit_log import router
 from services import admin_audit_storage as storage
 from supabase_auth import AdminUser, get_current_user
+from tests.admin_audit_epoch.resource_cleanup import cleanup_owned, database_identity, role_identity
 
 BACKEND = Path(__file__).resolve().parents[2]
 MIGRATION = BACKEND / 'alembic/versions/a611b12a0001_durable_admin_audit.py'
@@ -60,14 +61,16 @@ def durable(request, monkeypatch):
     admin = create_engine(admin_url, isolation_level='AUTOCOMMIT')
     name = 'batch12_audit_storage_' + uuid4().hex
     reader_name, writer_name = name + '_r', name + '_w'
-    with admin.connect() as c:
-        assert c.execute(text("SELECT current_database(),current_user,pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()")).one() == ('issue611','inert','inert')
-        c.execute(text(f'CREATE DATABASE "{name}" OWNER inert'))
     url = make_url(admin_url).set(database=name).render_as_string(hide_password=False)
-    owner = create_engine(url)
-    reader = writer = None
-    created_roles=[]
+    owner = reader = writer = None
+    created=False;expected_database=None;created_roles={}
     try:
+        with admin.connect() as c:
+            assert c.execute(text("SELECT current_database(),current_user,pg_get_userbyid(datdba) FROM pg_database WHERE datname=current_database()")).one() == ('issue611','inert','inert')
+            created=True  # Record an uncertain CREATE before crossing transport.
+            c.execute(text(f'CREATE DATABASE "{name}" OWNER inert'))
+            expected_database=database_identity(c,name)
+        owner=create_engine(url)
         requested = getattr(request, 'param', 'e602b11a0001')
         start = 'e602b11a0001' if requested == 'legacy' else requested
         assert migrate(url, 'upgrade', start).returncode == 0
@@ -82,8 +85,9 @@ def durable(request, monkeypatch):
             c.execute(text('UPDATE admin_audit_storage SET certified=true'))
         with admin.connect() as c:
             for role, group in ((reader_name, 'audit_log_reader'), (writer_name, 'audit_log_writer')):
+                created_roles[role]=None  # Retain uncertain creation outcomes.
                 c.execute(text(f'CREATE ROLE "{role}" LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD \'inert\''))
-                created_roles.append(role)
+                created_roles[role]=role_identity(c,role)
                 c.execute(text(f'GRANT {group} TO "{role}"'))
         reader = create_engine(make_url(url).set(username=reader_name).render_as_string(hide_password=False),isolation_level='REPEATABLE READ')
         writer = create_engine(make_url(url).set(username=writer_name).render_as_string(hide_password=False))
@@ -99,14 +103,7 @@ def durable(request, monkeypatch):
         with TestClient(app, raise_server_exceptions=False) as client:
             yield owner, factory, client, reader, writer, app, url, admin, reader_name, writer_name
     finally:
-        for engine in (reader, writer, owner):
-            if engine is not None: engine.dispose()
-        with admin.connect() as c:
-            c.execute(text(f'DROP DATABASE "{name}"'))
-            for role in created_roles:
-                if c.scalar(text('SELECT EXISTS(SELECT FROM pg_roles WHERE rolname=:r)'), {'r': role}):
-                    c.execute(text(f'DROP ROLE "{role}"'))
-        admin.dispose()
+        cleanup_owned(admin,(reader,writer,owner),name,created,expected_database,created_roles)
 
 
 @pytest.fixture
@@ -442,6 +439,22 @@ def test_migration_removes_existing_public_column_grants(durable):
     assert migrate(url,'upgrade','head').returncode==0
     with owner.connect() as c:
         assert c.scalar(text("SELECT EXISTS(SELECT FROM pg_attribute a,LATERAL aclexplode(a.attacl) e WHERE a.attrelid='admin_audit_log'::regclass AND e.grantee=0)")) is False
+
+
+def test_migration_removes_existing_public_sequence_grants(durable,monkeypatch):
+    owner,factory,client,_,_,_,url,*_=durable
+    with owner.begin() as c:c.execute(text('UPDATE admin_audit_storage SET certified=false'))
+    assert migrate(url,'downgrade','e602b11a0001').returncode==0
+    with owner.begin() as c:c.execute(text('GRANT ALL ON SEQUENCE admin_audit_log_id_seq TO PUBLIC'))
+    assert migrate(url,'upgrade','head').returncode==0
+    with owner.begin() as c:
+        assert c.scalar(text("SELECT has_sequence_privilege('audit_log_reader','admin_audit_log_id_seq','USAGE,SELECT,UPDATE')")) is False
+        assert c.scalar(text("SELECT has_sequence_privilege('audit_log_writer','admin_audit_log_id_seq','UPDATE,SELECT')")) is False
+        assert c.scalar(text("SELECT has_sequence_privilege('audit_log_writer','admin_audit_log_id_seq','USAGE')")) is True
+        c.execute(text('UPDATE admin_audit_storage SET certified=true'))
+        monkeypatch.setenv('ADMIN_AUDIT_INCARNATION',c.scalar(text('SELECT incarnation::text FROM admin_audit_storage')))
+    insert(factory)
+    assert client.get('/api/v1/admin/audit-log?days=0').status_code==200
 
 
 def test_migration_bodies_match_runtime_contract():
