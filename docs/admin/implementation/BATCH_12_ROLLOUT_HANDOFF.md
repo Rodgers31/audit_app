@@ -5,6 +5,32 @@ owned migration/worker controls, and the ordered operator procedure below.
 Production execution and acceptance remain pending. #583, #554 and #545 remain
 open; #611 owns the separate durable audit-storage release.
 
+## Coordinator review correction — October 12, 2026
+
+The observer now defaults to `sslmode=require`, rejects insecure, unknown,
+empty and repeated modes, and fingerprints the effective mode. The opened
+connection explicitly uses that mode and verifies `pg_stat_ssl` before reading
+operational state. Receipts record both the mode and actual encryption. Only the
+existing passwordless `postgres` test profile at literal 127.0.0.1 ports
+55496/55560 with its exact generated reconciliation database name uses plaintext;
+that profile has a different fingerprint and cannot authorize a TLS endpoint.
+Explicit `sslmode=disable` URLs remain refused. `require` proves encryption,
+while certificate/name verification requires the reviewed `verify-ca` or
+`verify-full` mode. These are distinct endpoint identities.
+
+Published plans now validate their exact generator provenance, malformed migration
+metadata gives a fixed refusal, and output-guard controls use valid receipts with
+named diagnostics. The original helper/observation packets are historical inputs;
+their generator hashes are unchanged. Old observations lack the newly required
+transport fields and cannot be used as current accepted plans. A new production
+observation requires a freshly reviewed TLS-bound endpoint and actual connection.
+
+Review regressions reproduced 13 failures on the unfixed helper. The fixed
+non-database cohort passed 54 cases on each current/minimum normal/optimized run
+in external `BATCH_12_REVIEW/640_UNIT_V2`; full owned PostgreSQL and immutable
+combined hosted verification are recorded separately by the coordinator. #642
+tracks these consumer/validation repairs. No production readiness is implied.
+
 ## Scope and evidence identity
 
 Reviewed baseline main: `dfd18032b6f38d57bfaa6f66d0feac218189f54c`, tree

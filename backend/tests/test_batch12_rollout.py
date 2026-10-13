@@ -29,7 +29,7 @@ def observation_fixture():
             "system_identifier": "123456", "cluster_identity_available": True},
         "schema": {}, "running_observations": [], "other_sessions": [], "prepared_transactions": 0,
         "roles": [{"name": "postgres", "superuser": False, "bypass_rls": True, "login": True}],
-        "connection_mode": "unverified_from_catalogs"}
+        "connection_mode": "unverified_from_catalogs", "sslmode": "require", "transport_encrypted": True}
 
 
 def migrate(db, revision):
@@ -72,27 +72,72 @@ def test_endpoint_fingerprint_omits_password():
     assert rollout.endpoint_fingerprint(a) != rollout.endpoint_fingerprint(a.replace("55560", "55561"))
 
 
+@pytest.mark.parametrize('mode', ['disable', 'allow', 'prefer', '', 'unknown', 'REQUIRE',
+                               'require&sslmode=disable', 'require&sslmode=require'])
+def test_insecure_or_ambiguous_tls_mode_refuses_before_connection(mode, monkeypatch):
+    import sqlalchemy
+    monkeypatch.setattr(sqlalchemy, 'create_engine', lambda *a, **k: pytest.fail('connection must not open'))
+    url = 'postgresql://role:inert-secret@database.example/owned?sslmode=' + mode
+    with pytest.raises(rollout.Refused, match='postgres_transport_required'):
+        rollout.observe(url, '1' * 64)
+
+
+def test_tls_mode_is_bound_and_default_is_encrypted():
+    url = 'postgresql://role:inert-secret@database.example/owned'
+    assert rollout.endpoint_fingerprint(url) == rollout.endpoint_fingerprint(url + '?sslmode=require')
+    assert rollout.endpoint_fingerprint(url + '?sslmode=require') != rollout.endpoint_fingerprint(url + '?sslmode=verify-full')
+
+
+def test_owned_loopback_profile_cannot_authorize_tls_downgrade():
+    url = 'postgresql://postgres@127.0.0.1:55560/batch9-reconciliation-' + 'a' * 32
+    assert rollout.endpoint_fingerprint(url) != rollout.endpoint_fingerprint(url + '?sslmode=require')
+    with pytest.raises(rollout.Refused, match='postgres_transport_required'):
+        rollout.endpoint_fingerprint(url + '?sslmode=disable')
+
+
+@pytest.mark.parametrize('source', ['revision="bad"', 'revision=[]\ndown_revision=None',
+                                   'revision="bad"\ndown_revision=[]', 'revision = ('])
+def test_malformed_migration_is_sanitized_refusal(source, tmp_path):
+    versions = tmp_path / 'backend/alembic/versions'
+    versions.mkdir(parents=True)
+    (versions / 'bad.py').write_text(source)
+    with pytest.raises(rollout.Refused, match='migration_identity'):
+        rollout.migration_chain(tmp_path)
+
+
+def test_published_plan_can_be_validated_without_mutating_provenance(tmp_path):
+    path = tmp_path / 'plan.json'
+    rollout.write_new(path, rollout.build_plan(observation_fixture()))
+    original = path.read_bytes()
+    rollout.validate_receipt(json.loads(original))
+    changed = json.loads(original)
+    changed['generator_sha256'] = '0' * 64
+    with pytest.raises(rollout.Refused, match='plan_shape'):
+        rollout.validate_receipt(changed)
+    assert path.read_bytes() == original
+
+
 def test_receipt_is_exclusive_external_and_read_back(tmp_path):
     path = tmp_path / "observation.json"
     rollout.write_new(path, observation_fixture())
     value = json.loads(path.read_text())
     assert value["production_ready"] is False and len(value["generator_sha256"]) == 64
     original = path.read_bytes()
-    with pytest.raises(rollout.Refused):
-        rollout.write_new(path, {"production_ready": True})
+    with pytest.raises(rollout.Refused, match='fresh_external_output_required'):
+        rollout.write_new(path, observation_fixture())
     assert path.read_bytes() == original
 
 
 def test_source_output_and_symlink_refuse(tmp_path):
     source = ROOT / "scripts/batch12_rollout.py"
     original = source.read_bytes()
-    with pytest.raises(rollout.Refused):
-        rollout.write_new(source, {"overwrite": True})
+    with pytest.raises(rollout.Refused, match='fresh_external_output_required'):
+        rollout.write_new(source, observation_fixture())
     assert source.read_bytes() == original
     link = tmp_path / "alias"
     link.symlink_to(tmp_path, target_is_directory=True)
-    with pytest.raises(rollout.Refused):
-        rollout.write_new(link / "new.json", {})
+    with pytest.raises(rollout.Refused, match='fresh_external_output_required'):
+        rollout.write_new(link / "new.json", observation_fixture())
     assert not (tmp_path / "new.json").exists()
 
 
@@ -104,6 +149,7 @@ def test_legacy_observation_is_read_only_and_plans_actual_suffix(owned):
     before = read(owned, "SELECT * FROM ingestion_jobs")
     observation = rollout.observe(owned.url, rollout.endpoint_fingerprint(owned.url))
     assert observation["read_only"] is True and observation["production_ready"] is False
+    assert observation['sslmode'] == 'disable' and observation['transport_encrypted'] is False
     assert observation["identity"]["superuser"] is True
     assert observation["identity"]["admission_open"] is True
     assert observation["identity"]["cluster_identity_available"] is True

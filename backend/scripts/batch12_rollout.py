@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from urllib.parse import parse_qsl, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 BASELINE_SOURCE = "dfd18032b6f38d57bfaa6f66d0feac218189f54c"
@@ -42,14 +43,22 @@ def migration_chain(root=ROOT):
         if path.is_symlink():
             raise Refused("migration_link")
         fields = {}
-        for node in ast.parse(path.read_bytes()).body:
-            if isinstance(node, ast.Assign) and len(node.targets) == 1:
-                name = node.targets[0]
-                if isinstance(name, ast.Name) and name.id in ("revision", "down_revision"):
-                    fields[name.id] = ast.literal_eval(node.value)
+        try:
+            for node in ast.parse(path.read_bytes()).body:
+                if isinstance(node, ast.Assign) and len(node.targets) == 1:
+                    name = node.targets[0]
+                    if isinstance(name, ast.Name) and name.id in ("revision", "down_revision"):
+                        if name.id in fields:
+                            raise Refused("migration_identity")
+                        fields[name.id] = ast.literal_eval(node.value)
+        except (SyntaxError, ValueError, TypeError):
+            raise Refused("migration_identity") from None
         if "revision" in fields:
             revision = fields["revision"]
-            if type(revision) is not str or revision in revisions:
+            parent = fields.get("down_revision")
+            if (type(revision) is not str or not revision or revision in revisions
+                    or "down_revision" not in fields
+                    or (parent is not None and type(parent) is not str)):
                 raise Refused("migration_identity")
             revisions[revision] = {"revision": revision, "parent": fields["down_revision"],
                 "path": str(path.relative_to(root)),
@@ -70,17 +79,34 @@ def migration_chain(root=ROOT):
     return chain
 
 
+def endpoint_transport(parsed):
+    mode = parsed.query.get("sslmode", "require")
+    if type(mode) is not str or mode not in ("require", "verify-ca", "verify-full"):
+        raise Refused("postgres_transport_required")
+    # The existing owned test helper exports a passwordless literal loopback
+    # profile. It is distinct from TLS endpoints and cannot downgrade one.
+    if (not parsed.query and parsed.host == "127.0.0.1" and parsed.port in (55496, 55560)
+            and parsed.username == "postgres" and parsed.password is None
+            and re.fullmatch(r"batch9-(?:reconciliation|review-592)-[0-9a-f]{32}", parsed.database or "")):
+        return "disable"
+    return mode
+
+
 def endpoint_fingerprint(url):
     from sqlalchemy.engine import make_url
     from sqlalchemy.exc import ArgumentError
     try:
         parsed = make_url(url)
+        query = parse_qsl(urlsplit(url).query, keep_blank_values=True)
+        if any(k == 'sslmode' and not v for k, v in query):
+            raise Refused('postgres_transport_required')
         if (parsed.drivername not in ("postgresql", "postgresql+psycopg2") or
                 not parsed.host or not parsed.username or not parsed.database or
                 set(parsed.query) - {"sslmode"}):
             raise Refused("postgres_endpoint_required")
         return digest({"host": parsed.host.lower(), "port": parsed.port or 5432,
-                       "database": parsed.database, "role": parsed.username})
+                       "database": parsed.database, "role": parsed.username,
+                       "sslmode": endpoint_transport(parsed)})
     except (ArgumentError, ValueError, TypeError):
         raise Refused("postgres_endpoint_required") from None
 
@@ -97,6 +123,8 @@ def observe(url, expected_endpoint):
         raise Refused("endpoint_mismatch")
     from sqlalchemy.engine import make_url
     parsed = make_url(url).set(drivername="postgresql+psycopg2")
+    mode = endpoint_transport(parsed)
+    parsed = parsed.update_query_dict({"sslmode": mode})
     engine = create_engine(parsed, poolclass=NullPool,
         connect_args={"connect_timeout": 10, "options": "-c default_transaction_read_only=on"})
     try:
@@ -105,6 +133,9 @@ def observe(url, expected_endpoint):
             connection.execute(text("SET LOCAL statement_timeout = '10s'"))
             connection.execute(text("SET LOCAL lock_timeout = '2s'"))
             connection.execute(text("SET LOCAL search_path = pg_catalog, public"))
+            encrypted = connection.scalar(text("SELECT ssl FROM pg_stat_ssl WHERE pid=pg_backend_pid()"))
+            if type(encrypted) is not bool or (mode != "disable" and encrypted is not True):
+                raise Refused("postgres_transport_unverified")
             if connection.scalar(text("SHOW transaction_read_only")) != "on":
                 raise Refused("read_only_unverified")
             identity = dict(connection.execute(text("""SELECT d.oid::bigint AS database_oid,
@@ -165,7 +196,8 @@ def observe(url, expected_endpoint):
                 "read_only": True, "endpoint_sha256": expected_endpoint, "identity": identity,
                 "revisions": list(revisions), "schema": schema, "running_observations": jobs,
                 "other_sessions": sessions, "prepared_transactions": prepared, "roles": roles,
-                "connection_mode": "unverified_from_catalogs", "production_ready": False}
+                "connection_mode": "unverified_from_catalogs", "sslmode": mode,
+                "transport_encrypted": encrypted, "production_ready": False}
             connection.rollback()
             return result
     except SQLAlchemyError:
@@ -189,7 +221,7 @@ def validate_observation(value):
         require(type(item) is dict and set(item) == set(expected.split()))
 
     require(type(value) is dict and type(value.get("version")) is int and value["version"] == 1)
-    expected = set("version kind observed_at read_only production_ready endpoint_sha256 identity revisions schema running_observations other_sessions prepared_transactions roles connection_mode".split())
+    expected = set("version kind observed_at read_only production_ready endpoint_sha256 identity revisions schema running_observations other_sessions prepared_transactions roles connection_mode sslmode transport_encrypted".split())
     published = {"generated_by", "generator_sha256"}
     require(set(value) in (expected, expected | published))
     if set(value) == expected | published:
@@ -206,6 +238,9 @@ def validate_observation(value):
         raise Refused("observation_time") from None
     require(observed.utcoffset() is not None and observed.utcoffset().total_seconds() == 0 and -30 <= age <= 300)
     require(value.get("connection_mode") == "unverified_from_catalogs")
+    require(value.get("sslmode") in ("disable", "require", "verify-ca", "verify-full")
+            and type(value.get("transport_encrypted")) is bool
+            and (value["sslmode"] == "disable" or value["transport_encrypted"] is True))
     identity = value.get("identity")
     keys(identity, "database role server_version database_oid observer_pid superuser bypass_rls admission_open full_stats cluster_identity_available system_identifier")
     for key in ("database", "role", "server_version"):
@@ -301,7 +336,11 @@ def validate_receipt(value):
         fingerprint = value.get("observation_sha256")
         if type(fingerprint) is not str or not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
             raise Refused("plan_observation_identity")
-        if value != plan_for_revision(value.get("from_revision"), fingerprint):
+        expected = plan_for_revision(value.get("from_revision"), fingerprint)
+        if set(value) == set(expected) | {"generated_by", "generator_sha256"}:
+            expected = {**expected, "generated_by": "backend/scripts/batch12_rollout.py",
+                "generator_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+        if value != expected:
             raise Refused("plan_shape")
     else:
         raise Refused("receipt_kind_or_authority")
