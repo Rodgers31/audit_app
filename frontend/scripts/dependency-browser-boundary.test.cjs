@@ -14,7 +14,7 @@ const wasmDir = path.dirname(transformersRequire.resolve('onnxruntime-web'));
 const runtimeVersion = scriptRequire(path.join(wasmDir, '../package.json')).version;
 const runtimeName = 'ort-wasm-simd-threaded.asyncify.wasm';
 const runtimeUrl = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${runtimeVersion}/dist/${runtimeName}`;
-const modelUrl = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/main/config.json';
+const modelUrl = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/config.json';
 
 /**
  * Execute the verifier's actual registered route callback in isolated browser
@@ -96,6 +96,8 @@ for (const [name, url] of [
   ['runtime query', runtimeUrl + '?unexpected=1'],
   ['runtime credentials', runtimeUrl.replace('https://', 'https://inert-user@')],
   ['unapproved runtime basename', `https://cdn.jsdelivr.net/npm/onnxruntime-web@${runtimeVersion}/dist/ort-unexpected.wasm`],
+  ['mutable model revision', modelUrl.replace('/751bff37182d3f1213fa05d7196b954e230abad9/', '/main/')],
+  ['different model revision', modelUrl.replace('/751bff37182d3f1213fa05d7196b954e230abad9/', '/' + '0'.repeat(40) + '/')],
   ['model HTTP downgrade', modelUrl.replace('https:', 'http:')],
   ['model alternate port', modelUrl.replace('huggingface.co', 'huggingface.co:444')],
   ['model query', modelUrl + '?unexpected=1'],
