@@ -61,8 +61,15 @@ def process(tmp_path, env, module, *args):
             # a zombie with no module argv on Linux; it is not a foreign child.
             child.poll()
             members = group_members(child.pid)
+            def foreign(rows):
+                return any(int(row[0]) != os.getuid() or not any(name in row[3]
+                    for name in (module, "admin_etl_dispatch_adapter")) for row in rows)
+            if foreign(members) and child.poll() is not None:
+                # The root can exit after the first poll. Reap that exact
+                # handle and census again; independent members still refuse.
+                members = group_members(child.pid)
             if members:
-                if any(int(row[0]) != os.getuid() or not any(name in row[3] for name in (module, "admin_etl_dispatch_adapter")) for row in members):
+                if foreign(members):
                     raise RuntimeError("Owned process cleanup identity mismatch")
                 os.killpg(child.pid, signal.SIGINT)
                 try:

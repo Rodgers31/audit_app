@@ -419,3 +419,13 @@ root control pass on current/minimum SQLAlchemy, normal and optimized runtimes
 (four cases per execution). This scoped run's source is this PR and its template
 uses e602b11a0001; fresh complete combined full-head/native hosted acceptance
 remains required. These results do not certify production rollout or activation.
+
+Independent review found a remaining exit-between-poll-and-census ordering.
+A parent-controlled native child now reproduces that exact race on c5f66d4.
+When a census fails command identity, cleanup re-polls only the known Popen
+root and repeats the census only after confirmed exit; independent foreign
+members still refuse. All five native controls pass on current/minimum,
+normal/optimized execution. Independent literal-function controls verify
+foreign UID/module refusal in both live-root and exited-root branches before
+any signal or wait. These doubles supplement, and do not replace, native
+process or fresh complete hosted acceptance.
