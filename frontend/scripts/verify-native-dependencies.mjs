@@ -19,11 +19,9 @@ const require = createRequire(import.meta.url);
 const transformersRequire = createRequire(require.resolve('@huggingface/transformers'));
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = resolve(root, 'public/data/constitution');
-const model = 'Xenova/all-MiniLM-L6-v2';
-// Pin the public model revision so repeat runs verify the same weights.
-const revision = '751bff37182d3f1213fa05d7196b954e230abad9';
-env.cacheDir = resolve(process.env.NATIVE_VERIFY_CACHE_DIR || resolve(tmpdir(), 'audit-app-native-model-cache'));
-env.allowLocalModels = false;
+const { prepareModel, configureLocalModel } = require('./embedding-model.cjs');
+const { model, revision } = require('./embedding-model.json');
+
 
 function dot(a, b) {
   return a.reduce((sum, value, i) => sum + value * b[i], 0);
@@ -81,7 +79,9 @@ async function checkInstallerZip() {
 }
 
 async function main() {
-  console.log(JSON.stringify({ check: 'environment', node: process.version, platform: process.platform, arch: process.arch, transformers: env.version, onnxruntime: transformersRequire('onnxruntime-node').env.versions, model, revision, cacheDir: env.cacheDir }));
+  const modelPath = await prepareModel(process.env.NATIVE_VERIFY_CACHE_DIR);
+  configureLocalModel(env);
+  console.log(JSON.stringify({ check: 'environment', node: process.version, platform: process.platform, arch: process.arch, transformers: env.version, onnxruntime: transformersRequire('onnxruntime-node').env.versions, model, revision, modelPath, allowRemoteModels: env.allowRemoteModels, useFSCache: env.useFSCache }));
   await checkInstallerZip();
   const png = await checkImages('transformers', transformersRequire);
   await checkImages('next', createRequire(require.resolve('next/package.json')));
@@ -115,7 +115,7 @@ async function main() {
   ].filter(Boolean).join('\n').slice(0, 1500);
 
   console.log('Loading the fixed public model for native CPU inference…');
-  const extract = await pipeline('feature-extraction', model, { dtype: 'q8', device: 'cpu', revision });
+  const extract = await pipeline('feature-extraction', modelPath, { dtype: 'q8', device: 'cpu', local_files_only: true });
   try {
     const articleVector = checkVector(await extract(articleText, { pooling: 'mean', normalize: true }));
     const committedVector = vectors.subarray(articlePosition * index.dim, (articlePosition + 1) * index.dim);
