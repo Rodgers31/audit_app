@@ -2,12 +2,17 @@
 
 Draft PR: https://github.com/Rodgers31/audit_app/pull/651
 Branch: `codex/batch13-baseline-release-readiness`.
-Exact reviewed implementation commit: `c06e96b3b8aa084d5596dbc5fd77fc78ab275908`,
-tree `8b0da9609cb54a9009637364aea3acdee3321c29`.
+Exact reviewed corrective implementation commit:
+`44372a9b5273530aec0d8f5e46cab7d08a7087ed`,
+tree `1a78bb61398cb927a272d5c033177c47cf7040f4`.
 The handoff-only delivery commit descends from that exact implementation. Its own
 SHA cannot be embedded in its contents; the exact final published head/tree/PR
-readback and final replay are retained in the external `FINAL_DELIVERY_V1.json`.
+readback and final replay are retained in the external `FINAL_DELIVERY_V2.json`.
 No implementation bytes change in this handoff commit.
+Prior implementation c06e96b3b8aa084d5596dbc5fd77fc78ab275908 and delivery
+8406649ac440f92ddd82b31fbfb44989d011e65b remain historical. Their actual replay
+receipts are retained; the planned V1 final-delivery manifest was never published
+before authenticated Chrome steering required this corrective round.
 
 Accepted base: `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree
 `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`. One owned managed checkout:
@@ -30,7 +35,7 @@ acceptance and operator abort/recovery criteria. Baseline target stays exactly
 **e602b11a0001**; **a611b12a0001** is a distinct excluded audit release. Source
 ancestry includes the additive audit migration, but this plan never upgrades head.
 
-Packet controls passed67 cases per current/minimum runtime in normal/optimized
+Packet controls passed70 cases per current/minimum runtime in normal/optimized
 Python. Owned PostgreSQL17.6 controls passed68 cases per each of those four
 cohorts: actual baseline migration/observer/refusal, new non-superuser and
 closed-admission boundaries, actual authenticated local HTTP→supervisor→adapter→
@@ -48,9 +53,12 @@ disabled only for the inert fixture. No Linux/platform parity claim is made.
 Worker fixtures omit deployed main lifespan, use inert profile/domain and process
 measurement seams and do not certify provider/JWKS/production ingestion.
 
-Independent bounded Spec and Standards reviewers passed final script SHA256
-`8f47b16e5dcbfc851e9b97c25ca57ec63e770c77d1b0c6d00d4c271cfeaae8dd` and runbook
-SHA256 `b5c0bbac19270d5a1aff6efb6cd3b00c64b26774ebfce22eb5bdabc838d8093a`.
+Independent bounded Spec and Standards reviewers passed corrective script SHA256
+`81ccc4d30b3eee9dc15b0ea8eb3ce6d2099a16d8be3e86ee7275bc80fd009b07` and runbook
+SHA256 `c81cd60fb75b5d7706ccbc3aee9b042d93ca31f4286754144309f2c6a431756d`.
+Spec ran38 in-memory controls per normal/-O mode; Standards ran9 provider-state
+combinations plus46 refusal controls per mode. All remained preparation-only;
+no false green was found. Prior8f47/b5c0 review bindings remain historical.
 Their controls used in-memory transports; native and actual publication proofs
 are separate. No paid review was requested.
 
@@ -83,12 +91,37 @@ replay. None of these original failures is relabeled or deleted.
 
 ## Production and cross-lane disposition
 
-Fresh complete GitHub readbacks preserve OFF repository/static workflows,
-three historical queued verification records and names-only secret metadata.
-Actual Render/Supabase browser navigation redirected to sign-in. Current backend
-source/configuration and database identity/revision/roles/RUNNING observations
-remain unverified. The old pinned source/Auto-Deploy and database observations
-are historical. No available authenticated credentials were consumed from peers.
+Fresh authenticated Chrome readbacks supersede the isolated in-app sign-in
+refusals. Render live deploy dep-db3oskc9v7es73dtuvc0 remains exact2d3cd595
+source, Auto-Deploy/PR previews OFF, one replica, no one-off jobs in the observed
+service/workspace. Its live Python3.12.15/SQLAlchemy2.0.54 and three installed
+source hashes were read; complete image/corpus qualification is pending. Actual
+Gunicorn master/worker and request recycling remain restart paths. The runtime
+DB target is the transaction pooler on6543, without an explicit sslmode. No
+secret value or hook URL is retained. The first metadata command failed after
+partial output because ps is absent; the independent /proc command completed.
+
+Explicit BEGIN READ ONLY/ROLLBACK at October13 22:08:26UTC observed postgres
+OID5/systemID7626352619084395911, revision ea1645a4c0b5, actual rolsuper=false,
+bypassrls=true, admission open,18 other sessions including pg_net/pg_cron and
+provider clients, zero prepared transactions, and exact untagged RUNNING IDs
+1167/1655/2651. Settings readback showed SSL enforcement OFF/all IPs admitted;
+no read replicas; direct IPv6 guidance and seven physical backups. No direct
+route/TLS certificate or restore validation was attempted. Full literal catalog
+JSON, copied SQL and process JSON have matching measured Chrome/file hashes;
+other provider metadata is explicitly transcribed scoped UI evidence. SQL editor
+query/history metadata may persist; no financial rows or writer controls changed.
+Vercel production metadata is Ready at accepted mainc8970e3; authenticated
+product/API acceptance and effective credential/API targets remain pending.
+GitHub still shows OFF/static workflows and three historical queued records;
+secret names do not prove values or holders. Timestamps are not restamped.
+
+Render's October14 01:00–02:00UTC scheduled maintenance affects control-plane/API/
+one-off job access; its notice explicitly promises deployed service/database
+continuity. It is an availability constraint, not evidence of a scheduled restart.
+The runbook incorporates these observations while leaving every fence unverified.
+The packet accepts authenticated_read_only observations without granting any
+production authority; a reproduced old-source provider_identity refusal is retained.
 
 Actual accepted `_maintenance` requires rolsuper=true, datallowconn=false,
 zero other target sessions/background writers and zero prepared transactions.
@@ -132,12 +165,12 @@ after identity-bound cleanup; final raw readbacks report remaining group members
 and free ports. The single checkout remains attached for the open draft. No
 repository/environment copies, dependency install or Docker cleanup occurred.
 Storage checks preserve the original shared10GiB baseline; the most recent
-prepublication check recorded4962103296bytes growth and WITHIN_GROWTH_LIMIT.
+pre-corrected-replay check recorded4978520064bytes growth and WITHIN_GROWTH_LIMIT.
 Final post-replay measurement is external; any failure/excess is STOP.
 
 Coordinator next steps: inspect the exact final source/readbacks and independent
 reviews, complete shared hosted acceptance, resolve Lane E's storage/contract
-blocker, then obtain authenticated provider access and review each concrete
+blocker, then complete independently reviewed provider fences and review each concrete
 runbook release step. Hold all activation and unknown-effect release meanwhile.
 
 Proposed skill lessons (coordinator deduplicates/edits): (1) a public writer must
