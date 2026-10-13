@@ -42,22 +42,21 @@ def readiness_pg_engine():
     if not PG_URL:
         pytest.skip("Owned PostgreSQL required")
     assert PG_URL in OWNED_URLS, "Never run destructive fixtures on an unowned target"
-    engine = create_engine(PG_URL)
-    Base.metadata.create_all(engine)
-    yield engine
-    engine.dispose()
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    template = EmptyTemplate(PG_URL)
+    try:
+        yield template
+    finally:
+        template.close()
 
 
 @pytest.fixture(params=["sqlite", "postgresql"])
 def readiness_store(request, tmp_path, monkeypatch):
     if request.param == "postgresql":
-        engine = request.getfixturevalue("readiness_pg_engine")
-        with engine.begin() as conn:
-            conn.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, "
-                "etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
-        # Every malformed-index/column case starts again from the real model.
-        SeedingDomainClaim.__table__.drop(engine)
-        SeedingDomainClaim.__table__.create(engine)
+        # The original subprocess fixture requires this exact static target.
+        case = request.getfixturevalue("readiness_pg_engine").database(fixed_name=True)
+        engine = case.__enter__()
+        request.addfinalizer(lambda: case.__exit__(None, None, None))
     else:
         engine = create_engine(f"sqlite:///{tmp_path / 'owned.sqlite'}")
         Base.metadata.create_all(engine)
@@ -305,7 +304,8 @@ def test_dispatch_scope_rechecks_schema_at_actual_cli_entry(readiness_store):
 def subprocess_entry(engine, tmp_path, arguments):
     root = Path(__file__).resolve().parents[1]
     url = engine.url.render_as_string(hide_password=False)
-    assert url in OWNED_URLS
+    from tests.admin_audit_epoch.ephemeral_database import validate_created_engine
+    validate_created_engine(engine)
     env = {"PATH": "/usr/bin:/bin:/usr/local/bin", "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHON_DOTENV_DISABLED": "1", "PYTHONPATH": str(root / "tests/batch9_native_readiness_fixture") + os.pathsep + str(root),
         "DATABASE_URL": url, "ADMIN_ETL_DISPATCH_ENABLED": "true", "BATCH9_NATIVE_READINESS_INERT_PROCESS": "true",
