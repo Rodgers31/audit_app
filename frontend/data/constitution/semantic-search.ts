@@ -23,6 +23,7 @@
  */
 import type { ChapterMeta, ConstitutionArticle } from './types';
 import { CONSTITUTION_META } from './index';
+import embeddingModel from '../../scripts/embedding-model.json';
 
 export interface SemanticHit {
   chapterNumber: number;
@@ -82,12 +83,20 @@ async function getIndex(): Promise<LoadedIndex> {
 
     // Dynamic import keeps transformers.js out of the initial bundle —
     // visitors who never open the search box pay ~0KB for this feature.
-    const { pipeline } = await import('@huggingface/transformers');
-    const extract = await pipeline(
-      'feature-extraction',
-      'Xenova/all-MiniLM-L6-v2',
-      { dtype: 'q8' }
-    );
+    const { BertTokenizer, AutoModel, FeatureExtractionPipeline } = await import('@huggingface/transformers');
+    const { model: modelId, revision } = embeddingModel;
+    // Transformers 4.3.1 discovery requests ignore revision. Load the known
+    // BERT tokenizer's two files explicitly so every model request stays pinned.
+    const tokenizerFiles = await Promise.all(['tokenizer.json', 'tokenizer_config.json'].map(async (file) => {
+      const response = await fetch(`https://huggingface.co/${modelId}/resolve/${revision}/${file}`, {
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!response.ok) throw new Error('Failed to load pinned tokenizer');
+      return response.json();
+    }));
+    const tokenizer = new BertTokenizer(tokenizerFiles[0], tokenizerFiles[1]);
+    const model = await AutoModel.from_pretrained(modelId, { dtype: 'q8', revision });
+    const extract = new FeatureExtractionPipeline({ task: 'feature-extraction', tokenizer, model });
     const embed = async (text: string): Promise<Float32Array> => {
       const out = await extract(text, { pooling: 'mean', normalize: true });
       // out.data is a Float32Array of length `dim`

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/check_raw_v2.py"
+  ],
+  "child_exit": 0,
+  "started": 1791645105.784278,
+  "ended": 1791645106.4166179,
+  "generator_sha256": "ae62e5f63ddcbef1f73118efede6b57c7c1549c9b973e4396e7755007d6f35ea",
+  "raw_output_sha256": "a7afb967a6b61e6ad6c9da52289c41c9e0a7eb2bdf83114234d3b30e2954a5cc",
+  "setup_attempt": "v1 failed because Playwright JSON omits use.viewport; v2 checks preserved runtime readback rather than inventing config data."
+}

@@ -1,0 +1,951 @@
+{
+  "schema": 1,
+  "python_version": "3.9.6 (default, Aug 25 2026, 21:26:21) \n[Clang 21.0.0 (clang-2100.3.34.2)]",
+  "verifier_original": "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/verify_packet.py",
+  "verifier_sha256": "e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177",
+  "verifier_snapshot": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+  "attack_script": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/run_hostile_v2.py",
+  "attack_script_sha256": "553a5f73ef3476dc4009035e1ad1aca4bff59e856dada584ade0366702b3d4bf",
+  "git_head": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+  "git_tree": "9d0061928c16d173859f98cb6daa5f2f591b257c",
+  "source_inventory": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/source-inventory.json.gz",
+  "source_inventory_sha256": "19f584a22c27dcf377c9a21f008900d26c1759b789ad9f899241bbeaa3a5f0a1",
+  "tested_cases": 97,
+  "unexpected_acceptances": 2,
+  "verifier_original_hash_after": "e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177",
+  "results": [
+    {
+      "name": "cases/valid-passing-control",
+      "expected_rejection": false,
+      "rejected": false,
+      "return": [
+        [
+          [
+            {
+              "id": "fixture-id-1",
+              "file": "county.spec.ts",
+              "title": "fixture case",
+              "line": 1,
+              "column": 1,
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "status": "expected",
+                  "results": [
+                    {
+                      "status": "passed",
+                      "retry": 0,
+                      "duration": 1,
+                      "errors": []
+                    }
+                  ]
+                }
+              ]
+            },
+            "passed"
+          ]
+        ],
+        {
+          "expected": 1,
+          "unexpected": 0,
+          "skipped": 0,
+          "flaky": 0
+        }
+      ],
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/valid-failed-control",
+      "expected_rejection": false,
+      "rejected": false,
+      "return": [
+        [
+          [
+            {
+              "id": "fixture-id-1",
+              "file": "county.spec.ts",
+              "title": "fixture case",
+              "line": 1,
+              "column": 1,
+              "tests": [
+                {
+                  "projectName": "chromium",
+                  "expectedStatus": "passed",
+                  "status": "unexpected",
+                  "results": [
+                    {
+                      "status": "failed",
+                      "retry": 0,
+                      "duration": 1,
+                      "errors": [
+                        {
+                          "message": "fixture failure"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "failed"
+          ]
+        ],
+        {
+          "expected": 0,
+          "unexpected": 1,
+          "skipped": 0,
+          "flaky": 0
+        }
+      ],
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/none",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-object",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-list",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/primitive-true",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/primitive-zero",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/primitive-string",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-suites",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Empty suites",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-specs",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Empty/duplicate case identities",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/missing-errors",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/top-error",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duplicate-case-id",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Empty/duplicate case identities",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/bool-line",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Case location",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/bool-column",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Case location",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/zero-line",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Case location",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/negative-line",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Case location",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/null-title",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing case identity",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-id",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing case identity",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/missing-results",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Retry/missing result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/empty-results",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Retry/missing result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duplicate-results",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Retry/missing result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/retry-one",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Retried result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/retry-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Retried result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-negative",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-nan",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-infinity",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-negative-infinity",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/duration-null",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Result duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/status-interrupted",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/interrupted result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/status-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/interrupted result",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/hidden-error",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Hidden error",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/hidden-errors",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Hidden error",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/invalid-errors-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Hidden error",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/counter-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/contradictory counters",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/counter-negative",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/contradictory counters",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/counter-nan",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/contradictory counters",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/counter-infinity",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/contradictory counters",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/counter-mismatch",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid/contradictory counters",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/stats-duration-negative",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid report duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/stats-duration-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid report duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/stats-duration-nan",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid report duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "cases/stats-duration-infinity",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Invalid report duration",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/valid-controlled-fixture",
+      "expected_rejection": false,
+      "rejected": false,
+      "return": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 9
+      },
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/manifest-schema-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unsupported packet schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/manifest-schema-negative",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unsupported packet schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/empty-runs",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Empty run inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/missing-red-category",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing behavioral boundary evidence",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/missing-acceptance-category",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing current acceptance run",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/missing-report",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing/outside input",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/missing-receipt",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing/outside input",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/empty-report",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "JSONDecodeError",
+      "exception": "Expecting value: line 1 column 1 (char 0)",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/malformed-report",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "JSONDecodeError",
+      "exception": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/wrong-report-schema",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Report errors/schema",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/duplicate-json-keys",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Duplicate JSON key",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/bool-declared-counts",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Declared counts mismatch",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/null-case-inventory",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Malformed case inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/empty-case-inventory",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Malformed case inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/duplicate-case-inventory",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Malformed case inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/substituted-case-inventory",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Case substitution",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/substituted-green-report",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Declared counts mismatch",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-child-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-child-nonzero",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-timed-out",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-source-drift",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-helper-drift",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/acceptance-generator-changed",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unbound/drifted acceptance child",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-child-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Source execution drift/failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-timed-out",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Source execution drift/failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-drift",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Source execution drift/failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-empty-inventory",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Empty source inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-mismatch",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Tested source mismatch: source.ts",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/red-helper-drift",
+      "expected_rejection": true,
+      "rejected": false,
+      "return": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 9
+      },
+      "matches_expectation": false
+    },
+    {
+      "name": "verify/red-source-drift",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red is a setup/drift/timeout failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/red-generator-drift",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red is a setup/drift/timeout failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/red-timed-out",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red is a setup/drift/timeout failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/red-child-bool",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red is a setup/drift/timeout failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/red-child-zero",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red is a setup/drift/timeout failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/report-traversal",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unsafe path",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-traversal",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Incomplete tested source inventory",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/report-absolute",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unsafe path",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/report-symlink",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Symlinked input",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/source-symlink",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Symlinked input",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/historical-red-all-passed",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red run contains no failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/current-acceptance-all-skipped",
+      "expected_rejection": true,
+      "rejected": false,
+      "return": {
+        "historical_integrity": true,
+        "local_recorded_acceptance": true,
+        "fresh_execution": false,
+        "hosted_acceptance": false,
+        "production_acceptance": false,
+        "source_files": 3,
+        "runs": 9
+      },
+      "matches_expectation": false
+    },
+    {
+      "name": "verify/historical-substituted-same-green-report",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Red run contains no failure",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/absent-packet",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Missing packet/checkout",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/null-packet",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "TypeError",
+      "exception": "expected str, bytes or os.PathLike object, not NoneType",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/null-checkout",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "TypeError",
+      "exception": "expected str, bytes or os.PathLike object, not NoneType",
+      "matches_expectation": true
+    },
+    {
+      "name": "verify/unsafe-manifest",
+      "expected_rejection": true,
+      "rejected": true,
+      "exception_type": "ValueError",
+      "exception": "Unsafe path",
+      "matches_expectation": true
+    },
+    {
+      "name": "cli-output/inside-packet",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet/output.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 180, in main\n    require(not output.resolve().is_relative_to(args.checkout.resolve()) and not output.resolve().is_relative_to(args.packet.resolve()), 'Output must be external')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Output must be external\n"
+    },
+    {
+      "name": "cli-output/inside-checkout",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout/output.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 180, in main\n    require(not output.resolve().is_relative_to(args.checkout.resolve()) and not output.resolve().is_relative_to(args.packet.resolve()), 'Output must be external')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Output must be external\n"
+    },
+    {
+      "name": "cli-output/existing-output",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/existing.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 181, in main\n    require(output.parent.is_dir() and not output.exists(), 'Output must be fresh')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Output must be fresh\n"
+    },
+    {
+      "name": "cli-output/missing-parent",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/missing-parent/output.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 181, in main\n    require(output.parent.is_dir() and not output.exists(), 'Output must be fresh')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Output must be fresh\n"
+    },
+    {
+      "name": "cli-output/symlinked-output",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/output-link.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 179, in main\n    require(not any(p.is_symlink() for p in [output, *output.parents]), 'Symlinked output')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Symlinked output\n"
+    },
+    {
+      "name": "cli-output/symlinked-output-parent",
+      "expected_rejection": true,
+      "rejected": true,
+      "matches_expectation": true,
+      "command": [
+        "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py",
+        "--packet",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/packet",
+        "--checkout",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/base/checkout",
+        "--output",
+        "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/attack-v2-20261010T095711/linked-directory/output.json"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 192, in <module>\n    main()\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 179, in main\n    require(not any(p.is_symlink() for p in [output, *output.parents]), 'Symlinked output')\n  File \"/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-adversarial/verify_packet-e689f6bd530d8e14620538238ceb25be1e9679023367d421125b1c28fafea177.py\", line 22, in require\n    raise ValueError(message)\nValueError: Symlinked output\n"
+    }
+  ]
+}

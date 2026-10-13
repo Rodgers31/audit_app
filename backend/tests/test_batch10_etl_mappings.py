@@ -19,6 +19,7 @@ from seeding.types import DomainRunResult
 
 MAPPINGS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population"}
 AUTH = {"Authorization": "Bearer batch10-admin"}
+_TEMPLATE = pytest.StashKey()
 
 
 @pytest.fixture(scope="module")
@@ -29,12 +30,19 @@ def mapping_url(tmp_path_factory):
 
 
 @pytest.fixture
-def pg(monkeypatch, mapping_url):
-    url = mapping_url
-    engine = create_engine(url)
+def pg(monkeypatch, mapping_url, request):
+    # Imported process fixtures retain their static URL and exported fixture pair.
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    module = request.node.getparent(pytest.Module)
+    if _TEMPLATE not in module.stash:
+        template = EmptyTemplate(mapping_url)
+        module.addfinalizer(template.close)
+        module.stash[_TEMPLATE] = template
+    case = module.stash[_TEMPLATE].database(fixed_name=True)
+    engine = case.__enter__()
+    request.addfinalizer(lambda: case.__exit__(None, None, None))
     factory = sessionmaker(bind=engine)
     with engine.begin() as c:
-        c.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
         c.execute(text("CREATE TABLE IF NOT EXISTS batch10_effects(domain text, job_id integer)"))
         c.execute(text("TRUNCATE batch10_effects"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")

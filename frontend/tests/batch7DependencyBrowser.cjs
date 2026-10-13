@@ -8,6 +8,7 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 const { chromium } = require('@playwright/test');
 const { selectFixture } = require('../scripts/dependency-browser-fixtures.cjs');
+const { model, revision } = require('../scripts/embedding-model.json');
 
 /**
  * Drive two isolated Learn contexts: BM25 fallback and actual WASM inference.
@@ -20,7 +21,6 @@ async function main() {
   const cache = process.env.NATIVE_VERIFY_CACHE_DIR;
   assert.ok(base && /^http:\/\/127\.0\.0\.1:\d+$/.test(base));
   assert.ok(cache, 'An owned public-model cache is required');
-  const revision = '751bff37182d3f1213fa05d7196b954e230abad9';
   const transformersRequire = createRequire(require.resolve('@huggingface/transformers'));
   const wasmDir = path.dirname(transformersRequire.resolve('onnxruntime-web'));
   const runtimeVersion = require(path.join(wasmDir, '../package.json')).version;
@@ -52,7 +52,7 @@ async function main() {
           const { relative, contentType } = fixture;
           fixtures.push(relative);
           fixtureUrls.push(url.href);
-          return route.fulfill({ body: await fs.readFile(path.join(cache, 'Xenova/all-MiniLM-L6-v2', revision, relative)),
+          return route.fulfill({ body: await fs.readFile(path.join(cache, model, revision, relative)),
             contentType });
         }
         if (fixture?.kind === 'runtime') {

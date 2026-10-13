@@ -1,0 +1,14 @@
+{
+  "head": "982a961a58ed3647ead6bc7900250efa7d882a94",
+  "tree": "5ebb363b208efd159d4b4673a760f111cdd1d629",
+  "generator_sha256": "398087f945f65a73539461dbde07168e1506fab135f93d25a90341006b5408f1",
+  "original_unit_sha256": "c3ed6d872b35b6459a7208b1f41363fec9a7285924cf4ac84b236b343f7d870b",
+  "created": 1791646489.051074,
+  "inputs": {
+    "valid.test.tsx": "c3ed6d872b35b6459a7208b1f41363fec9a7285924cf4ac84b236b343f7d870b",
+    "noop.test.tsx": "92bd008e8b06a8b46385da934be449007ac34b114c725610029e789a396cd2da",
+    "same-url-write.test.tsx": "dfe9e3d19117f6ff29b8506c076e00f908453ad71b0a5e24e95b1953da41a1e5",
+    "jest.config.cjs": "084e93279aeb15bb7d682cacdfd3dc18508c4abd65e11c7c550f2c42698120b8"
+  },
+  "scope": "Synthetic assertion detectors in reviewer-owned copies; do not count selected/skipped copies as browser inventory or product causal evidence."
+}
