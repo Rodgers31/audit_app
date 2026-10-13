@@ -330,6 +330,8 @@ def plan_for_revision(revision, observation_sha256, root=ROOT):
 def validate_receipt(value):
     if type(value) is not dict or value.get("production_ready") is not False or value.get("production_execution_authorized", False) is not False:
         raise Refused("receipt_kind_or_authority")
+    if type(value.get("version")) is not int or value["version"] != 1:
+        raise Refused("receipt_version")
     if value.get("kind") == "database_observation":
         validate_observation(value)
     elif value.get("kind") == "baseline_plan_only":

@@ -301,3 +301,11 @@ def test_unrecognized_fields_or_missing_nullable_fields_refuse(layer):
         value["other_sessions"] = [{"pid": 101}]
     with pytest.raises(rollout.Refused):
         rollout.build_plan(value)
+
+
+@pytest.mark.parametrize("version", [True, 1.0])
+def test_plan_version_requires_exact_json_integer(version):
+    plan=rollout.plan_for_revision('ea1645a4c0b5','1'*64)
+    plan['version']=version
+    with pytest.raises(rollout.Refused,match='receipt_version'):
+        rollout.validate_receipt(plan)
