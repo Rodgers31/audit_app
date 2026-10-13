@@ -23,6 +23,7 @@
  */
 import type { ChapterMeta, ConstitutionArticle } from './types';
 import { CONSTITUTION_META } from './index';
+import embeddingModel from '../../scripts/embedding-model.json';
 
 export interface SemanticHit {
   chapterNumber: number;
@@ -83,8 +84,7 @@ async function getIndex(): Promise<LoadedIndex> {
     // Dynamic import keeps transformers.js out of the initial bundle —
     // visitors who never open the search box pay ~0KB for this feature.
     const { BertTokenizer, AutoModel, FeatureExtractionPipeline } = await import('@huggingface/transformers');
-    const modelId = 'Xenova/all-MiniLM-L6-v2';
-    const revision = '751bff37182d3f1213fa05d7196b954e230abad9';
+    const { model: modelId, revision } = embeddingModel;
     // Transformers 4.3.1 discovery requests ignore revision. Load the known
     // BERT tokenizer's two files explicitly so every model request stays pinned.
     const tokenizerFiles = await Promise.all(['tokenizer.json', 'tokenizer_config.json'].map(async (file) => {

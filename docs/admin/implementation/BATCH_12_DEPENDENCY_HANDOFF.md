@@ -112,3 +112,25 @@ Owned preview/browser groups and listeners were stopped and verified absent. No 
 Recommended skill lesson (proposal only; no global skill changes): dependency-auditor/verify-test-prod-parity should require observing every actual discovery request, not only the final pipeline options. Concrete example: Transformers 4.3.1 accepted a revision option but preflighted config and tokenizer metadata at `main`; the strict real browser caught it while source-bound option doubles passed. Also match canonical CI environment before attributing unit failures: inert valid Supabase settings changed fake-timer/auth behavior even though credentials were safe.
 
 Continuation lesson for receipt-provenance/adversarial-verify: validate actual mount/configuration identities and measured output schemas, not just command exits. The recorder's original duplicate-mount dictionary collapse and error-bearing audit JSON both returned false PASS in literal controlled execution. Fixes required a healthy positive as well as hostile refusals; the observed Docker Desktop path translation needed an exact tested alias while retaining read-only/content authority.
+
+
+## Coordinator review follow-up — #644
+
+The historical author runtime/platform packets above remain immutable. The
+coordinator addresses Copilot's body-only summary findings with a shared
+manifest import in the actual browser consumer, route selector and browser
+verification entry. The approved model/revision and shipped asset bytes remain
+unchanged. Three default Jest controls execute the actual loader with declared
+model/transport doubles: shared-revision valid ranking, tokenizer refusal and
+model-load refusal. An altered manifest revision reproduces the old consumer's
+stale constant (one intended failure, two refusal positives); the repair passes
+all three. These tests certify caller contracts, not real WASM inference.
+
+Both canonical CI and bounded manual full verification now invoke the existing
+CPU/image/installer verifier on the native hosted x64 runner, using an owned
+temporary model cache removed by an EXIT trap. The seven job contracts and
+existing deadlines are preserved; this step has a five-minute bound. Actual
+hosted native acceptance is recorded separately before merge. Local review
+controls, typecheck and all 112 workflow-boundary tests pass in
+BATCH_12_REVIEW/638_REVIEW_LOCAL. Residual advisory remediation and production
+provider acceptance in #494, and asset-reader validation in #637, remain open.

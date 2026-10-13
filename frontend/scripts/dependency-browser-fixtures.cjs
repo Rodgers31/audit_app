@@ -1,6 +1,7 @@
 'use strict';
 
-const modelPrefix = 'https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/';
+const { model, revision } = require('./embedding-model.json');
+const modelPrefix = `https://huggingface.co/${model}/resolve/${revision}/`;
 const modelFiles = ['config.json', 'tokenizer.json', 'tokenizer_config.json', 'onnx/model_quantized.onnx'];
 const runtimeFiles = ['ort-wasm-simd-threaded.asyncify.mjs', 'ort-wasm-simd-threaded.asyncify.wasm'];
 
