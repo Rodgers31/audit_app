@@ -37,6 +37,7 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import SmartBackLink from '@/lib/navigation/SmartBackLink';
+import { useReconcileInitialQuery } from '@/lib/navigation/useReconcileInitialQuery';
 import { useParams, useSearchParams } from 'next/navigation';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
@@ -603,6 +604,7 @@ export default function CountyDetailClient() {
   const { t } = useLang();
   const params = useParams();
   const searchParams = useSearchParams();
+  useReconcileInitialQuery(searchParams.toString());
   const countyId = params.id as string;
   // Respect ?fy=... from the listing so the Health badge matches the column
   // the user clicked from. Fall back to the last reported FY.

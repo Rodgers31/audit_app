@@ -13,9 +13,11 @@ from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine, event
-from sqlalchemy.dialects.postgresql import JSONB, dialect
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import operators
+from sqlalchemy.sql.elements import BinaryExpression
 
 from models import (
     BudgetLine, Country, DocumentType, Entity, EntityType, Extraction,
@@ -223,45 +225,64 @@ def test_complete_budget_qualification_matches_pre_projection_contract(context, 
 
 
 def test_budget_qualification_does_not_transfer_unrelated_context_payloads(context):
-    engine, _, _, _ = context
+    engine, _, receipt, digest = context
     statements, clauses = [], []
 
     def capture(conn, cursor, sql, params, execution_context, executemany):
         if sql.lstrip().upper().startswith("SELECT"):
             statements.append((sql, params))
 
-    def compile_clause(conn, clause, multiparams, params, options):
-        clauses.append(str(clause.compile(dialect=dialect())))
+    def capture_clause(conn, clause, multiparams, params, options):
+        clauses.append(clause)
 
     with Session(engine) as db:
         row = db.get(BudgetLine, 1)
         event.listen(engine, "before_cursor_execute", capture)
-        event.listen(engine, "before_execute", compile_clause)
+        event.listen(engine, "before_execute", capture_clause)
         try:
             output = qualify_rows(db, "budget_lines", [row])
         finally:
             event.remove(engine, "before_cursor_execute", capture)
-            event.remove(engine, "before_execute", compile_clause)
-    assert output[1]["allocated_amount"]["status"] == "verified"
+            event.remove(engine, "before_execute", capture_clause)
     assert len(statements) == 5  # Includes all context, with no lazy SELECTs.
     selected = []
+    extraction_rows = []
     raw = engine.raw_connection()
     try:
         for sql, params in statements:
             cursor = raw.cursor()
             cursor.execute(sql, params)
             rows = cursor.fetchall()
-            selected.append(([d[0] for d in cursor.description], sum(len(str(v).encode()) for r in rows for v in r if v is not None)))
+            columns = [d[0] for d in cursor.description]
+            selected.append((columns, sum(len(str(v).encode()) for r in rows for v in r if v is not None)))
+            if columns[-1] == "response_receipt":
+                extraction_rows.extend(rows)
             cursor.close()
     finally:
         raw.close()
     byte_count = sum(size for _, size in selected)
     print(f"qualification context selected UTF-8 bytes={byte_count}; columns={[cols for cols, _ in selected]}")
     assert byte_count < 100_000, f"Unrelated context payloads transferred: {byte_count} bytes"
-    extraction_sql = next(sql for sql in clauses if "FROM extractions" in sql)
-    assert "extractions.extracted_json[" in extraction_sql
-    assert "extractions.extracted_json AS" not in extraction_sql
+    extraction_clause = next(
+        clause for clause in clauses
+        if clause.get_final_froms()[0].name == "extractions"
+    )
+    assert list(extraction_clause.selected_columns.keys()) == [
+        "id", "source_document_id", "extractor", "response_receipt",
+    ]
+    receipt_expression = extraction_clause.selected_columns.response_receipt.element
+    assert isinstance(receipt_expression, BinaryExpression)
+    assert receipt_expression.operator is operators.json_getitem_op
+    assert receipt_expression.left.compare(Extraction.__table__.c.extracted_json)
+    assert receipt_expression.right.value == "response_receipt"
+    assert len(extraction_rows) == 1
+    extraction_id, source_id, extractor, fetched_receipt = extraction_rows[0]
+    assert (extraction_id, source_id, extractor) == (1, 1, "http-response-v1")
+    if isinstance(fetched_receipt, str):
+        fetched_receipt = json.loads(fetched_receipt)
+    assert fetched_receipt == receipt
     assert [len(cols) for cols, _ in selected] == [6, 4, 2, 2, 4]
+    assert output[1]["allocated_amount"] == expected(digest)
 
 
 @pytest.mark.parametrize("table", ["loans", "gdp_data", "economic_indicators", "poverty_indices", "debt_timeline", "revenue_by_source"])

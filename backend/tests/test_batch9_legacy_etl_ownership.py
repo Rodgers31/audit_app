@@ -28,11 +28,15 @@ def wait_for(read, predicate, timeout=20):
     raise AssertionError(f"Owned control timeout: last={value}")
 
 @pytest.fixture
-def db(owned_database):
+def db(owned_database, request):
+    case = owned_database.database(fixed_name=True)
+    case_engine = case.__enter__()
+    request.addfinalizer(lambda: case.__exit__(None, None, None))
+    case_engine.dispose()  # Children retain the exact established URL/guard.
     engine = create_engine(validate_target(URL), connect_args=connect_args())
+    request.addfinalizer(engine.dispose)
     factory = sessionmaker(bind=engine)
     with engine.begin() as conn:
-        conn.execute(text("TRUNCATE countries,seeding_domain_claims,etl_dispatch_worker,etl_dispatch_commands,ingestion_jobs,admin_audit_log RESTART IDENTITY CASCADE"))
         conn.execute(text("CREATE TABLE IF NOT EXISTS batch9_legacy_control(writer text PRIMARY KEY,mode text NOT NULL)"))
         conn.execute(text("CREATE TABLE IF NOT EXISTS batch9_legacy_markers(stage text,writer text,pid integer)"))
         conn.execute(text("TRUNCATE batch9_legacy_control,batch9_legacy_markers"))
@@ -43,14 +47,42 @@ def db(owned_database):
         conn.execute(text("INSERT INTO source_documents(id,country_id,publisher,title,url,doc_type,fetch_date,last_seen_at,status) VALUES(1,1,'Inert fixture','Owned base','https://fixture.invalid/base.pdf','AUDIT',now(),now(),'AVAILABLE')"))
         for table in ('countries','entities','fiscal_periods','source_documents'):
             conn.execute(text(f"SELECT setval(pg_get_serial_sequence('{table}','id'),1)"))
-    yield engine, factory
-    engine.dispose()
+    try:
+        yield engine, factory
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture(scope="session")
 def owned_database(tmp_path_factory):
-    with owned_postgres_fixture(URL_OVERRIDE, ROOT, tmp_path_factory.mktemp("batch9-review-596-resources")) as url:
-        yield url
+    import psycopg2
+    import threading
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate, close_owned_connections
+    # The original bootstrap keeps its native readiness connection after its
+    # transaction context exits. Close only connections created by this call
+    # before PostgreSQL copies the empty database; never terminate another PID.
+    probes = []
+    owner_thread = threading.get_ident()
+    owned_arguments = connect_args()
+    with pytest.MonkeyPatch.context() as patch:
+        connect = psycopg2.connect
+        def tracked_probe(*args, **kwargs):
+            connection = connect(*args, **kwargs)
+            if not args and kwargs == owned_arguments and threading.get_ident() == owner_thread:
+                probes.append(connection)
+            return connection
+        patch.setattr(psycopg2, "connect", tracked_probe)
+        try:
+            with owned_postgres_fixture(URL_OVERRIDE, ROOT, tmp_path_factory.mktemp("batch9-review-596-resources")) as url:
+                patch.undo()
+                close_owned_connections(probes)
+                template = EmptyTemplate(url)
+                try:
+                    yield template
+                finally:
+                    template.close()
+        finally:
+            close_owned_connections(probes)
 
 def env(tmp_path, domain="audits", dispatch=True):
     storage = tmp_path / "storage"

@@ -204,6 +204,15 @@ jobs:
           cd frontend
           npm run test:dependency-boundaries
 
+      - name: Verify native CPU model and image contracts
+        timeout-minutes: 5
+        run: |
+          cd frontend
+          NATIVE_VERIFY_CACHE_DIR=$(mktemp -d "$RUNNER_TEMP/audit-native-model.XXXXXX")
+          export NATIVE_VERIFY_CACHE_DIR
+          trap 'rm -rf "$NATIVE_VERIFY_CACHE_DIR"' EXIT
+          npm run verify:native
+
       - name: Build (REQUIRED)
         run: |
           cd frontend
@@ -299,6 +308,12 @@ jobs:
       - name: Exercise published, absent, partial and refreshed data in Chromium
         working-directory: frontend
         run: npx playwright test --config playwright.acceptance.config.ts
+      - name: Exercise browser readiness and history regressions in Chromium
+        working-directory: frontend
+        run: npx playwright test --config playwright.browser-readiness.config.ts
+        env:
+          BROWSER_TEST_COHORT: public
+
       - name: Preserve browser failure receipts
         if: always()
         uses: actions/upload-artifact@v4
@@ -307,6 +322,8 @@ jobs:
           path: |
             frontend/acceptance-report/
             frontend/acceptance-results/
+            frontend/readiness-report/
+            frontend/readiness-results/
           retention-days: 14
 
   test-browser-legacy:

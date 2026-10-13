@@ -1,0 +1,3492 @@
+{
+  "config": {
+    "configFile": "/app/frontend/playwright.ci-cohorts.config.ts",
+    "rootDir": "/app/frontend/e2e",
+    "forbidOnly": true,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/evidence/review-spec/original100-v1/browser",
+        "repeatEach": 100,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/app/frontend/e2e",
+        "testIgnore": [
+          "**/acceptance/**",
+          "**/admin-users/**",
+          "**/operations/**",
+          "**/admin-overview-audit/**",
+          "**/batch7-etl-ui/**",
+          "**/batch7_coordinator_integration/**"
+        ],
+        "testMatch": [
+          "**/*.spec.ts"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "list"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.2",
+    "workers": 2,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "smart-back.spec.ts",
+      "file": "smart-back.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Smart back link — counties list ↔ detail",
+          "file": "smart-back.spec.ts",
+          "line": 48,
+          "column": 6,
+          "specs": [
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5630,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:02.338Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-c8b0d41d63d3c4677359",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5647,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:02.342Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-742aa09d8ecf73649c62",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5168,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:10.544Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-c9d7456583330f934c58",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5178,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:10.550Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-6daab1af039b9b67e327",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5245,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:18.081Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-ddef6baa216f8524a992",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5522,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:18.085Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-bb751623e0a52dfcfe2e",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5221,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:25.603Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-bf471c5ab3a59bf81abd",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5193,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:25.851Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a0648f058b30b4a475f3",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5281,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:33.099Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-9bac1afa55b819a2c278",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5283,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:33.200Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a4384b8601e067b5b761",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5204,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:40.806Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-48c49e5bc898973b19f9",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 11,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5225,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:40.915Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a0fe8d7e9bcee5b94816",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5288,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:48.221Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-325a19321ed3007cb99f",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5273,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:48.360Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-c9b10115533ab173c5fe",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5244,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:55.937Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-ee564dcc25435fbf9a43",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5194,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:30:56.067Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e5a5f72f8de7d86f9a0e",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 16,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5180,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:03.487Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e1a1c32fd2f1bee063b4",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 17,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:03.563Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a4a0791c433b68105a43",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5124,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:10.979Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-f479fc1c1cde9b84b863",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5180,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:11.078Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-fcfc7749717b491f0016",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 20,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5177,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:18.405Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-49f0654c0223c86aec36",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 21,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5175,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:18.525Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b1de6a485b4b0287752f",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 22,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5146,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:25.831Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-968df8c7d2eba5b96ce6",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 23,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5153,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:25.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-c569db7cfec704edf066",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 24,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5051,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:33.196Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d2e694cdda5cdc2c8448",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 25,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5138,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:33.324Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-5b3d60ec6d3126412f37",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5178,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:40.705Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-9bd2d98ff3c25b771b70",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 27,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5197,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:40.781Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-fb73045ee9790014c736",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 28,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5223,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:48.107Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-5ae4090c0b34963ba1d2",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 29,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5174,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:48.229Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-39a0331c5e28a432fdba",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 30,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5283,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:55.656Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-2e2a30c50e9333632ebf",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 31,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5317,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:31:55.661Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-7f5bb02f2e0b7726a4e5",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 32,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5212,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:03.249Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a3cdb86c2adc6d49ec1c",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 33,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5162,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:03.246Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-075907d198d7835402c9",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 34,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5236,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:10.765Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-52b63d09f868d8afa0b5",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 35,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5220,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:10.779Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-97a9aed3b4ae4d81a59a",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 36,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5311,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:18.481Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-ddda5e159c2c261cf563",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 37,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5312,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:18.473Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e2d50e9be11e21f7665d",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 38,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5148,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:26.322Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-42816170d27b48b2e5e0",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 39,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5269,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:26.315Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-310287d9f1c34feffac7",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 40,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5172,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:33.687Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-9810c50a6fce918bd1f8",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 41,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5134,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:33.773Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d506aea54a81cb4ba692",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 42,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5145,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:41.209Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d18625d5bb2b2b45b438",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 43,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5118,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:41.214Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-aba5cfa196434e11932e",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 44,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5177,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:48.727Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-7690a8822ccd8b8a60df",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 45,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5212,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:48.732Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-88383400de5c09bf9262",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 46,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5249,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:56.238Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a4aea074471a3cc444d2",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 47,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5161,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:32:56.286Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a02b6e72b2bcdd76a9df",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 48,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5188,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:03.726Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d9dcd9d373924d0aa58e",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 49,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5157,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:03.729Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-33834df7aa7a2f2a6864",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 50,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5183,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:11.286Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-29c1b3f7b7b1b8af105f",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 51,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5097,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:11.281Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-3678574416a5e5c62f9b",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 52,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5342,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:18.686Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-41476838b51b2cac41d3",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 53,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5286,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:18.701Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-8b9790fbc78d654a606b",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 54,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5408,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:26.282Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-826da90d8894c0cdf7fc",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 55,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5343,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:26.278Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-2d865fd8d49584f83363",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 56,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5290,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:33.790Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b10910fd2e3c0143c5ab",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 57,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5255,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:33.877Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-f46177f0ae0550512656",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 58,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5226,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:41.541Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e80ae0c13738381132f9",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 59,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5181,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:41.553Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-778c2f62708a95aca75d",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 60,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5336,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:49.196Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-8a7ad15fbe4792970e14",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 61,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5328,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:49.188Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-82c87869361b18a0dc48",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 62,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5286,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:56.855Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-bb858ccefdce8944493b",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 63,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5295,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:33:56.841Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-3c778901a238ae8b8546",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 64,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5245,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:04.455Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-303afeaecb7fb32176a8",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 65,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5248,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:04.453Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-da448485769c1bb8a384",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 66,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5212,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:11.978Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-335af93b4e4da8a77864",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 67,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5229,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:11.977Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-7f9f8d9ef2f256433cc5",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 68,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5152,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:19.523Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b71db957d28394dc7fdf",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 69,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5164,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:19.522Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a7e1494437082f1f7e1d",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 70,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5353,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:26.953Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-1d321054984f63e4c21a",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 71,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5327,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:26.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b90ea2e3b928601dc1bc",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 72,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5206,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:34.684Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-7d975709b7293bb81be5",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 73,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5203,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:34.681Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-3d633bd075b5dc8f9732",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 74,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5177,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:42.195Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-ff53d0bee16119578c35",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 75,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5198,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:42.192Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-a1629f165f80b0713cfe",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 76,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5209,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:49.821Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-61b009dc9f746c8b37ea",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 77,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5204,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:49.821Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-cf2495d6bbe69ecac5b4",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 78,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5269,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:57.298Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-9ff89cc041c9c854315d",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 79,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5256,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:34:57.300Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-0fcb870b9561f30d3cd0",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 80,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5238,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:04.830Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-61a4f2a78e64b4307cee",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 81,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5204,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:04.824Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e545d5e2e35f7d7bb277",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 82,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5185,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:12.365Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b26734314f192a83af8f",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 83,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5215,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:12.363Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-c3d2b3a1c9698e689d60",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 84,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5150,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:19.898Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-5b4081e0cc5229534f9b",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 85,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5174,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:19.884Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-de6458a998de83dde607",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 86,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5164,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:27.402Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-fae87d3e5dc34d14b41a",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 87,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5146,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:27.409Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-89c667f4eb8ecd301649",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 88,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5247,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:34.844Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-158cb5791acd270a781a",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 89,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5244,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:34.850Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-95da9efa4463f09f6569",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 90,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5107,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:42.371Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-e17e72905da8e011b95c",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 91,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5148,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:42.367Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-decd4223a23b18ad0d44",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 92,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5179,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:49.873Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-96d95764ddf19bbfb396",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 93,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5374,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:49.876Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d880c89739c2313a6590",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 94,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5216,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:57.165Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-d18b80083ae6122c62ab",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 95,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5206,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:35:57.379Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-6ef7e7db660f07052974",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 96,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5124,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:36:04.496Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-b00bbf203d2f08a1fe3d",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 97,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5106,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:36:04.690Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-f3119e30102c2006ea62",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 98,
+                      "parallelIndex": 1,
+                      "status": "passed",
+                      "duration": 5186,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:36:11.866Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-2713b8e34f3a93bff3e9",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            },
+            {
+              "title": "scroll position is roughly preserved after smart-back",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 99,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5074,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-10-10T16:36:12.011Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7d5163b0bd2a88b22ea4-f6204990d11474f96892",
+              "file": "smart-back.spec.ts",
+              "line": 72,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-10T16:28:24.847Z",
+    "duration": 472754.929,
+    "expected": 100,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

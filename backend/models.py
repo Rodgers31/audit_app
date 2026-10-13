@@ -21,9 +21,10 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.sql import false as sa_false
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, OID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import UserDefinedType
 
 Base = declarative_base()
 
@@ -1232,6 +1233,7 @@ class AdminAuditLog(Base):
     """
 
     __tablename__ = "admin_audit_log"
+    __table_args__ = (CheckConstraint("id > 0", name="ck_admin_audit_positive_id"),)
 
     id = Column(Integer, primary_key=True, index=True)
     actor_id = Column(String(64), nullable=False, index=True)
@@ -1246,6 +1248,39 @@ class AdminAuditLog(Base):
         default=lambda: datetime.now(timezone.utc),
         index=True,
     )
+
+
+class AuditRootTransaction(UserDefinedType):
+    """Ordinary durable xid8; never a cast of the tuple's wrapped xmin."""
+    cache_ok = True
+
+    def get_col_spec(self, **kw):
+        return "xid8"
+
+
+class AdminAuditProvenance(Base):
+    """Database-assigned provenance, atomically appended by the audit trigger."""
+    __tablename__ = "admin_audit_provenance"
+
+    audit_id = Column(Integer, ForeignKey("admin_audit_log.id"), primary_key=True)
+    root_xid = Column(AuditRootTransaction().with_variant(String(20), "sqlite"), nullable=False)
+    incarnation = Column(Uuid(as_uuid=True), nullable=False)
+
+
+class AdminAuditStorage(Base):
+    """Operator certification; restored bytes alone never supply authority."""
+    __tablename__ = "admin_audit_storage"
+    __table_args__ = (
+        CheckConstraint("singleton", name="ck_audit_storage_singleton"),
+        CheckConstraint("schema_version=1", name="ck_audit_storage_version"),
+    )
+    singleton = Column(Boolean, primary_key=True)
+    schema_version = Column(Integer, nullable=False)
+    incarnation = Column(Uuid(as_uuid=True), nullable=False)
+    system_identifier = Column(Text, nullable=False)
+    database_oid = Column(OID().with_variant(Integer, "sqlite"), nullable=False)
+    timeline = Column(Integer, nullable=False)
+    certified = Column(Boolean, nullable=False, server_default=sa_false())
 
 
 class CountyDebtInstrument(Base):
