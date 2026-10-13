@@ -402,3 +402,17 @@ These controls are separate from actual canonical CLI/hosted acceptance,
 which remains pending and must use the complete original browser inventory.
 
 No production role, connection, migration or storage certification was changed.
+
+### Review follow-up: canonical CLI transport controls
+
+The canonical coordinator bootstrap now reads the three roles back as strict
+JSON. The old lifecycle transport fixture answered every psql call with a DDL
+marker and therefore refused before its original successful/failed/interrupted
+cohort scenarios could execute. Preserve those nine scenarios and handle only
+the exact role-profile SELECT with the declared safe profile. Add 26 controls
+covering every role flag and inherited membership, missing/extra/reordered rows,
+wrong boolean types and malformed JSON; each refuses before a cohort starts and
+removes only its owned database. Node 22.19.0 executes all 35 controls successfully.
+These are CLI transport controls, not native database or complete hosted browser
+acceptance. The original transport mismatch is retained as a failing receipt;
+the canonical full browser gate must still execute after the registry blocker.
