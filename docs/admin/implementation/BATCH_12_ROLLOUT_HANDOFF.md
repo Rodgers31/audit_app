@@ -390,3 +390,9 @@ for writes before classifying authenticated GETs as observations, and place
 fresh-connection Alembic migrations before the final admission-closed retained
 operator phase. Actual examples are command-history receipt retirement and
 `alembic/env.py`'s new NullPool connection. No shared skill file was edited.
+
+Coordinator follow-up: plan receipts now require an exact JSON integer version;
+boolean/float aliases reproduce the original dictionary-comparison gap and
+are refused by the new guard. Production authority remains false. This is
+part of #642, with final combined current/minimum native proof recorded before
+merge. The earlier 54-case-per-mode packets remain historical, unchanged.
