@@ -1,6 +1,6 @@
 """Source-bound baseline release preparation. No production operation or authority.
 
-GitHub readbacks and provider access refusals are observations, never maintenance
+GitHub and authenticated or refused provider readbacks are observations, never maintenance
 certificates. This packet enumerates obligations; a coordinator must separately
 review and authorize each concrete production step.
 """
@@ -41,8 +41,8 @@ CONTROLS = (
      "Repository/workflow admission, schedules, dispatch/rerun, queued and running jobs, runner descendants; secret target and receipt transports."),
     ("github_deploy", "migrations_manual_scripts", (".github/workflows/docker-build-deploy.yml", ".github/workflows/ci.yml", ".github/workflows/verification.yml", ".github/workflows/r2-acceptance.yml"),
      "Keep all writers fenced; head upgrades, SSH compose deploy, images, revalidation and R2 publication need separate disposition."),
-    ("render_lifecycle", "application_sessions", ("backend/main.py", "backend/Dockerfile", "docker-compose.prod.yml"),
-     "Exact service/replica/deploy/image/start command; manual/API/hook/rollback/resume/recycle/health replacement and credential holders."),
+    ("render_lifecycle", "application_sessions", ("backend/main.py", "backend/Dockerfile", "backend/Dockerfile.prod", "docker-compose.prod.yml"),
+     "Exact service/replica/deploy/image/start command; manual/API/hook/rollback/resume, Gunicorn request recycling, Docker/provider health replacement, provider maintenance and credential holders."),
     ("render_independent_jobs", "migrations_manual_scripts", ("backend/alembic/env.py",),
      "Inventory every Render workspace service, cron and one-off job by ID. Suspending/redeploying the base service does not terminate a one-off job."),
     ("startup_bootstrap", "bootstrap", ("backend/main.py", "backend/bootstrap.py"),
@@ -68,12 +68,12 @@ CONTROLS = (
 )
 
 BLOCKERS = (
-    "Fresh authenticated Render service/workspace/deploy/job/restart/credential census is absent.",
-    "Fresh authenticated Supabase cluster/revision/role/session/admission/provider census is absent.",
+    "Render metadata/runtime observations do not certify every service/job/restart/credential fence.",
+    "Supabase metadata/catalog observations do not certify every provider/session/admission fence.",
     "GitHub secret metadata cannot prove any secret value's database or external-effect target.",
     "Every writer/restart/reconnect/background channel requires an exact independently trusted fence.",
     "Accepted reconciliation requires actual rolsuper=true, datallowconn=false, zero other target sessions and zero prepared transactions; provider equivalent is not reviewed.",
-    "Exact installed source/image/runtime, direct-connection feasibility and production restore/external effects remain unverified.",
+    "Complete installed source/image/runtime qualification, direct-connection feasibility and production restore/external effects remain unverified.",
     "Retained effects/claims/dispatch/RUNNING rows require exact investigation and signed same-backend reconciliation; never age-based reclaim.",
     "Authenticated deployed UI/API/worker/operator acceptance and coordinator authorization remain pending.",
 )
@@ -151,7 +151,7 @@ def validate_inputs(value, now):
     for name, identity in (("render", RENDER), ("supabase", SUPABASE)):
         row = value["providers"][name]
         exact(row, "resource_id observed_at state", "provider_shape")
-        require(row["resource_id"] == identity and row["state"] in ("authentication_required", "not_supplied"), "provider_identity")
+        require(row["resource_id"] == identity and row["state"] in ("authentication_required", "not_supplied", "authenticated_read_only"), "provider_identity")
         fresh(row["observed_at"], now)
     canonical(value)
 

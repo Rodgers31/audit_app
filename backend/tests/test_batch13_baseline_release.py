@@ -44,6 +44,23 @@ def test_valid_packet_enumerates_every_category_and_stays_blocked():
     assert all(r["deployed_disposition"] == "unverified" for r in packet["writer_controls"])
 
 
+@pytest.mark.parametrize("provider", ["render", "supabase", "both"])
+def test_authenticated_observations_do_not_certify_fences(provider):
+    value = inputs()
+    for name, row in value["providers"].items():
+        if provider in (name, "both"):
+            row["state"] = "authenticated_read_only"
+    packet = release.build_packet(value)
+    release.verify_packet(packet, value)
+    assert packet["providers"] == value["providers"]
+    assert packet["production_ready"] is packet["production_execution_authorized"] is False
+    assert packet["status"] == "blocked_production_prerequisites"
+    assert all(row["deployed_disposition"] == "unverified" for row in packet["writer_controls"])
+    lifecycle = next(row for row in packet["writer_controls"] if row["id"] == "render_lifecycle")
+    assert "backend/Dockerfile.prod" in lifecycle["source_paths"]
+    assert "Gunicorn request recycling" in lifecycle["required_readback_and_fence"]
+
+
 @pytest.mark.parametrize("bad", [None, {}, [], "bad", 0, True], ids=["null", "empty-object", "empty-list", "text", "zero", "bool"])
 def test_unknown_root_refuses(bad):
     with pytest.raises(release.Refused, match="readback_shape"):

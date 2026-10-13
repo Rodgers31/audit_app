@@ -21,13 +21,60 @@ not an executed writer. Three historical verification records remain queued:
 38348755971, 38346644137 and 37998042049. The coordinator owns their disposition
 under #599; an OFF snapshot is not proof of their termination.
 
-Render service `srv-d6hr3t5m5p6s73bomqu0` and Supabase project
-`xznjxwrkbkahwtnbstbj` both redirected fresh browser navigation to sign-in.
-Current provider state, installed source/image/runtime, database revision,
-RUNNING rows, role privileges and Auto-Deploy setting are unverified. Earlier
-`2d3cd595…`/Auto-Deploy-OFF and `ea1645a4c0b5`/three RUNNING observations remain
-historical; do not reuse their timestamps or treat them as current empty state.
-GitHub secret names are visible; values and targets remain independently unknown.
+Authenticated October 13 Chrome readbacks supersede the isolated in-app browser's
+sign-in refusals. Render workspace `tea-d6hqnc24d50c73fgi4tg` showed one project,
+one service `srv-d6hr3t5m5p6s73bomqu0`, one manual replica, no environment groups
+and no one-off jobs for that service. Live deploy `dep-db3oskc9v7es73dtuvc0`
+remains source `2d3cd5959df1914bf068cb0381057d1bcbbabf81`; Auto-Deploy and PR
+previews are OFF. Root/context are backend, Dockerfile is `Dockerfile.prod`,
+and command override/pre-deploy/health-check fields are empty. These scoped
+observations do not account for other workspaces, hook/API holders or all queues.
+
+Read-only shell inspection of instance `44sdb` found Python3.12.15,
+SQLAlchemy2.0.54, psycopg2-binary2.9.13, gunicorn26.2.0 and uvicorn0.54.0.
+Installed Dockerfile.prod/bootstrap.py/main.py hashes match that pinned commit;
+the image digest and complete installed corpus are unverified. Gunicorn PID1 and
+worker PID2480 (UID999, PGID1) use request recycling at1000 plus jitter100.
+AutoSeeder=false, Parliament=0 and WEB_CONCURRENCY=1 do not fence startup,
+Gunicorn recycling, Docker health or provider lifecycle channels. The runtime
+DATABASE_URL targets transaction pooler aws-1-eu-central-1.pooler.supabase.com:
+6543/postgres as postgres.xznjxwrkbkahwtnbstbj, with no explicit sslmode. No
+password is retained; transport encryption/certificate verification is unproved.
+The first metadata command printed these observations then failed because `ps`
+was absent; the separate `/proc` census completed without installing anything.
+
+Supabase `xznjxwrkbkahwtnbstbj` main/Production in Frankfurt has no read replicas.
+Explicit repeatable-read `BEGIN READ ONLY`/ROLLBACK at22:08:26UTC observed
+database postgres/OID5/systemID7626352619084395911, PostgreSQL17.6 and revision
+`ea1645a4c0b5`. Actual postgres has rolsuper=false and bypassrls=true; admission
+is open. There were18 other target sessions, including pg_net/pg_cron background
+workers, PostgREST, Supavisor, Storage and provider clients, and zero prepared
+transactions. RUNNING IDs1167(national_budget),1655 and2651(fiscal_summary) have
+neither claim nor dispatch-command tags. Only ingestion_jobs/admin_audit_log of
+the inspected coordinator table set exist, both with RLS. This momentary catalog
+snapshot is not quiescence, a direct-path proof or same-backend maintenance.
+
+Database Settings showed SSL enforcement OFF, all IPs admitted, connection pool
+size15/max clients200, and connection/disconnection logging OFF. Those controls
+were only read. The Connect panel advertises direct
+`db.xznjxwrkbkahwtnbstbj.supabase.co:5432/postgres` with IPv6-default guidance;
+actual route/TLS and IPv4
+add-on feasibility remain unverified. Seven physical daily backups (October6–12,
+latest October12 23:37:56UTC) are listed. No restore test or backup-byte custody
+was performed; Storage object bytes are excluded.
+
+Vercel production deployment `45ZTzet1S5oEtrSYLjnpawW3HQJC` is Ready at main
+`c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`. A badge does not prove authenticated
+product/API acceptance or effective client targets. GitHub secret names are
+visible; their values, targets and holders remain independently unknown.
+
+Render's [scheduled maintenance](https://status.render.com/incidents/bwd9ycdxqps4)
+is October14 01:00–02:00UTC (October13 8–9pm CDT): dashboard/API/one-off job
+control may be unavailable. The notice says deployed services/databases will
+continue uninterrupted; it does not announce a service restart. Schedule reviewed
+maintenance outside unavailable control windows and abort on loss of control.
+These timestamped readbacks are archived evidence; refresh them before each
+operational decision rather than restamping or treating observed jobs as stopped.
 
 The new `backend/scripts/batch13_baseline_release.py` prepares and verifies a
 packet from fresh typed inputs. Its 14 source control groups enumerate obligations,
@@ -46,7 +93,8 @@ It cannot execute SQL, migrate, deploy, stop a process or release a claim.
 
 Inputs must retain the accepted base/tree, complete workflow census with unique
 IDs/paths, nonterminal run identities, names-only secret metadata and exact
-provider IDs/access disposition. UTC readbacks expire after five minutes with
+provider IDs/access disposition, including `authenticated_read_only` observations.
+UTC readbacks expire after five minutes with
 maximum 30 seconds clock lead. `not_supplied` does not assert a new provider
 observation. Authenticate and refresh actual provider readbacks separately; this
 author tool intentionally cannot promote them to a maintenance certificate.
@@ -64,7 +112,7 @@ An unknown credential holder, session, process or restart path stops the release
 | Surface | Required exact inventory and fence readback |
 | --- | --- |
 | GitHub code/jobs | Repository ID1046703259; all workflow IDs/paths/revisions, dispatch/rerun/schedule permissions, all queued/running runs and runner child processes, environment/repository/org secret and variable holders. Preserve OFF; disabling a schedule alone is insufficient. |
-| Render backend | Service ID above; workspace, sibling services/workers/cron, all deploy IDs/source commits, image digest/runtime/start/pre-deploy commands, replicas, PIDs/births, current build and deploy queues, hooks, API keys, manual deploy/rollback/restart/resume and health replacement rights. Disable/fence each launch channel through the reviewed provider action and verify actual stopped processes. |
+| Render backend | Service ID above; workspace, sibling services/workers/cron, all deploy IDs/source commits, image digest/runtime/start/pre-deploy commands, replicas, PIDs/births, current build and deploy queues, hooks, API keys, manual deploy/rollback/restart/resume, Gunicorn request recycling and Docker/provider health replacement rights. Account for provider maintenance and control-plane availability. Disable/fence each launch channel through the reviewed provider action and verify actual stopped processes. |
 | Render jobs | Enumerate each one-off job/cron ID, process and secret target. A base-service suspension/redeploy does not terminate an existing one-off job. Independently stop/fence each job and its launcher; inspect deployment/pre-deploy jobs and cron manual triggers. |
 | Backend startup | `main.py` startup calls reference initialization before AutoSeeder. Stop every replica/thread and fence lifecycle restarts; account for all16 bootstrap effect domains plus the separate national-budget path. Read actual flags but do not use them as a lifecycle fence. |
 | Application writers | AutoSeeder initial/hourly/weekly, APScheduler discovery, manual light/deep ETL, Parliament ingest/reconcile, digest/email, request sessions, dedicated supervisor, adapter orphans/native descendants and legacy compose restart/cron policies. Bind every host/PID/birth/group/generation and scheduler launch scope. |
@@ -134,7 +182,7 @@ hooks](https://render.com/docs/deploy-hooks).
 4. Obtain a fresh explicit `BEGIN READ ONLY` observation using the accepted TLS
    observer and independently verified endpoint. Require one current baseline
    revision and actual schema. Generate its exact pending suffix to e602b11a0001
-   with `batch12_rollout.py`; never stamp or infer equivalence. Historical
+   with `batch12_rollout.py`; never stamp or infer equivalence. The October13
    ea1645a4c0b5 requires eleven steps through c415a10d2026, f38c61a9d203,
    c96d13e2f411, a42b86e1d310, b73e19a4f602, d8f4a619b203, e554d7c9a001,
    e572b8c9a001, e583b9c9a001, e554b10a0001, e602b11a0001; this list is conditional
