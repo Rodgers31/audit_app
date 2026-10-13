@@ -1,0 +1,47 @@
+{
+  "range_base_exclusive": "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20",
+  "range_end_inclusive": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "command": [
+    "git",
+    "log",
+    "--format=%H%x09%T%x09%P%x09%s",
+    "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20..6fcaed18327d4ebdb91b475c016d81ca624deda8"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+  "observed_exit": 0,
+  "raw_output_sha256": "90a53ad4f813e4f7daf3b58fd0bc13bd86568633d2b2976b50f04c630b460d4d",
+  "commits": [
+    {
+      "commit": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+      "tree": "958d72062130267d0916ad14f9ab7ab6afb0af71",
+      "parents": [
+        "ee9edb420d7493e31f67d82d2fb654f779d9d443"
+      ],
+      "subject": "docs(counties): include ignored raw browser evidence in the packet"
+    },
+    {
+      "commit": "ee9edb420d7493e31f67d82d2fb654f779d9d443",
+      "tree": "25f5f22882cd96135852f647376ff8f971a12e2f",
+      "parents": [
+        "982a961a58ed3647ead6bc7900250efa7d882a94"
+      ],
+      "subject": "docs(counties): preserve source-bound navigation evidence and failed gates"
+    },
+    {
+      "commit": "982a961a58ed3647ead6bc7900250efa7d882a94",
+      "tree": "5ebb363b208efd159d4b4673a760f111cdd1d629",
+      "parents": [
+        "09fd3c150032e8595678ddf2046948651a260b96"
+      ],
+      "subject": "test(counties): observe native pagination history writes"
+    },
+    {
+      "commit": "09fd3c150032e8595678ddf2046948651a260b96",
+      "tree": "f3a254d87655cbba42365684f1c611cae5b1312e",
+      "parents": [
+        "bcb5ff99854de595bbe3f7d60cc8796b7ada5a20"
+      ],
+      "subject": "fix(counties): publish pagination URLs without server navigation"
+    }
+  ]
+}

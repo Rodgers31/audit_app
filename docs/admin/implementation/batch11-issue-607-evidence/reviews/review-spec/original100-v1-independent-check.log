@@ -1,0 +1,40 @@
+{
+  "head": "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+  "tree": "958d72062130267d0916ad14f9ab7ab6afb0af71",
+  "producer_sha256": "6b4037dda331fbc25011620b723ed19137aa76c886dbe37e436239c1fca5205c",
+  "completed": 1791650197.227642,
+  "counts": {
+    "passed": 100,
+    "unexpected": 0,
+    "skipped": 0,
+    "flaky": 0,
+    "retries": 0
+  },
+  "original_source_sha256": "0a39e8b46d52cbc8bb932048c847f77488cb4e60fc1c32fb21b07c58c58160ae",
+  "configured_workers": 2,
+  "runtime": {
+    "node": "v22.23.3",
+    "arch": "x64",
+    "platform": "linux",
+    "kernel": "7.0.12-linuxkit",
+    "nodeExecutable": "/opt/b11/node-v22.23.3-linux-x64/bin/node",
+    "nodeSha": "fde6a4bf8d0562f7751d1a2d6cb9b417c4cfe107bbcb0aa3e9a24e125e348f48",
+    "playwright": "1.58.2",
+    "chromium": "145.0.7632.6",
+    "chromiumExecutable": "/ms-playwright/chromium-1208/chrome-linux64/chrome",
+    "chromiumSha": "481fea1516a1f2b76454664272f12cd9dd1f20117b21e1f1498e08bc7f872c00",
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "consumed_hashes": {
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1/report.json": "f8c2bb66bcfeac3040ba7a77c274d1500e9702873d8d3c07769ea7ea1dcd4d14",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1/receipt.json": "5dcb0bf7cc36bbb1cc8892013166e29974dbd5d6cf2ef9ac19df0473f12fcca0",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1-driver-receipt.json": "c6f50b08a2b7aebcaf290e5be80b95aafcc57f2df43df9ea9a7b589e70755b7e",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/original100-v1-runtime.json": "1de35f7db75efd45e750e816f5a0b618c6658879df0aeda6c18857352cd55c9d"
+  },
+  "source_changed": [],
+  "helper_changed": false,
+  "limits": "Fresh local diagnostic success; does not reproduce or resolve the naturally completed-200 #607 failure, historical #601 saved900/returned100 cause, or failed original full-inventory gate. No hosted/production acceptance."
+}

@@ -1,0 +1,35 @@
+{
+  "Id": "3f947fe7ad040d6cb7c99d9bdacce56ce7aec11510a0a31a17a6fe663ccb14f1",
+  "Image": "sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d",
+  "image_reference": "mcr.microsoft.com/playwright@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d",
+  "labels": {
+    "audit_app.owner": "batch11-navigation",
+    "org.opencontainers.image.ref.name": "ubuntu",
+    "org.opencontainers.image.version": "24.04"
+  },
+  "state_running": true,
+  "port_bindings": {},
+  "mounts": [
+    {
+      "Type": "bind",
+      "Source": "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+      "Destination": "/app",
+      "Mode": "",
+      "RW": true,
+      "Propagation": "rprivate"
+    },
+    {
+      "Type": "bind",
+      "Source": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation",
+      "Destination": "/evidence",
+      "Mode": "",
+      "RW": true,
+      "Propagation": "rprivate"
+    }
+  ],
+  "command": [
+    "/usr/local/bin/docker",
+    "inspect",
+    "batch11-navigation-linux"
+  ]
+}
