@@ -1,0 +1,24 @@
+{
+  "command": [
+    "/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/CI_TEST_RUNTIME/bin/python",
+    "-B",
+    "-m",
+    "pytest",
+    "/Users/roger/.codex/worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py",
+    "-vv",
+    "-o",
+    "addopts=",
+    "-o",
+    "cache_dir=/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_11_REVIEW/SPEC_REVIEW/census-tests-current-01/cache",
+    "--junitxml=/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_11_REVIEW/SPEC_REVIEW/census-tests-current-01/junit.xml"
+  ],
+  "started_at": "2026-10-10T20:20:20.658878+00:00",
+  "ended_at": "2026-10-10T20:20:21.294007+00:00",
+  "exit": 0,
+  "source_hashes": {
+    "test_collect_issue_census.py": "80e8b7efae29d926173c936dbd5b3a2d33afbd12fedd696801980aad6be68143",
+    "collect_issue_census.py": "8108ab85ec4b135354db12401a8fe5d20642255c7d543cd7080f65839c081f56"
+  },
+  "source_stable": true,
+  "log_sha256": "038a660c14e9abd5a0cf2e265377c3c9be7e4cb9c9ffb91316238c3963c437cb"
+}

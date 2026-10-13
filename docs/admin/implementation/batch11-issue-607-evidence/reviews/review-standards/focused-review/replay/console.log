@@ -1,0 +1,52 @@
+[WebServer] 2026-10-10 16:38:35,118 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+[WebServer] 2026-10-10 16:38:35,119 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+[WebServer] 2026-10-10 16:38:35,127 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+[WebServer] 2026-10-10 16:38:35,127 - main - INFO - Redis cache initialized successfully
+[WebServer] 2026-10-10 16:38:35,176 - main - INFO - Using in-memory rate limiting
+[WebServer] 2026-10-10 16:38:35,176 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+[WebServer] 2026-10-10 16:38:35,424 - main - INFO - Social admin router registered at /api/v1/admin/social
+[WebServer] 2026-10-10 16:38:35,444 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+[WebServer] 2026-10-10 16:38:35,469 - main - INFO - Economic data router registered at /api/v1/economic
+[WebServer] 2026-10-10 16:38:35,474 - main - INFO - Admin router registered at /api/v1/admin
+[WebServer] 2026-10-10 16:38:35,485 - main - INFO - Admin users router registered at /api/v1/admin/users
+[WebServer] 2026-10-10 16:38:35,490 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+[WebServer] 2026-10-10 16:38:35,500 - main - INFO - User features router registered (newsletter endpoints)
+[WebServer] 2026-10-10 16:38:35,512 - main - INFO - Audit dashboard router registered at /api/v1/audit
+[WebServer] 2026-10-10 16:38:35,513 - main - INFO - Detailed health router registered at /health/detailed
+[WebServer] 2026-10-10 16:38:35,519 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+[WebServer] 2026-10-10 16:38:35,522 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+[WebServer] 2026-10-10 16:38:35,525 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+[WebServer] 2026-10-10 16:38:35,527 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+[WebServer] 2026-10-10 16:38:35,542 - main - INFO - Data provenance router registered at /api/v1/provenance
+[WebServer] INFO:     Started server process [158636]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8141 (Press CTRL+C to quit)
+[WebServer] <w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (133kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+[WebServer] 2026-10-10 16:39:58,094 - trust_guards - WARNING - TRUST: /audits/federal returned 0 rows for the latest period; downstream UI may render blank.
+[WebServer] 2026-10-10 16:39:58,100 - trust_guards - WARNING - TRUST: /budget/national returned 0 rows for the latest period; downstream UI may render blank.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: appropriated_budget=180B is outside the plausible [2,000, 8,000]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: total_revenue=100B is outside the plausible [1,000, 5,000]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: tax_revenue=80B is outside the plausible [800, 4,500]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: non_tax_revenue=20B is outside the plausible [30, 1,500]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: debt_service_cost=50B is outside the plausible [400, 4,000]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: development_spending=40B is outside the plausible [100, 2,000]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: recurrent_spending=90B is outside the plausible [800, 5,000]B band.
+[WebServer] 2026-10-10 16:39:58,204 - trust_guards - WARNING - TRUST: FY 2025/26: county_allocation=20B is outside the plausible [150, 1,200]B band.
+[WebServer] 2026-10-10 16:39:58,284 - routers.audit_dashboard - WARNING - audit summary: 1 finding(s) withheld — source document has no resolvable URL; 48 published
+[WebServer] 2026-10-10 16:39:58,538 - trust_guards - WARNING - TRUST: budget sector list is empty
+[WebServer] 2026-10-10 16:39:58,539 - trust_guards - WARNING - TRUST: /budget/overview returned 0 rows for FY2025/26 9M; downstream UI may render blank.
+[WebServer] 2026-10-10 16:39:58,540 - trust_guards - WARNING - TRUST: County budget feed (COB): last fetch was 192 days ago (exceeds 120-day freshness window). Review the COB ingestion pipeline.
+[WebServer] 2026-10-10 16:39:58,541 - trust_guards - WARNING - TRUST: County budget extraction produced only aggregate Total rows — Recurrent, Development, and Personnel Emoluments tables were not found in the source PDF. The Budget page will show estimated figures for category breakdowns.
+[WebServer] 2026-10-10 16:39:58,556 - services.population - WARNING - No national population row (entity_id IS NULL) in population_data; reporting absence. Reseed with: python -m seeding.cli seed --domain population
+
+Running 6 tests using 2 workers
+
+  ✓  1 [chromium] › e2e/county-pagination-boundaries.spec.ts:5:7 › pagination keeps URL and rows together with a pending server navigation (3.1s)
+  ✓  3 [chromium] › e2e/county-pagination-boundaries.spec.ts:5:7 › pagination keeps URL and rows together with a failed server navigation (2.6s)
+  ✓  2 [chromium] › e2e/county-pagination-contract.spec.ts:4:5 › pagination and view-all retain duplicate query values, hash and history depth (6.7s)
+  ✓  4 [chromium] › e2e/county-pagination-boundaries.spec.ts:35:5 › rapid pagination and view-all keep the latest list state without a server navigation (3.0s)
+  ✓  5 [chromium] › e2e/county-pagination-contract.spec.ts:33:5 › deep-link clamping and shrinking or empty filters keep URL and rows consistent (2.7s)
+  ✓  6 [chromium] › e2e/county-pagination-contract.spec.ts:52:5 › browser back and forward retain the page-2 URL and a legitimate saved list position (3.6s)
+
+  6 passed (1.8m)

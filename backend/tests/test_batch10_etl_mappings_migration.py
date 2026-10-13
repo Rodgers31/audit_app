@@ -40,7 +40,7 @@ def test_complete_chain_and_empty_round_trip_preserves_private_schema(migrated):
     result = migrate('upgrade','head')
     assert result.returncode == 0, result.stderr
     with engine.begin() as c:
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'e602b11a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'a611b12a0001'
         for role in ('anon','authenticated'):
             c.execute(text(f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='{role}') THEN CREATE ROLE {role}; END IF; END $$"))
         c.execute(text("INSERT INTO ingestion_jobs(domain,status,dry_run,started_at,items_processed,items_created,items_updated,errors,metadata) VALUES ('audits','PENDING',false,now(),0,0,0,'[]',jsonb_build_object('manual_trigger',true))"))
@@ -64,6 +64,8 @@ def test_complete_chain_and_empty_round_trip_preserves_private_schema(migrated):
 
 
 def test_upgrade_refuses_ready_worker_preserves_old_oag_history(migrated):
+    # These controls exercise the mapping revisions. Audit storage admission
+    # and its downgrade refusal have separate full-head controls.
     engine,migrate = migrated
     result=migrate('upgrade','e583b9c9a001')
     assert result.returncode==0,result.stderr
@@ -72,12 +74,12 @@ def test_upgrade_refuses_ready_worker_preserves_old_oag_history(migrated):
         audit=c.scalar(text("INSERT INTO admin_audit_log(actor_id,actor_email,action,target_type,target_id,payload,created_at) VALUES ('inert','inert@example.invalid','etl.trigger','etl_command','inert','{}',now()) RETURNING id"))
         identity=uuid4()
         c.execute(text("INSERT INTO etl_dispatch_commands(id,actor_id,idempotency_key,source,domain,dry_run,generation,status,version,created_at,updated_at,audit_id) VALUES (:id,'inert',:key,'oag','audits',false,:g,'queued',1,now(),now(),:audit)"),{'id':identity,'key':uuid4(),'g':uuid4(),'audit':audit})
-    failed=migrate('upgrade','head')
+    failed=migrate('upgrade','e602b11a0001')
     assert failed.returncode!=0 and 'Stop dedicated worker' in failed.stderr
     with engine.begin() as c:
         assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e583b9c9a001'
         c.execute(text('UPDATE etl_dispatch_worker SET ready=false'))
-    result=migrate('upgrade','head')
+    result=migrate('upgrade','e602b11a0001')
     assert result.returncode==0,result.stderr
     with engine.connect() as c:
         assert c.scalar(text('SELECT id FROM etl_dispatch_commands'))==identity
@@ -86,7 +88,7 @@ def test_upgrade_refuses_ready_worker_preserves_old_oag_history(migrated):
 
 def test_schema_enforces_all_source_domain_pairs_and_downgrade_retains_history(migrated):
     engine,migrate=migrated
-    result=migrate('upgrade','head')
+    result=migrate('upgrade','e602b11a0001')
     assert result.returncode==0,result.stderr
     with engine.begin() as c:
         for source in (*MAPPINGS,'opendata','cra'):

@@ -1,0 +1,32 @@
+PASS ../../evidence/review-spec/unit-detectors-v4/valid.test.tsx
+  /counties URL state — normalization and regression guards
+    ✓ opens on page 1 when the URL carries no query (249 ms)
+    ✓ opens a ?p=2 deep link on page 2 (145 ms)
+    ✓ opens a ?view=all deep link with every county listed (197 ms)
+    ✓ clamps an out-of-range ?p= to the last page and preserves other query parameters (69 ms)
+    ✓ clamps to the last remaining page when a new county list has only two pages (118 ms)
+    ✓ preserves a new valid page 1 when navigation and a smaller list arrive together (120 ms)
+    ✓ preserves a new valid page 2 when navigation and a smaller list arrive together (103 ms)
+    ✓ preserves a new View All navigation when a smaller list arrives in the same commit (123 ms)
+    ✓ keeps the requested page while search has zero matches, then restores it when cleared (225 ms)
+    ✓ does not normalize an irrelevant page in View All mode (283 ms)
+    ✓ writes ?p=N with native replaceState when a page is picked, and shows that page (135 ms)
+    ✓ writes ?view=all and strips ?p= when View All is toggled on (232 ms)
+    ✓ follows browser back/forward (popstate) (170 ms)
+    ✓ follows a Next.js navigation that changes the query without a popstate (200 ms)
+    ✓ normalizes to page 1 when search leaves only one page of results (196 ms)
+    ✓ paints a client-side mount (back from a county page) in its URL state on the first commit (138 ms)
+  /counties static prerender
+    ✓ contains the provenance note — the LCP element — not the loading fallback (111 ms)
+    ✓ contains the first page of the ranking table (201 ms)
+  /counties hydration with a query string
+    ✓ hydrates ?p=2 without a mismatch, then shows page 2 (300 ms)
+    ✓ hydrates ?view=all without a mismatch, then shows every county (345 ms)
+    ✓ CONTROL: hydrates the bare URL without a mismatch (243 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       21 passed, 21 total
+Snapshots:   0 total
+Time:        5.323 s
+Ran all test suites within paths "/evidence/review-spec/unit-detectors-v4/valid.test.tsx".
+Test results written to: ../../evidence/review-spec/unit-detectors-v4-execution/valid-report.json
