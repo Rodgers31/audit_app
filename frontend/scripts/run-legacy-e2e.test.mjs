@@ -51,8 +51,30 @@ export function spawnSync(command, args, options = {}) {
     }
     return okay('ready');
   }
-  if (args[0] === 'exec' && args.includes('psql')) return okay('CREATE');
+  if (args[0] === 'exec' && args.includes('psql')) {
+    if (!args.includes('-At')) return okay('CREATE');
+    const profileQuery = \`SELECT json_build_array(rolname,rolsuper,rolbypassrls,rolcanlogin,rolcreaterole,rolcreatedb,rolreplication,
+      EXISTS(SELECT FROM pg_auth_members WHERE member=r.oid)) FROM pg_roles r
+      WHERE rolname IN ('audit_log_reader','audit_log_writer','batch7_coordinator') ORDER BY rolname\`;
+    assertProfileQuery(args.at(-1), profileQuery);
+    const rows = [
+      ['audit_log_reader', false, false, false, false, false, false, false],
+      ['audit_log_writer', false, false, false, false, false, false, false],
+      ['batch7_coordinator', false, false, true, false, true, false, false],
+    ];
+    const changed = /^profile-(\\d)-(\\d)$/.exec(mode);
+    if (changed) rows[Number(changed[1])][Number(changed[2])] = !rows[Number(changed[1])][Number(changed[2])];
+    if (mode === 'profile-missing') rows.pop();
+    if (mode === 'profile-extra') rows.push(['unrelated', false, false, false, false, false, false, false]);
+    if (mode === 'profile-reordered') rows.reverse();
+    if (mode === 'profile-wrong-type') rows[0][1] = 'false';
+    if (mode === 'profile-malformed') return okay('CREATE');
+    return okay(rows.map(row => JSON.stringify(row)).join('\\n') + '\\n');
+  }
   throw new Error('Unexpected fake Docker command');
+}
+function assertProfileQuery(actual, expected) {
+  if (actual !== expected) throw new Error('Unexpected role profile query');
 }
 export function spawn(command, args, options) {
   log(command, args);
@@ -159,6 +181,23 @@ test('complete CLI succeeds only with fresh reports and removes its owned databa
     assertOwnedRemoval(commands);
   });
 });
+
+// Exercise the real CLI's strict readback before any cohort is spawned. Each
+// role flag (including inherited membership) must match its fixture contract.
+for (const mode of [
+  ...[0, 1, 2].flatMap(row => [1, 2, 3, 4, 5, 6, 7].map(column => `profile-${row}-${column}`)),
+  'profile-missing', 'profile-extra', 'profile-reordered', 'profile-wrong-type', 'profile-malformed',
+]) {
+  test(`complete CLI refuses ${mode} before running cohorts and removes its owned database`, () => {
+    scenario(mode, ({ result, summary, commands }) => {
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(summary, undefined);
+      assert.equal(commands.some(command => command.args.includes('--config') && !command.args.includes('--list')), false);
+      assertOwnedRemoval(commands);
+      assert.ok(result.stderr.includes(mode === 'profile-malformed' ? 'Unexpected token' : 'role profile mismatch'), result.stderr);
+    });
+  });
+}
 
 for (const mode of ['failed-case', 'absent-results', 'stale-results', 'interrupted']) {
   test(`complete CLI refuses ${mode} and clears stale success`, () => {

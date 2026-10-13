@@ -66,11 +66,30 @@ async function startDatabase() {
   for (const sql of [
     "CREATE ROLE fixture LOGIN PASSWORD 'fixture'",
     'CREATE DATABASE fixture OWNER fixture',
-    "CREATE ROLE batch7_coordinator LOGIN PASSWORD 'batch7-inert-coordinator-local'",
+    // Only this owned fixture login may create its empty per-case databases.
+    // Audit group creation stays with the container administrator; runtime
+    // and full migrations retain the restricted coordinator principal.
+    "CREATE ROLE batch7_coordinator LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE CREATEDB NOREPLICATION PASSWORD 'batch7-inert-coordinator-local'",
     'CREATE DATABASE batch7_coordinator OWNER batch7_coordinator',
+    'CREATE ROLE audit_log_reader NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION',
+    'CREATE ROLE audit_log_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION',
   ]) checked('docker', ['exec', container, 'psql', '-U', 'batch9_ci', '-d', 'postgres',
     '-v', 'ON_ERROR_STOP=1', '-c', sql]);
+  const roleProfile = checked('docker', ['exec', container, 'psql', '-U', 'batch9_ci', '-d', 'postgres',
+    '-v', 'ON_ERROR_STOP=1', '-At', '-c', `SELECT json_build_array(rolname,rolsuper,rolbypassrls,rolcanlogin,rolcreaterole,rolcreatedb,rolreplication,
+      EXISTS(SELECT FROM pg_auth_members WHERE member=r.oid)) FROM pg_roles r
+      WHERE rolname IN ('audit_log_reader','audit_log_writer','batch7_coordinator') ORDER BY rolname`])
+    .trim().split('\n').map(line => JSON.parse(line));
+  const expectedProfile = [
+    ['audit_log_reader', false, false, false, false, false, false, false],
+    ['audit_log_writer', false, false, false, false, false, false, false],
+    ['batch7_coordinator', false, false, true, false, true, false, false],
+  ];
+  if (JSON.stringify(roleProfile) !== JSON.stringify(expectedProfile)) {
+    throw new Error('Owned coordinator bootstrap role profile mismatch');
+  }
   writeReceipt('database.json', { container, image, port: 55494, owner,
+    role_profile: roleProfile,
     container_identity: JSON.parse(checked('docker', ['inspect', container]))[0].Id });
 }
 

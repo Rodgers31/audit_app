@@ -135,7 +135,10 @@ class ConfigurationTests(unittest.TestCase):
             cwd=ROOT / "frontend", text=True, capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("# pass 13", result.stdout)
+        self.assertRegex(result.stdout, r"(?m)^# tests 39$")
+        self.assertRegex(result.stdout, r"(?m)^# pass 39$")
+        self.assertRegex(result.stdout, r"(?m)^# fail 0$")
+        self.assertRegex(result.stdout, r"(?m)^# skipped 0$")
 
     def test_etl_cohort_waits_for_an_actual_fixture_route(self):
         result = subprocess.run(
