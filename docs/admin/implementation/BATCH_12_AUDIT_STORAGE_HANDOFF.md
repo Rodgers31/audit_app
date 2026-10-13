@@ -416,3 +416,30 @@ removes only its owned database. Node 22.19.0 executes all 35 controls successfu
 These are CLI transport controls, not native database or complete hosted browser
 acceptance. The original transport mismatch is retained as a failing receipt;
 the canonical full browser gate must still execute after the registry blocker.
+
+### Review follow-up: shared opt-in fixture lifetime (#649)
+
+The exact 136 baseline-skipped PostgreSQL cases reproduce 94 passes and 42
+setup errors in one native invocation: the Batch7 fixed-name case fixture
+removes its originally empty source, then a later Batch9 module tries to build
+another template from that missing database. Preserve the failed run and its
+JUnit outcomes. The temporary container and network were verified removed.
+
+The three consumers now use one empty template per exact profile per pytest
+session, with one session cleanup finalizer. Every request revalidates the
+profile and ambient redirects. Per-case databases, child target checks,
+ownership/readback/history guards, original tests and opt-in conditions remain.
+Six additional lifetime/registration controls cover sharing, session/target
+isolation, revalidation, failed construction and failed finalizer registration
+(including preserving a cleanup failure). Native acceptance requires all 136
+exact cases to execute on both supported runtimes with per-node JUnit outcomes;
+no default-suite skip or mocked control substitutes for this check.
+
+The repaired exact 136-case selection passes with zero skips/errors/failures on
+both current and minimum SQLAlchemy. Each runtime receives a fresh owned
+container and independently migrated restricted role; reusing the source across
+separate pytest invocations is refused. Exact JUnit node multisets and resource
+cleanup are checked. The handoff retains the earlier failed source-reuse attempt
+as diagnostic evidence. Full hosted acceptance and production activation remain
+separate gates. Workflow transport counts now use anchored complete TAP lines
+for tests39/pass39/fail0/skipped0, avoiding substring count ambiguity.

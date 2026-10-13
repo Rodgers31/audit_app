@@ -8,6 +8,85 @@ from tests.admin_audit_epoch import ephemeral_database as fixture
 SAFE = "postgresql+psycopg2://batch10_mappings:batch10-inert-local@127.0.0.1:55522/batch10_mappings"
 
 
+def session_control(finalizers):
+    return SimpleNamespace(session=SimpleNamespace(stash=pytest.Stash(), addfinalizer=finalizers.append))
+
+
+def test_static_template_is_shared_across_module_requests_and_closed_once(monkeypatch):
+    calls, finalizers, closed = [], [], []
+    def create(raw):
+        calls.append(raw)
+        return SimpleNamespace(close=lambda: closed.append(raw))
+    monkeypatch.setattr(fixture, 'EmptyTemplate', create)
+    first = session_control(finalizers)
+    second = SimpleNamespace(session=first.session)
+    assert fixture.session_template(first, SAFE) is fixture.session_template(second, SAFE)
+    assert calls == [SAFE] and len(finalizers) == 1
+    finalizers[0]()
+    assert closed == [SAFE]
+
+
+def test_template_cache_is_separate_for_sessions_and_targets(monkeypatch):
+    calls, finalizers = [], []
+    def create(raw):
+        calls.append(raw)
+        return SimpleNamespace(close=lambda: None)
+    monkeypatch.setattr(fixture, 'EmptyTemplate', create)
+    first, second = session_control(finalizers), session_control(finalizers)
+    other = 'postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker'
+    a = fixture.session_template(first, SAFE)
+    assert fixture.session_template(second, SAFE) is not a
+    assert fixture.session_template(first, other) is not a
+    assert calls == [SAFE, SAFE, other] and len(finalizers) == 3
+
+
+def test_cached_template_still_refuses_ambient_redirect(monkeypatch):
+    calls, finalizers = [], []
+    monkeypatch.setattr(fixture, 'EmptyTemplate', lambda raw: calls.append(raw) or SimpleNamespace(close=lambda: None))
+    request = session_control(finalizers)
+    fixture.session_template(request, SAFE)
+    monkeypatch.setenv('PGHOSTADDR', '127.0.0.1')
+    with pytest.raises(ValueError):
+        fixture.session_template(request, SAFE)
+    assert calls == [SAFE] and len(finalizers) == 1
+
+
+def test_failed_template_constructor_never_populates_cache(monkeypatch):
+    finalizers, calls = [], []
+    def create(raw):
+        calls.append(raw)
+        raise RuntimeError('controlled constructor failure')
+    monkeypatch.setattr(fixture, 'EmptyTemplate', create)
+    request = session_control(finalizers)
+    for _ in range(2):
+        with pytest.raises(RuntimeError, match='controlled constructor failure'):
+            fixture.session_template(request, SAFE)
+    assert calls == [SAFE, SAFE] and finalizers == []
+
+
+@pytest.mark.parametrize('cleanup_fails', [False, True])
+def test_failed_session_registration_attempts_cleanup_without_caching(monkeypatch, cleanup_fails):
+    closed = []
+    def close():
+        closed.append(True)
+        if cleanup_fails:
+            raise RuntimeError('controlled cleanup failure')
+    monkeypatch.setattr(fixture, 'EmptyTemplate', lambda raw: SimpleNamespace(close=close))
+    request = session_control([])
+    def fail_registration(callback):
+        raise ValueError('controlled registration failure')
+    request.session.addfinalizer = fail_registration
+    if cleanup_fails:
+        with pytest.raises(BaseExceptionGroup) as caught:
+            fixture.session_template(request, SAFE)
+        assert [type(error) for error in caught.value.exceptions] == [ValueError, RuntimeError]
+    else:
+        with pytest.raises(ValueError, match='controlled registration failure'):
+            fixture.session_template(request, SAFE)
+    assert closed == [True]
+    assert request.session.stash[fixture._SESSION_TEMPLATE_KEY] == {}
+
+
 def test_failed_probe_close_still_attempts_independent_owned_probe():
     closed = []
     class FailingProbe:

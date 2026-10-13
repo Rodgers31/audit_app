@@ -38,16 +38,12 @@ PG_URL = os.environ.get("BATCH9_NATIVE_READINESS_DATABASE_URL") or os.environ.ge
 
 
 @pytest.fixture(scope="module")
-def readiness_pg_engine():
+def readiness_pg_engine(request):
     if not PG_URL:
         pytest.skip("Owned PostgreSQL required")
     assert PG_URL in OWNED_URLS, "Never run destructive fixtures on an unowned target"
-    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
-    template = EmptyTemplate(PG_URL)
-    try:
-        yield template
-    finally:
-        template.close()
+    from tests.admin_audit_epoch.ephemeral_database import session_template
+    return session_template(request, PG_URL)
 
 
 @pytest.fixture(params=["sqlite", "postgresql"])

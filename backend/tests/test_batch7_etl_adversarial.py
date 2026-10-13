@@ -25,13 +25,9 @@ pytestmark = pytest.mark.skipif(os.environ.get("BATCH7_ETL_ADVERSARIAL_DATABASE_
 
 
 @pytest.fixture(scope="module")
-def isolated_engine():
-    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
-    template = EmptyTemplate(URL)
-    try:
-        yield template
-    finally:
-        template.close()
+def isolated_engine(request):
+    from tests.admin_audit_epoch.ephemeral_database import session_template
+    return session_template(request, URL)
 
 
 @pytest.fixture

@@ -20,19 +20,14 @@ from routers import etl_admin
 URL = os.environ.get("BATCH7_ETL_TEST_DATABASE_URL")
 pytestmark = pytest.mark.skipif(not URL, reason="Owned PostgreSQL required")
 AUTH = {"Authorization": "Bearer admin"}
-_TEMPLATE = pytest.StashKey()
 
 
 @pytest.fixture
 def pg(monkeypatch, request):
     assert URL == "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
     # Imported consumers keep the original static URL/child target guard.
-    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
-    if _TEMPLATE not in request.session.stash:
-        template = EmptyTemplate(URL)
-        request.session.addfinalizer(template.close)
-        request.session.stash[_TEMPLATE] = template
-    case = request.session.stash[_TEMPLATE].database(fixed_name=True)
+    from tests.admin_audit_epoch.ephemeral_database import session_template
+    case = session_template(request, URL).database(fixed_name=True)
     engine = case.__enter__()
     request.addfinalizer(lambda: case.__exit__(None, None, None))
     factory = sessionmaker(bind=engine)

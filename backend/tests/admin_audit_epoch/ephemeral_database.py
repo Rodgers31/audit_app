@@ -28,6 +28,34 @@ PROFILES = (
     (55494, "batch7_coordinator", "batch7-inert-coordinator-local", "batch7_coordinator"),
 )
 _LIVE = {}
+_SESSION_TEMPLATE_KEY = None
+
+
+def session_template(request, raw):
+    """One validated empty template per static target and pytest session.
+
+    Fixed-name cases remove the empty source database, so a later module must
+    reuse its session's verified template rather than reconnect to that source.
+    Case databases remain independent and the session owns the close finalizer.
+    """
+    global _SESSION_TEMPLATE_KEY
+    import pytest
+    key = profile(raw).render_as_string(hide_password=False)
+    if _SESSION_TEMPLATE_KEY is None:
+        _SESSION_TEMPLATE_KEY = pytest.StashKey()
+    templates = request.session.stash.setdefault(_SESSION_TEMPLATE_KEY, {})
+    if key not in templates:
+        template = EmptyTemplate(raw)
+        try:
+            request.session.addfinalizer(template.close)
+        except BaseException as primary:
+            try:
+                template.close()
+            except BaseException as cleanup:
+                raise BaseExceptionGroup("Template registration and cleanup failed", [primary, cleanup]) from None
+            raise
+        templates[key] = template
+    return templates[key]
 
 
 def close_owned_connections(connections):
