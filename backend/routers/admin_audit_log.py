@@ -3,18 +3,18 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import re
 
-from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from models import AdminAuditLog
+from models import AdminAuditLog, AdminAuditProvenance
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import desc, func, text as sql_text
 from sqlalchemy.orm import Session
 
 from supabase_auth import require_admin
 from utils.audit import safe_audit_payload
+from services import admin_audit_storage as durable
 
 PRIVATE = {"Cache-Control": "private, no-store", "Vary": "Authorization"}
 
@@ -108,7 +108,8 @@ async def list_audit_log(
     since: Optional[datetime] = Query(None, description="Inclusive date-range start"),
     until: Optional[datetime] = Query(None, description="Inclusive date-range end"),
     visibility_snapshot: Optional[str] = Query(None, max_length=4096),
-    db: Session = Depends(get_db),
+    actor=Depends(require_admin),
+    db: Session = Depends(durable.get_audit_db),
 ):
     now = datetime.now(timezone.utc)
     captured = utc(as_of) if as_of is not None else now
@@ -120,22 +121,27 @@ async def list_audit_log(
         raise HTTPException(422, "All audit snapshot fields are required together.")
     postgres = db.get_bind().dialect.name == 'postgresql'
     visibility = None
+    scope = key = None
     if postgres:
         if snapshot_id is not None and visibility_snapshot is None:
             raise HTTPException(422, "Refresh to obtain an audit visibility snapshot.")
         if now - captured > timedelta(minutes=15):
             raise HTTPException(422, "Audit snapshot expired. Refresh the log.")
-        if visibility_snapshot is not None:
-            # Validate client metadata before performing a storage read.
-            visibility = visibility_filter(visibility_snapshot)
-        try:
-            # xmin is only safe to interpret as xid8 while the current server
-            # remains in epoch zero, even when reusing an older bookmark.
-            current_visibility = visibility_filter(db.execute(sql_text('SELECT pg_current_snapshot()::text')).scalar_one())
-        except HTTPException:
-            raise HTTPException(503, "Audit visibility evidence is unavailable.") from None
-        if visibility is None:
-            visibility = current_visibility
+        legacy_bookmark = visibility_snapshot is not None and not visibility_snapshot.startswith('v3:')
+        if legacy_bookmark:
+            visibility_filter(visibility_snapshot)
+        supplied = durable.bookmark(visibility_snapshot) if visibility_snapshot is not None and not legacy_bookmark else None
+        scope, key = durable.capability(db)
+        if legacy_bookmark:
+            raise HTTPException(422, "Refresh to obtain an audit visibility snapshot.")
+        current_visibility = durable.snapshot8(db.scalar(sql_text('SELECT pg_current_snapshot()::text')))
+        if supplied:
+            import hmac
+            if supplied[0] != scope or not hmac.compare_digest(
+                supplied[2], durable.signature(scope, supplied[1], captured, snapshot_id, actor.id, key)
+            ) or int(supplied[1].split(':')[1]) > int(current_visibility.split(':')[1]):
+                raise HTTPException(422, "Audit snapshot changed. Refresh the log.")
+        visibility = supplied[1] if supplied else current_visibility
     elif visibility_snapshot is not None:
         raise HTTPException(422, "Unsupported audit visibility snapshot.")
     start = utc(since) if since is not None else None
@@ -144,14 +150,15 @@ async def list_audit_log(
         raise HTTPException(422, "Invalid audit date range.")
     q = db.query(AdminAuditLog)
     if visibility is not None:
-        q = q.filter(sql_text('pg_visible_in_snapshot(CAST(CAST(admin_audit_log.xmin AS text) AS xid8), CAST(:audit_visibility AS pg_snapshot))')).params(audit_visibility=visibility)
+        q = q.join(AdminAuditProvenance, AdminAuditProvenance.audit_id == AdminAuditLog.id).filter(sql_text('pg_visible_in_snapshot(admin_audit_provenance.root_xid, CAST(:audit_visibility AS pg_snapshot))')).params(audit_visibility=visibility)
+    # Keep the ceiling shared across filter transfers within this population.
+    ceiling = snapshot_id if snapshot_id is not None else (q.with_entities(func.max(AdminAuditLog.id)).scalar() or 0)
     for column, value in ((AdminAuditLog.actor_id, actor_id), (AdminAuditLog.action, action),
                           (AdminAuditLog.target_type, target_type), (AdminAuditLog.target_id, target_id)):
         if value:
             q = q.filter(column == value)
     # Timestamp plus high-water ID stabilizes both moving day windows and new
-    # backdated rows across offset pages. Rows are append-only by convention.
-    ceiling = snapshot_id if snapshot_id is not None else (db.query(func.max(AdminAuditLog.id)).scalar() or 0)
+    # backdated rows across offset pages. PostgreSQL rows and provenance are database-enforced append-only.
     q = q.filter(AdminAuditLog.id <= ceiling, AdminAuditLog.created_at <= captured.replace(tzinfo=None))
     if days > 0:
         q = q.filter(AdminAuditLog.created_at >= (captured - timedelta(days=days)).replace(tzinfo=None))
@@ -165,4 +172,4 @@ async def list_audit_log(
                             action=r.action, target_type=r.target_type, target_id=r.target_id,
                             payload=safe_audit_payload(r.action, r.payload), created_at=utc(r.created_at)) for r in rows]
     return AuditLogList(entries=entries, total=total, page=page, page_size=page_size,
-                        has_more=page * page_size < total, snapshot_id=ceiling, as_of=captured, visibility_snapshot=visibility)
+                        has_more=page * page_size < total, snapshot_id=ceiling, as_of=captured, visibility_snapshot=durable.issue_bookmark(scope, visibility, captured, ceiling, actor.id, key) if visibility is not None else None)

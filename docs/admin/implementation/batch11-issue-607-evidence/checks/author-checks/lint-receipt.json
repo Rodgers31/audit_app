@@ -1,0 +1,20 @@
+{
+  "name": "lint",
+  "command": [
+    "docker",
+    "exec",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "CI=true",
+    "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+    "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+    "npm",
+    "run",
+    "lint"
+  ],
+  "child_exit": 0,
+  "log_sha256": "2522ed89d95aac263c8d78e6e0cba6bca283ed013c902d1ce7721753460bc3bc"
+}

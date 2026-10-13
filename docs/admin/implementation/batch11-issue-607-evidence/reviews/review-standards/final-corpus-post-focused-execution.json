@@ -1,0 +1,21 @@
+{
+  "observed_child_exit": 0,
+  "command": [
+    "/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/corpus_recheck_v3.py",
+    "--checkout",
+    "/Users/roger/.codex/worktrees/batch11-county-navigation/audit_app",
+    "--output",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-standards/final-corpus-post-focused",
+    "--expected-head",
+    "6fcaed18327d4ebdb91b475c016d81ca624deda8",
+    "--expected-manifest-sha256",
+    "5c0f77c0411fc8349e3a06fa86df1b11d02de55032fd0fd82fcb3b1b5e1b359d"
+  ],
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "generator_sha256": "b24655d0d92a2952584a18b8a06f4b07a51618a938c404d1bb31b61aaaeadc83",
+  "log_sha256": "ea8f44e88fe10a1ab4a288cffec732a4673a16c3c3ca61fe3b94fba9b028cb79",
+  "receipt_sha256": "3eca774c6ebffc241278129426f89de551446e7a11e3b98cf3091e55c1b840f8"
+}

@@ -3,37 +3,17 @@ import os
 from datetime import datetime, timezone
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from database import get_db
 from models import AdminAuditLog
-from routers.admin_audit_log import router
-from supabase_auth import AdminUser, get_current_user
+from tests.admin_audit_epoch.test_durable_storage import durable  # noqa: F401
 
 
 @pytest.fixture()
-def pg_audit():
+def pg_audit(request):
     if os.getenv('ADMIN_OVERVIEW_AUDIT_POSTGRES') != '1':
         pytest.skip('explicit disposable PostgreSQL lane opt-in required')
-    engine = create_engine('postgresql+psycopg2://inert:inert@127.0.0.1:55473/admin_overview_audit')
-    AdminAuditLog.__table__.create(engine)
-    factory = sessionmaker(bind=engine)
-    app = FastAPI()
-    app.include_router(router)
-    app.dependency_overrides[get_current_user] = lambda: AdminUser(id='inert-admin', email=None, roles=['admin'])
-    def sessions():
-        with factory() as db:
-            yield db
-    app.dependency_overrides[get_db] = sessions
-    try:
-        with TestClient(app, raise_server_exceptions=False) as client:
-            yield client, factory
-    finally:
-        AdminAuditLog.__table__.drop(engine)
-        engine.dispose()
+    _,factory,client,*_=request.getfixturevalue('durable')
+    yield client,factory
 
 
 def row():

@@ -1,0 +1,11 @@
+
+> audit-app-frontend@1.0.0 verify:native
+> node scripts/verify-native-dependencies.mjs
+
+{"check":"environment","node":"v22.23.3","platform":"linux","arch":"x64","transformers":"4.3.1","onnxruntime":{"common":"1.30.0","node":"1.30.0"},"model":"Xenova/all-MiniLM-L6-v2","revision":"751bff37182d3f1213fa05d7196b954e230abad9","cacheDir":"/evidence/native-cache"}
+{"check":"installer-zip-extraction","admZip":"0.6.1","entry":"runtimes/linux-x64/native/verification.txt"}
+{"check":"native-image-decode","caller":"transformers","sharp":"0.35.5","vips":"8.18.7","svg":true,"png":true,"webp":true}
+{"check":"native-image-decode","caller":"next","sharp":"0.35.5","vips":"8.18.7","svg":true,"png":true,"webp":true}
+Loading the fixed public model for native CPU inference…
+{"check":"native-model-inference","dimensions":384,"article":142,"committedIndexCosine":0.9959702126804159,"compatibilityFloor":0.99,"query":"how many terms can a president serve?","top":[{"chapterNumber":9,"articleNumber":142,"score":0.6626678505766386},{"chapterNumber":9,"articleNumber":146,"score":0.5548421812370162},{"chapterNumber":9,"articleNumber":149,"score":0.5074266152753143},{"chapterNumber":9,"articleNumber":134,"score":0.48980273526456186},{"chapterNumber":9,"articleNumber":137,"score":0.4847573137731531}]}
+Native dependency verification passed (Node CPU and image decode).
