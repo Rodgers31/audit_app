@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/usr/local/bin/docker",
+    "exec",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright",
+    "BROWSER_TEST_PYTHON=/opt/b11/python/bin/python",
+    "BROWSER_TEST_COHORT=public",
+    "BROWSER_TARGET_SHA=6fcaed18327d4ebdb91b475c016d81ca624deda8",
+    "CI=true",
+    "node",
+    "/evidence/review-standards/config-readback.js"
+  ],
+  "child_exit": 0,
+  "producer_sha256_before": "5502490deec8852d4a5d4214e22a6c9c0fac150abd21a19a68d64de9029bc0bf",
+  "producer_sha256_after": "5502490deec8852d4a5d4214e22a6c9c0fac150abd21a19a68d64de9029bc0bf",
+  "log_sha256": "293ff036941ed37d37698f72f92c3ec5aef94e5eb1fce137daeb6eff3f4b28a1"
+}

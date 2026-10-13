@@ -1,0 +1,42 @@
+{
+  "head": "0000000000000000000000000000000000000000",
+  "tree": "1111111111111111111111111111111111111111",
+  "source_hashes": {
+    "source.ts": "7cefb9aa217c81555befc729d7fa5d70dbc83bfe20d91eaac7e8af9aee481432"
+  },
+  "source_changed": [],
+  "child_exit": 0,
+  "timed_out": false,
+  "command": [
+    "/fixture/docker",
+    "exec",
+    "fake-owned-container",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "PLAYWRIGHT_BROWSERS_PATH=/ms-playwright",
+    "BROWSER_TEST_PYTHON=/opt/b11/python/bin/python",
+    "BROWSER_TEST_COHORT=public",
+    "BROWSER_TARGET_SHA=0000000000000000000000000000000000000000",
+    "CI=true",
+    "PLAYWRIGHT_JSON_OUTPUT_FILE=/evidence/run-27-retried-report/report.json",
+    "node",
+    "node_modules/@playwright/test/cli.js",
+    "test",
+    "--config",
+    "playwright.ci-cohorts.config.ts",
+    "--project=chromium",
+    "--output",
+    "/evidence/run-27-retried-report/browser",
+    "--reporter=list,json",
+    "e2e/county-pagination-boundaries.spec.ts",
+    "e2e/county-pagination-contract.spec.ts"
+  ],
+  "started": 1791647548.324866,
+  "ended": 1791647548.325066,
+  "generator_sha256": "be16b7b91f6578457b2fec44295c8d6ed77286adba2d1d5bf09315d3755e3f95",
+  "log_sha256": "eb4a0d3c6f6d0a86227f6f683dc8fc6ff208a6dd8285d1d039f0ed743030c2e0",
+  "scope": "fresh local replay; no hosted or production acceptance",
+  "timeout_cleanup": "If timed out, remote children may remain in this exact owned container; stop it and inspect before reusing."
+}

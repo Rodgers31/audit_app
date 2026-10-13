@@ -1,0 +1,11 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/check_raw.py"
+  ],
+  "child_exit": 1,
+  "started": 1791645086.0131042,
+  "ended": 1791645086.130657,
+  "generator_sha256": "be0fd3a272ef572d0fbfe5b0bea86a652f908779546b35d249f11682e97783e6",
+  "raw_output_sha256": "42d93a81d482411e41986e40f7d5b7a1fc26643ec1583b68afe3324fb4dcc7fb"
+}

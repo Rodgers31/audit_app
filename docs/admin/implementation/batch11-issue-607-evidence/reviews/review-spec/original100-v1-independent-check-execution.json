@@ -1,0 +1,9 @@
+{
+  "command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/roger/.codex/visualizations/2026/10/10/01a12626-6d17-7a30-a5ea-1462a6883004/batch11-navigation/review-spec/check_original100.py"
+  ],
+  "child_exit": 0,
+  "producer_sha256": "6b4037dda331fbc25011620b723ed19137aa76c886dbe37e436239c1fca5205c",
+  "log_sha256": "1fd72bdfdc0c41456c642735709d96b0448cca83e482dfb7c8f7bb1c170d5739"
+}
