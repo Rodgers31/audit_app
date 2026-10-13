@@ -1,0 +1,14 @@
+{
+  "classification": "reviewer harness setup error; no packet or behavior verdict",
+  "cause": "Git --name-only without -z quotes some Unicode archive paths; the reviewer scope parser treated quote syntax as a path",
+  "launched_packet_checker": false,
+  "observed_child_exit": 1,
+  "preserved_generator": "corpus_recheck.py",
+  "replacement_generator": "corpus_recheck_v2.py",
+  "unexpected_parser_paths": [
+    "\"docs/admin/implementation/batch11-issue-607-evidence/archives/full-current-attempt3/public-output/accessibility-A11y-smoke-counties-\\342\\200\\224-has-exactly-one-h1-chromium/error-context.md.gz\"",
+    "\"docs/admin/implementation/batch11-issue-607-evidence/archives/full-current-attempt3/public-output/accessibility-A11y-smoke-counties-\\342\\200\\224-has-exactly-one-h1-chromium/test-failed-1.png.gz\"",
+    "\"docs/admin/implementation/batch11-issue-607-evidence/archives/full-current-attempt3/public-output/accessibility-A11y-smoke-counties-\\342\\200\\224-has-exactly-one-h1-chromium/trace.zip.gz\"",
+    "\"docs/admin/implementation/batch11-issue-607-evidence/archives/full-current-attempt3/public-output/accessibility-A11y-smoke-counties-\\342\\200\\224-has-exactly-one-h1-chromium/video.webm.gz\""
+  ]
+}

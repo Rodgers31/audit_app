@@ -54,6 +54,8 @@ app.include_router(etl_admin.router)
 app.include_router(admin.router)
 workers: list[subprocess.Popen] = []
 role = "admin"
+case_template = None
+active_case = None
 
 
 def required_coordinator_migrations():
@@ -144,6 +146,24 @@ def validate_mapping_schema(connection):
 def prepare_database():
     """Existing observation/audit schema plus the actual declared migrations."""
     paths = required_coordinator_migrations()
+    from tests.admin_audit_epoch.ephemeral_database import profile, head, owned_connection
+    durable_path = BACKEND / "alembic/versions/a611b12a0001_durable_admin_audit.py"
+    if not durable_path.is_file():
+        raise RuntimeError("Missing required coordinator fixture migration: " + durable_path.name)
+    target = profile(URL)
+    with engine.connect() as connection:
+        owned_connection(connection, target.database, target.username)
+        fresh = connection.scalar(text("SELECT NOT EXISTS(SELECT FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','S'))"))
+        if fresh is not True:
+            if connection.scalar(text("SELECT to_regclass('public.admin_audit_storage') IS NOT NULL AND to_regclass('public.alembic_version') IS NOT NULL")) is not True:
+                raise RuntimeError("Coordinator fixture requires a fresh or fully migrated database")
+            if connection.scalar(text("SELECT version_num FROM public.alembic_version")) != head():
+                raise RuntimeError("Coordinator fixture requires the actual full migration head")
+    if fresh is True:
+        environment = {"PATH": os.environ["PATH"], "DATABASE_URL": URL,
+            "PYTHONPATH": str(BACKEND), "PYTHON_DOTENV_DISABLED": "1", "PYTHONDONTWRITEBYTECODE": "1"}
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"],
+            cwd=BACKEND, env=environment, check=True, timeout=90)
     from alembic.migration import MigrationContext
     from alembic.operations import Operations
     migrations = []
@@ -268,13 +288,19 @@ def fixture_health():
 
 @app.post("/fixture/reset")
 def fixture_reset():
-    global role
+    global role, case_template, active_case
     stop_workers()
     os.environ["ADMIN_ETL_DISPATCH_ENABLED"] = "false"
     role = "admin"
-    with engine.begin() as connection:
-        connection.execute(text("TRUNCATE batch7_coordinator_markers,batch7_coordinator_effects,etl_dispatch_domains,etl_dispatch_commands,etl_dispatch_worker,admin_audit_log,ingestion_jobs RESTART IDENTITY CASCADE"))
-        connection.execute(text("UPDATE batch7_coordinator_control SET mode='normal'"))
+    from tests.admin_audit_epoch.ephemeral_database import EmptyTemplate
+    engine.dispose()
+    if case_template is None:
+        case_template = EmptyTemplate(URL)
+    if active_case is not None:
+        active_case.__exit__(None, None, None)
+        active_case = None
+    active_case = case_template.database(fixed_name=True)
+    active_case.__enter__()
     return {"fixture": True, "enabled": False}
 
 
@@ -350,3 +376,7 @@ if __name__ == "__main__":
         finally:
             stop_workers()
             engine.dispose()
+            if active_case is not None:
+                active_case.__exit__(None, None, None)
+            if case_template is not None:
+                case_template.close()

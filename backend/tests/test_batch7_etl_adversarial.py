@@ -1,7 +1,7 @@
-"""Independent executable boundary attacks; owned PostgreSQL schema only.
+"""Independent executable boundary attacks; owned full-head PostgreSQL only.
 
 Reviewed author SHA e98a4be3998f7da4e2326a068802a879e393fb97. No product
-lifespan, primary dotenv, public-schema writes, or native source transport.
+lifespan, primary dotenv, or native source transport.
 """
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -25,25 +25,16 @@ pytestmark = pytest.mark.skipif(os.environ.get("BATCH7_ETL_ADVERSARIAL_DATABASE_
 
 
 @pytest.fixture(scope="module")
-def isolated_engine():
-    engine = create_engine(URL, connect_args={"options": "-c search_path=" + SCHEMA})
-    with engine.begin() as db:
-        db.execute(text("CREATE SCHEMA batch7_adversarial"))
-    Base.metadata.create_all(engine, tables=[AdminAuditLog.__table__, IngestionJob.__table__, EtlDispatchCommand.__table__, EtlDispatchWorker.__table__, EtlDispatchDomain.__table__, SeedingDomainClaim.__table__])
-    try:
-        yield engine
-    finally:
-        with engine.begin() as db:
-            db.execute(text("DROP SCHEMA batch7_adversarial CASCADE"))
-        engine.dispose()
+def isolated_engine(request):
+    from tests.admin_audit_epoch.ephemeral_database import session_template
+    return session_template(request, URL)
 
 
 @pytest.fixture
 def pg(isolated_engine, monkeypatch):
-    with isolated_engine.begin() as db:
-        db.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
-    yield sessionmaker(bind=isolated_engine), isolated_engine
+    with isolated_engine.database() as engine:
+        yield sessionmaker(bind=engine), engine
 
 
 def accepted(factory, generation, dry_run=False, key=None):

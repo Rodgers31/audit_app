@@ -23,21 +23,25 @@ AUTH = {"Authorization": "Bearer admin"}
 
 
 @pytest.fixture
-def pg(monkeypatch):
+def pg(monkeypatch, request):
     assert URL == "postgresql+psycopg2://batch7_worker:batch7-inert-local@127.0.0.1:55485/batch7_etl_worker"
-    engine = create_engine(URL)
+    # Imported consumers keep the original static URL/child target guard.
+    from tests.admin_audit_epoch.ephemeral_database import session_template
+    case = session_template(request, URL).database(fixed_name=True)
+    engine = case.__enter__()
+    request.addfinalizer(lambda: case.__exit__(None, None, None))
     factory = sessionmaker(bind=engine)
-    with engine.begin() as connection:
-        connection.execute(text("TRUNCATE seeding_domain_claims, etl_dispatch_domains, etl_dispatch_commands, etl_dispatch_worker, admin_audit_log, ingestion_jobs RESTART IDENTITY CASCADE"))
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_ENABLED", "true")
     monkeypatch.setattr(database, "SessionLocal", factory)
     monkeypatch.setattr(supabase_auth, "_decode_supabase_jwt", lambda token: {"sub": token})
     monkeypatch.setattr(supabase_auth, "_fetch_roles", lambda uid: ("inert@example.invalid", ["admin"] if uid in ("admin", "admin2") else ["user"]))
     app = FastAPI()
     app.include_router(etl_admin.router)
-    with TestClient(app) as client:
-        yield client, factory, engine
-    engine.dispose()
+    try:
+        with TestClient(app) as client:
+            yield client, factory, engine
+    finally:
+        engine.dispose()
 
 
 def post(client, generation, key=None, dry_run=False, source="oag", actor="admin"):

@@ -1,0 +1,25 @@
+/Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_SESSIONS/CI_RESTORATION/runtime/lib/python3.13/site-packages/pytest_asyncio/plugin.py:208: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+============================= test session starts ==============================
+platform darwin -- Python 3.13.9, pytest-8.3.3, pluggy-1.6.0 -- /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_9_PR_REVIEW/CI_TEST_RUNTIME/bin/python
+cachedir: visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_11_REVIEW/SPEC_REVIEW/census-tests-current-01/cache
+rootdir: /Users/roger/.codex
+plugins: platformdirs-4.12.4, asyncio-0.24.0, cov-6.0.0, mock-3.14.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, default_loop_scope=None
+collecting ... collected 10 items
+
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_complete_search_collects_second_page PASSED [ 10%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_empty_issue_census_refuses_but_zero_match_search_is_explicit PASSED [ 20%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_exact_full_rest_page_requires_empty_terminal_page PASSED [ 30%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_incomplete_truncated_and_wrong_type_search_refuse PASSED [ 40%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_malformed_rest_pages_and_primitive_ids_refuse PASSED [ 50%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_output_symlink_ancestor_and_internal_outputs_refuse PASSED [ 60%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_rest_census_collects_second_page_and_excludes_pr_rows PASSED [ 70%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_rest_duplicate_pages_refuse PASSED [ 80%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_retained_collector_stops_after_first_search_page PASSED [ 90%]
+../../../../../../../worktrees/batch9-final-pr-review/audit_app/docs/admin/implementation/batch11-issue-607-evidence/tools/test_collect_issue_census.py::CensusControls::test_search_changed_total_and_duplicate_second_page_refuse PASSED [100%]
+
+- generated xml file: /Users/roger/.codex/visualizations/2026/10/03/01a1034a-4799-7f72-a9d1-28c8cfbea53f/BATCH_11_REVIEW/SPEC_REVIEW/census-tests-current-01/junit.xml -
+============================== 10 passed in 0.10s ==============================

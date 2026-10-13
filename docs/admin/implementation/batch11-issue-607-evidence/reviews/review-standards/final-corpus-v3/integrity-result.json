@@ -1,0 +1,17 @@
+{
+  "verification_scope": "integrity-only",
+  "historical_integrity": true,
+  "local_recorded_acceptance": false,
+  "current_full_counts": {
+    "expected": 316,
+    "unexpected": 2,
+    "skipped": 11,
+    "flaky": 0
+  },
+  "fresh_execution": false,
+  "hosted_acceptance": false,
+  "production_acceptance": false,
+  "source_files": 3610,
+  "runs": 24,
+  "verifier_sha256": "f15582d811f4374a459555e67f03abf0044b818eb02e6f5a92a85e2c3947dbc6"
+}

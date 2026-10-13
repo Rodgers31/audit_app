@@ -1,0 +1,20 @@
+{
+  "name": "typescript",
+  "command": [
+    "docker",
+    "exec",
+    "batch11-navigation-linux",
+    "env",
+    "-i",
+    "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME=/evidence/home",
+    "CI=true",
+    "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+    "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+    "node",
+    "node_modules/typescript/bin/tsc",
+    "--noEmit"
+  ],
+  "child_exit": 0,
+  "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

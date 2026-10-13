@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "issue": 629,
+  "scope": "historical-byte-layout-only",
+  "original_commit": "26a328ad5b69f0df2efbdefad7de1c0209744ffd",
+  "original_packet_path": "docs/admin/implementation/batch11-issue-607-evidence",
+  "manifests": {
+    "packet-v1.json": "5c0f77c0411fc8349e3a06fa86df1b11d02de55032fd0fd82fcb3b1b5e1b359d",
+    "packet-v2.json": "a1c571feda16b95f24e2230c74dadac2a523df35b34cac66680cbd3db65a6bec"
+  },
+  "moves": [
+    {
+      "original_path": "archive-generators/record_v2.py",
+      "artifact_path": "archive-generators/record_v2.py.txt",
+      "sha256": "d7e6fb4d511827690d103d6b78946a5e6eecd44c15d0e907519fd90b0c234dfd"
+    }
+  ]
+}

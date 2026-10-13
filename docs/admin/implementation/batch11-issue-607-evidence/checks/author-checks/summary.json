@@ -1,0 +1,88 @@
+{
+  "passed": false,
+  "checks": [
+    {
+      "name": "lint",
+      "command": [
+        "docker",
+        "exec",
+        "batch11-navigation-linux",
+        "env",
+        "-i",
+        "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+        "HOME=/evidence/home",
+        "CI=true",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+        "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+        "npm",
+        "run",
+        "lint"
+      ],
+      "child_exit": 0,
+      "log_sha256": "2522ed89d95aac263c8d78e6e0cba6bca283ed013c902d1ce7721753460bc3bc"
+    },
+    {
+      "name": "typescript",
+      "command": [
+        "docker",
+        "exec",
+        "batch11-navigation-linux",
+        "env",
+        "-i",
+        "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+        "HOME=/evidence/home",
+        "CI=true",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+        "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "child_exit": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "jest",
+      "command": [
+        "docker",
+        "exec",
+        "batch11-navigation-linux",
+        "env",
+        "-i",
+        "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+        "HOME=/evidence/home",
+        "CI=true",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+        "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+        "node",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile=/evidence/author-checks/jest-report.json"
+      ],
+      "child_exit": 1,
+      "log_sha256": "a87a112b41a11af73245c4818504cc1a6c723070eaaaab330483d3335ffe66df"
+    },
+    {
+      "name": "native",
+      "command": [
+        "docker",
+        "exec",
+        "batch11-navigation-linux",
+        "env",
+        "-i",
+        "PATH=/opt/b11/node-v22.23.3-linux-x64/bin:/opt/b11/python/bin:/usr/local/bin:/usr/bin:/bin",
+        "HOME=/evidence/home",
+        "CI=true",
+        "NEXT_PUBLIC_API_URL=http://127.0.0.1:8141",
+        "NATIVE_VERIFY_CACHE_DIR=/evidence/native-cache",
+        "npm",
+        "run",
+        "verify:native"
+      ],
+      "child_exit": 0,
+      "log_sha256": "ed195c93a1a092277c8c0c66ae8d7ca5241fcfd75a06293aa4cf1b895a29cc63"
+    }
+  ],
+  "scope": "local Linux AMD64; no hosted or production acceptance"
+}

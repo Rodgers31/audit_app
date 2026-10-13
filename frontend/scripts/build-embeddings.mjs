@@ -22,14 +22,18 @@
  *   embeddings-index.json  — { model, dim, count, articles: [{ch, art, title}] }
  */
 import { readFile, readdir, writeFile } from 'node:fs/promises';
+import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { pipeline } from '@huggingface/transformers';
+import { env, pipeline } from '@huggingface/transformers';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { prepareModel, configureLocalModel } = require('./embedding-model.cjs');
+const { model: MODEL_ID, revision } = require('./embedding-model.json');
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const DATA_DIR = resolve(ROOT, 'public/data/constitution');
-const MODEL_ID = 'Xenova/all-MiniLM-L6-v2';
 const DIM = 384;
 
 /**
@@ -84,48 +88,61 @@ async function main() {
   }
   console.log(`Encoding ${rows.length} articles with ${MODEL_ID}…`);
 
-  const extract = await pipeline('feature-extraction', MODEL_ID, {
+  const modelPath = await prepareModel(process.env.NATIVE_VERIFY_CACHE_DIR);
+  configureLocalModel(env);
+  console.log(JSON.stringify({ check: 'embedding-builder-input', model: MODEL_ID, revision, modelPath, device: 'cpu', allowRemoteModels: env.allowRemoteModels, useFSCache: env.useFSCache }));
+  const extract = await pipeline('feature-extraction', modelPath, {
+    device: 'cpu',
+    local_files_only: true,
     dtype: 'q8', // quantized — same weights the browser will use
   });
 
-  const flat = new Float32Array(rows.length * DIM);
-  const index = [];
-  let t0 = Date.now();
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const out = await extract(row.text, { pooling: 'mean', normalize: true });
-    // out.data is a Float32Array of length DIM
-    flat.set(out.data, i * DIM);
-    index.push({
-      ch: row.chapter.number,
-      art: row.article.number,
-      title: row.article.title,
-    });
-    if ((i + 1) % 20 === 0 || i === rows.length - 1) {
-      const dt = ((Date.now() - t0) / 1000).toFixed(1);
-      process.stdout.write(`  ${i + 1}/${rows.length}  (${dt}s)\r`);
+  try {
+    const flat = new Float32Array(rows.length * DIM);
+    const index = [];
+    let t0 = Date.now();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const out = await extract(row.text, { pooling: 'mean', normalize: true });
+      assert.ok(out.data instanceof Float32Array && out.data.length === DIM, 'embedding output: expected 384 Float32 values');
+      assert.deepEqual(out.dims, [1, DIM], 'embedding output: unexpected dimensions');
+      assert.ok(out.data.every(Number.isFinite), 'embedding output: non-finite value');
+      const norm = Math.sqrt(out.data.reduce((sum, value) => sum + value * value, 0));
+      assert.ok(Math.abs(norm - 1) < 0.0001, 'embedding output: vector is not normalized');
+      flat.set(out.data, i * DIM);
+      index.push({
+        ch: row.chapter.number,
+        art: row.article.number,
+        title: row.article.title,
+      });
+      if ((i + 1) % 20 === 0 || i === rows.length - 1) {
+        const dt = ((Date.now() - t0) / 1000).toFixed(1);
+        process.stdout.write(`  ${i + 1}/${rows.length}  (${dt}s)\r`);
+      }
     }
-  }
-  console.log('');
+    console.log('');
 
-  const binPath = resolve(DATA_DIR, 'embeddings.bin');
-  const idxPath = resolve(DATA_DIR, 'embeddings-index.json');
-  await writeFile(binPath, Buffer.from(flat.buffer));
-  await writeFile(
-    idxPath,
-    JSON.stringify(
-      {
-        model: MODEL_ID,
-        dim: DIM,
-        count: rows.length,
-        articles: index,
-      },
-      null,
-      2
-    ) + '\n'
-  );
-  console.log(`Wrote ${binPath}  (${(flat.byteLength / 1024).toFixed(1)} KB)`);
-  console.log(`Wrote ${idxPath}`);
+    const binPath = resolve(DATA_DIR, 'embeddings.bin');
+    const idxPath = resolve(DATA_DIR, 'embeddings-index.json');
+    await writeFile(binPath, Buffer.from(flat.buffer));
+    await writeFile(
+      idxPath,
+      JSON.stringify(
+        {
+          model: MODEL_ID,
+          dim: DIM,
+          count: rows.length,
+          articles: index,
+        },
+        null,
+        2
+      ) + '\n'
+    );
+    console.log(`Wrote ${binPath}  (${(flat.byteLength / 1024).toFixed(1)} KB)`);
+    console.log(`Wrote ${idxPath}`);
+  } finally {
+    await extract.dispose();
+  }
 }
 
 main().catch((err) => {
