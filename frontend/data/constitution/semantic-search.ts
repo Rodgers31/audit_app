@@ -45,6 +45,70 @@ interface LoadedIndex {
   embed: (text: string) => Promise<Float32Array>;
 }
 
+const EMBEDDING_DIM = 384;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function refuseEmbedding(reason: string): never {
+  // The UI can continue with BM25; keep invalid assets/output observable
+  // without logging the user's query or model payload.
+  console.warn(`Constitution semantic search unavailable: ${reason}`);
+  throw new Error(`Invalid constitution embedding: ${reason}`);
+}
+
+function validateVector(values: Float32Array, offset: number, label: string): void {
+  let squaredNorm = 0;
+  for (let k = 0; k < EMBEDDING_DIM; k++) {
+    const value = values[offset + k];
+    if (!Number.isFinite(value)) refuseEmbedding(`${label} contains a non-finite value`);
+    squaredNorm += value * value;
+  }
+  // Match the builder's normalization contract. This also refuses zero and
+  // oversized finite vectors that would invalidate cosine scoring.
+  if (Math.abs(Math.sqrt(squaredNorm) - 1) >= 0.0001) {
+    refuseEmbedding(`${label} is not normalized`);
+  }
+}
+
+function validateIndex(meta: unknown, bin: ArrayBuffer): { vectors: Float32Array; entries: IndexEntry[] } {
+  if (!isRecord(meta) || meta.model !== embeddingModel.model || meta.dim !== EMBEDDING_DIM) {
+    refuseEmbedding('incompatible index model or dimension');
+  }
+  // The accepted builder/shipped index omit revision. Preserve that legacy
+  // format; any explicitly declared revision must match the pinned encoder.
+  // An omitted revision does not authenticate the asset's generation history.
+  if ('revision' in meta && meta.revision !== embeddingModel.revision) {
+    refuseEmbedding('incompatible index revision');
+  }
+  if (typeof meta.count !== 'number' || !Number.isSafeInteger(meta.count) || meta.count <= 0 ||
+      !Array.isArray(meta.articles) || meta.articles.length !== meta.count) {
+    refuseEmbedding('invalid index count or entries');
+  }
+  if (bin.byteLength !== meta.count * EMBEDDING_DIM * Float32Array.BYTES_PER_ELEMENT) {
+    refuseEmbedding('embedding byte size mismatch');
+  }
+  const entries: IndexEntry[] = [];
+  const seen = new Set<number>();
+  for (const entry of meta.articles) {
+    if (!isRecord(entry) || typeof entry.ch !== 'number' || !Number.isSafeInteger(entry.ch) ||
+        typeof entry.art !== 'number' || !Number.isSafeInteger(entry.art) ||
+        typeof entry.title !== 'string' || !entry.title.trim()) {
+      refuseEmbedding('invalid article entry');
+    }
+    const chapter = CONSTITUTION_META.find(c => c.number === entry.ch);
+    if (!chapter?.articleTitles.some(a => a.number === entry.art) || seen.has(entry.art)) {
+      refuseEmbedding('unknown or duplicate article identity');
+    }
+    seen.add(entry.art);
+    entries.push({ ch: entry.ch, art: entry.art, title: entry.title });
+  }
+  const vectors = new Float32Array(bin);
+  for (let i = 0; i < entries.length; i++) validateVector(vectors, i * EMBEDDING_DIM, 'stored vector');
+  return { vectors, entries };
+}
+
 let INDEX_PROMISE: Promise<LoadedIndex> | null = null;
 
 /**
@@ -68,18 +132,9 @@ async function getIndex(): Promise<LoadedIndex> {
     }
     const [bin, meta] = await Promise.all([
       binRes.arrayBuffer(),
-      idxRes.json() as Promise<{
-        dim: number;
-        count: number;
-        articles: IndexEntry[];
-      }>,
+      idxRes.json() as Promise<unknown>,
     ]);
-    const vectors = new Float32Array(bin);
-    if (vectors.length !== meta.dim * meta.count) {
-      throw new Error(
-        `Embedding size mismatch: expected ${meta.dim * meta.count}, got ${vectors.length}`
-      );
-    }
+    const { vectors, entries } = validateIndex(meta, bin);
 
     // Dynamic import keeps transformers.js out of the initial bundle —
     // visitors who never open the search box pay ~0KB for this feature.
@@ -98,11 +153,15 @@ async function getIndex(): Promise<LoadedIndex> {
     const model = await AutoModel.from_pretrained(modelId, { dtype: 'q8', revision });
     const extract = new FeatureExtractionPipeline({ task: 'feature-extraction', tokenizer, model });
     const embed = async (text: string): Promise<Float32Array> => {
-      const out = await extract(text, { pooling: 'mean', normalize: true });
-      // out.data is a Float32Array of length `dim`
-      return out.data as Float32Array;
+      const out: unknown = await extract(text, { pooling: 'mean', normalize: true });
+      if (!isRecord(out) || !(out.data instanceof Float32Array) || out.data.length !== EMBEDDING_DIM ||
+          !Array.isArray(out.dims) || out.dims.length !== 2 || out.dims[0] !== 1 || out.dims[1] !== EMBEDDING_DIM) {
+        refuseEmbedding('invalid query vector shape');
+      }
+      validateVector(out.data, 0, 'query vector');
+      return out.data;
     };
-    return { dim: meta.dim, vectors, entries: meta.articles, embed };
+    return { dim: EMBEDDING_DIM, vectors, entries, embed };
   })();
   return INDEX_PROMISE;
 }
