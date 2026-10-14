@@ -45,6 +45,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ... import freshness
 from ...config import SeedingSettings
 from ...http_client import create_http_client
 from ...registries import register_domain
@@ -309,6 +310,10 @@ def run(
         raise AuditSourceScopeError(
             "listing observation requires a non-dry bounded audits run"
         )
+    if context.dry_run:
+        # Embedded previews must not inherit a previous invocation's source
+        # verdict. Discovery alone cannot certify refreshed financial data.
+        freshness.reset("audits")
     selected = (
         {e["source_url"]: e for e in source_entries}
         if source_entries is not None
@@ -923,7 +928,16 @@ def run(
         d for d in metadata["documents"]
         if d.get("extractions") and d.get("extraction_outcome") != "invalid"
     ]
-    if extracted_docs:
+    if context.dry_run:
+        # The preview deliberately stopped before fetch/extract/load above.
+        # Its discovery errors still reach the CLI, but absence of extraction
+        # is planned work rather than evidence that a fixture was served.
+        metadata["dry_run_plan"] = {
+            "mode": "discovery_only",
+            "extraction": "not_requested",
+            "publication": "not_requested",
+        }
+    elif extracted_docs:
         volumes_note = ""
         if volume_report is not None:
             volumes_note = (
