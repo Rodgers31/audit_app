@@ -1,0 +1,73 @@
+# Batch 13 Lane C — test environment isolation
+
+Assigned base `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`; branch `codex/batch13-test-environment-isolation`. Owned checkout `/Users/roger/.codex/worktrees/e725/audit_app`, chat `01a1372d-e734-72c2-b955-70779451f87a` (Batch 13: test environment isolation). Draft [PR #654](https://github.com/Rodgers31/audit_app/pull/654), implementation/test head `3b4ad7aa4ef8e51c391e37dcd3ee4d5599db7299`. The final documentation head is the commit containing this amended handoff and is recorded exactly in external `PUBLICATION_FINAL_V1.json` and the PR head readback; a document cannot embed its own Git commit hash. This second round changes only publication metadata in this handoff. No coordinated rebase was performed.
+
+## Changes and exact contracts
+
+Related tickets: #636, #634, #650; umbrella #545 remains open. Only five test files and this handoff change, including the coordinator-authorized cash continuation:
+
+- `frontend/__tests__/lib/api/retryBudget.test.ts`
+- `backend/tests/test_freshness_publication_evidence.py`
+- `backend/tests/test_county_budget_boundary_adversarial.py`
+- `backend/tests/test_county_publication_boundaries.py`
+- `backend/tests/test_county_cash_postgres.py`
+
+Production retry/authentication, freshness clocks, receipt defaults, database configuration, shared fixtures, workflows and dependency locks retain the assigned base bytes.
+
+`retryBudget.test.ts` mocks the Supabase client boundary to return a resolved unauthenticated session. Real Axios interceptors, QueryClient and controlled adapters execute all original 19 test bodies unchanged. Each case requires the client/session lookup to execute and zero fetch/XHR calls. Finally cleanup restores the original fetch property descriptor (including absence), XHR, Axios adapter, QueryClient, console and timer state. No environment variables are changed by the fixture.
+
+`test_freshness_publication_evidence.py` adds only `ids=["malformed-publication-date", "unofficial-scraped-publisher"]` to the two existing parameters. Full-module AST and literal source comparison after removing exactly that keyword/line equal the original. The clock-derived publication expressions, publisher strings and all assertions remain identical.
+
+The original three county PDF fixtures explicitly set `storage_path=tmp_path` alongside their existing `cache_path=tmp_path`. They still exercise real receipt capture and LocalReceiptStore readback, and now assert the digest-named retained bytes physically exist under their own pytest temporary directory. The page, provenance, absence, zero and monetary assertions remain intact. No receipt writes are disabled.
+
+## Executed proof
+
+The external lane packet is `/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/BATCH12_CONTINUATION_V1/NEXT_AUTHORS_V1/C_test_environment_isolation`. Producers, complete tracked-source hashes, raw stdout/stderr, actual commands/exits, full Jest/JUnit identities, import-clock collection values and physical cleanup are retained there. `run_lane_v5.py` is the final diagnostic runner; `EXECUTION_RECORDED` alone is not a passing test verdict. `verify_run_v4.py` checks actual outputs, exact scoped identities, source, types and cleanup; malformed/missing/stale outputs are refused.
+
+- Original retry fixture: variables absent, 19 passes; inert valid loopback configuration, 17 passes and the two reported failures. Final fixture: the same 19 cases pass in each configuration, zero pending. URL `http://127.0.0.1:18064`, inert anonymous key, no auth service started. Session-path attempted-fetch and attempted-XHR mutants each fail all 19 no-traffic assertions; refusal mocks prevent transport.
+- Original PDF cases: 3 passes on each runtime but actual four-byte `%PDF` receipt escapes into repository storage. New temporary-location assertions fail all 3 before the settings repair on both runtimes. After repair, both complete focused backend cohorts pass all 60 cases, zero skips/failures/errors, with repository receipt storage absent and owned temporary directories physically removed.
+- Original/final freshness cases actually execute on both runtimes under test-module import clocks for UTC dates 2026-10-13 and 2026-10-14. Both original values/publishers are identical per date; only the original IDs drift. Final two IDs are stable. Product clock code is untouched. Normal real-clock focused cohorts also execute.
+- Current runtime: Python 3.13.9 / SQLAlchemy 2.0.54; supported minimum: Python 3.12.14 / SQLAlchemy 2.0.23; macOS ARM64. Fresh checks satisfy every backend requirements constraint. Node 22.19.0; shared installed frontend lock hash `46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc`, 902 installed entries with zero version mismatch; actual complete tooling-repair check reports no operations. Runtimes are borrowed read-only.
+- Full frontend unit selection: 149 suites pass; 2,098 pass and one unchanged existing pending case (2,099 total). TypeScript `tsc --noEmit --incremental false` exits 0.
+- Actual reader controls: 32 valid/refusal cases per versioned replay across current/minimum, normal/optimized Python. The latest V3 replay explicitly reaches the stale-source refusal after recataloguing otherwise valid output hashes. Counts overlap with V1 and are not summed.
+- A supplemental real recatalogued Jest control found that the external V3 reader accepted boolean `false` as an integer zero counter. V4 requires exact integer counters; eight actual normal/optimized current/minimum red/green controls verify the repair. Original V3 bytes and earlier controls are retained; this is an author evidence-tool fix, not a product issue.
+- Independent Spec and Standards reviews pass the original four-test-file scope, including original assertion preservation, exact scoped identities, actual raw outcomes and cleanup. Separate continuation reviews cover the fifth test file, `backend/tests/test_county_cash_postgres.py`, as recorded below.
+
+The canonical complete backend collector was executed before/after on each runtime: 17,554 backend plus 336 legacy identities, 17,890 total. Raw inventories retain two intended freshness label changes and eight pre-existing UUID display changes per backend cohort; legacy has no delta. **Strict global label equivalence is not claimed**, and no UUID/date masking or new skip allowance is introduced. The exact historical 1,476 accepted skips remain retained by source/hash reference; this scoped author work does not recertify the historical hosted 17,896-case run. Collection is not execution.
+
+## Equivalent call sites and remaining qualification
+
+Readback checked concrete PDF callers. `test_cbirr_report_period.py`, `test_county_revenue_receipts.py`, `test_parse_cache.py`, and `test_prospective_pdf_evidence.py` already supply temporary receipt storage. The equivalent omission in `backend/tests/test_county_cash_postgres.py` was subsequently admitted by the coordinator continuation exception and repaired as documented below. The original fixture guard and all money/page/publisher/provenance/public-account assertions remain unchanged. No duplicate issue was filed. Other county writer-only settings do not enter the inspected PDF receipt capture path.
+
+Hosted combined acceptance, merges, issue disposition and any scope expansion belong to the coordinator. #545 intended-host/deployed acceptance remains pending. No hosted run, native Linux AMD64, actual browser, production auth/storage, deployment, migration, worker activation or financial source write is claimed here.
+
+## Failures, storage and safe continuation
+
+The original storage timeout and first resume cache-binding refusal remain failures. The corrected coordinator v2 kernel-clock policy admitted resumption under the unchanged 180-second bound, immutable baseline and shared 10 GiB budget. Fresh phase checks pass; latest exact readback is external. No rebaseline, cache-index edit or evidence deletion occurred.
+
+The original harness's Unicode filename inventory refusal and npm pretest ownership refusal are preserved separately. Direct Jest execution uses the validated read-only shared dependency tree; the unchanged npm pretest deliberately refuses a linked node_modules directory. The real tooling checker was run in read-only mode against the actual installed dependency owner instead. Direct broad pytest collection's legacy ETL import errors are preserved; the unchanged canonical launcher subsequently collects both disjoint ownership cohorts successfully.
+
+Only the exact owned four-byte repository receipt objects created during red runs were removed after preserving their bytes/digest. Test databases and reader corpora use owned OS TemporaryDirectory/finally cleanup. The original delivery created no service, socket listener, container, volume, network or native PostgreSQL cluster. The later cash continuation created and removed its exclusively owned native clusters, as documented below. Keep this worktree while its draft is reviewed; the coordinator manages its eventual archive.
+
+Proposed skill lesson: for retry-budget fixtures using fake timers, isolate the asynchronous auth boundary explicitly and prove zero transport with attempted-call controls. For fixture storage, check physical digest-object ownership/readback in addition to passing financial assertions. For date IDs, compare the whole module AST after removing the sole descriptive-ID keyword and retain real collected values on both sides of midnight. Global skills were not edited.
+
+
+## Coordinator-authorized cash PostgreSQL continuation
+
+The first PR #654 packet at `02da92764b308c09847d1c4de5ea1545bc09be58` remains immutable historical evidence. `NEXT_AUTHORS_V1/CONTINUATION_SCOPE_EXCEPTIONS_V1.json` explicitly adds only the cash fixture's storage path, narrow receipt controls and this handoff. This round reuses the same branch/PR/worktree, with native port **55566** and an exclusively owned `round8_s5_b13c_*` database under the unchanged guard. The updated final head/tree/PR are recorded in external `CASH_CONTINUATION_V1/CASH_PUBLICATION_FINAL_V1.json`; this handoff cannot embed its own commit hash.
+
+The fixture now supplies `storage_path=tmp_path` alongside `cache_path`, then checks real configured-store bytes against the original PDF and physically checks its temporary receipt object's size and SHA256. Complete module AST comparison removing exactly the added import, storage keyword and four readback statements equals prior source; all **17 original assertions** remain. No shared fixture, database guard, production setting/default, model, migration, source layout JSON or previous four test files changes.
+
+The protected original `/Users/roger/.codex/visualizations/2026/09/27/01a0e1cf-a369-7b83-9e83-8d7900666170/ROUND8_SESSION_5_EVIDENCE/cbirr-annual.pdf` is **53,561,211 bytes**, SHA256 `5f5e4f97bbe2752957f284950d0ba90fcff4d47b35fc0ac96a9106ffb59821b3`. It is borrowed read-only; no download/copy or fake PDF substitutes for native acceptance. The existing fixture retains its pinned table rows and reads county captions/periods from the genuine PDF; this is not a full 935-page table-extraction replay.
+
+Actual native PostgreSQL **17.6**, macOS ARM64, binary SHA256 `e20b8d5f288d31a27c6fedbccf03e1f9f4942a7bd2574338e038015c897095c7`. Cluster data directories use owned OS TemporaryDirectory/finally cleanup. The case role owns only its exclusive database and has no superuser, create-database or create-role capability; fresh actual role/system-identifier/data-directory/port readbacks are retained. Each test's generated schema is dropped and independently censused after the cohort. These are test databases, not production migration or role-policy acceptance.
+
+Original source passes all three Kisii/Kisumu/Kitui money, page, publisher, provenance and public-account cases on current and minimum, but leaves the complete pinned PDF receipt in repository storage after test temporary cleanup. Appended location assertions fail all three cases on each runtime before the settings repair. Original escaped objects are identified by full digest/length/source reference and only those owned objects are removed; the protected original source bytes remain intact.
+
+Repaired source executes all three cases successfully on **both current and minimum, normal and optimized Python** (four overlapping cohorts, zero skips/failures/errors). Genuine receipt writes and logical/physical readback remain enabled, temporary receipt objects disappear with each case directory, and no repository receipt survives. Final committed-source replay and exact identities/source/outputs/exits/cleanup are reconciled in the new publication packet. Earlier #636/#634 and three-fixture results stay bound to their original published source, with prior test bytes unchanged.
+
+`verify_cash_run_v2.py` binds the complete tracked source inventory, actual native system/role/PDF/producer identities, exact three JUnit identities, mandatory outcomes, and physical cleanup. **56** actual valid/refusal controls execute across normal/optimized current/minimum: missing/malformed JUnit, stale source, boolean exit, skipped case, wrong role/system/database/port, receipt spill, leftover schema, surviving temporary directory, and wrong identities. Eight actual original-fixture namespace/missing-PDF controls preserve errors/skips, then demonstrate that their real negative JUnit is refused by the reader; no additional skips are admitted as acceptance. Counts overlap and are not unique coverage totals.
+
+Standards review found an interruption gap in the original external native driver. V1 and its successful ordinary baseline/red cleanup remain preserved, without an interruption guarantee. Versioned V2 terminates/checks its exact owned child group on wait interruption and rebinds the native system identity before disposal. Two real OS parent/descendant interruption controls (current normal, minimum optimized) verify physical group/descendant/temp absence; these helper controls are not native financial acceptance. Independent Spec/Standards continuation reviews and final native cleanup are retained in the same new packet.
+
+The explicit cash-fixture scope follow-up is implemented and locally verified. Global hosted gate, issue disposition, merge and #545 intended-host/deployed acceptance remain coordinator-owned. The observed coordinator run `38487238965` failed and is not cited as new acceptance. No Actions activation, paid review, production operation, peer/dirty-primary mutation, or global skill edit occurred.

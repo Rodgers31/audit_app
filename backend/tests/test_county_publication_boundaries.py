@@ -1,6 +1,7 @@
 """Publisher zero, unavailable targets, and lettered grant items (#238/#299)."""
 
 import json
+import hashlib
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,6 +10,7 @@ from unittest.mock import patch
 import pytest
 from models import BudgetLine, Entity, EntityType
 from seeding.config import SeedingSettings
+from services.receipt_store import configured_receipt_store
 from seeding.domains.counties_budget import fetcher, parser, writer
 from seeding.pdf_parsers import (
     ExtractedTable,
@@ -52,11 +54,14 @@ def test_unavailable_pdf_target_preserves_receipts(tmp_path):
     raw = [{"county": "Nairobi", "category": "Revenue Receipts",
             "subcategory": "Total", "allocated": None, "absorbed": Decimal(100),
             "amounts_in": "kes", "fiscal_year": "2025/26", "quarter": None}]
-    settings = SeedingSettings(cache_path=tmp_path)
+    settings = SeedingSettings(cache_path=tmp_path, storage_path=tmp_path)
     with patch("seeding.cob_cbirr.download_cbirr", return_value=SimpleNamespace(path=pdf)), patch(
         "seeding.parse_cache.parse_with_cache", return_value=raw,
     ):
         result = fetcher._download_and_parse_county_pdf(None, "https://cob.go.ke/x", settings)
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert configured_receipt_store(settings).read(digest) == b"%PDF"
+    assert (tmp_path / "response-receipts" / digest[:2] / digest).read_bytes() == b"%PDF"
     assert result[0]["allocated_amount"] is None
     assert result[0]["actual_amount"] == 100
 
@@ -64,6 +69,7 @@ def test_unavailable_pdf_target_preserves_receipts(tmp_path):
 def test_pdf_money_cells_keep_valid_thousands_separators(tmp_path):
     pdf = tmp_path / "source.pdf"
     pdf.write_bytes(b"%PDF")
+    settings = SeedingSettings(cache_path=tmp_path, storage_path=tmp_path)
     raw = [{"county": "Nairobi", "category": "Revenue Receipts",
             "subcategory": "Total", "allocated": "1,234.50", "absorbed": "1,000",
             "amounts_in": "kes", "fiscal_year": "2025/26", "quarter": None}]
@@ -71,8 +77,11 @@ def test_pdf_money_cells_keep_valid_thousands_separators(tmp_path):
         "seeding.parse_cache.parse_with_cache", return_value=raw,
     ):
         result = fetcher._download_and_parse_county_pdf(
-            None, "https://cob.go.ke/x", SeedingSettings(cache_path=tmp_path),
+            None, "https://cob.go.ke/x", settings,
         )
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert configured_receipt_store(settings).read(digest) == b"%PDF"
+    assert (tmp_path / "response-receipts" / digest[:2] / digest).read_bytes() == b"%PDF"
     assert result[0]["allocated_amount"] == 1234.5
     assert result[0]["actual_amount"] == 1000
 

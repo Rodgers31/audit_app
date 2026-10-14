@@ -17,6 +17,7 @@ import pytest
 from fastapi.testclient import TestClient
 from models import Base, BudgetLine, Country, Entity, EntityType
 from seeding.config import SeedingSettings
+from services.receipt_store import configured_receipt_store
 from seeding.domains.counties_budget import fetcher, parser, writer
 from seeding.pdf_parsers import CoBQuarterlyReportParser, ExtractedTable
 from seeding.types import DomainRunContext
@@ -109,7 +110,8 @@ def test_recovered_cash_survives_real_persistence_and_public_account(
     raw_records = [r for r in raw_records if r["county"] == county]
     assert raw_records
     settings = SeedingSettings(
-        cache_path=tmp_path, live_pdf_fetch_enabled=False, enrich_with_worldbank=False
+        cache_path=tmp_path, storage_path=tmp_path,
+        live_pdf_fetch_enabled=False, enrich_with_worldbank=False
     )
     with patch(
         "seeding.cob_cbirr.download_cbirr",
@@ -121,6 +123,10 @@ def test_recovered_cash_survives_real_persistence_and_public_account(
         payload = fetcher._download_and_parse_county_pdf(
             None, source["source_url"], settings
         )
+    assert configured_receipt_store(settings).read(SHA) == pdf.read_bytes()
+    receipt_object = tmp_path / "response-receipts" / SHA[:2] / SHA
+    assert receipt_object.stat().st_size == pdf.stat().st_size
+    assert hashlib.sha256(receipt_object.read_bytes()).hexdigest() == SHA
     normalized = parser.parse_budget_payload(payload)
     assert len(normalized) == len(raw_records)
     session = cash_postgres
