@@ -13,7 +13,7 @@ from services import admin_audit_storage as storage
 SCOPE = '61100000-0000-4000-8000-000000000001'
 KEY = bytes.fromhex('ab' * 32)
 Constraint = namedtuple('Constraint', 'conname contype convalidated conkey confrelid confkey ready')
-Role = namedtuple('Role', 'rolsuper rolbypassrls')
+Role = namedtuple('Role', 'rolsuper rolbypassrls rolcreaterole rolcreatedb rolreplication')
 Table = namedtuple('Table', 'ordinary relrowsecurity owns mutates writes_column rls resolves')
 Trigger = namedtuple('Trigger', 'relname tgname tgenabled tgtype prosrc prosecdef proconfig owned unconditional noargs')
 Function = namedtuple('Function', 'prosrc prosecdef proconfig owned')
@@ -32,13 +32,16 @@ class Result:
 class CatalogTransport:
     """Literal valid catalog result plus one hostile transport mutation."""
     def __init__(self):
-        self.role = Role(False, False)
+        self.role = Role(False, False, False, False, False)
+        self.groups = [(name, False, False, False, False, False, False, False)
+                       for name in ('audit_log_reader', 'audit_log_writer')]
         self.constraints = [
             Constraint('admin_audit_provenance_audit_id_fkey','f',True,'{1}','admin_audit_log','{1}',True),
             Constraint('admin_audit_provenance_pkey','p',True,'{1}','-',None,True)]
         self.policy_permissive = True
         self.state = State(True,1,SCOPE,'111',1,1,True)
         self.prepared = self.unknown = self.public_authority = self.sequence_authority = False
+        self.group_authority = False
         self.isolation='repeatable read'
         self.triggers = [
             Trigger('admin_audit_log','audit_log_capture','A',5,storage.CAPTURE_BODY,True,['search_path=pg_catalog'],True,True,True),
@@ -47,6 +50,7 @@ class CatalogTransport:
 
     def scalar(self, statement, params=None):
         sql = str(statement)
+        if 'unsafe_audit_group_authority' in sql: return self.group_authority
         if 'transaction_isolation' in sql:return self.isolation
         if 'pg_prepared_xacts' in sql: return self.prepared
         if 'LEFT JOIN public.admin_audit_provenance' in sql: return self.unknown
@@ -58,6 +62,7 @@ class CatalogTransport:
     def execute(self, statement, params=None):
         sql = str(statement)
         if sql.startswith(('SET LOCAL','LOCK TABLE')): return Result([])
+        if 'AS inherits' in sql: return Result(self.groups)
         if 'rolsuper,rolbypassrls' in sql: return Result([self.role])
         if 'AS ordinary' in sql: return Result([Table(True,True,False,False,False,True,True)])
         if 'FROM pg_attribute' in sql:
@@ -94,11 +99,41 @@ def test_literal_catalog_transport_control(authority):
     assert storage.capability(CatalogTransport()) == (SCOPE, KEY)
 
 
+@pytest.mark.parametrize('value', [None, 0, 1, 'false', True])
+@pytest.mark.parametrize('column', range(1, 8))
+def test_group_role_contract_requires_native_false_flags(authority, column, value):
+    db = CatalogTransport()
+    row = list(db.groups[0]); row[column] = value; db.groups[0] = tuple(row)
+    with pytest.raises(HTTPException) as failure:
+        storage.capability(db)
+    assert failure.value.status_code == 503
+
+
+@pytest.mark.parametrize('groups', [[], [('audit_log_reader',)],
+    [(), ('audit_log_writer',) + (False,) * 7],
+    [('audit_log_reader',) + (False,) * 7] * 2,
+    [('audit_log_reader',) + (False,) * 8],
+    [('unknown',) + (False,) * 7, ('audit_log_writer',) + (False,) * 7]])
+def test_missing_malformed_duplicate_or_unknown_group_refuses(authority, groups):
+    db = CatalogTransport(); db.groups = groups
+    with pytest.raises(HTTPException) as failure:
+        storage.capability(db)
+    assert failure.value.status_code == 503
+
+
 def test_later_sequence_authority_drift_refuses(authority):
     catalog=CatalogTransport();catalog.sequence_authority=True
     with pytest.raises(HTTPException) as failure:
         storage.capability(catalog)
     assert failure.value.status_code==503
+
+
+@pytest.mark.parametrize('value', [None, True, 0, 1, 'false'])
+def test_effective_group_authority_requires_native_false(authority, value):
+    catalog = CatalogTransport(); catalog.group_authority = value
+    with pytest.raises(HTTPException) as failure:
+        storage.capability(catalog)
+    assert failure.value.status_code == 503
 
 
 @pytest.mark.parametrize('surface', ['validated','ready','policy','role','version','prepared','unknown','public'])

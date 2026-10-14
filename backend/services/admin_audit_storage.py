@@ -140,8 +140,41 @@ def capability(db):
         unavailable()
     tables = ("admin_audit_log", "admin_audit_provenance", "admin_audit_storage")
     db.execute(text("LOCK TABLE public.admin_audit_log, public.admin_audit_provenance, public.admin_audit_storage IN ACCESS SHARE MODE"))
-    role = db.execute(text("SELECT rolsuper,rolbypassrls FROM pg_roles WHERE rolname=current_user")).one()
-    if role.rolsuper is not False or role.rolbypassrls is not False:
+    role = db.execute(text("SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=current_user")).one()
+    if len(role) != 5 or any(value is not False for value in role):
+        unavailable()
+    # Group flags are not inherited as ordinary object privileges. Validate
+    # the same private group contract as migration, including later drift.
+    groups = db.execute(text("""SELECT r.rolname,r.rolsuper,r.rolbypassrls,r.rolcanlogin,
+      r.rolcreaterole,r.rolcreatedb,r.rolreplication,
+      EXISTS(SELECT FROM pg_auth_members m WHERE m.member=r.oid) AS inherits
+      FROM pg_roles r WHERE r.rolname IN ('audit_log_reader','audit_log_writer')
+      ORDER BY r.rolname""")).all()
+    if (len(groups) != 2
+            or any(len(row) != 8 or any(value is not False for value in row[1:]) for row in groups)
+            or [row[0] for row in groups] != ['audit_log_reader', 'audit_log_writer']):
+        unavailable()
+    if db.scalar(text("""SELECT
+      has_schema_privilege('audit_log_reader','public','CREATE')
+      OR has_schema_privilege('audit_log_writer','public','CREATE')
+      OR has_sequence_privilege('audit_log_writer','public.admin_audit_log_id_seq','SELECT,UPDATE')
+      OR NOT has_sequence_privilege('audit_log_writer','public.admin_audit_log_id_seq','USAGE')
+      OR NOT has_table_privilege('audit_log_writer','public.admin_audit_log','SELECT')
+      OR has_table_privilege('audit_log_writer','public.admin_audit_log','UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+      OR has_any_column_privilege('audit_log_writer','public.admin_audit_log','UPDATE,REFERENCES')
+      OR has_column_privilege('audit_log_writer','public.admin_audit_log','id','INSERT')
+      OR EXISTS(SELECT FROM unnest(ARRAY['actor_id','actor_email','action','target_type','target_id','payload','created_at']) n
+        WHERE NOT has_column_privilege('audit_log_writer','public.admin_audit_log',n,'INSERT'))
+      OR EXISTS(SELECT FROM pg_class c WHERE c.oid IN
+        ('public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)
+        AND (has_table_privilege('audit_log_writer',c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+          OR has_any_column_privilege('audit_log_writer',c.oid,'SELECT,INSERT,UPDATE,REFERENCES')))
+      OR EXISTS(SELECT FROM pg_class c WHERE c.oid IN
+        ('public.admin_audit_log'::regclass,'public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)
+        AND (NOT has_table_privilege('audit_log_reader',c.oid,'SELECT')
+          OR has_table_privilege('audit_log_reader',c.oid,'REFERENCES')
+          OR has_any_column_privilege('audit_log_reader',c.oid,'REFERENCES')))
+      AS unsafe_audit_group_authority""")) is not False:
         unavailable()
     if db.scalar(text("SELECT has_schema_privilege('public','CREATE')")) is not False:
         unavailable()
@@ -159,8 +192,8 @@ def capability(db):
     for table in tables:
         checks = db.execute(text("""SELECT c.relkind='r' AND c.relpersistence='p' AS ordinary,
           c.relrowsecurity, c.relowner=(SELECT oid FROM pg_roles WHERE rolname=current_user) AS owns,
-          has_table_privilege(c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER') AS mutates,
-          has_any_column_privilege(c.oid,'INSERT,UPDATE') AS writes_column,
+          has_table_privilege(c.oid,'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES') AS mutates,
+          has_any_column_privilege(c.oid,'INSERT,UPDATE,REFERENCES') AS writes_column,
           row_security_active(c.oid) AS rls,
           to_regclass(:name)=c.oid AS resolves
           FROM pg_class c WHERE c.oid=CAST(:qualified AS regclass)"""),
