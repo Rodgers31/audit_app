@@ -17,6 +17,7 @@ from models import (
     Country,
     DebtCategory,
     DocumentType,
+    DocumentStatus,
     EconomicIndicator,
     Entity,
     EntityType,
@@ -586,9 +587,9 @@ def _ensure_source_document(
         .first()
     )
     if document:
-        # Refresh metadata if it changed
+        # Registration adds provenance, not a new acquisition. Preserve the
+        # existing transport evidence and its date, including migrated history.
         document.meta = {**(document.meta or {}), **metadata}
-        document.fetch_date = fetch_date
         session.add(document)
         session.flush()
         return document
@@ -602,6 +603,9 @@ def _ensure_source_document(
         fetch_date=fetch_date,
         md5=metadata.get("md5"),
         doc_type=doc_type,
+        # No publisher bytes were fetched here. Migration 3c uses FAILED for
+        # these unfetched registrations; only acquisition can earn AVAILABLE.
+        status=DocumentStatus.FAILED,
         meta=metadata,
     )
     session.add(document)
