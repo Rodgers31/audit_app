@@ -434,6 +434,14 @@ FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relkind='S' 
 '''
 
 
+def inventory_json_lines(raw):
+    """Read psql's LF framing; Unicode inside JSON strings is not framing."""
+    lines = raw.decode('utf8').split('\n')
+    if lines[-1] == '':
+        lines.pop()  # A final LF terminates a record; interior blanks still fail.
+    return [json.loads(line) for line in lines]
+
+
 def inventory_local(container, snapshot=None):
     isolated_container(container)
     if snapshot is not None and (not isinstance(snapshot, str) or not re.fullmatch(r'[0-9A-Fa-f]+-[0-9A-Fa-f]+-[0-9]+', snapshot)):
@@ -444,7 +452,7 @@ def inventory_local(container, snapshot=None):
     sql = start + "SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO, YMD'; SET LOCAL extra_float_digits=3;\n" + INVENTORY_SQL + '\nROLLBACK;\n'
     raw = run(['docker', 'exec', '-i', owned(container), 'psql', '-XqAt', '-v', 'ON_ERROR_STOP=1',
                '-U', 'postgres', '-d', 'postgres'], input=sql.encode(), timeout=300)
-    records = [json.loads(line) for line in raw.decode().splitlines()]
+    records = inventory_json_lines(raw)
     if not records or records[0].get('kind') != 'catalog' or not any(r.get('kind') == 'table' for r in records):
         raise Refusal('inventory_empty_or_malformed')
     return records
