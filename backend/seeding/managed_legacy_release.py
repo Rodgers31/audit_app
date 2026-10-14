@@ -343,7 +343,11 @@ def validate(policy, now=None):
                 all(
                     c.get("generated") == ""
                     and c.get("identity") == ""
-                    and (c["name"] in ("id", "created_at") or c.get("default") is None)
+                    and (
+                        c["name"] in ("id", "created_at")
+                        or c.get("default") is None
+                        or (c["name"] == "payload" and c["default"] == "'{}'::jsonb")
+                    )
                     for c in columns
                 ),
                 "audit_defaults",
