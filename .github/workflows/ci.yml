@@ -350,9 +350,17 @@ jobs:
           npx playwright install --with-deps chromium
         env:
           ONNXRUNTIME_NODE_INSTALL: skip
+      - name: Authenticate pinned original-browser PostgreSQL pull
+        run: python .github/scripts/prepare_browser_registry_auth.py prepare --state "$RUNNER_TEMP/browser-registry-state.json"
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Run original cases against built Next.js and synthetic API
         working-directory: frontend
         run: npm run test:e2e:legacy
+      - name: Remove owned original-browser registry credentials
+        if: always()
+        run: python .github/scripts/prepare_browser_registry_auth.py cleanup --state "$RUNNER_TEMP/browser-registry-state.json"
       - name: Preserve original suite receipts
         if: always()
         uses: actions/upload-artifact@v4
@@ -361,6 +369,15 @@ jobs:
           path: |
             frontend/legacy-report/
             frontend/legacy-results/
+          retention-days: 14
+
+      - name: Preserve original-browser registry authentication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-registry-authentication
+          path: ${{ runner.temp }}/browser-registry-state.json
+          if-no-files-found: error
           retention-days: 14
 
   # Quality Gate - All tests must pass before deployment

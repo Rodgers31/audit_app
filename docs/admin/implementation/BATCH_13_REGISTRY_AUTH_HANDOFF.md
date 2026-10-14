@@ -1,0 +1,27 @@
+# Original-browser PostgreSQL registry authentication
+
+The full PR #651 verification attempt 38487238965 failed before original-browser execution when public ECR refused the immutable PostgreSQL fixture with `toomanyrequests: Data limit exceeded`. The backend job also reached its existing 45-minute limit after 15,934 logged outcomes; this is incomplete execution. The same source's 72 new release-preparation cases passed before cancellation. Repository Actions and all five static workflows were restored OFF. Those failures remain preserved and do not establish full acceptance.
+
+## Source change
+
+The original-browser launcher now uses `docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675`. The official OCI index, Linux/amd64 child `d13db94ae661d517c5ed57c509a578d5ea64aae639871ba25294f4f42d83de28`, configuration and all fourteen layers were independently verified byte-for-byte. The index digest, explicit Linux/amd64 platform, cohort selection, readiness checks, fixture roles, assertions, retries and existing deadlines are preserved. The remaining PostgreSQL/Redis services and backend backup/reconciliation image consumers retain their existing ECR references.
+
+Both CI and bounded manual verification authenticate before the original-browser launcher. Preparation requires repository Actions secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`, with a read-only Docker Hub personal access token. It supplies the token on Docker stdin and isolates credentials in a private, uniquely owned configuration directory. A canonical nonempty credential placeholder prevents Docker's documented native credential-helper autodetection. Preparation verifies the actual private credential configuration in memory before exporting its path through the runner-managed environment file. It never records token bytes, Docker diagnostics or secret-derived hashes.
+
+Cleanup runs unconditionally under `always()`. It verifies source, principal, filesystem identity and ownership before removing the owned credential configuration. Nonzero logout or cleanup refusal fails the job. A missing state file cannot bypass cleanup; nonregular files, links and changed ownership refuse. A separate `browser-registry-authentication` artifact retains nonsensitive setup/cleanup state without changing the original browser report artifact's paths. There is no alternate registry fallback.
+
+## Verification and limits
+
+The unchanged launcher with the new quota regression reproduces the ECR refusal. The candidate preserves all prior lifecycle controls and passes all forty combined Node controls. Twenty-nine focused workflow, checkout and registry-helper tests pass on each current/minimum runtime under normal and optimized Python; these overlap the Node and independent review controls and are not additive coverage.
+
+Independent Spec and Standards review exercise real owned temporary files and intercepted Docker commands, including login failure with empty stderr, hostile output types, secret diagnostics, rejected credential helpers, file/path replacement, links, FIFO refusal, absent state, cleanup failures and physical removal. Prior unsafe preparations and rejected alternatives remain versioned in the external coordinator packet. These controls do not certify actual hosted authentication, native image acquisition or browser execution.
+
+At publication, the coordinator records the final source/evidence binding in the external `REGISTRY_AUTH_PUBLICATION_V1` packet and independently reads the PR's actual published head. Source inputs and exact commands/outcomes are retained under `PR651_ACCEPTANCE_V1/REGISTRY_TRANSPORT_RECOVERY_V1`; final prepared integration is `AUTHENTICATED_HUB_PREPARATION_V6`. The original immutable storage baseline and shared 10 GiB growth limit remain in force. Only the existing owned coordinator worktree is used; the deliberately dirty primary checkout and peer resources are untouched.
+
+## Required continuation
+
+Verify the two secret names exist without reading or printing their values. Refreeze the exact reviewed combined source and create fresh source-bound readers for the changed launcher URI/hash and authentication artifact. Use one bounded full seven-job attempt, preserving the complete backend inventory, accepted skip set, all original browser cohorts and existing budgets. Restore repository Actions OFF and all five static workflows disabled in every exit path, then independently verify final state. A terminal success label alone does not satisfy case, source, artifact, runtime or cleanup acceptance.
+
+PR #651 remains separately reviewable. Refs #648 and #598; parent #545 retains deployed and release requirements. This source repair does not authorize production deployment, migration, reconciliation, retained-claim release, worker/provider activation or financial source writes. Chrome login is separate from hosted Docker authentication.
+
+Primary protocol references: [Docker personal access tokens](https://docs.docker.com/security/access-tokens/), [Docker CLI login and credential stores](https://docs.docker.com/reference/cli/docker/login/), and [GitHub runner environment files](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#environment-files). Archived exact official CLI/runner source identities qualify the placeholder and environment-file contracts in the review packet.
