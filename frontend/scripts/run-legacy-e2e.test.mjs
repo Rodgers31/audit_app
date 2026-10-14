@@ -34,6 +34,10 @@ export function spawnSync(command, args, options = {}) {
     ? [options.env.BROWSER_TEST_COHORT] : names)));
   if (command !== 'docker') throw new Error('Unexpected fake command');
   if (args[0] === 'run') {
+    if (mode === 'preloaded-missing') {
+      present = false;
+      return { status: 1, stdout: '', stderr: 'pinned image absent; pull=never' };
+    }
     if (mode === 'ecr-quota' && args.at(-1).startsWith('public.ecr.aws/')) {
       present = false;
       return { status: 1, stdout: '', stderr: 'toomanyrequests: Data limit exceeded' };
@@ -147,7 +151,7 @@ function scenario(mode, inspect) {
       .map(key => [key, process.env[key]]));
     const result = spawnSync(process.execPath, ['--no-warnings', '--loader', resolve(root, 'loader.mjs'),
       resolve(root, 'scripts/run-legacy-e2e.mjs'), ...(mode === 'invalid-argument' ? ['--grep', 'omit'] : [])], {
-      cwd: root, env: { ...env, CI_LIFECYCLE_TEST_MODE: mode }, encoding: 'utf8', timeout: 15000,
+      cwd: root, env: { ...env, CI_LIFECYCLE_TEST_MODE: mode, ...(['ecr-quota','preloaded-missing','inherited-credential'].includes(mode) ? { BROWSER_POSTGRES_TRANSPORT: 'preloaded-dockerhub' } : {}), ...(mode === 'invalid-transport' ? { BROWSER_POSTGRES_TRANSPORT: 'unreviewed' } : {}), ...(mode === 'inherited-credential' ? { DOCKERHUB_TOKEN: 'INERT_NO_TEST_ACCESS' } : {}) }, encoding: 'utf8', timeout: 15000,
     });
     assert.equal(result.error, undefined, result.error?.message);
     const commands = readFileSync(resolve(root, 'commands.jsonl'), 'utf8').trim().split('\n')
@@ -180,7 +184,7 @@ test('complete CLI succeeds only with fresh reports and removes its owned databa
     assert.deepEqual(summary.cohort_exit_codes, Object.fromEntries(names.map(name => [name, 0])));
     assert.equal(summary.owned_database_removed, true);
     const started = commands.find(command => command.command === 'docker' && command.args[0] === 'run');
-    assert.equal(started.args.at(-1), 'docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
+    assert.equal(started.args.at(-1), 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
     assert.equal(started.args[started.args.indexOf('--platform') + 1], 'linux/amd64');
     assertOwnedRemoval(commands);
   });
@@ -245,6 +249,20 @@ test('complete CLI uses the identical pinned image after the former ECR transpor
     assert.equal(runs.length, 1);
     assert.equal(runs[0].args.at(-1), 'docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
     assert.equal(runs[0].args[runs[0].args.indexOf('--platform') + 1], 'linux/amd64');
+    assert.ok(runs[0].args.includes('--pull=never'));
     assertOwnedRemoval(commands);
   });
 });
+
+for (const [mode,message] of [['preloaded-missing','pull=never'], ['invalid-transport','Unknown browser image transport'], ['inherited-credential','cannot inherit registry credentials']]) {
+  test(`complete CLI refuses ${mode} without an anonymous fallback or stale success`, () => {
+    scenario(mode, ({result,summary,commands}) => {
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(summary, undefined);
+      assert.ok(result.stderr.includes(message));
+      assert.equal(commands.some(command => command.args.includes('--config') && !command.args.includes('--list')), false);
+      assert.equal(commands.some(command => command.command === 'docker' && command.args[0] === 'pull'), false);
+      assert.ok(!result.stderr.includes('INERT_NO_TEST_ACCESS'));
+    });
+  });
+}

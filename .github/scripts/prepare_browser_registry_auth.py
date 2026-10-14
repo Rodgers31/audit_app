@@ -12,6 +12,9 @@ from uuid import uuid4
 
 REGISTRY = "docker.io"
 STATE_NAME = "browser-registry-state.json"
+IMAGE = "docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675"
+IMAGE_ID = "sha256:7296f210ae81031ec955dbad9a67a84fe958572a2153b8d0826a647522904dc1"
+IMAGE_MANIFEST_ID = "sha256:d13db94ae661d517c5ed57c509a578d5ea64aae639871ba25294f4f42d83de28"
 SECRET_NAMES = {"DOCKERHUB_USERNAME", "DOCKERHUB_TOKEN"}
 
 
@@ -124,28 +127,19 @@ def docker(config, args, password=None):
     # The token is supplied only on stdin. Docker output may contain sensitive
     # diagnostics; retain only the exit code, never its bytes or their hashes.
     return subprocess.run(["docker", "--config", str(config), *args],
-                          input=password, capture_output=True, timeout=60, env=env)
+                          input=password, capture_output=True, timeout=120 if args[:1] == ["pull"] else 60, env=env)
 
 
 def prepare(state):
+    require(os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch", "Authenticated acquisition requires a trusted manual event")
     base = locations(state)
     require(not state.exists() and not state.is_symlink(), "Registry state already exists")
     username, token = (os.environ.get(name, "") for name in ("DOCKERHUB_USERNAME", "DOCKERHUB_TOKEN"))
     require(all(value and value.strip() == value and not any(c in value for c in "\r\n\0")
                 for value in (username, token)), "Both read-only Docker Hub credentials are required")
-    env_path = Path(os.environ.get("GITHUB_ENV", ""))
-    require(env_path.is_absolute() and env_path == env_path.resolve()
-            and env_path.parent == base / "_runner_file_commands"
-            and re.fullmatch("set_env_[0-9a-f-]{36}", env_path.name)
-            and not any(c in str(env_path) for c in "\r\n\0"), "Expected runner-managed GITHUB_ENV is required")
-    env_fd = open_file(env_path, os.O_WRONLY | os.O_APPEND)
     nonce = uuid4().hex
     config = base / ("browser-registry-" + nonce)
-    try:
-        config.mkdir(mode=0o700)
-    except BaseException:
-        os.close(env_fd)
-        raise
+    config.mkdir(mode=0o700)
     owner = {"nonce": nonce, "uid": os.getuid(), "generator_sha256": source_hash(),
              "registry": REGISTRY, "config": str(config), "config_identity": identity(config.stat())}
     try:
@@ -156,7 +150,6 @@ def prepare(state):
         for path in config.iterdir():
             path.unlink()
         config.rmdir()
-        os.close(env_fd)
         raise
     try:
         # Docker auto-detects a native credential helper for an empty config.
@@ -181,21 +174,34 @@ def prepare(state):
         expected = base64.b64encode((username + ":" + token).encode()).decode()
         require(credentials == {"auths": {"https://index.docker.io/v1/": {"auth": expected}}},
                 "Docker Hub credential configuration did not match the owned login")
-        checked_file(env_fd)
-        path_matches(env_path, env_fd)
-        directory_fd = owned_directory(config, owner)
-        os.close(directory_fd)
-        os.write(env_fd, ("DOCKER_CONFIG=" + str(config) + "\n").encode())
-        path_matches(env_path, env_fd)
         data["status"] = "AUTHENTICATED_CONFIG_VERIFIED"
         write_state(state, data)
-        print("Owned Docker Hub authentication configuration verified")
+        pulled = docker(config, ["pull", "--platform", "linux/amd64", IMAGE])
+        require(type(pulled.returncode) is int, "Pinned image pull returned an invalid exit type")
+        data["pull_exit_code"] = pulled.returncode
+        require(pulled.returncode == 0, "Pinned image pull returned a nonzero exit")
+        inspected = docker(config, ["image", "inspect", "--platform", "linux/amd64", IMAGE])
+        require(type(inspected.returncode) is int and inspected.returncode == 0,
+                "Pinned image inspection returned a nonzero or invalid exit")
+        images = json.loads(inspected.stdout)
+        require(type(images) is list and len(images) == 1 and type(images[0]) is dict,
+                "Pinned image inspection has an invalid inventory")
+        image = images[0]
+        require(type(image.get("Id")) is str and image["Id"] in {IMAGE_ID, IMAGE_MANIFEST_ID}
+                and image.get("Os") == "linux"
+                and image.get("Architecture") == "amd64", "Pinned image bytes or platform changed")
+        digests = image.get("RepoDigests")
+        allowed = {IMAGE, IMAGE.replace("docker.io/library/", "")}
+        require(type(digests) is list and bool(digests) and all(type(value) is str for value in digests)
+                and bool(set(digests) & allowed), "Pinned repository digest missing from inspected image")
+        data.update(image=IMAGE, image_id=image["Id"], platform="linux/amd64", image_verified=True,
+                    repo_digest=next(value for value in digests if value in allowed))
+        write_state(state, data)
+        print("Pinned browser image acquired and inspected; owned credentials require cleanup before candidate checkout")
     except BaseException:
         data["status"] = "PREPARATION_FAILED"
         write_state(state, data)
         raise
-    finally:
-        os.close(env_fd)
 
 
 def cleanup(state):
