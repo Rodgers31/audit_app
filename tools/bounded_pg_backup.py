@@ -27,6 +27,19 @@ MAX_BYTES = 256 * 1024 * 1024
 ENV = {'PATH': '/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin', 'PYTHONDONTWRITEBYTECODE': '1'}
 
 
+
+# Only this reviewed finite selector can change CI fixture transport.
+import hashlib as _transport_hashlib
+from pathlib import Path as _TransportPath
+_transport_path = _TransportPath(__file__).resolve().with_name('ci_postgres_image_transport.py')
+_transport_raw = _transport_path.read_bytes()
+if _transport_hashlib.sha256(_transport_raw).hexdigest() != 'e0b369929fce5a73b907dbfe462f89f6b9d65403fb6218457bb056df65d5337a':
+    raise RuntimeError('CI test image transport source changed')
+_CI_IMAGE_TRANSPORT = {'__file__': str(_transport_path)}
+exec(compile(_transport_raw, str(_transport_path), 'exec'), _CI_IMAGE_TRANSPORT)
+IMAGE, SUPABASE_IMAGE = (_CI_IMAGE_TRANSPORT['select_image'](IMAGE), _CI_IMAGE_TRANSPORT['select_image'](SUPABASE_IMAGE))
+ENV.update(_CI_IMAGE_TRANSPORT['transport_environment']())
+
 class Refusal(RuntimeError):
     """Public error codes contain no child stderr, credentials or private data."""
 
@@ -39,6 +52,7 @@ def bounds(wall_seconds, transport_bytes):
 
 
 def run(argv, *, timeout=10, input=None):
+    argv = _CI_IMAGE_TRANSPORT['docker_run_arguments'](argv, ENV)
     try:
         result = subprocess.run(argv, env=ENV, input=input, stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE, timeout=timeout)
