@@ -1,0 +1,43 @@
+# Batch 13 Lane C — test environment isolation
+
+Assigned base `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`; branch `codex/batch13-test-environment-isolation`. Owned checkout `/Users/roger/.codex/worktrees/e725/audit_app`, chat `01a1372d-e734-72c2-b955-70779451f87a` (Batch 13: test environment isolation). Draft publication identity is recorded in the external publication readback; this first handoff is completed with the actual PR URL after creation. No coordinated rebase was performed.
+
+## Changes and exact contracts
+
+Related tickets: #636, #634, #650; umbrella #545 remains open. Only four test files and this handoff change. Production retry/authentication, freshness clocks, receipt defaults, database configuration, shared fixtures, workflows and dependency locks retain the assigned base bytes.
+
+`retryBudget.test.ts` mocks the Supabase client boundary to return a resolved unauthenticated session. Real Axios interceptors, QueryClient and controlled adapters execute all original 19 test bodies unchanged. Each case requires the client/session lookup to execute and zero fetch/XHR calls. Finally cleanup restores the original fetch property descriptor (including absence), XHR, Axios adapter, QueryClient, console and timer state. No environment variables are changed by the fixture.
+
+`test_freshness_publication_evidence.py` adds only `ids=["malformed-publication-date", "unofficial-scraped-publisher"]` to the two existing parameters. Full-module AST and literal source comparison after removing exactly that keyword/line equal the original. The clock-derived publication expressions, publisher strings and all assertions remain identical.
+
+The three named county PDF fixtures explicitly set `storage_path=tmp_path` alongside their existing `cache_path=tmp_path`. They still exercise real receipt capture and LocalReceiptStore readback, and now assert the digest-named retained bytes physically exist under their own pytest temporary directory. The page, provenance, absence, zero and monetary assertions remain intact. No receipt writes are disabled.
+
+## Executed proof
+
+The external lane packet is `/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/BATCH12_CONTINUATION_V1/NEXT_AUTHORS_V1/C_test_environment_isolation`. Producers, complete tracked-source hashes, raw stdout/stderr, actual commands/exits, full Jest/JUnit identities, import-clock collection values and physical cleanup are retained there. `run_lane_v5.py` is the final diagnostic runner; `EXECUTION_RECORDED` alone is not a passing test verdict. `verify_run_v3.py` checks actual outputs, exact scoped identities, source, types and cleanup; malformed/missing/stale outputs are refused.
+
+- Original retry fixture: variables absent, 19 passes; inert valid loopback configuration, 17 passes and the two reported failures. Final fixture: the same 19 cases pass in each configuration, zero pending. URL `http://127.0.0.1:18064`, inert anonymous key, no auth service started. Session-path attempted-fetch and attempted-XHR mutants each fail all 19 no-traffic assertions; refusal mocks prevent transport.
+- Original PDF cases: 3 passes on each runtime but actual four-byte `%PDF` receipt escapes into repository storage. New temporary-location assertions fail all 3 before the settings repair on both runtimes. After repair, both complete focused backend cohorts pass all 60 cases, zero skips/failures/errors, with repository receipt storage absent and owned temporary directories physically removed.
+- Original/final freshness cases actually execute on both runtimes under test-module import clocks for UTC dates 2026-10-13 and 2026-10-14. Both original values/publishers are identical per date; only the original IDs drift. Final two IDs are stable. Product clock code is untouched. Normal real-clock focused cohorts also execute.
+- Current runtime: Python 3.13.9 / SQLAlchemy 2.0.54; supported minimum: Python 3.12.14 / SQLAlchemy 2.0.23; macOS ARM64. Fresh checks satisfy every backend requirements constraint. Node 22.19.0; shared installed frontend lock hash `46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc`, 902 installed entries with zero version mismatch; actual complete tooling-repair check reports no operations. Runtimes are borrowed read-only.
+- Full frontend unit selection: 149 suites pass; 2,098 pass and one unchanged existing pending case (2,099 total). TypeScript `tsc --noEmit --incremental false` exits 0.
+- Actual reader controls: 32 valid/refusal cases per versioned replay across current/minimum, normal/optimized Python. The latest V2 replay explicitly reaches the stale-source refusal after recataloguing otherwise valid output hashes. Counts overlap with V1 and are not summed.
+- Independent Spec and Standards reviews pass the four-file scope, including original assertion preservation, exact scoped identities, actual raw outcomes and cleanup.
+
+The canonical complete backend collector was executed before/after on each runtime: 17,554 backend plus 336 legacy identities, 17,890 total. Raw inventories retain two intended freshness label changes and eight pre-existing UUID display changes per backend cohort; legacy has no delta. **Strict global label equivalence is not claimed**, and no UUID/date masking or new skip allowance is introduced. The exact historical 1,476 accepted skips remain retained by source/hash reference; this scoped author work does not recertify the historical hosted 17,896-case run. Collection is not execution.
+
+## Equivalent call sites and remaining qualification
+
+Readback checked concrete PDF callers. `test_cbirr_report_period.py`, `test_county_revenue_receipts.py`, `test_parse_cache.py`, and `test_prospective_pdf_evidence.py` already supply temporary receipt storage. The source-only equivalent omission at `backend/tests/test_county_cash_postgres.py:111` passes cache_path without storage_path before real PDF capture. That prerequisite-gated real-PDF/PostgreSQL fixture is outside the three assigned settings, was not executed or edited, and needs coordinator scope disposition under the existing #650 defect family. No duplicate issue was filed; no claim is made that its optional role cases passed. Other county writer-only settings do not enter the inspected PDF receipt capture path.
+
+Hosted combined acceptance, merges, issue disposition and any scope expansion belong to the coordinator. #545 intended-host/deployed acceptance remains pending. No hosted run, native Linux AMD64, actual browser, production auth/storage, deployment, migration, worker activation or financial source write is claimed here.
+
+## Failures, storage and safe continuation
+
+The original storage timeout and first resume cache-binding refusal remain failures. The corrected coordinator v2 kernel-clock policy admitted resumption under the unchanged 180-second bound, immutable baseline and shared 10 GiB budget. Fresh phase checks pass; latest exact readback is external. No rebaseline, cache-index edit or evidence deletion occurred.
+
+The original harness's Unicode filename inventory refusal and npm pretest ownership refusal are preserved separately. Direct Jest execution uses the validated read-only shared dependency tree; the unchanged npm pretest deliberately refuses a linked node_modules directory. The real tooling checker was run in read-only mode against the actual installed dependency owner instead. Direct broad pytest collection's legacy ETL import errors are preserved; the unchanged canonical launcher subsequently collects both disjoint ownership cohorts successfully.
+
+Only the exact owned four-byte repository receipt objects created during red runs were removed after preserving their bytes/digest. Test databases and reader corpora use owned OS TemporaryDirectory/finally cleanup. No service, socket listener, container, volume, network or native PostgreSQL cluster was created. Keep this worktree while its draft is reviewed; the coordinator manages its eventual archive.
+
+Proposed skill lesson: for retry-budget fixtures using fake timers, isolate the asynchronous auth boundary explicitly and prove zero transport with attempted-call controls. For fixture storage, check physical digest-object ownership/readback in addition to passing financial assertions. For date IDs, compare the whole module AST after removing the sole descriptive-ID keyword and retain real collected values on both sides of midnight. Global skills were not edited.

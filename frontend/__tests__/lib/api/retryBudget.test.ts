@@ -1,7 +1,17 @@
 import { AxiosError, CanceledError, type AxiosAdapter, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
+import { createClient } from '@/lib/supabase/client';
 import { apiClient } from '@/lib/api/axios';
 import { getCounties } from '@/lib/api/counties';
 import { getQueryClient } from '@/lib/react-query/getQueryClient';
+
+// These cases exercise HTTP retries, with a deterministic unauthenticated session.
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
+  })),
+}));
 
 const response = (config: InternalAxiosRequestConfig, status: number) => ({
   config,
@@ -31,18 +41,40 @@ const networkAdapter = (
 describe('one HTTP retry budget', () => {
   const originalAdapter = apiClient.defaults.adapter;
   let errorLog: jest.SpyInstance;
+  let xhrOpen: jest.SpyInstance;
+  let authFetch: jest.Mock;
+  let originalFetch: PropertyDescriptor | undefined;
 
   beforeEach(() => {
+    jest.mocked(createClient).mockClear();
+    originalFetch = Object.getOwnPropertyDescriptor(globalThis, 'fetch');
+    authFetch = jest.fn().mockRejectedValue(new Error('Unexpected auth fetch in retry fixture'));
+    Object.defineProperty(globalThis, 'fetch', { configurable: true, writable: true, value: authFetch });
+    xhrOpen = jest.spyOn(XMLHttpRequest.prototype, 'open').mockImplementation(() => {
+      throw new Error('Unexpected XHR in retry fixture');
+    });
     jest.useFakeTimers();
     getQueryClient().clear();
     errorLog = jest.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
-    apiClient.defaults.adapter = originalAdapter;
-    getQueryClient().clear();
-    errorLog.mockRestore();
-    jest.useRealTimers();
+    try {
+      expect(createClient).toHaveBeenCalled();
+      for (const { value } of jest.mocked(createClient).mock.results) {
+        expect(value.auth.getSession).toHaveBeenCalled();
+      }
+      expect(authFetch).not.toHaveBeenCalled();
+      expect(xhrOpen).not.toHaveBeenCalled();
+    } finally {
+      if (originalFetch) Object.defineProperty(globalThis, 'fetch', originalFetch);
+      else Reflect.deleteProperty(globalThis, 'fetch');
+      xhrOpen.mockRestore();
+      apiClient.defaults.adapter = originalAdapter;
+      getQueryClient().clear();
+      errorLog.mockRestore();
+      jest.useRealTimers();
+    }
   });
 
   it('bounds a QueryClient request through the real Axios interceptor to three HTTP attempts', async () => {
