@@ -367,7 +367,7 @@ jobs:
     - name: Check out reviewed immutable image acquisition source
       uses: actions/checkout@v5
       with:
-        ref: '1124c1502a0b0192773c36b1c9059e63d40839bf'
+        ref: 'c34573e6c3b3788baac19585345ae61cdfe0a331'
         persist-credentials: false
     - name: Authenticate pinned original-browser PostgreSQL pull
       run: python3 -I .github/scripts/prepare_browser_registry_auth.py prepare --state
