@@ -3,7 +3,9 @@
 The separate audit target is `a611b12a0001`, descending directly from baseline
 `e602b11a0001`. Accepted starting source is
 `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree
-`1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`. The additive migration is unchanged.
+`1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`. Review round 2 strengthens the
+additive migration's effective public-role REFERENCES postcondition; its
+revision, ancestry, DDL, data, triggers and uncertified startup are unchanged.
 Never substitute `upgrade head` for either independently reviewed release step.
 Lane D's preparation contract V3 is at source
 `9cb9cfc37d7c8881e857892171eb38e8bac4ca62`; its baseline target excludes audit.
@@ -65,6 +67,12 @@ API, manual writer and provider maintenance/restart paths.
    truncate history or invent legacy provenance. Read back actual applied revision,
    three table schemas, validated constraints, exact ALWAYS functions/triggers,
    policy/column/sequence ACLs, group flags and private effective principals.
+   The connected reader must have exactly the direct `audit_log_reader` parent
+   and no administrative membership. Both audit groups need effective schema
+   USAGE without CREATE. Public `anon`/`authenticated` roles must have no table
+   or column REFERENCES authority, including inherited grants. Already-applied
+   migrations do not rerun strengthened postconditions; runtime admission still
+   revalidates the observed role and privilege contract on every request.
 6. Inventory legacy history without RLS hiding rows. Populated unknown history
    prevents admission; retain unavailable behavior and request a separate reviewed
    custody/legacy solution. Empty or continuously captured history alone does not

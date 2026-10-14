@@ -138,8 +138,8 @@ def upgrade():
     if db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r, pg_class c
       WHERE r.rolname IN ('anon','authenticated')
       AND c.oid IN ('public.admin_audit_log'::regclass,'public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)
-      AND (r.rolsuper OR r.rolbypassrls OR has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')
-        OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE')))""")) is not False:
+      AND (r.rolsuper OR r.rolbypassrls OR has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+        OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')))""")) is not False:
         raise RuntimeError("Public application roles inherit private audit authority")
 
 

@@ -143,6 +143,18 @@ def capability(db):
     role = db.execute(text("SELECT rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=current_user")).one()
     if len(role) != 5 or any(value is not False for value in role):
         unavailable()
+    membership = db.execute(text("""SELECT
+      ARRAY(SELECT DISTINCT p.rolname::text FROM pg_auth_members m
+        JOIN pg_roles p ON p.oid=m.roleid
+        WHERE m.member=(SELECT oid FROM pg_roles WHERE rolname=current_user)
+        ORDER BY p.rolname::text) AS audit_reader_parents,
+      EXISTS(SELECT FROM pg_auth_members m
+        WHERE m.member=(SELECT oid FROM pg_roles WHERE rolname=current_user)
+        AND m.admin_option) AS delegates""")).one()
+    if (len(membership) != 2 or type(membership[0]) is not list
+            or len(membership[0]) != 1 or type(membership[0][0]) is not str
+            or membership[0][0] != 'audit_log_reader' or membership[1] is not False):
+        unavailable()
     # Group flags are not inherited as ordinary object privileges. Validate
     # the same private group contract as migration, including later drift.
     groups = db.execute(text("""SELECT r.rolname,r.rolsuper,r.rolbypassrls,r.rolcanlogin,
@@ -157,6 +169,8 @@ def capability(db):
     if db.scalar(text("""SELECT
       has_schema_privilege('audit_log_reader','public','CREATE')
       OR has_schema_privilege('audit_log_writer','public','CREATE')
+      OR NOT has_schema_privilege('audit_log_reader','public','USAGE')
+      OR NOT has_schema_privilege('audit_log_writer','public','USAGE')
       OR has_sequence_privilege('audit_log_writer','public.admin_audit_log_id_seq','SELECT,UPDATE')
       OR NOT has_sequence_privilege('audit_log_writer','public.admin_audit_log_id_seq','USAGE')
       OR NOT has_table_privilege('audit_log_writer','public.admin_audit_log','SELECT')
@@ -186,8 +200,8 @@ def capability(db):
     if db.scalar(text("""SELECT EXISTS(SELECT FROM pg_roles r, pg_class c
       WHERE r.rolname IN ('anon','authenticated')
       AND c.oid IN ('public.admin_audit_log'::regclass,'public.admin_audit_provenance'::regclass,'public.admin_audit_storage'::regclass)
-      AND (r.rolsuper OR r.rolbypassrls OR has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')
-        OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE')))""")) is not False:
+      AND (r.rolsuper OR r.rolbypassrls OR has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER,REFERENCES')
+        OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')))""")) is not False:
         unavailable()
     for table in tables:
         checks = db.execute(text("""SELECT c.relkind='r' AND c.relpersistence='p' AS ordinary,
