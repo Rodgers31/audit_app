@@ -129,14 +129,77 @@ class ConfigurationTests(unittest.TestCase):
                     "PYTHON_DOTENV_DISABLED": "1",
                 })
 
+    def test_original_browser_requires_owned_authenticated_docker_hub_config(self):
+        state = '"$RUNNER_TEMP/browser-registry-state.json"'
+        prepare = {
+            "name": "Authenticate pinned original-browser PostgreSQL pull",
+            "run": "python .github/scripts/prepare_browser_registry_auth.py prepare --state " + state,
+            "env": {"DOCKERHUB_USERNAME": "${{ secrets.DOCKERHUB_USERNAME }}",
+                    "DOCKERHUB_TOKEN": "${{ secrets.DOCKERHUB_TOKEN }}"},
+        }
+        cleanup = {
+            "name": "Remove owned original-browser registry credentials",
+            "if": "always()",
+            "run": "python .github/scripts/prepare_browser_registry_auth.py cleanup --state " + state,
+        }
+        registry_receipt = {
+            "name": "Preserve original-browser registry authentication receipt",
+            "if": "always()", "uses": "actions/upload-artifact@v4",
+            "with": {"name": "browser-registry-authentication",
+                     "path": "${{ runner.temp }}/browser-registry-state.json",
+                     "if-no-files-found": "error", "retention-days": 14},
+        }
+
+        def validate(steps):
+            preparations = [s for s in steps if s.get("name") == prepare["name"]]
+            removals = [s for s in steps if s.get("name") == cleanup["name"]]
+            self.assertEqual(preparations, [prepare])
+            self.assertEqual(removals, [cleanup])
+            install = next(i for i, s in enumerate(steps) if s.get("name") == "Install isolated fixture API and Chromium")
+            tests = next(i for i, s in enumerate(steps) if s.get("name") == "Run original cases against built Next.js and synthetic API")
+            artifacts = next(i for i, s in enumerate(steps) if s.get("name") == "Preserve original suite receipts")
+            self.assertLess(install, steps.index(preparations[0]))
+            self.assertLess(steps.index(preparations[0]), tests)
+            self.assertLess(tests, steps.index(removals[0]))
+            self.assertLess(steps.index(removals[0]), artifacts)
+            self.assertEqual(steps[tests]["run"], "npm run test:e2e:legacy")
+            self.assertNotIn("continue-on-error", steps[tests])
+            self.assertEqual(steps[artifacts]["if"], "always()")
+            self.assertEqual([s for s in steps if s.get("name") == registry_receipt["name"]], [registry_receipt])
+            self.assertGreater(steps.index(registry_receipt), steps.index(removals[0]))
+
+        for name, workflow in self.workflows():
+            with self.subTest(workflow=name):
+                steps = workflow["jobs"]["test-browser-legacy"]["steps"]
+                validate(steps)
+                for field in ("DOCKERHUB_USERNAME", "DOCKERHUB_TOKEN"):
+                    mutated = deepcopy(steps)
+                    login = next(s for s in mutated if s.get("name") == prepare["name"])
+                    login["env"][field] = ""
+                    with self.assertRaises(AssertionError):
+                        validate(mutated)
+                for step_name in (prepare["name"], cleanup["name"]):
+                    for bypass in ("continue-on-error", "if"):
+                        mutated = deepcopy(steps)
+                        step = next(s for s in mutated if s.get("name") == step_name)
+                        step[bypass] = True if bypass == "continue-on-error" else "false"
+                        with self.assertRaises(AssertionError):
+                            validate(mutated)
+                moved = deepcopy(steps)
+                login = next(s for s in moved if s.get("name") == prepare["name"])
+                moved.remove(login)
+                moved.append(login)
+                with self.assertRaises(AssertionError):
+                    validate(moved)
+
     def test_browser_cohort_verdicts_execute_with_negative_controls(self):
         result = subprocess.run(
             ["node", "--test", "scripts/ci-browser-cohorts.test.mjs", "scripts/run-legacy-e2e.test.mjs"],
             cwd=ROOT / "frontend", text=True, capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertRegex(result.stdout, r"(?m)^# tests 39$")
-        self.assertRegex(result.stdout, r"(?m)^# pass 39$")
+        self.assertRegex(result.stdout, r"(?m)^# tests 40$")
+        self.assertRegex(result.stdout, r"(?m)^# pass 40$")
         self.assertRegex(result.stdout, r"(?m)^# fail 0$")
         self.assertRegex(result.stdout, r"(?m)^# skipped 0$")
 

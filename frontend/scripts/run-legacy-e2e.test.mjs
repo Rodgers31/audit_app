@@ -34,6 +34,10 @@ export function spawnSync(command, args, options = {}) {
     ? [options.env.BROWSER_TEST_COHORT] : names)));
   if (command !== 'docker') throw new Error('Unexpected fake command');
   if (args[0] === 'run') {
+    if (mode === 'ecr-quota' && args.at(-1).startsWith('public.ecr.aws/')) {
+      present = false;
+      return { status: 1, stdout: '', stderr: 'toomanyrequests: Data limit exceeded' };
+    }
     owner = args[args.indexOf('--label') + 1].split('=')[1];
     container = args[args.indexOf('--name') + 1];
     present = mode !== 'failed-no-container';
@@ -176,7 +180,7 @@ test('complete CLI succeeds only with fresh reports and removes its owned databa
     assert.deepEqual(summary.cohort_exit_codes, Object.fromEntries(names.map(name => [name, 0])));
     assert.equal(summary.owned_database_removed, true);
     const started = commands.find(command => command.command === 'docker' && command.args[0] === 'run');
-    assert.equal(started.args.at(-1), 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
+    assert.equal(started.args.at(-1), 'docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
     assert.equal(started.args[started.args.indexOf('--platform') + 1], 'linux/amd64');
     assertOwnedRemoval(commands);
   });
@@ -228,3 +232,19 @@ for (const [mode, removeCount, message] of [
     });
   });
 }
+
+// Model the exact hosted ECR refusal. The unchanged digest/platform/cohort
+// contract must work through the reviewed cache transport, with one run only.
+test('complete CLI uses the identical pinned image after the former ECR transport refuses', () => {
+  scenario('ecr-quota', ({ result, summary, commands }) => {
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(summary?.verdict, 'PASSED');
+    assert.equal(summary.inventory_total, names.length);
+    assert.deepEqual(summary.cohort_exit_codes, Object.fromEntries(names.map(name => [name, 0])));
+    const runs = commands.filter(command => command.command === 'docker' && command.args[0] === 'run');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].args.at(-1), 'docker.io/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675');
+    assert.equal(runs[0].args[runs[0].args.indexOf('--platform') + 1], 'linux/amd64');
+    assertOwnedRemoval(commands);
+  });
+});
