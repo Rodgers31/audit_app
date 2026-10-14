@@ -33,7 +33,7 @@ class RegistryAuthenticationTests(unittest.TestCase):
         self.mode = "valid"
         self.calls = []
         self.environment = patch.dict(os.environ, {
-            "RUNNER_TEMP": str(self.base), "GITHUB_ENV": str(self.env_file),
+            "RUNNER_TEMP": str(self.base), "GITHUB_ENV": str(self.env_file), "GITHUB_EVENT_NAME": "workflow_dispatch",
             "DOCKERHUB_USERNAME": self.username, "DOCKERHUB_TOKEN": self.token,
         }, clear=True)
         self.environment.start()
@@ -47,7 +47,7 @@ class RegistryAuthenticationTests(unittest.TestCase):
         self.assertEqual(argv[:2], ["docker", "--config"])
         self.assertNotIn(self.token, argv)
         self.assertTrue(capture_output)
-        self.assertEqual(timeout, 60)
+        self.assertEqual(timeout, 120 if argv[3:4] == ["pull"] else 60)
         self.assertFalse(self.module.SECRET_NAMES & set(env))
         config = Path(argv[2])
         self.assertEqual(env["DOCKER_CONFIG"], str(config))
@@ -76,6 +76,25 @@ class RegistryAuthenticationTests(unittest.TestCase):
                 path.write_text("not JSON" if self.mode == "malformed-config" else json.dumps(data))
                 path.chmod(0o644 if self.mode == "public-config" else 0o600)
             return subprocess.CompletedProcess(argv, 0, b"Login Succeeded", b"")
+        if argv[3] == "pull":
+            self.assertEqual(argv[3:], ["pull", "--platform", "linux/amd64", self.module.IMAGE])
+            self.assertIsNone(input)
+            return subprocess.CompletedProcess(argv, 1 if self.mode == "pull-error" else 0, b"", b"")
+        if argv[3:5] == ["image", "inspect"]:
+            self.assertEqual(argv[5:], ["--platform", "linux/amd64", self.module.IMAGE])
+            data = [{"Id": self.module.IMAGE_ID, "Os": "linux", "Architecture": "amd64", "RepoDigests": [self.module.IMAGE]}]
+            if self.mode == "containerd-image":
+                data[0]["Id"] = self.module.IMAGE_MANIFEST_ID
+                data[0]["RepoDigests"] = [self.module.IMAGE.replace("docker.io/library/", "")]
+            if self.mode == "wrong-repository":
+                data[0]["RepoDigests"] = ["postgres@sha256:" + "0" * 64]
+            if self.mode == "empty-repository":
+                data[0]["RepoDigests"] = []
+            if self.mode == "wrong-image":
+                data[0]["Id"] = "sha256:" + "0" * 64
+            if self.mode == "wrong-platform":
+                data[0]["Architecture"] = "arm64"
+            return subprocess.CompletedProcess(argv, 0, json.dumps(data).encode(), b"")
         self.assertEqual(argv[3:], ["logout", "docker.io"])
         self.assertIsNone(input)
         if self.mode == "logout-timeout":
@@ -95,9 +114,10 @@ class RegistryAuthenticationTests(unittest.TestCase):
             self.module.cleanup(self.state)
         self.assertNotIn(self.token, output.getvalue())
 
-    def test_actual_owned_config_is_exported_then_physically_removed(self):
+    def test_pinned_image_acquired_without_export_then_credentials_removed(self):
         config = self.prepare()
-        self.assertEqual(self.env_file.read_text(), "DOCKER_CONFIG=" + str(config) + "\n")
+        self.assertEqual(self.env_file.read_text(), "")
+        self.assertIs(json.loads(self.state.read_text())["image_verified"], True)
         self.assertEqual(json.loads(self.state.read_text())["status"], "AUTHENTICATED_CONFIG_VERIFIED")
         self.cleanup()
         self.assertFalse(config.exists())
@@ -216,30 +236,60 @@ class RegistryAuthenticationTests(unittest.TestCase):
         self.mode = "valid"
         self.cleanup()
 
-    def test_actual_cli_refuses_fifo_state_and_export_without_waiting(self):
-        for mode in ("prepare", "cleanup"):
+    def test_pull_or_wrong_image_refuses_and_cannot_leave_credentials_for_tests(self):
+        for mode in ("pull-error", "wrong-image", "wrong-platform", "wrong-repository", "empty-repository"):
             with self.subTest(mode=mode):
-                target = self.env_file if mode == "prepare" else self.state
-                if target.exists():
-                    target.unlink()
-                os.mkfifo(target)
-                command = [sys.executable, "-B", *(["-O"] if sys.flags.optimize else []),
-                           str(SCRIPT), mode, "--state", str(self.state)]
-                process = subprocess.Popen(command, env=dict(os.environ),
-                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                try:
-                    stdout, stderr = process.communicate(timeout=2)
-                except subprocess.TimeoutExpired:
-                    self.fail("Nonregular registry control file caused a blocking open")
-                finally:
-                    if process.poll() is None:
-                        process.kill()
-                        process.communicate(timeout=2)
-                    target.unlink()
-                self.assertEqual(process.returncode, 1, stderr.decode())
-                self.assertNotIn(self.token.encode(), stdout + stderr)
+                self.mode = mode
+                with self.assertRaises(RuntimeError):
+                    self.module.prepare(self.state)
+                self.assertEqual(self.env_file.read_text(), "")
+                self.assertNotIn("image_verified", json.loads(self.state.read_text()))
+                self.mode = "valid"
+                config = Path(json.loads(self.state.read_text())["config"])
+                self.cleanup()
+                self.assertFalse(config.exists())
+                self.state.unlink()
+
+    def test_containerd_manifest_identity_requires_same_index_and_platform(self):
+        self.mode = "containerd-image"
+        config = self.prepare()
+        data = json.loads(self.state.read_text())
+        self.assertEqual(data["image_id"], self.module.IMAGE_MANIFEST_ID)
+        self.assertEqual(data["repo_digest"], self.module.IMAGE.replace("docker.io/library/", ""))
+        self.cleanup()
+        self.assertFalse(config.exists())
+
+    def test_manual_event_only_and_no_runner_env_file_access(self):
+        for event in ('pull_request', 'pull_request_target', 'push', ''):
+            with self.subTest(event=event), patch.dict(os.environ, {'GITHUB_EVENT_NAME': event}):
+                with self.assertRaises(RuntimeError):
+                    self.module.prepare(self.state)
+                self.assertFalse(self.state.exists())
                 self.assertEqual(self.calls, [])
-                self.env_file.write_text("")
+        peer = self.base / 'peer-env'
+        peer.write_text('PEER_SENTINEL')
+        self.env_file.unlink()
+        self.env_file.symlink_to(peer)
+        config = self.prepare()
+        self.assertEqual(peer.read_text(), 'PEER_SENTINEL')
+        self.cleanup()
+        self.assertFalse(config.exists())
+        self.assertEqual(peer.read_text(), 'PEER_SENTINEL')
+
+    def test_actual_cli_refuses_fifo_state_without_waiting(self):
+        os.mkfifo(self.state)
+        command = [sys.executable, "-B", *(["-O"] if sys.flags.optimize else []),
+                   str(SCRIPT), "cleanup", "--state", str(self.state)]
+        process = subprocess.Popen(command, env=dict(os.environ), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            stdout, stderr = process.communicate(timeout=2)
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate(timeout=2)
+        self.assertEqual(process.returncode, 1, stderr.decode())
+        self.assertNotIn(self.token.encode(), stdout + stderr)
+        self.assertEqual(self.calls, [])
 
 
 if __name__ == "__main__":
