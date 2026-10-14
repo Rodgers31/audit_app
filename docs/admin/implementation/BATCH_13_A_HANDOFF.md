@@ -38,7 +38,7 @@ the weekly/manual wrapper is repaired; `main._startup_sequence` already consumes
 writer permission and separately proves required references; manual/force calls
 share unchanged initializer ownership. Test callers remain test controls.
 `_seed_national_budget` has one product caller inside the initializer. No other
-unconditional workflow success print was found. The policy in #583 remains the
+unconditional bootstrap-success print was found. The policy in #583 remains the
 operator/production release gate.
 
 ## Executed local evidence
@@ -97,7 +97,8 @@ receipt-reader refusal controls are bound externally by `DELIVERY_V1.json`.
 
 ## Failures, resources and cleanup
 
-START/STATUS and every historic failure remain immutable evidence: original
+START, append-only STATUS phases and immutable failure receipts preserve: the
+original
 180-second storage timeout; first corrected-guard cache clock mismatch;
 missing Homebrew server binary; probe syntax/setup failure; migrated cold-start
 constraint failure; and parser failures that mistook quoted source in exception
