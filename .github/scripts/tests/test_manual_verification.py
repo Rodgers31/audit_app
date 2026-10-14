@@ -1,6 +1,7 @@
 """Offline guards for the bounded manual verification workflow."""
 
 from copy import deepcopy
+import importlib.util
 from pathlib import Path
 import subprocess
 import sys
@@ -101,6 +102,43 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     if name == "quality-gate":
                         actual["if"] = "always()"
                 steps = actual["steps"]
+                if name == "test-backend":
+                    validator_path = ROOT / ".github/scripts/tests/test_backend_acquisition_workflow.py"
+                    spec = importlib.util.spec_from_file_location("backend_acquisition_contract", validator_path)
+                    validator = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(validator)
+                    validator.BackendAcquisitionWorkflowTests().validate(manual)
+                    self.assertEqual(actual.pop("env"), validator.MODE)
+                    del steps[:3]
+                    self.assertEqual(steps[0].pop("name"), "Check out frozen candidate after backend credential removal")
+                    self.assertIs(steps[0]["with"].pop("persist-credentials"), False)
+                    boundary = next(step for step in steps if step.get("name") == "Test workflow boundaries and optional coverage reporting")
+                    self.assertEqual(boundary["run"], "env -u AUDIT_CI_TEST_POSTGRES_TRANSPORT python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v")
+                    boundary["run"] = "python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v"
+                    steps.remove(validator.RECEIPT)
+                if name == "test-browser-legacy":
+                    # The manual gate acquires the identical fixture bytes
+                    # before candidate checkout. Validate that entire security
+                    # boundary, then compare the remaining CI contract exactly.
+                    validator_path = ROOT / ".github/scripts/tests/test_browser_acquisition_workflow.py"
+                    spec = importlib.util.spec_from_file_location("manual_acquisition_contract", validator_path)
+                    validator = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(validator)
+                    validator.BrowserAcquisitionWorkflowTests().validate(manual)
+                    del steps[:3]
+                    self.assertEqual(steps[0].pop("name"), "Check out frozen candidate after credential removal")
+                    self.assertIs(steps[0]["with"].pop("persist-credentials"), False)
+                    tests = next(step for step in steps if step.get("name") == "Run original cases against built Next.js and synthetic API")
+                    self.assertEqual(tests.pop("env"), {"BROWSER_POSTGRES_TRANSPORT": "preloaded-dockerhub"})
+                    receipts = [step for step in steps if step.get("name") == "Preserve original-browser registry authentication receipt"]
+                    self.assertEqual(receipts, [{
+                        "name": "Preserve original-browser registry authentication receipt",
+                        "if": "always()", "uses": "actions/upload-artifact@v4",
+                        "with": {"name": "browser-registry-authentication",
+                                 "path": "${{ runner.temp }}/browser-registry-state.json",
+                                 "if-no-files-found": "error", "retention-days": 14},
+                    }])
+                    steps.remove(receipts[0])
                 guards = [step for step in steps if step.get("name") == GUARD_NAME]
                 checkouts = [step for step in steps
                              if step.get("uses", "").startswith("actions/checkout@")]

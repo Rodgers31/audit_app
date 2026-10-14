@@ -135,8 +135,8 @@ class ConfigurationTests(unittest.TestCase):
             cwd=ROOT / "frontend", text=True, capture_output=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertRegex(result.stdout, r"(?m)^# tests 39$")
-        self.assertRegex(result.stdout, r"(?m)^# pass 39$")
+        self.assertRegex(result.stdout, r"(?m)^# tests 43$")
+        self.assertRegex(result.stdout, r"(?m)^# pass 43$")
         self.assertRegex(result.stdout, r"(?m)^# fail 0$")
         self.assertRegex(result.stdout, r"(?m)^# skipped 0$")
 

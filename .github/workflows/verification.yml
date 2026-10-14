@@ -1,18 +1,17 @@
-# Manual-only verification while automatic development workflows remain disabled.
-# Full scope keeps all seven ci.yml contracts; backend scope skips the other jobs.
-# Offline controls permit only the explicit scope conditions and frozen checkout guard.
-# Disable this workflow and repository Actions again immediately after the approved run.
 name: Bounded manual verification
-run-name: Manual verification [${{ inputs.verification_scope }}] ${{ inputs.commit_sha }}
+run-name: Manual verification [${{ inputs.verification_scope }}] ${{ inputs.commit_sha
+  }}
 'on':
   workflow_dispatch:
     inputs:
       commit_sha:
-        description: Approved immutable commit SHA; must match the selected dispatch ref
+        description: Approved immutable commit SHA; must match the selected dispatch
+          ref
         required: true
         type: string
       verification_scope:
-        description: 'full: all seven CI jobs; backend: backend only, full quality gate skipped'
+        description: 'full: all seven CI jobs; backend: backend only, full quality
+          gate skipped'
         required: true
         default: full
         type: choice
@@ -36,19 +35,41 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: audit_app_test
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
         ports:
         - 5432:5432
       redis:
         image: public.ecr.aws/docker/library/redis@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries
-          5
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout
+          5s --health-retries 5
         ports:
         - 6379:6379
+    env:
+      AUDIT_CI_TEST_POSTGRES_TRANSPORT: docker-hub-preloaded-v1
+      CI: 'true'
+      GITHUB_ACTIONS: 'true'
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
     steps:
-    - uses: actions/checkout@v5
+    - name: Check out reviewed immutable backend image acquisition source
+      uses: actions/checkout@v5
+      with:
+        ref: 'e00af52f290591c9f1d0109b3e2999407ffc46ef'
+        persist-credentials: false
+    - name: Authenticate pinned backend PostgreSQL pulls
+      if: github.event_name == 'workflow_dispatch'
+      run: python3 -I .github/scripts/prepare_backend_registry_auth.py prepare --state "$RUNNER_TEMP/backend-registry-state.json" --platform linux/amd64
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Remove owned backend registry credentials
+      if: always()
+      run: python3 -I .github/scripts/prepare_backend_registry_auth.py cleanup --state "$RUNNER_TEMP/backend-registry-state.json"
+    - name: Check out frozen candidate after backend credential removal
+      uses: actions/checkout@v5
       with:
         ref: ${{ inputs.commit_sha }}
+        persist-credentials: false
     - name: Verify frozen checkout
       run: python3 .github/scripts/verify_checkout.py
       env:
@@ -79,13 +100,16 @@ jobs:
         '
     - name: Prepare pinned owned PostgreSQL test images
       timeout-minutes: 5
-      run: python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
+      run: python .github/scripts/prepare_postgres_test_images.py --service-postgres-ref
+        public.ecr.aws/docker/library/postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3
     - name: Prepare owned reconciliation test fixture
       timeout-minutes: 5
-      run: python .github/scripts/prepare_reconciliation_test_fixture.py prepare --state "$RUNNER_TEMP/reconciliation-fixture-state.json" --port 55496
+      run: python .github/scripts/prepare_reconciliation_test_fixture.py prepare --state
+        "$RUNNER_TEMP/reconciliation-fixture-state.json" --port 55496
     - name: Prepare owned audit epoch test fixture
       timeout-minutes: 5
-      run: python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state "$RUNNER_TEMP/audit-epoch-fixture-state.json" --port 55534
+      run: python .github/scripts/prepare_audit_epoch_test_fixture.py prepare --state
+        "$RUNNER_TEMP/audit-epoch-fixture-state.json" --port 55534
     - name: Run Core Backend Tests (REQUIRED)
       id: backend_tests
       run: python .github/scripts/run_backend_tests.py
@@ -97,26 +121,25 @@ jobs:
     - name: Remove owned audit epoch test fixture
       if: always()
       timeout-minutes: 5
-      run: |
-        if [ -f "$RUNNER_TEMP/audit-epoch-fixture-state.json" ]; then
-          python .github/scripts/prepare_audit_epoch_test_fixture.py cleanup --state "$RUNNER_TEMP/audit-epoch-fixture-state.json"
-        fi
+      run: "if [ -f \"$RUNNER_TEMP/audit-epoch-fixture-state.json\" ]; then\n  python\
+        \ .github/scripts/prepare_audit_epoch_test_fixture.py cleanup --state \"$RUNNER_TEMP/audit-epoch-fixture-state.json\"\
+        \nfi\n"
     - name: Remove owned reconciliation test fixture
       if: always()
       timeout-minutes: 5
-      run: |
-        if [ -f "$RUNNER_TEMP/reconciliation-fixture-state.json" ]; then
-          python .github/scripts/prepare_reconciliation_test_fixture.py cleanup --state "$RUNNER_TEMP/reconciliation-fixture-state.json"
-        fi
+      run: "if [ -f \"$RUNNER_TEMP/reconciliation-fixture-state.json\" ]; then\n \
+        \ python .github/scripts/prepare_reconciliation_test_fixture.py cleanup --state\
+        \ \"$RUNNER_TEMP/reconciliation-fixture-state.json\"\nfi\n"
     - name: Report Local Backend Coverage
       id: local_coverage
       continue-on-error: true
-      run: "cd backend\nif [ -f coverage.xml ]; then\n  COVERAGE=$(python -c \"import xml.etree.ElementTree\
-        \ as ET; root = ET.parse('coverage.xml').getroot(); print(float(root.attrib['line-rate']) * 100)\"\
-        )\n  echo \"Test Coverage: ${COVERAGE}%\"\nelse\n  echo \"\u26A0\uFE0F No coverage.xml found,\
-        \ skipping check\"\nfi\n"
+      run: "cd backend\nif [ -f coverage.xml ]; then\n  COVERAGE=$(python -c \"import\
+        \ xml.etree.ElementTree as ET; root = ET.parse('coverage.xml').getroot();\
+        \ print(float(root.attrib['line-rate']) * 100)\")\n  echo \"Test Coverage:\
+        \ ${COVERAGE}%\"\nelse\n  echo \"\u26A0\uFE0F No coverage.xml found, skipping\
+        \ check\"\nfi\n"
     - name: Test workflow boundaries and optional coverage reporting
-      run: python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v
+      run: env -u AUDIT_CI_TEST_POSTGRES_TRANSPORT python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v
     - name: Prepare optional Codecov upload
       id: coverage_upload_prepare
       continue-on-error: true
@@ -145,8 +168,16 @@ jobs:
         TEST_OUTCOME: ${{ steps.backend_tests.outcome }}
         LOCAL_COVERAGE_OUTCOME: ${{ steps.local_coverage.outcome }}
     - name: Validate API Health Check
-      run: "cd backend\n# Quick smoke test - ensure main app can import\npython -c \"from main import\
-        \ app; print('\u2705 App imports successfully')\"\n"
+      run: "cd backend\n# Quick smoke test - ensure main app can import\npython -c\
+        \ \"from main import app; print('\u2705 App imports successfully')\"\n"
+    - name: Preserve backend registry authentication receipt
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-registry-authentication
+        path: ${{ runner.temp }}/backend-registry-state.json
+        if-no-files-found: error
+        retention-days: 14
   test-frontend:
     if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
@@ -175,7 +206,6 @@ jobs:
 
         '
       env:
-        # CPU binaries are packaged; these jobs do not need optional CUDA downloads.
         ONNXRUNTIME_NODE_INSTALL: skip
     - name: Lint (REQUIRED - No Warnings)
       run: 'cd frontend
@@ -202,17 +232,24 @@ jobs:
 
         '
     - name: Verify production dependency boundary
-      run: |
-        cd frontend
+      run: 'cd frontend
+
         npm run test:dependency-boundaries
+
+        '
     - name: Verify native CPU model and image contracts
       timeout-minutes: 5
-      run: |
-        cd frontend
+      run: 'cd frontend
+
         NATIVE_VERIFY_CACHE_DIR=$(mktemp -d "$RUNNER_TEMP/audit-native-model.XXXXXX")
+
         export NATIVE_VERIFY_CACHE_DIR
-        trap 'rm -rf "$NATIVE_VERIFY_CACHE_DIR"' EXIT
+
+        trap ''rm -rf "$NATIVE_VERIFY_CACHE_DIR"'' EXIT
+
         npm run verify:native
+
+        '
     - name: Build (REQUIRED)
       run: 'cd frontend
 
@@ -252,9 +289,10 @@ jobs:
 
         '
     - name: Run ETL Tests (REQUIRED)
-      run: "cd etl\n# Run tests; exit code 5 = no tests collected, which is OK\nset +e\npython -m pytest\
-        \ --cov=. --cov-report=xml --verbose --maxfail=1\nrc=$?\nset -e\nif [ $rc -eq 5 ]; then\n  echo\
-        \ 'No tests collected, skipping'\n  exit 0\nfi\nexit $rc\n"
+      run: "cd etl\n# Run tests; exit code 5 = no tests collected, which is OK\nset\
+        \ +e\npython -m pytest --cov=. --cov-report=xml --verbose --maxfail=1\nrc=$?\n\
+        set -e\nif [ $rc -eq 5 ]; then\n  echo 'No tests collected, skipping'\n  exit\
+        \ 0\nfi\nexit $rc\n"
   security-scan:
     if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest
@@ -271,8 +309,8 @@ jobs:
     - name: Install Trivy
       run: 'sudo apt-get install -y wget apt-transport-https gnupg lsb-release
 
-        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee
-        /usr/share/keyrings/trivy.gpg > /dev/null
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg
+        --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
 
         echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb
         $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
@@ -283,8 +321,8 @@ jobs:
 
         '
     - name: Run Trivy vulnerability scanner
-      run: "trivy fs --format sarif --output trivy-results.sarif \\\n  --severity CRITICAL,HIGH --exit-code\
-        \ 0 .\n"
+      run: "trivy fs --format sarif --output trivy-results.sarif \\\n  --severity\
+        \ CRITICAL,HIGH --exit-code 0 .\n"
     - name: Upload Trivy results to GitHub Security tab
       if: always() && hashFiles('trivy-results.sarif') != ''
       uses: github/codeql-action/upload-sarif@v4
@@ -339,11 +377,15 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: browser-publication-acceptance
-        path: |
-          frontend/acceptance-report/
+        path: 'frontend/acceptance-report/
+
           frontend/acceptance-results/
+
           frontend/readiness-report/
+
           frontend/readiness-results/
+
+          '
         retention-days: 14
   test-browser-legacy:
     if: ${{ inputs.verification_scope == 'full' }}
@@ -351,9 +393,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+    - name: Check out reviewed immutable image acquisition source
+      uses: actions/checkout@v5
+      with:
+        ref: 'c34573e6c3b3788baac19585345ae61cdfe0a331'
+        persist-credentials: false
+    - name: Authenticate pinned original-browser PostgreSQL pull
+      run: python3 -I .github/scripts/prepare_browser_registry_auth.py prepare --state
+        "$RUNNER_TEMP/browser-registry-state.json"
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+      if: github.event_name == 'workflow_dispatch'
+    - name: Remove owned original-browser registry credentials
+      if: always()
+      run: python3 -I .github/scripts/prepare_browser_registry_auth.py cleanup --state
+        "$RUNNER_TEMP/browser-registry-state.json"
     - uses: actions/checkout@v5
       with:
         ref: ${{ inputs.commit_sha }}
+        persist-credentials: false
+      name: Check out frozen candidate after credential removal
     - name: Verify frozen checkout
       run: python3 .github/scripts/verify_checkout.py
       env:
@@ -384,6 +445,8 @@ jobs:
     - name: Run original cases against built Next.js and synthetic API
       working-directory: frontend
       run: npm run test:e2e:legacy
+      env:
+        BROWSER_POSTGRES_TRANSPORT: preloaded-dockerhub
     - name: Preserve original suite receipts
       if: always()
       uses: actions/upload-artifact@v4
@@ -394,6 +457,14 @@ jobs:
           frontend/legacy-results/
 
           '
+        retention-days: 14
+    - name: Preserve original-browser registry authentication receipt
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: browser-registry-authentication
+        path: ${{ runner.temp }}/browser-registry-state.json
+        if-no-files-found: error
         retention-days: 14
   quality-gate:
     timeout-minutes: 5
@@ -408,15 +479,18 @@ jobs:
     if: ${{ always() && inputs.verification_scope == 'full' }}
     steps:
     - name: Check All Tests Passed
-      run: "echo \"Backend Tests: ${{ needs.test-backend.result }}\"\necho \"Frontend Tests: ${{ needs.test-frontend.result\
-        \ }}\"\necho \"Browser Tests: ${{ needs.test-browser.result }}\"\necho \"Original Browser Tests:\
-        \ ${{ needs.test-browser-legacy.result }}\"\necho \"ETL Tests: ${{ needs.test-etl.result }}\"\n\
-        echo \"Security Scan: ${{ needs.security-scan.result }}\"\n\n# Backend + Frontend + Browser +\
-        \ ETL must pass; security scan is advisory\nif [[ \"${{ needs.test-backend.result }}\" != \"success\"\
-        \ ]] || \\\n   [[ \"${{ needs.test-frontend.result }}\" != \"success\" ]] || \\\n   [[ \"${{ needs.test-browser.result\
-        \ }}\" != \"success\" ]] || \\\n   [[ \"${{ needs.test-browser-legacy.result }}\" != \"success\"\
-        \ ]] || \\\n   [[ \"${{ needs.test-etl.result }}\" != \"success\" ]]; then\n  echo \"\u274C Quality\
-        \ Gate FAILED - One or more test suites failed\"\n  exit 1\nfi\n\nif [[ \"${{ needs.security-scan.result\
-        \ }}\" != \"success\" ]]; then\n  echo \"\u26A0\uFE0F Security scan failed (non-blocking) \u2014\
-        \ check the Security tab for details\"\nfi\n\necho \"\u2705 Quality Gate PASSED - All tests successful\"\
-        \n"
+      run: "echo \"Backend Tests: ${{ needs.test-backend.result }}\"\necho \"Frontend\
+        \ Tests: ${{ needs.test-frontend.result }}\"\necho \"Browser Tests: ${{ needs.test-browser.result\
+        \ }}\"\necho \"Original Browser Tests: ${{ needs.test-browser-legacy.result\
+        \ }}\"\necho \"ETL Tests: ${{ needs.test-etl.result }}\"\necho \"Security\
+        \ Scan: ${{ needs.security-scan.result }}\"\n\n# Backend + Frontend + Browser\
+        \ + ETL must pass; security scan is advisory\nif [[ \"${{ needs.test-backend.result\
+        \ }}\" != \"success\" ]] || \\\n   [[ \"${{ needs.test-frontend.result }}\"\
+        \ != \"success\" ]] || \\\n   [[ \"${{ needs.test-browser.result }}\" != \"\
+        success\" ]] || \\\n   [[ \"${{ needs.test-browser-legacy.result }}\" != \"\
+        success\" ]] || \\\n   [[ \"${{ needs.test-etl.result }}\" != \"success\"\
+        \ ]]; then\n  echo \"\u274C Quality Gate FAILED - One or more test suites\
+        \ failed\"\n  exit 1\nfi\n\nif [[ \"${{ needs.security-scan.result }}\" !=\
+        \ \"success\" ]]; then\n  echo \"\u26A0\uFE0F Security scan failed (non-blocking)\
+        \ \u2014 check the Security tab for details\"\nfi\n\necho \"\u2705 Quality\
+        \ Gate PASSED - All tests successful\"\n"

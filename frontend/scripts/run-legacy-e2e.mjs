@@ -13,7 +13,9 @@ const output = resolve('legacy-results');
 const target = checked('git', ['rev-parse', 'HEAD']).trim();
 const owner = randomUUID();
 const container = `batch9-ci-browser-${owner}`;
-const image = 'public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675';
+const transport = process.env.BROWSER_POSTGRES_TRANSPORT || 'original-ecr';
+const preloaded = transport === 'preloaded-dockerhub';
+const image = `${preloaded ? 'docker.io' : 'public.ecr.aws/docker'}/library/postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675`;
 let ownedDatabase = false;
 let active;
 let interrupted = false;
@@ -50,7 +52,7 @@ async function startDatabase() {
   // A failed docker run can still create its named container (for example,
   // if publishing the port races). The finally block must inspect that name.
   ownedDatabase = true;
-  checked('docker', ['run', '--detach', '--name', container, '--platform', 'linux/amd64',
+  checked('docker', ['run', ...(preloaded ? ['--pull=never'] : []), '--detach', '--name', container, '--platform', 'linux/amd64',
     '--label', `audit_app.ci.owner=${owner}`, '--publish', '127.0.0.1:55494:5432',
     '--env', 'POSTGRES_USER=batch9_ci', '--env', 'POSTGRES_PASSWORD=ci-inert-local',
     '--env', 'POSTGRES_DB=batch9_ci', image]);
@@ -123,6 +125,10 @@ async function main() {
   mkdirSync(output, { recursive: true });
   for (const file of ['summary.json', 'inventory.json', 'database.json']) {
     try { unlinkSync(resolve(output, file)); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  }
+  if (!['original-ecr', 'preloaded-dockerhub'].includes(transport)) throw new Error('Unknown browser image transport');
+  if (preloaded && (process.env.DOCKER_CONFIG || process.env.DOCKERHUB_USERNAME || process.env.DOCKERHUB_TOKEN)) {
+    throw new Error('Browser cases cannot inherit registry credentials');
   }
   if (args.length > 1 || (args.length && args[0] !== '--list')) {
     throw new Error('The complete browser gate accepts only --list; case filtering would omit required cohorts');
