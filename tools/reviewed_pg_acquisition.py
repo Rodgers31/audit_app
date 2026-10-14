@@ -372,7 +372,7 @@ def capture(client, directory, expected_identity, wall_seconds, transport_bytes)
         sql += "SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO, YMD'; SET LOCAL extra_float_digits=3;\n"
         sql += backup.INVENTORY_SQL + '\n' + RECOVERY_PREREQUISITES_SQL + '\nROLLBACK;\n'
         raw = backup.run(psql(client), input=sql.encode(), timeout=max(.1, deadline - time.monotonic()))
-        records = [json.loads(line) for line in raw.decode().splitlines()]
+        records = backup.inventory_json_lines(raw)
         if not records:
             raise Refusal('recovery_prerequisites_missing')
         prerequisites = records.pop()
