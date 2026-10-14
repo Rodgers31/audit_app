@@ -459,7 +459,9 @@ jobs:
           import logging
           logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
           from bootstrap import initialize_reference_data
-          initialize_reference_data()
+          if initialize_reference_data() is not True:
+              logging.warning('Bootstrap seeding deferred or incomplete; inspect bootstrap logs and retained ownership before retry')
+              raise SystemExit(2)
           print('Bootstrap seeding completed successfully')
           "
 
