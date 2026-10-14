@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { waitForAppReady } from './utils/selectors';
+import { withCountyPaginationScrollObserver } from './utils/pagination-scroll-observer';
 
 test('pagination and view-all retain duplicate query values, hash and history depth', async ({ page }) => {
   await page.goto('/counties?p=2&retained=one&retained=two&from=probe#county-list-anchor');
@@ -49,7 +50,7 @@ test('deep-link clamping and shrinking or empty filters keep URL and rows consis
   expect(new URL(page.url()).searchParams.has('p')).toBe(false);
 });
 
-test('browser back and forward retain the page-2 URL and a legitimate saved list position', async ({ page }) => {
+test('browser back and forward retain the page-2 URL and a legitimate saved list position', withCountyPaginationScrollObserver(async ({ page }) => {
   await page.goto('/counties?p=2&retained=one');
   await waitForAppReady(page);
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
@@ -70,4 +71,4 @@ test('browser back and forward retain the page-2 URL and a legitimate saved list
   await expect(page).toHaveURL(/[?&]p=2/);
   await expect(page.getByText(/Showing\s+11[–\-]20\s+of/)).toBeVisible();
   await expect.poll(async () => Math.abs(await page.evaluate(() => scrollY) - before)).toBeLessThan(100);
-});
+}));
