@@ -8,7 +8,7 @@ import unittest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
-TRUSTED_ACQUISITION_REF = '1124c1502a0b0192773c36b1c9059e63d40839bf'
+TRUSTED_ACQUISITION_REF = 'c34573e6c3b3788baac19585345ae61cdfe0a331'
 
 
 class BrowserAcquisitionWorkflowTests(unittest.TestCase):
