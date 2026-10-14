@@ -1,6 +1,6 @@
 # Batch 13 Lane C — test environment isolation
 
-Assigned base `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`; branch `codex/batch13-test-environment-isolation`. Owned checkout `/Users/roger/.codex/worktrees/e725/audit_app`, chat `01a1372d-e734-72c2-b955-70779451f87a` (Batch 13: test environment isolation). Draft publication identity is recorded in the external publication readback; this first handoff is completed with the actual PR URL after creation. No coordinated rebase was performed.
+Assigned base `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8`; branch `codex/batch13-test-environment-isolation`. Owned checkout `/Users/roger/.codex/worktrees/e725/audit_app`, chat `01a1372d-e734-72c2-b955-70779451f87a` (Batch 13: test environment isolation). Draft [PR #654](https://github.com/Rodgers31/audit_app/pull/654), implementation/test head `3b4ad7aa4ef8e51c391e37dcd3ee4d5599db7299`. The final documentation head is the commit containing this amended handoff and is recorded exactly in external `PUBLICATION_FINAL_V1.json` and the PR head readback; a document cannot embed its own Git commit hash. This second round changes only publication metadata in this handoff. No coordinated rebase was performed.
 
 ## Changes and exact contracts
 
