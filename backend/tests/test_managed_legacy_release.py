@@ -48,8 +48,8 @@ def store(monkeypatch):
         CREATE TABLE ingestion_jobs(id serial PRIMARY KEY,domain text NOT NULL,status text NOT NULL,
         dry_run boolean NOT NULL,metadata jsonb NOT NULL,errors jsonb NOT NULL,
         started_at timestamp,finished_at timestamp,items_processed integer NOT NULL DEFAULT 0);
-        CREATE TABLE admin_audit_log(id serial PRIMARY KEY,actor_id text,actor_email text,action text,
-        target_type text,target_id text,payload jsonb,created_at timestamp);
+        CREATE TABLE admin_audit_log(id serial PRIMARY KEY,actor_id varchar(64) NOT NULL,actor_email varchar(255),action varchar(80) NOT NULL,
+        target_type varchar(40),target_id varchar(64),payload jsonb NOT NULL DEFAULT '{}'::jsonb,created_at timestamp NOT NULL DEFAULT now());
         CREATE TABLE facts(id integer PRIMARY KEY,amount numeric NOT NULL);
         CREATE TABLE etl_dispatch_worker(ready boolean NOT NULL);
         INSERT INTO facts VALUES(1,42.75);
@@ -288,7 +288,9 @@ def test_unqualified_audit_epoch_refuses_without_repair_writes(
                 text("ALTER TABLE admin_audit_log DISABLE TRIGGER audit_log_capture")
             )
             other.execute(
-                text("INSERT INTO admin_audit_log(action) VALUES('legacy.unknown')")
+                text(
+                    "INSERT INTO admin_audit_log(actor_id,action) VALUES('owned-test-operator','legacy.unknown')"
+                )
             )
             other.execute(
                 text(
@@ -323,7 +325,11 @@ def test_unqualified_audit_epoch_refuses_without_repair_writes(
 def test_existing_captured_audit_and_provenance_are_preserved(store, monkeypatch):
     c, admin = store
     with admin.begin() as other:
-        other.execute(text("INSERT INTO admin_audit_log(action) VALUES('owned.prior')"))
+        other.execute(
+            text(
+                "INSERT INTO admin_audit_log(actor_id,action) VALUES('owned-test-operator','owned.prior')"
+            )
+        )
     prior = c.execute(
         text(
             "SELECT to_jsonb(a),to_jsonb(p) FROM admin_audit_log a JOIN admin_audit_provenance p ON p.audit_id=a.id"
@@ -369,7 +375,11 @@ def test_duplicate_sidecars_without_the_canonical_primary_key_are_refused(
 ):
     c, admin = store
     with admin.begin() as other:
-        other.execute(text("INSERT INTO admin_audit_log(action) VALUES('owned.prior')"))
+        other.execute(
+            text(
+                "INSERT INTO admin_audit_log(actor_id,action) VALUES('owned-test-operator','owned.prior')"
+            )
+        )
         other.execute(
             text(
                 "ALTER TABLE admin_audit_provenance DROP CONSTRAINT admin_audit_provenance_pkey"
@@ -398,6 +408,19 @@ def test_missing_positive_audit_id_constraint_is_refused(store, monkeypatch):
             )
         )
     with pytest.raises(release.ReleaseRefused, match="audit_sidecar_constraints"):
+        compiled(policy_for(c), monkeypatch)
+    assert c.scalar(text("SELECT count(*) FROM admin_audit_log")) == 0
+
+
+def test_unknown_payload_default_is_not_admitted(store, monkeypatch):
+    c, admin = store
+    with admin.begin() as other:
+        other.execute(
+            text(
+                "ALTER TABLE admin_audit_log ALTER COLUMN payload SET DEFAULT jsonb_build_object('unknown',true)"
+            )
+        )
+    with pytest.raises(release.ReleaseRefused, match="audit_defaults"):
         compiled(policy_for(c), monkeypatch)
     assert c.scalar(text("SELECT count(*) FROM admin_audit_log")) == 0
 
