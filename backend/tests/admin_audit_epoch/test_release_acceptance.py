@@ -1,16 +1,20 @@
 """Owned native release controls; no production certification or effects."""
 from datetime import datetime, timezone
+import subprocess
+import sys
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
 from tests.admin_audit_epoch.test_durable_storage import (
-    ACTOR, durable, fields, insert, private_unavailable,
+    ACTOR, BACKEND, command_environment, durable, fields, insert, migrate, private_unavailable,
 )
+from tests.admin_audit_epoch.resource_cleanup import database_identity, role_identity
 
 
 @pytest.mark.parametrize('principal', ['reader', 'audit_log_reader', 'audit_log_writer'])
@@ -50,6 +54,235 @@ def test_audit_group_login_or_parent_authority_drift_refuses(durable, group):
         with admin.connect() as c:
             c.execute(text(f'REVOKE pg_monitor FROM {group}'))
     assert client.get('/api/v1/admin/audit-log?days=0').status_code == 200
+
+
+def test_connected_reader_extra_parent_refuses_private_route(durable):
+    _, factory, client, _, _, _, _, admin, reader_name, _ = durable
+    insert(factory)
+    try:
+        with admin.connect() as c:
+            c.execute(text(f'GRANT pg_monitor TO "{reader_name}"'))
+        private_unavailable(client.get('/api/v1/admin/audit-log?days=0'))
+    finally:
+        with admin.connect() as c:
+            c.execute(text(f'REVOKE pg_monitor FROM "{reader_name}"'))
+    assert client.get('/api/v1/admin/audit-log?days=0').status_code == 200
+
+
+def test_connected_reader_administrative_membership_refuses_private_route(durable):
+    _, factory, client, _, _, _, _, admin, reader_name, _ = durable
+    insert(factory)
+    try:
+        with admin.connect() as c:
+            c.execute(text(f'GRANT audit_log_reader TO "{reader_name}" WITH ADMIN OPTION'))
+        private_unavailable(client.get('/api/v1/admin/audit-log?days=0'))
+    finally:
+        with admin.connect() as c:
+            c.execute(text(f'REVOKE ADMIN OPTION FOR audit_log_reader FROM "{reader_name}"'))
+    assert client.get('/api/v1/admin/audit-log?days=0').status_code == 200
+
+
+@pytest.mark.parametrize('group', ['audit_log_reader', 'audit_log_writer'])
+def test_missing_effective_group_schema_usage_refuses_private_route(durable, group):
+    owner, factory, client, _, writer, _, _, _, reader_name, _ = durable
+    insert(factory)
+    with owner.connect() as c:
+        public_usage = c.scalar(text("""SELECT EXISTS(SELECT FROM pg_namespace n,
+          LATERAL aclexplode(COALESCE(n.nspacl,acldefault('n',n.nspowner))) a
+          WHERE n.nspname='public' AND a.grantee=0 AND a.privilege_type='USAGE')"""))
+    assert type(public_usage) is bool
+    try:
+        with owner.begin() as c:
+            # Retain the reader's direct schema access so the route observes
+            # the group drift even when the reader group loses USAGE.
+            c.execute(text(f'GRANT USAGE ON SCHEMA public TO "{reader_name}"'))
+            c.execute(text('REVOKE USAGE ON SCHEMA public FROM PUBLIC'))
+            c.execute(text(f'REVOKE USAGE ON SCHEMA public FROM {group}'))
+            assert c.scalar(text("SELECT has_schema_privilege(:group,'public','USAGE')"),
+                            {'group': group}) is False
+        if group == 'audit_log_writer':
+            with pytest.raises(DBAPIError) as failure:
+                with writer.begin() as c:
+                    c.execute(text("INSERT INTO public.admin_audit_log(actor_id,action,payload,created_at) VALUES('inert','etl.trigger','{}',now())"))
+            assert failure.value.orig.pgcode == '42501'
+        private_unavailable(client.get('/api/v1/admin/audit-log?days=0'))
+    finally:
+        with owner.begin() as c:
+            c.execute(text(f'GRANT USAGE ON SCHEMA public TO {group}'))
+            if public_usage:
+                c.execute(text('GRANT USAGE ON SCHEMA public TO PUBLIC'))
+            c.execute(text(f'REVOKE USAGE ON SCHEMA public FROM "{reader_name}"'))
+    insert(factory)
+    assert client.get('/api/v1/admin/audit-log?days=0').json()['total'] == 2
+
+
+@pytest.mark.parametrize('role', ['anon', 'authenticated'])
+@pytest.mark.parametrize('table,column', [
+    ('admin_audit_log', 'id'), ('admin_audit_provenance', 'audit_id'),
+    ('admin_audit_storage', 'singleton'),
+])
+@pytest.mark.parametrize('column_only', [False, True])
+def test_public_application_role_references_refuses_private_route(durable, role, table, column, column_only):
+    owner, factory, client, _, _, _, _, admin, *_ = durable
+    insert(factory)
+    created = False
+    expected_role = None
+    granted = False
+    errors = []
+    privilege = f'REFERENCES({column})' if column_only else 'REFERENCES'
+    with admin.connect() as c:
+        expected_database = database_identity(c, owner.url.database)
+    def bind(c, database):
+        if (expected_database is None
+                or tuple(c.execute(text('SELECT current_database(),current_user')).one()) != (database, 'inert')
+                or database_identity(c, owner.url.database) != expected_database):
+            raise RuntimeError('Owned application-role cluster/database identity changed')
+    def role_state(c):
+        row = c.execute(text('SELECT oid,rolsuper,rolbypassrls,rolcanlogin,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=:role'), {'role': role}).one_or_none()
+        if row is None:
+            return None
+        value = tuple(row)
+        if (len(value) != 7 or type(value[0]) is not int or not 0 < value[0] < 2**32
+                or any(flag is not False for flag in value[1:])):
+            raise RuntimeError('Owned application-role identity unavailable')
+        return value
+    def revoke():
+        if not granted:
+            return
+        with owner.begin() as c:
+            bind(c, owner.url.database)
+            if expected_role is None or role_state(c) != expected_role:
+                raise RuntimeError('Owned application-role grant identity changed')
+            c.execute(text(f'REVOKE {privilege} ON TABLE public.{table} FROM {role}'))
+    def drop():
+        if not created:
+            return
+        with admin.connect() as c:
+            bind(c, 'issue611')
+            if expected_role is None or role_state(c) != expected_role:
+                raise RuntimeError('Owned application-role creation outcome unverified')
+            c.execute(text(f'DROP ROLE {role}'))
+            if role_state(c) is not None:
+                raise RuntimeError('Owned application role remains')
+    try:
+        with admin.connect() as c:
+            bind(c, 'issue611')
+            expected_role = role_state(c)
+            if expected_role is None:
+                created = True
+                c.execute(text(f'CREATE ROLE {role} NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION'))
+                expected_role = role_state(c)
+        with owner.begin() as c:
+            bind(c, owner.url.database)
+            if expected_role is None or role_state(c) != expected_role:
+                raise RuntimeError('Owned application-role identity changed before grant')
+            assert c.scalar(text("SELECT has_column_privilege(:role,:table,:column,'REFERENCES')"),
+                            {'role': role, 'table': 'public.' + table, 'column': column}) is False
+            granted = True
+            c.execute(text(f'GRANT {privilege} ON TABLE public.{table} TO {role}'))
+            assert c.scalar(text("SELECT has_column_privilege(:role,:table,:column,'REFERENCES')"),
+                            {'role': role, 'table': 'public.' + table, 'column': column}) is True
+        private_unavailable(client.get('/api/v1/admin/audit-log?days=0'))
+    except BaseException as error:
+        errors.append(error)
+    finally:
+        for cleanup in (revoke, drop):
+            try:
+                cleanup()
+            except BaseException as error:
+                errors.append(error)
+        if errors:
+            raise BaseExceptionGroup('Owned application-role rehearsal or cleanup failed', errors)
+    assert client.get('/api/v1/admin/audit-log?days=0').status_code == 200
+
+
+@pytest.mark.parametrize('role', ['anon', 'authenticated'])
+@pytest.mark.parametrize('column_only', [False, True])
+def test_migration_refuses_inherited_application_references(durable, role, column_only):
+    owner, _, _, _, _, _, url, admin, reader_name, _ = durable
+    with owner.begin() as c:
+        c.execute(text('UPDATE admin_audit_storage SET certified=false'))
+    assert migrate(url, 'downgrade', 'e602b11a0001').returncode == 0
+    with admin.connect() as c:
+        expected_database = database_identity(c, owner.url.database)
+        expected_parent = role_identity(c, reader_name)
+    expected_role = None
+    created = detached = inherited = granted = False
+    errors = []
+    privilege = 'REFERENCES(id)' if column_only else 'REFERENCES'
+    def bind(c, database):
+        if (expected_database is None or expected_parent is None
+                or tuple(c.execute(text('SELECT current_database(),current_user')).one()) != (database, 'inert')
+                or database_identity(c, owner.url.database) != expected_database
+                or role_identity(c, reader_name) != expected_parent):
+            raise RuntimeError('Owned migration role/database identity changed')
+    def role_state(c):
+        row = c.execute(text('SELECT oid,rolsuper,rolbypassrls,rolcanlogin,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=:role'), {'role': role}).one_or_none()
+        if row is None:
+            return None
+        value = tuple(row)
+        if (len(value) != 7 or type(value[0]) is not int or not 0 < value[0] < 2**32
+                or any(flag is not False for flag in value[1:])):
+            raise RuntimeError('Owned migration application-role identity unavailable')
+        return value
+    def mutate_control(sql, needed, drop=False):
+        if not needed:
+            return
+        with admin.connect() as c:
+            bind(c, 'issue611')
+            if expected_role is None or role_state(c) != expected_role:
+                raise RuntimeError('Owned migration application-role identity changed')
+            c.execute(text(sql))
+            if drop and role_state(c) is not None:
+                raise RuntimeError('Owned migration application role remains')
+    def revoke_reference():
+        if not granted:
+            return
+        with owner.begin() as c:
+            bind(c, owner.url.database)
+            c.execute(text(f'REVOKE {privilege} ON TABLE public.admin_audit_log FROM "{reader_name}"'))
+    try:
+        with admin.connect() as c:
+            bind(c, 'issue611')
+            expected_role = role_state(c)
+            if expected_role is None:
+                created = True
+                c.execute(text(f'CREATE ROLE {role} NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION'))
+                expected_role = role_state(c)
+            detached = True
+            c.execute(text(f'REVOKE audit_log_reader FROM "{reader_name}"'))
+            inherited = True
+            c.execute(text(f'GRANT "{reader_name}" TO {role}'))
+        with owner.begin() as c:
+            bind(c, owner.url.database)
+            granted = True
+            c.execute(text(f'GRANT {privilege} ON TABLE public.admin_audit_log TO "{reader_name}"'))
+            assert c.scalar(text("SELECT has_column_privilege(:role,'public.admin_audit_log','id','REFERENCES')"), {'role': role}) is True
+            assert c.scalar(text("SELECT has_table_privilege(:role,'public.admin_audit_log','SELECT,INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER')"), {'role': role}) is False
+        # The retained fixture's setup CLI uses a normal interpreter. Exercise
+        # this postcondition in the requested parent mode as an actual CLI too.
+        argv = [sys.executable, '-B', *(['-O'] if sys.flags.optimize else []),
+                '-m', 'alembic', 'upgrade', 'a611b12a0001']
+        result = subprocess.run(argv, cwd=BACKEND, env=command_environment(url),
+                                capture_output=True, text=True, timeout=90)
+        print('owned migration', argv, 'exit', result.returncode, result.stdout, result.stderr)
+        assert result.returncode != 0 and 'Public application roles inherit private audit authority' in result.stderr, result.stderr
+        with owner.connect() as c:
+            assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'e602b11a0001'
+            assert c.scalar(text("SELECT to_regclass('public.admin_audit_provenance')")) is None
+    except BaseException as error:
+        errors.append(error)
+    finally:
+        for cleanup in (revoke_reference,
+                        lambda: mutate_control(f'REVOKE "{reader_name}" FROM {role}', inherited),
+                        lambda: mutate_control(f'GRANT audit_log_reader TO "{reader_name}"', detached),
+                        lambda: mutate_control(f'DROP ROLE {role}', created, drop=True)):
+            try:
+                cleanup()
+            except BaseException as error:
+                errors.append(error)
+        if errors:
+            raise BaseExceptionGroup('Owned inherited-authority migration or cleanup failed', errors)
 
 
 @pytest.mark.parametrize('privilege,resource,group', [

@@ -7,6 +7,23 @@ pending under #611; #545, #583 and #554 remain open. This document and the
 [release runbook](BATCH_13_E_RELEASE_RUNBOOK.md) grant no production execution
 authority.
 
+Review-round-2 supersession: the initial publication below records historical
+acceptance at `bcb7081d9c18afda3b93156420618ad820f8554f`. Three subsequently
+received review findings reproduced 16 native false-HTTP200 admissions and
+four unsafe migration successes. The new repair checks exact connected-reader
+membership without administrative delegation, effective schema USAGE for both
+groups, and public-role table/column REFERENCES in both runtime admission and
+the migration postcondition. The migration source hash changes; its revision,
+ancestry, DDL, data, trigger bodies and uncertified startup do not. Old packets
+remain immutable and do not certify the repaired bytes.
+
+The final round-2 published head/tree, contract, mandatory case outcomes,
+independent normal/optimized reviews, exact cleanup and review dispositions are
+recorded in the evidence root's `REVIEW_R2_V1/PUBLICATION_V1.json` and
+`REVIEW_R2_V1/MIGRATION_CONTRACT_V1.json`. Unchanged frontend byte coverage is
+transferred with explicit source hashes; new backend behavior has fresh native
+acceptance. No old native or browser receipt is relabeled as a new execution.
+
 ## Source and publication identity
 
 | Identity | Exact value |
@@ -16,12 +33,12 @@ authority.
 | Exclusive branch | `codex/batch13-durable-audit-release-acceptance` |
 | Assigned accepted base | `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f` |
 | Assigned accepted tree | `1f5a2ccdec2627b320ccedcb9f1fd9db975f3dc8` |
-| Final implementation commit | `cc9a7ab661c9415fc31ed92a69a708ffa7b28cd2` |
-| Final implementation tree | `4d80ee5a2104f5b53c1a9deb04e5693800d921d8` |
+| Initial implementation commit | `cc9a7ab661c9415fc31ed92a69a708ffa7b28cd2` |
+| Initial implementation tree | `4d80ee5a2104f5b53c1a9deb04e5693800d921d8` |
 | Additive audit revision | `a611b12a0001`, directly after `e602b11a0001` |
-| Migration SHA256, unchanged | `4f496ff1993c2f1155b8b938f6364bc377d15315112dc082edae490a09d4dc20` |
+| Initial migration SHA256, before round 2 | `4f496ff1993c2f1155b8b938f6364bc377d15315112dc082edae490a09d4dc20` |
 
-The final implementation commit contains all product, test and runbook changes.
+The initial implementation commit contains its product, test and runbook changes.
 The subsequent handoff commit adds this document only. Its exact published
 head/tree, PR readback, complete source inventory, replay receipts and contract
 hashes are bound by the external `PUBLICATION_V1.json`; a commit cannot contain
@@ -49,7 +66,8 @@ REFERENCES, including REFERENCES granted directly to the connected reader.
 Native role and privilege regressions returned HTTP200 before repair and the
 private sanitized HTTP503 after repair.
 
-The existing migration, root xid8 capture, append-only triggers, RLS, router,
+Except for the round-2 migration postcondition described above, root xid8
+capture, append-only triggers, RLS, router,
 models, writer transactions and frontend are unchanged. New tests execute the
 actual independent general helper and Users provider writes, shared dispatch
 acceptance, and reconciliation Core INSERT. The source census includes the

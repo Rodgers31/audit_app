@@ -33,6 +33,7 @@ class CatalogTransport:
     """Literal valid catalog result plus one hostile transport mutation."""
     def __init__(self):
         self.role = Role(False, False, False, False, False)
+        self.membership = (['audit_log_reader'], False)
         self.groups = [(name, False, False, False, False, False, False, False)
                        for name in ('audit_log_reader', 'audit_log_writer')]
         self.constraints = [
@@ -62,6 +63,7 @@ class CatalogTransport:
     def execute(self, statement, params=None):
         sql = str(statement)
         if sql.startswith(('SET LOCAL','LOCK TABLE')): return Result([])
+        if 'AS audit_reader_parents' in sql: return Result([self.membership])
         if 'AS inherits' in sql: return Result(self.groups)
         if 'rolsuper,rolbypassrls' in sql: return Result([self.role])
         if 'AS ordinary' in sql: return Result([Table(True,True,False,False,False,True,True)])
@@ -97,6 +99,21 @@ def authority(monkeypatch):
 
 def test_literal_catalog_transport_control(authority):
     assert storage.capability(CatalogTransport()) == (SCOPE, KEY)
+
+
+@pytest.mark.parametrize('membership', [
+    (), ([], False), (['pg_monitor'], False), (['audit_log_writer'], False),
+    (['audit_log_reader', 'pg_monitor'], False), (['audit_log_reader'] * 2, False),
+    ('audit_log_reader', False), (('audit_log_reader',), False), (None, False),
+    ([None], False), ([False], False), (['audit_log_reader'], True),
+    (['audit_log_reader'], None), (['audit_log_reader'], 0),
+    (['audit_log_reader'], 'false'), (['audit_log_reader'], False, False),
+])
+def test_connected_reader_membership_requires_exact_private_native_contract(authority, membership):
+    catalog = CatalogTransport(); catalog.membership = membership
+    with pytest.raises(HTTPException) as failure:
+        storage.capability(catalog)
+    assert failure.value.status_code == 503
 
 
 @pytest.mark.parametrize('value', [None, 0, 1, 'false', True])
