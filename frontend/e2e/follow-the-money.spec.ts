@@ -365,9 +365,13 @@ test.describe('Follow the Money — read states', () => {
         const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
         let calls = 0;
         let retrying = false;
+        let observeRetry!: () => void;
+        const retryObservation = new Promise<void>(resolve => { observeRetry = resolve; });
         let release!: () => void;
         const pending = new Promise<void>(resolve => { release = resolve; });
         await page.route(url => url.pathname === `/api/v1/counties/${COUNTY_ID}/money-flow`, async route => {
+          // Force loading to precede observation of the retry request.
+          if (retrying) await retryObservation;
           calls++;
           if (!retrying) return route.fulfill({ status: 500, json: { detail: 'Synthetic failed read' } });
           // A gated successful empty response is different from a failed read.
@@ -397,7 +401,9 @@ test.describe('Follow the Money — read states', () => {
         await retry.press('Enter');
         await expect(panel.getByRole('status')).toContainText(loadingMessage);
         await expect(panel.getByRole('button', { name: retryName, exact: true })).toHaveCount(0);
-        expect(calls).toBe(2);
+        expect(calls).toBe(1);
+        observeRetry();
+        await expect.poll(() => calls).toBe(2);
         release();
         await expect(panel.getByRole('status')).toContainText(emptyMessage);
         await expect(panel.getByRole('alert')).toHaveCount(0);
