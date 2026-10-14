@@ -4,13 +4,21 @@ Assigned base `c8970e3953717fc0f0ca3a54e22f7e3e509eec0f`, tree `1f5a2ccdec2627b3
 
 ## Changes and exact contracts
 
-Related tickets: #636, #634, #650; umbrella #545 remains open. Only four test files and this handoff change. Production retry/authentication, freshness clocks, receipt defaults, database configuration, shared fixtures, workflows and dependency locks retain the assigned base bytes.
+Related tickets: #636, #634, #650; umbrella #545 remains open. Only five test files and this handoff change, including the coordinator-authorized cash continuation:
+
+- `frontend/__tests__/lib/api/retryBudget.test.ts`
+- `backend/tests/test_freshness_publication_evidence.py`
+- `backend/tests/test_county_budget_boundary_adversarial.py`
+- `backend/tests/test_county_publication_boundaries.py`
+- `backend/tests/test_county_cash_postgres.py`
+
+Production retry/authentication, freshness clocks, receipt defaults, database configuration, shared fixtures, workflows and dependency locks retain the assigned base bytes.
 
 `retryBudget.test.ts` mocks the Supabase client boundary to return a resolved unauthenticated session. Real Axios interceptors, QueryClient and controlled adapters execute all original 19 test bodies unchanged. Each case requires the client/session lookup to execute and zero fetch/XHR calls. Finally cleanup restores the original fetch property descriptor (including absence), XHR, Axios adapter, QueryClient, console and timer state. No environment variables are changed by the fixture.
 
 `test_freshness_publication_evidence.py` adds only `ids=["malformed-publication-date", "unofficial-scraped-publisher"]` to the two existing parameters. Full-module AST and literal source comparison after removing exactly that keyword/line equal the original. The clock-derived publication expressions, publisher strings and all assertions remain identical.
 
-The three named county PDF fixtures explicitly set `storage_path=tmp_path` alongside their existing `cache_path=tmp_path`. They still exercise real receipt capture and LocalReceiptStore readback, and now assert the digest-named retained bytes physically exist under their own pytest temporary directory. The page, provenance, absence, zero and monetary assertions remain intact. No receipt writes are disabled.
+The original three county PDF fixtures explicitly set `storage_path=tmp_path` alongside their existing `cache_path=tmp_path`. They still exercise real receipt capture and LocalReceiptStore readback, and now assert the digest-named retained bytes physically exist under their own pytest temporary directory. The page, provenance, absence, zero and monetary assertions remain intact. No receipt writes are disabled.
 
 ## Executed proof
 
@@ -23,7 +31,7 @@ The external lane packet is `/Users/roger/.codex/visualizations/2026/10/13/01a13
 - Full frontend unit selection: 149 suites pass; 2,098 pass and one unchanged existing pending case (2,099 total). TypeScript `tsc --noEmit --incremental false` exits 0.
 - Actual reader controls: 32 valid/refusal cases per versioned replay across current/minimum, normal/optimized Python. The latest V3 replay explicitly reaches the stale-source refusal after recataloguing otherwise valid output hashes. Counts overlap with V1 and are not summed.
 - A supplemental real recatalogued Jest control found that the external V3 reader accepted boolean `false` as an integer zero counter. V4 requires exact integer counters; eight actual normal/optimized current/minimum red/green controls verify the repair. Original V3 bytes and earlier controls are retained; this is an author evidence-tool fix, not a product issue.
-- Independent Spec and Standards reviews pass the four-file scope, including original assertion preservation, exact scoped identities, actual raw outcomes and cleanup.
+- Independent Spec and Standards reviews pass the original four-test-file scope, including original assertion preservation, exact scoped identities, actual raw outcomes and cleanup. Separate continuation reviews cover the fifth test file, `backend/tests/test_county_cash_postgres.py`, as recorded below.
 
 The canonical complete backend collector was executed before/after on each runtime: 17,554 backend plus 336 legacy identities, 17,890 total. Raw inventories retain two intended freshness label changes and eight pre-existing UUID display changes per backend cohort; legacy has no delta. **Strict global label equivalence is not claimed**, and no UUID/date masking or new skip allowance is introduced. The exact historical 1,476 accepted skips remain retained by source/hash reference; this scoped author work does not recertify the historical hosted 17,896-case run. Collection is not execution.
 
@@ -39,7 +47,7 @@ The original storage timeout and first resume cache-binding refusal remain failu
 
 The original harness's Unicode filename inventory refusal and npm pretest ownership refusal are preserved separately. Direct Jest execution uses the validated read-only shared dependency tree; the unchanged npm pretest deliberately refuses a linked node_modules directory. The real tooling checker was run in read-only mode against the actual installed dependency owner instead. Direct broad pytest collection's legacy ETL import errors are preserved; the unchanged canonical launcher subsequently collects both disjoint ownership cohorts successfully.
 
-Only the exact owned four-byte repository receipt objects created during red runs were removed after preserving their bytes/digest. Test databases and reader corpora use owned OS TemporaryDirectory/finally cleanup. No service, socket listener, container, volume, network or native PostgreSQL cluster was created. Keep this worktree while its draft is reviewed; the coordinator manages its eventual archive.
+Only the exact owned four-byte repository receipt objects created during red runs were removed after preserving their bytes/digest. Test databases and reader corpora use owned OS TemporaryDirectory/finally cleanup. The original delivery created no service, socket listener, container, volume, network or native PostgreSQL cluster. The later cash continuation created and removed its exclusively owned native clusters, as documented below. Keep this worktree while its draft is reviewed; the coordinator manages its eventual archive.
 
 Proposed skill lesson: for retry-budget fixtures using fake timers, isolate the asynchronous auth boundary explicitly and prove zero transport with attempted-call controls. For fixture storage, check physical digest-object ownership/readback in addition to passing financial assertions. For date IDs, compare the whole module AST after removing the sole descriptive-ID keyword and retain real collected values on both sides of midnight. Global skills were not edited.
 
