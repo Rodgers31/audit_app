@@ -35,7 +35,7 @@ function assets(failedTokenizer = false) {
     const url = String(input);
     if (url.endsWith('embeddings.bin')) return { ok: true, arrayBuffer: async () => vector.buffer } as Response;
     if (url.endsWith('embeddings-index.json')) return { ok: true, json: async () => ({
-      dim: 384, count: 1, articles: [{ ch: 9, art: 142, title: 'Term of President' }],
+      model: manifest.model, dim: 384, count: 1, articles: [{ ch: 9, art: 142, title: 'Term of President' }],
     }) } as Response;
     return { ok: !failedTokenizer, json: async () => ({}) } as Response;
   });
