@@ -45,10 +45,31 @@ jobs:
           5s --health-retries 5
         ports:
         - 6379:6379
+    env:
+      AUDIT_CI_TEST_POSTGRES_TRANSPORT: docker-hub-preloaded-v1
+      CI: 'true'
+      GITHUB_ACTIONS: 'true'
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
     steps:
-    - uses: actions/checkout@v5
+    - name: Check out reviewed immutable backend image acquisition source
+      uses: actions/checkout@v5
+      with:
+        ref: 'e00af52f290591c9f1d0109b3e2999407ffc46ef'
+        persist-credentials: false
+    - name: Authenticate pinned backend PostgreSQL pulls
+      if: github.event_name == 'workflow_dispatch'
+      run: python3 -I .github/scripts/prepare_backend_registry_auth.py prepare --state "$RUNNER_TEMP/backend-registry-state.json" --platform linux/amd64
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Remove owned backend registry credentials
+      if: always()
+      run: python3 -I .github/scripts/prepare_backend_registry_auth.py cleanup --state "$RUNNER_TEMP/backend-registry-state.json"
+    - name: Check out frozen candidate after backend credential removal
+      uses: actions/checkout@v5
       with:
         ref: ${{ inputs.commit_sha }}
+        persist-credentials: false
     - name: Verify frozen checkout
       run: python3 .github/scripts/verify_checkout.py
       env:
@@ -118,7 +139,7 @@ jobs:
         \ ${COVERAGE}%\"\nelse\n  echo \"\u26A0\uFE0F No coverage.xml found, skipping\
         \ check\"\nfi\n"
     - name: Test workflow boundaries and optional coverage reporting
-      run: python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v
+      run: env -u AUDIT_CI_TEST_POSTGRES_TRANSPORT python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v
     - name: Prepare optional Codecov upload
       id: coverage_upload_prepare
       continue-on-error: true
@@ -149,6 +170,14 @@ jobs:
     - name: Validate API Health Check
       run: "cd backend\n# Quick smoke test - ensure main app can import\npython -c\
         \ \"from main import app; print('\u2705 App imports successfully')\"\n"
+    - name: Preserve backend registry authentication receipt
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-registry-authentication
+        path: ${{ runner.temp }}/backend-registry-state.json
+        if-no-files-found: error
+        retention-days: 14
   test-frontend:
     if: ${{ inputs.verification_scope == 'full' }}
     runs-on: ubuntu-latest

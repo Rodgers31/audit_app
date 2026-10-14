@@ -445,6 +445,10 @@ class ReceiptBoundaryTests(unittest.TestCase):
 
     def test_image_identity_refusals_stop_before_database_execution(self):
         digest = logical.backup.SUPABASE_IMAGE.split('@')[1]
+        ecr = 'public.ecr.aws/supabase/postgres@' + digest
+        hub = 'supabase/postgres@' + digest
+        self.assertIn(logical.backup.SUPABASE_IMAGE, (ecr, hub))
+        unselected = ecr if logical.backup.SUPABASE_IMAGE == hub else hub
         state = {'Name': '/' + self.target, 'HostConfig': {'NetworkMode': 'none', 'PortBindings': {}},
                  'State': {'Running': True}, 'Image': digest}
         healthy = {'Id': digest, 'RepoDigests': [logical.backup.SUPABASE_IMAGE]}
@@ -453,7 +457,7 @@ class ReceiptBoundaryTests(unittest.TestCase):
                         [{**healthy, 'Id': 'sha256:' + 'b' * 64}],
                         [{**healthy, 'RepoDigests': []}], [{**healthy, 'RepoDigests': None}],
                         [{**healthy, 'RepoDigests': logical.backup.SUPABASE_IMAGE}],
-                        [{**healthy, 'RepoDigests': ['supabase/postgres@' + digest]}]]
+                        [{**healthy, 'RepoDigests': [unselected]}]]
         for images in wrong_images:
             with self.subTest(images=images), patch.object(logical.backup, 'run', side_effect=[json.dumps([state]).encode(), json.dumps(images).encode()]) as run:
                 with self.assertRaises(logical.Refusal):

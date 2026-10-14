@@ -18,6 +18,16 @@ SERVICE_POSTGRES_REF = "public.ecr.aws/docker/library/postgres@sha256:2d2b8998d3
 SERVICE_ALIAS = "postgres:17"
 
 
+
+# Only this reviewed finite selector can change CI fixture transport.
+import hashlib as _transport_hashlib
+from pathlib import Path as _TransportPath
+_transport_path = _TransportPath(__file__).resolve().parents[2] / 'tools/ci_postgres_image_transport.py'
+_transport_raw = _transport_path.read_bytes()
+if _transport_hashlib.sha256(_transport_raw).hexdigest() != 'e0b369929fce5a73b907dbfe462f89f6b9d65403fb6218457bb056df65d5337a':
+    raise RuntimeError('CI test image transport source changed')
+_CI_IMAGE_TRANSPORT = {'__file__': str(_transport_path)}
+exec(compile(_transport_raw, str(_transport_path), 'exec'), _CI_IMAGE_TRANSPORT)
 class Refusal(RuntimeError):
     def __init__(self, reason, context=None):
         super().__init__(reason)
@@ -72,7 +82,10 @@ def required_images():
     images = [values[name] for name in ("IMAGE", "SUPABASE_IMAGE")]
     if any(not isinstance(ref, str) or PIN.fullmatch(ref) is None for ref in images):
         raise Refusal("mutable_or_invalid_fixture_image_pin")
-    return images
+    try:
+        return [_CI_IMAGE_TRANSPORT['select_image'](ref) for ref in images]
+    except RuntimeError:
+        raise Refusal('invalid_ci_test_image_transport') from None
 
 
 def prepare(*, service_postgres_ref=None):
@@ -165,6 +178,8 @@ def prepare(*, service_postgres_ref=None):
     for ref in images:
         raw = run(["image", "inspect", ref], phase="inspect_cached", image=ref, missing=True)
         if raw is None:
+            if _CI_IMAGE_TRANSPORT["transport_environment"]():
+                refuse("selected_ci_image_missing_from_cache")
             run(["pull", "--platform", platform, ref], phase="pull", image=ref, timeout=MAX_SECONDS)
             raw = run(["image", "inspect", ref], phase="inspect_pulled", image=ref)
         image = verified_image(raw, ref)

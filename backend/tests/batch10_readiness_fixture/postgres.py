@@ -12,6 +12,18 @@ IMAGE = "public.ecr.aws/docker/library/postgres@sha256:67f41722b7a8cbdb868a44a49
 OWNER = "batch10-readiness"
 
 
+
+# Only this reviewed finite selector can change CI fixture transport.
+import hashlib as _transport_hashlib
+from pathlib import Path as _TransportPath
+_transport_path = _TransportPath(__file__).resolve().parents[3] / 'tools/ci_postgres_image_transport.py'
+_transport_raw = _transport_path.read_bytes()
+if _transport_hashlib.sha256(_transport_raw).hexdigest() != 'e0b369929fce5a73b907dbfe462f89f6b9d65403fb6218457bb056df65d5337a':
+    raise RuntimeError('CI test image transport source changed')
+_CI_IMAGE_TRANSPORT = {'__file__': str(_transport_path)}
+exec(compile(_transport_raw, str(_transport_path), 'exec'), _CI_IMAGE_TRANSPORT)
+IMAGE = _CI_IMAGE_TRANSPORT['select_image'](IMAGE)
+
 def docker(*args, check=True):
     endpoint = next(
         (
