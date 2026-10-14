@@ -102,6 +102,20 @@ class ManualWorkflowBoundaryTests(unittest.TestCase):
                     if name == "quality-gate":
                         actual["if"] = "always()"
                 steps = actual["steps"]
+                if name == "test-backend":
+                    validator_path = ROOT / ".github/scripts/tests/test_backend_acquisition_workflow.py"
+                    spec = importlib.util.spec_from_file_location("backend_acquisition_contract", validator_path)
+                    validator = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(validator)
+                    validator.BackendAcquisitionWorkflowTests().validate(manual)
+                    self.assertEqual(actual.pop("env"), validator.MODE)
+                    del steps[:3]
+                    self.assertEqual(steps[0].pop("name"), "Check out frozen candidate after backend credential removal")
+                    self.assertIs(steps[0]["with"].pop("persist-credentials"), False)
+                    boundary = next(step for step in steps if step.get("name") == "Test workflow boundaries and optional coverage reporting")
+                    self.assertEqual(boundary["run"], "env -u AUDIT_CI_TEST_POSTGRES_TRANSPORT python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v")
+                    boundary["run"] = "python -m unittest discover -s .github/scripts/tests -p 'test_*.py' -v"
+                    steps.remove(validator.RECEIPT)
                 if name == "test-browser-legacy":
                     # The manual gate acquires the identical fixture bytes
                     # before candidate checkout. Validate that entire security
