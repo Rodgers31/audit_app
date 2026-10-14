@@ -117,6 +117,7 @@ def test_public_api_error_cannot_be_cached_as_the_result_of_a_later_refresh(clie
         ),
         (datetime.now(timezone.utc).date().isoformat(), "A SCRAPED COPY"),
     ],
+    ids=["malformed-publication-date", "unofficial-scraped-publisher"],
 )
 def test_malformed_date_or_publisher_cannot_certify_fresh(
     client,
