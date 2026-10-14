@@ -180,14 +180,15 @@ def prepare(state):
         require(type(pulled.returncode) is int, "Pinned image pull returned an invalid exit type")
         data["pull_exit_code"] = pulled.returncode
         require(pulled.returncode == 0, "Pinned image pull returned a nonzero exit")
-        inspected = docker(config, ["image", "inspect", "--platform", "linux/amd64", IMAGE])
-        require(type(inspected.returncode) is int and inspected.returncode == 0,
-                "Pinned image inspection returned a nonzero or invalid exit")
+        inspected = docker(config, ["image", "inspect", IMAGE])
+        require(type(inspected.returncode) is int, "Pinned image inspection returned an invalid exit type")
+        data["inspect_exit_code"] = inspected.returncode
+        require(inspected.returncode == 0, "Pinned image inspection returned a nonzero exit")
         images = json.loads(inspected.stdout)
         require(type(images) is list and len(images) == 1 and type(images[0]) is dict,
                 "Pinned image inspection has an invalid inventory")
         image = images[0]
-        require(type(image.get("Id")) is str and image["Id"] in {IMAGE_ID, IMAGE_MANIFEST_ID}
+        require(type(image.get("Id")) is str and image["Id"] in {IMAGE_ID, IMAGE_MANIFEST_ID, IMAGE.partition("@")[2]}
                 and image.get("Os") == "linux"
                 and image.get("Architecture") == "amd64", "Pinned image bytes or platform changed")
         digests = image.get("RepoDigests")

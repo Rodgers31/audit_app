@@ -81,11 +81,18 @@ class RegistryAuthenticationTests(unittest.TestCase):
             self.assertIsNone(input)
             return subprocess.CompletedProcess(argv, 1 if self.mode == "pull-error" else 0, b"", b"")
         if argv[3:5] == ["image", "inspect"]:
-            self.assertEqual(argv[5:], ["--platform", "linux/amd64", self.module.IMAGE])
+            if self.mode == "docker28" and "--platform" in argv[5:]:
+                return subprocess.CompletedProcess(argv, 125, b"", b"unknown flag: --platform")
+            self.assertEqual(argv[5:], [self.module.IMAGE])
             data = [{"Id": self.module.IMAGE_ID, "Os": "linux", "Architecture": "amd64", "RepoDigests": [self.module.IMAGE]}]
             if self.mode == "containerd-image":
                 data[0]["Id"] = self.module.IMAGE_MANIFEST_ID
                 data[0]["RepoDigests"] = [self.module.IMAGE.replace("docker.io/library/", "")]
+            if self.mode == "containerd-index":
+                data[0]["Id"] = self.module.IMAGE.partition("@")[2]
+                data[0]["RepoDigests"] = [self.module.IMAGE.replace("docker.io/library/", "")]
+            if self.mode == "inspect-error":
+                return subprocess.CompletedProcess(argv, 1, b"", self.token.encode())
             if self.mode == "wrong-repository":
                 data[0]["RepoDigests"] = ["postgres@sha256:" + "0" * 64]
             if self.mode == "empty-repository":
@@ -125,6 +132,35 @@ class RegistryAuthenticationTests(unittest.TestCase):
         self.assertEqual(data["status"], "OWNED_CONFIG_REMOVED")
         self.assertIs(data["physical_config_removed"], True)
         self.assertEqual(data["logout_exit_code"], 0)
+
+    def test_docker28_inspection_keeps_exact_image_and_platform_checks(self):
+        self.mode = "docker28"
+        config = self.prepare()
+        data = json.loads(self.state.read_text())
+        self.assertIs(data["image_verified"], True)
+        self.assertEqual(data["inspect_exit_code"], 0)
+        self.cleanup()
+        self.assertFalse(config.exists())
+
+    def test_containerd_index_id_still_requires_pinned_repository_and_platform(self):
+        self.mode = "containerd-index"
+        config = self.prepare()
+        data = json.loads(self.state.read_text())
+        self.assertEqual(data["image_id"], self.module.IMAGE.partition("@")[2])
+        self.assertEqual(data["platform"], "linux/amd64")
+        self.cleanup()
+        self.assertFalse(config.exists())
+
+    def test_inspection_refusal_retains_only_exit_and_removes_credentials(self):
+        self.mode = "inspect-error"
+        with self.assertRaises(RuntimeError):
+            self.prepare()
+        data = json.loads(self.state.read_text())
+        self.assertEqual(data["inspect_exit_code"], 1)
+        self.assertNotIn(self.token, self.state.read_text())
+        self.assertNotIn("image_verified", data)
+        self.cleanup()
+        self.assertFalse(Path(data["config"]).exists())
 
     def test_missing_or_hostile_credentials_refuse_before_any_allocation(self):
         for name in ("DOCKERHUB_USERNAME", "DOCKERHUB_TOKEN"):
