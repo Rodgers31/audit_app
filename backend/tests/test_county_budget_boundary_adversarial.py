@@ -1,5 +1,6 @@
 """Independent county publication probes: reported zero, absence, provenance."""
 
+import hashlib
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -7,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from models import BudgetLine, Entity, EntityType, SourceDocument
 from seeding.config import SeedingSettings
+from services.receipt_store import configured_receipt_store
 from seeding.domains.counties_budget import fetcher, parser, writer
 from seeding.pdf_parsers import ExtractedTable, county_revenue_receipts
 from seeding.types import DomainRunContext
@@ -61,6 +63,7 @@ def test_hostile_numbers_do_not_become_amounts(value):
 def test_pdf_conversion_keeps_artifact_page_absence_and_zero(tmp_path):
     pdf = tmp_path / "source.pdf"
     pdf.write_bytes(b"%PDF")
+    settings = SeedingSettings(cache_path=tmp_path, storage_path=tmp_path)
     raw = [{"county": "Nairobi", "category": "Revenue Receipts",
             "subcategory": "Total", "allocated": None, "absorbed": Decimal(0),
             "amounts_in": "kes", "fiscal_year": "2024/25", "quarter": None,
@@ -69,8 +72,11 @@ def test_pdf_conversion_keeps_artifact_page_absence_and_zero(tmp_path):
         path=pdf, sha256="b" * 64,
     )), patch("seeding.parse_cache.parse_with_cache", return_value=raw):
         payload = fetcher._download_and_parse_county_pdf(
-            None, "https://cob.go.ke/report.pdf", SeedingSettings(cache_path=tmp_path),
+            None, "https://cob.go.ke/report.pdf", settings,
         )
+    digest = hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert configured_receipt_store(settings).read(digest) == b"%PDF"
+    assert (tmp_path / "response-receipts" / digest[:2] / digest).read_bytes() == b"%PDF"
     row = parser.parse_budget_payload(payload)[0]
     assert row.allocated_amount is None
     assert row.actual_amount == 0
