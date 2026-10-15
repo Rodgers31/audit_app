@@ -97,7 +97,10 @@
 @layer base {
   html {
     font-family: 'Public Sans', system-ui, sans-serif;
-    scroll-behavior: smooth;
+    /* Native history restoration must not animate through an intermediate
+       offset that a rapid forward/back can save as the new list position.
+       User actions that need animation opt in with behavior: 'smooth'. */
+    scroll-behavior: auto;
     /* Tells the browser which native form widget / scrollbar palette
        to use. Pairs with Tailwind ``darkMode: 'media'`` so the user
        gets dark scrollbars + form controls without a manual toggle. */
