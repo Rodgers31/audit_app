@@ -110,6 +110,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-receipts
+          include-hidden-files: true
           path: |
             backend/.ci-test-results/collection-*.json
             backend/.ci-test-results/results-*.xml

@@ -12,6 +12,39 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class ConfigurationTests(unittest.TestCase):
+    def assert_backend_receipts(self, workflow):
+        step = next(step for step in workflow["jobs"]["test-backend"]["steps"]
+                    if step.get("name") == "Preserve backend test receipts")
+        self.assertEqual(step["if"], "always()")
+        self.assertEqual(step["uses"], "actions/upload-artifact@v4")
+        self.assertIs(step["with"].get("include-hidden-files"), True)
+        self.assertEqual(step["with"]["path"].splitlines(), [
+            "backend/.ci-test-results/collection-*.json",
+            "backend/.ci-test-results/results-*.xml",
+            "backend/.ci-test-results/summary.json",
+            "backend/coverage.xml",
+        ])
+
+    def test_backend_receipts_include_only_explicit_hidden_reports(self):
+        for name, workflow in self.workflows():
+            with self.subTest(workflow=name):
+                self.assert_backend_receipts(workflow)
+
+    def test_receipt_policy_rejects_hidden_omission_and_broader_upload(self):
+        for name, workflow in self.workflows():
+            for mutation in ("omitted", "false", "string", "broad"):
+                bad = deepcopy(workflow)
+                step = next(step for step in bad["jobs"]["test-backend"]["steps"]
+                            if step.get("name") == "Preserve backend test receipts")
+                if mutation == "omitted":
+                    step["with"].pop("include-hidden-files", None)
+                elif mutation == "broad":
+                    step["with"]["path"] = "backend/"
+                else:
+                    step["with"]["include-hidden-files"] = False if mutation == "false" else "true"
+                with self.subTest(workflow=name, mutation=mutation), self.assertRaises(AssertionError):
+                    self.assert_backend_receipts(bad)
+
     def workflows(self):
         for name in ("ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
