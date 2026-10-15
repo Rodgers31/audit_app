@@ -18,6 +18,7 @@ const health={account_id:id,external_account_id:'901',api_product:'facebook_page
 const account={id,platform:'facebook',display_name:'AuditGava',handle:null,profile_url:'https://www.facebook.com/901',connection_state:'connected',publishing_enabled:false,capabilities:{rules_version:'social-v1',provider_api_version:'v26.0',eligible:true,supported_formats:[],feature_states:{publishing:'unsupported'},limits:{},granted_scopes:[],required_scopes:[],price_class:'free',source_links:[],verified_at:null,adapter_available:false}};
 beforeEach(() => {
   jest.restoreAllMocks();
+  window.sessionStorage.clear();
   useAuth.mockReturnValue({user:{id:'actor'}});
   useSocialAccounts.mockReturnValue({ data: [], refetch: jest.fn(), isPending:false });
   useMetaConnectionStatus.mockReturnValue({ data:status, refetch:jest.fn(), isPending:false });
@@ -169,4 +170,24 @@ test('recovery rejects a response for a different flow UUID',async()=>{
   const api=jest.requireMock('@/lib/api/axios').default;
   api.get.mockResolvedValue({data:{...discovery,flow_id:'e63cc738-a5bd-422c-9c55-5534657f3867'}});
   await expect(connectionApi.choices(id)).rejects.toMatchObject({code:'INVALID_RESPONSE'});
+});
+
+test('same administrator can recover granted choices after the admin page remounts',async()=>{
+  const {popup}=readyFlow();
+  const complete=jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  const choices=jest.spyOn(connectionApi,'choices').mockResolvedValue(discovery);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  await screen.findByRole('heading',{name:'Confirm account identities'});
+  view.unmount(); // AdminGuard removes this subtree during a sign-in recheck.
+  render(<MetaAccounts />);
+  fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
+  await screen.findByRole('heading',{name:'Confirm account identities'});
+  expect(choices).toHaveBeenCalledWith(id);
+  expect(complete).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button',{name:'Confirm selected identities'})).toBeDisabled();
+  expect(JSON.stringify(window.sessionStorage)).not.toContain('short-code');
+  expect(JSON.stringify(window.sessionStorage)).not.toContain(state);
 });
