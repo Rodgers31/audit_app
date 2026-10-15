@@ -25,6 +25,9 @@ NO_STORE = {'Cache-Control': 'private, no-store'}
 
 class SocialRoute(APIRoute):
 
+    async def prepare_request(self, request: Request):
+        return request
+
     def get_route_handler(self):
         original = super().get_route_handler()
 
@@ -34,6 +37,7 @@ class SocialRoute(APIRoute):
             request_id = uuid4()
             request.state.social_request_id = request_id
             try:
+                request = await self.prepare_request(request)
                 response = await original(request)
             except SocialError as error:
                 failure_code = error.code
