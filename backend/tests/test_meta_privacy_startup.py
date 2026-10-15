@@ -24,7 +24,7 @@ except Exception as error:
     result['startup_errors'] = chain
 else:
     from fastapi.testclient import TestClient
-    from social.privacy.api import DATA_PATH, STATUS_PATH
+    from social.privacy.api import DATA_PATH, STATUS_PATH, DEAUTH_PATH
     from social.privacy.runtime import registered_ownership
     from types import SimpleNamespace
     output = io.StringIO()
@@ -36,7 +36,9 @@ else:
     client = TestClient(main.app, raise_server_exceptions=False)
     responses = [client.post(DATA_PATH, content='unknown=INERT-META-STARTUP-PRIVATE',
         headers={'Content-Type':'application/x-www-form-urlencoded'}),
-        client.get(STATUS_PATH, params={'code':'INERT-META-STARTUP-PRIVATE'})]
+        client.get(STATUS_PATH, params={'code':'INERT-META-STARTUP-PRIVATE'}),
+        client.post(DEAUTH_PATH, content='signed_request=x',
+            headers={'Content-Type':'application/x-www-form-urlencoded'})]
     client.get('/api/v1/social/privacy/meta/INERT-META-STARTUP-PRIVATE')
     owner = registered_ownership(SimpleNamespace(app=main.app))
     # Exercise the installed Uvicorn formatter, whose five-argument contract
@@ -60,7 +62,8 @@ print(json.dumps(result))
 
 def configuration():
     return {
-        'META_PRIVACY_ENABLED': 'true', 'META_APP_ID': '1396416369308998',
+        'META_PRIVACY_ENABLED': 'true', 'META_DEAUTHORIZATION_ENABLED': 'true',
+        'META_APP_ID': '1396416369308998',
         'META_APP_SECRET': MARKER,
         'META_PRIVACY_STATUS_URL': 'https://privacy.example.test/api/v1/social/privacy/meta/data-deletion/status',
         'SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION': 'e1',
@@ -87,7 +90,7 @@ def capture(values):
 def test_explicit_privacy_configuration_installs_actual_public_signed_ingress():
     result = capture(configuration())
     assert result['startup_errors'] == []
-    assert result['statuses'] == [400, 404]
+    assert result['statuses'] == [400, 404, 400]
     assert json.loads(result['bodies'][0])['detail']['code'] == 'PRIVACY_REQUEST_INVALID'
     assert result['ownership_app'] == '1396416369308998'
     assert result['native_registered'] is False
@@ -98,19 +101,36 @@ def test_explicit_privacy_configuration_installs_actual_public_signed_ingress():
         assert headers['content-security-policy'] == "default-src 'none'; frame-ancestors 'none'"
 
 
+@pytest.mark.parametrize('deauthorization', [None, 'false'])
+def test_privacy_only_keeps_app_removal_off_by_default(deauthorization):
+    values = configuration()
+    if deauthorization is None:
+        values.pop('META_DEAUTHORIZATION_ENABLED')
+    else:
+        values['META_DEAUTHORIZATION_ENABLED'] = deauthorization
+    result = capture(values)
+    assert result['startup_errors'] == []
+    assert result['statuses'] == [400, 404, 404]
+    assert result['ownership_app'] == '1396416369308998'
+
+
 @pytest.mark.parametrize('enabled', [None, 'false'])
 def test_disabled_privacy_ignores_unused_secrets_and_mounts_nothing(enabled):
-    values = {k: MARKER for k in configuration() if k != 'META_PRIVACY_ENABLED'}
+    values = {k: MARKER for k in configuration()
+              if k not in {'META_PRIVACY_ENABLED', 'META_DEAUTHORIZATION_ENABLED'}}
     if enabled is not None:
         values['META_PRIVACY_ENABLED'] = enabled
     result = capture(values)
     assert result['startup_errors'] == []
-    assert result['statuses'] == [404, 404]
+    assert result['statuses'] == [404, 404, 404]
     assert result['ownership_app'] is None
 
 
 @pytest.mark.parametrize('change', [
     {'META_PRIVACY_ENABLED': 'yes'},
+    {'META_DEAUTHORIZATION_ENABLED': 'yes'},
+    {'META_PRIVACY_ENABLED': 'false'},
+    {'META_CONNECTIONS_ENABLED': 'true', 'META_DEAUTHORIZATION_ENABLED': 'false'},
     {'META_CONNECTIONS_ENABLED': 'true', 'META_PRIVACY_ENABLED': 'false'},
     {'META_APP_ID': MARKER}, {'META_APP_SECRET': ''},
     {'META_PRIVACY_STATUS_URL': 'https://privacy.example.test/wrong'},

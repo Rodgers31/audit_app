@@ -1,14 +1,17 @@
 # Meta privacy runtime assembly (#488)
 
 The existing API now has an explicit, default-off startup entry point for the
-signed data-deletion callback and indexed connection ownership. This supplies
+signed data-deletion callback, separately opted-in app-removal callback, and
+indexed connection ownership. This supplies
 runtime assembly; it does not certify the app, enable OAuth, connect accounts,
 install publishing adapters, start a worker, or complete deletion.
 
 `main.py` calls `configure_meta_privacy(app, SessionLocal)`. Missing or `false`
 `META_PRIVACY_ENABLED` leaves ingress and app state absent. Enabling
-`META_CONNECTIONS_ENABLED` without privacy assembly refuses startup. Both flags
-accept exactly `true` or `false`. Privacy can remain enabled while new OAuth
+`META_DEAUTHORIZATION_ENABLED` without privacy assembly refuses startup. Enabling
+`META_CONNECTIONS_ENABLED` requires both privacy and app-removal assembly. All
+three flags accept exactly `true` or `false`; absent flags default to `false`.
+Privacy can remain enabled while new OAuth
 connections are disabled, including after a rollback of connection enablement.
 
 Enabled configuration requires these explicitly supplied server-only values:
@@ -16,6 +19,7 @@ Enabled configuration requires these explicitly supplied server-only values:
 | Name | Meaning |
 | --- | --- |
 | `META_PRIVACY_ENABLED` | Explicit callback/index opt-in |
+| `META_DEAUTHORIZATION_ENABLED` | Separate app-removal HTTP opt-in; defaults off, including when privacy is enabled |
 | `META_APP_ID`, `META_APP_SECRET` | Same exact app identity as the connection configuration |
 | `META_PRIVACY_STATUS_URL` | HTTPS URL ending exactly in `/api/v1/social/privacy/meta/data-deletion/status` |
 | `SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION`, `SOCIAL_CREDENTIAL_KEYS` | Existing versioned credential envelope keyring |
@@ -32,9 +36,17 @@ need deployed operator evidence.
 The existing callback performs signed validation and commits a durable request
 before acknowledgement. Retrying after reconstructing the runtime returns the
 same confirmation receipt. Public status remains `pending_review` with
-`deletion_completed: false`. No deletion executor, legal retention decision or
-deauthorization HTTP protocol is supplied by this change. Do not register a
-guessed deauthorization callback or claim that disconnect completes deletion.
+`deletion_completed: false`. No deletion executor or legal retention decision is
+supplied by this change.
+
+The separately opted-in `/api/v1/social/privacy/meta/deauthorization` route
+accepts a bounded POST form containing only `signed_request`. It uses the same
+signature validation and existing durable revocation service, then returns an
+empty HTTP 200 only after commit. It exposes no internal receipt or deletion
+status. This wire acknowledgment is a provisional engineering contract: local
+tests do not establish Meta acceptance. Verify a separately authorized real app
+removal event before accepting new OAuth connections. Leave this opt-in off
+until that check is prepared; do not claim that disconnect completes deletion.
 
 Privacy response headers are applied outside the global middleware, including
 errors, rate-limit rejection and unmatched private routes. Application audit

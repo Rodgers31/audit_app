@@ -60,13 +60,16 @@ def configure_meta_privacy(app, session_factory, environ=None):
     registration = None
     try:
         privacy = values.get('META_PRIVACY_ENABLED', 'false')
+        deauthorization = values.get('META_DEAUTHORIZATION_ENABLED', 'false')
         connections = values.get('META_CONNECTIONS_ENABLED', 'false')
-        if privacy not in ('true', 'false') or connections not in ('true', 'false'):
+        if any(value not in ('true', 'false') for value in (privacy, deauthorization, connections)):
             raise ValueError()
         if privacy == 'false':
-            if connections == 'true':
+            if connections == 'true' or deauthorization == 'true':
                 raise ValueError()
             return None
+        if connections == 'true' and deauthorization != 'true':
+            raise ValueError()
         envelope_keys = _object(values.get('SOCIAL_CREDENTIAL_KEYS'), 64)
         digest_keys = _object(values.get('META_PRIVACY_SUBJECT_KEYS'), 16)
         raw_envelopes = {_key(key) for key in envelope_keys.values()}
@@ -75,7 +78,8 @@ def configure_meta_privacy(app, session_factory, environ=None):
             raise ValueError()  # Subject lookup and credential encryption use separate keys.
         registration = PrivacyRegistration(
             PrivacyConfig(values.get('META_APP_ID'), values.get('META_APP_SECRET'),
-                          values.get('META_PRIVACY_STATUS_URL'), enabled=True),
+                          values.get('META_PRIVACY_STATUS_URL'), enabled=True,
+                          deauthorization_enabled=deauthorization == 'true'),
             SubjectDigester(values.get('META_PRIVACY_SUBJECT_ACTIVE_KEY_VERSION'), raw_digests),
             CredentialCipher(values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION'), envelope_keys),
             session_factory,
