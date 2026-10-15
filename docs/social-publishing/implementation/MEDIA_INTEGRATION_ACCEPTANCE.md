@@ -37,3 +37,20 @@ See #490 before enabling storage or invoking maintenance. The cleanup port is de
 Before activating quarantine cleanup, separate browser grant-renewal deadlines from orphan expiry and establish conservative handling of in-flight signed PUTs. A signed request can begin before expiry; an age timestamp or DELETE alone does not establish that all client writes stopped. This is a maintenance activation gate tracked in #490, not a claim validated against live R2 in this batch. Keep cleanup disabled until that contract is established.
 
 These PRs add tested code, not production migration, deployment, account connection, publication, billing or environment changes. Hosted Actions remain disabled by the existing workflow; local results are not hosted CI.
+
+## Media metadata request boundary
+
+All routes mounted from the media router bound their request bodies to 64 KiB
+before JSON decoding, authentication dependencies or media service execution.
+This covers upload initiation and completion as well as the router's read routes;
+the shared social boundary still applies private/no-store headers, request IDs
+and sanitized error telemetry. File bytes continue to use the private direct
+R2 PUT flow and its separate image/video size limits.
+
+A declared length above the bound returns HTTP413 without consuming the body.
+Absent or understated lengths still hit the actual streamed-byte bound; a
+crossing chunk stops further reads. Malformed or duplicate Content-Length
+headers return HTTP400. Exactly64KiB is admitted to existing JSON/schema/auth
+validation. This application guard does not certify CDN/proxy limits, request
+timeouts or deployed host/storage/backup acceptance. Media enablement remains
+separate.

@@ -3,12 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.orm import Session
 
-from ..http_boundary import AdminUser, SocialRoute, get_db, social_admin
+from ..http_boundary import AdminUser, get_db, social_admin
 from .contracts import CompleteUpload, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
+from .http import MediaRoute
 from .runtime import request_media_runtime
 from .service import MediaService
 
-router = APIRouter(prefix='/api/v1/admin/social/media', tags=['Admin Social Media'], dependencies=[Depends(social_admin)], route_class=SocialRoute)
+router = APIRouter(prefix='/api/v1/admin/social/media', tags=['Admin Social Media'], dependencies=[Depends(social_admin)], route_class=MediaRoute)
 
 
 def service(request: Request, db: Session = Depends(get_db)):
