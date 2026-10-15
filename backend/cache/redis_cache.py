@@ -20,6 +20,10 @@ from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
+# The qualified 47-county response exceeds 2 MiB. Admit that bounded public
+# result while retaining the existing 16 MiB aggregate payload budget/eviction.
+MEMORY_CACHE_MAX_ENTRY_BYTES = 3 * 1024 * 1024
+
 
 def _json_default(obj: Any) -> Any:
     """Encode the one type endpoint handlers legitimately hand the cache.
@@ -168,7 +172,7 @@ class RedisCache:
         self._memory_cache = {}  # {key: (value, expiry_timestamp)}
         self._memory_cache_max_size = 1024
         self._memory_cache_max_bytes = 16 * 1024 * 1024
-        self._memory_cache_max_entry_bytes = 2 * 1024 * 1024
+        self._memory_cache_max_entry_bytes = MEMORY_CACHE_MAX_ENTRY_BYTES
         self._memory_lock = threading.RLock()
         self._metrics = Counter()
         self._unserialisable_values = 0
@@ -281,7 +285,7 @@ class RedisCache:
                 # Fallback to memory cache with TTL
                 size = len(payload.encode("utf-8"))
                 with self._memory_lock:
-                    entry_limit = getattr(self, "_memory_cache_max_entry_bytes", 2 * 1024 * 1024)
+                    entry_limit = getattr(self, "_memory_cache_max_entry_bytes", MEMORY_CACHE_MAX_ENTRY_BYTES)
                     total_limit = getattr(self, "_memory_cache_max_bytes", 16 * 1024 * 1024)
                     if size > entry_limit or size > total_limit:
                         self.record("oversized")
