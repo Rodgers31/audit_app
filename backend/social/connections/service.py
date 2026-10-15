@@ -18,7 +18,7 @@ from ..contracts import CapabilitySet, canonical_hash
 from ..models import SocialAccount, SocialAuditEvent, SocialCommandReceipt, SocialControls
 from ..service import SocialError, SocialService, iso, utc
 from ..telemetry import log_event
-from .config import SCOPES, PAGE_SCOPES, IG_SCOPES
+from .config import PAGE_SCOPES, IG_SCOPES
 from .crypto import CredentialCipher
 from .models import SocialCredential, SocialOAuthFlow
 from .provider import InspectedDiscovery, MetaProvider
@@ -54,7 +54,7 @@ class ConnectionService:
     def status(self):
         self.db.execute(select(SocialOAuthFlow.id).limit(1))  # Missing schema is unavailable, never a success.
         errors = self.config.blockers()
-        return {'provider': 'meta', 'available': not errors, 'blockers': errors, 'access_mode': self.config.access_mode if self.config.access_mode in {'owned_standard','advanced'} else 'unverified', 'scopes': list(SCOPES), 'publishing_adapter_available': False}
+        return {'provider': 'meta', 'available': not errors, 'blockers': errors, 'access_mode': self.config.access_mode if self.config.access_mode in {'owned_standard','advanced'} else 'unverified', 'scopes': list(self.config.requested_scopes), 'publishing_adapter_available': False}
 
     def _body(self, body, binding):
         # Only a digest is persisted by SocialService.command. No code/state body is logged.
@@ -102,7 +102,7 @@ class ConnectionService:
                 raise SocialError('OAUTH_STATE_USED', 'This connection already advanced. Start a new connection.')
             state = self.cipher.decrypt(flow.id, 'oauth_start', flow.key_version, flow.encrypted_verifier)['state']
         result = dict(result)
-        result['authorize_url'] = f'https://www.facebook.com/{self.config.graph_version}/dialog/oauth?' + urlencode({'client_id': self.config.app_id, 'redirect_uri': body.redirect_uri, 'state': state, 'response_type': 'code', 'scope': ','.join(SCOPES), 'auth_type': 'rerequest'})
+        result['authorize_url'] = f'https://www.facebook.com/{self.config.graph_version}/dialog/oauth?' + urlencode({'client_id': self.config.app_id, 'redirect_uri': body.redirect_uri, 'state': state, 'response_type': 'code', 'scope': ','.join(self.config.requested_scopes), 'auth_type': 'rerequest'})
         return result
 
     def _discovery_dto(self, flow, grant):

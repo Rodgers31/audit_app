@@ -12,7 +12,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit
 
 import httpx
 
-from .config import SCOPES, PAGE_SCOPES, IG_SCOPES
+from .config import PAGE_SCOPES, IG_SCOPES
 from ..service import SocialError
 
 
@@ -110,7 +110,7 @@ class MetaProvider:
 
     def authorize_url(self, state, redirect_uri):
         self.config.require_redirect(redirect_uri)
-        return f'https://www.facebook.com/{self.config.graph_version}/dialog/oauth?' + urlencode({'client_id': self.config.app_id, 'redirect_uri': redirect_uri, 'state': state, 'response_type': 'code', 'scope': ','.join(SCOPES), 'auth_type': 'rerequest'})
+        return f'https://www.facebook.com/{self.config.graph_version}/dialog/oauth?' + urlencode({'client_id': self.config.app_id, 'redirect_uri': redirect_uri, 'state': state, 'response_type': 'code', 'scope': ','.join(self.config.requested_scopes), 'auth_type': 'rerequest'})
 
     def _request(self, method, path, *, token=None, params=None, data=None):
         # Path is internal, never derived from a returned provider URL.
@@ -174,7 +174,7 @@ class MetaProvider:
         now = datetime.now(timezone.utc)
         if any(v and datetime.fromisoformat(v) <= now for v in (expires, data_expires)):
             raise SocialError('GRANT_REVOKED', 'Meta authorization expired. Reconnect this account.')
-        return {'scopes': sorted(set(scopes) & set(SCOPES)), 'access_expires_at': expires, 'data_access_expires_at': data_expires, 'external_user_id': _identity(value.get('user_id')), 'granular_scopes': value.get('granular_scopes', [])}
+        return {'scopes': sorted(set(scopes) & set(self.config.requested_scopes)), 'access_expires_at': expires, 'data_access_expires_at': data_expires, 'external_user_id': _identity(value.get('user_id')), 'granular_scopes': value.get('granular_scopes', [])}
 
     def _paged(self, path, fields, token):
         result, seen, cursor = [], set(), None
@@ -222,6 +222,8 @@ class MetaProvider:
         metadata['scopes'] = sorted(set(metadata['scopes']) & actual)
         if 'pages_show_list' not in metadata['scopes']:
             raise SocialError('PERMISSIONS_REQUIRED', 'Page discovery permission was not granted. Reconnect and explicitly grant Page access.')
+        if self.config.business_discovery_enabled and 'business_management' not in metadata['scopes']:
+            raise SocialError('PERMISSIONS_REQUIRED', 'Business Page discovery permission was not granted. Reconnect and explicitly grant access to the intended business.')
         pages = self._paged('me/accounts', 'id,name,access_token,tasks,instagram_business_account', token)
         choices, ids = [], set()
         for page in pages:

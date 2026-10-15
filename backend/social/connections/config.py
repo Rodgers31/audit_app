@@ -23,9 +23,18 @@ class MetaConfig:
     access_mode: str = 'unverified'
     active_key_version: str = ''
     encryption_keys: dict[str, str] = field(default_factory=dict, repr=False)
+    business_discovery_enabled: bool = False
+
+    @property
+    def requested_scopes(self):
+        # Business-owned Pages can be omitted from /me/accounts without this
+        # separately consented permission. It is not a publishing capability.
+        return SCOPES + (('business_management',) if self.business_discovery_enabled is True else ())
 
     def blockers(self):
         errors = []
+        if type(self.business_discovery_enabled) is not bool:
+            errors.append('BUSINESS_DISCOVERY_CONFIGURATION_INVALID')
         if self.enabled is not True:
             errors.append('CONNECTIONS_DISABLED')
         if self.app_configuration_validated is not True:
@@ -79,4 +88,4 @@ def load_config():
             redirects = []
     except (ValueError, TypeError):
         keys, redirects = {}, []
-    return MetaConfig(enabled=os.getenv('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=os.getenv('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=os.getenv('META_APP_ID', ''), app_secret=os.getenv('META_APP_SECRET', ''), graph_version=os.getenv('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=os.getenv('META_ACCESS_MODE', 'unverified'), active_key_version=os.getenv('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys)
+    return MetaConfig(enabled=os.getenv('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=os.getenv('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=os.getenv('META_APP_ID', ''), app_secret=os.getenv('META_APP_SECRET', ''), graph_version=os.getenv('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=os.getenv('META_ACCESS_MODE', 'unverified'), active_key_version=os.getenv('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=os.getenv('META_BUSINESS_DISCOVERY_ENABLED') == 'true')
