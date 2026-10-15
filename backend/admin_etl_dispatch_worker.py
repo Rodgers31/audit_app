@@ -5,6 +5,7 @@ Only a fresh fenced terminal receipt releases it. There is no automatic recovery
 of uncertain effects or administrative unblock endpoint.
 """
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import threading
@@ -194,7 +195,7 @@ def stop_child(child):
         child.wait()
 
 
-def serve(factory):
+def serve(factory, stop_requested=lambda: False):
     from admin_etl_dispatch_adapter import supported_registry
     if not enabled() or not supported_registry():
         raise RuntimeError("Dedicated dispatch is disabled or its mapping is unavailable")
@@ -214,20 +215,22 @@ def serve(factory):
     keeper.start()
     child = None
     try:
-        while not stopped.is_set():
+        while not stopped.is_set() and not stop_requested():
             claimed = claim(factory, generation)
             if claimed is None:
                 stopped.wait(0.5)
                 continue
+            if stop_requested():
+                break
             command_id, token = claimed
             # A fixed module and server-created IDs: the API never supplies code,
             # paths, source URLs or arbitrary native CLI arguments.
             child = subprocess.Popen([sys.executable, "-m", "admin_etl_dispatch_adapter", str(command_id), str(token), str(generation)],
                 cwd=Path(__file__).resolve().parent, stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            while child.poll() is None and not stopped.wait(0.1):
+            while child.poll() is None and not stopped.wait(0.1) and not stop_requested():
                 pass
-            if stopped.is_set() and child.poll() is None:
+            if (stopped.is_set() or stop_requested()) and child.poll() is None:
                 stop_child(child)
             finish(factory, generation, command_id, token, child.returncode)
             child = None
@@ -250,13 +253,27 @@ def main():
         print("Dedicated dispatch is disabled.", file=sys.stderr)
         return 1
     from database import SessionLocal
+    shutdown_requested = False
+
+    def request_stop(signum, frame):
+        nonlocal shutdown_requested
+        # A signal handler must not acquire Event/DB locks or raise into a
+        # commit/finalizer. Repeated supervisor signals coalesce into this flag.
+        shutdown_requested = True
+
+    previous_handlers = {}
     try:
-        serve(SessionLocal)
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous_handlers[signum] = signal.signal(signum, request_stop)
+        serve(SessionLocal, stop_requested=lambda: shutdown_requested)
     except KeyboardInterrupt:
         return 0
     except Exception:
         print("Dedicated worker unavailable.", file=sys.stderr)
         return 1
+    finally:
+        for signum, handler in previous_handlers.items():
+            signal.signal(signum, handler)
     return 0
 
 
