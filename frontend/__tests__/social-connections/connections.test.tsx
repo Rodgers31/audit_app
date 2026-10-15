@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { decodeConnectionStatus, decodeDiscoveredFlow, decodeStartedFlow, decodeAccountHealth, decodeSelectedAccounts, connectionApi } from '@/lib/api/socialConnections';
 import { receiveMetaCallback } from '@/components/admin/social/connections/callbackSecurity';
 import MetaAccounts from '@/components/admin/social/connections/MetaAccounts';
+import { readConnectionRecovery, saveConnectionRecovery } from '@/components/admin/social/connections/connectionRecovery';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }));
 jest.mock('@/lib/hooks/useSocial', () => ({ useSocialAccounts: jest.fn() }));
@@ -18,6 +19,7 @@ const health={account_id:id,external_account_id:'901',api_product:'facebook_page
 const account={id,platform:'facebook',display_name:'AuditGava',handle:null,profile_url:'https://www.facebook.com/901',connection_state:'connected',publishing_enabled:false,capabilities:{rules_version:'social-v1',provider_api_version:'v26.0',eligible:true,supported_formats:[],feature_states:{publishing:'unsupported'},limits:{},granted_scopes:[],required_scopes:[],price_class:'free',source_links:[],verified_at:null,adapter_available:false}};
 beforeEach(() => {
   jest.restoreAllMocks();
+  window.sessionStorage.clear();
   useAuth.mockReturnValue({user:{id:'actor'}});
   useSocialAccounts.mockReturnValue({ data: [], refetch: jest.fn(), isPending:false });
   useMetaConnectionStatus.mockReturnValue({ data:status, refetch:jest.fn(), isPending:false });
@@ -169,4 +171,60 @@ test('recovery rejects a response for a different flow UUID',async()=>{
   const api=jest.requireMock('@/lib/api/axios').default;
   api.get.mockResolvedValue({data:{...discovery,flow_id:'e63cc738-a5bd-422c-9c55-5534657f3867'}});
   await expect(connectionApi.choices(id)).rejects.toMatchObject({code:'INVALID_RESPONSE'});
+});
+
+test('same administrator can recover granted choices after the admin page remounts',async()=>{
+  const {popup}=readyFlow();
+  const complete=jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  const choices=jest.spyOn(connectionApi,'choices').mockResolvedValue(discovery);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  await screen.findByRole('heading',{name:'Confirm account identities'});
+  view.unmount(); // AdminGuard removes this subtree during a sign-in recheck.
+  render(<MetaAccounts />);
+  fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
+  await screen.findByRole('heading',{name:'Confirm account identities'});
+  expect(choices).toHaveBeenCalledWith(id);
+  expect(complete).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button',{name:'Confirm selected identities'})).toBeDisabled();
+  expect(JSON.stringify(window.sessionStorage)).not.toContain('short-code');
+  expect(JSON.stringify(window.sessionStorage)).not.toContain(state);
+});
+
+test.each(['actor change','unmount'])('accepted selection clears its recovery reference after %s',async transition=>{
+  const {popup}=readyFlow(), pending=deferred<Awaited<ReturnType<typeof connectionApi.select>>>(), refetch=jest.fn();
+  useSocialAccounts.mockReturnValue({data:[],refetch,isPending:false});
+  jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  jest.spyOn(connectionApi,'select').mockReturnValue(pending.promise);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
+  expect(readConnectionRecovery('actor').flow).toBe(id);
+  endActor(view,transition);
+  await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
+  expect(readConnectionRecovery('actor').flow).toBeUndefined();
+  expect(refetch).not.toHaveBeenCalled();
+  expect(screen.queryByText('Selected accounts connected. Publishing remains disabled.')).not.toBeInTheDocument();
+});
+
+test('a late accepted selection preserves the same actors newer flow',async()=>{
+  const {popup}=readyFlow(), pending=deferred<Awaited<ReturnType<typeof connectionApi.select>>>();
+  jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  jest.spyOn(connectionApi,'select').mockReturnValue(pending.promise);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
+  view.unmount();
+  const newerFlow='5aadebe9-11ce-4207-afce-836cd86cc9da';
+  expect(saveConnectionRecovery('actor',newerFlow,discovery.expires_at)).toBe(true);
+  await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
+  expect(readConnectionRecovery('actor').flow).toBe(newerFlow);
 });

@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth/AuthProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { receiveMetaCallback } from './callbackSecurity';
+import { forgetConnectionRecovery, readConnectionRecovery, saveConnectionRecovery } from './connectionRecovery';
 import styles from '../social.module.css';
 
 function useActorEpoch(actor: string | undefined) {
@@ -63,6 +64,7 @@ export default function MetaAccounts() {
   const [page, setPage] = useState(''), [includeInstagram, setIncludeInstagram] = useState(false);
   const [confirmed, setConfirmed] = useState(false), [expired, setExpired] = useState(false);
   const [recoverFlow, setRecoverFlow] = useState<string>();
+  const [recoveryUnavailable, setRecoveryUnavailable] = useState(false);
   const pending = useRef<{ popup: Window; state: string; redirect: string; key: string; id: string } | null>(null);
   const openedPopup = useRef<Window | null>(null);
   const selectionKey = useRef<{ signature: string; key: string } | null>(null);
@@ -76,7 +78,7 @@ export default function MetaAccounts() {
       if (!flow || !payload) return;
       const current = captureEpoch();
       pending.current = null; openedPopup.current = null; flow.popup.close(); setBusy(true);
-      if (payload.denied || !payload.code) { setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
+      if (payload.denied || !payload.code) { setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id)); setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
       try { const result = await connectionApi.complete(payload.code, flow.state, flow.redirect, flow.key); if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); }
       catch (e) { if (current()) { setError(e); setRecoverFlow(flow.id); } }
       finally { if (current()) setBusy(false); }
@@ -85,7 +87,9 @@ export default function MetaAccounts() {
     return () => { window.removeEventListener('message', handler); openedPopup.current?.close(); openedPopup.current = null; pending.current = null; };
   }, [user?.id, captureEpoch]);
   useEffect(() => {
-    setDiscovery(undefined); setPage(''); setIncludeInstagram(false); setConfirmed(false); setError(undefined); setBusy(false); setRecoverFlow(undefined); selectionKey.current = null;
+    setDiscovery(undefined); setPage(''); setIncludeInstagram(false); setConfirmed(false); setError(undefined); setBusy(false); selectionKey.current = null;
+    const recovery = readConnectionRecovery(user?.id);
+    setRecoverFlow(recovery.flow); setRecoveryUnavailable(!recovery.available);
   }, [user?.id]);
   useEffect(() => {
     if (!discovery) { setExpired(false); return; }
@@ -95,7 +99,7 @@ export default function MetaAccounts() {
     return () => window.clearTimeout(timer);
   }, [discovery]);
   async function start(reconnect?: string) {
-    if (busy || !connectAvailable) return;
+    if (busy || !connectAvailable || !user?.id) return;
     const current = captureEpoch();
     openedPopup.current?.close(); openedPopup.current = null; pending.current = null;
     const popup = window.open('about:blank', 'AuditGavaMetaConnection', 'popup,width=700,height=760');
@@ -108,6 +112,7 @@ export default function MetaAccounts() {
       if (!current()) { popup.close(); return; }
       const url = new URL(flow.authorize_url);
       if (url.searchParams.get('redirect_uri') !== redirect || Date.parse(flow.expires_at) <= Date.now()) throw new ConnectionError('INVALID_RESPONSE', 'The connection callback or expiry differs from this admin page.');
+      setRecoveryUnavailable(!saveConnectionRecovery(user.id, flow.flow_id, flow.expires_at));
       pending.current = { popup, state: url.searchParams.get('state')!, redirect, key: crypto.randomUUID(), id: flow.flow_id };
       popup.location.replace(flow.authorize_url);
     } catch (e) { popup.close(); if (current()) { openedPopup.current = null; setError(e); } }
@@ -128,7 +133,12 @@ export default function MetaAccounts() {
     const signature = JSON.stringify([discovery.flow_id, page, instagram]);
     if (selectionKey.current?.signature !== signature) selectionKey.current = { signature, key: crypto.randomUUID() };
     setBusy(true); setError(undefined);
-    try { await connectionApi.select(discovery.flow_id, page, instagram, selectionKey.current.key); if (!current()) return; setDiscovery(undefined); setConfirmed(true); await accounts.refetch(); }
+    try {
+      await connectionApi.select(discovery.flow_id, page, instagram, selectionKey.current.key);
+      const forgotten = forgetConnectionRecovery(user!.id, discovery.flow_id);
+      if (!current()) return;
+      setRecoveryUnavailable(!forgotten); setDiscovery(undefined); setConfirmed(true); await accounts.refetch();
+    }
     catch (e) { if (current()) setError(e); }
     finally { if (current()) setBusy(false); }
   }
@@ -136,7 +146,8 @@ export default function MetaAccounts() {
     <div className={styles.toolbar}><Link href='/admin/social'>Back to social publishing</Link><button className={styles.button} type='button' disabled={busy} onClick={() => { void accounts.refetch(); void status.refetch(); }}>Refresh accounts</button></div>
     <div className={styles.status}><strong>Manual account connection</strong><span>New connections keep publishing disabled.</span></div>
     <ErrorNotice error={error ?? accounts.error ?? status.error} />
-    {recoverFlow && <div className={styles.notice}><p>The completion response was unavailable. Recover this flow&apos;s account choices before starting again.</p><button className={styles.button} type='button' disabled={busy} onClick={recover}>Recover account choices</button></div>}
+    {recoveryUnavailable && <p role='status'>This browser cannot retain the connection recovery reference. If account selection is lost, start a new connection.</p>}
+    {recoverFlow && <div className={styles.notice}><p>A connection may have finished in the Meta window. Recover its account choices before starting again.</p><button className={styles.button} type='button' disabled={busy} onClick={recover}>Recover account choices</button></div>}
     {status.isPending && <p role='status'>Checking Meta connection availability…</p>}
     {status.data && <div className={styles.accountCard}><h2>Facebook and Instagram</h2><p>Connect the AuditGava Facebook Page and explicitly choose its linked professional Instagram account.</p>{!status.data.available && <div className={styles.notice}><p>Meta connections are unavailable until registered app configuration and server credentials are validated.</p><p className={styles.muted}>{status.data.blockers.join(' · ')}</p></div>}<p className={styles.muted}>Access: {status.data.access_mode.replaceAll('_', ' ')}. Requested permissions: {status.data.scopes.join(', ')}. Threads requires a separate future connection.</p><button className={`${styles.button} ${styles.primary}`} type='button' disabled={busy || !connectAvailable} onClick={() => start()}>{busy ? 'Connecting…' : 'Connect owned Meta accounts'}</button>{pending.current && <p role='status'>Complete authorization in the Meta popup. The same administrator session must confirm the accounts.</p>}</div>}
     {discovery && <section className={styles.accountCard} aria-label='Choose exact Meta identities'><h2>Confirm account identities</h2><p>Granted permissions: {discovery.granted_scopes.join(', ')}</p>{discovery.choices.length === 0 && <p>No connectable Pages were returned. Review the Meta grant and Page content access, then reconnect.</p>}<label>Facebook Page<select value={page} disabled={busy || expired} onChange={e => { setPage(e.target.value); setIncludeInstagram(false); }}><option value=''>Choose an exact Page</option>{discovery.choices.map(c => <option key={c.page_id} value={c.page_id} disabled={!c.page_eligible}>{c.display_name} · {c.page_id}{!c.page_eligible ? ' · insufficient permissions or content tasks' : ''}</option>)}</select></label>{selected && <><p>Page tasks: {selected.tasks.join(', ') || 'none reported'}</p>{selected.instagram_id ? <label className={styles.reviewCheck}><input type='checkbox' checked={includeInstagram} disabled={busy || expired || !selected.instagram_eligible} onChange={e => setIncludeInstagram(e.target.checked)} /><span>Also connect {selected.instagram_name} · @{selected.instagram_handle} · {selected.instagram_id}{!selected.instagram_eligible && <small> · professional eligibility, content tasks or permissions missing: {selected.missing_instagram_scopes.join(', ') || 'eligibility unverified'}</small>}</span></label> : <p>No accessible professional Instagram identity is linked to this Page.</p>}</>}{expired && <p role='alert'>This selection flow expired. Start a new connection.</p>}<button className={`${styles.button} ${styles.primary}`} type='button' disabled={busy || expired || !selected?.page_eligible} onClick={confirm}>Confirm selected identities</button></section>}
