@@ -11,8 +11,8 @@ from test_domain_support import db
 
 @pytest.mark.parametrize("allowed", [(), ("image/png",)])
 def test_registered_status_reports_actual_media_runtime_without_enabling_automation(db, monkeypatch, allowed):
-    monkeypatch.setattr("social.media.runtime.media_runtime", lambda: SimpleNamespace(available_mimes=lambda: allowed))
-    status = SocialService(db).status()
+    monkeypatch.setattr("social.media.runtime.media_runtime", lambda: pytest.fail('A domain status read must not construct an SDK client'))
+    status = SocialService(db, media_runtime=SimpleNamespace(available_mimes=lambda: allowed)).status()
     parsed = SystemDTO.model_validate(status)
     assert parsed.media_upload_available is bool(allowed)
     assert parsed.publishing_enabled is False

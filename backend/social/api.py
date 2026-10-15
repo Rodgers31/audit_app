@@ -152,7 +152,8 @@ class SystemDTO(StrictModel):
 
 def service(request: Request, db: Session=Depends(get_db)):
     from .worker.native_runtime import registered_adapters
-    return SocialService(db, available_adapters=registered_adapters(request))
+    from .media.runtime import request_media_runtime
+    return SocialService(db, available_adapters=registered_adapters(request), media_runtime=request_media_runtime(request))
 
 def command(request, svc, admin, key, body, action, status=200):
     try:

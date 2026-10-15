@@ -5,14 +5,14 @@ from sqlalchemy.orm import Session
 
 from ..http_boundary import AdminUser, SocialRoute, get_db, social_admin
 from .contracts import CompleteUpload, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
-from .runtime import media_runtime
+from .runtime import request_media_runtime
 from .service import MediaService
 
 router = APIRouter(prefix='/api/v1/admin/social/media', tags=['Admin Social Media'], dependencies=[Depends(social_admin)], route_class=SocialRoute)
 
 
-def service(db: Session = Depends(get_db)):
-    return MediaService(db, media_runtime())
+def service(request: Request, db: Session = Depends(get_db)):
+    return MediaService(db, request_media_runtime(request))
 
 Service = Annotated[MediaService, Depends(service)]
 Key = Annotated[UUID, Header(alias='Idempotency-Key')]

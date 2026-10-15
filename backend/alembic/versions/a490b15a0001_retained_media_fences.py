@@ -29,6 +29,10 @@ def upgrade():
 
 
 def downgrade():
+    op.execute("SET LOCAL lock_timeout = '2s'")
+    op.execute("SET LOCAL statement_timeout = '30s'")
+    # Serialize the history check and destructive DDL with every upload writer.
+    op.execute('LOCK TABLE social_media_uploads IN ACCESS EXCLUSIVE MODE')
     if op.get_bind().execute(sa.text('SELECT EXISTS(SELECT 1 FROM social_media_uploads WHERE retained_write_fence IS NOT NULL)')).scalar():
         raise RuntimeError('Retained media history prevents destructive downgrade')
     op.execute('DROP TRIGGER social_retained_fence_immutable ON social_media_uploads')

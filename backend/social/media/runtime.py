@@ -59,3 +59,14 @@ def media_runtime():
     except Exception:
         return MediaRuntime(MediaConfig(), None, None, 'Media storage or inspection configuration is unavailable.')
     return build_media_runtime(config)
+
+
+def request_media_runtime(request):
+    """HTTP never constructs or borrows a process-global SDK client."""
+    runtime = getattr(request.app.state, 'social_media_runtime', None)
+    if runtime is None:
+        return MediaRuntime(MediaConfig(), None, None, 'Media storage has not been enabled.')
+    if not isinstance(runtime, MediaRuntime):
+        from ..service import SocialError
+        raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'The application media runtime is unavailable.', 503)
+    return runtime

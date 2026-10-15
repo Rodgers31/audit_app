@@ -14,8 +14,12 @@ keyring, enabled private R2 storage, and working JPEG/PNG inspection. Invalid or
 partial configuration refuses startup. An explicitly supplied configuration map
 never borrows missing credentials from the process environment.
 
-The API lifespan installs only the registry and credential/media ports; it starts
-no worker or scheduler. Shutdown detaches the registry before closing adapters
+The API lifespan owns one media runtime per app and shares it with native
+composition, media routes and system status. HTTP never constructs the global
+CLI cache. Shutdown detaches the app bindings and closes its SDK client once,
+including when media is enabled while native adapters are off. Concurrent app
+instances own separate clients. The lifespan installs only the registry and
+credential/media ports; it starts no worker or scheduler. Shutdown detaches the registry before closing adapters
 and the R2 SDK client. Partial construction and failing closes still attempt all
 owned resource closures, with sanitized public errors.
 
@@ -102,7 +106,10 @@ Apply additive revision `a490b15a0001` after `a611b12a0001` before starting the 
 ORM/API. Its nullable field preserves existing history; its database constraint
 forbids settling grants, cleanup or capacity release on retained records, and its
 trigger forbids replacing/clearing a recorded fence. Lock timeout is 2 seconds
-and statement timeout 30 seconds. Migration failure must abort the release.
+and statement timeout 30 seconds. Downgrade takes an ACCESS EXCLUSIVE upload-table lock before checking history,
+so an in-flight fence writer cannot commit between the check and destructive
+DDL. Lock acquisition is bounded by the same timeouts. Migration failure must
+abort the release.
 
 Before deployment, retain the exact accepted source/configuration, resolved
 flag values and schema revision, and verify both global and account publishing

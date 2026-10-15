@@ -119,3 +119,54 @@ def test_lost_finalization_response_recovers_on_migrated_postgresql(pg_engine):
         with db.begin():
             assert db.get(SocialMediaBudget, 'global').pending_count == 0
             assert db.get(SocialMediaBudget, 'global').bytes_used == 2*len(png())
+
+
+def test_downgrade_serializes_retained_history_check_with_concurrent_writer(pg_engine):
+    from threading import Event
+    import time
+    from sqlalchemy import event
+    upgrade(pg_engine)
+    runtime = fixture(pg_engine)
+    result = ready(pg_engine, MediaRuntime(replace(runtime.config,retained_writes_enabled=False),
+                                          runtime.storage,runtime.inspector))
+    observed = Event()
+    migration_pid = []
+    def before_statement(conn, cursor, statement, *args):
+        if statement.startswith(('LOCK TABLE social_media_uploads','DROP TRIGGER social_retained_fence_immutable')):
+            observed.set()
+    event.listen(pg_engine,'before_cursor_execute',before_statement)
+    writer = pg_engine.connect()
+    transaction = writer.begin()
+    writer.execute(text("UPDATE social_media_uploads SET retained_write_fence='{}',pending_released=1 WHERE asset_id=:id"),{'id':result.id})
+    def downgrade():
+        with pg_engine.begin() as conn:
+            migration_pid.append(conn.execute(text('SELECT pg_backend_pid()')).scalar())
+            try:
+                with Operations.context(MigrationContext.configure(conn)):
+                    retained_migration().downgrade()
+            except RuntimeError as error:
+                assert 'history' in str(error)
+                return 'refused'
+            return 'dropped'
+    try:
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(downgrade)
+            try:
+                assert observed.wait(5), 'Downgrade never reached its serializing DDL/lock'
+                deadline = time.monotonic()+5
+                with pg_engine.connect() as observer:
+                    while time.monotonic()<deadline:
+                        waiting = observer.execute(text("SELECT wait_event_type='Lock' FROM pg_stat_activity WHERE pid=:pid"), {'pid':migration_pid[0]}).scalar()
+                        if waiting: break
+                        time.sleep(0.01)
+                    assert waiting, 'Downgrade was not actually blocked by the in-flight writer'
+                transaction.commit()
+                assert future.result(timeout=5) == 'refused', 'Downgrade erased concurrently committed retained history'
+            finally:
+                if transaction.is_active:transaction.rollback()
+    finally:
+        writer.close()
+        event.remove(pg_engine,'before_cursor_execute',before_statement)
+    with pg_engine.begin() as conn:
+        assert 'retained_write_fence' in {c['name'] for c in inspect(conn).get_columns('social_media_uploads')}
+        assert conn.execute(text('SELECT retained_write_fence FROM social_media_uploads WHERE asset_id=:id'),{'id':result.id}).scalar() == '{}'
