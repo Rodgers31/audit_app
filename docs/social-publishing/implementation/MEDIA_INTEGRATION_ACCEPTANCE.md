@@ -47,10 +47,10 @@ the shared social boundary still applies private/no-store headers, request IDs
 and sanitized error telemetry. File bytes continue to use the private direct
 R2 PUT flow and its separate image/video size limits.
 
-A declared length above the bound returns HTTP413 without consuming the body.
+A declared length above the bound returns HTTP 413 without consuming the body.
 Absent or understated lengths still hit the actual streamed-byte bound; a
 crossing chunk stops further reads. Malformed or duplicate Content-Length
-headers return HTTP400. Exactly64KiB is admitted to existing JSON/schema/auth
+headers return HTTP 400. Exactly 64 KiB is admitted to existing JSON/schema/auth
 validation. This application guard does not certify CDN/proxy limits, request
 timeouts or deployed host/storage/backup acceptance. Media enablement remains
 separate.
