@@ -134,14 +134,29 @@ class MediaService:
         return UploadAuthorization(asset=dto, method='PUT', url=access.url, headers=access.headers, expires_at=expiry)
 
     def complete(self, actor, asset_id, key, version, request_id):
+        result = self._complete(actor, asset_id, key, version, request_id)
+        if self.config.retained_writes_enabled:
+            from .retention import retain_ready
+            return retain_ready(self, actor, asset_id, result.version, request_id)
+        return result
+
+    def _complete(self, actor, asset_id, key, version, request_id, *, recover_unknown=False, recovery_scope=None):
         require_positive_version(version)
         if not all(isinstance(value, UUID) for value in (actor, asset_id, key)):
             raise SocialError('INVALID_REQUEST', 'Valid upload and command identities are required.', 422)
         storage = self._storage()
+        if (type(recover_unknown) is not bool or recover_unknown and
+                (not self.config.retained_writes_enabled or getattr(storage, 'retained_create_only', None) is not True)):
+            raise SocialError('MEDIA_RECOVERY_UNAVAILABLE', 'Retained create-only recovery is unavailable.', 503)
         digest = canonical_hash({'expected_version': version})
         with self.db.begin():
             self._budgets(actor)
             asset, upload = self._rows(asset_id)
+            if recover_unknown:
+                from .retention import RetainedRecovery
+                recovery = RetainedRecovery.model_validate(recovery_scope)
+                if (upload.version, upload.grant_epoch, upload.finalization_epoch) != (recovery.expected_version, recovery.expected_grant_epoch, recovery.expected_finalization_epoch):
+                    raise SocialError('VERSION_CONFLICT', 'This recovery scope changed.')
             if upload.actor_id != actor:
                 raise SocialError('PERMISSION_DENIED', 'Only the initiating administrator may complete this upload.', 403)
             if upload.completion_key is not None and (upload.completion_key != key or upload.completion_hash != digest):
@@ -151,13 +166,14 @@ class MediaService:
             if upload.finalization_epoch is not None and not upload.finalization_settled:
                 if asset.lease_expires_at and utc(asset.lease_expires_at) > self.now():
                     raise SocialError('MEDIA_INSPECTION_BUSY', 'This upload is being inspected. Retry the same command.', 409, retryable=True)
-                raise SocialError('MEDIA_FINALIZATION_UNKNOWN', 'A storage creation could not be confirmed. Its quota remains reserved. Ask an administrator to reconcile this upload.', 503)
+                if not recover_unknown:
+                    raise SocialError('MEDIA_FINALIZATION_UNKNOWN', 'A storage creation could not be confirmed. Its quota remains reserved. Ask an administrator to reconcile this upload.', 503)
             if asset.state in {'failed', 'archived'}:
                 raise SocialError('MEDIA_INSPECTION_FAILED' if asset.state == 'failed' else 'UPLOAD_EXPIRED', asset.inspection_error or 'This upload is no longer usable.', 422)
             if upload.version != version:
                 raise SocialError('VERSION_CONFLICT', 'This media upload changed. Refresh before continuing.')
             now = self.now()
-            if utc(upload.expires_at) <= now:
+            if utc(upload.expires_at) <= now and not recover_unknown:
                 raise SocialError('UPLOAD_EXPIRED', 'This media upload has expired.', 410)
             if asset.lease_expires_at and utc(asset.lease_expires_at) > now:
                 raise SocialError('MEDIA_INSPECTION_BUSY', 'This upload is being inspected. Retry the same command.', 409, retryable=True)
@@ -300,6 +316,8 @@ class MediaService:
             asset, upload = self._rows(asset_id)
             if upload.version != body.expected_version or upload.grant_epoch != body.expected_grant_epoch or upload.finalization_epoch != body.expected_finalization_epoch:
                 raise SocialError('VERSION_CONFLICT', 'This media upload changed before reconciliation.')
+            if upload.retained_write_fence is not None:
+                raise SocialError('MEDIA_RETENTION_INVALID', 'Retained copies require retained recovery; write-drain reconciliation cannot change this fence.', 409)
             now = self.now()
             # A legacy ready cleanup can precede the end of an admitted PUT.
             # Its old delete marker cannot prove the quarantine stayed absent.
@@ -374,7 +392,7 @@ class MediaService:
 
     def _cleanup_conditions(self, now):
         referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
-        return [SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
+        return [SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
 
     def backlog(self):
         """One aggregate and one compact ledger read; no keys, grants or bodies."""
@@ -390,9 +408,10 @@ class MediaService:
                 func.coalesce(func.sum(case((SocialMediaAsset.lease_expires_at > now, 1), else_=0)), 0),
                 func.coalesce(func.sum(case((referenced, 1), else_=0)), 0),
                 func.min(case((and_(SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0), SocialMediaUpload.expires_at), else_=None)),
+                func.coalesce(func.sum(case((SocialMediaUpload.retained_write_fence.is_not(None), 1), else_=0)), 0),
             ).select_from(SocialMediaUpload).join(SocialMediaAsset, SocialMediaAsset.id == SocialMediaUpload.asset_id)).one()
             ledger = self.db.get(SocialMediaBudget, 'global')
-            return MaintenanceBacklog(eligible_cleanup=int(counts[0]), unknown_browser_writes=int(counts[1]), unknown_finalizations=int(counts[2]), active_leases=int(counts[3]), protected_references=int(counts[4]), reserved_bytes=ledger.bytes_used if ledger else 0, pending_uploads=ledger.pending_count if ledger else 0, oldest_orphan_at=utc(counts[5]) if counts[5] else None)
+            return MaintenanceBacklog(retained_fences=int(counts[6]), eligible_cleanup=int(counts[0]), unknown_browser_writes=int(counts[1]), unknown_finalizations=int(counts[2]), active_leases=int(counts[3]), protected_references=int(counts[4]), reserved_bytes=ledger.bytes_used if ledger else 0, pending_uploads=ledger.pending_count if ledger else 0, oldest_orphan_at=utc(counts[5]) if counts[5] else None)
 
     def cleanup(self, limit=20):
         """Scheduler port: remove expired quarantine/orphans, never ready originals.
@@ -412,6 +431,7 @@ class MediaService:
             with self.db.begin():
                 self._budgets(actor)
                 asset, upload = self._rows(identity)
+                if upload.retained_write_fence is not None: continue
                 # Candidate lists are snapshots. Another cleanup or completion
                 # may have settled this reservation before these locks arrived.
                 if upload.reservation_released or upload.quarantine_cleaned or utc(upload.expires_at) > self.now(): continue
@@ -435,7 +455,7 @@ class MediaService:
             with self.db.begin():
                 budgets = self._budgets(actor)
                 asset, upload = self._rows(identity)
-                if upload.reservation_released or upload.quarantine_cleaned or asset.lease_token != token or asset.lease_epoch != epoch or asset.lease_expires_at is None or utc(asset.lease_expires_at) <= self.now(): continue
+                if upload.retained_write_fence is not None or upload.reservation_released or upload.quarantine_cleaned or asset.lease_token != token or asset.lease_epoch != epoch or asset.lease_expires_at is None or utc(asset.lease_expires_at) <= self.now(): continue
                 asset.lease_token, asset.lease_expires_at = None, None
                 upload.quarantine_cleaned = 1
                 if not ready:

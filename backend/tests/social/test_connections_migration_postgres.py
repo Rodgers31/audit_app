@@ -16,6 +16,7 @@ CURRENT_CONNECTION_DESCENDANTS = (
     'a42b86e1d310_social_private_media_intake.py',
     'b73e19a4f602_social_media_write_settlement.py',
     'd8f4a619b203_social_privacy_receipts.py',
+    'a490b15a0001_retained_media_fences.py',
 )
 
 

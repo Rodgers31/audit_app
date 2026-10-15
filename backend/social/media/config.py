@@ -24,9 +24,10 @@ class MediaConfig:
     orphan_hours: int = 24
     ready_retention_days: int = 30
     ffprobe_path: str | None = ''
+    retained_writes_enabled: bool = False
 
     def validate(self):
-        if type(self.enabled) is not bool:
+        if type(self.enabled) is not bool or type(self.retained_writes_enabled) is not bool:
             raise ValueError('Media feature flag must be boolean')
         if self.ffprobe_path is not None and not isinstance(self.ffprobe_path, str):
             raise ValueError('Media inspection executable path must be a string or unset')
@@ -50,6 +51,7 @@ def config_from_environment(environ=None):
     values = os.environ if environ is None else environ
     # Missing or invalid enablement never implicitly enables upload.
     enabled = values.get('SOCIAL_MEDIA_ENABLED', 'false').lower()
-    if enabled not in {'true', 'false'}:
+    retained = values.get('SOCIAL_MEDIA_RETAINED_WRITES_ENABLED', 'false')
+    if enabled not in {'true', 'false'} or retained not in {'true', 'false'}:
         raise ValueError('Invalid media enablement')
-    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', '')).validate()
+    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', ''), retained_writes_enabled=retained == 'true').validate()

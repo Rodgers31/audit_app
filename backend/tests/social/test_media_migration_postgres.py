@@ -22,6 +22,14 @@ def media_migration():
     return module
 
 
+def retained_migration():
+    path = Path(__file__).resolve().parents[2] / 'alembic/versions/a490b15a0001_retained_media_fences.py'
+    spec = importlib.util.spec_from_file_location('media_retained_migration', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def upgrade(engine):
     with engine.begin() as conn:
         with Operations.context(MigrationContext.configure(conn)):
@@ -30,6 +38,7 @@ def upgrade(engine):
             media_migration().upgrade()
             from test_media_settlement_migration_postgres import settlement_migration
             settlement_migration().upgrade()
+            retained_migration().upgrade()
 
 
 def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
@@ -42,6 +51,7 @@ def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
         assert inspect(conn).get_foreign_keys('social_media_uploads')[0]['referred_table'] == 'social_media_assets'
         with Operations.context(MigrationContext.configure(conn)):
             from test_media_settlement_migration_postgres import settlement_migration
+            retained_migration().downgrade()
             settlement_migration().downgrade()
             media_migration().downgrade()
         assert len(inspect(conn).get_table_names()) == 14

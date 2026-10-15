@@ -22,10 +22,11 @@ class MediaRuntime:
         return self.inspector.available_mimes()
 
 
-@lru_cache(maxsize=1)
-def media_runtime():
+def build_media_runtime(config):
+    client = None
+    transferred = False
     try:
-        config = config_from_environment()
+        config.validate()
         if not config.enabled:
             return MediaRuntime(config, None, None, 'Media storage has not been enabled.')
         import boto3
@@ -37,6 +38,35 @@ def media_runtime():
         inspector = LocalInspector(config)
         if not inspector.available_mimes():
             return MediaRuntime(config, None, None, 'Required media inspectors are unavailable.')
+        transferred = True
         return MediaRuntime(config, storage, inspector)
     except Exception:
         return MediaRuntime(MediaConfig(), None, None, 'Media storage or inspection configuration is unavailable.')
+    finally:
+        if client is not None and not transferred:
+            try:
+                client.close()
+            except Exception:
+                # This path already returns an unavailable runtime. Never turn
+                # an SDK cleanup error into secret-bearing startup output.
+                pass
+
+
+@lru_cache(maxsize=1)
+def media_runtime():
+    try:
+        config = config_from_environment()
+    except Exception:
+        return MediaRuntime(MediaConfig(), None, None, 'Media storage or inspection configuration is unavailable.')
+    return build_media_runtime(config)
+
+
+def request_media_runtime(request):
+    """HTTP never constructs or borrows a process-global SDK client."""
+    runtime = getattr(request.app.state, 'social_media_runtime', None)
+    if runtime is None:
+        return MediaRuntime(MediaConfig(), None, None, 'Media storage has not been enabled.')
+    if not isinstance(runtime, MediaRuntime):
+        from ..service import SocialError
+        raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'The application media runtime is unavailable.', 503)
+    return runtime
