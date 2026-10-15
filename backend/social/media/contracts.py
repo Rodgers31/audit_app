@@ -76,6 +76,7 @@ class MediaCapabilities(StrictModel):
 
 
 class MaintenanceBacklog(StrictModel):
+    retained_fences: Annotated[int, Field(strict=True, ge=0)] = 0
     eligible_cleanup: Annotated[int, Field(strict=True, ge=0)]
     unknown_browser_writes: Annotated[int, Field(strict=True, ge=0)]
     unknown_finalizations: Annotated[int, Field(strict=True, ge=0)]

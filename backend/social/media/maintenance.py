@@ -16,6 +16,7 @@ from .contracts import MaintenanceResult
 from .runtime import media_runtime
 from .service import MediaService
 from .operator import prepare_reconciliation, validate_report_page
+from .retention import RetainedRecovery, recover_retained
 
 
 def run_once(session_factory, runtime, *, allow_cleanup=False, limit=20):
@@ -42,6 +43,11 @@ def main(argv=None):
     parser.add_argument('--limit', type=int, default=20)
     parser.add_argument('--prepare-reconciliation', action='store_true', help='Read-only upload/epoch and ledger observations; supplies no settlement authority')
     parser.add_argument('--after-asset-id', help='UUID cursor for a new read-only page; each page is a separate observation')
+    parser.add_argument('--recover-retained-upload', help='One explicitly scoped unknown upload; retains both copies and all reserved bytes')
+    parser.add_argument('--actor-id', help='UUID of the initiating administrator')
+    parser.add_argument('--expected-version', type=int)
+    parser.add_argument('--expected-grant-epoch', type=int)
+    parser.add_argument('--expected-finalization-epoch', type=int)
     engine = None
     try:
         args = parser.parse_args(bounded_arguments(argv))
@@ -50,10 +56,26 @@ def main(argv=None):
         if (args.allow_cleanup and args.prepare_reconciliation
                 or args.after_asset_id is not None and not args.prepare_reconciliation):
             raise SocialError('INVALID_REQUEST', 'Reconciliation preparation is read-only and cannot be combined with cleanup.', 422)
+        recovery = None
+        if args.recover_retained_upload is not None:
+            if args.allow_cleanup or args.prepare_reconciliation or args.after_asset_id is not None:
+                raise SocialError('INVALID_REQUEST', 'Retained recovery is one separate command.', 422)
+            identity, actor = UUID(args.recover_retained_upload), UUID(args.actor_id)
+            recovery = RetainedRecovery(expected_version=args.expected_version,
+                expected_grant_epoch=args.expected_grant_epoch,
+                expected_finalization_epoch=args.expected_finalization_epoch)
+        elif any(value is not None for value in (args.actor_id, args.expected_version,
+                args.expected_grant_epoch, args.expected_finalization_epoch)):
+            raise SocialError('INVALID_REQUEST', 'Recovery scope requires an explicit upload.', 422)
         cursor = UUID(args.after_asset_id) if args.after_asset_id is not None else None
         engine = create_worker_engine(WorkerConfig(database_url=args.database_url))
         factory, runtime = sessionmaker(engine, expire_on_commit=False), media_runtime()
-        result = report_once(factory, runtime, limit=args.limit, after_asset_id=cursor) if args.prepare_reconciliation else run_once(factory, runtime, allow_cleanup=args.allow_cleanup, limit=args.limit)
+        if recovery is not None:
+            from uuid import uuid4
+            with factory() as db:
+                result = recover_retained(MediaService(db, runtime), actor, identity, recovery, uuid4())
+        else:
+            result = report_once(factory, runtime, limit=args.limit, after_asset_id=cursor) if args.prepare_reconciliation else run_once(factory, runtime, allow_cleanup=args.allow_cleanup, limit=args.limit)
         print(result.model_dump_json())
         return 0
     except Exception as error:

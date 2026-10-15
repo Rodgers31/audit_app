@@ -1691,20 +1691,24 @@ async def _app_lifespan(app_: "FastAPI"):
         _reset_readiness("database_unavailable")
         raise RuntimeError("Database is required for backend startup")
 
-    startup_task = asyncio.create_task(_startup_sequence())
-    try:
-        yield
-    finally:
-        _reset_readiness("stopped")
-        startup_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await startup_task
-        try:
-            from services.auto_seeder import stop_auto_seeder
+    from social.worker.startup import installed_native_runtime
+    from database import engine as social_engine
 
-            await stop_auto_seeder()
-        except Exception:
-            pass
+    async with installed_native_runtime(app_, social_engine):
+        startup_task = asyncio.create_task(_startup_sequence())
+        try:
+            yield
+        finally:
+            _reset_readiness("stopped")
+            startup_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await startup_task
+            try:
+                from services.auto_seeder import stop_auto_seeder
+
+                await stop_auto_seeder()
+            except Exception:
+                pass
 
 
 async def _startup_sequence() -> None:

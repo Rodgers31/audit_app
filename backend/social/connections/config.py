@@ -77,15 +77,16 @@ def valid_redirect(value):
     return u.scheme == 'https' and bool(u.hostname) and not (u.username or u.password or u.query or u.fragment) and u.path == '/admin/social/accounts/callback'
 
 
-def load_config():
+def load_config(environ=None):
     """Read only explicitly named server configuration; never load a dotenv file."""
+    values = os.environ if environ is None else environ
     try:
-        keys = json.loads(os.getenv('SOCIAL_CREDENTIAL_KEYS', '{}'))
-        redirects = json.loads(os.getenv('META_REDIRECT_URIS', '[]'))
+        keys = json.loads(values.get('SOCIAL_CREDENTIAL_KEYS', '{}'))
+        redirects = json.loads(values.get('META_REDIRECT_URIS', '[]'))
         if not isinstance(keys, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in keys.items()):
             keys = {}
         if not isinstance(redirects, list) or not all(isinstance(v, str) for v in redirects):
             redirects = []
     except (ValueError, TypeError):
         keys, redirects = {}, []
-    return MetaConfig(enabled=os.getenv('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=os.getenv('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=os.getenv('META_APP_ID', ''), app_secret=os.getenv('META_APP_SECRET', ''), graph_version=os.getenv('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=os.getenv('META_ACCESS_MODE', 'unverified'), active_key_version=os.getenv('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=os.getenv('META_BUSINESS_DISCOVERY_ENABLED') == 'true')
+    return MetaConfig(enabled=values.get('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=values.get('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=values.get('META_APP_ID', ''), app_secret=values.get('META_APP_SECRET', ''), graph_version=values.get('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=values.get('META_ACCESS_MODE', 'unverified'), active_key_version=values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=values.get('META_BUSINESS_DISCOVERY_ENABLED') == 'true')

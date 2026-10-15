@@ -13,8 +13,19 @@ class NativeRegistration:
     media_access: VerifiedMediaAccess | None
 
     async def close(self):
+        import asyncio
+        failed = cancelled = False
         for adapter in self.adapters.values():
-            await adapter.close()
+            try:
+                await adapter.close()
+            except asyncio.CancelledError:
+                cancelled = True
+            except Exception:
+                failed = True
+        if cancelled:
+            raise asyncio.CancelledError()
+        if failed:
+            raise RuntimeError('Native adapter shutdown failed')
 
 
 def create_native_registration(engine, config, *, cipher, storage, storage_origin, transport_factory):

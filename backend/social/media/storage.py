@@ -49,6 +49,9 @@ def bounded(value, maximum=MAXIMUM):
 
 class R2Storage:
     provider = 'r2'
+    # Both browser grants and finalization use If-None-Match: *. Retaining the
+    # committed keys fences those conditional writes at R2's atomic commit.
+    retained_create_only = True
 
     def __init__(self, client, bucket: str, endpoint: str):
         self.client, self.bucket = client, bucket

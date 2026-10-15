@@ -20,6 +20,7 @@ Count = Annotated[int, Field(strict=True, ge=0)]
 
 
 class UploadObservation(StrictModel):
+    retained_fence_recorded: bool = False
     asset_id: UUID
     upload_version: int
     grant_epoch: int
@@ -49,6 +50,7 @@ class UploadObservation(StrictModel):
 
 
 class OperatorReport(StrictModel):
+    retained_fences: Count = 0
     purpose: Literal['social_media_490'] = 'social_media_490'
     observation_scope: Literal['database_only'] = 'database_only'
     observed_at: datetime
@@ -116,13 +118,14 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
         totals = db.execute(select(
             func.coalesce(func.sum(SocialMediaUpload.reserved_bytes), 0),
             func.coalesce(func.sum(pending), 0),
-            func.coalesce(func.sum(case((and_(unknown, or_(SocialMediaUpload.reservation_released == 1,
+            func.coalesce(func.sum(case((and_(unknown, SocialMediaUpload.retained_write_fence.is_(None), or_(SocialMediaUpload.reservation_released == 1,
                 SocialMediaUpload.pending_released == 1, SocialMediaUpload.reserved_bytes < 2 * SocialMediaUpload.declared_size)), 1), else_=0)), 0),
             missing_or_wrong + surplus,
             select(func.count()).select_from(SocialMediaAsset).where(~exists(select(SocialMediaUpload.asset_id).where(
                 SocialMediaUpload.asset_id == SocialMediaAsset.id))).scalar_subquery(),
             select(ledger.c.bytes_used).scalar_subquery(),
             select(ledger.c.pending_count).scalar_subquery(),
+            func.coalesce(func.sum(case((SocialMediaUpload.retained_write_fence.is_not(None), 1), else_=0)), 0),
         ).select_from(SocialMediaUpload)).one()
         reasons = []
         if totals[5] is None:
@@ -146,6 +149,8 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
         uploads = []
         for asset, upload, protected, actor_scope, actor_bytes, actor_pending, expected_bytes, expected_pending in rows[:limit]:
             codes = []
+            if upload.retained_write_fence is not None:
+                codes.append('RETAINED_CREATE_ONLY_FENCE_RECORDED')
             storage = service.runtime.storage
             if not service.config.enabled or storage is None: codes.append('STORAGE_UNAVAILABLE')
             elif (asset.storage_provider, asset.bucket) != (storage.provider, storage.bucket): codes.append('STORAGE_TARGET_MISMATCH')
@@ -160,6 +165,7 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
             if upload.quarantine_cleaned or upload.reservation_released: codes.append('PRIOR_CLEANUP_REQUIRES_INVENTORY')
             if not codes: codes.append('SETTLED_QUARANTINE_CLEANUP_CANDIDATE' if asset.state == 'ready' else 'SETTLED_ORPHAN_CLEANUP_CANDIDATE')
             uploads.append(UploadObservation(
+                retained_fence_recorded=upload.retained_write_fence is not None,
                 asset_id=asset.id, upload_version=upload.version, grant_epoch=upload.grant_epoch,
                 grant_settled_epoch=upload.grant_settled_epoch, finalization_epoch=upload.finalization_epoch,
                 finalization_settled=bool(upload.finalization_settled), grant_expires_at=utc(upload.grant_expires_at) if upload.grant_expires_at else None,
@@ -172,7 +178,7 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
                 actor_ledger_bytes=actor_bytes or 0, actor_ledger_pending=actor_pending or 0,
                 actor_upload_reserved_bytes=int(expected_bytes), actor_upload_pending=int(expected_pending), reason_codes=tuple(codes),
             ))
-        return OperatorReport(observed_at=now, global_ledger_present=totals[5] is not None,
+        return OperatorReport(retained_fences=int(totals[7]), observed_at=now, global_ledger_present=totals[5] is not None,
             ledger_reserved_bytes=totals[5] or 0, ledger_pending_uploads=totals[6] or 0,
             upload_reserved_bytes=int(totals[0]), upload_pending_held=int(totals[1]),
             legacy_released_write_hazards=int(totals[2]), actor_ledger_discrepancies=int(totals[3]),

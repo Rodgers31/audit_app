@@ -26,6 +26,7 @@ MIGRATIONS = (
     "c96d13e2f411_social_meta_credentials.py",
     "a42b86e1d310_social_private_media_intake.py",
     "b73e19a4f602_social_media_write_settlement.py",
+    "a490b15a0001_retained_media_fences.py",
 )
 SCHEMA = "readiness_local"
 ROLE_NAMES = ("readiness_owner", "anon", "authenticated", "readiness_backend", "readiness_browser_parent")
