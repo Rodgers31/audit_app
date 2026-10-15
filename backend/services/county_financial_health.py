@@ -7,6 +7,8 @@ import re
 from collections import defaultdict
 from datetime import date
 
+from sqlalchemy import case, func
+
 from models import Audit, Extraction, FiscalPeriod, SourceDocument
 from types import SimpleNamespace
 from services.audit_citations import (
@@ -30,6 +32,19 @@ def county_audit_signals(db, entity_ids, *, display_grade):
     """
     if not entity_ids:
         return {}
+    # Rank only narrow identity columns. Ranking the complete evidence rows
+    # carries provenance through a wide sort and can spill to disk.
+    carriers = (
+        db.query(
+            Audit.id.label("audit_id"),
+            func.row_number().over(
+                partition_by=Audit.source_document_id,
+                order_by=Audit.id,
+            ).label("document_row"),
+        )
+        .filter(Audit.entity_id.in_(entity_ids), publishable_audit_criterion())
+        .subquery()
+    )
     rows = (
         db.query(
             Audit.extraction_id,
@@ -45,39 +60,38 @@ def county_audit_signals(db, entity_ids, *, display_grade):
             FiscalPeriod.start_date,
             FiscalPeriod.end_date,
             SourceDocument.url,
-            SourceDocument.meta,
+            # Keep document/audit evidence in one statement snapshot, but
+            # transfer shared metadata once instead of once per finding.
+            case(
+                (carriers.c.document_row == 1, SourceDocument.meta),
+                else_=None,
+            ).label("meta"),
             Extraction.extracted_json["entity_name"].as_string().label("entity_name"),
             Extraction.extracted_json["auditee"].as_string().label("auditee"),
             Extraction.extracted_json["volume_kind"].as_string().label("volume_kind"),
             Extraction.extracted_json["fiscal_year"].as_string().label("fiscal_year"),
         )
+        .join(carriers, carriers.c.audit_id == Audit.id)
         .outerjoin(FiscalPeriod, Audit.period_id == FiscalPeriod.id)
         .join(SourceDocument, Audit.source_document_id == SourceDocument.id)
         .outerjoin(Extraction, Audit.extraction_id == Extraction.id)
-        .filter(Audit.entity_id.in_(entity_ids), publishable_audit_criterion())
         .all()
     )
     serialized = string_extraction_payloads(db, rows)
-    if serialized:
-        rows = [
-            SimpleNamespace(
-                **{
-                    **r._mapping,
-                    **{
-                        key: serialized[r.extraction_id].get(key)
-                        for key in (
-                            "entity_name",
-                            "auditee",
-                            "volume_kind",
-                            "fiscal_year",
-                        )
-                    },
-                }
-            )
-            if r.extraction_id in serialized
-            else r
-            for r in rows
-        ]
+    document_metadata = {
+        row.source_document_id: row.meta for row in rows if row.meta is not None
+    }
+    hydrated = []
+    for row in rows:
+        fields = dict(row._mapping)
+        fields["meta"] = document_metadata.get(row.source_document_id)
+        if row.extraction_id in serialized:
+            fields.update({
+                key: serialized[row.extraction_id].get(key)
+                for key in ("entity_name", "auditee", "volume_kind", "fiscal_year")
+            })
+        hydrated.append(SimpleNamespace(**fields))
+    rows = hydrated
     from models import Entity
 
     names = dict(
