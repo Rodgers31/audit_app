@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import json
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, RLock
@@ -188,6 +189,55 @@ def test_memory_budget_rejects_large_payload_and_evicts_to_total_limit(memory_ca
         memory_cache.set(f"page:{page}", {"body": "y" * 600_000}, ttl=60)
     assert sum(entry[2] for entry in memory_cache._memory_cache.values()) <= 1_700_000
     assert len(memory_cache._memory_cache) <= 2
+
+
+@pytest.mark.parametrize('constructor', [False, True])
+@pytest.mark.parametrize('caller', ['library', 'main', 'money_flow'])
+def test_county_sized_response_is_cached_without_repeating_handler(memory_cache, monkeypatch, constructor, caller):
+    if constructor:
+        monkeypatch.setattr(module.RedisCache, '_initialize', lambda self: None)
+        memory_cache = module.RedisCache()
+        monkeypatch.setattr(module, 'cache', memory_cache)
+    if caller == 'main':
+        import main
+        monkeypatch.setattr(main, 'redis_cache', memory_cache)
+        decorate = main.cached
+    elif caller == 'money_flow':
+        from routers import money_flow
+        monkeypatch.setattr(money_flow, '_redis_cache', memory_cache)
+        decorate = money_flow._cached
+    else:
+        decorate = module.cached
+    # The actual 47-county response serialized to 2,362,271 bytes on 15 Oct.
+    # Preserve its size boundary without retaining real financial observations.
+    payload = [
+        {'id': str(i), 'total': 0, 'absent': None, 'source': {
+            'status': 'qualified', 'locator': 'inert-fixture-context-' + 'x' * 50_000,
+        }} for i in range(47)
+    ]
+    size = len(json.dumps(payload).encode())
+    assert 2 * 1024 * 1024 < size < 3 * 1024 * 1024
+    calls = 0
+
+    @decorate(ttl=3600, key_prefix='counties:all')
+    async def endpoint(fiscal_year=None):
+        nonlocal calls
+        calls += 1
+        return payload
+
+    async def exercise():
+        first = await endpoint(fiscal_year=None)
+        second = await endpoint(fiscal_year=None)
+        assert first == second == payload
+    asyncio.run(exercise())
+    assert calls == 1, 'County-sized response was rejected and the expensive handler ran twice'
+    assert sum(entry[2] for entry in memory_cache._memory_cache.values()) <= 16 * 1024 * 1024
+
+
+def test_default_entry_ceiling_still_refuses_payload_above_three_mib(memory_cache):
+    memory_cache.set('above-entry-limit', {'body': 'x' * (3 * 1024 * 1024)}, ttl=60)
+    assert memory_cache.get('above-entry-limit') is None
+    assert memory_cache._metrics['oversized'] == 1
 
 
 def test_cache_health_reports_bounded_counts_without_keys(memory_cache):
