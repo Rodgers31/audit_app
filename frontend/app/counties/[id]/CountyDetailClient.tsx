@@ -44,6 +44,7 @@ import { fmtKES, fmtLabel, fmtPop, hasIngestedAudit, pct, Tab } from './shared';
 import TabSkeleton from './tabs/TabSkeleton';
 import TabErrorBoundary from './tabs/TabErrorBoundary';
 import styles from '../CountyExperience.module.css';
+import CountyDetailSkeleton from './CountyDetailSkeleton';
 import { gradeSignal, SignalMark } from '../CountySignals';
 import { FINANCIAL_HEALTH_BANDS, financialHealthBand } from '@/lib/counties/financialHealth';
 
@@ -673,19 +674,7 @@ export default function CountyDetailClient() {
 
   /* Loading */
   if (isLoading) {
-    return (
-      <div className={styles.detail}>
-        <div className={styles.container}>
-          <header className={styles.detailHeader}>
-            <h1>{t('county.page.title_fallback')}</h1>
-            <p className={styles.intro}>{t('county.loading')}</p>
-          </header>
-          <div className={styles.pageState}>
-            <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gov-forest' />
-          </div>
-        </div>
-      </div>
-    );
+    return <CountyDetailSkeleton />;
   }
 
   /* Error */
@@ -783,12 +772,14 @@ export default function CountyDetailClient() {
                     .filter(Boolean)
                     .join(' · ')}
                 </p>
-                {data.budget.fiscal_year && (
-                  <p className={styles.detailYear}>
-                    <Clock size={13} aria-hidden='true' />
-                    {t('county.hero.fy_badge')} {data.budget.fiscal_year}
-                  </p>
-                )}
+                <p className={styles.detailYear} aria-hidden={!data.budget.fiscal_year || undefined}>
+                  {data.budget.fiscal_year && (
+                    <>
+                      <Clock size={13} aria-hidden='true' />
+                      {t('county.hero.fy_badge')} {data.budget.fiscal_year}
+                    </>
+                  )}
+                </p>
               </div>
               <div className={styles.detailActions}>
                 <WatchButton

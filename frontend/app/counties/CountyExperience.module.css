@@ -475,6 +475,32 @@
   display: inline-flex;
   align-items: center;
 }
+.loadingBackLink {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.loadingMetric {
+  display: flex;
+  align-items: center;
+  min-height: 33px;
+}
+.loadingMetricLabel {
+  margin-top: 6px;
+}
+.loadingCopy,
+.loadingYear {
+  display: block;
+  width: 16rem;
+  max-width: 100%;
+  height: 1.7em;
+  background: var(--county-neutral-wash);
+  border-radius: 3px;
+}
+.loadingYear {
+  width: 12rem;
+  height: 18px;
+}
 .detailHeader {
   padding-bottom: 24px;
 }
@@ -494,14 +520,17 @@
   color: var(--county-muted);
   max-width: 68ch;
   margin-top: 12px;
+  min-height: 1.7em;
 }
 .detailYear {
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 8px;
   font-size: 12px;
   color: var(--county-muted);
   margin-top: 16px;
+  min-height: 18px;
 }
 .detailActions {
   display: flex;
@@ -515,6 +544,8 @@
   flex-wrap: wrap;
   gap: 12px;
   max-width: 100%;
+  /* Late accountability data must not resize the adjacent identity column. */
+  width: 300px;
 }
 .signal {
   --signal-ink: var(--county-muted);
@@ -570,7 +601,8 @@
   background: var(--signal-wash);
   color: var(--signal-ink);
   border-radius: 2px 4px 4px 2px;
-  min-height: 72px;
+  /* Reserve the letter/verdict/trend rows even before accountability arrives. */
+  min-height: 130px;
   flex: 1 1 138px;
 }
 .gradeBadge > div:first-child {
@@ -857,6 +889,12 @@
   }
   .reportBody {
     padding: 28px 32px;
+  }
+}
+@media (max-width: 639px) {
+  /* Long county names wrap on phones. Reserve two title lines in both states. */
+  .detailHeader h1 {
+    min-height: 2.3em;
   }
 }
 @media (min-width: 1040px) {
