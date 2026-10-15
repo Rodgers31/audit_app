@@ -286,7 +286,9 @@ export default function BudgetSpendingPage() {
   useEffect(() => {
     const newest = currentFiscal?.fiscal_year ?? newestFYWithFlow;
     if (!selectedFY && newest) {
-      setSelectedFY(newest);
+      // Initialization may commit after the reader has already selected a year.
+      // Consult the queued state, rather than overwriting it from this render.
+      setSelectedFY((previous) => previous || newest);
     }
   }, [selectedFY, currentFiscal, newestFYWithFlow]);
 
