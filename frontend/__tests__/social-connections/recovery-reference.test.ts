@@ -1,6 +1,6 @@
 import { forgetConnectionRecovery, readConnectionRecovery, saveConnectionRecovery } from '@/components/admin/social/connections/connectionRecovery';
 
-const key = 'auditgava.meta.connection-recovery.v1';
+const key = 'auditgava.meta.connection-recovery.v1:actor-a';
 const flow = '4aadebe9-11ce-4207-afce-836cd86cc9da';
 const expires = '2026-10-15T12:10:00.000Z';
 const reference = { version: 1, actor: 'actor-a', flow, expires };
@@ -15,6 +15,16 @@ test('another actor cannot recover or erase a valid reference, even after return
   expect(readConnectionRecovery('actor-a').flow).toBe(flow);
   expect(forgetConnectionRecovery('actor-a', flow)).toBe(true);
   expect(readConnectionRecovery('actor-a').flow).toBeUndefined();
+});
+
+test('starting a second actor connection preserves both actors pending flows', () => {
+  const otherFlow = '5aadebe9-11ce-4207-afce-836cd86cc9da';
+  expect(saveConnectionRecovery('actor-a', flow, expires)).toBe(true);
+  expect(saveConnectionRecovery('actor-b', otherFlow, expires)).toBe(true);
+  expect(readConnectionRecovery('actor-a').flow).toBe(flow);
+  expect(readConnectionRecovery('actor-b').flow).toBe(otherFlow);
+  expect(forgetConnectionRecovery('actor-a', flow)).toBe(true);
+  expect(readConnectionRecovery('actor-b').flow).toBe(otherFlow);
 });
 
 test.each([

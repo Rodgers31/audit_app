@@ -133,7 +133,12 @@ export default function MetaAccounts() {
     const signature = JSON.stringify([discovery.flow_id, page, instagram]);
     if (selectionKey.current?.signature !== signature) selectionKey.current = { signature, key: crypto.randomUUID() };
     setBusy(true); setError(undefined);
-    try { await connectionApi.select(discovery.flow_id, page, instagram, selectionKey.current.key); if (!current()) return; setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, discovery.flow_id)); setDiscovery(undefined); setConfirmed(true); await accounts.refetch(); }
+    try {
+      await connectionApi.select(discovery.flow_id, page, instagram, selectionKey.current.key);
+      const forgotten = forgetConnectionRecovery(user!.id, discovery.flow_id);
+      if (!current()) return;
+      setRecoveryUnavailable(!forgotten); setDiscovery(undefined); setConfirmed(true); await accounts.refetch();
+    }
     catch (e) { if (current()) setError(e); }
     finally { if (current()) setBusy(false); }
   }

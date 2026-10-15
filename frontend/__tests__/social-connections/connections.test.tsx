@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { decodeConnectionStatus, decodeDiscoveredFlow, decodeStartedFlow, decodeAccountHealth, decodeSelectedAccounts, connectionApi } from '@/lib/api/socialConnections';
 import { receiveMetaCallback } from '@/components/admin/social/connections/callbackSecurity';
 import MetaAccounts from '@/components/admin/social/connections/MetaAccounts';
+import { readConnectionRecovery, saveConnectionRecovery } from '@/components/admin/social/connections/connectionRecovery';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }));
 jest.mock('@/lib/hooks/useSocial', () => ({ useSocialAccounts: jest.fn() }));
@@ -190,4 +191,40 @@ test('same administrator can recover granted choices after the admin page remoun
   expect(screen.getByRole('button',{name:'Confirm selected identities'})).toBeDisabled();
   expect(JSON.stringify(window.sessionStorage)).not.toContain('short-code');
   expect(JSON.stringify(window.sessionStorage)).not.toContain(state);
+});
+
+test.each(['actor change','unmount'])('accepted selection clears its recovery reference after %s',async transition=>{
+  const {popup}=readyFlow(), pending=deferred<Awaited<ReturnType<typeof connectionApi.select>>>(), refetch=jest.fn();
+  useSocialAccounts.mockReturnValue({data:[],refetch,isPending:false});
+  jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  jest.spyOn(connectionApi,'select').mockReturnValue(pending.promise);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
+  expect(readConnectionRecovery('actor').flow).toBe(id);
+  endActor(view,transition);
+  await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
+  expect(readConnectionRecovery('actor').flow).toBeUndefined();
+  expect(refetch).not.toHaveBeenCalled();
+  expect(screen.queryByText('Selected accounts connected. Publishing remains disabled.')).not.toBeInTheDocument();
+});
+
+test('a late accepted selection preserves the same actors newer flow',async()=>{
+  const {popup}=readyFlow(), pending=deferred<Awaited<ReturnType<typeof connectionApi.select>>>();
+  jest.spyOn(connectionApi,'complete').mockResolvedValue(discovery);
+  jest.spyOn(connectionApi,'select').mockReturnValue(pending.promise);
+  const view=render(<MetaAccounts />);
+  fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(popup.location.replace).toHaveBeenCalled());
+  await act(async()=>{callback(popup);});
+  fireEvent.change(screen.getByRole('combobox',{name:'Facebook Page'}),{target:{value:'901'}});
+  fireEvent.click(screen.getByRole('button',{name:'Confirm selected identities'}));
+  view.unmount();
+  const newerFlow='5aadebe9-11ce-4207-afce-836cd86cc9da';
+  expect(saveConnectionRecovery('actor',newerFlow,discovery.expires_at)).toBe(true);
+  await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
+  expect(readConnectionRecovery('actor').flow).toBe(newerFlow);
 });
