@@ -33,7 +33,7 @@ class BackendAcquisitionWorkflowTests(unittest.TestCase):
         self.assertEqual(set(event), {'workflow_dispatch'})
         job = workflow['jobs']['test-backend']
         self.assertIs(type(job['timeout-minutes']), int)
-        self.assertEqual(job['timeout-minutes'], 45)
+        self.assertEqual(job['timeout-minutes'], 60)
         self.assertEqual(job['env'], MODE)
         steps = job['steps']
         source, acquire, cleanup, candidate, guard = steps[:5]
@@ -133,7 +133,7 @@ class BackendAcquisitionWorkflowTests(unittest.TestCase):
             elif mutation == 'candidate-numeric-false':
                 steps[3]['with']['persist-credentials'] = 0
             elif mutation == 'float-deadline':
-                job['timeout-minutes'] = 45.0
+                job['timeout-minutes'] = 60.0
             elif mutation == 'float-retention':
                 next(step for step in steps if step.get('name') == RECEIPT['name'])['with']['retention-days'] = 14.0
             elif mutation == 'automatic-event':
@@ -147,7 +147,7 @@ class BackendAcquisitionWorkflowTests(unittest.TestCase):
             elif mutation == 'changed-unit-boundary':
                 next(step for step in steps if step.get('name') == 'Test workflow boundaries and optional coverage reporting')['run'] = 'true'
             else:
-                job['timeout-minutes'] = 60
+                job['timeout-minutes'] = 90
             with self.subTest(mutation=mutation), self.assertRaises(AssertionError):
                 self.validate(bad)
 

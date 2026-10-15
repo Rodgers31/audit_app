@@ -31,6 +31,9 @@ class LauncherTests(unittest.TestCase):
         self.script = self.root / ".github/scripts/run_backend_tests.py"
         self.script.parent.mkdir(parents=True)
         shutil.copyfile(SCRIPT, self.script)
+        conftest = self.root / "backend/tests/conftest.py"
+        conftest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / "backend/tests/conftest.py", conftest)
         files = {
             "backend/pytest.ini": "[pytest]\npythonpath = .\n",
             "backend/etl/__init__.py": "OWNER = 'backend'\n",
@@ -115,6 +118,39 @@ class LauncherTests(unittest.TestCase):
         combined.read()
         self.assertTrue(any(path.endswith("test_backend.py") for path in combined.measured_files()))
         self.assertTrue(any(path.endswith("test_audit_parser.py") for path in combined.measured_files()))
+
+    def test_large_parameter_values_execute_without_flooding_ci_logs(self):
+        path = self.root / "backend/tests/test_backend.py"
+        path.write_text(path.read_text() + '''
+import pytest
+@pytest.mark.parametrize("payload", ["x" * 1048576 + "a", "x" * 1048576 + "b", b"x" * 1048576 + b"a", "\\ud800" * 300])
+def test_large_payload(payload):
+    assert len(payload) in (1048577, 300)
+    assert payload[-1:] in ("a", "b", b"a", "\\ud800")
+''')
+        result = self.run_launcher()
+        self.assertEqual(result.returncode, 0, result.stdout[-3000:] + result.stderr)
+        receipt = json.loads((self.output / "collection-backend.json").read_text())
+        nodes = receipt["nodeids"]
+        self.assertEqual(len(nodes), 5)
+        self.assertEqual(len(set(nodes)), 5)
+        self.assertLess(max(map(len, nodes)), 256, "Parameter data flooded collected CI identities")
+        self.assertLess(len(result.stdout.encode()), 65536, "Parameter data flooded CI logs")
+        self.assertEqual(json.loads((self.output / "summary.json").read_text())["verdict"], "PASSED")
+
+    def test_precollection_failure_cannot_reupload_previous_passing_reports(self):
+        first = self.run_launcher()
+        self.assertEqual(first.returncode, 0, first.stderr)
+        reports = [self.output / f"{prefix}-{cohort}.{suffix}"
+                   for cohort in ("backend", "legacy")
+                   for prefix, suffix in (("results", "xml"), ("collection", "json"))]
+        reports += [self.output / "summary.json", self.root / "backend/coverage.xml"]
+        self.assertTrue(all(path.is_file() for path in reports))
+        (self.root / "backend/tests/test_audit_parser.py").unlink()
+        second = self.run_launcher()
+        self.assertNotEqual(second.returncode, 0)
+        self.assertIn("declared legacy file is missing", second.stderr)
+        self.assertFalse(any(path.exists() for path in reports), "Stale passing report survived failed preflight")
 
     def test_a_failing_legacy_case_keeps_the_complete_gate_red(self):
         path = self.root / "backend/tests/test_audit_parser.py"

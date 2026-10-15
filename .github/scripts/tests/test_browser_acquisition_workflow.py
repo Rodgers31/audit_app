@@ -84,7 +84,8 @@ class BrowserAcquisitionWorkflowTests(unittest.TestCase):
                 self.validate(bad)
 
     def test_pull_request_and_deployment_callers_have_no_new_secret_requirement(self):
-        baseline_hashes = {'ci.yml': '2f7fb89d35d3b1f6bdf5d77809b2329747200a7113f9a9382e5880e27683d095', 'docker-build-deploy.yml': '949e8ae94456b38d2b2d5ed32a899fdc0f6a44541b05c44d19a56063ed055793'}
+        # Reviewed backend deadline/receipt change; acquisition and secrets unchanged.
+        baseline_hashes = {'ci.yml': 'd99077f26d996931e890fcab7908f00ca118c4cd0c6704bbd1c3712f9252c92b', 'docker-build-deploy.yml': '949e8ae94456b38d2b2d5ed32a899fdc0f6a44541b05c44d19a56063ed055793'}
         for name, expected_hash in baseline_hashes.items():
             raw = (ROOT/'.github/workflows'/name).read_bytes()
             self.assertEqual(hashlib.sha256(raw).hexdigest(), expected_hash)

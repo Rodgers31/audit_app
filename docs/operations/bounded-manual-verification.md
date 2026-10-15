@@ -22,7 +22,10 @@ Each test job checks that its real checkout and dispatch SHA match, that the
 event is `workflow_dispatch`, and that the run attempt is 1 before installation
 or testing. The final gate retains the original required-suite decisions.
 
-The seven configured timeouts sum to 100 runner-minutes. This sum is not a
+The seven configured timeouts sum to 145 runner-minutes (60 for the complete
+backend job). Only the backend job runs in backend scope. The backend emits
+bounded generated parameter IDs, the 25 slowest test durations per cohort,
+and retains collection, JUnit and coverage receipts even after a failure. This sum is not a
 guaranteed billing limit. No rerun is authorized automatically; any failed run
 requires diagnosis before another separately authorized attempt.
 

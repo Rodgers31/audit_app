@@ -12,13 +12,46 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 class ConfigurationTests(unittest.TestCase):
+    def assert_backend_receipts(self, workflow):
+        step = next(step for step in workflow["jobs"]["test-backend"]["steps"]
+                    if step.get("name") == "Preserve backend test receipts")
+        self.assertEqual(step["if"], "always()")
+        self.assertEqual(step["uses"], "actions/upload-artifact@v4")
+        self.assertIs(step["with"].get("include-hidden-files"), True)
+        self.assertEqual(step["with"]["path"].splitlines(), [
+            "backend/.ci-test-results/collection-*.json",
+            "backend/.ci-test-results/results-*.xml",
+            "backend/.ci-test-results/summary.json",
+            "backend/coverage.xml",
+        ])
+
+    def test_backend_receipts_include_only_explicit_hidden_reports(self):
+        for name, workflow in self.workflows():
+            with self.subTest(workflow=name):
+                self.assert_backend_receipts(workflow)
+
+    def test_receipt_policy_rejects_hidden_omission_and_broader_upload(self):
+        for name, workflow in self.workflows():
+            for mutation in ("omitted", "false", "string", "broad"):
+                bad = deepcopy(workflow)
+                step = next(step for step in bad["jobs"]["test-backend"]["steps"]
+                            if step.get("name") == "Preserve backend test receipts")
+                if mutation == "omitted":
+                    step["with"].pop("include-hidden-files", None)
+                elif mutation == "broad":
+                    step["with"]["path"] = "backend/"
+                else:
+                    step["with"]["include-hidden-files"] = False if mutation == "false" else "true"
+                with self.subTest(workflow=name, mutation=mutation), self.assertRaises(AssertionError):
+                    self.assert_backend_receipts(bad)
+
     def workflows(self):
         for name in ("ci.yml", "verification.yml"):
             yield name, yaml.safe_load((ROOT / ".github/workflows" / name).read_text())
 
     def assert_job_deadlines(self, workflow):
         expected = {
-            "test-backend": 45, "test-frontend": 20, "test-etl": 10,
+            "test-backend": 60, "test-frontend": 20, "test-etl": 10,
             "security-scan": 10, "test-browser": 20,
             "test-browser-legacy": 20, "quality-gate": 5,
         }
@@ -37,8 +70,8 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(preparation["timeout-minutes"], 5)
 
     def test_complete_backend_has_finite_budget_without_relaxing_other_deadlines(self):
-        # Run 38012121550 completed 15,466 pytest cases, coverage and cleanup,
-        # then exhausted 30 minutes during controls before API smoke.
+        # Run 38666663428 needed 42 minutes for the first cohort alone,
+        # then hit 45 minutes before legacy tests, coverage and API smoke.
         for name, workflow in self.workflows():
             with self.subTest(workflow=name):
                 self.assert_job_deadlines(workflow)
@@ -46,9 +79,9 @@ class ConfigurationTests(unittest.TestCase):
     def test_deadline_policy_rejects_short_unbounded_or_broadened_budgets(self):
         for name, workflow in self.workflows():
             valid = deepcopy(workflow)
-            valid["jobs"]["test-backend"]["timeout-minutes"] = 45
+            valid["jobs"]["test-backend"]["timeout-minutes"] = 60
             self.assert_job_deadlines(valid)
-            for minutes in (20, 30, 60, 0, -1, True, 45.0, "45", None,
+            for minutes in (20, 30, 45, 90, 0, -1, True, 60.0, "60", None,
                             float("nan"), float("inf"), [], {}):
                 with self.subTest(workflow=name, backend_minutes=minutes):
                     mutated = deepcopy(valid)
