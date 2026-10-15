@@ -271,13 +271,21 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start_time
 
         # Log audit entry
+        if __package__ == 'backend.middleware':
+            from ..social.http_policy import private_social_path, social_log_path
+        else:
+            from social.http_policy import private_social_path, social_log_path
+
         audit_entry = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "user_id": user_id,
             "client_ip": client_ip,
             "method": request.method,
-            "path": request.url.path,
-            "query_params": str(request.query_params),
+            "path": social_log_path(request.url.path),
+            "query_params": (
+                "[redacted]" if private_social_path(request.url.path)
+                else str(request.query_params)
+            ),
             "status_code": response.status_code,
             "duration_ms": round(duration * 1000, 2),
             "user_agent": user_agent,

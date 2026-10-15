@@ -33,7 +33,8 @@ def install_privacy(app, registration):
         raise SocialError('PRIVACY_CONFIGURATION_INVALID', 'One explicit privacy registration is required.', 503)
     registration.validate()
     if registration.config.enabled:
-        app.include_router(create_privacy_router(registration.service_dependency))
+        app.include_router(create_privacy_router(registration.service_dependency,
+            enable_deauthorization=registration.config.deauthorization_enabled))
     app.state.social_privacy_registration = registration
 
 

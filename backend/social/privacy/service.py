@@ -32,11 +32,14 @@ class PrivacyConfig:
     app_secret: str = field(repr=False)
     status_url_base: str
     enabled: bool = False
+    deauthorization_enabled: bool = False
 
     def validate(self):
         try:
             url = urlsplit(self.status_url_base)
-            valid = (type(self.enabled) is bool and type(self.app_id) is str
+            valid = (type(self.enabled) is bool and type(self.deauthorization_enabled) is bool
+                     and (not self.deauthorization_enabled or self.enabled)
+                     and type(self.app_id) is str
                      and re.fullmatch(r'[1-9][0-9]{0,63}', self.app_id)
                      and type(self.app_secret) is str and 1 <= len(self.app_secret) <= 256
                      and all(33 <= ord(c) <= 126 for c in self.app_secret)
