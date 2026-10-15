@@ -1957,6 +1957,13 @@ app.add_middleware(SocialNoStoreMiddleware)
 app.include_router(social_admin_router)
 logger.info("Social admin router registered at /api/v1/admin/social")
 
+# Explicit privacy ingress can stay enabled after new Meta connections are
+# disabled. Invalid enabled configuration fails startup, without provider I/O.
+from social.privacy.startup import configure_meta_privacy
+from database import SessionLocal as _SocialSessionLocal
+
+configure_meta_privacy(app, _SocialSessionLocal)
+
 try:
     from routers.etl_admin import router as etl_admin_router
 

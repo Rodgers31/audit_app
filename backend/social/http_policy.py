@@ -6,6 +6,21 @@ from uuid import uuid4
 from .telemetry import log_event
 
 
+def private_social_path(path):
+    return (path == '/api/v1/admin/social' or path.startswith('/api/v1/admin/social/')
+            or path == '/api/v1/social/privacy/meta' or path.startswith('/api/v1/social/privacy/meta/'))
+
+
+def social_log_path(path):
+    if not private_social_path(path):
+        return path
+    if path in {'/api/v1/social/privacy/meta/data-deletion',
+                '/api/v1/social/privacy/meta/data-deletion/status'}:
+        return path
+    namespace = '/api/v1/admin/social' if path.startswith('/api/v1/admin/social') else '/api/v1/social/privacy/meta'
+    return namespace + '/[redacted]'
+
+
 class SocialNoStoreMiddleware:
     """Also cover unmatched routes and outer security-middleware rejections."""
 
@@ -14,9 +29,7 @@ class SocialNoStoreMiddleware:
 
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
-        protected = path == "/api/v1/admin/social" or path.startswith(
-            "/api/v1/admin/social/"
-        )
+        protected = private_social_path(path)
         if scope["type"] != "http" or not protected:
             await self.app(scope, receive, send)
             return
@@ -27,7 +40,13 @@ class SocialNoStoreMiddleware:
             nonlocal response_started
             if message["type"] == "http.response.start":
                 response_started = True
-                MutableHeaders(scope=message)["Cache-Control"] = "private, no-store"
+                headers = MutableHeaders(scope=message)
+                headers["Cache-Control"] = "private, no-store"
+                if path == '/api/v1/social/privacy/meta' or path.startswith('/api/v1/social/privacy/meta/'):
+                    from .privacy.api import HEADERS
+                    # Apply after the global security middleware, including its
+                    # early rejections and unmatched routes in this namespace.
+                    headers.update(HEADERS)
             await send(message)
 
         try:
