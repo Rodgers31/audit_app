@@ -20,7 +20,7 @@ permissions:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -105,6 +105,18 @@ jobs:
             python .github/scripts/prepare_reconciliation_test_fixture.py cleanup --state "$RUNNER_TEMP/reconciliation-fixture-state.json"
           fi
 
+      - name: Preserve backend test receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-receipts
+          path: |
+            backend/.ci-test-results/collection-*.json
+            backend/.ci-test-results/results-*.xml
+            backend/.ci-test-results/summary.json
+            backend/coverage.xml
+          if-no-files-found: warn
+          retention-days: 14
       - name: Report Local Backend Coverage
         id: local_coverage
         continue-on-error: true

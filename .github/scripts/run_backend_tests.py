@@ -186,7 +186,8 @@ def run_cohort(cohort, output, collect_only=False):
     if collect_only:
         args.append("--collect-only")
     else:
-        args.extend(["--cov=.", "--cov-report="])
+        args.extend(["--cov=.", "--cov-report=", "--durations=25",
+                     f"--junitxml={output / f'results-{cohort}.xml'}"])
     return pytest.main(args, plugins=[CollectionReceipt(
         cohort, files, output / f"collection-{cohort}.json"
     )])
@@ -222,12 +223,15 @@ def validate_collection_receipt(receipt, cohort, files):
 def run_all(output, collect_only=False):
     output.mkdir(parents=True, exist_ok=True)
     (output / "summary.json").unlink(missing_ok=True)
+    for name in ("backend", "legacy"):
+        for filename in (f"collection-{name}.json", f"results-{name}.xml",
+                         f".coverage.{name}"):
+            (output / filename).unlink(missing_ok=True)
+    if not collect_only:
+        (BACKEND / "coverage.xml").unlink(missing_ok=True)
     if os.environ.get("PYTEST_ADDOPTS"):
         raise ValueError("Ambient PYTEST_ADDOPTS cannot alter the complete core test gate")
     inventory = test_inventory()
-    for name in ("backend", "legacy"):
-        (output / f"collection-{name}.json").unlink(missing_ok=True)
-        (output / f".coverage.{name}").unlink(missing_ok=True)
     results = {}
     for name in inventory:
         command = [sys.executable, str(Path(__file__).resolve()),

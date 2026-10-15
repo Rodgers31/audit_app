@@ -3,6 +3,7 @@
 NOTE: Do NOT add the repo root to sys.path here — the root contains a stub
 `seeding/` package that shadows `backend/seeding/` and breaks imports.
 """
+import hashlib
 import os
 import sys
 
@@ -11,6 +12,15 @@ import pytest
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
+
+
+def pytest_make_parametrize_id(config, val, argname):
+    """Keep oversized parser inputs out of case names and hosted log streams."""
+    if isinstance(val, (str, bytes)) and len(val) > 128:
+        content = val.encode("utf-8", errors="surrogatepass") if isinstance(val, str) else val
+        digest = hashlib.sha256(content).hexdigest()[:16]
+        return f"{argname}-{type(val).__name__}-{len(val)}-{digest}"
+    return None
 
 
 @pytest.fixture
