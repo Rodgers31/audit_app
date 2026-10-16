@@ -57,6 +57,7 @@ class SocialService:
         from types import MappingProxyType
         self.available_adapters = MappingProxyType(dict(available_adapters)) if isinstance(available_adapters, Mapping) else frozenset(available_adapters)
         self.actor = None
+        self.actor_kind = "admin"
         self.request_id = None
 
     def now(self):
@@ -88,7 +89,7 @@ class SocialService:
         return status, result
 
     def audit(self, action, *, post=None, target=None, previous=None, new=None, reason=None, details=None):
-        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind="admin", action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
+        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind=self.actor_kind, action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
 
     def _post(self, post_id):
         post = self.db.get(SocialPost, post_id)
@@ -132,7 +133,7 @@ class SocialService:
         post.row_version += 1
         post.updated_at = self.now()
 
-    def _new_revision(self, post, document, references, revision_no):
+    def _new_revision(self, post, document, references, revision_no, *, evidence_snapshot=None, generator_metadata=None):
         ids = all_asset_ids(document)
         assets = list(self.db.scalars(select(SocialMediaAsset).where(SocialMediaAsset.id.in_(ids))
             .order_by(SocialMediaAsset.id).with_for_update().execution_options(populate_existing=True))) if ids else []
@@ -141,8 +142,10 @@ class SocialService:
         if any(asset.state != 'ready' or asset.deleted_at is not None for asset in assets):
             raise SocialError("TARGET_VALIDATION_FAILED", "Referenced media assets must be ready and available.", 422)
         evidence = {"references": [r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in references]}
+        if evidence_snapshot is not None:
+            evidence = {**evidence_snapshot, **evidence}
         value = document_json(document)
-        revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, created_by=self.actor)
+        revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, generator_metadata=generator_metadata, created_by=self.actor)
         self.db.add(revision)
         self.db.flush()
         for asset_id in sorted(ids):
@@ -188,7 +191,7 @@ class SocialService:
             post.content_type = body.content_type
         document = body.document if body.document is not None else PostDocument.model_validate(old.document)
         references = body.references if body.references is not None else old.evidence_snapshot["references"]
-        new = self._new_revision(post, document, references, old.revision_no + 1)
+        new = self._new_revision(post, document, references, old.revision_no + 1, evidence_snapshot=old.evidence_snapshot if post.origin_type == "generated" else None, generator_metadata=old.generator_metadata)
         post.editorial_state = "draft"
         self._touch(post)
         self.audit("post.revised", post=post, previous=previous, new="draft", details={"revision_id": str(new.id), "previous_revision_id": str(old.id)})
@@ -216,6 +219,8 @@ class SocialService:
         return self.detail(post.id)
 
     def _validate_authorization(self, post, revision, body):
+        from .generation.service import verify_generated_revision
+        verify_generated_revision(self.db, post, revision)
         if revision.id != body.revision_id:
             raise SocialError("VERSION_CONFLICT", "The selected revision changed. Refresh before approval.")
         if post.editorial_state not in {"draft", "pending_review", "approved"}:
@@ -577,13 +582,19 @@ class SocialService:
         result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []))
         return result
 
-    def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all"):
+    def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all", origin_type=None, content_type=None):
         if type(page) is not int or not 1 <= page <= 2_147_483_647 or type(page_size) is not int or not 1 <= page_size <= 100:
             raise SocialError("INVALID_REQUEST", "Choose a valid post page and page size.", 422)
         if delivery_filter not in {"all", "scheduled", "history", "needs_attention"}:
             raise SocialError("INVALID_REQUEST", "Choose a supported delivery filter.", 422)
         now = self.now()
         condition = [SocialPost.editorial_state == editorial_state] if editorial_state else []
+        if origin_type is not None:
+            if origin_type not in {"manual", "generated"}:
+                raise SocialError("INVALID_REQUEST", "Choose a supported origin filter.", 422)
+            condition.append(SocialPost.origin_type == origin_type)
+        if content_type is not None:
+            condition.append(SocialPost.content_type == content_type)
         if delivery_filter != "all":
             membership = [SocialPublication.post_id == SocialPost.id]
             if delivery_filter == "scheduled":

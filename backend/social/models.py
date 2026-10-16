@@ -34,7 +34,7 @@ class SocialPost(Base):
     content_type = Column(Text, nullable=False)
     editorial_state = Column(Text, nullable=False, default="draft")
     current_revision_id = Column(Uuid(as_uuid=True), nullable=True)
-    source_event_id = Column(Uuid(as_uuid=True))  # FK belongs to the later source-event migration.
+    source_event_id = Column(Uuid(as_uuid=True), ForeignKey("social_source_events.id", name="fk_social_post_source_event"))
     duplicated_from_id = Column(Uuid(as_uuid=True), ForeignKey("social_posts.id"))
     replaces_post_id = Column(Uuid(as_uuid=True), ForeignKey("social_posts.id"))
     created_by = Column(Uuid(as_uuid=True))  # Supabase identity, intentionally no profile FK.
@@ -43,6 +43,7 @@ class SocialPost(Base):
     updated_at = updated()
     archived_at = Column(TZ)
     __table_args__ = (
+        UniqueConstraint("source_event_id", name="uq_social_post_source_event"),
         CheckConstraint("origin_type IN ('manual','generated')", name="ck_social_post_origin"),
         CheckConstraint("creation_method IN ('admin','pipeline','duplicate')", name="ck_social_post_creation"),
         CheckConstraint("editorial_state IN ('draft','pending_review','approved','rejected','archived')", name="ck_social_post_editorial"),
