@@ -6,7 +6,9 @@ import { LangProvider } from '@/lib/i18n/LangProvider';
 import MERU from './fixtures/meru-comprehensive.json';
 
 let mockLoading = true;
-let mockCounty = MERU;
+let mockCounty: Omit<typeof MERU, 'budget'> & {
+  budget: Omit<typeof MERU.budget, 'fiscal_year'> & { fiscal_year: string | null };
+} = MERU;
 jest.mock('next/navigation', () => ({
   useParams: () => ({ id: '012' }),
   usePathname: () => '/counties/012',
@@ -19,8 +21,8 @@ jest.mock('@/lib/react-query/useCounties', () => ({
   useCountyAccountability: () => ({ data: undefined }),
 }));
 jest.mock('next/dynamic', () => () => function Tab() { return <div>Tab body</div>; });
-jest.mock('@/components/WatchButton', () => () => <button>Watch</button>);
-jest.mock('@/components/PDFExportButton', () => () => <button>Export PDF</button>);
+jest.mock('@/components/WatchButton', () => function WatchButton() { return <button>Watch</button>; });
+jest.mock('@/components/PDFExportButton', () => function PDFExportButton() { return <button>Export PDF</button>; });
 
 beforeEach(() => { mockLoading = true; mockCounty = JSON.parse(JSON.stringify(MERU)); });
 
@@ -50,7 +52,7 @@ it('keeps the loading placeholders out of the accessible grade and financial rec
 
 it('retains an empty hidden year row when no fiscal period is sourced', () => {
   mockLoading = false;
-  mockCounty = { ...mockCounty, budget: { ...mockCounty.budget, fiscal_year: null } } as typeof MERU;
+  mockCounty = { ...mockCounty, budget: { ...mockCounty.budget, fiscal_year: null } };
   render(<LangProvider><CountyDetailClient /></LangProvider>);
   const row = screen.getByRole('heading', { level: 1 }).closest('header')!.querySelector('.detailYear');
   expect(row).not.toBeNull();

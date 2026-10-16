@@ -1705,18 +1705,22 @@ export default function CountyExplorerPage() {
             </p>
           </div>
           <div className={styles.headerActions}>
-            {YEARS.length > 0 && (
-              <label className={styles.selectField}>
-                <span>{t('counties.header.year')}</span>
-                <select value={selectedYear ?? ''} onChange={(e) => setPickedYear(e.target.value)}>
-                  {YEARS.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
+            <label
+              className={`${styles.selectField} ${styles.yearField}`}
+              style={YEARS.length === 0 ? { visibility: 'hidden' } : undefined}
+              aria-hidden={YEARS.length === 0 ? true : undefined}>
+              <span>{t('counties.header.year')}</span>
+              <select
+                disabled={YEARS.length === 0}
+                value={selectedYear ?? ''}
+                onChange={(e) => setPickedYear(e.target.value)}>
+                {YEARS.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button onClick={handleExport} className={styles.exportButton}>
               <Download size={16} aria-hidden='true' />
               {t('counties.header.export')}
