@@ -12,6 +12,7 @@ def main(argv=None):
     parser.add_argument('--database-url-env', required=True, help='Name of the DSN variable; never the DSN value')
     parser.add_argument('--role', required=True)
     parser.add_argument('--schema', default='public')
+    parser.add_argument('--native-platforms', action='store_true', help='Include the reviewed optional Threads/X/TikTok worker table contract')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--install', action='store_true', help='Grant the reviewed contract to an existing dedicated login')
     mode.add_argument('--verify', action='store_true', help='Verify through the actual worker login')
@@ -24,7 +25,10 @@ def main(argv=None):
         config = WorkerConfig(os.environ.get(args.database_url_env), database_schema=args.schema)
         engine = create_worker_engine(config)
         function = install_worker_role if args.install else verify_worker_role
-        function(engine, args.role, args.schema)
+        if args.native_platforms:
+            function(engine, args.role, args.schema, platforms=True)
+        else:
+            function(engine, args.role, args.schema)
     except Exception:
         result = 1
     except KeyboardInterrupt:

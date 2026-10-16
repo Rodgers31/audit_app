@@ -1,0 +1,4397 @@
+{
+  "full_source_sha256": "e5e1b75cea8eba9bd1945d08b01f386f75f5134b253b1559be3a4156569d67c2",
+  "parameters": {
+    "MediaFieldsParameter": {
+      "description": "A comma separated list of Media fields to display.",
+      "explode": false,
+      "in": "query",
+      "name": "media.fields",
+      "required": false,
+      "schema": {
+        "description": "The fields available for a Media object.",
+        "items": {
+          "enum": [
+            "alt_text",
+            "duration_ms",
+            "height",
+            "media_key",
+            "non_public_metrics",
+            "organic_metrics",
+            "preview_image_url",
+            "promoted_metrics",
+            "public_metrics",
+            "type",
+            "url",
+            "variants",
+            "width"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    },
+    "PlaceFieldsParameter": {
+      "description": "A comma separated list of Place fields to display.",
+      "explode": false,
+      "in": "query",
+      "name": "place.fields",
+      "required": false,
+      "schema": {
+        "description": "The fields available for a Place object.",
+        "items": {
+          "enum": [
+            "contained_within",
+            "country",
+            "country_code",
+            "full_name",
+            "geo",
+            "id",
+            "name",
+            "place_type"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    },
+    "PollFieldsParameter": {
+      "description": "A comma separated list of Poll fields to display.",
+      "explode": false,
+      "in": "query",
+      "name": "poll.fields",
+      "required": false,
+      "schema": {
+        "description": "The fields available for a Poll object.",
+        "items": {
+          "enum": [
+            "duration_minutes",
+            "end_datetime",
+            "id",
+            "options",
+            "voting_status"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    },
+    "PostExpansionsParameter": {
+      "description": "A comma separated list of fields to expand.",
+      "explode": false,
+      "in": "query",
+      "name": "expansions",
+      "required": false,
+      "schema": {
+        "items": {
+          "enum": [
+            "article.cover_media",
+            "article.media_entities",
+            "attachments.media_keys",
+            "attachments.media_source_tweet",
+            "attachments.poll_ids",
+            "author_id",
+            "edit_history_post_ids",
+            "entities.mentions.username",
+            "geo.place_id",
+            "in_reply_to_user_id",
+            "referenced_posts",
+            "username"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    },
+    "PostFieldsParameter": {
+      "description": "A comma separated list of Post fields to display.",
+      "explode": false,
+      "in": "query",
+      "name": "post.fields",
+      "required": false,
+      "schema": {
+        "description": "The fields available for a Post object.",
+        "items": {
+          "enum": [
+            "article",
+            "article_title",
+            "attachments",
+            "card_uri",
+            "community_id",
+            "context_annotations",
+            "conversation_id",
+            "created_at",
+            "display_text_range",
+            "edit_controls",
+            "entities",
+            "geo",
+            "id",
+            "lang",
+            "matched_media_notes",
+            "media_metadata",
+            "non_public_metrics",
+            "note_post",
+            "note_request_suggestions",
+            "organic_metrics",
+            "paid_partnership",
+            "possibly_sensitive",
+            "promoted_metrics",
+            "public_metrics",
+            "reply_settings",
+            "scopes",
+            "source",
+            "suggested_source_links",
+            "suggested_source_links_with_counts",
+            "text",
+            "withheld"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    },
+    "UserFieldsParameter": {
+      "description": "A comma separated list of User fields to display.",
+      "explode": false,
+      "in": "query",
+      "name": "user.fields",
+      "required": false,
+      "schema": {
+        "description": "The fields available for a User object.",
+        "items": {
+          "enum": [
+            "confirmed_email",
+            "connection_status",
+            "created_at",
+            "description",
+            "entities",
+            "id",
+            "is_identity_verified",
+            "location",
+            "name",
+            "parody",
+            "profile_banner_url",
+            "profile_image_url",
+            "protected",
+            "public_metrics",
+            "receives_your_dm",
+            "subscriber_count",
+            "subscribes_to_you",
+            "subscription",
+            "subscription_type",
+            "url",
+            "username",
+            "verified",
+            "verified_followers_count",
+            "verified_type",
+            "withheld"
+          ],
+          "type": "string"
+        },
+        "minItems": 1,
+        "type": "array",
+        "uniqueItems": true
+      },
+      "style": "form"
+    }
+  },
+  "paths": {
+    "/2/media/metadata": {
+      "post": {
+        "description": "Creates metadata for a Media file.",
+        "externalDocs": {
+          "url": "https://docs.x.com/x-api/media/media-metadata-create#metadata-create"
+        },
+        "operationId": "createMediaMetadata",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMediaMetadataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateMediaMetadataResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Create Media metadata",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/2/media/upload": {
+      "get": {
+        "description": "Retrieves the status of a Media upload by its ID.",
+        "externalDocs": {
+          "url": "https://docs.x.com/x-api/media/media-upload-status#media-upload-status"
+        },
+        "operationId": "getMediaUploadStatus",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "media_id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MediaId"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "command",
+            "required": false,
+            "schema": {
+              "enum": [
+                "STATUS"
+              ],
+              "type": "string"
+            },
+            "style": "form"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetMediaUploadStatusResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Get Media upload status",
+        "tags": [
+          "Media"
+        ]
+      },
+      "post": {
+        "description": "Uploads a media file for use in posts, direct messages, or ads. The response carries the media identifiers, including the media_key used to reference the asset in later calls. The media field carries the file content base64-encoded in JSON bodies (raw bytes in multipart bodies); media_category is tweet_image, tweet_video, or tweet_gif for posts and ads, dm_image/dm_video/dm_gif for DMs, or subtitles. For X Ads accounts, register the returned media_key via create_media_library_item to add it to the account's media library and use it in campaigns.",
+        "externalDocs": {
+          "url": "https://docs.x.com/x-api/media/media-upload"
+        },
+        "operationId": "mediaUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaUploadRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaUploadResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Upload media",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/2/media/upload/initialize": {
+      "post": {
+        "description": "Initializes a media upload.",
+        "externalDocs": {
+          "url": "https://docs.x.com/x-api/media/media-upload"
+        },
+        "operationId": "initializeMediaUpload",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InitializeMediaUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InitializeMediaUploadResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Initialize media upload",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/2/media/upload/{id}/append": {
+      "post": {
+        "operationId": "appendMediaUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendMediaUploadRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AppendMediaUploadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppendMediaUploadResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Append Media Upload",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/2/media/upload/{id}/finalize": {
+      "post": {
+        "description": "Finalizes a Media upload request.",
+        "externalDocs": {
+          "url": "https://docs.x.com/x-api/media/media-upload"
+        },
+        "operationId": "finalizeMediaUpload",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "type": "string"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeMediaUploadResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "media.write"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Finalize Media upload",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/2/tweets": {
+      "get": {
+        "operationId": "getPostsByIds",
+        "parameters": [
+          {
+            "explode": false,
+            "in": "query",
+            "name": "ids",
+            "required": true,
+            "schema": {
+              "items": {
+                "$ref": "#/components/schemas/PostId"
+              },
+              "maxItems": 100,
+              "minItems": 1,
+              "type": "array"
+            },
+            "style": "form"
+          },
+          {
+            "$ref": "#/components/parameters/PostFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PostExpansionsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/UserFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/MediaFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PollFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PlaceFieldsParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPostsByIdsResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "users.read",
+              "tweet.read"
+            ]
+          },
+          {
+            "UserToken": []
+          },
+          {
+            "BearerToken": []
+          }
+        ],
+        "summary": "Get Posts by IDs",
+        "tags": [
+          "Posts"
+        ]
+      },
+      "post": {
+        "operationId": "createPosts",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatePostsResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "tweet.write",
+              "tweet.read",
+              "users.read"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Create Posts",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/2/tweets/{id}": {
+      "delete": {
+        "operationId": "deletePosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostId"
+            },
+            "style": "simple"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletePostsResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "tweet.write",
+              "tweet.read",
+              "users.read"
+            ]
+          },
+          {
+            "UserToken": []
+          }
+        ],
+        "summary": "Delete Posts",
+        "tags": [
+          "Posts"
+        ]
+      },
+      "get": {
+        "operationId": "getPostsById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PostId"
+            },
+            "style": "simple"
+          },
+          {
+            "$ref": "#/components/parameters/PostFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PostExpansionsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/UserFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/MediaFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PollFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PlaceFieldsParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetPostsByIdResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "users.read",
+              "tweet.read"
+            ]
+          },
+          {
+            "UserToken": []
+          },
+          {
+            "BearerToken": []
+          }
+        ],
+        "summary": "Get Posts by ID",
+        "tags": [
+          "Posts"
+        ]
+      }
+    },
+    "/2/users/{id}/tweets": {
+      "get": {
+        "description": "When both are provided, `start_time` must be earlier than `end_time`. When both are provided, `since_id` must be less than `until_id`.",
+        "operationId": "getUsersPosts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            },
+            "style": "simple"
+          },
+          {
+            "in": "query",
+            "name": "max_results",
+            "required": false,
+            "schema": {
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 5,
+              "type": "integer"
+            },
+            "style": "form"
+          },
+          {
+            "description": "A base32hex-encoded pagination token.",
+            "in": "query",
+            "name": "pagination_token",
+            "required": false,
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "description": "Must be on or after 2010-11-06.",
+            "in": "query",
+            "name": "start_time",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "description": "Must be on or after 2010-11-06.",
+            "in": "query",
+            "name": "end_time",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "since_id",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "in": "query",
+            "name": "until_id",
+            "required": false,
+            "schema": {
+              "pattern": "^[0-9]{1,19}$",
+              "type": "string"
+            },
+            "style": "form"
+          },
+          {
+            "explode": false,
+            "in": "query",
+            "name": "exclude",
+            "required": false,
+            "schema": {
+              "items": {
+                "enum": [
+                  "replies",
+                  "retweets"
+                ],
+                "type": "string"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "style": "form"
+          },
+          {
+            "$ref": "#/components/parameters/PostFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PostExpansionsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/UserFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/MediaFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PollFieldsParameter"
+          },
+          {
+            "$ref": "#/components/parameters/PlaceFieldsParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetUsersPostsResponse"
+                }
+              }
+            },
+            "description": "The request has succeeded."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "The request has failed."
+          }
+        },
+        "security": [
+          {
+            "OAuth2UserToken": [
+              "users.read",
+              "tweet.read"
+            ]
+          },
+          {
+            "UserToken": []
+          },
+          {
+            "BearerToken": []
+          }
+        ],
+        "summary": "Get Users Posts",
+        "tags": [
+          "Users"
+        ]
+      }
+    }
+  },
+  "retrieved_at": "2026-10-16",
+  "schemas": {
+    "AppendMediaUploadRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "media": {
+          "anyOf": [
+            {
+              "format": "binary",
+              "type": "string"
+            },
+            {
+              "format": "byte",
+              "type": "string"
+            }
+          ],
+          "description": "The media chunk to upload."
+        },
+        "segment_index": {
+          "description": "The index of this segment in the upload sequence.",
+          "maximum": 9999,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "media",
+        "segment_index"
+      ],
+      "type": "object"
+    },
+    "AppendMediaUploadResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/AppendMediaUploadResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "AppendMediaUploadResponseData": {
+      "properties": {
+        "expires_at": {
+          "description": "Epoch seconds when the upload session expires.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadata": {
+      "properties": {
+        "allow_download_status": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataAllowDownloadStatus"
+        },
+        "alt_text": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataAltText"
+        },
+        "audience_policy": {
+          "type": "object"
+        },
+        "content_expiration": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataContentExpiration"
+        },
+        "domain_restrictions": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataDomainRestrictions"
+        },
+        "found_media_origin": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataFoundMediaOrigin"
+        },
+        "geo_restrictions": {
+          "type": "object"
+        },
+        "management_info": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataManagementInfo"
+        },
+        "preview_image": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataPreviewImage"
+        },
+        "sensitive_media_warning": {
+          "type": "object"
+        },
+        "shared_info": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataSharedInfo"
+        },
+        "sticker_info": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataStickerInfo"
+        },
+        "upload_source": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadataUploadSource"
+        }
+      },
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataAllowDownloadStatus": {
+      "properties": {
+        "allow_download": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataAltText": {
+      "properties": {
+        "text": {
+          "maxLength": 1000,
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataContentExpiration": {
+      "properties": {
+        "timestamp_sec": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "timestamp_sec"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataDomainRestrictions": {
+      "properties": {
+        "whitelist": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "whitelist"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataFoundMediaOrigin": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "id"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataManagementInfo": {
+      "properties": {
+        "managed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "managed"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataPreviewImage": {
+      "properties": {
+        "media_key": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "media_key"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataSharedInfo": {
+      "properties": {
+        "shared": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "shared"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataStickerInfo": {
+      "properties": {
+        "stickers": {
+          "items": {
+            "$ref": "#/components/schemas/CreateMediaMetadataMetadataStickerInfoStickers"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "stickers"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataStickerInfoStickers": {
+      "properties": {},
+      "type": "object"
+    },
+    "CreateMediaMetadataMetadataUploadSource": {
+      "properties": {
+        "upload_source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "upload_source"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataRequest": {
+      "properties": {
+        "id": {
+          "description": "The media id the metadata is attached to.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/components/schemas/CreateMediaMetadataMetadata",
+          "description": "User-defined metadata to associate with the media."
+        }
+      },
+      "required": [
+        "id",
+        "metadata"
+      ],
+      "type": "object"
+    },
+    "CreateMediaMetadataResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/CreateMediaMetadataResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CreateMediaMetadataResponseData": {
+      "properties": {
+        "associated_metadata": {
+          "description": "The metadata now associated with the media.",
+          "type": "object"
+        },
+        "id": {
+          "description": "The media id the metadata was attached to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "CreatePostsEditOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "previous_post_id": {
+          "description": "The ID of the Post being edited.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "previous_post_id"
+      ],
+      "type": "object"
+    },
+    "CreatePostsGeo": {
+      "additionalProperties": false,
+      "properties": {
+        "place_id": {
+          "description": "Place ID for geo tagging.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "place_id"
+      ],
+      "type": "object"
+    },
+    "CreatePostsMedia": {
+      "additionalProperties": false,
+      "properties": {
+        "call_to_actions": {
+          "$ref": "#/components/schemas/CreatePostsMediaCallToActions",
+          "description": "Call-to-action button rendered on the media entity."
+        },
+        "description": {
+          "description": "Description for the media, rendered on the Post card for video and Amplify content.",
+          "type": "string"
+        },
+        "embeddable": {
+          "description": "When true, the media's asset URLs do not expire and external syndicated playback is allowed.",
+          "type": "boolean"
+        },
+        "media_ids": {
+          "description": "Media IDs to attach to the tweet.",
+          "items": {
+            "pattern": "^[0-9]{1,19}$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
+        },
+        "preview_media_id": {
+          "description": "Media id whose asset is used as the preview image.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        },
+        "tagged_user_ids": {
+          "description": "User IDs tagged in the media.",
+          "items": {
+            "pattern": "^[0-9]{1,19}$",
+            "type": "string"
+          },
+          "maxItems": 10,
+          "type": "array"
+        },
+        "title": {
+          "description": "Title for the media, rendered on the Post card for video and Amplify content.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "media_ids"
+      ],
+      "type": "object"
+    },
+    "CreatePostsMediaCallToActions": {
+      "additionalProperties": false,
+      "properties": {
+        "app_install": {
+          "$ref": "#/components/schemas/CreatePostsMediaCallToActionsAppInstall",
+          "description": "App Install CTA. At least one store id should be provided."
+        },
+        "visit_site": {
+          "$ref": "#/components/schemas/CreatePostsMediaCallToActionsVisitSite",
+          "description": "Visit Site CTA."
+        },
+        "watch_now": {
+          "$ref": "#/components/schemas/CreatePostsMediaCallToActionsWatchNow",
+          "description": "Watch Now CTA."
+        }
+      },
+      "type": "object"
+    },
+    "CreatePostsMediaCallToActionsAppInstall": {
+      "additionalProperties": false,
+      "properties": {
+        "app_store_id": {
+          "description": "Apple App Store iPhone app id.",
+          "type": "string"
+        },
+        "ipad_app_store_id": {
+          "description": "Apple App Store iPad app id.",
+          "type": "string"
+        },
+        "play_store_id": {
+          "description": "Google Play Store app id.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreatePostsMediaCallToActionsVisitSite": {
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "description": "HTTPS URL the CTA links to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "CreatePostsMediaCallToActionsWatchNow": {
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "description": "HTTPS URL the CTA links to.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "CreatePostsPoll": {
+      "additionalProperties": false,
+      "properties": {
+        "duration_minutes": {
+          "description": "Duration of the poll in minutes.",
+          "maximum": 10080,
+          "minimum": 5,
+          "type": "integer"
+        },
+        "options": {
+          "description": "Poll options (2-4 choices, 1-25 characters each).",
+          "items": {
+            "maxLength": 25,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "type": "array"
+        },
+        "reply_settings": {
+          "description": "Who can reply to the poll Tweet. Accepted for compatibility; it carries no backend argument and is dropped before the mutation is issued (see `translate_body`).",
+          "enum": [
+            "following",
+            "mentionedUsers",
+            "subscribers",
+            "verified"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "options",
+        "duration_minutes"
+      ],
+      "type": "object"
+    },
+    "CreatePostsReply": {
+      "additionalProperties": false,
+      "properties": {
+        "auto_populate_reply_metadata": {
+          "description": "If true, reply metadata is automatically populated. Accepted for compatibility; it carries no backend argument and is dropped before the mutation is issued (see `translate_body`).",
+          "type": "boolean"
+        },
+        "exclude_reply_user_ids": {
+          "description": "User IDs to exclude from the reply thread.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "in_reply_to_tweet_id": {
+          "description": "The ID of the tweet being replied to.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "in_reply_to_tweet_id"
+      ],
+      "type": "object"
+    },
+    "CreatePostsRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "card_uri": {
+          "description": "Card URI parameter.",
+          "type": "string"
+        },
+        "community_id": {
+          "description": "Community to post the tweet to.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        },
+        "direct_message_deep_link": {
+          "description": "Direct message deep link.",
+          "type": "string"
+        },
+        "edit_options": {
+          "$ref": "#/components/schemas/CreatePostsEditOptions",
+          "description": "Edit an existing tweet rather than creating a new one."
+        },
+        "for_super_followers_only": {
+          "description": "Restrict tweet to super followers.",
+          "type": "boolean"
+        },
+        "geo": {
+          "$ref": "#/components/schemas/CreatePostsGeo",
+          "description": "Geo location for the tweet."
+        },
+        "made_with_ai": {
+          "description": "Disclose that the tweet contains AI-generated media.",
+          "type": "boolean"
+        },
+        "media": {
+          "$ref": "#/components/schemas/CreatePostsMedia",
+          "description": "Media attachments."
+        },
+        "nullcast": {
+          "description": "If true, the tweet is not shown in the public timeline.",
+          "type": "boolean"
+        },
+        "paid_partnership": {
+          "description": "Disclose that the tweet is a paid partnership.",
+          "type": "boolean"
+        },
+        "poll": {
+          "$ref": "#/components/schemas/CreatePostsPoll",
+          "description": "Poll configuration."
+        },
+        "quote_tweet_id": {
+          "description": "Tweet ID to quote.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        },
+        "reply": {
+          "$ref": "#/components/schemas/CreatePostsReply",
+          "description": "Tweet reply configuration."
+        },
+        "reply_settings": {
+          "description": "Who can reply to this tweet.",
+          "enum": [
+            "following",
+            "mentionedUsers",
+            "subscribers",
+            "verified"
+          ],
+          "type": "string"
+        },
+        "share_with_followers": {
+          "description": "Share an exclusive (super-follower) tweet with all followers.",
+          "type": "boolean"
+        },
+        "text": {
+          "default": "",
+          "description": "Text of the tweet. Required unless media is provided.  Defaulted to an empty string so it is always sent: the backend's `tweet_text` variable is non-null and rejects an absent value.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "CreatePostsResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/CreatePostsResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "CreatePostsResponseData": {
+      "properties": {
+        "edit_history_post_ids": {
+          "description": "Post IDs in this Post's edit history chain.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "id": {
+          "description": "Unique identifier of the created Post.",
+          "pattern": "^[0-9]{1,19}$",
+          "type": "string"
+        },
+        "text": {
+          "description": "The content of the created Post.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text"
+      ],
+      "type": "object"
+    },
+    "DeletePostsResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/DeletePostsResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "DeletePostsResponseData": {
+      "properties": {
+        "deleted": {
+          "description": "Whether the Post was deleted.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "deleted"
+      ],
+      "type": "object"
+    },
+    "DisallowedResourceProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/disallowed-resource"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "DuplicateRuleProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.twitter.com/2/problems/duplicate-rules"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "value"
+      ],
+      "type": "object"
+    },
+    "Error": {
+      "properties": {
+        "code": {
+          "format": "int32",
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "Expansions": {
+      "properties": {
+        "media": {
+          "items": {
+            "$ref": "#/components/schemas/Media"
+          },
+          "type": "array"
+        },
+        "places": {
+          "items": {
+            "$ref": "#/components/schemas/Place"
+          },
+          "type": "array"
+        },
+        "polls": {
+          "items": {
+            "$ref": "#/components/schemas/Poll"
+          },
+          "type": "array"
+        },
+        "posts": {
+          "items": {
+            "$ref": "#/components/schemas/Post"
+          },
+          "type": "array"
+        },
+        "topics": {
+          "items": {
+            "$ref": "#/components/schemas/Topic"
+          },
+          "type": "array"
+        },
+        "users": {
+          "items": {
+            "$ref": "#/components/schemas/User"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FieldHydrationFailureProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/field-hydration-failure"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "field"
+      ],
+      "type": "object"
+    },
+    "FieldUnauthorizedProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/field-unauthorized"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "field"
+      ],
+      "type": "object"
+    },
+    "FinalizeMediaUploadResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/FinalizeMediaUploadResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "FinalizeMediaUploadResponseData": {
+      "properties": {
+        "expires_after_secs": {
+          "description": "Seconds until the upload session expires.",
+          "type": "integer"
+        },
+        "id": {
+          "description": "Unique identifier of the media.",
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/components/schemas/FinalizeMediaUploadResponseDataImage"
+        },
+        "media_key": {
+          "description": "The media key for the uploaded media.",
+          "type": "string"
+        },
+        "processing_info": {
+          "$ref": "#/components/schemas/FinalizeMediaUploadResponseDataProcessingInfo"
+        },
+        "size": {
+          "description": "Total size of the media in bytes.",
+          "type": "integer"
+        },
+        "video": {
+          "$ref": "#/components/schemas/FinalizeMediaUploadResponseDataVideo"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "FinalizeMediaUploadResponseDataImage": {
+      "additionalProperties": false,
+      "properties": {
+        "h": {
+          "description": "Height in pixels.",
+          "type": "integer"
+        },
+        "image_type": {
+          "description": "MIME type of the uploaded image.",
+          "type": "string"
+        },
+        "w": {
+          "description": "Width in pixels.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "FinalizeMediaUploadResponseDataProcessingInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "check_after_secs": {
+          "description": "Seconds to wait before polling status again.",
+          "type": "integer"
+        },
+        "progress_percent": {
+          "description": "Processing completion percentage.",
+          "type": "integer"
+        },
+        "state": {
+          "description": "Processing state (pending, in_progress, failed, succeeded).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "FinalizeMediaUploadResponseDataVideo": {
+      "additionalProperties": false,
+      "properties": {
+        "video_type": {
+          "description": "MIME type of the processed video.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GetMediaUploadStatusResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/GetMediaUploadStatusResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "GetMediaUploadStatusResponseData": {
+      "properties": {
+        "expires_after_secs": {
+          "description": "Seconds until the upload session expires.",
+          "type": "integer"
+        },
+        "id": {
+          "description": "Unique identifier of the media.",
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/components/schemas/GetMediaUploadStatusResponseDataImage"
+        },
+        "media_key": {
+          "description": "The media key for the uploaded media.",
+          "type": "string"
+        },
+        "processing_info": {
+          "$ref": "#/components/schemas/GetMediaUploadStatusResponseDataProcessingInfo"
+        },
+        "size": {
+          "description": "Total size of the media in bytes.",
+          "type": "integer"
+        },
+        "video": {
+          "$ref": "#/components/schemas/GetMediaUploadStatusResponseDataVideo"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "GetMediaUploadStatusResponseDataImage": {
+      "additionalProperties": false,
+      "properties": {
+        "h": {
+          "description": "Height in pixels.",
+          "type": "integer"
+        },
+        "image_type": {
+          "description": "MIME type of the uploaded image.",
+          "type": "string"
+        },
+        "w": {
+          "description": "Width in pixels.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "GetMediaUploadStatusResponseDataProcessingInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "check_after_secs": {
+          "description": "Seconds to wait before polling status again.",
+          "type": "integer"
+        },
+        "progress_percent": {
+          "description": "Processing completion percentage.",
+          "type": "integer"
+        },
+        "state": {
+          "description": "Processing state (pending, in_progress, failed, succeeded).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GetMediaUploadStatusResponseDataVideo": {
+      "additionalProperties": false,
+      "properties": {
+        "video_type": {
+          "description": "MIME type of the processed video.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GetPostsByIdResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/Post"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        },
+        "includes": {
+          "$ref": "#/components/schemas/Expansions"
+        }
+      },
+      "type": "object"
+    },
+    "GetPostsByIdsResponse": {
+      "properties": {
+        "data": {
+          "items": {
+            "$ref": "#/components/schemas/Post"
+          },
+          "type": "array"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        },
+        "includes": {
+          "$ref": "#/components/schemas/Expansions"
+        },
+        "meta": {
+          "properties": {
+            "result_count": {
+              "description": "Number of items in the data array.",
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "GetUsersPostsResponse": {
+      "properties": {
+        "data": {
+          "items": {
+            "$ref": "#/components/schemas/Post"
+          },
+          "type": "array"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        },
+        "includes": {
+          "$ref": "#/components/schemas/Expansions"
+        },
+        "meta": {
+          "properties": {
+            "newest_id": {
+              "description": "Most recent ID in the data array.",
+              "type": "string"
+            },
+            "next_token": {
+              "description": "Pagination token for the next page of results.",
+              "type": "string"
+            },
+            "oldest_id": {
+              "description": "Oldest ID in the data array.",
+              "type": "string"
+            },
+            "previous_token": {
+              "description": "Pagination token for the previous page of results.",
+              "type": "string"
+            },
+            "result_count": {
+              "description": "Number of items in the data array.",
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "InitializeMediaUploadRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "additional_owners": {
+          "description": "User ids granted access to the uploaded media.",
+          "items": {
+            "pattern": "^[0-9]{1,19}$",
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "media_category": {
+          "description": "The media category of the upload.",
+          "enum": [
+            "amplify_video",
+            "tweet_gif",
+            "tweet_image",
+            "tweet_video",
+            "dm_gif",
+            "dm_image",
+            "dm_video",
+            "subtitles"
+          ],
+          "type": "string"
+        },
+        "media_type": {
+          "description": "The type of media.",
+          "enum": [
+            "video/mp4",
+            "video/webm",
+            "video/mp2t",
+            "video/quicktime",
+            "text/srt",
+            "text/vtt",
+            "image/jpeg",
+            "image/gif",
+            "image/bmp",
+            "image/png",
+            "image/webp",
+            "image/pjpeg",
+            "image/tiff",
+            "model/gltf-binary",
+            "model/vnd.usdz+zip"
+          ],
+          "type": "string"
+        },
+        "shared": {
+          "description": "Whether this media is shared or not.",
+          "type": "boolean"
+        },
+        "total_bytes": {
+          "description": "The total size of the media upload in bytes.",
+          "maximum": 17179869184,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "InitializeMediaUploadResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/InitializeMediaUploadResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "InitializeMediaUploadResponseData": {
+      "properties": {
+        "expires_after_secs": {
+          "description": "Seconds until the upload session expires.",
+          "type": "integer"
+        },
+        "id": {
+          "description": "Unique identifier of the upload session.",
+          "type": "string"
+        },
+        "media_key": {
+          "description": "The media key for the uploaded media.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "InternalErrorProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/internal-error"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "InvalidRequestProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "parameter": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/invalid-request"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "InvalidRuleProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "details": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.twitter.com/2/problems/invalid-rules"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "details"
+      ],
+      "type": "object"
+    },
+    "Media": {
+      "properties": {
+        "alt_text": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "integer"
+        },
+        "height": {
+          "type": "integer"
+        },
+        "media_key": {
+          "type": "string"
+        },
+        "non_public_metrics": {
+          "$ref": "#/components/schemas/MediaNonPublicMetrics"
+        },
+        "organic_metrics": {
+          "$ref": "#/components/schemas/MediaOrganicMetrics"
+        },
+        "preview_image_url": {
+          "type": "string"
+        },
+        "promoted_metrics": {
+          "$ref": "#/components/schemas/MediaPromotedMetrics"
+        },
+        "public_metrics": {
+          "$ref": "#/components/schemas/MediaPublicMetrics"
+        },
+        "type": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "variants": {
+          "$ref": "#/components/schemas/MediaVariants"
+        },
+        "width": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MediaId": {
+      "description": "Unique identifier of a Media",
+      "pattern": "^[0-9]{1,19}$",
+      "type": "string"
+    },
+    "MediaNonPublicMetrics": {
+      "description": "Nonpublic engagement metrics for the media at the time of the request.",
+      "properties": {
+        "playback_0_count": {
+          "description": "Number of users who started playback (0% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_100_count": {
+          "description": "Number of users who completed playback (100% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_25_count": {
+          "description": "Number of users who watched at least 25% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_50_count": {
+          "description": "Number of users who watched at least 50% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_75_count": {
+          "description": "Number of users who watched at least 75% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MediaOrganicMetrics": {
+      "description": "Organic nonpublic engagement metrics for the media at the time of the request.",
+      "properties": {
+        "playback_0_count": {
+          "description": "Number of users who started playback (0% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_100_count": {
+          "description": "Number of users who completed playback (100% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_25_count": {
+          "description": "Number of users who watched at least 25% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_50_count": {
+          "description": "Number of users who watched at least 50% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_75_count": {
+          "description": "Number of users who watched at least 75% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "view_count": {
+          "description": "The number of organic views of this video. Null when the backend returns quartile data without a view count.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MediaPromotedMetrics": {
+      "description": "Promoted nonpublic engagement metrics for the media at the time of the request.",
+      "properties": {
+        "playback_0_count": {
+          "description": "Number of users who started playback (0% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_100_count": {
+          "description": "Number of users who completed playback (100% quartile) of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_25_count": {
+          "description": "Number of users who watched at least 25% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_50_count": {
+          "description": "Number of users who watched at least 50% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "playback_75_count": {
+          "description": "Number of users who watched at least 75% of this video.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "view_count": {
+          "description": "The number of promoted views of this video. Null when the backend returns quartile data without a view count.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MediaPublicMetrics": {
+      "description": "Public engagement metrics for the media at the time of the request.",
+      "properties": {
+        "view_count": {
+          "description": "The number of times this video has been viewed.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "view_count"
+      ],
+      "type": "object"
+    },
+    "MediaUploadRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "additional_owners": {
+          "description": "Comma-separated list of user IDs who can use this media.",
+          "type": "string"
+        },
+        "media": {
+          "anyOf": [
+            {
+              "format": "binary",
+              "type": "string"
+            },
+            {
+              "format": "byte",
+              "type": "string"
+            }
+          ],
+          "description": "The media file to upload: base64-encoded in JSON bodies, raw bytes in multipart bodies."
+        },
+        "media_category": {
+          "description": "The category of the media being uploaded.",
+          "enum": [
+            "tweet_image",
+            "tweet_video",
+            "tweet_gif",
+            "dm_image",
+            "dm_video",
+            "dm_gif",
+            "subtitles"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "media",
+        "media_category"
+      ],
+      "type": "object"
+    },
+    "MediaUploadResponse": {
+      "properties": {
+        "data": {
+          "$ref": "#/components/schemas/MediaUploadResponseData"
+        },
+        "errors": {
+          "items": {
+            "$ref": "#/components/schemas/Problem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "MediaUploadResponseData": {
+      "properties": {
+        "expires_after_secs": {
+          "description": "Seconds until the upload session expires.",
+          "type": "integer"
+        },
+        "id": {
+          "description": "Unique identifier of the media.",
+          "type": "string"
+        },
+        "image": {
+          "$ref": "#/components/schemas/MediaUploadResponseDataImage"
+        },
+        "media_key": {
+          "description": "The media key for the uploaded media.",
+          "type": "string"
+        },
+        "processing_info": {
+          "$ref": "#/components/schemas/MediaUploadResponseDataProcessingInfo"
+        },
+        "size": {
+          "description": "Total size of the media in bytes.",
+          "type": "integer"
+        },
+        "video": {
+          "$ref": "#/components/schemas/MediaUploadResponseDataVideo"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    },
+    "MediaUploadResponseDataImage": {
+      "additionalProperties": false,
+      "properties": {
+        "h": {
+          "description": "Height in pixels.",
+          "type": "integer"
+        },
+        "image_type": {
+          "description": "MIME type of the uploaded image.",
+          "type": "string"
+        },
+        "w": {
+          "description": "Width in pixels.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "MediaUploadResponseDataProcessingInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "check_after_secs": {
+          "description": "Seconds to wait before polling status again.",
+          "type": "integer"
+        },
+        "progress_percent": {
+          "description": "Processing completion percentage.",
+          "type": "integer"
+        },
+        "state": {
+          "description": "Processing state (pending, in_progress, failed, succeeded).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MediaUploadResponseDataVideo": {
+      "additionalProperties": false,
+      "properties": {
+        "video_type": {
+          "description": "MIME type of the processed video.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "MediaVariants": {
+      "description": "Each media object may have multiple display or playback variants, with different resolutions or formats.",
+      "items": {
+        "description": "A single playback or display variant of a media object.",
+        "properties": {
+          "bit_rate": {
+            "description": "The bit rate of this variant, in bits per second. Absent for playlist variants.",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "content_type": {
+            "description": "The MIME type of this variant, for example \"video/mp4\" or \"application/x-mpegURL\".",
+            "nullable": true,
+            "type": "string"
+          },
+          "url": {
+            "description": "The URL to this media variant.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "NotAuthorizedForFieldProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "parameter": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/not-authorized-for-field"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "field"
+      ],
+      "type": "object"
+    },
+    "NotAuthorizedForResourceProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "parameter": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "section": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/not-authorized-for-resource"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "resource_type"
+      ],
+      "type": "object"
+    },
+    "Place": {
+      "properties": {
+        "contained_within": {
+          "$ref": "#/components/schemas/PlaceContainedWithin"
+        },
+        "country": {
+          "type": "string"
+        },
+        "country_code": {
+          "type": "string"
+        },
+        "full_name": {
+          "type": "string"
+        },
+        "geo": {
+          "$ref": "#/components/schemas/PlaceGeo"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "place_type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PlaceContainedWithin": {
+      "description": "A list of unique identifiers of the Places that contain this place.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "PlaceGeo": {
+      "description": "The geographic location of this place, expressed as a GeoJSON Feature.",
+      "properties": {
+        "bbox": {
+          "description": "The bounding box as [southwest_longitude, southwest_latitude, northeast_longitude, northeast_latitude].",
+          "items": {
+            "format": "double",
+            "type": "number"
+          },
+          "maxItems": 4,
+          "minItems": 4,
+          "type": "array"
+        },
+        "properties": {
+          "description": "Additional GeoJSON feature properties.",
+          "type": "object"
+        },
+        "type": {
+          "description": "The GeoJSON feature type.",
+          "oneOf": [
+            {
+              "enum": [
+                "Feature"
+              ],
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "bbox",
+        "properties"
+      ],
+      "type": "object"
+    },
+    "Poll": {
+      "properties": {
+        "duration_minutes": {
+          "type": "integer"
+        },
+        "end_datetime": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/components/schemas/PollOptions"
+        },
+        "voting_status": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PollOptions": {
+      "description": "The list of options (choices) available in this poll.",
+      "items": {
+        "description": "A single option (choice) available in a poll.",
+        "properties": {
+          "label": {
+            "description": "The text label of this poll option.",
+            "type": "string"
+          },
+          "position": {
+            "description": "The 1-based position of this option within the poll.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "votes": {
+            "description": "The number of votes this option has received.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "position",
+          "label",
+          "votes"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "Post": {
+      "properties": {
+        "article": {
+          "type": "object"
+        },
+        "article_title": {
+          "description": "Metadata about the long-form Article attached to this Post, if any.",
+          "type": "object"
+        },
+        "attachments": {
+          "$ref": "#/components/schemas/PostAttachments"
+        },
+        "author_id": {
+          "description": "Unique identifier of the author of this Post.",
+          "type": "string"
+        },
+        "card_uri": {
+          "type": "string"
+        },
+        "community_id": {
+          "description": "The unique identifier of the Community this Post belongs to, if any.",
+          "type": "string"
+        },
+        "context_annotations": {
+          "$ref": "#/components/schemas/PostContextAnnotations"
+        },
+        "conversation_id": {
+          "description": "The ID of the conversation this Post belongs to (matches the root Post's ID).",
+          "type": "string"
+        },
+        "created_at": {
+          "description": "Creation time of the Post.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "display_text_range": {
+          "$ref": "#/components/schemas/PostDisplayTextRange"
+        },
+        "edit_controls": {
+          "$ref": "#/components/schemas/PostEditControls"
+        },
+        "edit_history_post_ids": {
+          "description": "A list of Post IDs in this Post's edit history chain.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "entities": {
+          "$ref": "#/components/schemas/PostEntities"
+        },
+        "geo": {
+          "$ref": "#/components/schemas/PostGeo"
+        },
+        "id": {
+          "description": "Unique identifier of this Post.",
+          "type": "string"
+        },
+        "in_reply_to_user_id": {
+          "description": "Unique identifier of the User this Post is replying to.",
+          "type": "string"
+        },
+        "lang": {
+          "description": "Language of the Post, if detected by X. Returned as a BCP47 language tag.",
+          "type": "string"
+        },
+        "matched_media_notes": {
+          "$ref": "#/components/schemas/PostMatchedMediaNotes"
+        },
+        "media_metadata": {
+          "$ref": "#/components/schemas/PostMediaMetadata"
+        },
+        "non_public_metrics": {
+          "description": "Nonpublic engagement metrics for the Post at the time of the request.",
+          "type": "object"
+        },
+        "note_post": {
+          "$ref": "#/components/schemas/PostNotePost"
+        },
+        "note_request_suggestions": {
+          "$ref": "#/components/schemas/PostNoteRequestSuggestions"
+        },
+        "organic_metrics": {
+          "description": "Organic nonpublic engagement metrics for the Post at the time of the request.",
+          "type": "object"
+        },
+        "paid_partnership": {
+          "description": "Indicates if this Post is a paid partnership, i.e. it has been disclosed by the author as containing paid promotion.",
+          "type": "boolean"
+        },
+        "possibly_sensitive": {
+          "description": "Indicates if this Post contains URLs marked as sensitive, for example content suitable for mature audiences.",
+          "type": "boolean"
+        },
+        "promoted_metrics": {
+          "description": "Promoted nonpublic engagement metrics for the Post at the time of the request.",
+          "type": "object"
+        },
+        "public_metrics": {
+          "$ref": "#/components/schemas/PostPublicMetrics"
+        },
+        "referenced_posts": {
+          "$ref": "#/components/schemas/PostReferencedPosts"
+        },
+        "reply_settings": {
+          "description": "Shows who can reply to this Post.",
+          "type": "string"
+        },
+        "scopes": {
+          "$ref": "#/components/schemas/PostScopes"
+        },
+        "source": {
+          "description": "The name of the app the user posted from. This is deprecated.",
+          "type": "string"
+        },
+        "suggested_source_links": {
+          "$ref": "#/components/schemas/PostSuggestedSourceLinks"
+        },
+        "suggested_source_links_with_counts": {
+          "$ref": "#/components/schemas/PostSuggestedSourceLinksWithCounts"
+        },
+        "text": {
+          "description": "The content of the Post.",
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        },
+        "withheld": {
+          "$ref": "#/components/schemas/PostWithheld"
+        }
+      },
+      "type": "object"
+    },
+    "PostAttachments": {
+      "description": "Specifies the type of attachments (if any) present in this Post.",
+      "properties": {
+        "media_keys": {
+          "description": "Media keys of media attached to this Post.",
+          "items": {
+            "type": "string"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "media_source_tweet_id": {
+          "description": "IDs of the source Posts the attached media originated from.",
+          "items": {
+            "type": "string"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "poll_ids": {
+          "description": "IDs of polls attached to this Post.",
+          "items": {
+            "type": "string"
+          },
+          "nullable": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PostContextAnnotations": {
+      "description": "Annotations inferred about the Post (domain and entity context).",
+      "items": {
+        "description": "A single inferred annotation about the Post (domain and entity context).",
+        "properties": {
+          "domain": {
+            "description": "The domain (broad category) this annotation belongs to.",
+            "oneOf": [
+              {
+                "description": "A domain or entity referenced by a context annotation.",
+                "properties": {
+                  "description": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "id": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "name": {
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          },
+          "entity": {
+            "description": "The specific entity recognized within the domain.",
+            "oneOf": [
+              {
+                "description": "A domain or entity referenced by a context annotation.",
+                "properties": {
+                  "description": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "id": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "name": {
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "domain",
+          "entity"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostDisplayTextRange": {
+      "description": "The inclusive start and exclusive end indices of the displayable content of the Post.",
+      "items": {
+        "format": "int64",
+        "type": "integer"
+      },
+      "maxItems": 2,
+      "minItems": 2,
+      "type": "array"
+    },
+    "PostEditControls": {
+      "description": "Indicates how much longer (if at all) this Post can be edited.",
+      "properties": {
+        "editable_until": {
+          "description": "The time until which this Post can be edited.",
+          "nullable": true,
+          "type": "string"
+        },
+        "edits_remaining": {
+          "description": "Number of edits still allowed for this Post.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "is_edit_eligible": {
+          "description": "Indicates whether this Post is eligible to be edited.",
+          "nullable": true,
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "PostEntities": {
+      "description": "A list of metadata entities (hashtags, mentions, URLs) found in the Post text.",
+      "properties": {
+        "cashtags": {
+          "items": {
+            "description": "A hashtag or cashtag entity.",
+            "properties": {
+              "end": {
+                "description": "End index in the text (exclusive).",
+                "format": "int64",
+                "type": "integer"
+              },
+              "start": {
+                "description": "Start index in the text (inclusive).",
+                "format": "int64",
+                "type": "integer"
+              },
+              "tag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "tag"
+            ],
+            "type": "object"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "hashtags": {
+          "items": {
+            "description": "A hashtag or cashtag entity.",
+            "properties": {
+              "end": {
+                "description": "End index in the text (exclusive).",
+                "format": "int64",
+                "type": "integer"
+              },
+              "start": {
+                "description": "Start index in the text (inclusive).",
+                "format": "int64",
+                "type": "integer"
+              },
+              "tag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "start",
+              "end",
+              "tag"
+            ],
+            "type": "object"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "mentions": {
+          "items": {
+            "description": "A user mention entity.",
+            "properties": {
+              "end": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "id": {
+                "nullable": true,
+                "type": "string"
+              },
+              "start": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "username": {
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "urls": {
+          "items": {
+            "description": "A URL entity found in the Post text, enriched with link metadata.",
+            "properties": {
+              "description": {
+                "description": "Description of the linked page, when available.",
+                "nullable": true,
+                "type": "string"
+              },
+              "display_url": {
+                "description": "The URL as displayed in the Post text.",
+                "nullable": true,
+                "type": "string"
+              },
+              "end": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "expanded_url": {
+                "description": "The fully resolved URL.",
+                "nullable": true,
+                "type": "string"
+              },
+              "images": {
+                "items": {
+                  "description": "A preview image for a linked page.",
+                  "properties": {
+                    "height": {
+                      "format": "int64",
+                      "nullable": true,
+                      "type": "integer"
+                    },
+                    "url": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "width": {
+                      "format": "int64",
+                      "nullable": true,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
+                },
+                "nullable": true,
+                "type": "array"
+              },
+              "media_key": {
+                "nullable": true,
+                "type": "string"
+              },
+              "start": {
+                "format": "int64",
+                "type": "integer"
+              },
+              "status": {
+                "description": "HTTP status from resolving the URL.",
+                "format": "int64",
+                "nullable": true,
+                "type": "integer"
+              },
+              "title": {
+                "description": "Title of the linked page, when available.",
+                "nullable": true,
+                "type": "string"
+              },
+              "unwound_url": {
+                "description": "The final destination after following redirects.",
+                "nullable": true,
+                "type": "string"
+              },
+              "url": {
+                "description": "The t.co shortened URL.",
+                "nullable": true,
+                "type": "string"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "nullable": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PostGeo": {
+      "description": "The location tagged on the Post, if the user provided one.",
+      "properties": {
+        "coordinates": {
+          "description": "A GeoJSON Point geometry.",
+          "nullable": true,
+          "properties": {
+            "coordinates": {
+              "description": "[longitude, latitude].",
+              "items": {
+                "format": "double",
+                "type": "number"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "type": {
+              "description": "The GeoJSON geometry type.",
+              "enum": [
+                "Point"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "coordinates"
+          ],
+          "type": "object"
+        },
+        "place_id": {
+          "description": "The unique identifier of the tagged place.",
+          "nullable": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostId": {
+      "description": "Unique identifier of a Post",
+      "example": "1346889436626259968",
+      "pattern": "^[0-9]{1,19}$",
+      "type": "string"
+    },
+    "PostMatchedMediaNotes": {
+      "description": "Community-Notes media matches for this Post.",
+      "items": {
+        "description": "A Community-Notes media match for this Post.",
+        "properties": {
+          "match_status": {
+            "description": "The status of the media note match.",
+            "nullable": true,
+            "type": "string"
+          },
+          "note_id": {
+            "description": "The matched note's unique identifier.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostMediaMetadata": {
+      "description": "Metadata for media attached to this Post.",
+      "items": {
+        "description": "Metadata for one media item attached to this Post.",
+        "properties": {
+          "alt_text": {
+            "description": "Alternative text describing the media for accessibility.",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Description of the media.",
+            "nullable": true,
+            "type": "string"
+          },
+          "media_key": {
+            "description": "The unique identifier of the media.",
+            "nullable": true,
+            "type": "string"
+          },
+          "title": {
+            "description": "Title of the media.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostNotePost": {
+      "description": "The full content of the Post, including text beyond 280 characters.",
+      "properties": {
+        "entities": {
+          "description": "Metadata entities (hashtags, cashtags, mentions, URLs) found in the note Post text.",
+          "nullable": true,
+          "properties": {
+            "cashtags": {
+              "items": {
+                "description": "A hashtag or cashtag entity.",
+                "properties": {
+                  "end": {
+                    "description": "End index in the text (exclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "start": {
+                    "description": "Start index in the text (inclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "tag"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "hashtags": {
+              "items": {
+                "description": "A hashtag or cashtag entity.",
+                "properties": {
+                  "end": {
+                    "description": "End index in the text (exclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "start": {
+                    "description": "Start index in the text (inclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "tag"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "mentions": {
+              "items": {
+                "description": "A user mention entity.",
+                "properties": {
+                  "end": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "id": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "start": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "username": {
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "urls": {
+              "items": {
+                "description": "A URL entity found in note Post text.",
+                "properties": {
+                  "display_url": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "end": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "expanded_url": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "start": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "url": {
+                    "nullable": true,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "text": {
+          "description": "The full note text of the Post.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "type": "object"
+    },
+    "PostNoteRequestSuggestions": {
+      "description": "Community-Notes request suggestions for this Post.",
+      "items": {
+        "description": "A Community-Notes request suggestion for this Post.",
+        "properties": {
+          "source_link": {
+            "description": "A suggested source link supporting the note request.",
+            "nullable": true,
+            "type": "string"
+          },
+          "suggestion": {
+            "description": "The text of the note request suggestion.",
+            "nullable": true,
+            "type": "string"
+          },
+          "suggestion_id": {
+            "description": "The unique identifier of the note request suggestion.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostPublicMetrics": {
+      "description": "Engagement metrics for the Post at the time of the request.",
+      "properties": {
+        "bookmark_count": {
+          "description": "Number of times this Post has been bookmarked.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "impression_count": {
+          "description": "Number of times this Post has been viewed.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "like_count": {
+          "description": "Number of likes on this Post.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "quote_count": {
+          "description": "Number of quote Posts of this Post.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "reply_count": {
+          "description": "Number of replies to this Post.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "repost_count": {
+          "description": "Number of times this Post has been reposted.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "repost_count",
+        "reply_count",
+        "like_count",
+        "quote_count",
+        "bookmark_count",
+        "impression_count"
+      ],
+      "type": "object"
+    },
+    "PostReferencedPosts": {
+      "description": "A list of Posts this Post refers to. If the Post is a Retweet, Quote or Reply, it includes the referenced Post's type and ID.",
+      "items": {
+        "description": "A reference from this Post to another Post (repost, quote, or reply).",
+        "properties": {
+          "id": {
+            "description": "Unique identifier of the referenced Post.",
+            "type": "string"
+          },
+          "type": {
+            "description": "How this Post references the other Post.",
+            "oneOf": [
+              {
+                "description": "The kind of Post-to-Post reference.",
+                "enum": [
+                  "retweeted",
+                  "quoted",
+                  "replied_to"
+                ],
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostScopes": {
+      "description": "The scopes for this Post.",
+      "properties": {
+        "followers": {
+          "description": "Indicates whether visibility of this Post is limited to the author's followers.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "followers"
+      ],
+      "type": "object"
+    },
+    "PostSuggestedSourceLinks": {
+      "description": "URLs suggested as sources for this Post.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "PostSuggestedSourceLinksWithCounts": {
+      "description": "Suggested source URLs for this Post, each with the number of times it was suggested.",
+      "items": {
+        "description": "A suggested source URL for this Post with the number of times it was suggested.",
+        "properties": {
+          "count": {
+            "description": "Number of times this source link was suggested.",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "url": {
+            "description": "The suggested source URL.",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "PostWithheld": {
+      "description": "Withholding details for withheld content.",
+      "properties": {
+        "copyright": {
+          "description": "Indicates whether this content is withheld due to a copyright claim.",
+          "type": "boolean"
+        },
+        "country_codes": {
+          "description": "Uppercase ISO 3166-1 alpha-2 country codes where this content is withheld.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "scope": {
+          "description": "Whether the withholding applies to a Post or a User.",
+          "enum": [
+            "post",
+            "user"
+          ],
+          "nullable": true,
+          "type": "string"
+        }
+      },
+      "required": [
+        "copyright",
+        "country_codes"
+      ],
+      "type": "object"
+    },
+    "Problem": {
+      "discriminator": {
+        "mapping": {
+          "https://api.twitter.com/2/problems/duplicate-rules": "#/components/schemas/DuplicateRuleProblem",
+          "https://api.twitter.com/2/problems/invalid-rules": "#/components/schemas/InvalidRuleProblem",
+          "https://api.x.com/2/problems/disallowed-resource": "#/components/schemas/DisallowedResourceProblem",
+          "https://api.x.com/2/problems/field-hydration-failure": "#/components/schemas/FieldHydrationFailureProblem",
+          "https://api.x.com/2/problems/field-unauthorized": "#/components/schemas/FieldUnauthorizedProblem",
+          "https://api.x.com/2/problems/internal-error": "#/components/schemas/InternalErrorProblem",
+          "https://api.x.com/2/problems/invalid-request": "#/components/schemas/InvalidRequestProblem",
+          "https://api.x.com/2/problems/not-authorized-for-field": "#/components/schemas/NotAuthorizedForFieldProblem",
+          "https://api.x.com/2/problems/not-authorized-for-resource": "#/components/schemas/NotAuthorizedForResourceProblem",
+          "https://api.x.com/2/problems/recipient-not-messageable": "#/components/schemas/RecipientNotMessageableProblem",
+          "https://api.x.com/2/problems/resource-not-found": "#/components/schemas/ResourceNotFoundProblem",
+          "https://api.x.com/2/problems/resource-unavailable": "#/components/schemas/ResourceUnavailableProblem"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/components/schemas/ResourceNotFoundProblem"
+        },
+        {
+          "$ref": "#/components/schemas/InvalidRequestProblem"
+        },
+        {
+          "$ref": "#/components/schemas/NotAuthorizedForResourceProblem"
+        },
+        {
+          "$ref": "#/components/schemas/NotAuthorizedForFieldProblem"
+        },
+        {
+          "$ref": "#/components/schemas/FieldUnauthorizedProblem"
+        },
+        {
+          "$ref": "#/components/schemas/FieldHydrationFailureProblem"
+        },
+        {
+          "$ref": "#/components/schemas/ResourceUnavailableProblem"
+        },
+        {
+          "$ref": "#/components/schemas/DisallowedResourceProblem"
+        },
+        {
+          "$ref": "#/components/schemas/RecipientNotMessageableProblem"
+        },
+        {
+          "$ref": "#/components/schemas/InternalErrorProblem"
+        },
+        {
+          "$ref": "#/components/schemas/DuplicateRuleProblem"
+        },
+        {
+          "$ref": "#/components/schemas/InvalidRuleProblem"
+        }
+      ]
+    },
+    "RecipientNotMessageableProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/recipient-not-messageable"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "ResourceNotFoundProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "parameter": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/resource-not-found"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "resource_type"
+      ],
+      "type": "object"
+    },
+    "ResourceUnavailableProblem": {
+      "properties": {
+        "detail": {
+          "type": "string"
+        },
+        "resource_id": {
+          "type": "string"
+        },
+        "resource_type": {
+          "type": "string"
+        },
+        "status": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "https://api.x.com/2/problems/resource-unavailable"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "title",
+        "detail",
+        "resource_type"
+      ],
+      "type": "object"
+    },
+    "Topic": {
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "User": {
+      "properties": {
+        "affiliation": {
+          "$ref": "#/components/schemas/UserAffiliation"
+        },
+        "confirmed_email": {
+          "type": "string"
+        },
+        "connection_status": {
+          "$ref": "#/components/schemas/UserConnectionStatus"
+        },
+        "created_at": {
+          "description": "Creation time of this User.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "description": {
+          "description": "The text of this User's profile description (also known as bio), if the User provided one.",
+          "type": "string"
+        },
+        "entities": {
+          "$ref": "#/components/schemas/UserEntities"
+        },
+        "id": {
+          "description": "Unique identifier of this User.",
+          "type": "string"
+        },
+        "is_identity_verified": {
+          "description": "Indicates if this User has completed identity verification.",
+          "type": "boolean"
+        },
+        "location": {
+          "description": "The location specified in the User's profile, if the User provided one. As this is a freeform value, it may not indicate a valid location.",
+          "type": "string"
+        },
+        "most_recent_post_id": {
+          "description": "Unique identifier of this User's most recent Post.",
+          "type": "string"
+        },
+        "name": {
+          "description": "The friendly name of this User, as shown on their profile.",
+          "type": "string"
+        },
+        "parody": {
+          "description": "Indicates if this User is a parody account.",
+          "type": "boolean"
+        },
+        "pinned_post_id": {
+          "description": "Unique identifier of this User's pinned Post.",
+          "type": "string"
+        },
+        "profile_banner_url": {
+          "description": "The URL to the profile banner for this User.",
+          "type": "string"
+        },
+        "profile_image_url": {
+          "description": "The URL to the profile image for this User.",
+          "type": "string"
+        },
+        "protected": {
+          "description": "Indicates if this User has chosen to protect their Posts (in other words, if this User's Posts are private).",
+          "type": "boolean"
+        },
+        "public_metrics": {
+          "$ref": "#/components/schemas/UserPublicMetrics"
+        },
+        "receives_your_dm": {
+          "description": "Indicates if you can send a DM to this User.",
+          "type": "boolean"
+        },
+        "subscriber_count": {
+          "description": "The number of Premium subscribers of this User.",
+          "type": "integer"
+        },
+        "subscribes_to_you": {
+          "description": "Indicates if this User subscribes to you.",
+          "type": "boolean"
+        },
+        "subscription": {
+          "$ref": "#/components/schemas/UserSubscription"
+        },
+        "subscription_type": {
+          "description": "The X Blue subscription type of the user, e.g.: Basic, Premium, PremiumPlus or None.",
+          "type": "string"
+        },
+        "url": {
+          "description": "The URL specified in the User's profile.",
+          "type": "string"
+        },
+        "username": {
+          "description": "The X handle (screen name) of this User.",
+          "type": "string"
+        },
+        "verified": {
+          "description": "Indicates if this User is a verified X User.",
+          "type": "boolean"
+        },
+        "verified_followers_count": {
+          "description": "The number of verified followers of this User.",
+          "type": "integer"
+        },
+        "verified_type": {
+          "description": "The X Blue verified type of the user, e.g.: blue, government, business or none.",
+          "type": "string"
+        },
+        "withheld": {
+          "$ref": "#/components/schemas/UserWithheld"
+        }
+      },
+      "type": "object"
+    },
+    "UserAffiliation": {
+      "description": "Metadata about a user's affiliation.",
+      "properties": {
+        "badge_url": {
+          "description": "URL of the affiliation badge image shown on the User's profile.",
+          "nullable": true,
+          "type": "string"
+        },
+        "description": {
+          "description": "Description of the affiliation.",
+          "nullable": true,
+          "type": "string"
+        },
+        "url": {
+          "description": "URL associated with the affiliation.",
+          "nullable": true,
+          "type": "string"
+        },
+        "user_id": {
+          "description": "A list of unique identifiers of the accounts this User is affiliated with.",
+          "items": {
+            "type": "string"
+          },
+          "nullable": true,
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "UserConnectionStatus": {
+      "description": "Returns detailed information about the relationship between two users.",
+      "items": {
+        "description": "A connection between the authenticated User and this User.",
+        "enum": [
+          "blocking",
+          "follow_request_received",
+          "follow_request_sent",
+          "followed_by",
+          "following",
+          "muting"
+        ],
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "UserEntities": {
+      "description": "A list of metadata found in the User's profile description.",
+      "properties": {
+        "description": {
+          "description": "Entities found in the User's bio.",
+          "nullable": true,
+          "properties": {
+            "cashtags": {
+              "items": {
+                "description": "A hashtag or cashtag entity.",
+                "properties": {
+                  "end": {
+                    "description": "End index in the text (exclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "start": {
+                    "description": "Start index in the text (inclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "tag"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "hashtags": {
+              "items": {
+                "description": "A hashtag or cashtag entity.",
+                "properties": {
+                  "end": {
+                    "description": "End index in the text (exclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "start": {
+                    "description": "Start index in the text (inclusive).",
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "tag": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "tag"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "mentions": {
+              "items": {
+                "description": "A user mention entity.",
+                "properties": {
+                  "end": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "id": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "start": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "username": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "username"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            },
+            "urls": {
+              "items": {
+                "description": "A URL entity found in profile text.",
+                "properties": {
+                  "description": {
+                    "description": "Description of the linked page, when available.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "display_url": {
+                    "description": "The URL as displayed in the Post text.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "end": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "expanded_url": {
+                    "description": "The fully resolved URL.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "images": {
+                    "items": {
+                      "description": "A preview image for a linked page.",
+                      "properties": {
+                        "height": {
+                          "format": "int64",
+                          "nullable": true,
+                          "type": "integer"
+                        },
+                        "url": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "width": {
+                          "format": "int64",
+                          "nullable": true,
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "nullable": true,
+                    "type": "array"
+                  },
+                  "media_key": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "start": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "status": {
+                    "description": "HTTP status from resolving the URL.",
+                    "format": "int64",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  "title": {
+                    "description": "Title of the linked page, when available.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "unwound_url": {
+                    "description": "The final destination after following redirects.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "url": {
+                    "description": "The t.co shortened URL.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "url"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            }
+          },
+          "type": "object"
+        },
+        "url": {
+          "description": "Entities for the User's profile website URL.",
+          "nullable": true,
+          "properties": {
+            "urls": {
+              "items": {
+                "description": "A URL entity found in profile text.",
+                "properties": {
+                  "description": {
+                    "description": "Description of the linked page, when available.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "display_url": {
+                    "description": "The URL as displayed in the Post text.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "end": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "expanded_url": {
+                    "description": "The fully resolved URL.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "images": {
+                    "items": {
+                      "description": "A preview image for a linked page.",
+                      "properties": {
+                        "height": {
+                          "format": "int64",
+                          "nullable": true,
+                          "type": "integer"
+                        },
+                        "url": {
+                          "nullable": true,
+                          "type": "string"
+                        },
+                        "width": {
+                          "format": "int64",
+                          "nullable": true,
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "nullable": true,
+                    "type": "array"
+                  },
+                  "media_key": {
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "start": {
+                    "format": "int64",
+                    "type": "integer"
+                  },
+                  "status": {
+                    "description": "HTTP status from resolving the URL.",
+                    "format": "int64",
+                    "nullable": true,
+                    "type": "integer"
+                  },
+                  "title": {
+                    "description": "Title of the linked page, when available.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "unwound_url": {
+                    "description": "The final destination after following redirects.",
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "url": {
+                    "description": "The t.co shortened URL.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "start",
+                  "end",
+                  "url"
+                ],
+                "type": "object"
+              },
+              "nullable": true,
+              "type": "array"
+            }
+          },
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "UserId": {
+      "description": "Unique identifier of a User",
+      "example": "2244994945",
+      "pattern": "^[0-9]{1,19}$",
+      "type": "string"
+    },
+    "UserPublicMetrics": {
+      "description": "A list of metrics for this User.",
+      "properties": {
+        "followers_count": {
+          "description": "Number of Users who follow this User.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "following_count": {
+          "description": "Number of Users this User follows.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "like_count": {
+          "description": "Number of Posts this User has liked.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "listed_count": {
+          "description": "Number of Lists that include this User.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "media_count": {
+          "description": "Number of media items posted by this User.",
+          "format": "int64",
+          "nullable": true,
+          "type": "integer"
+        },
+        "post_count": {
+          "description": "Number of Posts (including Reposts) created by this User.",
+          "format": "int64",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "followers_count",
+        "following_count",
+        "post_count",
+        "listed_count"
+      ],
+      "type": "object"
+    },
+    "UserSubscription": {
+      "description": "The subscription relationship between this User and you.",
+      "properties": {
+        "subscribes_to_you": {
+          "description": "Indicates if this User subscribes to you.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "subscribes_to_you"
+      ],
+      "type": "object"
+    },
+    "UserWithheld": {
+      "description": "Withholding details for withheld content.",
+      "properties": {
+        "country_codes": {
+          "description": "A list of countries (as ISO 3166-1 alpha-2 codes) where this content is withheld.",
+          "items": {
+            "type": "string"
+          },
+          "nullable": true,
+          "type": "array"
+        },
+        "scope": {
+          "description": "The scope of the withholding. Only present, with the value \"user\", when the entire User is withheld.",
+          "enum": [
+            "user"
+          ],
+          "nullable": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "scope": "Selected publishing/media and bounded own-post recovery paths plus all referenced component definitions. Public contract snapshot, not live grant or provider acceptance evidence.",
+  "source_url": "https://docs.x.com/openapi.json",
+  "upstream_info": {
+    "contact": {
+      "name": "X Developers",
+      "url": "https://developer.x.com/"
+    },
+    "description": "X API v2 core endpoints",
+    "license": {
+      "name": "X Developer Agreement and Policy",
+      "url": "https://developer.x.com/en/developer-terms/agreement-and-policy.html"
+    },
+    "termsOfService": "https://developer.x.com/en/developer-terms/agreement-and-policy.html",
+    "title": "X API v2",
+    "version": "2.171"
+  }
+}

@@ -9,7 +9,8 @@ import math
 from ..contracts import OperationPlan, OperationResult, RetryDecision
 
 BLOCK_CODES = frozenset({"TOKEN_EXPIRED", "TOKEN_REVOKED", "PERMISSION_DENIED", "ACCOUNT_INELIGIBLE",
-                         "BUDGET_EXHAUSTED", "AUTHORIZATION_REQUIRED", "RECONNECT_REQUIRED"})
+                         "BUDGET_EXHAUSTED", "AUTHORIZATION_REQUIRED", "RECONNECT_REQUIRED", "MANUAL_ACTION_REQUIRED",
+                         "STATUS_RETRY_DELAY_UNVERIFIED"})
 RETRY_CODES = frozenset({"TEMPORARY_REJECTION", "RATE_LIMITED", "NOT_SENT", "CONNECTION_NOT_SENT"})
 
 

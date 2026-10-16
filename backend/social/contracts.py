@@ -117,10 +117,37 @@ class SparseOverrides(StrictModel):
         return {key: value for key, value in handler(self).items() if key in self.model_fields_set}
 
 
+class TikTokPostOptions(StrictModel):
+    """Explicit creator choices frozen with the authorized revision."""
+    mode: Literal["direct", "draft"]
+    privacy_level: Literal["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"]
+    disable_comment: StrictBool = True
+    disable_duet: StrictBool = True
+    disable_stitch: StrictBool = True
+    commercial_content: StrictBool = False
+    is_brand_organic: StrictBool = False
+    is_branded_content: StrictBool = False
+    is_ai_generated: StrictBool = False
+    upload_consent: StrictBool = False
+    music_usage_confirmed: StrictBool = False
+    branded_content_policy_confirmed: StrictBool = False
+    creator_settings_checked_at: datetime
+    creator_settings_hash: Hash
+    photo_title: Annotated[str, StringConstraints(strict=True, max_length=90)] = ""
+
+
 class DocumentTarget(StrictModel):
     account_id: UUID
     format: PostFormat
     overrides: SparseOverrides = Field(default_factory=SparseOverrides)
+    tiktok_options: TikTokPostOptions | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_options(self, handler):
+        result = handler(self)
+        if self.tiktok_options is None:
+            result.pop("tiktok_options", None)
+        return result
 
 
 class PostDocument(StrictModel):
@@ -247,9 +274,17 @@ class InspectedAsset(StrictModel):
     width: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
     height: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
     duration_ms: Union[Annotated[int, Field(strict=True, gt=0)], None] = None
+    frame_rate_milli_fps: Annotated[int, Field(strict=True, gt=0)] | None = None
     alt_text: Union[StrictStr, None] = None
     caption_asset_id: Union[UUID, None] = None
     caption_sha256: Union[Hash, None] = None
+
+    @model_serializer(mode="wrap")
+    def serialize_rate(self, handler):
+        result = handler(self)
+        if self.frame_rate_milli_fps is None:
+            result.pop('frame_rate_milli_fps', None)
+        return result
 
 
 class ResolvedPostPayload(StrictModel):
@@ -265,9 +300,18 @@ class ResolvedPostPayload(StrictModel):
     assets: tuple[InspectedAsset, ...] = ()
     visibility: Literal["public"] = "public"
     disclosures: tuple[StrictStr, ...] = ()
+    tiktok_options: TikTokPostOptions | None = None
     capability_version: StrictStr = "social-v1"
     evidence_hash: Hash
     content_hash: Hash
+
+    @model_serializer(mode="wrap")
+    def serialize_options(self, handler):
+        # Preserve byte-identical hashes for existing non-TikTok publications.
+        result = handler(self)
+        if self.tiktok_options is None:
+            result.pop("tiktok_options", None)
+        return result
 
     _link = field_validator("link")(https_url)
 
@@ -362,7 +406,7 @@ class DefinitiveAbsenceProof(StrictModel):
 
 
 class ReconciliationResult(StrictModel):
-    outcome: Literal["confirmed_published", "definitively_unpublished", "still_processing", "unknown"]
+    outcome: Literal["confirmed_published", "definitively_unpublished", "still_processing", "still_reconciling", "unknown"]
     evidence: dict[str, Any] = Field(default_factory=dict)
     absence_proof: Union[DefinitiveAbsenceProof, None] = None
     result: Union[OperationResult, None] = None

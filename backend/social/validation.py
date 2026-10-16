@@ -16,7 +16,20 @@ def issue(code, field, message):
     return ValidationIssue(code=code, field=field, message=message)
 
 
-def registered_capability(account: SocialAccount, available_adapters) -> CapabilitySet:
+def capability_context(db, account):
+    if account.platform == 'x':
+        from .platform_budget import SocialPlatformBudget, budget_available
+        row = db.execute(select(SocialPlatformBudget.__table__).where(SocialPlatformBudget.account_id == account.id)).mappings().first()
+        return {'x_access_verified': bool(row and row['enabled'] is True and row['access_verified'] is True),
+            'x_budget_remaining_microusd': row['limit_microusd']-row['reserved_microusd']-row['spent_microusd'] if budget_available(row,1) else 0}
+    if account.platform == 'tiktok':
+        # Approval is established by the explicit registered product, and the
+        # provider-verified persisted admission must still match it below.
+        return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+    return {}
+
+
+def registered_capability(account: SocialAccount, available_adapters, context=None) -> CapabilitySet:
     if isinstance(available_adapters, Mapping):
         adapter = available_adapters.get((account.platform, account.api_product))
         if adapter is None:
@@ -26,18 +39,19 @@ def registered_capability(account: SocialAccount, available_adapters) -> Capabil
                 'platform': account.platform, 'api_product': account.api_product,
                 'external_account_id': account.external_account_id, 'connection_state': account.connection_state,
                 'granted_scopes': account.granted_scopes, 'capability_snapshot': account.capability_snapshot,
+                **(context or {}),
             }))
         except (ValueError, TypeError):
             return CapabilitySet()
     return CapabilitySet()
 
 
-def capability_for(account: SocialAccount, available_adapters=frozenset()) -> CapabilitySet:
+def capability_for(account: SocialAccount, available_adapters=frozenset(), context=None) -> CapabilitySet:
     if isinstance(available_adapters, Mapping):
-        caps = registered_capability(account, available_adapters)
+        caps = registered_capability(account, available_adapters, context)
         # Registry presence cannot silently upgrade a legacy connected account.
         # A provider-verified reconnect persists the native capability snapshot.
-        if not native_capability_matches(account.capability_snapshot, caps):
+        if not native_capability_matches(account.capability_snapshot, caps, allow_paid=account.platform == 'x'):
             return caps.model_copy(update={'eligible':False,'adapter_available':False,
                 'feature_states':{**caps.feature_states,'publishing':'requires_review'}})
         return caps
@@ -79,7 +93,7 @@ def validate_document(db: Session, document: PostDocument, evidence, available_a
         if account is None:
             results.append(TargetValidation(account_id=target.account_id, valid=False, errors=(issue("ACCOUNT_UNAVAILABLE", "account_id", "This selected account is not connected. Remove it or connect an eligible account."),)))
             continue
-        caps = capability_for(account, available_adapters)
+        caps = capability_for(account, available_adapters, capability_context(db,account))
         if account.connection_state != "connected" or not account.publishing_enabled or account.hold_reason:
             errors.append(issue("ACCOUNT_UNAVAILABLE", "account_id", "Reconnect or enable this account before publishing."))
         if not caps.eligible or caps.feature_states.get("publishing") not in {"supported", "paid"}:
@@ -124,13 +138,17 @@ def validate_document(db: Session, document: PostDocument, evidence, available_a
                 errors.append(issue("MEDIA_NOT_READY", path + ".caption_asset_id", "The caption asset is not ready."))
                 continue
             try:
-                inspected.append(InspectedAsset(asset_id=asset.id, sha256=asset.sha256, mime_type=asset.mime_type, byte_size=asset.byte_size, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, alt_text=reference.get("alt_text") if reference.get("alt_text") is not None else asset.default_alt_text, caption_asset_id=caption_id, caption_sha256=caption.sha256 if caption else None))
+                inspected.append(InspectedAsset(asset_id=asset.id, sha256=asset.sha256, mime_type=asset.mime_type, byte_size=asset.byte_size, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, frame_rate_milli_fps=int(asset.frame_rate * 1000) if asset.frame_rate is not None else None, alt_text=reference.get("alt_text") if reference.get("alt_text") is not None else asset.default_alt_text, caption_asset_id=caption_id, caption_sha256=caption.sha256 if caption else None))
             except ValidationError:
                 errors.append(issue("MEDIA_NOT_READY", path, "The inspected asset metadata is incomplete."))
                 continue
             if (asset.mime_type or "").startswith("image/") and not inspected[-1].alt_text:
                 warnings.append(issue("ALT_TEXT_MISSING", path + ".alt_text", "Add an image description for accessibility."))
         payload = dict(schema_version=1, account_id=str(account.id), platform=account.platform, api_product=account.api_product, external_account_id=account.external_account_id, format=target.format, text=fields["text"], link=fields["link"], hashtags=fields["hashtags"], assets=[a.model_dump(mode="json") for a in inspected], visibility="public", disclosures=[], capability_version=caps.rules_version, evidence_hash=canonical_hash(evidence))
+        if target.tiktok_options is not None:
+            if account.platform != 'tiktok':
+                errors.append(issue('OPTIONS_PLATFORM_MISMATCH', 'tiktok_options', 'TikTok choices apply only to TikTok accounts.'))
+            payload['tiktok_options'] = target.tiktok_options.model_dump(mode='json')
         try:
             preview = ResolvedPostPayload(**payload, content_hash=canonical_hash(payload))
         except ValidationError:

@@ -1,0 +1,50 @@
+{
+  "generated_by": "/Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/tests/social/platform_connections_verify.py",
+  "generator_sha256": "a633e03da59aa75d8629685a2cbf86c4d3679ca1c51f52150d9c8518b5b2c381",
+  "generated_at": "2026-10-16T19:52:25.709040+00:00",
+  "target_commit": "06896185005d822c4b29888138b984510dd1fdbd",
+  "uncommitted_source_hashes": {
+    "backend/social/platform_connections/__init__.py": "ce44fe3b338bded535457e9188199be1b56266ce8a10860b7f02f0ffb9a9de5b",
+    "backend/social/platform_connections/api.py": "c5762300669b6e118de198a18c9ef492e98b7e5bd61df288b3de17766ab43ff6",
+    "backend/social/platform_connections/config.py": "83882770f4c5e07e2fdc8486f775a8505078a1398400d0134232d7b1d9bdf053",
+    "backend/social/platform_connections/contracts.py": "fe4b7655208e12355c3dfd73a294aee558e82b5b1e73ebba8e899d22a396cf62",
+    "backend/social/platform_connections/models.py": "d37bc655794a753dc12781f2066476617546caecaecbb939aca0e9f87f4194ce",
+    "backend/social/platform_connections/provider.py": "dd41be0883913655fb2db5671cc4474e54f2e093d6f8886a1ad61bf6caec2ccc",
+    "backend/social/platform_connections/service.py": "8df8b959ad2a4f70f470ca445a6f24cadef27041ea0be4f1a8f5e828f95322df",
+    "backend/social/platform_connections/tiktok_provider.py": "e7f8b44cecb0876572bfd090e45bdb260bd456259c459667dd1f49da4c02e08c",
+    "backend/tests/social/platform_connections_verify.py": "a633e03da59aa75d8629685a2cbf86c4d3679ca1c51f52150d9c8518b5b2c381",
+    "backend/tests/social/test_platform_connections.py": "dcb049cb7d6c92c4e236811aed7106866f301233e78de4636f7401f5bbd28686",
+    "backend/alembic/versions/a703b15a0001_platform_connections.py": "8dac7570b3030ed5089944f275402e54b6aa49b53cb2414efd504af77cb06e83"
+  },
+  "verdict": "PASSED",
+  "scope": "Sanitized HTTPX provider fixtures and isolated SQLite only; no live-provider or PostgreSQL acceptance",
+  "runs": [
+    {
+      "command": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/social/test_platform_connections.py"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/b15-platforms/audit_app/backend",
+      "exit_code": 0,
+      "stdout": ".........................................                                [100%]\n=============================== warnings summary ===============================\ndatabase.py:64\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nmodels.py:29\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n41 passed, 2 warnings in 0.71s\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-O",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/social/test_platform_connections.py"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/b15-platforms/audit_app/backend",
+      "exit_code": 0,
+      "stdout": ".........................................                                [100%]\n=============================== warnings summary ===============================\n../../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/config/__init__.py:1304\n  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/config/__init__.py:1304: PytestConfigWarning: assertions not in test modules or plugins will be ignored because assert statements are not executed by the underlying Python interpreter (are you using python -O?)\n  \n    self._warn_about_missing_assertion(mode)\n\ndatabase.py:64\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/database.py:64: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\nmodels.py:29\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n41 passed, 3 warnings in 0.68s\n",
+      "stderr": ""
+    }
+  ]
+}
