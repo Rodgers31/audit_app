@@ -527,7 +527,7 @@ def _discover_latest_county_birr_pdf(
 
 def convert_county_pdf_records(
     parsed_records: List[Dict[str, Any]], pdf_url: str, artifact_sha256: str | None,
-    *, receipt: Optional[dict] = None
+    *, receipt: Optional[dict] = None, publication_evidence=None, publication_refusal=None
 ) -> List[Dict[str, Any]]:
     """Convert actual CBIRR producer output without downloading or caching.
 
@@ -588,6 +588,8 @@ def convert_county_pdf_records(
             "page_ref": record.get("page_ref"),
             "artifact_sha256": artifact_sha256,
             "revenue_coverage": record.get("revenue_coverage"),
+            "publication_evidence": publication_evidence,
+            "publication_refusal": publication_refusal,
         }
         if receipt is not None:
             from ...pdf_evidence import cell_evidence
@@ -705,8 +707,12 @@ def _download_and_parse_county_pdf(
 
         receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-county-budget-v1")
         receipt = bind_parse_receipt(receipt, parsed_records)
+        from .publication import capture_publication_date
+        publication, refusal = (capture_publication_date(pdf_path, receipt)
+            if settings.cob_verified_qualification_enabled else (None, "qualification_disabled"))
         return convert_county_pdf_records(
-            parsed_records, pdf_url, getattr(downloaded, "sha256", None), receipt=receipt
+            parsed_records, pdf_url, getattr(downloaded, "sha256", None), receipt=receipt,
+            publication_evidence=publication, publication_refusal=refusal,
         ) or None
 
     except ImportError:

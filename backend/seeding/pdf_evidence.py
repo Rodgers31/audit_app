@@ -245,7 +245,11 @@ def bind_pdf_evidence(
                     else value
                 )
             if field == "geography" and isinstance(value, str):
-                return value.lower().removesuffix(" county").strip()
+                label = value.lower().removesuffix(" county").strip()
+                # CoB labels the county Nairobi; the canonical application
+                # entity is Nairobi City County. Match the shared qualifier's
+                # one established alias, without weakening other identities.
+                return "nairobi" if label == "nairobi city" else label
             return value
 
         matches = all(
