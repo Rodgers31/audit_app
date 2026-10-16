@@ -111,6 +111,15 @@
 .headerActions select {
   min-height: 44px;
 }
+/* Metadata arrives independently of the SSR list. Keep its control's footprint
+   stable so revealing the year cannot reflow the header or content below it. */
+.yearField {
+  width: 10.5rem;
+  max-width: 100%;
+}
+.yearField select {
+  width: 100%;
+}
 .exportButton,
 .filterToggle {
   display: inline-flex;
