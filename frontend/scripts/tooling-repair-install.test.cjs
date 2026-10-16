@@ -14,9 +14,12 @@ function fixture() {
  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tooling-repair-'));
  fs.copyFileSync(path.join(frontend, 'package-lock.json'), path.join(root, 'package-lock.json'));
  fs.mkdirSync(path.join(root, 'node_modules'));
- for (const name of ['braces', 'sprintf-js']) fs.cpSync(path.join(frontend, 'node_modules', name), path.join(root, 'node_modules', name), { recursive: true });
+ for (const inventory of patchSet.packages) for (const entry of inventory.entries) {
+  fs.mkdirSync(path.dirname(path.join(root, entry)), { recursive: true });
+  fs.cpSync(path.join(frontend, entry), path.join(root, entry), { recursive: true });
+ }
  for (const patch of patchSet.patches) {
-  const target = path.join(root, 'node_modules', patch.package, patch.file);
+  const target = path.join(root, patchSet.packages.find(p => p.name === patch.package).entries[0], patch.file);
   if (patch.original_sha256 === null) fs.unlinkSync(target);
   else {
    let source = fs.readFileSync(target, 'utf8');
@@ -34,19 +37,23 @@ function child(root, options) {
  return spawnSync(process.execPath, ['-e', `console.log(JSON.stringify(require(${JSON.stringify(installer)}).applyRepairs(${JSON.stringify(root)},${JSON.stringify(options)})))`],
   { env: { PATH: process.env.PATH }, encoding: 'utf8', timeout: 10000 });
 }
-test('cold upstream install applies all ten repaired files, reads back and repeats idempotently', () => withFixture(root => {
+test('cold upstream install applies all reviewed repaired files, reads back and repeats idempotently', () => withFixture(root => {
  assert.throws(() => applyRepairs(root, { check: true }), /unpatched/);
- assert.equal(applyRepairs(root).changedFiles, 10);
+ assert.equal(applyRepairs(root).changedFiles, 7);
  assert.equal(applyRepairs(root).changedFiles, 0);
  assert.equal(applyRepairs(root, { check: true }).changedFiles, 0);
  assert.equal(fs.existsSync(path.join(root, 'node_modules/.tooling-repair-lock')), false);
 }));
 for (const [name, mutate, diagnostic] of [
+ ['argparse traversal entry', root => { const p=path.join(root,'package-lock.json'); const d=JSON.parse(fs.readFileSync(p)); d.packages['../node_modules/argparse']={version:'2.0.1',dev:true}; fs.writeFileSync(p,JSON.stringify(d)); }, /unsafe package path/],
+ ['unreviewed nested YAML version', root => { const p=path.join(root,'package-lock.json'); const d=JSON.parse(fs.readFileSync(p)); d.packages['node_modules/extra/node_modules/js-yaml']={version:'3.15.1',dev:true}; fs.writeFileSync(p,JSON.stringify(d)); }, /unexpected locked locations/],
+ ['retired sprintf lock entry', root => { const p=path.join(root,'package-lock.json'); const d=JSON.parse(fs.readFileSync(p)); d.packages['node_modules/sprintf-js']={version:'1.0.3',dev:true}; fs.writeFileSync(p,JSON.stringify(d)); }, /retired sprintf-js/],
+ ['nonexecutable YAML CLI', root => fs.chmodSync(path.join(root,'node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js'),0o644), /executable mode/],
  ['changed upstream source', root => fs.appendFileSync(path.join(root, 'node_modules/braces/lib/parse.js'), '\n// drift'), /upstream bytes changed/],
  ['missing installed package', root => fs.rmSync(path.join(root, 'node_modules/braces'), { recursive: true }), /absent installed/],
  ['wrong package version', root => { const p = path.join(root, 'node_modules/braces/package.json'); const d = JSON.parse(fs.readFileSync(p)); d.version = '99.0.0'; fs.writeFileSync(p, JSON.stringify(d)); }, /incompatible installed/],
  ['malformed lock', root => fs.writeFileSync(path.join(root, 'package-lock.json'), '{'), /JSON/],
- ['empty lock inventory', root => fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: {} })), /missing locked/],
+ ['empty lock inventory', root => fs.writeFileSync(path.join(root, 'package-lock.json'), JSON.stringify({ lockfileVersion: 3, packages: {} })), /reviewed argparse/],
  ['unsafe lock path', root => { const p = path.join(root, 'package-lock.json'); const d = JSON.parse(fs.readFileSync(p)); d.packages['../node_modules/braces'] = d.packages['node_modules/braces']; fs.writeFileSync(p, JSON.stringify(d)); }, /unsafe package path/],
  ['unreviewed locked version', root => { const p = path.join(root, 'package-lock.json'); const d = JSON.parse(fs.readFileSync(p)); d.packages['node_modules/braces'].version = '3.0.4'; fs.writeFileSync(p, JSON.stringify(d)); }, /incompatible locked/],
  ['symlinked source', root => { const p = path.join(root, 'node_modules/braces/lib/parse.js'); const owned = path.join(root, 'unrelated'); fs.renameSync(p, owned); fs.symlinkSync(owned, p); }, /symlink refused/],
@@ -54,16 +61,16 @@ for (const [name, mutate, diagnostic] of [
  ['existing wrong helper', root => fs.writeFileSync(path.join(root, 'node_modules/braces/lib/audit-bounds.js'), 'unexpected'), /unexpected helper/],
 ]) {
  test(`installer refuses ${name} without applying any other target`, () => withFixture(root => {
-  const retained = fs.readFileSync(path.join(root, 'node_modules/sprintf-js/src/sprintf.js'));
+  const retained = fs.readFileSync(path.join(root, 'node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js'));
   mutate(root);
   const result = child(root, {});
   assert.equal(result.status, 1); assert.equal(result.signal, null); assert.match(result.stderr, diagnostic);
-  assert.deepEqual(fs.readFileSync(path.join(root, 'node_modules/sprintf-js/src/sprintf.js')), retained);
+  assert.deepEqual(fs.readFileSync(path.join(root, 'node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js')), retained);
   assert.equal(fs.existsSync(path.join(root, 'node_modules/.tooling-repair-lock')), false);
  }));
 }
 test('omit-dev install distinguishes absent tooling packages from applied repairs', () => withFixture(root => {
- for (const name of ['braces', 'sprintf-js']) fs.rmSync(path.join(root, 'node_modules', name), { recursive: true });
+ for (const inventory of patchSet.packages) for (const entry of inventory.entries) fs.rmSync(path.join(root, entry), { recursive: true });
  const result = applyRepairs(root, { production: true });
  assert.deepEqual(result.packages, []); assert.equal(result.absentPackages.length, 2); assert.equal(result.changedFiles, 0);
  assert.throws(() => applyRepairs(root, { check: true }), /absent installed/);
@@ -81,7 +88,7 @@ test('held concurrent installer lock fails visibly and preserves the owner lock'
  const lock = path.join(root, 'node_modules/.tooling-repair-lock'); fs.mkdirSync(lock);
  const result = child(root, {}); assert.equal(result.status, 1); assert.match(result.stderr, /EEXIST/);
  assert.ok(fs.statSync(lock).isDirectory()); fs.rmdirSync(lock);
- assert.equal(applyRepairs(root).changedFiles, 10);
+ assert.equal(applyRepairs(root).changedFiles, 7);
 }));
 test('two real installer processes cannot overlap patch publication', async () => {
  const root = fixture(); const ready = path.join(root, 'ready'), release = path.join(root, 'release');
@@ -95,7 +102,7 @@ test('two real installer processes cannot overlap patch publication', async () =
   assert.ok(fs.existsSync(ready), stderr);
   const competing = child(root, {}); assert.equal(competing.status, 1); assert.match(competing.stderr, /EEXIST/);
   fs.writeFileSync(release, 'release'); const result = await finished;
-  assert.deepEqual(result, { code: 0, signal: null }); assert.equal(JSON.parse(stdout).changedFiles, 10);
+  assert.deepEqual(result, { code: 0, signal: null }); assert.equal(JSON.parse(stdout).changedFiles, 7);
   assert.equal(applyRepairs(root).changedFiles, 0);
  } finally { if (worker.exitCode === null) { worker.kill(); await finished; } fs.rmSync(root, { recursive: true }); }
 });

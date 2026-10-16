@@ -44,88 +44,15 @@ for (const name of ['tailwindcss', '@next/eslint-plugin-next']) {
   }
  });
 }
-const nyc = createRequire(app.resolve('@istanbuljs/load-nyc-config/package.json'));
-const yaml = createRequire(nyc.resolve('js-yaml/package.json'));
-const argparse = createRequire(yaml.resolve('argparse/package.json'));
-const { sprintf, vsprintf } = argparse('sprintf-js');
-for (const [name, fn] of [['sprintf', f => sprintf(f, 1)], ['vsprintf', f => vsprintf(f, [1])],
- ['format', f => sprintf.format(sprintf.parse(f), [f, 1])]]) {
- for (const f of ['%.101f', '%.101e', '%.101g', '%.999999999999999999999999f']) {
-  test(`argparse ${name}: rejects ${f} before native numeric formatting`, () => {
-   assert.throws(() => fn(f), e => e.code === 'ERR_SPRINTF_PRECISION');
-  });
- }
-}
-test('argparse: direct format rejects malformed precision before invoking an argument callback', () => {
- for (const precision of [NaN, Infinity, -Infinity, -1, true, false, null, '', 'garbage', {}, [], '0']) {
-  const tree = sprintf.parse('%.2g'); tree[0][7] = precision; let called = false;
-  assert.throws(() => sprintf.format(tree, ['%.2g', () => { called = true; return 1; }]), e => e.code === 'ERR_SPRINTF_PRECISION');
-  assert.equal(called, false);
- }
-});
-test('argparse: retained valid numeric, named, positional and string formats', () => {
- assert.equal(sprintf('%.2f %s', 1.25, 'done'), '1.25 done');
- assert.equal(sprintf('%(name)s', { name: 'sample' }), 'sample');
- assert.equal(sprintf('%2$s %1$d', 7, 'item'), 'item 7');
- assert.equal(sprintf('%.100f', 1).length, 102);
- assert.equal(sprintf('%.100e', 1), (1).toExponential(100));
- assert.equal(sprintf('%.100g', 1), (1).toPrecision(100));
- assert.equal(sprintf('%.101s', 'short'), 'short');
-});
 test('direct expansion bounds nested queue values as well as AST nodes', () => {
  const braces = require('braces'); let value = 'x';
  for (let i = 0; i < 8000; i++) value = [value];
  assert.throws(() => braces.expand({ type: 'root', nodes: [{ type: 'text', value }] }), e => e.code === 'ERR_BRACES_DEPTH');
 });
-test('format snapshots precision before caller-controlled getters or callbacks can mutate it', () => {
- const callbackTree = sprintf.parse('%.2f');
- assert.equal(sprintf.format(callbackTree, ['%.2f', () => { callbackTree[0][7] = '1000'; return 1; }]), '1.00');
- const getterTree = sprintf.parse('%.2f'); let reads = 0;
- Object.defineProperty(getterTree[0], 7, { get() { return ++reads === 1 ? '2' : '1000'; } });
- assert.equal(sprintf.format(getterTree, ['%.2f', 1]), '1.00'); assert.equal(reads, 1);
+test('the reviewed lock and installed tree contain argparse2 without sprintf-js', () => {
+ const fs = require('node:fs');
+ const lock = JSON.parse(fs.readFileSync(require.resolve('../package-lock.json')));
+ assert.ok(!Object.keys(lock.packages).some(p => /(?:^|\/)node_modules\/sprintf-js$/.test(p)));
+ assert.equal(require('argparse/package.json').version, '2.0.1');
+ assert.throws(() => app.resolve('sprintf-js'), { code: 'MODULE_NOT_FOUND' });
 });
-
-for (const entry of ['src/sprintf.js', 'dist/sprintf.min.js']) {
- for (const conversion of ['e', 'f']) {
-  test(`sprintf ${entry}: captured numeric and parsed zero precision preserve native rounding`, () => {
-   const { sprintf: format, vsprintf: vectorFormat } = argparse(`sprintf-js/${entry}`);
-   const value = 1.75, pattern = `%.0${conversion}`;
-   const expected = conversion === 'e' ? value.toExponential(0) : value.toFixed(0);
-   assert.equal(format(pattern, value), expected);
-   assert.equal(vectorFormat(pattern, [value]), expected);
-   for (const precision of [0, '0']) {
-    const tree = format.parse(pattern); tree[0][7] = precision;
-    assert.equal(format.format(tree, [pattern, value]), expected);
-    assert.equal(format.format(tree, [pattern, () => { tree[0][7] = 1000; return value; }]), expected);
-   }
-   const tree = format.parse(pattern); let reads = 0;
-   Object.defineProperty(tree[0], 7, { get() { return ++reads === 1 ? 0 : 1000; } });
-   assert.equal(format.format(tree, [pattern, value]), expected);
-   assert.equal(reads, 1);
-  });
- }
- test(`sprintf ${entry}: zero significant-digit precision rejects before callbacks`, () => {
-  const { sprintf: format } = argparse(`sprintf-js/${entry}`);
-  for (const precision of [0, '0']) {
-   const tree = format.parse('%.1g'); tree[0][7] = precision; let called = false;
-   assert.throws(() => format.format(tree, ['', () => { called = true; return 1; }]), e => e.code === 'ERR_SPRINTF_PRECISION');
-   assert.equal(called, false);
-  }
-  assert.equal(format('%e', 1.75), (1.75).toExponential());
-  assert.equal(format('%f', 1.75), '1.75');
-  assert.equal(format('%g', 1.75), '1.75');
- });
- test(`sprintf ${entry}: distributed formatter retains valid output and rejects excessive precision`, () => {
-  const { sprintf: format, vsprintf: vectorFormat } = argparse(`sprintf-js/${entry}`);
-  for (const conversion of ['e', 'f', 'g']) {
-   const pattern = `%.101${conversion}`;
-   for (const call of [() => format(pattern, 1), () => vectorFormat(pattern, [1]), () => format.format(format.parse(pattern), [pattern, 1])]) {
-    assert.throws(call, e => e.code === 'ERR_SPRINTF_PRECISION');
-   }
-   const tree = format.parse(`%.2${conversion}`);
-   const expected = format(`%.2${conversion}`, 1);
-   assert.equal(format.format(tree, ['', () => { tree[0][7] = '1000'; tree[0][8] = 'g'; return 1; }]), expected);
-  }
-  assert.equal(format('%.2f %s', 1.25, 'done'), '1.25 done');
- });
-}

@@ -78,15 +78,25 @@ function planRepairs(root, { check = false, production = false } = {}) {
   assert.ok(typeof check === 'boolean' && typeof production === 'boolean', 'tooling repair: boolean modes required');
   assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
   assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
-  assert.equal(patchSet.schema, 2, 'tooling repair: unsupported patch schema');
+  assert.equal(patchSet.schema, 3, 'tooling repair: unsupported patch schema');
   assert.ok(Array.isArray(patchSet.packages) && patchSet.packages.length === 2 &&
     new Set(patchSet.packages.map(p => p.name)).size === 2, 'tooling repair: complete package inventory required');
   assert.ok(Array.isArray(patchSet.patches) && patchSet.patches.length > 0, 'tooling repair: nonempty patches required');
   const lock = JSON.parse(fs.readFileSync(regularPath(root, 'package-lock.json')));
   assert.ok(lock && lock.lockfileVersion === 3 && lock.packages && !Array.isArray(lock.packages), 'tooling repair: lock package inventory required');
+  const named = (entry, name) => entry === `node_modules/${name}` || entry.endsWith(`/node_modules/${name}`);
+  assert.ok(!Object.keys(lock.packages).some(entry => named(entry, 'sprintf-js')),
+    'tooling repair: retired sprintf-js remains locked');
+  const argparse = Object.entries(lock.packages).filter(([entry]) => named(entry, 'argparse'));
+  for (const [entry] of argparse) {
+    validateRelativePath(entry);
+    assert.ok(entry.startsWith('node_modules/'), 'tooling repair: unsafe package path');
+  }
+  assert.ok(argparse.length > 0 && argparse.every(([, record]) => record.version === '2.0.1' && record.dev === true),
+    'tooling repair: reviewed argparse 2.0.1 required');
   const operations = [], packages = [], absentPackages = [], usedPatches = new Set();
   for (const inventory of patchSet.packages) {
-    assert.ok(['braces', 'sprintf-js'].includes(inventory.name) && typeof inventory.version === 'string' &&
+    assert.ok(['braces', 'js-yaml'].includes(inventory.name) && typeof inventory.version === 'string' &&
       inventory.files && !Array.isArray(inventory.files) && Object.keys(inventory.files).length > 0,
     'tooling repair: invalid package inventory');
     const patches = new Map();
@@ -99,8 +109,31 @@ function planRepairs(root, { check = false, production = false } = {}) {
         'tooling repair: patch inventory mismatch');
       patches.set(patch.file, patch); usedPatches.add(patch);
     }
-    const entries = Object.entries(lock.packages).filter(([name]) =>
-      name.endsWith(`/node_modules/${inventory.name}`) || name === `node_modules/${inventory.name}`);
+    assert.ok(Array.isArray(inventory.entries) && inventory.entries.length > 0 &&
+      new Set(inventory.entries).size === inventory.entries.length, 'tooling repair: package locations required');
+    for (const entry of inventory.entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/') && named(entry, inventory.name), 'tooling repair: unsafe package location');
+      const record = lock.packages[entry];
+      assert.ok(record && record.version === inventory.version && record.dev === true, `tooling repair: incompatible locked ${entry}`);
+    }
+    // The separate YAML4 CLI is untouched; every other occurrence must be in the repaired inventory.
+    const otherEntries = inventory.otherEntries || {};
+    assert.ok(typeof otherEntries === 'object' && !Array.isArray(otherEntries), 'tooling repair: invalid excluded locations');
+    for (const [entry, version] of Object.entries(otherEntries)) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/') && named(entry, inventory.name) &&
+        lock.packages[entry]?.version === version && lock.packages[entry]?.dev === true,
+      `tooling repair: incompatible locked ${entry}`);
+    }
+    const entries = Object.entries(lock.packages).filter(([entry]) => named(entry, inventory.name) &&
+      !Object.hasOwn(otherEntries, entry));
+    for (const [entry] of entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/'), 'tooling repair: unsafe package path');
+    }
+    assert.deepEqual(entries.map(([entry]) => entry).sort(), [...inventory.entries].sort(),
+      `tooling repair: unexpected locked locations for ${inventory.name}`);
     assert.ok(entries.length > 0, `tooling repair: missing locked ${inventory.name}`);
     for (const [entry, record] of entries) {
       validateRelativePath(entry);
@@ -124,6 +157,10 @@ function planRepairs(root, { check = false, production = false } = {}) {
           'tooling repair: invalid source digest');
         const { target, stat } = inspectPath(root, relative, Boolean(patch && patch.original_sha256 === null));
         assert.ok(stat === null || stat.isFile(), `tooling repair: regular file required ${relative}`);
+        if (identity.mode !== undefined) {
+          assert.ok(identity.mode === 0o755 && stat && (stat.mode & 0o777) === identity.mode,
+            `tooling repair: executable mode required ${relative}`);
+        }
         const bytes = stat ? fs.readFileSync(target) : null;
         if (bytes && hash(bytes) === identity.repaired_sha256) continue;
         if (!patch) {
@@ -137,7 +174,7 @@ function planRepairs(root, { check = false, production = false } = {}) {
         }
         const repaired = replacement(patch, bytes, relative);
         assert.ok(!check, `tooling repair: unpatched ${relative}; run npm ci with scripts enabled`);
-        operations.push({ target, bytes: repaired });
+        operations.push({ target, bytes: repaired, mode: stat ? stat.mode & 0o777 : 0o644 });
       }
       packages.push(entry);
     }
@@ -155,11 +192,12 @@ function applyRepairs(root = path.resolve(__dirname, '..'), options = {}) {
   if (!check) fs.mkdirSync(lockPath);
   try {
     const plan = planRepairs(root, options);
-    for (const { target, bytes } of plan.operations) {
+    for (const { target, bytes, mode } of plan.operations) {
       const temporary = `${target}.repair-${process.pid}`;
       let created = false;
       try {
-        fs.writeFileSync(temporary, bytes, { flag: 'wx' }); created = true;
+        fs.writeFileSync(temporary, bytes, { flag: 'wx', mode }); created = true;
+        fs.chmodSync(temporary, mode);
         fs.renameSync(temporary, target); created = false;
       } finally {
         if (created) fs.unlinkSync(temporary);
