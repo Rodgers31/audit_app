@@ -1,0 +1,5 @@
+
+> audit-app-frontend@1.0.0 verify:dependency-tooling
+> node scripts/verify-dependency-tooling.cjs
+
+Dependency tooling checks passed: parser resolution, theme tokens, dark/responsive/group/peer/arbitrary selectors, typography, and nesting.

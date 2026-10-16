@@ -1,0 +1,885 @@
+
+> audit-app-frontend@1.0.0 test:dependency-boundaries
+> node --test scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs
+
+TAP version 13
+# Subtest: actual browser verifier rejects unrelated runtime package
+ok 1 - actual browser verifier rejects unrelated runtime package
+  ---
+  duration_ms: 3.178167
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects wrong runtime version
+ok 2 - actual browser verifier rejects wrong runtime version
+  ---
+  duration_ms: 0.893583
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects unversioned runtime
+ok 3 - actual browser verifier rejects unversioned runtime
+  ---
+  duration_ms: 1.020292
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects runtime HTTP downgrade
+ok 4 - actual browser verifier rejects runtime HTTP downgrade
+  ---
+  duration_ms: 0.712042
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects runtime alternate port
+ok 5 - actual browser verifier rejects runtime alternate port
+  ---
+  duration_ms: 0.589084
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects runtime query
+ok 6 - actual browser verifier rejects runtime query
+  ---
+  duration_ms: 0.481875
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects runtime credentials
+ok 7 - actual browser verifier rejects runtime credentials
+  ---
+  duration_ms: 0.464
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects unapproved runtime basename
+ok 8 - actual browser verifier rejects unapproved runtime basename
+  ---
+  duration_ms: 0.970167
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects mutable model revision
+ok 9 - actual browser verifier rejects mutable model revision
+  ---
+  duration_ms: 1.11975
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects different model revision
+ok 10 - actual browser verifier rejects different model revision
+  ---
+  duration_ms: 0.779083
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects model HTTP downgrade
+ok 11 - actual browser verifier rejects model HTTP downgrade
+  ---
+  duration_ms: 0.566
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects model alternate port
+ok 12 - actual browser verifier rejects model alternate port
+  ---
+  duration_ms: 0.482542
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects model query
+ok 13 - actual browser verifier rejects model query
+  ---
+  duration_ms: 0.557875
+  type: 'test'
+  ...
+# Subtest: actual browser verifier rejects model credentials
+ok 14 - actual browser verifier rejects model credentials
+  ---
+  duration_ms: 0.549292
+  type: 'test'
+  ...
+# Subtest: actual browser verifier accepts the approved fixture https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.wasm
+ok 15 - actual browser verifier accepts the approved fixture https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.wasm
+  ---
+  duration_ms: 0.633584
+  type: 'test'
+  ...
+# Subtest: actual browser verifier accepts the approved fixture https://unpkg.com/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.wasm
+ok 16 - actual browser verifier accepts the approved fixture https://unpkg.com/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/ort-wasm-simd-threaded.asyncify.wasm
+  ---
+  duration_ms: 0.510708
+  type: 'test'
+  ...
+# Subtest: actual browser verifier accepts the approved fixture https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/config.json
+ok 17 - actual browser verifier accepts the approved fixture https://huggingface.co/Xenova/all-MiniLM-L6-v2/resolve/751bff37182d3f1213fa05d7196b954e230abad9/config.json
+  ---
+  duration_ms: 0.4835
+  type: 'test'
+  ...
+# Subtest: embedding builder accepts valid output before writing
+ok 18 - embedding builder accepts valid output before writing
+  ---
+  duration_ms: 33.974333
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses short output before writing
+ok 19 - embedding builder refuses short output before writing
+  ---
+  duration_ms: 31.098459
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses NaN output before writing
+ok 20 - embedding builder refuses NaN output before writing
+  ---
+  duration_ms: 30.189
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses infinity output before writing
+ok 21 - embedding builder refuses infinity output before writing
+  ---
+  duration_ms: 30.735792
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses array output before writing
+ok 22 - embedding builder refuses array output before writing
+  ---
+  duration_ms: 29.281209
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses dimensions output before writing
+ok 23 - embedding builder refuses dimensions output before writing
+  ---
+  duration_ms: 30.291917
+  type: 'test'
+  ...
+# Subtest: embedding builder refuses zero output before writing
+ok 24 - embedding builder refuses zero output before writing
+  ---
+  duration_ms: 29.961458
+  type: 'test'
+  ...
+# Subtest: model cache refuses null without fetching
+ok 25 - model cache refuses null without fetching
+  ---
+  duration_ms: 1.201542
+  type: 'test'
+  ...
+# Subtest: model cache refuses array without fetching
+ok 26 - model cache refuses array without fetching
+  ---
+  duration_ms: 0.261
+  type: 'test'
+  ...
+# Subtest: model cache refuses boolean without fetching
+ok 27 - model cache refuses boolean without fetching
+  ---
+  duration_ms: 0.260959
+  type: 'test'
+  ...
+# Subtest: model cache refuses number without fetching
+ok 28 - model cache refuses number without fetching
+  ---
+  duration_ms: 0.195667
+  type: 'test'
+  ...
+# Subtest: model cache refuses NaN without fetching
+ok 29 - model cache refuses NaN without fetching
+  ---
+  duration_ms: 0.247083
+  type: 'test'
+  ...
+# Subtest: model cache refuses relative without fetching
+ok 30 - model cache refuses relative without fetching
+  ---
+  duration_ms: 0.182958
+  type: 'test'
+  ...
+# Subtest: model cache refuses damaged config.json before any missing-file download
+ok 31 - model cache refuses damaged config.json before any missing-file download
+  ---
+  duration_ms: 2.489584
+  type: 'test'
+  ...
+# Subtest: model cache refuses damaged onnx/model_quantized.onnx before any missing-file download
+ok 32 - model cache refuses damaged onnx/model_quantized.onnx before any missing-file download
+  ---
+  duration_ms: 17.449375
+  type: 'test'
+  ...
+# Subtest: model cache refuses damaged tokenizer.json before any missing-file download
+ok 33 - model cache refuses damaged tokenizer.json before any missing-file download
+  ---
+  duration_ms: 3.44725
+  type: 'test'
+  ...
+# Subtest: model cache refuses damaged tokenizer_config.json before any missing-file download
+ok 34 - model cache refuses damaged tokenizer_config.json before any missing-file download
+  ---
+  duration_ms: 1.402583
+  type: 'test'
+  ...
+# Subtest: model cache refuses unknown-file
+ok 35 - model cache refuses unknown-file
+  ---
+  duration_ms: 1.691916
+  type: 'test'
+  ...
+# Subtest: model cache refuses unknown-directory
+ok 36 - model cache refuses unknown-directory
+  ---
+  duration_ms: 1.689375
+  type: 'test'
+  ...
+# Subtest: model cache refuses file-link
+ok 37 - model cache refuses file-link
+  ---
+  duration_ms: 1.764792
+  type: 'test'
+  ...
+# Subtest: model cache refuses directory-link
+ok 38 - model cache refuses directory-link
+  ---
+  duration_ms: 1.277125
+  type: 'test'
+  ...
+# Subtest: model cache refuses dangling-link
+ok 39 - model cache refuses dangling-link
+  ---
+  duration_ms: 1.662
+  type: 'test'
+  ...
+# Subtest: model cache refuses ancestor-link
+ok 40 - model cache refuses ancestor-link
+  ---
+  duration_ms: 1.509583
+  type: 'test'
+  ...
+# Subtest: model preparation refuses HTTP error without publishing
+ok 41 - model preparation refuses HTTP error without publishing
+  ---
+  duration_ms: 7.153667
+  type: 'test'
+  ...
+# Subtest: model preparation refuses empty download without publishing
+ok 42 - model preparation refuses empty download without publishing
+  ---
+  duration_ms: 2.08125
+  type: 'test'
+  ...
+# Subtest: model preparation refuses same-size unreviewed download without publishing
+ok 43 - model preparation refuses same-size unreviewed download without publishing
+  ---
+  duration_ms: 0.543875
+  type: 'test'
+  ...
+# Subtest: model preparation refuses oversized download without publishing
+ok 44 - model preparation refuses oversized download without publishing
+  ---
+  duration_ms: 0.362084
+  type: 'test'
+  ...
+# Subtest: model byte authority cannot be bypassed with unknown files or coercible values
+ok 45 - model byte authority cannot be bypassed with unknown files or coercible values
+  ---
+  duration_ms: 0.119166
+  type: 'test'
+  ...
+# Subtest: configured native model excludes remote and alternate caches
+ok 46 - configured native model excludes remote and alternate caches
+  ---
+  duration_ms: 0.072708
+  type: 'test'
+  ...
+# Subtest: a missing graph test or syntax error cannot count as an intended rejection
+ok 47 - a missing graph test or syntax error cannot count as an intended rejection
+  ---
+  duration_ms: 81.95025
+  type: 'test'
+  ...
+# Subtest: the actual malformed configuration reaches the guard contract
+ok 48 - the actual malformed configuration reaches the guard contract
+  ---
+  duration_ms: 86.163125
+  type: 'test'
+  ...
+# Subtest: npm CLI resolution uses the installed runtime
+ok 49 - npm CLI resolution uses the installed runtime
+  ---
+  duration_ms: 59.28325
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for stable
+ok 50 - actual command recorder binds pre-execution source for stable
+  ---
+  duration_ms: 186.423166
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for source
+ok 51 - actual command recorder binds pre-execution source for source
+  ---
+  duration_ms: 189.414584
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for delete
+ok 52 - actual command recorder binds pre-execution source for delete
+  ---
+  duration_ms: 185.906292
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for head
+ok 53 - actual command recorder binds pre-execution source for head
+  ---
+  duration_ms: 193.7955
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for generator
+ok 54 - actual command recorder binds pre-execution source for generator
+  ---
+  duration_ms: 169.582666
+  type: 'test'
+  ...
+# Subtest: actual command recorder binds pre-execution source for child-failure
+ok 55 - actual command recorder binds pre-execution source for child-failure
+  ---
+  duration_ms: 180.239708
+  type: 'test'
+  ...
+# Subtest: advertised Node runtime range fits installed application and Jest tooling
+ok 56 - advertised Node runtime range fits installed application and Jest tooling
+  ---
+  duration_ms: 6.190875
+  type: 'test'
+  ...
+# Subtest: installed Jest dependency graph excludes the vulnerable brace compiler
+ok 57 - installed Jest dependency graph excludes the vulnerable brace compiler
+  ---
+  duration_ms: 689.256542
+  type: 'test'
+  ...
+# Subtest: graph gate accepts exact prerelease and build versions without normalization
+ok 58 - graph gate accepts exact prerelease and build versions without normalization
+  ---
+  duration_ms: 265.4065
+  type: 'test'
+  ...
+# Subtest: graph gate rejects malformed rows and incomplete measurements
+ok 59 - graph gate rejects malformed rows and incomplete measurements
+  ---
+  duration_ms: 2081.007584
+  type: 'test'
+  ...
+# Subtest: application discovery keeps Node fixtures out of Jest
+ok 60 - application discovery keeps Node fixtures out of Jest
+  ---
+  duration_ms: 513.514
+  type: 'test'
+  ...
+# Subtest: Jest executes matching tests and reports a real assertion failure
+ok 61 - Jest executes matching tests and reports a real assertion failure
+  ---
+  duration_ms: 580.4655
+  type: 'test'
+  ...
+# Subtest: malformed missing Tailwind reports the input contract without a success verdict
+ok 62 - malformed missing Tailwind reports the input contract without a success verdict
+  ---
+  duration_ms: 141.67325
+  type: 'test'
+  ...
+# Subtest: malformed null Tailwind reports the input contract without a success verdict
+ok 63 - malformed null Tailwind reports the input contract without a success verdict
+  ---
+  duration_ms: 85.247167
+  type: 'test'
+  ...
+# Subtest: malformed array Tailwind reports the input contract without a success verdict
+ok 64 - malformed array Tailwind reports the input contract without a success verdict
+  ---
+  duration_ms: 86.280667
+  type: 'test'
+  ...
+# Subtest: malformed invalid Tailwind syntax reports the input contract without a success verdict
+ok 65 - malformed invalid Tailwind syntax reports the input contract without a success verdict
+  ---
+  duration_ms: 87.153209
+  type: 'test'
+  ...
+# Subtest: malformed missing ESLint reports the input contract without a success verdict
+ok 66 - malformed missing ESLint reports the input contract without a success verdict
+  ---
+  duration_ms: 103.253334
+  type: 'test'
+  ...
+# Subtest: malformed invalid ESLint JSON reports the input contract without a success verdict
+ok 67 - malformed invalid ESLint JSON reports the input contract without a success verdict
+  ---
+  duration_ms: 90.306208
+  type: 'test'
+  ...
+# Subtest: tooling verification refuses deep Tailwind brace glob before its CSS success verdict
+ok 68 - tooling verification refuses deep Tailwind brace glob before its CSS success verdict
+  ---
+  duration_ms: 260.997833
+  type: 'test'
+  ...
+# Subtest: tooling verification refuses unreviewed Tailwind source scope before its CSS success verdict
+ok 69 - tooling verification refuses unreviewed Tailwind source scope before its CSS success verdict
+  ---
+  duration_ms: 167.267959
+  type: 'test'
+  ...
+# Subtest: tooling verification refuses deep Next lint root glob before its CSS success verdict
+ok 70 - tooling verification refuses deep Next lint root glob before its CSS success verdict
+  ---
+  duration_ms: 163.046042
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective override configuration before Next runs
+ok 71 - standard lint refuses unsafe effective override configuration before Next runs
+  ---
+  duration_ms: 726.334958
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective extends configuration before Next runs
+ok 72 - standard lint refuses unsafe effective extends configuration before Next runs
+  ---
+  duration_ms: 513.930375
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective alternate configuration before Next runs
+ok 73 - standard lint refuses unsafe effective alternate configuration before Next runs
+  ---
+  duration_ms: 509.190208
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective descendant configuration before Next runs
+ok 74 - standard lint refuses unsafe effective descendant configuration before Next runs
+  ---
+  duration_ms: 510.232792
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective array configuration before Next runs
+ok 75 - standard lint refuses unsafe effective array configuration before Next runs
+  ---
+  duration_ms: 168.041792
+  type: 'test'
+  ...
+# Subtest: standard lint refuses unsafe effective string configuration before Next runs
+ok 76 - standard lint refuses unsafe effective string configuration before Next runs
+  ---
+  duration_ms: 171.414458
+  type: 'test'
+  ...
+# Subtest: tailwindcss: actual fast-glob rejects nested input before recursion
+ok 77 - tailwindcss: actual fast-glob rejects nested input before recursion
+  ---
+  duration_ms: 38.694417
+  type: 'test'
+  ...
+# Subtest: tailwindcss: parse bounds nested pattern
+ok 78 - tailwindcss: parse bounds nested pattern
+  ---
+  duration_ms: 0.095417
+  type: 'test'
+  ...
+# Subtest: tailwindcss: compile bounds nested pattern
+ok 79 - tailwindcss: compile bounds nested pattern
+  ---
+  duration_ms: 0.10475
+  type: 'test'
+  ...
+# Subtest: tailwindcss: expand bounds nested pattern
+ok 80 - tailwindcss: expand bounds nested pattern
+  ---
+  duration_ms: 0.058834
+  type: 'test'
+  ...
+# Subtest: tailwindcss: stringify bounds nested pattern
+ok 81 - tailwindcss: stringify bounds nested pattern
+  ---
+  duration_ms: 0.06825
+  type: 'test'
+  ...
+# Subtest: tailwindcss: nesting boundary cannot be relaxed by caller options
+ok 82 - tailwindcss: nesting boundary cannot be relaxed by caller options
+  ---
+  duration_ms: 0.299208
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct compile AST walkers bound deep or cyclic nodes
+ok 83 - tailwindcss: direct compile AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.299542
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct stringify AST walkers bound deep or cyclic nodes
+ok 84 - tailwindcss: direct stringify AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.148083
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct expand AST walkers bound deep or cyclic nodes
+ok 85 - tailwindcss: direct expand AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.334958
+  type: 'test'
+  ...
+# Subtest: tailwindcss: shallow braces keep expansion and compile semantics
+ok 86 - tailwindcss: shallow braces keep expansion and compile semantics
+  ---
+  duration_ms: 0.776333
+  type: 'test'
+  ...
+# Subtest: tailwindcss: escaped, quoted, bracket and sibling braces keep semantics
+ok 87 - tailwindcss: escaped, quoted, bracket and sibling braces keep semantics
+  ---
+  duration_ms: 0.161709
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: actual fast-glob rejects nested input before recursion
+ok 88 - @next/eslint-plugin-next: actual fast-glob rejects nested input before recursion
+  ---
+  duration_ms: 8.202083
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: parse bounds nested pattern
+ok 89 - @next/eslint-plugin-next: parse bounds nested pattern
+  ---
+  duration_ms: 0.059458
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: compile bounds nested pattern
+ok 90 - @next/eslint-plugin-next: compile bounds nested pattern
+  ---
+  duration_ms: 0.046167
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: expand bounds nested pattern
+ok 91 - @next/eslint-plugin-next: expand bounds nested pattern
+  ---
+  duration_ms: 0.038792
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: stringify bounds nested pattern
+ok 92 - @next/eslint-plugin-next: stringify bounds nested pattern
+  ---
+  duration_ms: 0.037542
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: nesting boundary cannot be relaxed by caller options
+ok 93 - @next/eslint-plugin-next: nesting boundary cannot be relaxed by caller options
+  ---
+  duration_ms: 0.180458
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct compile AST walkers bound deep or cyclic nodes
+ok 94 - @next/eslint-plugin-next: direct compile AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.133041
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct stringify AST walkers bound deep or cyclic nodes
+ok 95 - @next/eslint-plugin-next: direct stringify AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.314334
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct expand AST walkers bound deep or cyclic nodes
+ok 96 - @next/eslint-plugin-next: direct expand AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.298042
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: shallow braces keep expansion and compile semantics
+ok 97 - @next/eslint-plugin-next: shallow braces keep expansion and compile semantics
+  ---
+  duration_ms: 0.137625
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: escaped, quoted, bracket and sibling braces keep semantics
+ok 98 - @next/eslint-plugin-next: escaped, quoted, bracket and sibling braces keep semantics
+  ---
+  duration_ms: 0.047166
+  type: 'test'
+  ...
+# Subtest: direct expansion bounds nested queue values as well as AST nodes
+ok 99 - direct expansion bounds nested queue values as well as AST nodes
+  ---
+  duration_ms: 0.873166
+  type: 'test'
+  ...
+# Subtest: the reviewed lock and installed tree contain argparse2 without sprintf-js
+ok 100 - the reviewed lock and installed tree contain argparse2 without sprintf-js
+  ---
+  duration_ms: 2.103292
+  type: 'test'
+  ...
+# Subtest: cold upstream install applies all reviewed repaired files, reads back and repeats idempotently
+ok 101 - cold upstream install applies all reviewed repaired files, reads back and repeats idempotently
+  ---
+  duration_ms: 82.939125
+  type: 'test'
+  ...
+# Subtest: installer refuses argparse traversal entry without applying any other target
+ok 102 - installer refuses argparse traversal entry without applying any other target
+  ---
+  duration_ms: 42.402375
+  type: 'test'
+  ...
+# Subtest: installer refuses unreviewed nested YAML version without applying any other target
+ok 103 - installer refuses unreviewed nested YAML version without applying any other target
+  ---
+  duration_ms: 45.096542
+  type: 'test'
+  ...
+# Subtest: installer refuses retired sprintf lock entry without applying any other target
+ok 104 - installer refuses retired sprintf lock entry without applying any other target
+  ---
+  duration_ms: 40.540417
+  type: 'test'
+  ...
+# Subtest: installer refuses nonexecutable YAML CLI without applying any other target
+ok 105 - installer refuses nonexecutable YAML CLI without applying any other target
+  ---
+  duration_ms: 45.53425
+  type: 'test'
+  ...
+# Subtest: installer refuses changed upstream source without applying any other target
+ok 106 - installer refuses changed upstream source without applying any other target
+  ---
+  duration_ms: 42.234916
+  type: 'test'
+  ...
+# Subtest: installer refuses missing installed package without applying any other target
+ok 107 - installer refuses missing installed package without applying any other target
+  ---
+  duration_ms: 40.918458
+  type: 'test'
+  ...
+# Subtest: installer refuses wrong package version without applying any other target
+ok 108 - installer refuses wrong package version without applying any other target
+  ---
+  duration_ms: 41.1075
+  type: 'test'
+  ...
+# Subtest: installer refuses malformed lock without applying any other target
+ok 109 - installer refuses malformed lock without applying any other target
+  ---
+  duration_ms: 37.186
+  type: 'test'
+  ...
+# Subtest: installer refuses empty lock inventory without applying any other target
+ok 110 - installer refuses empty lock inventory without applying any other target
+  ---
+  duration_ms: 40.541417
+  type: 'test'
+  ...
+# Subtest: installer refuses unsafe lock path without applying any other target
+ok 111 - installer refuses unsafe lock path without applying any other target
+  ---
+  duration_ms: 41.854542
+  type: 'test'
+  ...
+# Subtest: installer refuses unreviewed locked version without applying any other target
+ok 112 - installer refuses unreviewed locked version without applying any other target
+  ---
+  duration_ms: 41.108333
+  type: 'test'
+  ...
+# Subtest: installer refuses symlinked source without applying any other target
+ok 113 - installer refuses symlinked source without applying any other target
+  ---
+  duration_ms: 41.523958
+  type: 'test'
+  ...
+# Subtest: installer refuses dangling helper symlink without applying any other target
+ok 114 - installer refuses dangling helper symlink without applying any other target
+  ---
+  duration_ms: 41.786917
+  type: 'test'
+  ...
+# Subtest: installer refuses existing wrong helper without applying any other target
+ok 115 - installer refuses existing wrong helper without applying any other target
+  ---
+  duration_ms: 41.795041
+  type: 'test'
+  ...
+# Subtest: omit-dev install distinguishes absent tooling packages from applied repairs
+ok 116 - omit-dev install distinguishes absent tooling packages from applied repairs
+  ---
+  duration_ms: 15.837292
+  type: 'test'
+  ...
+# Subtest: symlinked node_modules refuses before creating a lock in its target
+ok 117 - symlinked node_modules refuses before creating a lock in its target
+  ---
+  duration_ms: 12.407541
+  type: 'test'
+  ...
+# Subtest: invalid boolean modes cannot skip repair validation
+ok 118 - invalid boolean modes cannot skip repair validation
+  ---
+  duration_ms: 12.0475
+  type: 'test'
+  ...
+# Subtest: held concurrent installer lock fails visibly and preserves the owner lock
+ok 119 - held concurrent installer lock fails visibly and preserves the owner lock
+  ---
+  duration_ms: 47.568
+  type: 'test'
+  ...
+# Subtest: two real installer processes cannot overlap patch publication
+ok 120 - two real installer processes cannot overlap patch publication
+  ---
+  duration_ms: 106.911667
+  type: 'test'
+  ...
+# Subtest: production mode rejects absent traversal entries rather than reporting them omitted
+ok 121 - production mode rejects absent traversal entries rather than reporting them omitted
+  ---
+  duration_ms: 39.809416
+  type: 'test'
+  ...
+# Subtest: check refuses missing mandatory unmodified braces/index.js
+ok 122 - check refuses missing mandatory unmodified braces/index.js
+  ---
+  duration_ms: 51.45925
+  type: 'test'
+  ...
+# Subtest: check refuses missing mandatory unmodified braces/lib/constants.js
+ok 123 - check refuses missing mandatory unmodified braces/lib/constants.js
+  ---
+  duration_ms: 51.501417
+  type: 'test'
+  ...
+# Subtest: check refuses changed main export even with unchanged name and version
+ok 124 - check refuses changed main export even with unchanged name and version
+  ---
+  duration_ms: 52.203375
+  type: 'test'
+  ...
+# Subtest: production mode refuses a dangling installed package link
+ok 125 - production mode refuses a dangling installed package link
+  ---
+  duration_ms: 37.419209
+  type: 'test'
+  ...
+# Subtest: legacy CLI retains executable mode for direct invocation
+ok 126 - legacy CLI retains executable mode for direct invocation
+  ---
+  duration_ms: 265.235875
+  type: 'test'
+  ...
+# Subtest: legacy CLI succeeds with deprecations fatal and normal success stderr empty
+ok 127 - legacy CLI succeeds with deprecations fatal and normal success stderr empty
+  ---
+  duration_ms: 72.0915
+  type: 'test'
+  ...
+# Subtest: legacy argument errors retain usage on stdout and diagnostic on stderr
+ok 128 - legacy argument errors retain usage on stdout and diagnostic on stderr
+  ---
+  duration_ms: 35.220333
+  type: 'test'
+  ...
+# Subtest: NYC js-yaml CLI --version prints its actual package version
+ok 129 - NYC js-yaml CLI --version prints its actual package version
+  ---
+  duration_ms: 34.326
+  type: 'test'
+  ...
+# Subtest: NYC js-yaml CLI -v prints its actual package version
+ok 130 - NYC js-yaml CLI -v prints its actual package version
+  ---
+  duration_ms: 35.296375
+  type: 'test'
+  ...
+# Subtest: NYC YAML configuration loader retains nested arrays and booleans
+ok 131 - NYC YAML configuration loader retains nested arrays and booleans
+  ---
+  duration_ms: 19.626041
+  type: 'test'
+  ...
+# Subtest: NYC js-yaml CLI retains stdin, hidden JSON, JSON-to-YAML and multi-document behavior
+ok 132 - NYC js-yaml CLI retains stdin, hidden JSON, JSON-to-YAML and multi-document behavior
+  ---
+  duration_ms: 176.293709
+  type: 'test'
+  ...
+# Subtest: NYC js-yaml CLI retains help and bounded error exits
+ok 133 - NYC js-yaml CLI retains help and bounded error exits
+  ---
+  duration_ms: 312.142792
+  type: 'test'
+  ...
+1..133
+# tests 133
+# suites 0
+# pass 133
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4209.180084
+
+> audit-app-frontend@1.0.0 postinstall
+> node scripts/apply-tooling-repairs.cjs
+
+{"check":"source-bound-tooling-repairs","packages":[],"absentPackages":["node_modules/braces","node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml"],"changedFiles":0}
+
+added 172 packages in 8s
+TAP version 13
+# {"check":"runtime-regression-source-isolation","childControlsExit":0,"sourceBefore":{"sha256":"e14b3eda36bb40ca384e78bb54f3386ca281f7ab72553e1dbf32b2d5a1d356b3","files":24426},"sourceAfter":{"sha256":"e14b3eda36bb40ca384e78bb54f3386ca281f7ab72553e1dbf32b2d5a1d356b3","files":24426},"sourceBytesPreserved":true,"sourceVerifierExit":0}
+# Subtest: destructive runtime regressions preserve a linked source installation
+ok 1 - destructive runtime regressions preserve a linked source installation
+  ---
+  duration_ms: 13124.5445
+  type: 'test'
+  ...
+# Subtest: runtime fixture copying resolves source links and preserves executable file permissions
+ok 2 - runtime fixture copying resolves source links and preserves executable file permissions
+  ---
+  duration_ms: 1.724958
+  type: 'test'
+  ...
+# Subtest: runtime fixture copying refuses a directory link cycle
+ok 3 - runtime fixture copying refuses a directory link cycle
+  ---
+  duration_ms: 1.011542
+  type: 'test'
+  ...
+# Subtest: runtime fixture copying refuses an occupied destination link before writing
+ok 4 - runtime fixture copying refuses an occupied destination link before writing
+  ---
+  duration_ms: 1.175833
+  type: 'test'
+  ...
+# Subtest: runtime verification rejects nested tooling and malformed manifests
+    # Subtest: real pruned installation decodes an image
+    ok 1 - real pruned installation decodes an image
+      ---
+      duration_ms: 380.366292
+      type: 'test'
+      ...
+    # Subtest: nested reachable braces cannot produce an absence verdict
+    ok 2 - nested reachable braces cannot produce an absence verdict
+      ---
+      duration_ms: 32.578833
+      type: 'test'
+      ...
+    # Subtest: dependency maps cannot be arrays or null
+    ok 3 - dependency maps cannot be arrays or null
+      ---
+      duration_ms: 24.675166
+      type: 'test'
+      ...
+    # Subtest: missing Sharp decoders cannot produce an image verdict
+    ok 4 - missing Sharp decoders cannot produce an image verdict
+      ---
+      duration_ms: 49.75025
+      type: 'test'
+      ...
+    1..4
+ok 5 - runtime verification rejects nested tooling and malformed manifests
+  ---
+  duration_ms: 6502.958292
+  type: 'test'
+  ...
+1..5
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13165.488334

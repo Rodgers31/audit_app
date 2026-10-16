@@ -1,0 +1,68 @@
+
+Running 3 tests using 1 worker
+
+(node:89304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-footer.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px (6.0s)
+(node:89440) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89440) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-profile.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px (6.0s)
+(node:89534) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:89534) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/reverted-loading-height.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px (317ms)
+
+
+  1) ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-footer.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
+
+    [31mTest timeout of 6000ms exceeded.[39m
+
+    Error: locator.boundingBox: Test timeout of 6000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('footer')[22m
+
+
+      31 |       await expect(page.locator('main .animate-spin')).toBeVisible();
+      32 |       await page.locator('footer').evaluate(el => el.remove());
+    > 33 |       const footer = await page.locator('footer').boundingBox();
+         |                                                   ^
+      34 |       expect(footer).not.toBeNull();
+      35 |       expect(footer!.y).toBeGreaterThanOrEqual(viewport.height);
+      36 |     } finally {
+        at /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-footer.spec.ts:33:51
+
+    Error Context: ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/hostile-results/missing-footer-reset-auth--0c956-elow-the-viewport-at-1365px/error-context.md
+
+  2) ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-profile.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
+
+    [31mTest timeout of 6000ms exceeded.[39m
+
+    Error Context: ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/hostile-results/missing-profile-reset-auth-d7cd7-elow-the-viewport-at-1365px/error-context.md
+
+  3) ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/reverted-loading-height.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: >= [32m900[39m
+    Received:    [31m540[39m
+
+      39 |     await expect(page.getByRole('heading', { name: 'Choose a New Password' })).toBeVisible();
+      40 |     const footer = await page.locator('footer').boundingBox();
+    > 41 |     expect(footer!.y).toBeGreaterThanOrEqual(viewport.height);
+         |                       ^
+      42 |   });
+      43 | }
+      44 |
+        at /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/reverted-loading-height.spec.ts:41:23
+
+    Error Context: ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/hostile-results/reverted-loading-height-re-9ea24-elow-the-viewport-at-1365px/error-context.md
+
+  3 failed
+    ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-footer.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
+    ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/missing-profile.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
+    ../../../../visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/reverted-loading-height.spec.ts:5:7 › reset auth loading keeps the footer below the viewport at 1365px 
