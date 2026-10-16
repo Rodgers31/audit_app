@@ -3,7 +3,11 @@
 Delivery checkout: `/Users/roger/.codex/worktrees/b15-generation/audit_app`.
 Branch: `codex/b15-generation`. Frozen base: `06896185005d822c4b29888138b984510dd1fdbd`.
 The primary dirty checkout was not edited, installed into, reset or stashed.
-Delivery head and draft PR will be recorded below after creation. No merge or deployment is authorized here.
+Implementation/tested commit: `4c8503b59b506f72f7be1b80a778fc2ad0947235`.
+Draft PR: https://github.com/Rodgers31/audit_app/pull/704 (attached to this chat).
+The subsequent documentation-only delivery head is recorded in the external
+`delivery.json` and shared status so it can bind this file without a circular hash.
+No merge or deployment is authorized here.
 
 ## Implemented and locally tested
 
@@ -46,6 +50,7 @@ Evidence root (local, retained outside Git):
 `/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/lane/generation-evidence-v1`.
 
 - `final-v2/receipt.json`: source/runtime/command/log hashes, unchanged sources; **50 passed, zero skipped** normally and the same **50 with Python -O**; **3 actual cross-lane integration tests**; **463 frontend tests**. These inventories overlap independent review selections and must not be summed as unique tests.
+- `committed-link-v1/receipt.json`: fresh 3/3 PostgreSQL replay against the peer's later SQL-bound readers and timeout-aware dispatcher; committed generation blobs exactly match the prior tested source manifest. All local and peer source bytes were unchanged during replay. The peer's working-tree file hashes, rather than its still-uncommitted base HEAD, identify that dependency. This does not prove the native CLI hard-timeout path or a merged tree.
 - Core command: `.venv/bin/python [-O] -m pytest --confcutdir=backend/tests/social backend/tests/social/test_generation.py backend/tests/social/test_generation_api.py backend/tests/social/test_generation_integration.py backend/tests/social/test_generation_postgres.py -q -rs`. Use `PYTHONPATH=backend:backend/tests/social`, `PYTHON_DOTENV_DISABLED=1`, and `B15_GENERATION_TEST_DB_URL` targeting the guarded owned database on 55400.
 - Frontend command: `node_modules/.bin/jest __tests__/social-generation.test.tsx __tests__/admin/social --runInBand` from `frontend`.
 - `backend-broader-v1.log`: 145 passed; 3 existing delivery-history PostgreSQL fixtures skipped because they require their historical fixed port. Their guards were not repointed and this is not a full zero-skip backend claim.
@@ -76,8 +81,12 @@ Parent roadmap #476 remains open. Fixtures do not establish all-plan completion.
 
 ## Delivery and resources
 
-Draft PR, final commit binding, remote review readback and cleanup are recorded in
-the final delivery update and shared `lane/generation-status.md`. Local database
-`b15-generation-postgres` on 127.0.0.1:55400 and its owned anonymous volume must be
-removed after final cross-lane replay. Chrome fixture server on 33506 stops in its
-finally block. The worktree and owned runtime caches remain for coordinator review.
+Remote inline comments and review bodies were both read after draft creation:
+both empty; no review requests or status checks were present. Repository Actions
+permissions were read as disabled. No hosted check is represented as passed.
+
+`cleanup.json` confirms owned `b15-generation-postgres` and its inspected anonymous
+volume were removed with `docker rm -fv`; both absent on readback. Loopback binds
+on 55400 and 33506 succeeded after cleanup. The Chrome fixture server stopped in
+its finally block. The worktree, evidence and owned runtime caches remain for
+coordinator review. No peer resources were removed.
