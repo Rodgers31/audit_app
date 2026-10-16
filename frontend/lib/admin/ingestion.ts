@@ -40,6 +40,23 @@ export function boolean(value: unknown): boolean {
   if (typeof value !== 'boolean') throw new Error('Invalid operations flag');
   return value;
 }
+export function parseGenerationOutcome(raw: unknown): Record<string, unknown> {
+  const v = record(raw);
+  const states = ['disabled', 'completed', 'unavailable', 'failed'];
+  const keys = ['processed', 'drafts_created', 'baselines', 'unchanged', 'refused'];
+  const state = text(v.state);
+  if (!states.includes(state)) throw new Error('Invalid generation state');
+  const uncertain = boolean(v.execution_unverified);
+  const result: Record<string, unknown> = { state, execution_unverified: uncertain };
+  for (const key of keys) {
+    if (uncertain) {
+      if (v[key] !== null || !['failed', 'unavailable'].includes(state)) throw new Error('Invalid uncertain generation outcome');
+      result[key] = null;
+    } else result[key] = integer(v[key], 0, 1000);
+  }
+  if (!uncertain && (Number(v.drafts_created) + Number(v.baselines) + Number(v.unchanged) + Number(v.refused) !== v.processed || state === 'completed' && v.refused !== 0)) throw new Error('Incoherent generation outcome');
+  return result;
+}
 export function parseIngestionJob(raw: unknown): IngestionJob {
   const v = record(raw);
   const status = text(v.status);
@@ -57,6 +74,7 @@ export function parseIngestionJob(raw: unknown): IngestionJob {
   if (typeof meta.source_mode === 'string' && ['live', 'fixture', 'unknown', 'unavailable', 'stale', 'refused'].includes(meta.source_mode)) metadata.source_mode = meta.source_mode;
   for (const key of ['manual_trigger', 'dropped_by_global_budget', 'dry_run']) if (typeof meta[key] === 'boolean') metadata[key] = meta[key];
   if (typeof meta.since === 'string') metadata.since = date(meta.since);
+  if ('post_commit_generation' in meta) metadata.post_commit_generation = parseGenerationOutcome(meta.post_commit_generation);
   return { id: integer(v.id,1,2147483647), domain, status, dry_run:boolean(v.dry_run),
     started_at:date(v.started_at), finished_at:v.finished_at === null ? null : date(v.finished_at),
     duration_seconds:duration as number | null, items_processed:integer(v.items_processed),
