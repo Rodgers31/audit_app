@@ -77,6 +77,36 @@ def _constraint_definition(definition):
 
 
 def _catalog(conn, schema):
+    # Domains, ranges and standalone composites have semantics not represented
+    # by the inventory below. Refuse them instead of certifying only their names.
+    # Ordinary table/view row types and their automatic arrays are inventoried
+    # through their relations; enum labels have an explicit inventory.
+    require(conn.execute(text("""SELECT NOT EXISTS(
+        SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+        LEFT JOIN pg_class c ON c.oid=t.typrelid WHERE n.nspname=:schema
+        AND NOT (t.typtype='e' OR (t.typtype='c' AND c.relkind IN ('r','p','v'))
+                 OR (t.typtype='b' AND t.typcategory='A' AND t.typelem<>0)))"""),
+        {'schema':schema}).scalar_one())
+    # A selected table can depend on a domain/enum/array/composite in another
+    # user schema. Its type name alone is not its definition. Follow recursive
+    # column/element/base-type dependencies and refuse semantics outside this
+    # selected-schema inventory; built-in pg_catalog types remain supported.
+    require(conn.execute(text("""WITH RECURSIVE used(oid) AS (
+        SELECT a.atttypid FROM pg_attribute a JOIN pg_class c ON c.oid=a.attrelid
+          JOIN pg_namespace n ON n.oid=c.relnamespace
+          WHERE n.nspname=:schema AND a.attnum>0 AND NOT a.attisdropped
+            AND c.relkind IN ('r','p','v','m','f')
+        UNION
+        SELECT dependency.oid FROM used u JOIN pg_type t ON t.oid=u.oid
+          CROSS JOIN LATERAL (
+            SELECT t.typelem AS oid WHERE t.typelem<>0
+            UNION SELECT t.typbasetype WHERE t.typbasetype<>0
+            UNION SELECT a.atttypid FROM pg_attribute a
+              WHERE a.attrelid=t.typrelid AND a.attnum>0 AND NOT a.attisdropped
+          ) dependency
+    ) SELECT NOT EXISTS(SELECT 1 FROM used u JOIN pg_type t ON t.oid=u.oid
+        JOIN pg_namespace n ON n.oid=t.typnamespace
+        WHERE n.nspname NOT IN ('pg_catalog',:schema))"""), {'schema':schema}).scalar_one())
     rows = conn.execute(text("""SELECT c.relname,c.relkind,c.relispartition,
         coalesce(jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attidentity,a.attgenerated,pg_get_expr(d.adbin,d.adrelid),coll.collname) ORDER BY a.attnum) FILTER (WHERE a.attnum IS NOT NULL),'[]'::jsonb)::text
         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -278,10 +308,13 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
     import os
     from pathlib import Path
     import selectors
-    import signal
     import subprocess
+    import sys
     import time
     from .privacy.private_io import write_private
+    # Process groups alone cannot account for a detached descendant. The
+    # dedicated Linux guardian uses kernel adoption; unsupported hosts refuse.
+    require(sys.platform == 'linux')
     require(type(pg_dump) is type(Path()) and pg_dump.is_absolute() and pg_dump.is_file())
     require(type(destination) is type(Path()) and destination.is_absolute() and not destination.exists() and not destination.is_symlink())
     url = engine.url
@@ -296,7 +329,8 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
     # Existing provider TLS root may be explicitly selected by this URL.
     if 'sslrootcert' in url.query:
         environ['PGSSLROOTCERT'] = url.query['sslrootcert']
-    command = [str(pg_dump), '--format=custom', '--no-owner', '--no-privileges', '--no-password', '--schema='+schema, '--snapshot='+snapshot]
+    command = [sys.executable, '-I', str(Path(__file__).with_name('recovery_process.py')),
+        str(pg_dump), '--format=custom', '--no-owner', '--no-privileges', '--no-password', '--schema='+schema, '--snapshot='+snapshot]
     process = subprocess.Popen(command, env=environ, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True)
     selector = selectors.DefaultSelector()
     selector.register(process.stdout, selectors.EVENT_READ)
@@ -313,8 +347,7 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
                 content.extend(block)
                 require(len(content) <= MAX_TOTAL_BYTES)
         require(process.wait(timeout=max(0.1, deadline-time.monotonic())) == 0)
-        # The dedicated child group must be empty after reaping pg_dump. An
-        # exited launcher cannot orphan a descendant and still certify closure.
+        # The guardian certifies its whole adopted tree, not just a process group.
         try:
             os.killpg(process.pid, 0)
         except ProcessLookupError:
@@ -327,11 +360,14 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
         return hashlib.sha256(raw).hexdigest()
     finally:
         selector.close()
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        process.wait(timeout=5)
+        if process.poll() is None:
+            # Give the guardian its bounded owned-child cleanup before forcing
+            # termination. A forced guardian can never produce an accepted dump.
+            process.terminate()
+            try:process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
         process.stdout.close()
 
 

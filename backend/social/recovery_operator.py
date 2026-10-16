@@ -19,8 +19,14 @@ from .privacy.restoration import reapply_deletion_ledger
 from .recovery_database import export_database_backup, verify_database_restore, MAX_TOTAL_BYTES, MAX_MANIFEST
 
 
+class PrivateParser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse's ordinary diagnostic includes unknown private arguments.
+        raise ValueError('RECOVERY_OPERATOR_REFUSED')
+
+
 def main(argv=None):
-    parser=argparse.ArgumentParser(description=__doc__)
+    parser=PrivateParser(description=__doc__, allow_abbrev=False)
     parser.add_argument('operation', choices=('export','verify','rotate','reapply-ledger'))
     parser.add_argument('--database-url-env', required=True)
     parser.add_argument('--schema', default='public')
@@ -35,9 +41,13 @@ def main(argv=None):
     parser.add_argument('--subject-proofs', type=Path)
     parser.add_argument('--ledger-entry', type=Path, action='append', default=[])
     parser.add_argument('--apply', action='store_true', help='Explicitly apply local rotation/suppression; publication must remain paused.')
-    args=parser.parse_args(argv)
     engine=None
+    result=None
     try:
+        try:args=parser.parse_args(argv)
+        except SystemExit as error:
+            if type(error.code) is int and error.code == 0:return 0
+            raise ValueError('RECOVERY_OPERATOR_REFUSED') from None
         if not re.fullmatch('[A-Z][A-Z0-9_]{0,127}', args.database_url_env):
             raise ValueError()
         url=os.environ.get(args.database_url_env)
@@ -71,13 +81,18 @@ def main(argv=None):
             if args.current_keyring is None or args.trusted_public_key is None or not 1<=len(args.ledger_entry)<=1000:raise ValueError()
             entries=[read_private(path,512_000) for path in args.ledger_entry]
             with Session(engine) as db:result=reapply_deletion_ledger(db,entries,public_key=read_private(args.trusted_public_key,32),cipher=read_keyring_backup(args.current_keyring).cipher(),apply=args.apply)
-        print(json.dumps(result,sort_keys=True))
-        return 0
-    except Exception:
+    except BaseException:
+        result=None
+    finally:
+        if engine is not None:
+            try:engine.dispose()
+            except BaseException:result=None
+    # A cleanup failure must invalidate success before anything is printed.
+    if result is None:
         print(json.dumps({'status':'REFUSED','code':'RECOVERY_OPERATOR_REFUSED','production_authorized':False}))
         return 1
-    finally:
-        if engine is not None:engine.dispose()
+    print(json.dumps(result,sort_keys=True))
+    return 0
 
 if __name__=='__main__':
     raise SystemExit(main())
