@@ -1,9 +1,11 @@
 # Generated drafts and shadow decisions
 
-This package creates factual drafts and advisory decisions. It never authorizes,
-schedules or publishes. Existing database constraints continue to require human
-authorization and keep legacy generation/automatic approval/scheduling/publishing
-flags false. Separate draft/shadow controls default false and require an audited
+This package creates factual drafts and advisory decisions. Its committed-event
+seam also invokes the separately guarded, default-off selective-policy path in
+`../automation`. Shadow rules never authorize a post. Policy authorization needs
+an independent immutable snapshot and approved operating evidence; see that
+package's README. Legacy generation remains false; the independent policy
+approval/schedule/publish controls default false. Separate draft/shadow controls default false and require an audited
 administrator command. No startup scan, cron, new worker, AI service or backfill runs.
 An optional existing-ETL post-commit hook additionally requires the exact
 SOCIAL_GENERATION_HOOK_ENABLED=true environment ceiling (default false).
@@ -80,7 +82,7 @@ source/freshness/control state is checked before returning a matching historical
 context. Changed state creates another immutable context/decision; identical
 contexts deduplicate. Cadence counts distinct other revisions, avoiding duplicate
 reservations or self-blocking. All decisions remain advisory and require human
-approval, including would_allow results. No live authorization path is present.
+approval, including would_allow results. The separate selective-policy path cannot reuse a shadow decision as authority.
 
 The admin Automation page exposes controls, bounded detection, immutable rule
 versions and paginated history. Generated composer evidence loads separately;

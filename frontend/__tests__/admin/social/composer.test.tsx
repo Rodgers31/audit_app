@@ -226,3 +226,19 @@ test('system status never fabricates worker health and uses versioned pause comm
   fireEvent.click(screen.getByRole('button', { name: 'Confirm pause' }));
   await waitFor(() => expect(patch).toHaveBeenCalledWith('/admin/social/controls', { expected_version: 1, publishing_enabled: false, reason: 'Editorial hold' }, expect.any(Object)));
 });
+
+
+test('policy-authorized revision cannot enter human schedule controls', async () => {
+  const p = post({ editorial_state: 'approved', targets: [target('ready')], publication: { approved_by: null } });
+  get.mockResolvedValue({ data: p }); mount(p);
+  expect(screen.queryByRole('region', { name: 'Schedule management' })).not.toBeInTheDocument();
+  expect(screen.getByText(/Authorized by an approved policy/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
+  if (process.env.B15_POLICY_UI_OUTPUT) {
+    const { mkdirSync, readFileSync, writeFileSync } = await import('fs');
+    const { resolve } = await import('path');
+    const directory = resolve(process.env.B15_POLICY_UI_OUTPUT); mkdirSync(directory, { recursive: true });
+    const css = readFileSync(resolve('components/admin/social/social.module.css'), 'utf8');
+    writeFileSync(resolve(directory, 'policy.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inert policy compatibility fixture</title><style>${css}</style></head><body style="margin:0;font-family:Arial,sans-serif;padding:20px"><p>OWNED INERT FIXTURE · NO LIVE ACCOUNTS</p>${document.body.innerHTML}</body></html>`);
+  }
+});
