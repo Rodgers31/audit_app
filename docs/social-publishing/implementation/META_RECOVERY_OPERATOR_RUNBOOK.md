@@ -91,15 +91,35 @@ purpose/namespace, version inventory, access policy and backup lifecycle.
 Never reuse/import the envelope export as a digest keyset. This helper reports
 `digest_keys_verified:false` on every result.
 
-The privacy owner must add independent original/restored digest instances with
-inert subjects: same app/subject/version yields the exact persisted lookup and
-frozen receipt/affected-set references after restart; unrelated app/subject/key
-fails; active rotation still finds old mappings/retries; new mappings survive
-restart; missing/wrong/corrupt versions cause unresolved ownership rather than
-false “no data”; failed persist cannot activate an unbacked version; retiring
-either old or new key with retained rows blocks. Then repeat against an approved
+`social.privacy.recovery.verify_subject_restoration` now supplies a bounded,
+explicit in-memory proof for up to 100 supplied ownership records. Build two
+independent `SubjectDigester` instances from separately obtained primary and
+restored digest keys. Supply `SubjectRecoveryProbe(record_id, app_id, subject,
+digest_version, stored_digest)` from an approved snapshot; subjects and keys
+remain private. Both computations must match the stored digest, not merely
+each other. Wrong or missing referenced keys, changed app/subject values,
+duplicate record IDs and an active-version mismatch refuse. A supplied version
+must select a key that reproduces the stored digest. The digest algorithm does
+not authenticate the version label: two labels with identical key bytes produce
+the same digest. Record IDs and labels must therefore come from the separately
+reconciled snapshot; this helper does not authenticate that metadata. Distinct
+rows may share a subject.
+The result contains counts and version labels only and explicitly leaves
+database coverage, backup custody and production authorization unverified.
+This helper reads no database or secret store, writes nothing, and is not
+automatically invoked by the app or worker.
+
+The privacy owner must still demonstrate complete restored inventory coverage
+and frozen receipt/affected-set references after restart; active rotation must
+find old mappings/retries, and new mappings must survive restart. Missing,
+wrong or corrupt versions must cause unresolved ownership rather than false
+“no data”; failed persistence must not activate an unbacked version; retiring
+either old or new key with retained rows must block. Repeat against an approved
 restored clone with real namespace/version coverage and deletion ledger
-reapplication. This runbook does not implement that privacy code or certify it.
+reapplication. The helper does not implement the rotation/retirement workflow
+or certify those broader operating gates. Existing credential-envelope results
+continue to report `digest_keys_verified:false`; the separate scoped proof
+does not silently upgrade them to complete recovery acceptance.
 
 ## Ingress verification checklist with safe synthetic probes
 
