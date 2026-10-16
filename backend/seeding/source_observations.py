@@ -118,7 +118,13 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
                    and entry.get("data_quality") == "official"]
         if len(entries) != 1:
             raise SourceObservationUnavailable("Exact record ingestion lineage unavailable")
-        q = qualify_rows(db, "budget_lines", [row])[row.id]["actual_spent"]
+        # Historical observations remain immutable. Only this exact requested
+        # ingestion entry can establish the current record's claim; combining
+        # older acquisitions would misclassify a legitimate new run as ambiguous.
+        from types import SimpleNamespace
+        view = SimpleNamespace(**{column.key: getattr(row, column.key) for column in row.__table__.columns})
+        view.provenance = entries
+        q = qualify_rows(db, "budget_lines", [view])[row.id]["actual_spent"]
         if (q["status"] != "verified" or q["source_kind"] != "pdf"
                 or q["document_bytes_checked"] is not True or q["value_checked"] is not True
                 or q["identity"]["basis"] != "actual"
@@ -147,6 +153,20 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
             published = date.fromisoformat(meta["publication_date"])
         except (ValueError, TypeError, KeyError):
             raise SourceObservationUnavailable("Publisher publication date unavailable") from None
+        if "publication_date_evidence" in meta:
+            proof = meta["publication_date_evidence"]
+            if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
+                    or proof.get("digest") != q["digest"] or proof.get("request_url") != doc.url
+                    or type(proof.get("extraction_id")) is not int):
+                raise SourceObservationUnavailable("Exact publisher date artifact evidence required")
+            dated = db.get(Extraction, proof["extraction_id"])
+            dated_receipt = dated.extracted_json.get("response_receipt") if dated and isinstance(dated.extracted_json, dict) else None
+            observation = {key: value for key, value in proof.items() if key != "extraction_id"}
+            if (dated is None or dated.source_document_id != doc.id or dated.extractor != "cob-publication-date-v1"
+                    or type(dated_receipt) is not dict or dated_receipt.get("digest") != q["digest"]
+                    or dated_receipt.get("request_url") != doc.url or dated_receipt.get("observations") != [observation]
+                    or dated_receipt.get("byte_check", {}).get("status") != "matched"):
+                raise SourceObservationUnavailable("Stored publisher date receipt required")
         extraction = db.get(Extraction, q["receipt_id"])
         receipt = extraction.extracted_json["response_receipt"]
         if receipt["request_url"] != doc.url:

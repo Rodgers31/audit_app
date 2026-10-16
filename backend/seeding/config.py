@@ -15,6 +15,18 @@ from .utils import parse_rate_limit
 class SeedingSettings(BaseSettings):
     """Configuration options controlling seeding behaviour."""
 
+    cob_verified_qualification_enabled: bool = Field(
+        default=False,
+        description="Operator qualification of newly inserted CoB PDF rows only; never clears existing holds.",
+    )
+
+    @field_validator("cob_verified_qualification_enabled", mode="before")
+    @classmethod
+    def explicit_cob_qualification(cls, value):
+        if type(value) is not bool and (type(value) is not str or value not in ("true", "false")):
+            raise ValueError("CoB qualification requires true or false")
+        return value
+
     cra_ingestion_enabled: bool = Field(
         default=False,
         description="Explicit opt-in to the reviewed CRA FY2026/27 Table 5.2 edition; no automatic source rollout.",

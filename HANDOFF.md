@@ -1,4 +1,66 @@
-# B15 ETL delivery — scoped implementation, not full original-plan closure
+# CoB producer qualification follow-up (local candidate)
+
+This managed checkout is `/Users/roger/.codex/worktrees/b15-cob-qualification/audit_app`,
+branch `codex/b15-cob-qualification`, based on ETL706 delivery
+`dda109ca70859a8c7686e01411262f12d8e0e67c`. It is a follow-up to the original
+ETL handoff preserved below, not a claim that this candidate was already in706.
+No push, PR, merge, production configuration or activation was performed here.
+
+The selected CoB actual-spending producer now captures a genuine explicitly
+labelled full publisher date from bounded PDF pages, preserves its exact retained
+byte/date/cell proof, and can qualify **new** records only under the separate
+strict default-off `SEED_COB_VERIFIED_QUALIFICATION_ENABLED` operator switch.
+Existing withheld rows/manual holds never promote. Unchanged existingTrue rows
+stayTrue with the switch off; changed values/source identity/artifacts instead
+withhold with an explicit reason. Exact requested-ingestion qualification keeps
+all historical provenance and permits legitimate repeated/new source runs.
+Prospective stored publisher-date evidence is rechecked against its own receipt.
+See `docs/social-publishing/COB_GENERATION_QUALIFICATION.md` for scope and limitations.
+
+Combined-candidate integration explicitly depends on generation704 head
+`2f3b36e2749a48dbe7d93f001081ddc756a61412`. The PostgreSQL tests load that
+peer's social package and complete migration chain without modifying peer files.
+They use actual small valid PDFs, pdfplumber's real CoB parser, retained simulated
+HTTP response bytes, the actual writer and committed readers, and the actual704
+hook/semantic-event/pending-review service. These simulated acquisitions are not
+real publisher or production acceptance. No generation code is copied into this
+branch; the coordinator must combine704+706+this increment before release.
+
+Evidence root:
+`/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/cob-producer-evidence`.
+`bound-normal-f3eeae3cee6441c1911e3ab5e17dbda7/receipt.json` and
+`bound-optimized-e181f851b1e44aa4b6b2708b008d48aa/receipt.json` bind complete
+own+704 tracked/untracked backend source and fixture inventories before/after
+execution, safe child environment/argv, raw output/JUnit and45 unique passes with
+zero skipped/error/failure cases in each mode. These are the same45 cases, not90
+unique tests. Runtime is Python3.14 with the existing read-only borrowed cached
+dependency runtime and owned PostgreSQL17; Python3.12/full minimum parity is not
+claimed. Fixture `b15-cobq-UUID` uses cached image/no pull, tmpfs storage and
+loopback55424, and is removed and port-rebound after each module. Recorder confirms
+no retained fixture container/process group.
+
+The exact accepted-writer Git blob overlay was seen red: real PDF/parser/writer
+rows stayed unpublished, so the integration could not baseline. The exact real
+two-ingestion path was seen red on the old reader's all-history qualification,
+then passed after the requested-ingestion projection. Root review's supported
+null source metadata regression was seen red at the new snapshot comprehension,
+then fixed by reusing `_source_metadata_for_update`. Earlier harness mistakes
+and incomplete diagnostic cohorts remain labelled in `HISTORICAL_RUNS.json`.
+Independent Standards found the inherited Nairobi/Nairobi City County binder
+disagreement: the actual normal canonical-name producer was seen red, then the
+one established alias was aligned with the shared figure qualifier. A different
+county remains refused. Root's independent pre-alias Spec replay passed13
+PostgreSQL cases. Post-alias independent Standards passed the same18 external
+SQLite controls normally and optimized. Their scopes remain separate from the
+final45-case bound pair. Review reports and local commit identity are recorded
+in the external delivery report.
+
+No local activation or real source request occurred. Publishing/uploads remain
+off. Unsupported/month-only/date-less reports stay unavailable; no dates are
+inferred and no other source/measure adapter is invented. This fixes selected
+source coding, not the remaining native analytics/policy/provider/live gates.
+
+# Original B15 ETL delivery — scoped implementation, not full original-plan closure
 
 Draft PR: https://github.com/Rodgers31/audit_app/pull/706. Checkout `/Users/roger/.codex/worktrees/b15-etl/audit_app`; branch `codex/b15-etl`. Accepted base `06896185005d822c4b29888138b984510dd1fdbd`; exact implementation head `8680685af63bfa8667445409c39726b869bc2d2f`. The final documentation-only delivery head is recorded after commit in the external `DELIVERY_FINAL_V1.json` and shared `lane/etl-status.md` (a document cannot embed its own Git commit hash).
 
