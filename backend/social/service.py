@@ -239,21 +239,31 @@ class SocialService:
 
     def _authorize(self, post, revision, publication, body, validation):
         if publication:
+            if publication.authorization_kind != "human":
+                raise SocialError("POLICY_COMMAND_REQUIRED", "Use the policy scheduling command or revise for human approval.")
             if publication.revision_id != revision.id or publication.approved_hash != revision.content_hash:
                 raise SocialError("VERSION_CONFLICT", "The active authorization does not match this revision.")
             if publication.cancel_requested_at:
                 raise SocialError("INVALID_STATE", "This publication was cancelled. Create a new revision or duplicate it.")
             return publication
-        now = self.now()
-        publication = SocialPublication(id=uuid4(), post_id=post.id, revision_id=revision.id, authorization_kind="human", approved_by=self.actor, approved_at=now, approved_hash=revision.content_hash)
+        previous = post.editorial_state
+        publication = self._store_authorization(post, revision, validation)
+        post.editorial_state = "approved"
+        self.audit("post.approved", post=post, previous=previous, new="approved", details={"publication_id": str(publication.id), "revision_id": str(revision.id), "content_hash": revision.content_hash, "attestation": body.review_attestation.model_dump() if body.review_attestation else None})
+        self.db.flush()
+        return publication
+
+    def _store_authorization(self, post, revision, validation, *, authorization_kind="human", policy_id=None, policy_version=None, policy_decision_id=None):
+        publication = SocialPublication(id=uuid4(), post_id=post.id, revision_id=revision.id,
+            authorization_kind=authorization_kind, approved_by=self.actor if authorization_kind == "human" else None,
+            approved_at=self.now(), approved_hash=revision.content_hash, policy_id=policy_id,
+            policy_version=policy_version, policy_decision_id=policy_decision_id)
         self.db.add(publication)
         self.db.flush()
         for result in validation.targets:
             payload = result.resolved_preview
             self.db.add(SocialPostTarget(id=uuid4(), publication_id=publication.id, account_id=result.account_id, resolved_payload=payload.model_dump(mode="json"), payload_hash=payload.content_hash, capability_version=payload.capability_version, state="ready"))
-        previous = post.editorial_state
         post.editorial_state = "approved"
-        self.audit("post.approved", post=post, previous=previous, new="approved", details={"publication_id": str(publication.id), "revision_id": str(revision.id), "content_hash": revision.content_hash, "attestation": body.review_attestation.model_dump() if body.review_attestation else None})
         self.db.flush()
         return publication
 
@@ -277,6 +287,9 @@ class SocialService:
 
     def _publishing_gates(self, post, revision, body):
         """All outbound admin commands use the same current policy gates."""
+        active = self._publication(post)
+        if active and active.authorization_kind != "human":
+            raise SocialError("POLICY_COMMAND_REQUIRED", "Policy authority cannot be reused by a human queue command.")
         controls = self.db.get(SocialControls, 1)
         if not controls or not controls.publishing_enabled:
             raise SocialError("PUBLISHING_PAUSED", "Publishing is paused. Your draft is preserved.")
@@ -303,6 +316,12 @@ class SocialService:
             if scheduled and due != utc(publication.scheduled_for):
                 raise SocialError("INVALID_STATE", "This revision is already queued with another schedule. Cancel it and revise the draft before scheduling again.")
             return self.accepted(post, publication)
+        return self._queue_authorization(post, publication, result, due,
+            timezone=body.schedule.timezone if scheduled else "UTC",
+            local_time=body.schedule.local_time if scheduled else due.replace(tzinfo=None).isoformat(), scheduled=scheduled)
+
+    def _queue_authorization(self, post, publication, result, due, *, timezone, local_time, scheduled=True):
+        now = self.now()
         # Use the frozen approved targets; never silently replace the selected subset.
         frozen = {t.account_id: t for t in self._targets(publication)}
         if set(frozen) != {t.account_id for t in result.targets}:
@@ -312,10 +331,11 @@ class SocialService:
             if target.payload_hash != validated.resolved_preview.content_hash:
                 raise SocialError("REVISION_INTEGRITY_FAILED", "The account or media changed after approval. Create and approve a new revision.")
         publication.scheduled_for = due
-        publication.schedule_timezone = body.schedule.timezone if scheduled else "UTC"
-        publication.requested_local_time = body.schedule.local_time if scheduled else due.replace(tzinfo=None).isoformat()
-        publication.start_deadline = due + timedelta(hours=1)
-        publication.retry_deadline = due + timedelta(hours=24)
+        publication.schedule_timezone = timezone
+        publication.requested_local_time = local_time
+        validity = utc(publication.content_valid_until) if publication.content_valid_until else None
+        publication.start_deadline = min(due + timedelta(hours=1), validity) if validity else due + timedelta(hours=1)
+        publication.retry_deadline = min(due + timedelta(hours=24), validity) if validity else due + timedelta(hours=24)
         publication.dispatch_requested_at = now
         publication.version += 1
         publication.updated_at = now
@@ -476,6 +496,8 @@ class SocialService:
         account = self.db.scalar(select(SocialAccount).where(SocialAccount.id == initial.account_id).with_for_update())
         publication = self.db.scalar(select(SocialPublication).where(SocialPublication.id == initial.publication_id).with_for_update())
         target = self.db.scalar(select(SocialPostTarget).where(SocialPostTarget.id == target_id).with_for_update().execution_options(populate_existing=True))
+        if publication.authorization_kind != "human":
+            raise SocialError("POLICY_COMMAND_REQUIRED", "Policy retries require fresh worker admission.")
         if target.state in {"outcome_unknown", "reconciling", "dispatching", "processing"}:
             raise SocialError("RECONCILIATION_REQUIRED", "The prior send may have been accepted. Reconcile it before any retry.")
         if target.state != "failed" or target.primary_remote_id or target.published_at:
@@ -535,7 +557,7 @@ class SocialService:
         controls.updated_by, controls.updated_at = self.actor, self.now()
         self.audit("controls.updated", reason=body.reason, details={"publishing_enabled": controls.publishing_enabled, "version": controls.version})
         self.db.flush()
-        return {"version": controls.version, "publishing_enabled": controls.publishing_enabled, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        return {"version": controls.version, "publishing_enabled": controls.publishing_enabled, "generation_enabled": False, "auto_approve_enabled": bool(controls and controls.auto_approve_enabled), "auto_schedule_enabled": bool(controls and controls.auto_schedule_enabled), "auto_publish_enabled": bool(controls and controls.auto_publish_enabled)}
 
     def _target_dto(self, target):
         return {"id": str(target.id), "account_id": str(target.account_id), "platform": target.resolved_payload["platform"], "state": target.state, "remote_url": target.remote_url, "safe_error_message": target.safe_error_message, "next_action_at": iso(target.next_action_at), "published_at": iso(target.published_at)}
@@ -563,7 +585,7 @@ class SocialService:
         return "queued"
 
     def _publication_dto(self, publication):
-        return {"id": str(publication.id), "revision_id": str(publication.revision_id), "version": publication.version, "approved_at": iso(publication.approved_at), "approved_by": str(publication.approved_by), "scheduled_for": iso(publication.scheduled_for), "schedule_timezone": publication.schedule_timezone, "requested_local_time": publication.requested_local_time, "cancel_requested_at": iso(publication.cancel_requested_at)} if publication else None
+        return {"id": str(publication.id), "revision_id": str(publication.revision_id), "version": publication.version, "approved_at": iso(publication.approved_at), "approved_by": str(publication.approved_by) if publication.approved_by else None, "scheduled_for": iso(publication.scheduled_for), "schedule_timezone": publication.schedule_timezone, "requested_local_time": publication.requested_local_time, "cancel_requested_at": iso(publication.cancel_requested_at)} if publication else None
 
     def _compact_publications(self, post_ids):
         from types import SimpleNamespace
@@ -627,7 +649,7 @@ class SocialService:
         ).where(target.state.in_(("published", "failed", "cancelled", "outcome_unknown", "blocked", "reconciling")))
 
     def _historical_target_dto(self, row):
-        return {key: str(row[key]) if key in {"id", "publication_id", "revision_id", "account_id", "approved_by"}
+        return {key: str(row[key]) if row[key] is not None and key in {"id", "publication_id", "revision_id", "account_id", "approved_by"}
             else iso(row[key]) if key in {"next_action_at", "published_at", "updated_at", "approved_at", "scheduled_for", "cancel_requested_at", "revoked_at"}
             else row[key] for key in row if key not in {"post_id", "history_rank", "history_count", "total"}}
 
@@ -707,7 +729,7 @@ class SocialService:
                 worker_state = heart.state
         counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
         available = sorted({key[0] if isinstance(key, tuple) else key for key in self.available_adapters})
-        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": available, "media_upload_available": bool(self.media_runtime is not None and self.media_runtime.available_mimes()), "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": available, "media_upload_available": bool(self.media_runtime is not None and self.media_runtime.available_mimes()), "generation_enabled": False, "auto_approve_enabled": bool(controls and controls.auto_approve_enabled), "auto_schedule_enabled": bool(controls and controls.auto_schedule_enabled), "auto_publish_enabled": bool(controls and controls.auto_publish_enabled)}
 
     def accepted(self, post, publication):
         targets = self._targets(publication)

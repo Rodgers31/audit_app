@@ -125,6 +125,8 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     revision = svc._new_revision(post, document, references, 1, evidence_snapshot=evidence, generator_metadata={'template_version': TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]})
     svc.audit('generation.draft_created', post=post, new='pending_review', details={'event_id': str(event.id), 'sequence': event.sequence, 'revision_id': str(revision.id), 'content_hash': revision.content_hash, 'backfill': backfill})
     svc.db.flush()
+    from ..automation.service import maybe_automate_generated
+    maybe_automate_generated(svc, post)
     return {'status': 'draft_created', 'event_id': str(event.id), 'post_id': str(post.id), 'sequence': event.sequence}
 
 
@@ -148,6 +150,10 @@ class GenerationService:
     def save_rule(self, rule_id, body):
         body = RuleCommand.model_validate(body.model_dump(mode='json'))
         controls(self.db, lock=True)
+        # Rule disable/supersession uses the same final ordering point as
+        # source events, policy authorization and worker mutation permits.
+        from ..automation.service import global_controls
+        global_controls(self.db)
         latest = self.db.scalar(select(AutomationRuleVersion).where(AutomationRuleVersion.rule_id == rule_id).order_by(AutomationRuleVersion.version.desc()).limit(1))
         if (latest.version if latest else 0) != body.expected_version:
             raise SocialError('VERSION_CONFLICT', 'This rule changed. Refresh its immutable version history.')
@@ -246,12 +252,13 @@ def decision_dto(row):
     return {'id': str(row.id), 'post_id': str(row.post_id), 'revision_id': str(row.revision_id), 'rule_version_id': str(row.rule_version_id), 'content_hash': row.content_hash, 'outcome': row.outcome, 'reasons': row.reasons, 'account_ids': row.account_ids, 'inputs': row.inputs, 'created_at': iso(row.created_at)}
 
 
-def verify_generated_revision(db, post, revision):
+def verify_generated_revision(db, post, revision, *, lock=True):
     """An old or detached evidence event cannot authorize a generated revision."""
     if post.origin_type != 'generated':
         return
     event = db.get(SourceEvent, post.source_event_id) if post.source_event_id else None
-    cursor = db.scalar(select(SourceCursor).where(SourceCursor.id == event.cursor_id).with_for_update().execution_options(populate_existing=True)) if event else None
+    stmt = select(SourceCursor).where(SourceCursor.id == event.cursor_id).execution_options(populate_existing=True) if event else None
+    cursor = db.scalar(stmt.with_for_update() if lock else stmt) if event else None
     if not event or not cursor or cursor.sequence != event.sequence:
         raise SocialError('SOURCE_REVIEW_REQUIRED', 'Source evidence changed. Review the newer generated draft.', 422)
     if revision.evidence_snapshot.get('source_event_id') != str(event.id) or revision.evidence_snapshot.get('source') != event.observation:

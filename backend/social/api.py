@@ -35,7 +35,7 @@ class PublicationDTO(StrictModel):
     scheduled_for: Union[datetime, None]
     version: int
     approved_at: datetime
-    approved_by: UUID
+    approved_by: Union[UUID, None]
     schedule_timezone: Union[str, None]
     requested_local_time: Union[str, None]
     cancel_requested_at: Union[datetime, None]
@@ -44,7 +44,7 @@ class HistoricalTargetDTO(TargetDTO):
     publication_id: UUID
     revision_id: UUID
     approved_at: datetime
-    approved_by: UUID
+    approved_by: Union[UUID, None]
     scheduled_for: Union[datetime, None]
     cancel_requested_at: Union[datetime, None]
     revoked_at: Union[datetime, None]
@@ -129,9 +129,9 @@ class ControlsDTO(StrictModel):
     version: int
     publishing_enabled: bool
     generation_enabled: Literal[False]
-    auto_approve_enabled: Literal[False]
-    auto_schedule_enabled: Literal[False]
-    auto_publish_enabled: Literal[False]
+    auto_approve_enabled: StrictBool
+    auto_schedule_enabled: StrictBool
+    auto_publish_enabled: StrictBool
 
 class WorkerDTO(StrictModel):
     state: str
@@ -146,9 +146,9 @@ class SystemDTO(StrictModel):
     adapters_available: tuple[str, ...]
     media_upload_available: StrictBool
     generation_enabled: Literal[False]
-    auto_approve_enabled: Literal[False]
-    auto_schedule_enabled: Literal[False]
-    auto_publish_enabled: Literal[False]
+    auto_approve_enabled: StrictBool
+    auto_schedule_enabled: StrictBool
+    auto_publish_enabled: StrictBool
 
 def service(request: Request, db: Session=Depends(get_db)):
     from .worker.native_runtime import registered_adapters
@@ -265,3 +265,6 @@ router.include_router(connection_router)
 router.include_router(media_router)
 from .generation.api import router as generation_router
 router.include_router(generation_router)
+
+from .automation.api import router as automation_router
+router.include_router(automation_router)

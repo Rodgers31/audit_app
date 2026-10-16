@@ -152,7 +152,8 @@ class SocialPublication(Base):
     authorization_kind = Column(Text, nullable=False, default="human")
     approved_by = Column(Uuid(as_uuid=True))
     approved_at = Column(TZ, nullable=False)
-    policy_id = Column(Uuid(as_uuid=True))  # Staged policy FK; unsupported for this batch.
+    policy_id = Column(Uuid(as_uuid=True))
+    policy_decision_id = Column(Uuid(as_uuid=True))
     policy_version = Column(Integer)
     approved_hash = Column(String(64), nullable=False)
     scheduled_for = Column(TZ)
@@ -170,7 +171,8 @@ class SocialPublication(Base):
     __table_args__ = (
         ForeignKeyConstraint(["revision_id", "post_id"], ["social_post_revisions.id", "social_post_revisions.post_id"], name="fk_social_publication_revision"),
         UniqueConstraint("revision_id", name="uq_social_publication_revision"),
-        CheckConstraint("authorization_kind = 'human' AND approved_by IS NOT NULL AND policy_id IS NULL AND policy_version IS NULL", name="ck_social_publication_human"),
+        CheckConstraint("(authorization_kind = 'human' AND approved_by IS NOT NULL AND policy_id IS NULL AND policy_version IS NULL AND policy_decision_id IS NULL) OR (authorization_kind = 'policy' AND approved_by IS NULL AND policy_id IS NOT NULL AND policy_version IS NOT NULL AND policy_version > 0 AND policy_decision_id IS NOT NULL)", name="ck_social_publication_human"),
+        ForeignKeyConstraint(['policy_decision_id', 'policy_id', 'policy_version', 'post_id', 'revision_id', 'approved_hash'], ['social_policy_decisions.id', 'social_policy_decisions.snapshot_id', 'social_policy_decisions.policy_version', 'social_policy_decisions.post_id', 'social_policy_decisions.revision_id', 'social_policy_decisions.content_hash'], name='fk_social_publication_policy_authority'),
         CheckConstraint("version > 0", name="ck_social_publication_version"),
         Index("uq_social_publication_active_post", "post_id", unique=True, postgresql_where=text("revoked_at IS NULL"), sqlite_where=text("revoked_at IS NULL")),
         Index("ix_social_publication_schedule", "scheduled_for"),
@@ -285,7 +287,7 @@ class SocialControls(Base):
     version = Column(BigInteger, nullable=False, default=1, server_default="1")
     updated_by = Column(Uuid(as_uuid=True))
     updated_at = updated()
-    __table_args__ = (CheckConstraint("id = 1 AND version > 0", name="ck_social_controls_singleton"), CheckConstraint("NOT generation_enabled AND NOT auto_approve_enabled AND NOT auto_schedule_enabled AND NOT auto_publish_enabled", name="ck_social_controls_automation_off"))
+    __table_args__ = (CheckConstraint("id = 1 AND version > 0", name="ck_social_controls_singleton"), CheckConstraint("NOT generation_enabled AND (NOT auto_publish_enabled OR auto_schedule_enabled) AND (NOT auto_schedule_enabled OR auto_approve_enabled)", name="ck_social_controls_automation_off"))
     __mapper_args__ = {"version_id_col": version, "version_id_generator": False}
 
 
@@ -327,7 +329,7 @@ SOCIAL_TABLES = tuple(table for table in Base.metadata.tables.values() if table.
 @event.listens_for(SocialPublication, "before_update")
 def immutable_authorization(mapper, connection, target):
     state = inspect(target)
-    for key in ("post_id", "revision_id", "authorization_kind", "approved_by", "approved_at", "policy_id", "policy_version", "approved_hash"):
+    for key in ("post_id", "revision_id", "authorization_kind", "approved_by", "approved_at", "policy_id", "policy_version", "policy_decision_id", "approved_hash"):
         if state.attrs[key].history.has_changes():
             raise ValueError("Social authorization is immutable")
 
