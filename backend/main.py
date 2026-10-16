@@ -1959,6 +1959,10 @@ from social.http_policy import SocialNoStoreMiddleware
 
 app.add_middleware(SocialNoStoreMiddleware)
 app.include_router(social_admin_router)
+from social.studio.api import router as social_studio_router
+app.include_router(social_studio_router)
+from social.studio.runtime import configure_studio
+configure_studio(app)
 logger.info("Social admin router registered at /api/v1/admin/social")
 
 # Explicit privacy ingress can stay enabled after new Meta connections are
