@@ -289,3 +289,8 @@ Before any separately approved operational acceptance:
   roles, owned-account identity and approved worker/media acceptance separately.
   Keep publishing, uploads, native delivery and retained writes OFF throughout
   this engineering slice. Chrome acceptance is unexecuted in this lane.
+
+
+### Nullable account credential references (#688)
+
+The inventory accounts projection includes unlinked accounts: credential_id may be null, matching SocialAccount's nullable foreign key. Nonnull values must remain canonical UUIDs present in the complete credential inventory; null does not remove the account row from its independent manifest commitment. The coordinator reproduced the null-reference refusal on the original PR source, then verified eight optional/dangling/malformed reference controls. The affected recovery cohort passes273 tests; the inventory cohort passes144 in optimized Python. Snapshot coverage continues to establish neither live database completeness, independent backup custody, nor production/deletion/retirement authority. This change performs no live restore or key operation.

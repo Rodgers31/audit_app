@@ -262,7 +262,8 @@ def _inventory(tables):
     for row in receipts.values():
         _require(any(v['receipt_id'] == row['id'] and v['fingerprint'] == row['request_fingerprint'] for v in tables['variants'].values()))
     for row in tables['accounts'].values():
-        _require(_uuid(row['credential_id']) in credentials)
+        credential_id = _optional_uuid(row['credential_id'])
+        _require(credential_id is None or credential_id in credentials)
     _require(envelopes and subjects)
     return tuple(envelopes), subjects
 

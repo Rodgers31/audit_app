@@ -104,6 +104,28 @@ def test_complete_supplied_snapshot_and_candidate_rotation(inventory):
     assert '200' not in repr(result)
 
 
+@pytest.mark.parametrize('credential_id', [None, uid(1), uid(2)])
+def test_inventory_includes_accounts_with_optional_credential(inventory, credential_id):
+    row = {'id': uid(10), 'credential_id': credential_id}
+    inventory.source['tables']['accounts'].append(row)
+    inventory.restored = deepcopy(inventory.source)
+    inventory.manifest['records']['accounts'][row['id']] = commitment(row)
+    result = inventory.verify()
+    assert result['records_verified'] == 10
+    assert result['snapshot_coverage_verified'] is True
+    assert result['production_authorized'] is False
+
+
+@pytest.mark.parametrize('credential_id', [uid(999), '', False, 0, 'not-a-uuid'])
+def test_optional_account_credential_still_refuses_dangling_or_malformed_values(inventory, credential_id):
+    row = {'id': uid(10), 'credential_id': credential_id}
+    inventory.source['tables']['accounts'].append(row)
+    inventory.restored = deepcopy(inventory.source)
+    inventory.manifest['records']['accounts'][row['id']] = commitment(row)
+    with pytest.raises(InventoryRecoveryError):
+        inventory.verify()
+
+
 @pytest.mark.parametrize('table', ['credentials', 'flows', 'ownership', 'receipts', 'variants', 'audits'])
 @pytest.mark.parametrize('side', ['source', 'restored', 'both'])
 def test_omitted_rows_cannot_certify_coverage(inventory, table, side):
