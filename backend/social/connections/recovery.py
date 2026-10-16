@@ -150,6 +150,10 @@ def write_keyring_backup(path: Path, ring: RecoveryKeyring):
             os.fsync(directory)
         finally:
             os.close(directory)
+        # Persistence is the authority: independently reopen before acknowledging.
+        restored = read_keyring_backup(path)
+        if encode_keyring(restored) != raw:
+            raise RecoveryError()
         return
     except (OSError, ValueError, TypeError):
         pass
