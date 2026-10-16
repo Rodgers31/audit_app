@@ -3,15 +3,17 @@ from contextlib import asynccontextmanager
 import httpx
 import pytest
 from sqlalchemy import text
-from test_domain_postgres import pg_engine
+from test_worker_role_postgres import role_database
+from social.worker.role_contract import install_worker_role
 from test_media_migration_postgres import upgrade
 from test_native_startup import ready
 
 
-def test_explicit_native_cli_scans_once_stops_and_closes_on_postgresql(pg_engine, monkeypatch):
+def test_explicit_native_cli_scans_once_stops_and_closes_on_postgresql(role_database, monkeypatch):
     import social.worker.__main__ as cli
     from social.worker.startup import native_runtime
-    upgrade(pg_engine)
+    owner, pg_engine, schema, role = role_database
+    install_worker_role(owner, role, schema)
     module = ready(monkeypatch)
     media = module.load_media_runtime({})
     closed = []
@@ -26,9 +28,8 @@ def test_explicit_native_cli_scans_once_stops_and_closes_on_postgresql(pg_engine
                 'SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED':'true'}, transport_factory=Transport) as registry:
             yield registry
     monkeypatch.setattr(cli, 'native_runtime', composition)
-    monkeypatch.setattr(cli, 'create_worker_engine', lambda config: pg_engine)
-    assert cli.main(['--database-url','postgresql://postgres@127.0.0.1:62124/social_domain_test',
-                     '--deployment-version','isolated-fixture','--once','--native-meta']) == 0
+    assert cli.main(['--database-url',pg_engine.url.render_as_string(hide_password=False),
+                     '--deployment-version','isolated-fixture','--once','--native-meta','--worker-role',role,'--database-schema',schema]) == 0
     assert closed == ['http','http','storage']
     with pg_engine.begin() as conn:
         row = conn.execute(text('SELECT state,active_claims,last_scan_at FROM social_worker_heartbeats')).one()

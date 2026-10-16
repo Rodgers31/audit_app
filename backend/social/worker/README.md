@@ -1,6 +1,6 @@
 # Durable publishing worker (batch one)
 
-The worker is a separate explicit process. No web/ETL lifespan imports it, no `.env` is read, no operational rows are seeded, and no provider adapters are registered by the CLI. Accounts, controls and provider implementations remain unavailable until their separately authorized setup. A missing adapter produces `ADAPTER_NOT_AVAILABLE`; it cannot produce a successful publication.
+The worker is a separate explicit process. No web/ETL lifespan imports it, no `.env` is read, no operational rows are seeded, and native provider adapters require explicit opt-in plus restricted-role verification. Accounts, controls and provider implementations remain unavailable until their separately authorized setup. A missing adapter produces `ADAPTER_NOT_AVAILABLE`; it cannot produce a successful publication.
 
 ```sh
 PYTHONPATH="$PWD/backend" python -m social.worker --database-url "$EXPLICIT_SOCIAL_DATABASE_URL"
@@ -34,3 +34,92 @@ PYTHONPATH="$PWD/backend" python -m pytest \
 ```
 
 `--confcutdir` avoids the existing root backend conftest's web/auth/database startup. Without an explicit test DSN, PostgreSQL tests skip truthfully. Tests execute independent worker claims, skip-locked rows, token/epoch fencing, lock ordering, account admission and expired-admission races, control-lock expiry, database failure before/after permit, upload checkpoints, processing while paused, bounded retries, independent results, malformed JSON, direct guard bypass attempts, and an actual SIGKILL after a fake remote receipt is fsynced. A fresh worker reconciles that receipt without executing a second public operation.
+
+
+## Restricted native worker login
+
+Native CLI startup now requires `--worker-role` and verifies the actual database
+login **before** constructing a queue repository or provider runtime. Plain
+non-native scans retain their existing behavior. This does not start a scheduled
+process or enable any publishing/upload setting, and does not change the API's
+separate database identity.
+
+The reviewed contract in `role_contract.py` allows SELECT on nine named worker
+tables, exact column INSERT/UPDATE grants for queue progress, attempts,
+heartbeats and worker audit events, and lock-only UPDATE(id) on controls,
+publications and credentials. Restrictive RLS policies prevent a permissive
+PUBLIC policy from enabling writes to lock-only rows or completed attempts.
+The worker cannot alter account publishing permissions, approved payloads,
+credential ciphertext, media objects, OAuth flows or privacy records, and cannot
+DELETE, TRUNCATE or grant privileges. Reading encrypted credentials is necessary
+for native dispatch; key custody and operating-system isolation are separate.
+
+An operator must separately approve and create a dedicated LOGIN role with
+NOSUPERUSER, NOBYPASSRLS, NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOINHERIT and
+CONNECTION LIMIT 2, without other memberships, ownership of any object (in any
+database, as recorded in `pg_shdepend`) or login defaults (`ALTER ROLE ... SET`). Credential creation/storage is outside these tools.
+Installation refuses existing excess access instead of silently revoking it;
+unexpected PUBLIC grants, policies or accessible SECURITY DEFINER routines may
+need a separate reviewed remediation. No role, grant or policy is created at
+import, API startup or migration.
+
+Both installation and verification inventory authority outside the worker
+tables as well: every relation and column in every non-temporary schema
+(PostgreSQL 17 MAINTAIN included), with catalog access limited to initdb's
+PUBLIC grants recorded in `pg_init_privs` plus information_schema's public views;
+catalog routines initdb withholds from PUBLIC; any accessible SECURITY DEFINER
+routine; parameter ACL rows (pg_settings hides superuser-only parameters from
+the worker); large-object, foreign-data-wrapper, foreign-server and user-mapping
+access; and login defaults, since `SET LOCAL ROLE` never applies them. A
+database-wide default may set only built-in user-context parameters or custom
+placeholders outside every installed extension's prefix; extension settings
+(such as `plpgsql.*`, which changes how the guard functions resolve names) are
+refused. The checks resolve functions in `pg_catalog` first, so a user-schema
+object cannot stand in for a builtin. The five guard triggers must fire on every UPDATE (no column
+list), and the worker tables must carry no rewrite rules, whose actions run as
+the table owner.
+
+After that separately authorized setup, use named environment references so
+connection secrets do not enter process arguments or shell history:
+
+```sh
+PYTHONPATH="$PWD/backend" python -m social.worker.role_admin \
+  --database-url-env SOCIAL_ROLE_OPERATOR_DSN --role audit_social_worker --install
+PYTHONPATH="$PWD/backend" python -m social.worker.role_admin \
+  --database-url-env SOCIAL_WORKER_DATABASE_URL --role audit_social_worker --verify
+PYTHONPATH="$PWD/backend" python -m social.worker \
+  --database-url-env SOCIAL_WORKER_DATABASE_URL --worker-role audit_social_worker \
+  --native-meta --once
+```
+
+These are operator examples, not activation approval. The installer only grants
+the exact contract to an existing login in one atomic transaction; it creates no
+credential, table, database, default ACL, PUBLIC privilege or operational row.
+Verification requires the existing controls singleton, matching RLS policies and
+exact effective privileges, including column grants and inherited PUBLIC access.
+A privileged operator session cannot pass runtime login verification. Both
+commands emit fixed diagnostics without SQL, DSNs or row data, including on
+Ctrl-C (exit 130). The native worker also requires its existing separate
+native/media operational gates. Configure `--schema` for the operator or
+`--database-schema` for a worker only for a trusted schema. With `--worker-role`
+(default schema `public`) or an explicit `--database-schema`, every physical
+worker connection pins `pg_catalog,<schema>,pg_temp`: builtins keep precedence and
+an untrusted temporary table cannot replace a worker relation. Without either,
+and for media maintenance, the DSN/login search path is unchanged.
+
+This is a startup snapshot of SQL authority, not ongoing delivery ownership,
+credential backup/restore proof or a defense against a compromised host that can
+read the API's environment. A database owner can still change grants/policies;
+reverify after any such change and before activation. No production restricted
+login is provisioned by this code release.
+
+The additional local lane uses `SOCIAL_ROLE_TEST_DATABASE_URL` pointing only to
+`social_domain_test` on loopback port 62124. Its fixtures create/drop uniquely
+named schemas and inert roles in that disposable database. Tests exercise the
+actual migrated schema and complete native text/image pipelines with inert
+HTTP/storage, forbidden SQL mutations, RLS drift and atomic refusal. Where an
+outside-table widening grants usable authority, its test first proves it through
+the actual worker login (absent before, present after); every widening then
+requires the verifier, the installer and the native CLI to refuse. Temporary
+catalog, parameter, large-object and foreign-server widenings are restored in
+`finally`.

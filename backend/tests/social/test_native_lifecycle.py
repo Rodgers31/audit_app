@@ -96,6 +96,7 @@ def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch):
     import social.worker.__main__ as cli
     module=ready(monkeypatch);base=module.load_media_runtime({});events=[]
     monkeypatch.setenv('SOCIAL_NATIVE_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED','true')
+    monkeypatch.setattr(cli,'verify_worker_role',lambda *args:None)
     engine=create_engine('sqlite://')
     original=engine.dispose
     def dispose():events.append('engine');original()
@@ -113,7 +114,7 @@ def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch):
     async def composition(engine):
         async with native_runtime(engine,environ=ENABLED,transport_factory=lambda:Transport(events,'transport')) as reg:yield reg
     monkeypatch.setattr(cli,'native_runtime',composition)
-    assert cli.main(['--database-url','postgresql://fixture@invalid/fixture','--once','--native-meta'])==0
+    assert cli.main(['--database-url','postgresql://fixture@invalid/fixture','--once','--native-meta','--worker-role','inert_worker'])==0
     assert events==['schema','recover','scan','heartbeat','heartbeat','transport','transport','storage','engine']
 
 @pytest.mark.asyncio
