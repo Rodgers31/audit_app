@@ -1,0 +1,62 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:84884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:84884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 1365px
+[1A[2K  1) browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 1365px 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: >= [32m900[39m
+    Received:    [31m540[39m
+
+      31 |       const footer = await page.locator('footer').boundingBox();
+      32 |       expect(footer).not.toBeNull();
+    > 33 |       expect(footer!.y).toBeGreaterThanOrEqual(viewport.height);
+         |                         ^
+      34 |     } finally {
+      35 |       release();
+      36 |     }
+        at /Users/roger/.codex/worktrees/b15-performance/audit_app/frontend/browser-fixtures/reset-loading/loading.spec.ts:33:25
+
+    Error Context: test-results/loading-reset-auth-loading-a954d-elow-the-viewport-at-1365px/error-context.md
+
+
+[1A[2K(node:84906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:84906) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[2/2] browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 390px
+[1A[2K  2) browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 390px 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThanOrEqual[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: >= [32m844[39m
+    Received:    [31m506.390625[39m
+
+      31 |       const footer = await page.locator('footer').boundingBox();
+      32 |       expect(footer).not.toBeNull();
+    > 33 |       expect(footer!.y).toBeGreaterThanOrEqual(viewport.height);
+         |                         ^
+      34 |     } finally {
+      35 |       release();
+      36 |     }
+        at /Users/roger/.codex/worktrees/b15-performance/audit_app/frontend/browser-fixtures/reset-loading/loading.spec.ts:33:25
+
+    Error Context: test-results/loading-reset-auth-loading-c2639-below-the-viewport-at-390px/error-context.md
+
+
+[1A[2K  2 failed
+    browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 1365px 
+    browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 390px 

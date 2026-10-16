@@ -1,0 +1,14 @@
+
+Running 2 tests using 1 worker
+
+[1A[2K(node:86865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:86865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[1/2] browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 1365px
+[1A[2K[2/2] browser-fixtures/reset-loading/loading.spec.ts:4:7 › reset auth loading keeps the footer below the viewport at 390px
+[1A[2K  2 passed (2.0s)

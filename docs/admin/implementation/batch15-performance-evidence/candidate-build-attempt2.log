@@ -1,0 +1,88 @@
+
+> audit-app-frontend@1.0.0 prebuild
+> node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs
+
+{"check":"source-bound-tooling-repairs","packages":["node_modules/braces","node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml"],"absentPackages":[],"changedFiles":0}
+{"check":"bounded-tooling-inputs","tailwindPatterns":["./pages/**/*.{js,ts,jsx,tsx,mdx}","./components/**/*.{js,ts,jsx,tsx,mdx}","./app/**/*.{js,ts,jsx,tsx,mdx}","./src/**/*.{js,ts,jsx,tsx,mdx}"],"nextRoot":"literal working directory","lintFilesChecked":318}
+
+> audit-app-frontend@1.0.0 build
+> next build
+
+[next.config] API rewrite target: http://127.0.0.1:33518
+   ▲ Next.js 15.5.27
+   - Experiments (use with caution):
+     ✓ scrollRestoration
+     · optimizePackageImports
+
+[next.config] API rewrite target: http://127.0.0.1:33518
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.7s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/42) ...
+   Generating static pages (10/42) 
+   Generating static pages (20/42) 
+   Generating static pages (31/42) 
+ ✓ Generating static pages (42/42)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS  Revalidate  Expire
+┌ ○ /                                    30.8 kB         439 kB          1h      1y
+├ ○ /_not-found                             1 kB         104 kB
+├ ○ /about                               5.36 kB         152 kB
+├ ○ /account                             6.72 kB         214 kB
+├ ○ /accountability/unaccounted-funds    6.72 kB         235 kB
+├ ○ /admin                               8.74 kB         244 kB
+├ ○ /admin/audit-log                      5.6 kB         240 kB
+├ ○ /admin/etl                           7.39 kB         248 kB
+├ ƒ /admin/etl/commands/[commandId]      4.55 kB         241 kB
+├ ○ /admin/ingestion                     6.03 kB         241 kB
+├ ƒ /admin/ingestion/[jobId]             4.81 kB         240 kB
+├ ○ /admin/social                          401 B         265 kB
+├ ƒ /admin/social/[postId]                 433 B         265 kB
+├ ○ /admin/social/accounts               7.26 kB         250 kB
+├ ƒ /admin/social/accounts/callback        177 B         103 kB
+├ ○ /admin/social/new                      414 B         265 kB
+├ ○ /admin/users                         4.63 kB         240 kB
+├ ƒ /admin/users/[userId]                11.1 kB         242 kB
+├ ƒ /api/account/delete                    177 B         103 kB
+├ ƒ /api/auth/reset-password               177 B         103 kB
+├ ƒ /api/health                            177 B         103 kB
+├ ƒ /api/revalidate                        177 B         103 kB
+├ ○ /apple-icon.png                          0 B            0 B
+├ ○ /audits                              12.5 kB         368 kB          1h      1y
+├ ƒ /auth/callback                         177 B         103 kB
+├ ○ /budget                              23.4 kB         425 kB          1h      1y
+├ ○ /counties                            22.3 kB         379 kB          1h      1y
+├ ƒ /counties/[id]                       11.9 kB         305 kB
+├ ○ /counties/compare                    7.37 kB         294 kB          1h      1y
+├ ○ /debt                                  26 kB         442 kB          1h      1y
+├ ○ /icon.png                                0 B            0 B
+├ ○ /learn                               29.1 kB         185 kB
+├ ○ /learn/glossary                      8.92 kB         253 kB
+├ ○ /learn/government                    7.56 kB         155 kB
+├ ○ /learn/quiz                          6.49 kB         160 kB
+├ ○ /learn/videos                          177 B         103 kB
+├ ○ /learn/why-it-matters                4.87 kB         152 kB
+├ ○ /newsletter/unsubscribe              4.01 kB         224 kB
+├ ○ /privacy                             4.82 kB         152 kB
+├ ○ /reset-password                       6.5 kB         208 kB
+├ ○ /robots.txt                            177 B         103 kB
+├ ○ /sitemap.xml                           177 B         103 kB
+├ ○ /sources                             8.19 kB         237 kB
+├ ƒ /sources/figures/[table]/[id]        6.03 kB         271 kB
+├ ○ /status                              3.89 kB         239 kB
+├ ○ /terms                               4.78 kB         152 kB
+└ ○ /transparency                        13.5 kB         305 kB          1h      1y
++ First Load JS shared by all             103 kB
+  ├ chunks/1255-8dc91b756d944555.js      46.2 kB
+  ├ chunks/4bd1b696-100b9d70ed4e49c1.js  54.2 kB
+  └ other shared chunks (total)          2.44 kB
+
+
+ƒ Middleware                             82.3 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

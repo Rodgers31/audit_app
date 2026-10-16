@@ -1,0 +1,28 @@
+import hashlib,json
+from pathlib import Path
+repo=Path('/Users/roger/.codex/worktrees/b15-performance/audit_app')
+evidence=repo/'docs/admin/implementation/batch15-performance-evidence'
+external=Path(__file__).parent.parent
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+for review in ('standards-review','spec-review'):
+ mapping=json.loads((evidence/review/'ARCHIVAL_PATHS.json').read_text())
+ for original,entry in mapping.items():
+  p=evidence/review/entry['retained_as']
+  if sha(p)!=entry['sha256'] or p.read_bytes()!=(external/review/original).read_bytes(): raise RuntimeError('archive mismatch '+str(p))
+ print('PASS byte-preserving archive mapping',review,len(mapping))
+receipt=json.loads((external/'standards-review/receipt.json').read_text())
+for name,digest in receipt['sha256'].items():
+ if sha(repo/name)!=digest:raise RuntimeError('changed reviewed product/test '+name)
+print('PASS all5 originally reviewed source/test hashes unchanged')
+for name in ('baseline-bound.json','candidate-bound.json'):
+ d=json.loads((evidence/name).read_text())
+ if d['chrome']!='155.0.8059.80' or sha(evidence/'measurement-generator.cjs.txt')!=d['generator_sha256']:raise RuntimeError('browser/generator mismatch')
+ print(name,'chrome',d['chrome'],'delay',d['delayMs'])
+ for m in d['measurements']:
+  shifts=m['result']['metrics']['shifts']; largest=current=0; start=prior=None
+  for s in shifts:
+   t=s['time']
+   if prior is None or t-prior>=1000 or t-start>=5000: start=t;current=0
+   current+=s['value'];largest=max(largest,current);prior=t
+  print(m['route'],'sum',sum(s['value'] for s in shifts),'sessionWindow',largest,'lastLCP',m['result']['metrics']['lcp'][-1]['time'])
+print('PASS metric/generator extraction completed')

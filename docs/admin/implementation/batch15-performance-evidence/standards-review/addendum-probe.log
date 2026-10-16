@@ -1,0 +1,14 @@
+PASS byte-preserving archive mapping standards-review 13
+PASS byte-preserving archive mapping spec-review 8
+PASS all5 originally reviewed source/test hashes unchanged
+baseline-bound.json chrome 155.0.8059.80 delay 1800
+/counties sum 0.0001381618788212195 sessionWindow 0.0001381618788212195 lastLCP 128
+/ sum 0.0001381618788212195 sessionWindow 0.0001381618788212195 lastLCP 64
+/reset-password?recovery=local-test sum 0.2113987569342881 sessionWindow 0.10590425143978259 lastLCP 1916
+/admin sum 0.03775299279475104 sessionWindow 0.03734324684947396 lastLCP 64
+candidate-bound.json chrome 155.0.8059.80 delay 1800
+/counties sum 0.0001381618788212195 sessionWindow 0.0001381618788212195 lastLCP 120
+/ sum 0.0001381618788212195 sessionWindow 0.0001381618788212195 lastLCP 60
+/reset-password?recovery=local-test sum 0.00040974594527708083 sessionWindow 0.00040974594527708083 lastLCP 2344
+/admin sum 0.03775299279475104 sessionWindow 0.03734324684947396 lastLCP 48
+PASS metric/generator extraction completed

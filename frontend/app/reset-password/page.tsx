@@ -175,7 +175,7 @@ function ResetPasswordForm() {
   // If auth is still loading, show spinner
   if (authLoading) {
     return (
-      <div className='flex items-center justify-center min-h-[60vh]'>
+      <div className='flex items-center justify-center min-h-screen'>
         <Loader2 className='w-8 h-8 animate-spin text-gov-sage' />
       </div>
     );
