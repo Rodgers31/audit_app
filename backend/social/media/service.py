@@ -273,13 +273,16 @@ class MediaService:
             asset = self.db.get(SocialMediaAsset, asset_id)
             if asset is None or asset.state != 'ready' or asset.deleted_at is not None:
                 raise SocialError('NOT_FOUND', 'Ready media was not found.', 404)
+            upload = self.db.get(SocialMediaUpload, asset.id)
+            if upload is None or not object_identity_matches(asset, upload):
+                raise SocialError('MEDIA_OBJECT_IDENTITY_MISMATCH', 'Stored media identity requires operator inspection. Capacity remains held.', 409)
             if asset.storage_provider != storage.provider or asset.bucket != storage.bucket:
                 raise SocialError('MEDIA_UNAVAILABLE', 'This asset storage provider is unavailable.', 503)
             metadata = asset.codec_metadata or {}
             expected = ObjectSnapshot(asset.byte_size, metadata.get('storage_etag'), metadata.get('storage_version'), asset.sha256, asset.mime_type)
             if not expected.etag:
                 raise SocialError('MEDIA_UNAVAILABLE', 'This asset has no verified immutable storage identity.', 503)
-            dto = self._dto(asset, self.db.get(SocialMediaUpload, asset.id)); key = asset.storage_key
+            dto = self._dto(asset, upload); key = asset.storage_key
         try:
             if storage.head(key) != expected:
                 raise StorageFailure('Asset identity changed')

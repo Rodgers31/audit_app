@@ -3,7 +3,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from social.media.models import SocialMediaBudget, SocialMediaUpload
 from social.media.operator import prepare_reconciliation
@@ -40,6 +40,35 @@ def test_cleanup_cannot_delete_another_ready_original_via_quarantine_key(media):
     assert store.objects == objects and store.operations == calls
     assert snapshot(svc) == before
     assert svc.preview(victim.id).asset.state == 'ready'
+
+
+@pytest.mark.parametrize('damage', ['other_ready_key', 'missing_upload', 'bad_quarantine_key'])
+def test_preview_refuses_unallocated_identity_before_storage_io(media, damage):
+    svc, store = media
+    victim = upload_ready(media)
+    target = upload_ready(media)
+    with svc.db.begin():
+        asset = svc.db.get(SocialMediaAsset, target.id)
+        upload = svc.db.get(SocialMediaUpload, target.id)
+        if damage == 'other_ready_key':
+            # A retained object can outlive its DB owner. Keep both live rows'
+            # unique keys intact and reproduce a malformed reference to those
+            # equal bytes under an unallocated ready key.
+            other_key = f'ready/{uuid4()}/original'
+            store.objects[other_key] = store.objects[f'ready/{victim.id}/original']
+            svc.db.execute(update(SocialMediaAsset).where(SocialMediaAsset.id == target.id)
+                           .values(storage_key=other_key))
+            svc.db.expire(asset)
+        elif damage == 'missing_upload':
+            svc.db.delete(upload)
+        else:
+            upload.quarantine_key = f'ready/{victim.id}/original'
+    before, objects, calls = snapshot(svc), dict(store.objects), list(store.operations)
+    with pytest.raises(SocialError, match='MEDIA_OBJECT_IDENTITY_MISMATCH'):
+        svc.preview(target.id)
+    assert store.operations == calls and store.objects == objects
+    assert snapshot(svc) == before
+    assert svc.preview(victim.id).asset.id == victim.id
 
 
 @pytest.mark.parametrize('column,value', [

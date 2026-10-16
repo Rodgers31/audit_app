@@ -42,7 +42,7 @@ change supplies no repair or deletion command.
 | Write-quiescence reconciliation | `_rows` before renewal freeze and after verifier I/O; no capacity released by reconciliation |
 | Bounded cleanup | Exact SQL predicate before LIMIT, then `_rows` under locks before object I/O and ledger commit |
 | Read-only inventory | Emits mismatch reason without interpreting it as cleanup permission |
-| Library and preview | Existing read behavior; neither deletes nor releases capacity; preview still checks recorded immutable metadata |
+| Library and preview | Library remains observational; preview checks the allocated asset/upload identity before HEAD/signing, then verifies immutable object metadata; neither releases capacity |
 
 There are no shared-model, worker, migration, role, route or feature-flag changes.
 This is an application guard for service mutations, not a new database constraint
@@ -133,3 +133,10 @@ Full logs, independent probe sources/reports, source hashes, exact commands and
 final PR/head are recorded in the coordinator's batch-14 media evidence lane.
 No paid or remote reviewer was requested. Draft review and coordinator integration
 remain separate from production acceptance and release authority.
+
+
+## Coordinator preview follow-up (#687)
+
+Copilot's preview finding was half-right: the exact same-provider/bucket key cannot be shared by two live asset rows because the database has a unique constraint. A malformed row can still reference an unallocated retained ready object with identical bytes and metadata, and the old preview signed that key. Preview now refuses a missing upload or mismatched ready/quarantine allocation before any storage call. It retains metadata/ETag verification for valid rows.
+
+Three inert cases (unallocated equal-content object, missing upload, wrong quarantine key) were observed failing on the original PR source and passing with the guard. The final object-identity/service selection passes32 cases in normal and optimized Python; independent executable spec and standards probes also pass. These are synthetic corruption controls, not evidence of a live unauthorized preview or storage operation. Parent #490/#488 and production activation gates remain open.
