@@ -1,7 +1,7 @@
 """Short PostgreSQL transactions, minimal claims and token/epoch fencing.
 
 Every transaction touching admission plus delivery rows locks controls, account,
-publication, then target. Claim-only transactions touch targets and nothing else.
+publication, then target. Claims read pause controls but lock only targets.
 No Connection or Session escapes a method or spans an external await.
 """
 from __future__ import annotations
@@ -21,6 +21,26 @@ from .policy import bounded_json, retry_decision, validate_plan
 from ..validation import validate_document
 
 ACTIONABLE_STATES = ("queued", "retry_wait", "processing", "reconciling")
+# An explicit pause leaves normal work untouched, while recovery reads remain
+# eligible. Missing controls must still reach the existing schema-error gate.
+# This is a scheduling filter only: admission rechecks controls under its locks.
+_QUEUE_ELIGIBILITY_SQL = """
+    t.state IN ('queued','retry_wait','processing','reconciling')
+    AND (
+        t.state IN ('processing','reconciling')
+        OR NOT EXISTS (
+            SELECT 1 FROM social_controls c
+            WHERE c.id=1 AND (
+                c.publishing_enabled IS FALSE
+                OR EXISTS (
+                    SELECT 1 FROM social_accounts a
+                    WHERE a.id=t.account_id
+                      AND c.platform_controls -> a.platform -> 'publishing_enabled' = 'false'::jsonb
+                )
+            )
+        )
+    )
+"""
 READ_BUDGET_LIMIT = 100
 READ_REQUEST_WINDOW_SECONDS = 86400
 REQUIRED_TABLES = (
@@ -76,14 +96,14 @@ class QueueRepository:
         if type(limit) is not int or not 1 <= limit <= self.config.external_slots:
             raise ValueError("Claim count exceeds free bounded execution slots")
         with self.engine.begin() as conn:
-            rows = conn.execute(text("""
+            rows = conn.execute(text(f"""
                 WITH due AS (
-                    SELECT id, state AS previous_state
-                    FROM social_post_targets
-                    WHERE state IN ('queued','retry_wait','processing','reconciling')
-                      AND next_action_at <= now() AND lease_token IS NULL
-                    ORDER BY next_action_at, id
-                    FOR UPDATE SKIP LOCKED LIMIT :limit
+                    SELECT t.id, t.state AS previous_state
+                    FROM social_post_targets t
+                    WHERE {_QUEUE_ELIGIBILITY_SQL}
+                      AND t.next_action_at <= now() AND t.lease_token IS NULL
+                    ORDER BY t.next_action_at, t.id
+                    FOR UPDATE OF t SKIP LOCKED LIMIT :limit
                 )
                 UPDATE social_post_targets AS target
                 SET lease_owner=:owner, lease_token=gen_random_uuid(),
@@ -109,12 +129,12 @@ class QueueRepository:
 
     def next_due_delay(self, ceiling: float) -> float:
         with self.engine.connect() as conn:
-            delay = conn.execute(text("""
-                SELECT EXTRACT(EPOCH FROM next_action_at-now())
-                FROM social_post_targets
-                WHERE state IN ('queued','retry_wait','processing','reconciling')
-                  AND lease_token IS NULL AND next_action_at > now()
-                ORDER BY next_action_at, id LIMIT 1
+            delay = conn.execute(text(f"""
+                SELECT EXTRACT(EPOCH FROM t.next_action_at-now())
+                FROM social_post_targets t
+                WHERE {_QUEUE_ELIGIBILITY_SQL}
+                  AND t.lease_token IS NULL AND t.next_action_at > now()
+                ORDER BY t.next_action_at, t.id LIMIT 1
             """)).scalar()
         return min(ceiling, max(0.01, float(delay))) if delay is not None else ceiling
 
