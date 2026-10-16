@@ -1,3 +1,7 @@
+> Historical review record from the original investigation. Its absolute commands, reviewed draft hashes and cleanup statements describe that run only. The original generator bytes and artifacts are mapped in `../HISTORICAL_ARTIFACTS.json`.
+>
+> Current supported replay: `python3 -I <packet>/portable-replay.py spec --baseline <installed baseline frontend> --candidate <installed candidate frontend> --output <fresh external directory>`. Prepare both roots using `../README.md`; current replay writes external receipts and cleans owned temporary fixtures/cache even on errors. Do not run the historical absolute commands below.
+
 # Independent executable specification review
 
 Reviewer scope: dependencies lane, 2026-10-16. Read COORDINATION.md and adversarial-verify, claims-need-receipts, dependency-auditor skills. No app/candidate edits; all reviewer writes are in this directory. No install, browser, service, hosted Actions, account mutation, or paid review. Review was executed under Node v22.19.0, darwin arm64.

@@ -1,3 +1,7 @@
+> Historical review record from the original investigation. Its absolute commands, reviewed draft hashes and cleanup statements describe that run only. The original generator bytes and artifacts are mapped in `../HISTORICAL_ARTIFACTS.json`.
+>
+> Current supported replay: `python3 -I <packet>/portable-replay.py standards --baseline <installed baseline frontend> --candidate <installed candidate frontend> --output <fresh external directory>`. Prepare both roots using `../README.md`; current replay writes external receipts and cleans owned temporary fixtures/cache even on errors. Do not run the historical absolute commands below.
+
 # Independent executable standards/adversarial review
 
 Review scope: diagnostic probe and bounded argparse 2 candidate at frozen source SHA `3f3b1f1981b93c3317e204defbd235121c1df084`. No source/candidate mutations. Reviewer owned only this external directory; disposable install and repair fixtures have been removed. Node v22.19.0, npm 11.6.0, darwin arm64. No Chrome, Actions, paid reviewer, service binding or production changes. Read coordination contract, adversarial-verify, claims-need-receipts and verify-test-prod-parity. Root/frontend AGENTS.md and CLAUDE.md absent.
