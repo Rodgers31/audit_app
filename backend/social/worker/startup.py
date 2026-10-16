@@ -19,6 +19,16 @@ def load_media_runtime(values):
     return build_media_runtime(config_from_environment(values))
 
 
+def validate_worker_native_environment(values):
+    """Pure preflight before reserving authority or constructing any SDK."""
+    if (values.get('SOCIAL_NATIVE_ENABLED', 'false') != 'true'
+            or values.get('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED', 'false') != 'true'):
+        raise ValueError('Native worker gates are not accepted')
+    load_meta_config(values).require_ready()
+    if not config_from_environment(values).enabled:
+        raise ValueError('Private media gates are not accepted')
+
+
 async def _close(registration, transports, runtime):
     failed = cancelled = False
     closers = [registration.close] if registration is not None else [item.aclose for item in transports]

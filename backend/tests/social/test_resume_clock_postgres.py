@@ -14,6 +14,7 @@ from social.worker.config import WorkerConfig
 from social.worker.repository import LeaseLost, QueueRepository
 from test_domain_commands import enable, make
 from test_domain_postgres import pg_engine
+from test_queue_postgres import repository
 from test_domain_support import account, call
 
 
@@ -94,7 +95,7 @@ def test_resume_refuses_authorization_that_expires_while_waiting_for_controls_lo
 def test_pre_cancellation_claim_remains_fenced_after_explicit_resume(pg_engine):
     post_id, revision_id, publication_id = queued_publication(pg_engine)
     config = WorkerConfig(pg_engine.url.render_as_string(hide_password=False))
-    repo = QueueRepository(pg_engine, config, uuid4())
+    repo = repository(pg_engine)
     old = repo.claim_due()[0]
     cancel(pg_engine, post_id)
     # Cancellation now retains worker-owned work until the worker acknowledges.

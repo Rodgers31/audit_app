@@ -1,36 +1,57 @@
-"""Explicit separate entrypoint: python -m social.worker --database-url ..."""
+"""Explicit separate provider entry; no import of FastAPI or web schedulers."""
 import asyncio
-from contextlib import AsyncExitStack
+import json
 import logging
 import os
 import re
 import signal
-import sys
+import threading
 from uuid import uuid4
 
-from .config import WorkerConfig, create_worker_engine
+from sqlalchemy import text
+
 from .arguments import PrivateArgumentParser
+from .config import WorkerConfig, create_worker_engine
+from .ownership import acquire_authority
 from .repository import QueueRepository
-from .runner import SocialWorker
-from .startup import native_runtime
 from .role_contract import verify_worker_role
+from .runner import SocialWorker
+from .startup import native_runtime, validate_worker_native_environment
 
 
 def main(argv=None):
-    parser = PrivateArgumentParser(description="Explicit durable social worker; native providers require separate validated opt-in")
+    parser = PrivateArgumentParser(description='Explicit durable social worker; native providers require validated opt-in')
     database = parser.add_mutually_exclusive_group(required=True)
-    database.add_argument("--database-url", help="Explicit PostgreSQL DSN; .env is never loaded")
-    database.add_argument("--database-url-env", help="Name of the explicit DSN environment variable; keeps credentials out of argv")
-    parser.add_argument("--worker-role", help="Existing restricted LOGIN role; required for native providers")
-    parser.add_argument("--database-schema", help="Trusted schema pinned on every connection; defaults to public with --worker-role")
-    parser.add_argument("--deployment-version", default="batch-1")
-    parser.add_argument("--once", action="store_true", help="One bounded scan then exit")
-    parser.add_argument("--native-meta", action="store_true", help="Use the explicitly enabled and operationally verified Meta registration")
+    database.add_argument('--database-url')
+    database.add_argument('--database-url-env')
+    parser.add_argument('--worker-role')
+    parser.add_argument('--database-schema')
+    parser.add_argument('--deployment-version', default='batch-1')
+    parser.add_argument('--once', action='store_true')
+    parser.add_argument('--native-meta', action='store_true')
+    parser.add_argument('--supervisor-receipt-fd', type=int)
     args = parser.parse_args(argv)
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    engine = None
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    engine, worker, authority = None, None, None
     result = 0
+    stopped = threading.Event()
+    installed = {}
+    resources_closed = False
+    wake_read, wake_write = None, None
+
+    def stop(signum, frame):
+        stopped.set()
+        if worker is not None:
+            worker.stop()
+        try:
+            os.write(wake_write, b'x')
+        except BlockingIOError:
+            pass  # A full pipe already guarantees a pending selector wakeup.
+
     try:
+        wake_read, wake_write = os.pipe()
+        os.set_blocking(wake_read, False)
+        os.set_blocking(wake_write, False)
         database_url = args.database_url
         if args.database_url_env is not None:
             if re.fullmatch(r'[A-Z][A-Z0-9_]{0,127}', args.database_url_env) is None:
@@ -38,78 +59,76 @@ def main(argv=None):
             database_url = os.environ.get(args.database_url_env)
         if args.native_meta and not args.worker_role:
             raise ValueError()
-        schema = args.database_schema
-        if schema is None and args.worker_role is not None:
-            schema = "public"
-        config = WorkerConfig(database_url, deployment_version=args.deployment_version,
-                              database_schema=schema)
+        if args.supervisor_receipt_fd is not None and args.supervisor_receipt_fd < 3:
+            raise ValueError()
+        schema = args.database_schema or ('public' if args.worker_role else None)
+        config = WorkerConfig(database_url, deployment_version=args.deployment_version, database_schema=schema)
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            installed[sig] = signal.getsignal(sig)
+            signal.signal(sig, stop)
         engine = create_worker_engine(config)
-        if args.worker_role is not None:
+        if args.worker_role:
             verify_worker_role(engine, args.worker_role, schema)
-        repository = QueueRepository(engine, config, uuid4())
-        async def execute():
-            interrupted = False
-            try:
-                async with AsyncExitStack() as stack:
+        if not args.native_meta:
+            # This diagnostic has no adapters, claims, recovery or resident loop.
+            if not args.once:
+                raise ValueError()
+            with engine.connect() as conn:
+                if conn.execute(text('SELECT EXISTS(SELECT 1 FROM social_post_targets)')).scalar_one():
+                    raise ValueError()
+        else:
+            validate_worker_native_environment(os.environ)
+            if stopped.is_set():
+                raise RuntimeError('Stopped before acquisition')
+            owner_id = uuid4()
+            authority = acquire_authority(engine, owner_id, config.deployment_version)
+            repository = QueueRepository(engine, config, owner_id, authority=authority)
+
+            async def execute():
+                nonlocal worker, resources_closed
+                interrupted = False
+                def wake():
                     try:
-                        registration = await stack.enter_async_context(native_runtime(engine)) if args.native_meta else None
-                        if args.native_meta and registration is None:
-                            raise ValueError('Native providers are disabled')
-                        worker = SocialWorker(repository,
-                            adapters=registration.adapters if registration else None,
-                            credential_loader=registration.credential_loader if registration else None,
-                            media_access=registration.media_access if registration else None)
-                        loop = asyncio.get_running_loop()
-                        installed_signals = []
+                        os.read(wake_read, 4096)
+                    except BlockingIOError:
+                        pass  # Another coalesced callback drained the same wakeup.
+                asyncio.get_running_loop().add_reader(wake_read, wake)
+                # Retain ownership on every startup or closure failure.
+                repository.check_authority()
+                try:
+                    async with native_runtime(engine) as registration:
+                        if registration is None:
+                            raise ValueError()
+                        worker = SocialWorker(repository, adapters=registration.adapters,
+                            credential_loader=registration.credential_loader, media_access=registration.media_access)
+                        if stopped.is_set():
+                            worker.stop()
                         try:
-                            for sig in (signal.SIGTERM, signal.SIGINT):
-                                loop.add_signal_handler(sig, worker.stop)
-                                installed_signals.append(sig)
                             await worker.run(once=args.once)
+                        except KeyboardInterrupt:
+                            interrupted = True
+                            raise
                         finally:
-                            failed = False
-                            cancelled = isinstance(sys.exc_info()[1], asyncio.CancelledError)
-                            interrupted = isinstance(sys.exc_info()[1], KeyboardInterrupt)
-                            for sig in installed_signals:
-                                try:
-                                    loop.remove_signal_handler(sig)
-                                except KeyboardInterrupt:
-                                    interrupted = True
-                                except asyncio.CancelledError:
-                                    cancelled = True
-                                except Exception:
-                                    failed = True
                             try:
                                 await worker.close()
                             except KeyboardInterrupt:
                                 interrupted = True
-                            except asyncio.CancelledError:
-                                cancelled = True
-                            except Exception:
-                                failed = True
-                            if interrupted:
-                                raise KeyboardInterrupt()
-                            if cancelled:
-                                raise asyncio.CancelledError()
-                            if failed:
-                                raise RuntimeError('Worker shutdown failed')
-                    except KeyboardInterrupt:
-                        interrupted = True
-                        raise
-            finally:
-                # Native context exit may itself fail; it cannot turn a pending
-                # user interrupt into a different exit status/private traceback.
-                if interrupted:
-                    raise KeyboardInterrupt()
-        asyncio.run(execute())
-    except Exception:
-        # Driver exceptions may include connection strings or sensitive parameters.
-        logging.getLogger("social.worker").error('{"event":"worker_startup_failed","error_code":"WORKER_UNAVAILABLE"}')
-        result = 1
+                                raise
+                        if worker.failed:
+                            raise RuntimeError('Worker unavailable')
+                finally:
+                    if interrupted:
+                        raise KeyboardInterrupt() from None
+                if not repository.drained():
+                    raise RuntimeError('Durable worker drain is unresolved')
+                resources_closed = True
+            asyncio.run(execute())
     except KeyboardInterrupt:
-        # An interrupt traceback would carry SQL and driver text; keep it fixed.
-        logging.getLogger("social.worker").error('{"event":"worker_startup_interrupted","error_code":"WORKER_UNAVAILABLE"}')
+        logging.getLogger('social.worker').error('{"event":"worker_startup_interrupted","error_code":"WORKER_UNAVAILABLE"}')
         result = 130
+    except (Exception, asyncio.CancelledError):
+        logging.getLogger('social.worker').error('{"event":"worker_startup_failed","error_code":"WORKER_UNAVAILABLE"}')
+        result = 1
     finally:
         if engine is not None:
             try:
@@ -117,12 +136,38 @@ def main(argv=None):
             except KeyboardInterrupt:
                 logging.getLogger('social.worker').error('{"event":"worker_shutdown_interrupted","error_code":"WORKER_UNAVAILABLE"}')
                 result = 130
-            except Exception:
+            except (Exception, asyncio.CancelledError):
                 logging.getLogger('social.worker').error('{"event":"worker_shutdown_failed","error_code":"WORKER_UNAVAILABLE"}')
                 if result != 130:
                     result = 1
+        if result == 0 and resources_closed and authority is not None and args.supervisor_receipt_fd is not None:
+            try:
+                proof = dict(version=1, owner_id=str(authority.owner_id), generation=authority.generation,
+                             providers_closed=True, executor_closed=True, claims_drained=True)
+                os.write(args.supervisor_receipt_fd, json.dumps(proof, separators=(',', ':')).encode())
+            except (Exception, asyncio.CancelledError):
+                logging.getLogger('social.worker').error('{"event":"worker_receipt_failed","error_code":"WORKER_UNAVAILABLE"}')
+                result = 1
+        for sig, handler in installed.items():
+            try:
+                signal.signal(sig, handler)
+            except KeyboardInterrupt:
+                logging.getLogger('social.worker').error('{"event":"worker_shutdown_interrupted","error_code":"WORKER_UNAVAILABLE"}')
+                result = 130
+            except (Exception, asyncio.CancelledError):
+                logging.getLogger('social.worker').error('{"event":"worker_shutdown_failed","error_code":"WORKER_UNAVAILABLE"}')
+                if result != 130:
+                    result = 1
+        for fd in (wake_read, wake_write):
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except (OSError, asyncio.CancelledError):
+                    logging.getLogger('social.worker').error('{"event":"worker_shutdown_failed","error_code":"WORKER_UNAVAILABLE"}')
+                    if result != 130:
+                        result = 1
     return result
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     raise SystemExit(main())

@@ -1,7 +1,7 @@
 """Short PostgreSQL transactions, minimal claims and token/epoch fencing.
 
-Every transaction touching admission plus delivery rows locks controls, account,
-publication, then target. Claims read pause controls but lock only targets.
+Every transaction locks global ownership before controls, account, publication,
+then target. Claims read pause controls after the global lock, then lock targets.
 No Connection or Session escapes a method or spans an external await.
 """
 from __future__ import annotations
@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import json
+import threading
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
@@ -16,6 +17,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from .config import WorkerConfig
+from .ownership import AuthorityLost, check_authority, RuntimeAuthority
 from ..contracts import CapabilitySet, DefinitiveAbsenceProof, OperationPlan, PostDocument, ResolvedPostPayload, canonical_hash
 from .policy import bounded_json, retry_decision, validate_plan
 from ..validation import validate_document
@@ -82,11 +84,29 @@ def _json(value):
 
 
 class QueueRepository:
-    def __init__(self, engine: Engine, config: WorkerConfig, worker_id: UUID):
+    def __init__(self, engine: Engine, config: WorkerConfig, worker_id: UUID, *, authority: RuntimeAuthority | None = None):
         self.engine, self.config, self.worker_id = engine, config, str(worker_id)
+        self.authority = authority
+        self.admission_stopped = threading.Event()
+
+    def _authority(self, conn):
+        check_authority(conn, self.authority, owner_id=self.worker_id)
+
+    def check_authority(self):
+        with self.engine.begin() as conn:
+            self._authority(conn)
+
+    def drained(self):
+        with self.engine.begin() as conn:
+            self._authority(conn)
+            return conn.execute(text('''SELECT NOT EXISTS(
+                SELECT 1 FROM social_post_targets WHERE lease_owner=:owner AND lease_token IS NOT NULL)
+                AND NOT EXISTS(SELECT 1 FROM social_publish_attempts WHERE completed_at IS NULL)
+            '''), {'owner':self.worker_id}).scalar_one() is True
 
     def validate_schema(self):
         with self.engine.connect() as conn:
+            self._authority(conn)
             for name in REQUIRED_TABLES:
                 if conn.execute(text("SELECT to_regclass(:name)"), {"name": name}).scalar() is None:
                     raise GateRejected("SOCIAL_SCHEMA_UNAVAILABLE")
@@ -96,6 +116,9 @@ class QueueRepository:
         if type(limit) is not int or not 1 <= limit <= self.config.external_slots:
             raise ValueError("Claim count exceeds free bounded execution slots")
         with self.engine.begin() as conn:
+            self._authority(conn)
+            if self.admission_stopped.is_set():
+                return []
             rows = conn.execute(text(f"""
                 WITH due AS (
                     SELECT t.id, t.state AS previous_state
@@ -129,6 +152,7 @@ class QueueRepository:
 
     def next_due_delay(self, ceiling: float) -> float:
         with self.engine.connect() as conn:
+            self._authority(conn)
             delay = conn.execute(text(f"""
                 SELECT EXTRACT(EPOCH FROM t.next_action_at-now())
                 FROM social_post_targets t
@@ -140,6 +164,7 @@ class QueueRepository:
 
     def load(self, claim: Claim) -> dict:
         with self.engine.connect() as conn:
+            self._authority(conn)
             row = conn.execute(text("""
                 SELECT now() AS database_now, t.*, a.platform, a.api_product, a.connection_state,
                        a.publishing_enabled AS account_enabled, a.capability_snapshot,
@@ -171,7 +196,9 @@ class QueueRepository:
             data["last_attempt"] = dict(attempt) if attempt else None
             return data
 
-    def _locked(self, conn, claim: Claim):
+    def _locked(self, conn, claim: Claim, *, check_global=True):
+        if check_global:
+            self._authority(conn)
         controls = conn.execute(text("SELECT * FROM social_controls WHERE id=1 FOR UPDATE")).mappings().first()
         account = conn.execute(text("SELECT * FROM social_accounts WHERE id=CAST(:account AS uuid) FOR UPDATE"),
                                self._params(claim)).mappings().first()
@@ -203,6 +230,8 @@ class QueueRepository:
             raise ValueError("Mutation classification must match the operation contract")
         with self.engine.begin() as conn:
             controls, account, pub, target = self._locked(conn, claim)
+            if self.admission_stopped.is_set():
+                return None
             now = self._current(conn, claim, target)
             pending = conn.execute(text("SELECT operation_id FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid) AND lease_epoch=:epoch AND completed_at IS NULL LIMIT 1"), self._params(claim)).scalar()
             if pending is not None:
@@ -267,7 +296,9 @@ class QueueRepository:
             sequence = conn.execute(text("SELECT COALESCE(MAX(sequence),0)+1 FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)"),
                                     self._params(claim)).scalar_one()
             receipt = {"intent": {"publication_capable": publication_capable,
-                                   "mutating": mutating, "safe_replay_class": safe_replay_class}}
+                                   "mutating": mutating, "safe_replay_class": safe_replay_class,
+                                   "runtime_owner_id": str(self.authority.owner_id),
+                                   "runtime_generation": self.authority.generation}}
             conn.execute(text("""
                 INSERT INTO social_publish_attempts
                     (id,target_id,sequence,operation_id,operation,request_fingerprint,
@@ -398,7 +429,12 @@ class QueueRepository:
                next_action: str | None = None, receipt: dict | None = None,
                duration_ms: int = 0, provider_request_id: str | None = None) -> bool:
         with self.engine.begin() as conn:
-            _, _, _, target = self._locked(conn, claim)
+            try:
+                self._authority(conn)
+                current_authority = True
+            except AuthorityLost:
+                current_authority = False
+            _, _, _, target = self._locked(conn, claim, check_global=False)
             # Remote observations win over memory: even a late worker's evidence is
             # retained. Only current unexpired ownership can transition the target.
             completed = conn.execute(text("""
@@ -415,6 +451,8 @@ class QueueRepository:
             if completed is None:
                 return False
             try:
+                if not current_authority:
+                    raise LeaseLost()
                 self._current(conn, claim, target)
             except LeaseLost:
                 self._audit(conn, claim, "late_operation_evidence", None, None,
@@ -493,6 +531,7 @@ class QueueRepository:
 
     def recover_expired(self) -> int:
         with self.engine.connect() as conn:
+            self._authority(conn)
             rows = conn.execute(text("""
                 SELECT id,account_id,publication_id,lease_token,lease_epoch,state
                 FROM social_post_targets WHERE lease_expires_at<=now() AND lease_token IS NOT NULL
@@ -524,6 +563,7 @@ class QueueRepository:
 
     def retry_policy(self, claim, result):
         with self.engine.connect() as conn:
+            self._authority(conn)
             row = conn.execute(text("""
                 SELECT now() AS database_now,t.submit_count,p.retry_deadline,p.content_valid_until,
                     COALESCE((SELECT MIN(dispatch_started_at) FROM social_publish_attempts
@@ -539,6 +579,7 @@ class QueueRepository:
 
     def read_budget_exhausted(self, claim):
         with self.engine.connect() as conn:
+            self._authority(conn)
             now = conn.execute(text("SELECT clock_timestamp()")).scalar_one()
             return self._read_budget_resume_at(conn, claim, now) is not None
 
@@ -559,6 +600,7 @@ class QueueRepository:
     def heartbeat(self, *, state: str, active_claims: int, scanned: bool = False,
                   success: bool = False, error_code: str | None = None):
         with self.engine.begin() as conn:
+            self._authority(conn)
             conn.execute(text("""
                 INSERT INTO social_worker_heartbeats (worker_id,deployment_version,started_at,
                     heartbeat_at,last_scan_at,last_success_at,active_claims,state,last_error_code)

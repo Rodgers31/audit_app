@@ -20,6 +20,7 @@ from social.models import SOCIAL_TABLES, SocialAccount, SocialControls, SocialPo
 from social.worker.config import WorkerConfig, create_worker_engine
 from social.worker.repository import QueueRepository, LeaseLost
 from social.worker.runner import SocialWorker
+from social.worker.ownership import acquire_authority
 from local_postgres import local_postgres_url
 
 
@@ -32,6 +33,14 @@ def engine():
     config = WorkerConfig(url.render_as_string(hide_password=False))
     engine = create_worker_engine(config)
     SocialPost.metadata.create_all(engine, tables=SOCIAL_TABLES)
+    from test_connections_migration_postgres import _migration
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    with engine.begin() as conn:
+        if conn.execute(text("SELECT to_regclass('social_worker_runtime_ownership')")).scalar() is None:
+            with Operations.context(MigrationContext.configure(conn)):
+                _migration('a545b14a0001_social_worker_global_owner.py').upgrade()
+        conn.execute(text('TRUNCATE social_worker_runtime_ownership,social_worker_runtime_history'))
     names = ",".join('"'+table.name+'"' for table in SOCIAL_TABLES)
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE "+names+" RESTART IDENTITY CASCADE"))
@@ -42,7 +51,22 @@ def engine():
 
 
 def repository(engine, **settings):
-    return QueueRepository(engine, WorkerConfig(str(engine.url.render_as_string(hide_password=False)), **settings), uuid4())
+    # Historical target/admission fixtures share one explicit runtime owner.
+    # Independent runtime contenders are exercised in test_global_ownership_postgres.
+    authority = getattr(engine, '_fixture_authority', None)
+    if authority is None:
+        from test_connections_migration_postgres import _migration
+        from alembic.migration import MigrationContext
+        from alembic.operations import Operations
+        with engine.begin() as conn:
+            if conn.execute(text("SELECT to_regclass('social_worker_runtime_ownership')")).scalar() is None:
+                with Operations.context(MigrationContext.configure(conn)):
+                    _migration('a545b14a0001_social_worker_global_owner.py').upgrade()
+        authority = acquire_authority(engine, uuid4(), 'target-fixture')
+        engine._fixture_authority = authority
+    settings.setdefault('external_slots', 2)
+    return QueueRepository(engine, WorkerConfig(str(engine.url.render_as_string(hide_password=False)), **settings),
+                           authority.owner_id, authority=authority)
 
 
 def seed(engine, *, count=1, same_account=False, paused=False, state="queued", checkpoint=None):
@@ -156,6 +180,9 @@ class FakeAdapter:
 
 
 def run_claim(repo, adapter=None, *, claim=None):
+    # These are joined synthetic steps under one acquired runtime identity.
+    # Production never clears a stopped repository or retries crash ownership.
+    repo.admission_stopped.clear()
     async def execute():
         worker = SocialWorker(repo, adapters={("facebook", "fake"): adapter} if adapter else {})
         try:
@@ -301,7 +328,8 @@ def test_empty_queue_minimal_query_and_idle_heartbeat(engine):
     sqlalchemy_event.listen(engine, "before_cursor_execute", observe)
     try:
         assert repo.claim_due(2) == []
-        assert len(statements) == 1
+        assert len(statements) == 2
+        assert 'social_worker_runtime_ownership' in statements[0]
         assert repo.next_due_delay(30) == 30
         repo.heartbeat(state="idle", active_claims=0, scanned=True)
     finally:
@@ -518,7 +546,8 @@ def test_mutation_transaction_acquires_documented_lock_order(engine):
         assert intent(repo, claim)
     finally:
         sqlalchemy_event.remove(engine, "before_cursor_execute", observe)
-    assert locked_tables == ["social_controls", "social_accounts", "social_publications", "social_post_targets"]
+    assert locked_tables == ["social_worker_runtime_ownership", "social_worker_runtime_ownership",
+                             "social_controls", "social_accounts", "social_publications", "social_post_targets"]
 
 
 @pytest.mark.parametrize("column", ["start_deadline", "content_valid_until"])
@@ -613,7 +642,7 @@ def test_completion_database_failure_survives_restart_as_reconciliation(engine, 
     assert fake.calls == 1 and row(engine, ids["targets"][0])["state"] == "published"
 
 
-def test_actual_process_kill_after_fake_remote_acceptance_recovers_without_republish(engine, tmp_path):
+def test_actual_process_kill_after_fake_remote_acceptance_retains_global_owner_without_republish(engine, tmp_path):
     import subprocess
     import sys
     ids = seed(engine)
@@ -625,6 +654,7 @@ from social.contracts import CapabilitySet, OperationPlan, ValidationResult
 from social.worker.config import WorkerConfig,create_worker_engine
 from social.worker.repository import QueueRepository
 from social.worker.runner import SocialWorker
+from social.worker.ownership import acquire_authority
 class ExplicitTestAdapter:
     def capabilities(self,account): return CapabilitySet.model_validate(account['capability_snapshot'])
     def validate(self,payload,capabilities): return ValidationResult(valid=True)
@@ -635,9 +665,10 @@ class ExplicitTestAdapter:
             receipt.write('accepted-remote-id\n'); receipt.flush(); os.fsync(receipt.fileno())
         print('REMOTE_ACCEPTED',flush=True)
         await asyncio.Event().wait()
-config=WorkerConfig(os.environ['SOCIAL_WORKER_TEST_DATABASE_URL'])
+config=WorkerConfig(os.environ['SOCIAL_WORKER_TEST_DATABASE_URL'],database_schema=os.environ['SOCIAL_WORKER_FIXTURE_SCHEMA'])
 engine=create_worker_engine(config)
-repo=QueueRepository(engine,config,uuid4())
+authority=acquire_authority(engine,uuid4(),'crash-fixture')
+repo=QueueRepository(engine,config,authority.owner_id,authority=authority)
 worker=SocialWorker(repo,adapters={('facebook','fake'):ExplicitTestAdapter()})
 async def run():
     claim=(await worker.db(repo.claim_due))[0]
@@ -645,16 +676,25 @@ async def run():
 asyncio.run(run())
 '''
     child_env = os.environ.copy()
+    from pathlib import Path
+    child_env['PYTHONPATH'] = str(Path(__file__).resolve().parents[2]) + (
+        os.pathsep + child_env['PYTHONPATH'] if child_env.get('PYTHONPATH') else '')
     # Preserve the endpoint already validated and pinned by the parent fixture.
     # Re-reading the raw DSN would reintroduce libpq environment redirection.
     child_env['SOCIAL_WORKER_TEST_DATABASE_URL'] = engine.url.render_as_string(hide_password=False)
+    with engine.connect() as conn:
+        child_env['SOCIAL_WORKER_FIXTURE_SCHEMA'] = conn.execute(text("SELECT n.nspname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid='social_post_targets'::regclass")).scalar_one()
     child = subprocess.Popen([sys.executable, "-c", script, str(ledger)], stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, text=True, env=child_env)
     try:
         import select
         readable, _, _ = select.select([child.stdout], [], [], 10)
         assert readable, "Child did not reach the remote-acceptance crash boundary"
-        assert child.stdout.readline().strip() == "REMOTE_ACCEPTED"
+        observed = child.stdout.readline().strip()
+        if not observed:
+            child.wait(timeout=5)
+            pytest.fail('Acceptance child failed before provider boundary: ' + child.stderr.read())
+        assert observed == "REMOTE_ACCEPTED"
         child.kill()
         child.wait(timeout=5)
     finally:
@@ -664,14 +704,14 @@ asyncio.run(run())
     assert ledger.read_text() == "accepted-remote-id\n"
     assert row(engine, ids["targets"][0])["state"] == "dispatching"
     expire(engine, ids["targets"][0])
-    repo = repository(engine)
-    assert repo.recover_expired() == 1
-    adapter = FakeAdapter(reconcile_result=ReconciliationResult(outcome="confirmed_published", evidence={"receipt":"exact"},
-        result=OperationResult(outcome="confirmed_success",primary_remote_id="accepted-remote-id",visibility_state="public",confirmation_kind="reconciled")))
-    run_claim(repo, adapter)
-    assert adapter.calls == 0 and adapter.reconciliations == 1
+    from social.worker.ownership import AuthorityLost
+    with pytest.raises(AuthorityLost, match='GLOBAL_WORKER_OWNED'):
+        repository(engine)
+    with engine.connect() as conn:
+        assert conn.execute(text('SELECT count(*) FROM social_worker_runtime_ownership')).scalar_one() == 1
+        assert conn.execute(text('SELECT count(*) FROM social_publish_attempts WHERE completed_at IS NULL')).scalar_one() == 1
     assert ledger.read_text() == "accepted-remote-id\n"
-    assert row(engine, ids["targets"][0])["state"] == "published"
+    assert row(engine, ids["targets"][0])["state"] == "dispatching"
 
 
 def test_pause_resume_retains_schedule_and_checks_deadline_again(engine):
