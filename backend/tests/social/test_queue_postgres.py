@@ -155,11 +155,11 @@ class FakeAdapter:
         return self.reconcile_result or ReconciliationResult(outcome="unknown", evidence={"lookup": "incomplete"})
 
 
-def run_claim(repo, adapter=None):
+def run_claim(repo, adapter=None, *, claim=None):
     async def execute():
         worker = SocialWorker(repo, adapters={("facebook", "fake"): adapter} if adapter else {})
         try:
-            claims = await worker.db(repo.claim_due, 1)
+            claims = [claim] if claim is not None else await worker.db(repo.claim_due, 1)
             assert claims
             await worker.process(claims[0])
         finally:
@@ -371,9 +371,13 @@ def test_expired_dispatched_claim_holds_account_and_fences_late_receipt(engine):
 
 
 def test_cancel_and_pause_before_permit_prevent_adapter_call(engine):
-    ids = seed(engine, paused=True)
+    ids = seed(engine)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_controls SET publishing_enabled=false"))
     fake = FakeAdapter()
-    run_claim(repository(engine), fake)
+    run_claim(repo, fake, claim=claim)
     assert fake.calls == 0 and row(engine, ids["targets"][0])["state"] == "queued"
     with engine.begin() as conn:
         conn.execute(text("UPDATE social_controls SET publishing_enabled=true"))
@@ -674,9 +678,9 @@ def test_pause_resume_retains_schedule_and_checks_deadline_again(engine):
     ids = seed(engine, paused=True)
     fake = FakeAdapter()
     repo = repository(engine)
-    run_claim(repo, fake)
+    assert repo.claim_due() == []
     paused = row(engine, ids["targets"][0])
-    assert paused["state"] == "queued" and paused["error_code"] == "PUBLISHING_PAUSED"
+    assert paused["state"] == "queued" and paused["error_code"] is None
     assert paused["checkpoint"] == {} and paused["submit_count"] == 0
     with engine.begin() as conn:
         conn.execute(text("UPDATE social_controls SET publishing_enabled=true"))
@@ -688,7 +692,7 @@ def test_pause_past_start_deadline_does_not_publish_stale_announcement(engine):
     ids = seed(engine, paused=True)
     fake = FakeAdapter()
     repo = repository(engine)
-    run_claim(repo, fake)
+    assert repo.claim_due() == []
     with engine.begin() as conn:
         conn.execute(text("UPDATE social_controls SET publishing_enabled=true"))
         conn.execute(text("UPDATE social_publications SET start_deadline=now()-interval '1 second'"))
@@ -761,9 +765,11 @@ def test_database_failure_before_permit_sends_nothing(engine):
 
 
 def test_repository_direct_public_permit_cannot_bypass_mutation_gate(engine):
-    seed(engine, paused=True)
+    seed(engine)
     repo = repository(engine)
     claim = repo.claim_due()[0]
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE social_controls SET publishing_enabled=false"))
     with pytest.raises(ValueError):
         repo.begin_operation(claim,operation_id=uuid4(),operation="publish",publication_capable=True,
             mutating=False,safe_replay_class="requires_reconciliation",request_fingerprint="a"*64,checkpoint_input={})
@@ -928,6 +934,8 @@ def test_unselected_account_with_self_consistent_unapproved_payload_has_no_permi
             state="queued",next_action="publish",next_action_at=datetime.now(timezone.utc)))
         db.commit()
     repo = repository(engine)
+    # The worker schedules against the database clock, not the test host's clock.
+    due_now(engine, target_id)
     claim = next(c for c in repo.claim_due(2) if c.target_id == str(target_id))
     assert intent(repo,claim) is None
     assert row(engine,target_id)["error_code"] == "TARGET_NOT_AUTHORIZED"
