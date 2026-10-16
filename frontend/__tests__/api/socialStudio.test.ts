@@ -25,3 +25,12 @@ test('provider zero stays zero and expired observations become stale', () => {
 test.each([true, NaN, Infinity, -1, null, '0'])('hostile available metric value %s refuses', value => {
   expect(() => decodeAnalytics({ ...analytics, collections: [{ ...analytics.collections[0], metrics: [{ ...metric, value }] }] })).toThrow();
 });
+
+test('native lifetime metrics preserve unavailable dates and provider end time', () => {
+  const decode = (changes: object) => decodeAnalytics({ ...analytics, collections: [{ ...analytics.collections[0], metrics: [{ ...metric, period: 'lifetime', window_start: null, window_end: null, ...changes }] }] }).collections[0].metrics[0];
+  expect(decode({}).window_start).toBeNull();
+  expect(decode({}).value).toBe(0);
+  expect(decode({ window_end: metric.window_end }).window_end).toBe(metric.window_end);
+  expect(() => decode({ period: 'day' })).toThrow();
+  expect(() => decode({ window_end: '2030-01-01T00:00:00Z' })).toThrow();
+});

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from sqlalchemy import func, select
 
-from ..contracts import canonical_json
+from ..contracts import canonical_json, canonical_hash
 from ..models import SocialAccount, SocialAuditEvent, SocialPostTarget
 from ..service import SocialError, iso, utc
 from .contracts import Metric, MetricRequest
@@ -74,7 +74,7 @@ def bounded_collect(port, request):
         process.close()
 
 
-def collect(factory, target_id, ports, *, enabled=False):
+def collect(factory, target_id, ports, *, enabled=False, authorization=None):
     if type(enabled) is not bool or not enabled:
         raise SocialError('ANALYTICS_DISABLED', 'Metrics collection has not been enabled.', 503)
     now = datetime.now(timezone.utc)
@@ -86,7 +86,10 @@ def collect(factory, target_id, ports, *, enabled=False):
         account = db.scalar(select(SocialAccount).where(SocialAccount.id == target.account_id).with_for_update())
         if target.state != 'published' or target.visibility_state != 'public' or not target.primary_remote_id:
             raise SocialError('METRICS_NOT_PUBLIC', 'Only confirmed public targets can be collected.')
-        port = ports.get(account.platform)
+        from .native_metrics import AnalyticsRuntime
+        native = type(ports) is AnalyticsRuntime
+        request = MetricRequest(platform=account.platform, account_id=account.id, target_id=target.id, remote_id=target.primary_remote_id, deadline=now + timedelta(seconds=10))
+        port = ports.prepare(db, target, authorization, request) if native else ports.get(account.platform)
         # No X reads under the zero-spend contract, even if a port is installed.
         if account.platform == 'x' or port is None or port.platform != account.platform or port.zero_cost is not True:
             raise SocialError('METRICS_UNAVAILABLE', 'An authorized zero-cost provider metrics port is unavailable.', 503)
@@ -100,6 +103,11 @@ def collect(factory, target_id, ports, *, enabled=False):
         row = MetricCollection(id=uuid4(), account_id=account.id, target_id=target.id, platform=account.platform, remote_id=target.primary_remote_id, state='reserved', created_at=now)
         db.add(row)
         collection_id = row.id
+        if native:
+            db.add(SocialAuditEvent(actor_kind='metrics', action='metrics.reserved', target_id=target_id,
+                details={'collection_id': str(row.id), 'authorization': authorization.model_dump(mode='json'),
+                         'request_hash': canonical_hash(request.model_dump(mode='json'))},
+                request_id=str(collection_id)))
     # The reservation is durable before the provider read; failure consumes quota.
     # Platform transport owns deadline/byte enforcement; fixture ports are never
     # automatically registered as native adapters.
@@ -120,14 +128,37 @@ def collect(factory, target_id, ports, *, enabled=False):
             row.state, row.reason = 'failed', 'Provider collection failed or returned invalid/late observations.'
         raise SocialError('METRICS_COLLECTION_FAILED', 'Provider collection failed; its quota reservation is retained.', 502) from None
     with factory() as db, db.begin():
+        studio_lock(db)
+        if native:
+            target = db.scalar(select(SocialPostTarget).where(SocialPostTarget.id == target_id).with_for_update().execution_options(populate_existing=True))
+            try:
+                ports.material(db, target, authorization)
+            except Exception:
+                row = db.get(MetricCollection, collection_id)
+                row.state, row.reason = 'failed', 'Authorization changed during collection; observations were discarded.'
+                # Commit failure evidence before raising below.
+                failed_authorization = True
+            else:
+                failed_authorization = False
+        else:
+            failed_authorization = False
         row = db.scalar(select(MetricCollection).where(MetricCollection.id == collection_id).with_for_update())
-        if row.state != 'reserved':
-            raise SocialError('METRICS_COLLECTION_CONFLICT', 'The collection reservation changed.')
-        row.state = 'collected'
-        for metric in metrics:
-            db.add(MetricObservation(collection_id=row.id, metric=metric.model_dump(mode='json')))
-        db.add(SocialAuditEvent(actor_kind='metrics', action='metrics.collected', target_id=target_id, details={'collection_id': str(row.id), 'observations': len(metrics)}, request_id=str(collection_id)))
+        if failed_authorization:
+            db.flush()
+        else:
+            _save_observations(db, row, metrics, target_id, collection_id)
+    if failed_authorization:
+        raise SocialError('METRICS_AUTHORIZATION_CHANGED', 'Authorization changed; observations were discarded and quota retained.')
     return collection_id
+
+
+def _save_observations(db, row, metrics, target_id, collection_id):
+    if row.state != 'reserved':
+        raise SocialError('METRICS_COLLECTION_CONFLICT', 'The collection reservation changed.')
+    row.state = 'collected'
+    for metric in metrics:
+        db.add(MetricObservation(collection_id=row.id, metric=metric.model_dump(mode='json')))
+    db.add(SocialAuditEvent(actor_kind='metrics', action='metrics.collected', target_id=target_id, details={'collection_id': str(row.id), 'observations': len(metrics)}, request_id=str(collection_id)))
 
 
 def observations(db, target_id, page=1, now=None):

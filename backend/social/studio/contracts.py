@@ -84,8 +84,8 @@ class Metric(StrictModel):
     api_version: Identifier
     unit: Identifier
     period: Identifier
-    window_start: datetime
-    window_end: datetime
+    window_start: datetime | None
+    window_end: datetime | None
     collected_at: datetime
     available_until: datetime
     status: Literal['available', 'unavailable']
@@ -94,7 +94,12 @@ class Metric(StrictModel):
 
     @model_validator(mode='after')
     def semantics(self):
-        if not self.window_start < self.window_end <= self.collected_at < self.available_until:
+        dates = (self.collected_at, self.available_until, self.window_start, self.window_end)
+        if any(d is not None and d.tzinfo is None for d in dates):
+            raise ValueError('Observation dates require timezones')
+        unknown_window = self.window_start is None and self.period == 'lifetime' and (self.window_end is None or self.window_end <= self.collected_at)
+        if not self.collected_at < self.available_until or (not unknown_window and
+                (self.window_start is None or self.window_end is None or not self.window_start < self.window_end <= self.collected_at)):
             raise ValueError('Invalid provider observation window or freshness')
         if (self.status == 'available') != (self.value is not None) or (self.status == 'unavailable') != (self.reason is not None):
             raise ValueError('Unavailable observations require a reason and null value')
