@@ -331,7 +331,11 @@ class PrivacyWorkflow:
             if execution.version != expected_version or execution.state not in {'executing', 'outcome_unknown'}:
                 raise refuse('VERSION_CONFLICT')
             intent = self.ledger.read(execution.id)
-            if intent['plan_hash'] != plan.plan_hash or intent['plan_id'] != str(plan.id) or intent['scope'] != plan.scope:
+            validate_intent(intent)
+            expected_intent = {'schema_version': 1, 'operation_id': str(execution.id),
+                'plan_id': str(plan.id), 'plan_hash': plan.plan_hash,
+                'policy_hash': plan.policy_hash, 'scope': plan.scope}
+            if canonical_hash(intent) != canonical_hash(expected_intent):
                 raise refuse('PRIVACY_LEDGER_MISMATCH')
             self.apply_intent(intent)
             operation = execution.id

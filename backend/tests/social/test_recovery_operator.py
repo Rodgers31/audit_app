@@ -2,8 +2,8 @@
 import os
 from pathlib import Path
 import signal
-import subprocess
 import time
+import sys
 import pytest
 from sqlalchemy import create_engine
 from social.recovery_database import _dump_snapshot,DatabaseRecoveryError
@@ -25,11 +25,14 @@ def test_exported_parent_cannot_leave_descendants_and_report_success(tmp_path):
     try:
         with pytest.raises(DatabaseRecoveryError):_dump_snapshot(engine,'00000001-00000001-1','public',backup,script)
         assert not backup.exists()
+        if sys.platform != 'linux':
+            assert not pidfile.exists()  # Unsupported containment refuses before launch.
+            return
         pid=int(pidfile.read_text())
         deadline=time.monotonic()+1
         while time.monotonic()<deadline:
-            result=subprocess.run(['ps','-o','stat=','-p',str(pid)],capture_output=True,text=True)
-            if result.returncode!=0 or result.stdout.strip().startswith('Z'):break
+            try:os.kill(pid,0)
+            except ProcessLookupError:break
             time.sleep(0.01)
         else:pytest.fail('Owned exporter descendant remains running')
     finally:
