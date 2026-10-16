@@ -233,7 +233,20 @@ def _policies():
 
 
 def _policy_rows(conn, oid, schema):
-    return list(conn.execute(text('SELECT c.relname AS "table",p.polname AS name,p.polcmd AS command,p.polpermissive AS permissive,p.polroles AS roles,pg_get_expr(p.polqual,p.polrelid) AS "using",pg_get_expr(p.polwithcheck,p.polrelid) AS "check" FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema AND (p.polroles @> ARRAY[CAST(:oid AS oid)] OR p.polroles @> ARRAY[CAST(0 AS oid)] OR p.polname LIKE \'scw_%\')'), {'oid': oid, 'schema': schema}).mappings())
+    # A policy does not grant table access. Unrelated PUBLIC policies cannot
+    # affect the worker while _grants denies all out-of-contract privileges.
+    # Still inventory every explicit worker policy and reserved policy name.
+    return list(conn.execute(text('''
+        SELECT c.relname AS "table",p.polname AS name,p.polcmd AS command,
+               p.polpermissive AS permissive,p.polroles AS roles,
+               pg_get_expr(p.polqual,p.polrelid) AS "using",
+               pg_get_expr(p.polwithcheck,p.polrelid) AS "check"
+        FROM pg_policy p JOIN pg_class c ON c.oid=p.polrelid
+        JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=:schema AND (
+            p.polroles @> ARRAY[CAST(:oid AS oid)] OR p.polname LIKE 'scw_%'
+            OR (c.relname=ANY(:tables) AND p.polroles @> ARRAY[CAST(0 AS oid)]))
+    '''), {'oid': oid, 'schema': schema, 'tables': sorted(TABLES)}).mappings())
 
 
 def _policy_matches(row, policy, oid):
