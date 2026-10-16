@@ -13,9 +13,9 @@ from sqlalchemy.engine import Engine, make_url
 class WorkerConfig:
     database_url: str
     deployment_version: str = "batch-1"
-    external_slots: int = 2
+    external_slots: int = 1
     active_scan_seconds: float = 5
-    idle_scan_seconds: float = 30
+    idle_scan_seconds: float = 60
     active_heartbeat_seconds: float = 15
     idle_heartbeat_seconds: float = 60
     lease_seconds: int = 120
@@ -63,15 +63,16 @@ def create_worker_engine(config: WorkerConfig) -> Engine:
     if url.drivername == "postgresql":
         url = url.set(drivername="postgresql+psycopg2")
     connect_args = {"connect_timeout": 10}
+    options = url.query.get('options', '')
+    if not isinstance(options, str):
+        raise ValueError("Ambiguous PostgreSQL options")
+    connect_args['options'] = options + ' -clock_timeout=2000 -cstatement_timeout=5000'
     if config.database_schema is not None:
         # libpq options apply to every physical connection, including
         # replacements. pg_catalog stays first, as in PostgreSQL's implicit
         # path, so no schema object replaces a builtin; pg_temp is last so a
         # temporary table cannot shadow a worker relation.
-        options = url.query.get('options', '')
-        if not isinstance(options, str):
-            raise ValueError("Ambiguous PostgreSQL options")
-        connect_args["options"] = options + " -csearch_path=pg_catalog," + config.database_schema + ",pg_temp"
+        connect_args["options"] += " -csearch_path=pg_catalog," + config.database_schema + ",pg_temp"
     return create_engine(
         url,
         pool_size=2,

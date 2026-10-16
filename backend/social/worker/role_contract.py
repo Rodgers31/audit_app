@@ -16,8 +16,9 @@ READ_TABLES = frozenset({
     'social_controls', 'social_accounts', 'social_publications',
     'social_post_targets', 'social_post_revisions', 'social_publish_attempts',
     'social_credentials', 'social_media_assets', 'social_worker_heartbeats',
+    'social_worker_runtime_ownership', 'social_worker_runtime_history',
 })
-LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials'})
+LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
     'social_accounts': frozenset('hold_reason publish_lease_target_id publish_lease_token publish_lease_expires_at updated_at'.split()),
     'social_post_targets': frozenset('state next_action next_action_at lease_owner lease_token lease_epoch lease_expires_at submit_count checkpoint primary_remote_id remote_refs remote_url visibility_state confirmation_kind error_code safe_error_message published_at updated_at'.split()),
@@ -26,6 +27,8 @@ UPDATES = {
     **{table: frozenset({'id'}) for table in LOCK_TABLES},
 }
 INSERTS = {
+    'social_worker_runtime_ownership': frozenset('id owner_id generation deployment_version'.split()),
+    'social_worker_runtime_history': frozenset('generation event owner_id deployment_version proof'.split()),
     'social_publish_attempts': frozenset('id target_id sequence operation_id operation request_fingerprint lease_epoch dispatch_started_at outcome receipt estimated_cost_microusd cost_reservation_state created_at'.split()),
     'social_worker_heartbeats': frozenset('worker_id deployment_version started_at heartbeat_at last_scan_at last_success_at active_claims state last_error_code'.split()),
     'social_audit_events': frozenset('id post_id target_id account_id actor_kind action previous_state new_state details request_id created_at'.split()),
@@ -223,7 +226,8 @@ def _policies():
         using, check = ('true', 'false') if table in LOCK_TABLES else ('(completed_at IS NULL)', '(completed_at IS NOT NULL)') if table == 'social_publish_attempts' else ('true', 'true')
         result.extend(Policy(table, name, 'w', permissive, using, check) for name, permissive in [('scw_update', True), ('scw_update_fence', False)])
     for table in sorted(INSERTS):
-        check = "(actor_kind = 'worker'::text)" if table == 'social_audit_events' else 'true'
+        check = ("(actor_kind = 'worker'::text)" if table == 'social_audit_events' else
+                 "(event = 'acquired'::text)" if table == 'social_worker_runtime_history' else 'true')
         result.extend(Policy(table, name, 'a', permissive, None, check) for name, permissive in [('scw_insert', True), ('scw_insert_fence', False)])
     return result
 
@@ -258,6 +262,9 @@ GUARD_SOURCES = {
     'social_guard_target_payload': '866879740f52eb3f17888c801729695c56e9fd5f1f4213804da1887f12e9618c',
     'social_guard_authorization': '2a825e76bd7af78352e7b59d019bf88e07fd19432b38a5e4e28294c97a344ec9',
     'social_guard_ready_asset': '9ce9b11cc7a1a664287e627a93456e8bb988438d25a29f6ea4d77bb74159e970',
+    'social_worker_owner_guard': 'c34abb544af92aa0338ebfd8a236ef2f2e21376208f29ff0018c8052413d23b7',
+    'social_worker_owner_acquired': '5537aa74d7d97f5d9d2bb8dc17b84f3401725653f73cb87f8ef879521675597e',
+    'social_worker_history_guard': '6fab44b2ffff522a542da51786a36b592afb96cb84e172b60068d17f330c5fbe',
 }
 TRIGGERS = {
     ('social_post_revisions', 'social_revision_immutable'): ('social_deny_history_mutation', 27),
@@ -265,6 +272,9 @@ TRIGGERS = {
     ('social_post_targets', 'social_target_payload_immutable'): ('social_guard_target_payload', 19),
     ('social_publications', 'social_publication_authorization_immutable'): ('social_guard_authorization', 19),
     ('social_media_assets', 'social_ready_asset_immutable'): ('social_guard_ready_asset', 19),
+    ('social_worker_runtime_ownership', 'social_worker_owner_guard'): ('social_worker_owner_guard', 31),
+    ('social_worker_runtime_ownership', 'social_worker_owner_acquired'): ('social_worker_owner_acquired', 5),
+    ('social_worker_runtime_history', 'social_worker_history_guard'): ('social_worker_history_guard', 31),
 }
 
 
@@ -289,7 +299,10 @@ def _triggers(conn, schema):
                  and row['tgtype'] == kind and row['tgenabled'] in ('O', 'A')
                  and row['unqualified'] is True and row['all_columns'] is True and row['tgnargs'] == 0
                  and row['tgconstraint'] == 0 and row['prosecdef'] is False
-                 and row['proconfig'] is None and row['lanname'] == 'plpgsql'
+                 and (row['proconfig'] is None if not function.startswith('social_worker_') else
+                      row['proconfig'] is not None and len(row['proconfig']) == 1
+                      and row['proconfig'][0].replace(' ', '').replace('"', '') == 'search_path=pg_catalog,' + schema + ',pg_temp')
+                 and row['lanname'] == 'plpgsql'
                  and hashlib.sha256(row['prosrc'].encode()).hexdigest() == GUARD_SOURCES[function])
         seen.add(key)
     _require(seen == TRIGGERS.keys())

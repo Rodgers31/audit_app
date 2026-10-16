@@ -85,14 +85,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 #    whatever port the host expects. Render in particular sets
 #    ``PORT=10000`` by default and runs a port scan against that
 #    address; binding to a hardcoded 8000 would make the deploy fail
-#    with ``no open ports detected``. The ``${...}`` expansion needs a
-#    shell, so we wrap in ``sh -c "exec gunicorn ..."``. The ``exec``
-#    is important: it replaces the shell with gunicorn so SIGTERM (used
-#    for graceful shutdown) reaches gunicorn directly instead of dying
-#    at the shell wrapper.
-CMD ["sh", "-c", "exec gunicorn main:app \
-  --worker-class uvicorn.workers.UvicornWorker \
-  --bind 0.0.0.0:${PORT:-8000} \
-  --access-logfile - --error-logfile - --log-level info \
-  --timeout 120 --keep-alive 5 \
-  --max-requests 1000 --max-requests-jitter 100"]
+#    with ``no open ports detected``. The stdlib launcher preserves that
+#    fallback and execs Gunicorn directly with supervision disabled.
+# The stdlib launcher execs this exact web argv when supervision is OFF
+# (the default). ON owns one web group plus one fixed social child.
+CMD ["python", "-m", "social_worker_supervisor"]

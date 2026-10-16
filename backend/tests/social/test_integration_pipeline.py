@@ -25,6 +25,7 @@ from social.service import SocialService
 from social.worker.config import WorkerConfig
 from social.worker.repository import QueueRepository
 from social.worker.runner import SocialWorker
+from test_queue_postgres import repository
 from supabase_auth import AdminUser
 from local_postgres import local_postgres_url
 
@@ -144,7 +145,7 @@ class ExplicitFake:
 
 def drain(engine, adapters):
     async def run():
-        repo = QueueRepository(engine, WorkerConfig(str(engine.url.render_as_string(hide_password=False))), uuid4())
+        repo = repository(engine)
         worker = SocialWorker(repo, adapters=adapters)
         try:
             while True:

@@ -94,7 +94,9 @@ def test_native_interrupt_drains_owned_cleanup_before_exit130(monkeypatch, caplo
     monkeypatch.setenv('INERT_REVIEW_DSN', 'postgresql://inert@localhost/inert')
     monkeypatch.setattr(worker_cli, 'create_worker_engine', lambda config: SimpleNamespace(dispose=lambda:events.append('dispose')))
     monkeypatch.setattr(worker_cli, 'verify_worker_role', lambda *args: None)
-    monkeypatch.setattr(worker_cli, 'QueueRepository', lambda *args: object())
+    monkeypatch.setattr(worker_cli, 'validate_worker_native_environment', lambda *args: None)
+    monkeypatch.setattr(worker_cli, 'acquire_authority', lambda *args: object())
+    monkeypatch.setattr(worker_cli, 'QueueRepository', lambda *args, **kwargs: SimpleNamespace(check_authority=lambda:None,drained=lambda:True))
     @asynccontextmanager
     async def native(engine):
         try: yield SimpleNamespace(adapters={}, credential_loader=None, media_access=None)
@@ -103,6 +105,7 @@ def test_native_interrupt_drains_owned_cleanup_before_exit130(monkeypatch, caplo
             if failure == 'native_exit': raise RuntimeError('PRIVATE_NATIVE_CLEANUP')
     monkeypatch.setattr(worker_cli, 'native_runtime', native)
     class Worker:
+        failed = False
         def __init__(self, *args, **kwargs): pass
         def stop(self): pass
         async def run(self, **kwargs):
@@ -111,14 +114,19 @@ def test_native_interrupt_drains_owned_cleanup_before_exit130(monkeypatch, caplo
             events.append('worker_close')
             if failure == 'worker_close': raise RuntimeError('PRIVATE_CLOSE')
     monkeypatch.setattr(worker_cli, 'SocialWorker', Worker)
-    def remove(sig):
-        events.append('signal_removal')
-        if failure == 'signal_interrupt': raise KeyboardInterrupt('PRIVATE_SIGNAL')
-        if failure == 'signal_removal': raise RuntimeError('PRIVATE_SIGNAL')
-    loop = SimpleNamespace(add_signal_handler=lambda *args:None, remove_signal_handler=remove)
-    monkeypatch.setattr(worker_cli.asyncio, 'get_running_loop', lambda:loop)
+    installed = []
+    # Keep asyncio.Runner from independently installing its default SIGINT
+    # wrapper; this fixture isolates the CLI's startup/finalization handlers.
+    monkeypatch.setattr(worker_cli.signal, 'getsignal', lambda sig: object())
+    def set_signal(sig, handler):
+        installed.append(sig)
+        if len(installed) > 2:
+            events.append('signal_removal')
+            if failure == 'signal_interrupt': raise KeyboardInterrupt('PRIVATE_SIGNAL')
+            if failure == 'signal_removal': raise RuntimeError('PRIVATE_SIGNAL')
+    monkeypatch.setattr(worker_cli.signal, 'signal', set_signal)
     assert worker_cli.main(['--database-url-env','INERT_REVIEW_DSN','--worker-role','inert_worker','--native-meta','--once']) == 130
-    assert events == ['signal_removal','signal_removal','worker_close','native_exit','dispose']
+    assert events == ['worker_close','native_exit','dispose','signal_removal','signal_removal']
     assert 'PRIVATE_' not in caplog.text
 
 

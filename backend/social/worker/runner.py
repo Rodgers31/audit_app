@@ -16,6 +16,7 @@ from .logging import event
 from .policy import bounded_json, retry_decision, validate_plan
 from .repository import Claim, GateRejected, LeaseLost, QueueRepository
 from .materials import CredentialLoadRequest
+from .ownership import AuthorityLost, bind_runtime, unbind_runtime
 
 logger = logging.getLogger("social.worker")
 
@@ -29,16 +30,21 @@ class SocialWorker:
         self.adapters = dict(adapters or {})
         self.credential_loader = credential_loader
         self.media_access = media_access
+        bind_runtime(repository.authority, self)
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="social-db")
         self.stop_event = asyncio.Event()
         self.tasks = set()
         self._last_heartbeat = 0.0
         self._last_success = False
+        self.failed = False
+        self._running = False
+        self._operation_slots = asyncio.Semaphore(self.config.external_slots)
 
     async def db(self, function, *args, **kwargs):
         return await asyncio.get_running_loop().run_in_executor(self.executor, partial(function, *args, **kwargs))
 
     def stop(self):
+        self.repository.admission_stopped.set()
         self.stop_event.set()
 
     async def close(self):
@@ -46,16 +52,28 @@ class SocialWorker:
         if self.tasks:
             await asyncio.gather(*self.tasks, return_exceptions=True)
         self.executor.shutdown(wait=True)
+        unbind_runtime(self.repository.authority, self)
 
     async def run(self, *, once=False):
+        if self._running:
+            raise RuntimeError('Worker is already running')
+        self._running = True
+        try:
+            await self._run(once=once)
+        finally:
+            self._running = False
+
+    async def _run(self, *, once=False):
         await self.db(self.repository.validate_schema)
         try:
             while not self.stop_event.is_set():
                 try:
                     await self.db(self.repository.recover_expired)
-                    free = self.config.external_slots-len(self.tasks)
+                    free = max(0, self.config.external_slots-len(self.tasks))
                     claims = await self.db(self.repository.claim_due, free) if free else []
                     for claim in claims:
+                        if self.stop_event.is_set():
+                            break
                         task = asyncio.create_task(self.process(claim))
                         self.tasks.add(task)
                         task.add_done_callback(self.tasks.discard)
@@ -77,9 +95,14 @@ class SocialWorker:
                         await asyncio.wait_for(self.stop_event.wait(), timeout=wait)
                     except asyncio.TimeoutError:
                         pass
+                except AuthorityLost:
+                    self.failed = True
+                    self.stop()
+                    raise
                 except asyncio.CancelledError:
                     raise
                 except Exception:
+                    self.failed = True
                     # Database failures never become adapter calls or fake health.
                     event(logger, "worker_scan_failed", worker_id=self.repository.worker_id,
                           error_code="DATABASE_UNAVAILABLE", outcome="unavailable")
@@ -93,7 +116,7 @@ class SocialWorker:
                 await asyncio.gather(*self.tasks, return_exceptions=True)
         finally:
             try:
-                await self.db(self.repository.heartbeat, state="stopped", active_claims=0)
+                await self.db(self.repository.heartbeat, state="unavailable" if self.failed else "stopped", active_claims=0)
             except Exception:
                 event(logger, "worker_heartbeat_failed", worker_id=self.repository.worker_id,
                       error_code="DATABASE_UNAVAILABLE", outcome="unavailable")
@@ -115,6 +138,19 @@ class SocialWorker:
                     return
 
     async def process(self, claim: Claim):
+        # Direct callers share the same operation budget and shutdown drain as
+        # tasks created by run(). A queued caller cannot admit after stop().
+        task = asyncio.current_task()
+        self.tasks.add(task)
+        try:
+            async with self._operation_slots:
+                if self.stop_event.is_set():
+                    return
+                await self._process(claim)
+        finally:
+            self.tasks.discard(task)
+
+    async def _process(self, claim: Claim):
         done = asyncio.Event()
         renewal = asyncio.create_task(self._renew(claim, done))
         intent = None
@@ -208,6 +244,11 @@ class SocialWorker:
         except LeaseLost:
             event(logger, "claim_fenced", target_id=claim.target_id, lease_epoch=claim.epoch,
                   outcome="lease_lost")
+        except AuthorityLost:
+            self.failed = True
+            self.stop()
+            event(logger, "worker_authority_lost", error_code="GLOBAL_WORKER_AUTHORITY_LOST",
+                  outcome="unavailable")
         except (ValueError, TypeError):
             if intent is None:
                 try:
@@ -221,6 +262,7 @@ class SocialWorker:
                       operation_id=intent.operation_id, error_code="ADAPTER_CONTRACT_INVALID",
                       outcome="reconciliation_required")
         except Exception:
+            self.failed = True
             # A receipt persistence failure is loud. The durable intent survives
             # and expired-lease recovery reconciles; there is no local resubmit.
             event(logger, "operation_persistence_failed", target_id=claim.target_id,

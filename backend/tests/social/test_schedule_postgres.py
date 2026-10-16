@@ -15,6 +15,7 @@ from social.service import SocialService, utc
 from social.worker.config import WorkerConfig
 from social.worker.repository import QueueRepository
 from test_domain_postgres import pg_engine
+from test_queue_postgres import repository
 from test_schedule_management import scheduled_fixture, command_body
 
 
@@ -27,7 +28,7 @@ def prepared(engine):
         target.next_action_at = pub.scheduled_for = now - timedelta(seconds=1)
         pub.start_deadline, pub.retry_deadline = now + timedelta(hours=1), now + timedelta(hours=24)
         db.commit()
-    repo = QueueRepository(engine, WorkerConfig(engine.url.render_as_string(hide_password=False)), uuid4())
+    repo = repository(engine)
     return client, base, client.get(base).json(), repo
 
 
