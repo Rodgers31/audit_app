@@ -1,6 +1,6 @@
 # Batch 15 performance/dependencies — partial implementation
 
-Date: 16 October 2026 (Chicago). Worktree `/Users/roger/.codex/worktrees/b15-performance/audit_app`; branch `codex/b15-performance`; accepted base `06896185005d822c4b29888138b984510dd1fdbd`. Final publication HEAD and draft PR are recorded in the shared `FULL_PLAN_COMPLETION_B15/lane/performance-status.md` after publication. Primary dirty checkout remained untouched; an existing external Python runtime was read-only.
+Date: 16 October 2026 (Chicago). Worktree `/Users/roger/.codex/worktrees/b15-performance/audit_app`; branch `codex/b15-performance`; accepted base `06896185005d822c4b29888138b984510dd1fdbd`. Implementation commit `b8c76a859bc7fab2c9340ab332f4e6b806c30747`; draft PR [#701](https://github.com/Rodgers31/audit_app/pull/701). Final publication HEAD is recorded in the shared `FULL_PLAN_COMPLETION_B15/lane/performance-status.md` after publication. Primary dirty checkout remained untouched; an existing external Python runtime was read-only.
 
 ## Implemented and tested
 
@@ -44,7 +44,7 @@ Retained setup failures: primary Python runtime lacked requests; an older extern
 
 ## Independent reviews
 
-Spec: `batch15-performance-evidence/spec-review/report.md`, no blocker in this limited increment; original2 browser cases pass, forced60vh mutants fail, profile503 explicitly outside auth acceptance. Standards: `batch15-performance-evidence/standards-review/REPORT.md`,0 actionable findings; original2 pass,3 hostile controls fail as intended, real API isolation/CORS/external-egress/cleanup checked under normal and optimized Python. Reports retain exact reviewed hashes, commands and outputs. No paid/bot review was requested. Remote inline comments and review bodies are read after draft creation; final disposition is recorded in shared status.
+Spec: `batch15-performance-evidence/spec-review/report.md`, no blocker in this limited increment; original2 browser cases pass, forced60vh mutants fail, profile503 explicitly outside auth acceptance. Standards: `batch15-performance-evidence/standards-review/REPORT.md`,0 actionable findings; original2 pass,3 hostile controls fail as intended, real API isolation/CORS/external-egress/cleanup checked under normal and optimized Python. Reports retain exact reviewed hashes, commands and outputs. No paid/bot review was requested. Fresh remote readback on draft #701 found zero inline comments, zero review bodies, zero issue comments, no requested reviewer and no closing-issue references; final readback is recorded in shared status.
 
 ## Original requirements still remaining
 
@@ -55,4 +55,4 @@ Spec: `batch15-performance-evidence/spec-review/report.md`, no blocker in this l
 
 ## Shared edits, dependencies and resources
 
-Shared product edit: reset-password route only. New standalone fixture/test/config/README plus evidence/handoff docs. No package/lock/config outside that standalone test, migration, API registration, social UI or runtime flag changes. No peer checkout changes. Build cohort released after final build; only owned loopback Next33508/API33518 remain until final cleanup, DB55404 unused. The shared status records final cleanup, source HEAD and PR. Publishing/uploads/Actions/automatic previews remain outside this lane; Actions readback was false. No deploy, merge, policy override, paid resource, hosted build, provider operation or bot request.
+Shared product edit: reset-password route only. New standalone fixture/test/config/README plus evidence/handoff docs. No package/lock/config outside that standalone test, migration, API registration, social UI or runtime flag changes. No peer checkout changes. Build cohort released after final build; owned loopback Next33508/API33518 were stopped cleanly and both listener checks were empty; DB55404 unused. A final supported-fixture replay is recorded in shared status. The shared status records final cleanup, source HEAD and PR. Publishing/uploads/Actions/automatic previews remain outside this lane; Actions readback was false. No deploy, merge, policy override, paid resource, hosted build, provider operation or bot request.

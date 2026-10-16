@@ -50,5 +50,9 @@
   "write_report.py": {
     "retained_as": "write_report.py.txt",
     "sha256": "62ba37d06028a6bc309b762bf9e975350af824f72fdc5d3776421b885e3edc36"
+  },
+  "addendum_probe.py": {
+    "retained_as": "addendum_probe.py.txt",
+    "sha256": "b689fcd26d40b17cbb5d78fb8d76d71d72dfc778084088f874932ce0744c1ee0"
   }
 }
