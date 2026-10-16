@@ -30,7 +30,15 @@ def retained_migration():
     return module
 
 
-def upgrade(engine):
+def retirement_migration():
+    path = Path(__file__).resolve().parents[2] / 'alembic/versions/a701b15a0001_media_payload_retirement.py'
+    spec = importlib.util.spec_from_file_location('media_retirement_migration', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def upgrade(engine, *, current=True):
     with engine.begin() as conn:
         with Operations.context(MigrationContext.configure(conn)):
             from test_connections_migration_postgres import connection_migration
@@ -39,10 +47,12 @@ def upgrade(engine):
             from test_media_settlement_migration_postgres import settlement_migration
             settlement_migration().upgrade()
             retained_migration().upgrade()
+            if current:
+                retirement_migration().upgrade()
 
 
 def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
-    upgrade(pg_engine)
+    upgrade(pg_engine, current=False)
     with pg_engine.begin() as conn:
         tables = dict(conn.execute(text("SELECT relname,relrowsecurity FROM pg_class WHERE relnamespace=current_schema()::regnamespace AND relkind='r'" )).all())
         assert len(tables) == 16 and all(tables.values())
@@ -58,7 +68,7 @@ def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):
 
 
 def test_media_budget_constraint_and_recorded_history_prevent_destructive_downgrade(pg_engine):
-    upgrade(pg_engine)
+    upgrade(pg_engine, current=False)
     with pg_engine.begin() as conn:
         conn.execute(text("INSERT INTO social_media_budgets(scope,bytes_used,pending_count) VALUES ('global',0,0)"))
     with pg_engine.connect() as conn:

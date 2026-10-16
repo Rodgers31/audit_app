@@ -56,7 +56,9 @@ class MediaService:
         return asset, upload
 
     def _audit(self, actor, request_id, asset, action, previous):
-        self.db.add(SocialAuditEvent(actor_id=actor, actor_kind='admin' if actor else 'worker', action=action, previous_state=previous, new_state=asset.state, details={'asset_id': str(asset.id), 'lease_epoch': asset.lease_epoch}, request_id=str(request_id)))
+        event = SocialAuditEvent(actor_id=actor, actor_kind='admin' if actor else 'worker', action=action, previous_state=previous, new_state=asset.state, details={'asset_id': str(asset.id), 'lease_epoch': asset.lease_epoch}, request_id=str(request_id))
+        self.db.add(event)
+        return event
 
     def _dto(self, asset, upload=None):
         return MediaAssetDTO(id=asset.id, version=upload.version if upload else 1, filename=asset.original_filename, state=asset.state, mime_type=asset.mime_type if asset.mime_type in {'image/jpeg', 'image/png', 'video/mp4'} else None, byte_size=asset.byte_size, sha256=asset.sha256, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, default_alt_text=asset.default_alt_text, safe_error=asset.inspection_error, created_at=utc(asset.created_at))
@@ -88,11 +90,23 @@ class MediaService:
                     raise SocialError('UPLOAD_GRANT_EXPIRED', 'The original upload authorization window has ended.', 410)
             else:
                 reservation = 2 * body.declared_size
+                protocol = None
+                if self.config.fenced_retirement_enabled:
+                    from .fencing import WRITE_PROTOCOL
+                    if (getattr(storage, 'retained_create_only', None) is not True
+                            or getattr(storage, 'permanent_payload_fence', None) is not True):
+                        raise SocialError('MEDIA_RECOVERY_UNAVAILABLE', 'Permanent payload fencing is unavailable.', 503)
+                    total = self.db.scalar(select(func.count()).select_from(SocialMediaUpload))
+                    own = self.db.scalar(select(func.count()).select_from(SocialMediaUpload).where(SocialMediaUpload.actor_id == actor))
+                    if total >= self.config.max_total_assets or own >= self.config.max_actor_assets:
+                        raise SocialError('MEDIA_QUOTA_EXCEEDED', 'Lifetime media admission capacity has been reached.', 429)
+                    protocol = WRITE_PROTOCOL
                 if budgets[0].bytes_used + reservation > self.config.total_quota_bytes or budgets[1].bytes_used + reservation > self.config.actor_quota_bytes or budgets[1].pending_count >= self.config.max_pending:
                     raise SocialError('MEDIA_QUOTA_EXCEEDED', 'The media budget or pending-upload limit has been reached.', 429)
                 identity = uuid4()
                 asset = SocialMediaAsset(id=identity, storage_provider=storage.provider, bucket=storage.bucket, storage_key=f'ready/{identity}/original', original_filename=body.filename, default_alt_text=body.alt_text, created_by=actor, state='pending', lease_epoch=0, codec_metadata={})
                 upload = SocialMediaUpload(asset_id=identity, actor_id=actor, initiation_key=key, request_hash=digest, quarantine_key=f'quarantine/{actor}/{identity}/source', declared_mime_type=body.declared_mime_type, declared_size=body.declared_size, reserved_bytes=reservation, expires_at=now + timedelta(hours=self.config.orphan_hours), grant_renewal_deadline=now + timedelta(seconds=self.config.upload_ttl), grant_epoch=0, grant_settled_epoch=0, pending_released=0, version=1, reservation_released=0, finalization_settled=0)
+                upload.write_protocol = protocol
                 self.db.add(asset); self.db.flush(); self.db.add(upload)
                 for budget in budgets:
                     budget.bytes_used += reservation; budget.pending_count += 1
@@ -324,6 +338,9 @@ class MediaService:
                 raise SocialError('VERSION_CONFLICT', 'This media upload changed before reconciliation.')
             if upload.retained_write_fence is not None:
                 raise SocialError('MEDIA_RETENTION_INVALID', 'Retained copies require retained recovery; write-drain reconciliation cannot change this fence.', 409)
+            from .models import SocialMediaDeletion
+            if self.db.scalar(select(SocialMediaDeletion.operation_id).where(SocialMediaDeletion.asset_id == asset.id).limit(1)):
+                raise SocialError('MEDIA_RETENTION_INVALID', 'Payload retirement requires its original operation and authority.', 409)
             now = self.now()
             # A legacy ready cleanup can precede the end of an admitted PUT.
             # Its old delete marker cannot prove the quarantine stayed absent.
@@ -398,7 +415,7 @@ class MediaService:
 
     def _cleanup_conditions(self, now):
         referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
-        return [*object_identity_conditions(self.db.bind.dialect.name), SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
+        return [*object_identity_conditions(self.db.bind.dialect.name), SocialMediaUpload.write_protocol.is_(None), SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
 
     def backlog(self):
         """One aggregate and one compact ledger read; no keys, grants or bodies."""
@@ -437,6 +454,7 @@ class MediaService:
             with self.db.begin():
                 self._budgets(actor)
                 asset, upload = self._rows(identity)
+                if upload.write_protocol is not None: continue
                 if upload.retained_write_fence is not None: continue
                 # Candidate lists are snapshots. Another cleanup or completion
                 # may have settled this reservation before these locks arrived.
