@@ -281,9 +281,19 @@ class SocialService:
             raise SocialError("WARNINGS_NOT_ACKNOWLEDGED", "Review and acknowledge every publication warning.", 422)
         if any(controls.platform_controls.get(t.platform, {}).get("publishing_enabled") is False for t in result.targets):
             raise SocialError("PUBLISHING_PAUSED", "One selected platform is paused. All targets remain unqueued.")
-        if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if any(t.platform == "x" for t in result.targets) and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
         return result
+
+    def _future_delivery_gates(self, result):
+        from .validation import capability_context
+        for target in result.targets:
+            if target.platform == 'tiktok':
+                account=self.db.get(SocialAccount,target.account_id)
+                caps=capability_for(account,self.available_adapters,capability_context(self.db,account))
+                if caps.feature_states.get('unattended_publication') != 'supported':
+                    raise SocialError('UNATTENDED_WORKFLOW_UNVERIFIED','TikTok future delivery requires a separately accepted unattended workflow.',422)
 
     def publish(self, post_id, body, *, scheduled=False):
         post, revision, publication = self._locked(post_id, body.expected_version)
@@ -293,6 +303,8 @@ class SocialService:
             due = resolve_schedule(body.schedule, now) if scheduled else now
         except ValueError:
             raise SocialError("INVALID_SCHEDULE_TIME", "Choose a future civil time and matching timezone offset.", 422) from None
+        if scheduled:
+            self._future_delivery_gates(result)
         publication = self._authorize(post, revision, publication, body, result)
         if publication.dispatch_requested_at is not None:
             if scheduled and due != utc(publication.scheduled_for):
@@ -369,12 +381,15 @@ class SocialService:
             raise SocialError("WARNINGS_NOT_ACKNOWLEDGED", "Review and acknowledge the unsent destination warnings.", 422, field_errors=[w.model_dump(mode="json") for w in missing])
         if any(controls.platform_controls.get(t.platform, {}).get("publishing_enabled") is False for t in result.targets):
             raise SocialError("PUBLISHING_PAUSED", "An unsent platform is paused. The schedule was preserved.")
-        if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if any(t.platform == "x" for t in result.targets) and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
         try:
             due = resolve_schedule(body.schedule, now) if scheduled else now
         except ValueError:
             raise SocialError("INVALID_SCHEDULE_TIME", "Choose a future civil time and matching timezone offset.", 422) from None
+        if scheduled:
+            self._future_delivery_gates(result)
         validity = utc(publication.content_valid_until) if publication.content_valid_until else None
         if validity and due >= validity:
             raise SocialError("AUTHORIZATION_EXPIRED", "The requested time is outside the original content validity. Review a new revision.")
@@ -440,6 +455,8 @@ class SocialService:
         if set(frozen) != {t.account_id for t in result.targets} or any(frozen[v.account_id].payload_hash != v.resolved_preview.content_hash for v in result.targets):
             raise SocialError("REVISION_INTEGRITY_FAILED", "Destinations or media changed. Create and review a new revision.")
         due = max(now, utc(publication.scheduled_for)) if publication.scheduled_for else now
+        if due>now:
+            self._future_delivery_gates(result)
         publication.cancel_requested_at = None
         if publication.dispatch_requested_at is None:
             publication.dispatch_requested_at = now
@@ -484,15 +501,21 @@ class SocialService:
             raise SocialError("RETRY_NOT_SAFE", "This authorization is cancelled, expired or exhausted. Review a new draft.")
         if not controls or not controls.publishing_enabled:
             raise SocialError("PUBLISHING_PAUSED", "Publishing is paused; retry remains unqueued.")
-        caps = capability_for(account, self.available_adapters)
+        from .validation import capability_context
+        caps = capability_for(account, self.available_adapters, capability_context(self.db,account))
         if account.connection_state != "connected" or not account.publishing_enabled or account.hold_reason or not caps.eligible:
             raise SocialError("ACCOUNT_UNAVAILABLE", "Reconnect and validate the failed account before retry.")
         if not caps.adapter_available:
             raise SocialError("ADAPTER_NOT_AVAILABLE", "The platform adapter is unavailable in this batch.")
         if controls.platform_controls.get(account.platform, {}).get("publishing_enabled") is False:
             raise SocialError("PUBLISHING_PAUSED", "This platform is paused; retry remains unqueued.")
-        if account.platform == "x" and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if account.platform == "x" and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X retry requires an explicitly approved API budget.")
+        if (account.platform == 'tiktok' and publication.scheduled_for and publication.dispatch_requested_at
+                and utc(publication.scheduled_for)>utc(publication.dispatch_requested_at)
+                and caps.feature_states.get('unattended_publication') != 'supported'):
+            raise SocialError('UNATTENDED_WORKFLOW_UNVERIFIED','TikTok future delivery requires a separately accepted unattended workflow.',422)
         revision = self.db.get(SocialPostRevision, publication.revision_id)
         document = PostDocument.model_validate(revision.document)
         selected = tuple(t for t in document.targets if t.account_id == target.account_id)
@@ -671,7 +694,8 @@ class SocialService:
                   SocialAccount.api_product, SocialAccount.external_account_id, SocialAccount.granted_scopes)
         accounts = (SimpleNamespace(**row._mapping) for row in self.db.execute(
             select(*fields).order_by(SocialAccount.display_name, SocialAccount.id).limit(100)))
-        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters).model_dump(mode="json")} for a in accounts]}
+        from .validation import capability_context
+        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters,capability_context(self.db,a)).model_dump(mode="json")} for a in accounts]}
 
     def platforms(self):
         from .contracts import CapabilitySet

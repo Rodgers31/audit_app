@@ -2,6 +2,7 @@ import { DocumentTarget, SocialAccount, SocialContent, TargetValidation } from '
 import { httpsUrl, platformLabels, resolveContent } from './socialDocument';
 import styles from './social.module.css';
 import AssetPreview from './media/AssetPreview';
+import { xWeightedLength, threadsConservativeLength } from '@/lib/socialPlatformCounters';
 
 export default function SocialPreview({ master, target, account, validation }: { master: SocialContent; target?: DocumentTarget; account?: SocialAccount; validation?: TargetValidation }) {
   const content = resolveContent(master, target);
@@ -9,6 +10,9 @@ export default function SocialPreview({ master, target, account, validation }: {
   const text = typeof resolved?.text === 'string' ? resolved.text : content.text;
   const link = resolved && ('link' in resolved) ? (typeof resolved.link === 'string' ? resolved.link : null) : content.link;
   const inspected = resolved?.assets ?? [];
+  const rendered = [text, content.hashtags.map(tag => tag.startsWith('#') ? tag : '#' + tag).join(' '), link].filter(Boolean).join('\n\n');
+  const xCount = account?.platform === 'x' ? xWeightedLength(rendered) : undefined;
+  const threadsCount = account?.platform === 'threads' ? threadsConservativeLength(rendered) : undefined;
   return <section className={styles.preview} aria-label='Resolved post preview'>
     <div className={styles.previewAccount}><span className={styles.avatar} aria-hidden='true'>AG</span><div><strong>{account?.display_name ?? 'Master content'}</strong><p className={styles.muted}>{account ? `${account.handle ?? 'Handle unavailable'} · ${platformLabels[account.platform]}` : 'Select a connected account to preview its version'}</p></div></div>
     {content.media.length > 0 && <ul className={styles.mediaList} aria-label='Preview media references'>{content.media.map((asset, index) => {
@@ -19,8 +23,9 @@ export default function SocialPreview({ master, target, account, validation }: {
     {!!content.hashtags.length && <p className={styles.copy}>{content.hashtags.join(' ')}</p>}
     {link && <p className={styles.copy}>{httpsUrl(link) ? <a href={httpsUrl(link)} target='_blank' rel='noopener noreferrer'>{link}</a> : link}</p>}
     {account?.platform === 'instagram' && link && <p className={styles.muted}>Caption URLs may not be clickable on Instagram.</p>}
-    {account?.platform === 'tiktok' && <p className={styles.muted}>TikTok access and consent must pass backend validation.</p>}
-    {account?.platform === 'x' && <p className={styles.muted}>X uses weighted text rules and may require paid access. Backend validation is authoritative.</p>}
+    {account?.platform === 'tiktok' && <p className={styles.muted}>TikTok {target?.tiktok_options?.mode === 'draft' ? 'draft inbox delivery requires completion in TikTok and is never a public success.' : 'direct publication requires approved product access, explicit privacy and consent.'}</p>}
+    {xCount && <p className={styles.muted} aria-live='polite'>{xCount.length === null ? `X counter unavailable: ${xCount.error}` : `${xCount.length} / 280 weighted X characters, including hashtags and link.`} Paid access and a reserved budget are required.</p>}
+    {threadsCount && <p className={styles.muted} aria-live='polite'>{threadsCount.length === null ? threadsCount.error : `${threadsCount.length} / 500 UTF-8 bytes · conservative application limit.`} Only the first valid topic tag becomes the Threads topic. Owned-post confirmation does not prove public visibility.</p>}
     <p className={`${styles.muted} ${styles.previewFooter}`}>Approximate preview. The platform controls final presentation. {validation ? 'Saved revision checked by the server.' : 'Local preview; validation required.'}</p>
   </section>;
 }

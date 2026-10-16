@@ -1,0 +1,18 @@
+{
+  "generated_by": "/private/tmp/b15_platforms_archive_evidence.py",
+  "generator_sha256": "adf482812aa899038807e074aceb38b70d9ccc8a381c43dfdb69f5f6d0ebac6d",
+  "generated_at": "2026-10-16T20:20:35.661775+00:00",
+  "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+  "historical_receipt": "tiktok-receipt.json",
+  "historical_receipt_sha256": "4be49b00a8d7c8bed8de370c3ed1cca9230f7baac6d8482496306938afb5b55a",
+  "historical_generator_sha256": "fce1ffc152d4b6221406617566608e99bd87f63ef2bc504c391c5dec9e063474",
+  "reason": "The integrated candidate changed after the historical subtask run. Fixed-path/ambient-environment producer scripts are archival and unsupported. Original receipt and raw-output bytes are retained.",
+  "untrustworthy_as_current": [
+    "verdict",
+    "runs",
+    "uncommitted_source_hashes",
+    "source_hashes",
+    "test_counts"
+  ],
+  "superseded_by": "HANDOFF.md and final-20261016T201824Z-2e59c5e5/index.json; changed candidate sources, not relabeled historical outcomes"
+}

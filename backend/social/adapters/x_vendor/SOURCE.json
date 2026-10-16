@@ -1,0 +1,7 @@
+{
+  "repository": "https://github.com/twitter/twemoji-parser",
+  "commit": "f8312f35fdee0e79874bb50213c4544c14fa759b",
+  "path": "src/lib/regex.js",
+  "retrieved": "2026-10-16",
+  "use": "Unmodified generated UTF-16 expression; Python wrapper applies to UTF-16 code units."
+}

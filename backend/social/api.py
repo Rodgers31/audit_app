@@ -258,8 +258,13 @@ def set_controls(request: Request, body: ControlsCommand, svc: Service, admin: A
 # the editorial router rather than nesting under its prefix a second time.
 from .connections.api import router as connection_router
 from .media.api import router as media_router
+from .platform_connections.api import router as platform_connection_router
+from .platform_events import router as platform_events_router, maintenance_router as platform_events_maintenance_router
 _editorial_router = router
 router = APIRouter()
 router.include_router(_editorial_router)
 router.include_router(connection_router)
 router.include_router(media_router)
+router.include_router(platform_connection_router)
+router.include_router(platform_events_router)
+router.include_router(platform_events_maintenance_router)
