@@ -456,3 +456,100 @@ def test_operator_entrypoint_executes_install_and_actual_login_verification(role
         runtime.dispose()
         verify_worker_role(runtime, role, schema)
     finally: runtime.dispose()
+
+
+OWNED_TEMPORARY = """
+    SELECT d.classid::regclass::text,n.nspname FROM pg_shdepend d
+    LEFT JOIN pg_class c ON d.classid='pg_class'::regclass AND c.oid=d.objid
+    LEFT JOIN pg_type t ON d.classid='pg_type'::regclass AND t.oid=d.objid
+    LEFT JOIN pg_proc p ON d.classid='pg_proc'::regclass AND p.oid=d.objid
+    JOIN pg_namespace n ON n.oid=coalesce(c.relnamespace,t.typnamespace,p.pronamespace)
+    WHERE d.refobjid=CAST(:role AS regrole) AND d.deptype='o'
+      AND d.dbid=(SELECT oid FROM pg_database WHERE datname=current_database())
+"""
+
+
+def test_own_temporary_objects_in_both_pooled_sessions_still_qualify(role_database):
+    owner, worker, schema, role = role_database
+    install_worker_role(owner, role, schema)
+    sessions = [worker.connect() for _ in range(2)]
+    try:
+        for conn in sessions:
+            with conn.begin():
+                # A text column also gives the temporary table a temporary TOAST relation.
+                conn.execute(text('CREATE TEMP TABLE inert_scratch(id int, note text)'))
+                conn.execute(text('CREATE TYPE pg_temp.inert_scratch_row AS (id int)'))
+                conn.execute(text("CREATE FUNCTION pg_temp.inert_scratch_fn() RETURNS int LANGUAGE sql AS 'SELECT 1'"))
+        backends = {conn.execute(text('SELECT pg_backend_pid()')).scalar() for conn in sessions}
+        assert len(backends) == 2
+    finally:
+        for conn in sessions: conn.close()
+    with owner.connect() as conn:
+        owned = conn.execute(text(OWNED_TEMPORARY), {'role': role}).all()
+    # Each session: the table, a composite type and the function. A table's row type depends on the table.
+    assert sorted(classid for classid, _ in owned) == ['pg_class'] * 2 + ['pg_proc'] * 2 + ['pg_type'] * 2
+    assert len({namespace for _, namespace in owned}) == 2
+    assert all(namespace.startswith('pg_temp_') for _, namespace in owned)
+    for _ in range(2):
+        verify_worker_role(worker, role, schema)
+    install_worker_role(owner, role, schema)
+    verify_worker_role(worker, role, schema)
+
+
+def test_ownership_held_in_another_database_refuses(role_database):
+    owner, worker, schema, role = role_database
+    install_worker_role(owner, role, schema)
+    # The other assigned disposable database on the same loopback server.
+    other = create_engine(owner.url.set(database='social_worker_test'), pool_size=1, max_overflow=0)
+    table = 'public.inert_owned_' + uuid4().hex[:16]
+    try:
+        with other.begin() as conn:
+            conn.execute(text('CREATE TABLE ' + table + '(id int)'))
+            conn.execute(text('ALTER TABLE ' + table + ' OWNER TO ' + role))
+        # Nothing in the verified database changed.
+        with owner.connect() as conn:
+            assert conn.execute(text(OWNED_TEMPORARY), {'role': role}).all() == []
+        with pytest.raises(WorkerRoleError): verify_worker_role(worker, role, schema)
+        with pytest.raises(WorkerRoleError): install_worker_role(owner, role, schema)
+    finally:
+        with other.begin() as conn: conn.execute(text('DROP TABLE IF EXISTS ' + table))
+        other.dispose()
+    verify_worker_role(worker, role, schema)
+
+
+def test_loaded_module_default_with_non_user_context_is_refused(role_database):
+    owner, worker, schema, role = role_database
+    install_worker_role(owner, role, schema)
+    # auto_explain is a module, not an extension: no prefix refusal applies. Its
+    # parameters are superuser context; until loaded they are inert placeholders.
+    operator = create_engine(owner.url, pool_size=1, max_overflow=0, connect_args={'options': '-csearch_path=' + schema})
+    try:
+        _run(owner, ["ALTER DATABASE social_domain_test SET auto_explain.log_analyze=off"], {}); worker.dispose()
+        with operator.connect() as conn:
+            assert conn.execute(text("SELECT count(*) FROM pg_extension WHERE extname='auto_explain'")).scalar() == 0
+            assert conn.execute(text("SELECT count(*) FROM pg_settings WHERE name='auto_explain.log_analyze'")).scalar() == 0
+        install_worker_role(operator, role, schema)
+        operator.dispose()
+        with operator.connect() as conn:
+            conn.execute(text("LOAD 'auto_explain'")); conn.commit()
+            assert conn.execute(text("SELECT context FROM pg_settings WHERE name='auto_explain.log_analyze'")).scalar() == 'superuser'
+        with pytest.raises(WorkerRoleError): install_worker_role(operator, role, schema)
+    finally:
+        operator.dispose()
+        _run(owner, ['ALTER DATABASE social_domain_test RESET auto_explain.log_analyze'], {}, best_effort=True)
+
+
+def test_mixed_case_user_setting_default_is_judged_case_insensitively(role_database):
+    owner, worker, schema, role = role_database
+    install_worker_role(owner, role, schema)
+    try:
+        _run(owner, ["ALTER DATABASE social_domain_test SET \"TimeZone\"='UTC'"], {}); owner.dispose(); worker.dispose()
+        with owner.connect() as conn:
+            stored = conn.execute(text("""
+                SELECT c FROM pg_db_role_setting d CROSS JOIN LATERAL unnest(d.setconfig) c
+                WHERE d.setrole=0 AND d.setdatabase=(SELECT oid FROM pg_database WHERE datname=current_database())""")).scalars().all()
+            assert 'TimeZone=UTC' in stored
+            assert conn.execute(text("SELECT context FROM pg_settings WHERE name='TimeZone'")).scalar() == 'user'
+        verify_worker_role(worker, role, schema); install_worker_role(owner, role, schema)
+    finally:
+        _run(owner, ['ALTER DATABASE social_domain_test RESET "TimeZone"'], {}, best_effort=True)
