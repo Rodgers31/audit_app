@@ -64,9 +64,18 @@ late evidence to its exact existing claim/intent, but cannot transition a target
 or admit another operation. The process-local guard is an API safety boundary;
 compromised Python code or privileged database administrators are outside it.
 
+Late evidence requires the original process-issued reference and the intent's
+recorded runtime owner/generation. Missing or copied references cannot settle an
+attempt, and a successor cannot settle its predecessor's operation. One runtime
+refuses concurrent `run()` calls; direct `process()` callers share its fixed slot
+budget and tracked shutdown drain. `close()` waits for those calls before
+unbinding the runtime; waiting callers admit no intent after stop.
+
 Non-native CLI is now a separate `--once`, zero-target diagnostic. It constructs
 no provider or authority and refuses a nonempty target table. All provider-capable
 CLI modes, including native `--once`, use the global permit.
+At the CLI boundary cancellation returns sanitized exit 1 after cleanup, while
+KeyboardInterrupt returns 130. Neither produces a successful closure receipt.
 
 ## Supervision and shutdown evidence
 
@@ -153,3 +162,5 @@ Before activation: accept actual Render host shutdown interval and capacity,
 production migration and restricted-role certification, API observation limits,
 key/privacy/media/provider gates, rollback/receipt custody and real operator
 closure. All publishing/native/upload/retained-write flags remain OFF until then.
+
+Coordinator follow-ups are tracked separately in #685 (issued intent completion) and #686 (direct-call bounds and shutdown drain). These concern unmerged candidate defects and local inert reproductions; they are not claims of production provider activity.

@@ -155,3 +155,29 @@ raise SystemExit(supervise(web,worker,1))
 @pytest.mark.parametrize('seconds',[True,0,-1,float('nan'),float('inf'),None])
 def test_direct_supervisor_api_cannot_bypass_finite_deadline(seconds):
     with pytest.raises(ValueError): supervisor.supervise([],lambda fd:[],seconds)
+
+
+def test_pipe_setup_failure_closes_both_descriptors_without_spawning(monkeypatch):
+    original_pipe = os.pipe
+    created = []
+    def tracked_pipe():
+        pair = original_pipe()
+        created.extend(pair)
+        return pair
+    monkeypatch.setattr(supervisor.os, 'pipe', tracked_pipe)
+    monkeypatch.setattr(supervisor.os, 'set_blocking', lambda *args: (_ for _ in ()).throw(OSError('inert setup failure')))
+    monkeypatch.setattr(supervisor.subprocess, 'Popen', lambda *args, **kwargs: pytest.fail('Pipe setup spawned a child'))
+    try:
+        with pytest.raises(OSError, match='inert setup failure'):
+            supervisor.supervise([], lambda fd: [], 1)
+        assert len(created) == 2
+        for fd in created:
+            with pytest.raises(OSError):
+                os.fstat(fd)
+    finally:
+        # The red control leaks; the fixture still cleans up its own descriptors.
+        for fd in created:
+            try:
+                os.close(fd)
+            except OSError:
+                pass

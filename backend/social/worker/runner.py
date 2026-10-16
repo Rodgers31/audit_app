@@ -37,6 +37,8 @@ class SocialWorker:
         self._last_heartbeat = 0.0
         self._last_success = False
         self.failed = False
+        self._running = False
+        self._operation_slots = asyncio.Semaphore(self.config.external_slots)
 
     async def db(self, function, *args, **kwargs):
         return await asyncio.get_running_loop().run_in_executor(self.executor, partial(function, *args, **kwargs))
@@ -53,12 +55,21 @@ class SocialWorker:
         unbind_runtime(self.repository.authority, self)
 
     async def run(self, *, once=False):
+        if self._running:
+            raise RuntimeError('Worker is already running')
+        self._running = True
+        try:
+            await self._run(once=once)
+        finally:
+            self._running = False
+
+    async def _run(self, *, once=False):
         await self.db(self.repository.validate_schema)
         try:
             while not self.stop_event.is_set():
                 try:
                     await self.db(self.repository.recover_expired)
-                    free = self.config.external_slots-len(self.tasks)
+                    free = max(0, self.config.external_slots-len(self.tasks))
                     claims = await self.db(self.repository.claim_due, free) if free else []
                     for claim in claims:
                         if self.stop_event.is_set():
@@ -127,6 +138,19 @@ class SocialWorker:
                     return
 
     async def process(self, claim: Claim):
+        # Direct callers share the same operation budget and shutdown drain as
+        # tasks created by run(). A queued caller cannot admit after stop().
+        task = asyncio.current_task()
+        self.tasks.add(task)
+        try:
+            async with self._operation_slots:
+                if self.stop_event.is_set():
+                    return
+                await self._process(claim)
+        finally:
+            self.tasks.discard(task)
+
+    async def _process(self, claim: Claim):
         done = asyncio.Event()
         renewal = asyncio.create_task(self._renew(claim, done))
         intent = None

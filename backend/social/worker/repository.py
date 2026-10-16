@@ -17,7 +17,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from .config import WorkerConfig
-from .ownership import AuthorityLost, check_authority, RuntimeAuthority
+from .ownership import AuthorityLost, check_authority, require_issued_authority, RuntimeAuthority
 from ..contracts import CapabilitySet, DefinitiveAbsenceProof, OperationPlan, PostDocument, ResolvedPostPayload, canonical_hash
 from .policy import bounded_json, retry_decision, validate_plan
 from ..validation import validate_document
@@ -428,6 +428,7 @@ class QueueRepository:
                provider_code: str | None = None, delay: float | None = None,
                next_action: str | None = None, receipt: dict | None = None,
                duration_ms: int = 0, provider_request_id: str | None = None) -> bool:
+        require_issued_authority(self.authority, owner_id=self.worker_id)
         with self.engine.begin() as conn:
             try:
                 self._authority(conn)
@@ -443,8 +444,12 @@ class QueueRepository:
                     provider_request_id=:provider_request_id,http_status=:http_status,provider_code=:provider_code
                 WHERE operation_id=CAST(:operation_id AS uuid) AND target_id=CAST(:id AS uuid)
                   AND lease_epoch=:epoch AND completed_at IS NULL
+                  AND receipt->'intent'->>'runtime_owner_id'=:runtime_owner
+                  AND receipt->'intent'->>'runtime_generation'=:runtime_generation
                 RETURNING operation,dispatch_started_at,receipt
             """), {**self._params(claim), "operation_id": intent.operation_id,
+                    "runtime_owner": str(self.authority.owner_id),
+                    "runtime_generation": str(self.authority.generation),
                     "outcome": outcome, "receipt": _json(receipt or {}),
                     "duration": duration_ms, "provider_request_id": provider_request_id,
                     "http_status": http_status, "provider_code": provider_code}).mappings().first()

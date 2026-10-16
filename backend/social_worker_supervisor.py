@@ -112,8 +112,7 @@ def supervise(web_argv, worker_argv_factory, seconds):
     stop = False
     handlers = {}
     web, worker = None, None
-    read_fd, write_fd = os.pipe()
-    os.set_blocking(read_fd, False)
+    read_fd, write_fd = None, None
     worker_reported = False
     result = 0
 
@@ -145,6 +144,8 @@ def supervise(web_argv, worker_argv_factory, seconds):
              deadline_kill=forced, release_proof=proof, ownership_retained=True)
 
     try:
+        read_fd, write_fd = os.pipe()
+        os.set_blocking(read_fd, False)
         for sig in (signal.SIGTERM, signal.SIGINT):
             handlers[sig] = signal.getsignal(sig)
             signal.signal(sig, request_stop)
@@ -184,7 +185,8 @@ def supervise(web_argv, worker_argv_factory, seconds):
                         emit('owned_group_cleanup_unresolved', group_id=child.pid)
             except Exception:
                 emit('owned_group_cleanup_failed', group_id=child.pid, error_code='GROUP_UNAVAILABLE')
-        os.close(read_fd)
+        if read_fd is not None:
+            os.close(read_fd)
         if write_fd is not None:
             os.close(write_fd)
         for sig, handler in handlers.items():

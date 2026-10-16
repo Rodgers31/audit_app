@@ -20,7 +20,9 @@ from test_connections_migration_postgres import upgrade
 
 @pytest.fixture
 def role_database():
-    raw = os.environ['SOCIAL_GLOBAL_OWNER_TEST_DATABASE_URL']
+    raw = os.getenv('SOCIAL_GLOBAL_OWNER_TEST_DATABASE_URL')
+    if not raw:
+        pytest.skip('Set an explicit isolated local global-owner test DSN')
     url = make_url(raw)
     if ('?' in raw or url.host != '127.0.0.1' or url.port != 55484
             or url.database != 'social_domain_test' or url.drivername not in ('postgresql','postgresql+psycopg2')):

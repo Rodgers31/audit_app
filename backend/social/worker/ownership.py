@@ -47,12 +47,17 @@ class RuntimeAuthority:
             raise ValueError('Explicit worker owner and positive generation required')
 
 
-def check_authority(conn, authority, *, owner_id=None, require_local=True):
-    """First lock in every admission transaction; never hold across provider IO."""
-    row = conn.execute(text('SELECT owner_id,generation FROM social_worker_runtime_ownership WHERE id=1 FOR UPDATE')).one_or_none()
+def require_issued_authority(authority, *, owner_id=None, require_local=True):
+    """A stale issuance can retain its evidence; a copied value has no authority."""
     if (type(authority) is not RuntimeAuthority or (require_local and not _locally_issued(authority))
             or (owner_id is not None and str(authority.owner_id) != str(owner_id))):
         raise AuthorityLost('GLOBAL_WORKER_AUTHORITY_REQUIRED')
+
+
+def check_authority(conn, authority, *, owner_id=None, require_local=True):
+    """First lock in every admission transaction; never hold across provider IO."""
+    require_issued_authority(authority, owner_id=owner_id, require_local=require_local)
+    row = conn.execute(text('SELECT owner_id,generation FROM social_worker_runtime_ownership WHERE id=1 FOR UPDATE')).one_or_none()
     if row is None or (str(row.owner_id), row.generation) != (str(authority.owner_id), authority.generation):
         raise AuthorityLost('GLOBAL_WORKER_AUTHORITY_LOST')
 

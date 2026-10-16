@@ -118,7 +118,7 @@ def seeded(role_database):
     return owner, repo(owner, authority), authority, ids
 
 
-def test_stale_global_generation_blocks_intent_but_retains_late_provider_evidence(role_database):
+def test_copied_global_reference_cannot_start_or_settle_provider_intent(role_database):
     from test_queue_postgres import intent
     owner, repository, authority, ids = seeded(role_database)
     claim = repository.claim_due()[0]
@@ -128,13 +128,13 @@ def test_stale_global_generation_blocks_intent_but_retains_late_provider_evidenc
         publication_capable=True, mutating=True, safe_replay_class='requires_reconciliation',
         request_fingerprint='a'*64, checkpoint_input={})
     admitted = intent(repository, claim)
-    late = copied.finish(claim, admitted, state='published', outcome='confirmed_success', checkpoint={},remote_refs={},
-        remote_id='observed-id', visibility_state='public', confirmation_kind='fake-confirmed',
-        receipt={'primary_remote_id':'observed-id'})
-    assert late is False
+    with pytest.raises(AuthorityLost):
+        copied.finish(claim, admitted, state='published', outcome='confirmed_success', checkpoint={},remote_refs={},
+            remote_id='observed-id', visibility_state='public', confirmation_kind='fake-confirmed',
+            receipt={'primary_remote_id':'observed-id'})
     with owner.connect() as conn:
         row = conn.execute(text('SELECT completed_at,receipt FROM social_publish_attempts')).one()
-        assert row.completed_at is not None and row.receipt['primary_remote_id'] == 'observed-id'
+        assert row.completed_at is None and 'primary_remote_id' not in row.receipt
         assert conn.execute(text('SELECT state FROM social_post_targets')).scalar_one() == 'dispatching'
 
 
@@ -193,3 +193,56 @@ def test_empty_upgrade_downgrade_and_browser_denial(role_database):
             _migration('a545b14a0001_social_worker_global_owner.py').downgrade()
             _migration('a545b14a0001_social_worker_global_owner.py').upgrade()
     assert acquire_authority(owner,uuid4(),'after-empty-downgrade').generation==1
+
+
+@pytest.mark.parametrize('kind', ['missing', 'copied', 'wrong_repository_owner'])
+def test_unissued_repository_cannot_settle_pending_provider_intent(role_database, kind):
+    from test_queue_postgres import intent
+    owner, repository, authority, _ = seeded(role_database)
+    claim = repository.claim_due()[0]
+    admitted = intent(repository, claim)
+    candidate = None if kind == 'missing' else RuntimeAuthority(authority.owner_id, authority.generation) if kind == 'copied' else authority
+    unissued = QueueRepository(owner, repository.config,
+                              uuid4() if kind == 'wrong_repository_owner' else authority.owner_id,
+                              authority=candidate)
+    with pytest.raises(AuthorityLost, match='AUTHORITY_REQUIRED'):
+        unissued.finish(claim, admitted, state='published', outcome='confirmed_success',
+                        checkpoint={}, remote_refs={}, remote_id='forged-observation',
+                        visibility_state='public', confirmation_kind='synthetic')
+    with owner.connect() as conn:
+        attempt = conn.execute(text('SELECT completed_at,outcome,receipt FROM social_publish_attempts')).one()
+        assert attempt.completed_at is None and attempt.outcome == 'intent'
+        assert 'forged-observation' not in str(attempt.receipt)
+        assert conn.execute(text('SELECT state FROM social_post_targets')).scalar_one() == 'dispatching'
+
+
+def test_successor_authority_cannot_settle_predecessor_provider_intent(role_database):
+    import json
+    from test_queue_postgres import intent
+    owner, predecessor, authority, _ = seeded(role_database)
+    claim = predecessor.claim_due()[0]
+    admitted = intent(predecessor, claim)
+    # Simulate an external administrative generation replacement. The supported
+    # release API separately refuses this unresolved intent; no real provider ran.
+    with owner.begin() as conn:
+        conn.execute(text('''INSERT INTO social_worker_runtime_history
+            (generation,event,owner_id,deployment_version,proof)
+            SELECT generation,'released',owner_id,deployment_version,CAST(:proof AS jsonb)
+            FROM social_worker_runtime_ownership'''), {'proof': json.dumps(receipt(authority))})
+        conn.execute(text('DELETE FROM social_worker_runtime_ownership'))
+    successor = repo(owner, acquire_authority(owner, uuid4(), 'successor'))
+    assert successor.finish(claim, admitted, state='published', outcome='confirmed_success',
+                            checkpoint={}, remote_refs={}, remote_id='wrong-runtime',
+                            visibility_state='public', confirmation_kind='synthetic') is False
+    with owner.connect() as conn:
+        assert conn.execute(text('SELECT completed_at FROM social_publish_attempts')).scalar_one() is None
+        assert conn.execute(text('SELECT state FROM social_post_targets')).scalar_one() == 'dispatching'
+    # The original process-bound issuance still retains its own late observation.
+    assert predecessor.finish(claim, admitted, state='published', outcome='confirmed_success',
+                              checkpoint={}, remote_refs={}, remote_id='old-observation',
+                              visibility_state='public', confirmation_kind='synthetic',
+                              receipt={'primary_remote_id': 'old-observation'}) is False
+    with owner.connect() as conn:
+        completed = conn.execute(text('SELECT completed_at,receipt FROM social_publish_attempts')).one()
+        assert completed.completed_at is not None and completed.receipt['primary_remote_id'] == 'old-observation'
+        assert conn.execute(text('SELECT state FROM social_post_targets')).scalar_one() == 'dispatching'
