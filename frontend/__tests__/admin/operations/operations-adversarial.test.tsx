@@ -97,6 +97,20 @@ test('redaction never transfers attacker strings or arbitrary metadata into the 
   expect(parsed.metadata).toEqual({ source_mode: 'fixture', manual_trigger: true, dropped_by_global_budget: false, dry_run: true, since: timestamp });
 });
 
+test('completed ingestion detail shows uncertain generation without invented zero progress', async () => {
+  const outcome = { state: 'failed', execution_unverified: true, processed: null,
+    drafts_created: null, baselines: null, unchanged: null, refused: null };
+  get.mockResolvedValue({ data: { ...job, metadata: { post_commit_generation: {
+    ...outcome, reason: 'PRIVATE_DIAGNOSTIC', secret: 'PRIVATE_DIAGNOSTIC',
+  } } } });
+  await mountDetail('1');
+  await screen.findByRole('heading', { name: 'Metadata' });
+  const metadata = screen.getByText(/post_commit_generation/);
+  expect(metadata).toHaveTextContent('"execution_unverified": true');
+  expect(metadata).toHaveTextContent('"processed": null');
+  expect(screen.queryByText(/PRIVATE_DIAGNOSTIC/)).not.toBeInTheDocument();
+});
+
 test('hostile and duplicated URL parameters become canonical bounded values', () => {
   for (const raw of ['NaN', 'Infinity', '-Infinity', 'true', '-1', '0', '1.2', '999999999999999999999']) {
     expect(ingestionFilters(new URLSearchParams(`page=${raw}&days=${raw}`))).toMatchObject({ page: 1, days: 7 });

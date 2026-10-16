@@ -66,8 +66,7 @@ def run(
     # or reconciliation BEFORE it reaches the DB, so a bad live parse (wrong
     # table row / wrong units) can't overwrite a good last-known value. Clean
     # rows pass through unchanged; quarantined years keep their existing DB row
-    # and are reported in `errors`. Degrades to "no gate" only if the guard
-    # itself can't run — never blocks seeding outright. See trust_guards.
+    # and are reported in `errors`. A broken guard cannot authorize persistence.
     try:
         from services.trust_guards import check_fiscal_summary
 
@@ -91,8 +90,11 @@ def run(
                 len(records),
             )
         records = clean_records
-    except Exception as exc:  # never let the gate break a seed run
-        logger.warning("fiscal_summary validation gate skipped: %s", exc)
+    except Exception as exc:
+        logger.exception("fiscal_summary reconciliation unavailable")
+        # Raising lets the native CLI roll back the entire domain transaction
+        # and retain a FAILED observation, including dedicated dispatch runs.
+        raise RuntimeError("Fiscal reconciliation unavailable") from exc
 
     try:
         created, updated = writer.write_fiscal_summary_records(

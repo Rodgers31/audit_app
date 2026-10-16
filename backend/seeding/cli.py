@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import signal
 import sys
 import threading
@@ -575,6 +576,22 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                             dry_run=dry_run,
                             started_at=started_at,
                         ).with_error(str(exc))
+
+            # Facts and the native observation are committed and their session
+            # closed before the optional generated-draft transaction can begin.
+            if (not dry_run and domain == "counties_budget" and job_id is not None
+                    and result is not None and not result.errors
+                    and freshness.get(domain).get("mode") == freshness.LIVE
+                    and os.environ.get("SOCIAL_GENERATION_HOOK_ENABLED", "false") != "false"):
+                from .generation_dispatch import dispatch_committed_generation, record_generation_timeout
+                try:
+                    with _domain_timeout(30):
+                        dispatch_committed_generation(SessionLocal, domain=domain,
+                                                      ingestion_id=job_id, dry_run=dry_run)
+                except DomainTimeoutError:
+                    # Some generation records may already have committed. The
+                    # financial commit remains successful; no automatic replay.
+                    record_generation_timeout(SessionLocal, domain=domain, ingestion_id=job_id)
 
             # Session closure and a coherent persisted observation are required.
             # A process exit or an expired connection/lease cannot reach this ack.
