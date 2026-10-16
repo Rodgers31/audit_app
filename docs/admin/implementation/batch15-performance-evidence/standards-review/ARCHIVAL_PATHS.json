@@ -1,0 +1,54 @@
+{
+  "create_probes.py": {
+    "retained_as": "create_probes.py.txt",
+    "sha256": "bed5404904e4d819bfdcc3ba3be88162190dd16f6de648d20a285832294bb131"
+  },
+  "browser.log": {
+    "retained_as": "browser.log",
+    "sha256": "19bf46951ff0274ce683761afb680d6da07d147090bfed0d05e78417eef3348c"
+  },
+  "missing-profile.spec.ts": {
+    "retained_as": "missing-profile.spec.ts.txt",
+    "sha256": "fbc302d470d3a07878c8daee6d7a1c3a4f8bd2ab5be1228a8778306287d1ad26"
+  },
+  "hostile-browser.log": {
+    "retained_as": "hostile-browser.log",
+    "sha256": "1f4cd918a89e86711d0e2f1e6afb2dc6011d43d5f70d59f5598d1d6d030cce6e"
+  },
+  "REPORT.md": {
+    "retained_as": "REPORT.md",
+    "sha256": "f29a724a2bd6e1c54da0a178336a3da497d72d61023bcc842f03c451aa0283cd"
+  },
+  "missing-footer.spec.ts": {
+    "retained_as": "missing-footer.spec.ts.txt",
+    "sha256": "3c7b4c98063578a24f1a559b15e50a6a6d1e671a202ce7400064bfb34b1e71e8"
+  },
+  "api-normal.log": {
+    "retained_as": "api-normal.log",
+    "sha256": "069db22dd5f20afa2c6eb4f38078e49a66893eed6ee11a713413a753cbf6be91"
+  },
+  "api-optimized.log": {
+    "retained_as": "api-optimized.log",
+    "sha256": "2e6841c7e5e150a891579dae4d74fe6fe1e627f04a470250cd02ea0704a68c2d"
+  },
+  "playwright.config.ts": {
+    "retained_as": "playwright.config.ts.txt",
+    "sha256": "565d86cfc94785c08a04d8a2e36656db16ac4e66f136a7edb37e8e4df7fbf1b4"
+  },
+  "api_probe.py": {
+    "retained_as": "api_probe.py.txt",
+    "sha256": "5853ab13fa109f91d372f036cbd806f37680fccc8f0b5090ac78eab695273d1f"
+  },
+  "reverted-loading-height.spec.ts": {
+    "retained_as": "reverted-loading-height.spec.ts.txt",
+    "sha256": "05920ecbc300b1d005c83f18dfbc61eee37b765e3577077312b1fb84485ced02"
+  },
+  "receipt.json": {
+    "retained_as": "receipt.json",
+    "sha256": "adab5378853194116e2b5e4fe752f13526002a6b258ac7e46f743f400554e5d9"
+  },
+  "write_report.py": {
+    "retained_as": "write_report.py.txt",
+    "sha256": "62ba37d06028a6bc309b762bf9e975350af824f72fdc5d3776421b885e3edc36"
+  }
+}

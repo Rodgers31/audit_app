@@ -1,0 +1,13 @@
+from pathlib import Path
+root=Path('/Users/roger/.codex/worktrees/b15-performance/audit_app/frontend')
+out=Path('/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review')
+s=(root/'browser-fixtures/reset-loading/loading.spec.ts').read_text().replace("from '@playwright/test'", f"from '{root}/node_modules/@playwright/test/index.js'").replace('[{ width: 1365, height: 900 }, { width: 390, height: 844 }]', '[{ width: 1365, height: 900 }]')
+s=s.replace("for (const viewport", "test.setTimeout(6000);\nfor (const viewport")
+probes={
+ 'reverted-loading-height':s.replace("await expect(page.locator('main .animate-spin')).toBeVisible();", "await page.locator('main .animate-spin').evaluate(el => { el.parentElement!.style.minHeight = '60vh'; });\n      await expect(page.locator('main .animate-spin')).toBeVisible();"),
+ 'missing-footer':s.replace("const footer = await page.locator('footer').boundingBox();", "await page.locator('footer').evaluate(el => el.remove());\n      const footer = await page.locator('footer').boundingBox();",1),
+ 'missing-profile':s.replace('sawProfile();\n        await pending;', 'return route.abort();'),
+}
+for name, source in probes.items():
+ (out/f'{name}.spec.ts').write_text(source)
+(out/'playwright.config.ts').write_text(f"import {{ defineConfig }} from '{root}/node_modules/@playwright/test/index.js';\nexport default defineConfig({{testDir:'.',testMatch:'*.spec.ts',workers:1,retries:0,use:{{baseURL:'http://127.0.0.1:33508',channel:'chrome',contextOptions:{{reducedMotion:'reduce'}}}}}});\n")

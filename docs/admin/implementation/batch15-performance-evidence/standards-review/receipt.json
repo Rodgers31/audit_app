@@ -1,0 +1,50 @@
+{
+  "reviewer": "independent Standards/adversarial subagent",
+  "fixed_base": "06896185005d822c4b29888138b984510dd1fdbd",
+  "head": "06896185005d822c4b29888138b984510dd1fdbd",
+  "scope": "unstaged diff and untracked reset-loading fixture",
+  "sha256": {
+    "frontend/app/reset-password/page.tsx": "9d7e8629f8ae050ef7de7d386746ab0636c5272f7142634795dcbf714ce63f2d",
+    "frontend/browser-fixtures/reset-loading/README.md": "45897dbeff1f6e2050514dd2064611bdafecbb359e73ebe34b8ca03e2363e67b",
+    "frontend/browser-fixtures/reset-loading/api.py": "ccf9887b504ab2cb023e3652355dce35dfa935cb8b5bdaf4aaa4d07adb031506",
+    "frontend/browser-fixtures/reset-loading/loading.spec.ts": "f7b1b40b1224fc6d37be91be2ec69aac4aaf4825016a8b0d044f7243fc5050bd",
+    "frontend/browser-fixtures/reset-loading/playwright.config.ts": "9b774d295bfc4e65967a574d7eb71c3fd14a9c84c76cf3dd889a044843ec59a6"
+  },
+  "runs": [
+    {
+      "command": "node node_modules/playwright/cli.js test --config browser-fixtures/reset-loading/playwright.config.ts --output /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/playwright",
+      "cwd": "/Users/roger/.codex/worktrees/b15-performance/audit_app/frontend",
+      "exit": 0,
+      "result": "2 Chrome tests passed desktop/mobile",
+      "log": "browser.log"
+    },
+    {
+      "command": "node node_modules/playwright/cli.js test --config /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/playwright.config.ts --output /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/hostile-results",
+      "cwd": "/Users/roger/.codex/worktrees/b15-performance/audit_app/frontend",
+      "exit": 1,
+      "result": "3 expected failures: missing footer, missing profile request, reverted height",
+      "log": "hostile-browser.log"
+    },
+    {
+      "command": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-69b6-7d82-9083-54e4bf07a86b/issue602/venv-current/bin/python /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/api_probe.py",
+      "exit": 0,
+      "log": "api-normal.log"
+    },
+    {
+      "command": "/Users/roger/.codex/visualizations/2026/10/10/01a12626-69b6-7d82-9083-54e4bf07a86b/issue602/venv-current/bin/python -O /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B15/performance/standards-review/api_probe.py",
+      "exit": 0,
+      "log": "api-optimized.log"
+    },
+    {
+      "command": "git diff --check",
+      "cwd": "/Users/roger/.codex/worktrees/b15-performance/audit_app",
+      "exit": 0
+    }
+  ],
+  "limitations": [
+    "No production or cloud access",
+    "No source edits; existing shared local services left running",
+    "Browser binding relies on root-owned source-bound production build and root binding evidence; suite itself does not attest build identity",
+    "Does not certify dependency gates, field LCP, actual recovery credentials, admin audit pagination or all original-plan scope"
+  ]
+}
