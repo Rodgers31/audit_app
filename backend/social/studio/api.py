@@ -53,7 +53,7 @@ class CapabilitiesDTO(StrictModel):
     unavailable_reason: str | None
     templates: tuple[str, ...]
     template_version: Literal[1]
-    analytics_collection_available: Literal[False]
+    analytics_collection_available: bool
     analytics_reason: str
     uploads_enabled: Literal[False]
     template_definitions: dict[str, dict]
@@ -111,9 +111,12 @@ Studio = Annotated[StudioService, Depends(studio)]
 
 
 @router.get('/capabilities', response_model=CapabilitiesDTO)
-def capabilities(request: Request):
+def capabilities(request: Request, svc: Service):
     runtime = request_runtime(request)
-    return {'rendering_available': runtime.enabled, 'unavailable_reason': None if runtime.enabled else 'Local rendering is disabled; operator configuration and verified capacity are required.', 'templates': TEMPLATES, 'template_definitions': TEMPLATE_DEFINITIONS, 'template_version': 1, 'analytics_collection_available': False, 'analytics_reason': 'No native zero-cost metrics transport is registered. Stored observations remain readable.', 'uploads_enabled': False}
+    from .native_metrics import request_analytics_runtime, capability_status
+    analytics = request_analytics_runtime(request)
+    analytics_available, analytics_reason = capability_status(svc.db, analytics)
+    return {'rendering_available': runtime.enabled, 'unavailable_reason': None if runtime.enabled else 'Local rendering is disabled; operator configuration and verified capacity are required.', 'templates': TEMPLATES, 'template_definitions': TEMPLATE_DEFINITIONS, 'template_version': 1, 'analytics_collection_available': analytics_available, 'analytics_reason': analytics_reason, 'uploads_enabled': False}
 
 
 @router.get('/jobs', response_model=JobsDTO)

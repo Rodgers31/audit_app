@@ -1963,6 +1963,8 @@ from social.studio.api import router as social_studio_router
 app.include_router(social_studio_router)
 from social.studio.runtime import configure_studio
 configure_studio(app)
+from social.studio.native_metrics import configured_runtime as configured_analytics_runtime
+app.state.social_analytics_runtime = configured_analytics_runtime()
 logger.info("Social admin router registered at /api/v1/admin/social")
 
 # Explicit privacy ingress can stay enabled after new Meta connections are
