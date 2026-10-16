@@ -167,8 +167,8 @@ Admin = Annotated[AdminUser, Depends(social_admin)]
 Service = Annotated[SocialService, Depends(service)]
 
 @router.get('/posts', response_model=PostList)
-def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all'):
-    return svc.posts(page, page_size, editorial_state, delivery_filter)
+def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all', origin_type: Union[Literal['manual', 'generated'], None]=None, content_type: Union[str, None]=Query(None, max_length=64)):
+    return svc.posts(page, page_size, editorial_state, delivery_filter, origin_type, content_type)
 
 @router.post('/posts', response_model=PostDetail, status_code=201)
 def create_post(request: Request, body: CreatePost, svc: Service, admin: Admin, key: IdempotencyKey):
@@ -263,3 +263,5 @@ router = APIRouter()
 router.include_router(_editorial_router)
 router.include_router(connection_router)
 router.include_router(media_router)
+from .generation.api import router as generation_router
+router.include_router(generation_router)

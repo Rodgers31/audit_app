@@ -70,10 +70,11 @@ function HistoryLinks({ post }: { post: SocialSummary }) {
 export default function SocialWorkspace() {
   const router = useRouter();
   const [view, setView] = useState<View>('pending');
+  const [origin, setOrigin] = useState(''), [category, setCategory] = useState('');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string>();
   const [unsaved, setUnsaved] = useState(false);
-  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all');
+  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all', origin || undefined, category || undefined);
   const detail = useSocialPost(selected, view !== 'history');
   const accounts = useSocialAccounts();
   const system = useSocialSystem();
@@ -84,8 +85,9 @@ export default function SocialWorkspace() {
   return <div className={styles.workspace}>
     <div className={styles.toolbar}><p><strong>Manual approval</strong> is the default. Review the evidence and every selected account.</p><Link href='/admin/social/new' className={`${styles.button} ${styles.primary}`}>Create manual post</Link></div>
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
-    <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/accounts' className={styles.button}>Accounts</Link></nav>
+    <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/automation' className={styles.button}>Drafts & shadow rules</Link><Link href='/admin/social/accounts' className={styles.button}>Accounts</Link></nav>
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
+      <div className={styles.toolbar}><label>Origin<select value={origin} onChange={e => { if (mayLeave()) { setOrigin(e.target.value); setPage(1); setSelected(undefined); setUnsaved(false); } }}><option value=''>All origins</option><option value='manual'>Manual</option><option value='generated'>Generated</option></select></label><label>Content type<select value={category} onChange={e => { if (mayLeave()) { setCategory(e.target.value); setPage(1); setSelected(undefined); setUnsaved(false); } }}><option value=''>All content types</option>{['dataset_availability', 'new_report', 'debt_update', 'budget_update', 'audit_finding', 'correction'].map(c => <option key={c} value={c}>{c.replaceAll('_', ' ')}</option>)}</select></label></div>
       <div className={styles.toolbar}><div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'drafts' ? 'drafts' : view === 'pending' ? 'posts awaiting review' : view === 'needs_attention' ? 'posts needing attention' : `${view} posts`}` : 'Loading compact post summaries…'}</p>{(view === 'scheduled' || view === 'history' || view === 'needs_attention') && <p className={styles.muted}>Global delivery results. Mixed posts can appear in several views; each account keeps its independent result.</p>}</div><button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button></div>
       {list.error && <SocialErrorBanner error={list.error} onRetry={() => list.refetch()} />}
       {list.isPending && <p role='status'>Loading posts…</p>}
