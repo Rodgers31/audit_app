@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import math
 import re
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine, make_url
 
 
@@ -73,7 +73,7 @@ def create_worker_engine(config: WorkerConfig) -> Engine:
         # path, so no schema object replaces a builtin; pg_temp is last so a
         # temporary table cannot shadow a worker relation.
         connect_args["options"] += " -csearch_path=pg_catalog," + config.database_schema + ",pg_temp"
-    return create_engine(
+    engine = create_engine(
         url,
         pool_size=2,
         max_overflow=0,
@@ -82,3 +82,19 @@ def create_worker_engine(config: WorkerConfig) -> Engine:
         hide_parameters=True,
         connect_args=connect_args,
     )
+
+    @event.listens_for(engine, 'begin')
+    def transaction_limits(connection):
+        # Poolers can discard libpq startup options. Reapply these bounds to
+        # every actual transaction, including reused/replaced connections.
+        # Transaction-local settings do not leak into another pooler client.
+        settings = ["SET LOCAL lock_timeout='2s'",
+                    "SET LOCAL statement_timeout='5s'"]
+        if config.database_schema is not None:
+            settings.append('SET LOCAL search_path=pg_catalog,'
+                            + config.database_schema + ',pg_temp')
+        # SET (unlike SELECT set_config) takes no query snapshot, preserving
+        # maintenance callers' ability to choose read-only REPEATABLE READ.
+        connection.exec_driver_sql(';'.join(settings)).close()
+
+    return engine

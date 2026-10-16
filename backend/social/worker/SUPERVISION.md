@@ -30,7 +30,12 @@ acceptance.
 Initial worker profile: one external slot (accepted code ceiling two), two DB
 connections/no overflow, two DB executor threads, active scans5s, idle scans60s,
 active heartbeat15s and idle heartbeat60s. Connections use lock timeout2s and
-statement timeout5s. A known earlier due time shortens an idle wait. Work newly
+statement timeout5s. These limits and the explicit schema path are reapplied with
+snapshot-free `SET LOCAL` statements at every transaction boundary, because a
+pooler can discard libpq startup options. An unpinned maintenance engine keeps
+its login search path and can still select read-only REPEATABLE READ. Each
+transaction adds one batched driver call, without increasing pool size.
+A known earlier due time shortens an idle wait. Work newly
 queued just after a scan can wait60s. Global/platform pauses still suppress
 normal queue claims and wakeups; bounded processing/reconciliation reads retain
 all prior read/admission/uncertainty budgets.
@@ -149,11 +154,13 @@ under this independent fixture. Process tests use actual signals, owned groups,
 crash/deadline controls and DSN-free child argv. Migration tests exercise real
 upgrade/empty downgrade/history refusal and restricted role denial.
 
-A real60s local idle observation measured8 SQLAlchemy application statements per
-empty steady scan (global fencing doubles the prior four-statement estimate).
-At one scan/minute this extrapolates to11,520 application statements/day, plus
-pool pre-ping, startup, transactions and incidental work. This is an estimate
-from local calls, **not** a billed query/egress or provider-cost receipt. Local
+A real60s local idle observation with the transaction-boundary repair measured
+12 driver executions per empty steady scan, with no provider calls. The earlier
+eight-execution observation predates this repair. At one scan/minute the new
+profile extrapolates to17,280 driver executions/day, plus pool pre-ping, startup
+and incidental work. A batched timeout/path setup contains multiple SQL
+statements: this driver count is **not** a server statement count, billed-query,
+egress or provider-cost receipt. Local
 macOS Python3.13 idle RSS was about74MiB with no native SDK/provider clients;
 Render Python3.12/native-client RSS, CPU, egress and shared DB headroom require
 separate measured acceptance. No zero-total-cost claim follows.

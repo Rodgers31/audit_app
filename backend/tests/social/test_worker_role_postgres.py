@@ -452,7 +452,7 @@ def test_operator_entrypoint_executes_install_and_actual_login_verification(role
         # Both connections and a replacement must retain the explicit path.
         with runtime.connect() as first, runtime.connect() as second:
             for conn in (first, second):
-                assert conn.execute(text('SHOW search_path')).scalar() == 'pg_catalog,' + schema + ',pg_temp'
+                assert conn.execute(text('SHOW search_path')).scalar().replace(' ', '') == 'pg_catalog,' + schema + ',pg_temp'
         runtime.dispose()
         verify_worker_role(runtime, role, schema)
     finally: runtime.dispose()
