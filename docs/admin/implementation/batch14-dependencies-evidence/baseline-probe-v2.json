@@ -1,0 +1,154 @@
+{
+  "node": "v22.19.0",
+  "platform": "darwin",
+  "arch": "arm64",
+  "versions": {
+    "nyc": "1.1.0",
+    "yaml": "3.15.2",
+    "argparse": "1.0.10"
+  },
+  "resolved": {
+    "nyc": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/index.js",
+    "yaml": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/package.json",
+    "argparse": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/argparse/package.json"
+  },
+  "nycConfig": {
+    "cwd": "/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/batch14-nyc-nddVJ5",
+    "all": true,
+    "include": [
+      "src/**/*.ts"
+    ],
+    "exclude": [
+      "src/generated/**"
+    ]
+  },
+  "cliCases": [
+    {
+      "name": "help",
+      "args": [
+        "--help"
+      ],
+      "input": null,
+      "child": {
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\n\nPositional arguments:\n  file           File to read, utf-8 encoded without BOM\n\nOptional arguments:\n  -h, --help     Show this help message and exit.\n  -v, --version  Show program's version number and exit.\n  -c, --compact  Display errors in compact mode\n  -t, --trace    Show stack trace on error\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "version",
+      "args": [
+        "--version"
+      ],
+      "input": null,
+      "child": {
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "3.15.2\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "yaml",
+      "args": [],
+      "input": "all: true\ninclude: [src/**/*.ts]\n",
+      "child": {
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "{\n  \"all\": true,\n  \"include\": [\n    \"src/**/*.ts\"\n  ]\n}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "json",
+      "args": [],
+      "input": "{\"all\":true,\"include\":[\"src/**/*.ts\"]}",
+      "child": {
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "all: true\ninclude:\n  - src/**/*.ts\n\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "hidden-json",
+      "args": [
+        "--to-json"
+      ],
+      "input": "all: true\n",
+      "child": {
+        "status": 0,
+        "signal": null,
+        "error": null,
+        "stdout": "{\n  \"all\": true\n}\n",
+        "stderr": ""
+      }
+    },
+    {
+      "name": "malformed",
+      "args": [],
+      "input": "a: [\n",
+      "child": {
+        "status": 1,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": "YAMLException: unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^\n"
+      }
+    },
+    {
+      "name": "compact-malformed",
+      "args": [
+        "--compact"
+      ],
+      "input": "a: [\n",
+      "child": {
+        "status": 1,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": "YAMLException: unexpected end of the stream within a flow collection\n"
+      }
+    },
+    {
+      "name": "trace-malformed",
+      "args": [
+        "--trace"
+      ],
+      "input": "a: [\n",
+      "child": {
+        "status": 1,
+        "signal": null,
+        "error": null,
+        "stdout": "",
+        "stderr": "YAMLException: unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^\n    at generateError (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:185:10)\n    at throwError (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:191:9)\n    at readFlowCollection (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:805:3)\n    at composeNode (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1395:11)\n    at readBlockMapping (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1124:11)\n    at composeNode (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1394:12)\n    at readDocument (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1560:3)\n    at loadDocuments (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1623:5)\n    at Object.loadAll (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1636:19)\n    at /Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js:108:14\n"
+      }
+    },
+    {
+      "name": "unknown-option",
+      "args": [
+        "--batch14-absent-option"
+      ],
+      "input": null,
+      "child": {
+        "status": 2,
+        "signal": null,
+        "error": null,
+        "stdout": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\n",
+        "stderr": "js-yaml: error: Unrecognized arguments: --batch14-absent-option.\n"
+      }
+    }
+  ],
+  "repair": {
+    "status": 0,
+    "signal": null,
+    "error": null,
+    "stdout": "{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/sprintf-js\"],\"absentPackages\":[],\"changedFiles\":0}\n",
+    "stderr": ""
+  }
+}

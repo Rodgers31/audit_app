@@ -1,0 +1,9 @@
+{
+  "cmd": [
+    "node",
+    "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/standards-review/candidate-repair-fixture/scripts/apply-tooling-repairs.cjs",
+    "--check"
+  ],
+  "cwd": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/standards-review/candidate-repair-fixture",
+  "returncode": 1
+}

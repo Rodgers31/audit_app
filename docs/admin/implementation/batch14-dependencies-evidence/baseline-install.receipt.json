@@ -1,0 +1,35 @@
+{
+  "command": [
+    "npm",
+    "ci",
+    "--include=dev",
+    "--include=optional",
+    "--no-audit",
+    "--no-fund"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend",
+  "started": "2026-10-16T11:45:53.990719+00:00",
+  "finished": "2026-10-16T11:46:22.989988+00:00",
+  "exit_code": 0,
+  "head": "3f3b1f1981b93c3317e204defbd235121c1df084",
+  "before": {
+    "frontend/package.json": "a5c78d7d9e3a18ef1cb0be64eb1302d32e141ed8db0b603fa8050dda45bc7d92",
+    "frontend/package-lock.json": "46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc",
+    "frontend/scripts/apply-tooling-repairs.cjs": "acd61ee77794572624afa1cfdb030ca80bf482148a3b4a213681e1bc453956fa",
+    "frontend/scripts/tooling-repairs.json": "70aef45be8afeaf14b7da055e78f01b81211036d68bf6946d1a3dec1cce3cc1e"
+  },
+  "after": {
+    "frontend/package.json": "a5c78d7d9e3a18ef1cb0be64eb1302d32e141ed8db0b603fa8050dda45bc7d92",
+    "frontend/package-lock.json": "46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc",
+    "frontend/scripts/apply-tooling-repairs.cjs": "acd61ee77794572624afa1cfdb030ca80bf482148a3b4a213681e1bc453956fa",
+    "frontend/scripts/tooling-repairs.json": "70aef45be8afeaf14b7da055e78f01b81211036d68bf6946d1a3dec1cce3cc1e"
+  },
+  "environment": {
+    "ONNXRUNTIME_NODE_INSTALL": "skip",
+    "npm_config_cache": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+  },
+  "outputs": {
+    "stdout": "c15beaf263d9d42b341207b2a079a6e019dd66492cad0f5d9f9c555c7ff16e4b",
+    "stderr": "661ad125f39b3b59fc79b9068832343bac3eeb3d7d130e3397c5a3a375520538"
+  }
+}

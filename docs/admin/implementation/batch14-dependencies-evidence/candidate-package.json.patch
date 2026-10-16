@@ -1,0 +1,11 @@
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -88,6 +88,7 @@
+     "next": {
+       "sharp": "0.35.5"
+     },
+-    "postcss-selector-parser": "7.1.6"
++    "postcss-selector-parser": "7.1.6",
++    "argparse": "2.0.1"
+   }
+ }

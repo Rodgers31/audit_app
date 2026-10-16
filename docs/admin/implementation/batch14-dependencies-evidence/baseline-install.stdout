@@ -1,0 +1,7 @@
+
+> audit-app-frontend@1.0.0 postinstall
+> node scripts/apply-tooling-repairs.cjs
+
+{"check":"source-bound-tooling-repairs","packages":["node_modules/braces","node_modules/sprintf-js"],"absentPackages":[],"changedFiles":10}
+
+added 901 packages in 29s

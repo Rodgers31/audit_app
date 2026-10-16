@@ -1,0 +1,12 @@
+[
+  {
+    "production": false,
+    "status": "rejected",
+    "message": "tooling repair: missing locked sprintf-js"
+  },
+  {
+    "production": true,
+    "status": "rejected",
+    "message": "tooling repair: missing locked sprintf-js"
+  }
+]

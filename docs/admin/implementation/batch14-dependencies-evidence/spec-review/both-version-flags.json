@@ -1,0 +1,30 @@
+[
+  {
+    "root": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend",
+    "flag": "--version",
+    "status": 0,
+    "stdout": "3.15.2\n",
+    "stderr": ""
+  },
+  {
+    "root": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend",
+    "flag": "-v",
+    "status": 0,
+    "stdout": "3.15.2\n",
+    "stderr": ""
+  },
+  {
+    "root": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/../argparse2-candidate/frontend",
+    "flag": "--version",
+    "status": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "root": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/../argparse2-candidate/frontend",
+    "flag": "-v",
+    "status": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]
