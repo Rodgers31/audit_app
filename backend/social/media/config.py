@@ -25,9 +25,13 @@ class MediaConfig:
     ready_retention_days: int = 30
     ffprobe_path: str | None = ''
     retained_writes_enabled: bool = False
+    fenced_retirement_enabled: bool = False
+    max_actor_assets: int = 1000
+    max_total_assets: int = 10000
+    retirement_policy_hashes: tuple[str, ...] = ()
 
     def validate(self):
-        if type(self.enabled) is not bool or type(self.retained_writes_enabled) is not bool:
+        if any(type(value) is not bool for value in (self.enabled, self.retained_writes_enabled, self.fenced_retirement_enabled)):
             raise ValueError('Media feature flag must be boolean')
         if self.ffprobe_path is not None and not isinstance(self.ffprobe_path, str):
             raise ValueError('Media inspection executable path must be a string or unset')
@@ -37,6 +41,14 @@ class MediaConfig:
                 raise ValueError('Invalid media limit: ' + name)
         if self.actor_quota_bytes > self.total_quota_bytes or self.lease_seconds <= self.inspection_timeout + 30:
             raise ValueError('Invalid media budget or inspection lease')
+        if (type(self.max_actor_assets) is not int or type(self.max_total_assets) is not int
+                or not 1 <= self.max_actor_assets <= self.max_total_assets <= 10000):
+            raise ValueError('Invalid lifetime media admission limit')
+        if (type(self.retirement_policy_hashes) is not tuple or len(self.retirement_policy_hashes) > 8
+                or len(set(self.retirement_policy_hashes)) != len(self.retirement_policy_hashes)
+                or any(type(value) is not str or re.fullmatch('[0-9a-f]{64}', value) is None
+                       for value in self.retirement_policy_hashes)):
+            raise ValueError('Invalid approved media retirement policy hashes')
         if not self.enabled:
             return self
         parsed = urlsplit(self.endpoint)
@@ -52,6 +64,10 @@ def config_from_environment(environ=None):
     # Missing or invalid enablement never implicitly enables upload.
     enabled = values.get('SOCIAL_MEDIA_ENABLED', 'false').lower()
     retained = values.get('SOCIAL_MEDIA_RETAINED_WRITES_ENABLED', 'false')
-    if enabled not in {'true', 'false'} or retained not in {'true', 'false'}:
+    retirement = values.get('SOCIAL_MEDIA_FENCED_RETIREMENT_ENABLED', 'false')
+    policies = values.get('SOCIAL_MEDIA_RETIREMENT_POLICY_HASHES', '')
+    if type(policies) is not str:
+        raise ValueError('Invalid approved media retirement policy hashes')
+    if enabled not in {'true', 'false'} or retained not in {'true', 'false'} or retirement not in {'true', 'false'}:
         raise ValueError('Invalid media enablement')
-    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', ''), retained_writes_enabled=retained == 'true').validate()
+    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', ''), retained_writes_enabled=retained == 'true', fenced_retirement_enabled=retirement == 'true', retirement_policy_hashes=tuple(policies.split(',')) if policies else ()).validate()

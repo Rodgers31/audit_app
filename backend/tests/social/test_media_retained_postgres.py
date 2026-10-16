@@ -42,7 +42,7 @@ def ready(engine, runtime):
 
 
 def test_retained_additive_migration_and_empty_downgrade(pg_engine):
-    upgrade(pg_engine)
+    upgrade(pg_engine, current=False)
     with pg_engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
         assert inspect(conn).get_columns('social_media_uploads')[-1]['name'] == 'retained_write_fence'
         assert conn.execute(text("SELECT relrowsecurity FROM pg_class WHERE oid='social_media_uploads'::regclass")).scalar()
