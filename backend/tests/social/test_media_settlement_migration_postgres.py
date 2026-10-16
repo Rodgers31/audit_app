@@ -69,7 +69,8 @@ def test_legacy_grants_remain_unknown_with_exact_pending_markers(pg_engine):
 
 
 @pytest.mark.parametrize('version', [1, 2])
-def test_migrated_cleaned_ready_recovers_only_after_verified_fresh_delete(pg_engine, version):
+@pytest.mark.parametrize('valid_identity', [True, False])
+def test_migrated_cleaned_ready_recovers_only_after_verified_fresh_delete(pg_engine, version, valid_identity):
     from social.media.config import MediaConfig
     from social.media.inspection import LocalInspector
     from social.media.models import SocialMediaUpload
@@ -84,7 +85,8 @@ def test_migrated_cleaned_ready_recovers_only_after_verified_fresh_delete(pg_eng
     storage = FakeStorage()
     content = png()
     digest = hashlib.sha256(content).hexdigest()
-    original, quarantine = f'ready/{identity}/original', f'quarantine/{identity}/source'
+    original = f'ready/{identity}/original'
+    quarantine = f'quarantine/{ACTOR}/{identity}/source' if valid_identity else f'quarantine/{identity}/source'
     storage.objects[original] = (content, 'image/png', digest)
     snapshot = storage.head(original)
     storage.objects[quarantine] = (content, 'image/png', None)
@@ -117,6 +119,20 @@ def test_migrated_cleaned_ready_recovers_only_after_verified_fresh_delete(pg_eng
     runtime = MediaRuntime(config, storage, LocalInspector(config))
     with Session(pg_engine, expire_on_commit=False) as db:
         service = MediaService(db, runtime)
+        if not valid_identity:
+            from social.media.operator import prepare_reconciliation
+            report = prepare_reconciliation(service)
+            assert 'OBJECT_IDENTITY_MISMATCH' in report.uploads[0].reason_codes
+            before = dict(storage.objects)
+            with pytest.raises(SocialError, match='MEDIA_OBJECT_IDENTITY_MISMATCH'):
+                settle_writes(service, identity)
+            assert service.cleanup() == 0 and ledger(service) == (len(content), pending)
+            assert storage.objects == before and 'delete' not in storage.operations
+            with db.begin():
+                upload = db.get(SocialMediaUpload, identity)
+                assert upload.grant_epoch == 1 and upload.grant_settled_epoch == 0
+                assert upload.version == version and upload.quarantine_cleaned == 1
+            return
         with pytest.raises(SocialError, match='MEDIA_WRITE_QUIESCENCE_UNCONFIRMED'):
             service.reconcile(ACTOR, identity, request_for(service, identity), uuid4())
         assert service.cleanup() == 0 and ledger(service) == (len(content), pending)

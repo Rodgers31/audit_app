@@ -13,6 +13,7 @@ from ..models import SocialAuditEvent, SocialMediaAsset, SocialRevisionAsset
 from ..service import SocialError, SocialService, utc, require_positive_version
 from .contracts import MaintenanceBacklog, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
 from .inspection import InspectionFailure
+from .identity import object_identity_matches, object_identity_conditions
 from .models import SocialMediaBudget, SocialMediaUpload
 from .storage import ObjectSnapshot, StorageFailure
 from .reconciliation import ReconcileUpload, WriteQuiescenceEvidence, WriteQuiescenceScope
@@ -50,6 +51,8 @@ class MediaService:
         upload = self.db.scalar(select(SocialMediaUpload).where(SocialMediaUpload.asset_id == asset_id).with_for_update().execution_options(populate_existing=True))
         if asset is None or upload is None:
             raise SocialError('NOT_FOUND', 'This media upload was not found.', 404)
+        if not object_identity_matches(asset, upload):
+            raise SocialError('MEDIA_OBJECT_IDENTITY_MISMATCH', 'Stored media identity requires operator inspection. Capacity remains held.', 409)
         return asset, upload
 
     def _audit(self, actor, request_id, asset, action, previous):
@@ -270,13 +273,16 @@ class MediaService:
             asset = self.db.get(SocialMediaAsset, asset_id)
             if asset is None or asset.state != 'ready' or asset.deleted_at is not None:
                 raise SocialError('NOT_FOUND', 'Ready media was not found.', 404)
+            upload = self.db.get(SocialMediaUpload, asset.id)
+            if upload is None or not object_identity_matches(asset, upload):
+                raise SocialError('MEDIA_OBJECT_IDENTITY_MISMATCH', 'Stored media identity requires operator inspection. Capacity remains held.', 409)
             if asset.storage_provider != storage.provider or asset.bucket != storage.bucket:
                 raise SocialError('MEDIA_UNAVAILABLE', 'This asset storage provider is unavailable.', 503)
             metadata = asset.codec_metadata or {}
             expected = ObjectSnapshot(asset.byte_size, metadata.get('storage_etag'), metadata.get('storage_version'), asset.sha256, asset.mime_type)
             if not expected.etag:
                 raise SocialError('MEDIA_UNAVAILABLE', 'This asset has no verified immutable storage identity.', 503)
-            dto = self._dto(asset, self.db.get(SocialMediaUpload, asset.id)); key = asset.storage_key
+            dto = self._dto(asset, upload); key = asset.storage_key
         try:
             if storage.head(key) != expected:
                 raise StorageFailure('Asset identity changed')
@@ -392,7 +398,7 @@ class MediaService:
 
     def _cleanup_conditions(self, now):
         referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
-        return [SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
+        return [*object_identity_conditions(self.db.bind.dialect.name), SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
 
     def backlog(self):
         """One aggregate and one compact ledger read; no keys, grants or bodies."""

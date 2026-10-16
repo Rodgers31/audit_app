@@ -15,6 +15,7 @@ from ..contracts import StrictModel
 from ..models import SocialMediaAsset, SocialRevisionAsset
 from ..service import SocialError, utc
 from .models import SocialMediaBudget, SocialMediaUpload
+from .identity import object_identity_matches
 
 Count = Annotated[int, Field(strict=True, ge=0)]
 
@@ -149,6 +150,8 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
         uploads = []
         for asset, upload, protected, actor_scope, actor_bytes, actor_pending, expected_bytes, expected_pending in rows[:limit]:
             codes = []
+            if not object_identity_matches(asset, upload):
+                codes.append('OBJECT_IDENTITY_MISMATCH')
             if upload.retained_write_fence is not None:
                 codes.append('RETAINED_CREATE_ONLY_FENCE_RECORDED')
             storage = service.runtime.storage
