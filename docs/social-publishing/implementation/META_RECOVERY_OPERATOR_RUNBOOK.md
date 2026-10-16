@@ -150,3 +150,147 @@ these local results. Preserve each gate as VERIFIED_BY_EXECUTION, DECLARED_ONLY,
 MISSING or BLOCKED with exact time/role/build/receipt scope. Complete protocol
 registration and public status reachability only with the privacy scope's actual
 callback contract; no deletion completion or public-policy authority is supplied.
+
+## Bounded independent inventory and continuity seam
+
+`social.recovery_inventory.verify_inventory_continuity` is an explicitly called
+operator function. It accepts ten **bytes** arguments, never a database session,
+mutable mapping, callback, path, environment variable or secret-store client:
+
+```python
+result = verify_inventory_continuity(
+    source_snapshot, restored_snapshot, independent_manifest, subject_proofs,
+    primary_envelope_backup, independently_restored_envelope_backup,
+    primary_digest_backup, independently_restored_digest_backup,
+    candidate_envelope_backup, candidate_digest_backup,
+)
+```
+
+Use only synthetic inputs until the separate extraction/access/restore authority
+is established. Do not paste these byte values into a shell, source, chat or
+receipt: snapshots contain encrypted grants and subject proofs contain private
+subjects. The verifier has no runtime registration and performs no durable write.
+Its fixed ordinary failure is `RECOVERY_INVENTORY_REFUSED`, raised without parser
+or cryptographic exception context. `KeyboardInterrupt` and `SystemExit` propagate.
+
+### Input contract and independent provenance
+
+Both snapshots are UTF-8 JSON objects with exactly `schema_version: 1`,
+`snapshot_id` (canonical nonzero UUID string), and `tables`. Each table below must
+be present as a list, including empty lists. Include every row in the approved
+recovery projection, even orphan, revoked, expired and unreferenced records.
+Do not filter by connected account or by the active key. Column names in this
+projection correspond to the models; it deliberately omits unrelated columns.
+
+| Projection table | Exact row fields |
+| --- | --- |
+| `credentials` | `id`, `credential_kind`, `parent_credential_id`, `version`, `key_version`, `encrypted_bundle` |
+| `flows` | `id`, `status`, `key_version`, `encrypted_verifier`, `encrypted_pending_grant` |
+| `ownership` | `id`, `app_id`, `digest_version`, `subject_digest`, `reference_key`, `flow_id`, `credential_id`, `credential_version`, `account_id`, `page_id`, `generation_at` |
+| `receipts` | `id`, `app_id`, `kind`, `digest_version`, `subject_digest`, `event_key`, `request_fingerprint`, `affected`, `state`, `resolution`, `audit_id`, `confirmation_hash`, `confirmation_key_version`, `encrypted_confirmation` |
+| `variants` | `id`, `app_id`, `kind`, `fingerprint`, `receipt_id` |
+| `accounts` | `id`, `credential_id` |
+| `audits` | `id` |
+
+Ciphertext fields are canonical standard base64 strings, or JSON `null` only
+where the model allows absence. Nullable references use `null`; numeric versions
+are positive signed 64-bit integers, never booleans. Timestamps are actual UTC
+calendar instants written as `YYYY-MM-DDTHH:MM:SS[.ffffff]Z`. `affected` is the
+frozen list of exact `ownership_id`, `flow_id`, `credential_id`,
+`credential_version`, `account_id`, `page_id` objects from the receipt. Historical
+ownership generations may precede the current credential version. The verifier
+checks references and subject identity across digest versions, and decrypts
+`privacy_confirmation` with the receipt UUID, checking the resulting code against
+its stored confirmation hash. Receipt variants and their canonical fingerprints
+must remain present. No ledger row is treated as a deletion completion.
+
+The independently reconciled manifest is a separate JSON object containing
+exactly `schema_version: 1`, `snapshot_id`, `active_envelope_version`,
+`active_digest_version`, and `records`. `records` has all seven table names,
+each mapping **every** expected row UUID to its SHA-256 commitment. A commitment
+is SHA-256 of ASCII JSON for the entire projection row, with sorted keys,
+compact comma/colon separators, `ensure_ascii=True` and nonfinite values refused.
+Row order is irrelevant; nested affected-list order is committed exactly.
+Independently reconcile this manifest against the approved snapshot and its
+nonsecret extraction/custodian receipts. Generating it from the same unchecked
+input and calling it independent supplies no new evidence. The helper does not
+create manifests or authenticate their issuers. IDs and version labels bind to
+these commitments, including when distinct HMAC/Fernet labels alias equal key
+bytes. Cryptographic success alone cannot authenticate a label.
+
+`subject_proofs` is exactly `schema_version: 1`, `snapshot_id`, `records`; each
+record is `{ "table": "ownership" | "receipts", "id": UUID, "subject": ASID }`.
+It must cover every ownership and receipt row exactly once with independently
+obtained private subjects. No raw subjects go in the snapshot or result.
+App namespaces and stored digests come from the independently committed rows.
+
+Envelope backups use the existing `meta_credential_envelopes` v1 contract.
+Digest backups are separate JSON objects with exactly `schema_version: 1`,
+`purpose: "meta_subject_digests"`, `active_version`, `keys`; `keys` maps labels
+to lowercase hex strings encoding exactly 32 bytes. Never use envelope material
+for digest keys. Primary/restored active labels must equal the manifest labels;
+all their version labels and key bytes must match, including unused keys.
+Candidate active labels may differ, but an existing label cannot acquire new
+bytes, and every retained envelope/digest must still be readable. Fresh instances
+are reconstructed for active encryption/digest canaries. Use the same independently
+restored bytes as candidate inputs for a restoration-only drill. Different input
+objects or matching hashes do not prove independence or custody.
+
+Bounds apply at the function boundary: each snapshot is at most 2,000,000 bytes;
+manifest and subject proofs each 256,000 bytes; each key backup 65,536 bytes;
+1,000 total projection rows per snapshot; 128,000 decoded bytes per envelope;
+500 affected references per receipt; 64 envelope versions and 16 digest versions.
+Duplicates, extra/omitted fields, duplicate IDs/keys, nonfinite values, malformed
+shapes and over-limit inputs refuse. Empty categories are valid, but a drill
+requires at least one envelope and one subject-bearing record. An empty database
+needs a separately designed empty-inventory attestation; it cannot pass vacuously.
+Partitioning a larger inventory is not global acceptance: retain and independently
+reconcile the complete partition census and references before designing support.
+
+### Honest verdict and remaining restore drill
+
+Success means `snapshot_coverage_verified: true` **only for this independently
+manifested recovery projection**, plus execution of every supplied envelope and
+subject lookup with primary, restored and candidate material. The result reports
+row/envelope/subject counts and candidate labels; it contains no row IDs, grants,
+subjects, keys or digests. `restart_scope` explicitly says
+`fresh_instances_from_supplied_backup_bytes`; a fresh Python process synthetic
+replay also exists in the test cohort. Neither proves real secret-store durability,
+failed-write handling or deployed process continuity.
+
+`database_coverage_verified`, `backup_custody_verified`, `production_authorized`,
+`retirement_authorized`, `deletion_authorized` and `deletion_completed` remain
+**false on every success**. PR679's supplied-subject helper retains its original
+false coverage/custody/authorization flags. No wrapper promotes those results.
+
+Before any separately approved operational acceptance:
+
+- Authenticate a complete read-only extraction at an approved database snapshot,
+  namespace/build/schema/role and recovery horizon. Reconcile projection row IDs,
+  labels and counts independently, plus omitted columns and domain tables. This
+  seam supplies no database extractor, transaction fence or production census.
+- Restore actual independently held off-host backups under named custody and
+  loss-of-primary-store conditions; authenticate labels and exported material.
+  Test backup storage permissions, durability and restore failure. Local synthetic
+  bytes and hashes supply neither identity nor custody.
+- Reconcile **all** retained database backups, WAL, historical snapshots, object
+  copies and the authoritative deletion ledger through the restore cutoff.
+  Frozen privacy receipts in one snapshot cannot prove a later deletion ledger
+  was reapplied. Resolve unindexed legacy ownership and media/subprocessor
+  attribution; preserve unresolved quarantine and pending retention review.
+- Execute actual failed-persist/restart and approved rotation/rollback drills on
+  the intended isolated store/runtime. Preserve old and new versions until every
+  accepted recovery copy is proven readable; candidate key absence refuses for
+  referenced material. This helper does no re-encryption or persistence.
+- Obtain approved retention/disposal policy and separate explicit key-retirement
+  or deletion authority. A zero reference count in one snapshot is insufficient.
+  No destructive retirement or deletion executor is provided here.
+- Retain deployed ingress/exporter redaction, protocol registration, effective
+  roles, owned-account identity and approved worker/media acceptance separately.
+  Keep publishing, uploads, native delivery and retained writes OFF throughout
+  this engineering slice. Chrome acceptance is unexecuted in this lane.
+
+
+### Nullable account credential references (#688)
+
+The inventory accounts projection includes unlinked accounts: credential_id may be null, matching SocialAccount's nullable foreign key. Nonnull values must remain canonical UUIDs present in the complete credential inventory; null does not remove the account row from its independent manifest commitment. The coordinator reproduced the null-reference refusal on the original PR source, then verified eight optional/dangling/malformed reference controls. The affected recovery cohort passes273 tests; the inventory cohort passes144 in optimized Python. Snapshot coverage continues to establish neither live database completeness, independent backup custody, nor production/deletion/retirement authority. This change performs no live restore or key operation.
