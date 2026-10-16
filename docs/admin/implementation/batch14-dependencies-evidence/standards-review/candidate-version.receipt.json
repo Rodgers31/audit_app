@@ -1,0 +1,9 @@
+{
+  "cmd": [
+    "node",
+    "--test",
+    "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/cli-version.test.cjs"
+  ],
+  "root": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend",
+  "exit": 1
+}

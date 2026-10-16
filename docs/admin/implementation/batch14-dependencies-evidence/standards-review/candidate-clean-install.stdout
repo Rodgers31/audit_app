@@ -1,0 +1,4 @@
+
+> audit-app-frontend@1.0.0 postinstall
+> node scripts/apply-tooling-repairs.cjs
+

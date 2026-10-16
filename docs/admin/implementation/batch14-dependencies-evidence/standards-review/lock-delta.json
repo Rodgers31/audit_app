@@ -1,0 +1,32 @@
+{
+  "production_identical": true,
+  "production_counts": [
+    173,
+    173
+  ],
+  "delta": {
+    "node_modules/sprintf-js": {
+      "baseline": {
+        "version": "1.0.3",
+        "resolved": "https://registry.npmjs.org/sprintf-js/-/sprintf-js-1.0.3.tgz",
+        "integrity": "sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==",
+        "dev": true,
+        "license": "BSD-3-Clause"
+      },
+      "candidate": null
+    },
+    "node_modules/@istanbuljs/load-nyc-config/node_modules/argparse": {
+      "baseline": {
+        "version": "1.0.10",
+        "resolved": "https://registry.npmjs.org/argparse/-/argparse-1.0.10.tgz",
+        "integrity": "sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==",
+        "dev": true,
+        "license": "MIT",
+        "dependencies": {
+          "sprintf-js": "~1.0.2"
+        }
+      },
+      "candidate": null
+    }
+  }
+}

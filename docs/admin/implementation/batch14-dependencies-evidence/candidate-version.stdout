@@ -1,0 +1,36 @@
+TAP version 13
+# Subtest: the NYC YAML CLI reports its package version
+not ok 1 - the NYC YAML CLI reports its package version
+  ---
+  duration_ms: 39.027834
+  type: 'test'
+  location: '/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/cli-version.test.cjs:9:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    --version must print its package version
+    
+    '' !== '3.15.2\n'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    3.15.2
+    
+  actual: ''
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/cli-version.test.cjs:21:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 68.162084

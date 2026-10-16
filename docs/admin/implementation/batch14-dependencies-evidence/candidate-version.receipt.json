@@ -1,0 +1,12 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/cli-version.test.cjs"
+  ],
+  "BATCH14_FRONTEND_ROOT": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend",
+  "exit_code": 1,
+  "test_sha256": "d27c5b82f941b7f3cceb9bb8d3e73e179590fac312a5edf413d1d70430586ef5",
+  "manifest_sha256": "5a6a00d523e19a1d95af7b55c0967349008825505e541e2ae75b9140b48c4ad5",
+  "lock_sha256": "fda6befb45060e569b869902e165d8cd47f2dd0d0e19048ad968f7f8715e2d37"
+}

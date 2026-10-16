@@ -1,0 +1,8 @@
+{
+  "cmd": [
+    "node",
+    "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/probe-argparse.cjs"
+  ],
+  "cwd": "None",
+  "returncode": 1
+}

@@ -1,0 +1,16 @@
+Error: ENOENT: no such file or directory, lstat '/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/standards-review/missing'
+    at Object.realpathSync (node:fs:2786:29)
+    at main (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/probe-argparse.cjs:11:19)
+    at Object.<anonymous> (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/docs/admin/implementation/batch14-dependencies-evidence/probe-argparse.cjs:43:1)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'lstat',
+  path: '/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/standards-review/missing'
+}

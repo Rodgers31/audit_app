@@ -1,0 +1,369 @@
+sprintf-js@1.0.3 dev
+node_modules/sprintf-js
+  sprintf-js@"~1.0.2" from argparse@1.0.10
+  node_modules/@istanbuljs/load-nyc-config/node_modules/argparse
+    argparse@"^1.0.7" from js-yaml@3.15.2
+    node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml
+      js-yaml@"^3.13.1" from @istanbuljs/load-nyc-config@1.1.0
+      node_modules/@istanbuljs/load-nyc-config
+        @istanbuljs/load-nyc-config@"^1.0.0" from babel-plugin-istanbul@8.0.0
+        node_modules/babel-plugin-istanbul
+          babel-plugin-istanbul@"^8.0.0" from babel-jest@30.5.2
+          node_modules/babel-jest
+            babel-jest@"30.5.2" from jest-config@30.5.2
+            node_modules/jest-cli/node_modules/jest-config
+              jest-config@"30.5.2" from jest-cli@30.5.2
+              node_modules/jest-cli
+                jest-cli@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+            babel-jest@"30.5.2" from jest-config@30.5.2
+            node_modules/@jest/core/node_modules/jest-config
+              jest-config@"30.5.2" from @jest/core@30.5.2
+              node_modules/@jest/core
+                @jest/core@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+                @jest/core@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+          babel-plugin-istanbul@"^8.0.0" from @jest/transform@30.5.2
+          node_modules/@jest/transform
+            @jest/transform@"30.5.2" from babel-jest@30.5.2
+            node_modules/babel-jest
+              babel-jest@"30.5.2" from jest-config@30.5.2
+              node_modules/jest-cli/node_modules/jest-config
+                jest-config@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+              babel-jest@"30.5.2" from jest-config@30.5.2
+              node_modules/@jest/core/node_modules/jest-config
+                jest-config@"30.5.2" from @jest/core@30.5.2
+                node_modules/@jest/core
+                  @jest/core@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+                  @jest/core@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+            @jest/transform@"30.5.2" from jest-snapshot@30.5.2
+            node_modules/jest-snapshot
+              jest-snapshot@"30.5.2" from jest-circus@30.5.2
+              node_modules/jest-circus
+                jest-circus@"30.5.2" from jest-config@30.5.2
+                node_modules/jest-cli/node_modules/jest-config
+                  jest-config@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                jest-circus@"30.5.2" from jest-config@30.5.2
+                node_modules/@jest/core/node_modules/jest-config
+                  jest-config@"30.5.2" from @jest/core@30.5.2
+                  node_modules/@jest/core
+                    @jest/core@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                    @jest/core@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+              jest-snapshot@"30.5.2" from jest-resolve-dependencies@30.5.2
+              node_modules/jest-resolve-dependencies
+                jest-resolve-dependencies@"30.5.2" from @jest/core@30.5.2
+                node_modules/@jest/core
+                  @jest/core@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+                  @jest/core@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+              jest-snapshot@"30.5.2" from jest-runtime@30.5.2
+              node_modules/jest-runtime
+                jest-runtime@"30.5.2" from jest-circus@30.5.2
+                node_modules/jest-circus
+                  jest-circus@"30.5.2" from jest-config@30.5.2
+                  node_modules/jest-cli/node_modules/jest-config
+                    jest-config@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                  jest-circus@"30.5.2" from jest-config@30.5.2
+                  node_modules/@jest/core/node_modules/jest-config
+                    jest-config@"30.5.2" from @jest/core@30.5.2
+                    node_modules/@jest/core
+                      @jest/core@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                      @jest/core@"30.5.2" from jest-cli@30.5.2
+                      node_modules/jest-cli
+                        jest-cli@"30.5.2" from jest@30.5.2
+                        node_modules/jest
+                          dev jest@"30.5.2" from the root project
+                jest-runtime@"30.5.2" from jest-runner@30.5.2
+                node_modules/jest-runner
+                  jest-runner@"30.5.2" from @jest/core@30.5.2
+                  node_modules/@jest/core
+                    @jest/core@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                    @jest/core@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                  jest-runner@"30.5.2" from jest-config@30.5.2
+                  node_modules/jest-cli/node_modules/jest-config
+                    jest-config@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                  jest-runner@"30.5.2" from jest-config@30.5.2
+                  node_modules/@jest/core/node_modules/jest-config
+                    jest-config@"30.5.2" from @jest/core@30.5.2
+                    node_modules/@jest/core
+                      @jest/core@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                      @jest/core@"30.5.2" from jest-cli@30.5.2
+                      node_modules/jest-cli
+                        jest-cli@"30.5.2" from jest@30.5.2
+                        node_modules/jest
+                          dev jest@"30.5.2" from the root project
+                jest-runtime@"30.5.2" from @jest/core@30.5.2
+                node_modules/@jest/core
+                  @jest/core@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+                  @jest/core@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+              jest-snapshot@"30.5.2" from @jest/core@30.5.2
+              node_modules/@jest/core
+                @jest/core@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+                @jest/core@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+              jest-snapshot@"30.5.2" from @jest/expect@30.5.2
+              node_modules/@jest/expect
+                @jest/expect@"30.5.2" from jest-circus@30.5.2
+                node_modules/jest-circus
+                  jest-circus@"30.5.2" from jest-config@30.5.2
+                  node_modules/jest-cli/node_modules/jest-config
+                    jest-config@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                  jest-circus@"30.5.2" from jest-config@30.5.2
+                  node_modules/@jest/core/node_modules/jest-config
+                    jest-config@"30.5.2" from @jest/core@30.5.2
+                    node_modules/@jest/core
+                      @jest/core@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                      @jest/core@"30.5.2" from jest-cli@30.5.2
+                      node_modules/jest-cli
+                        jest-cli@"30.5.2" from jest@30.5.2
+                        node_modules/jest
+                          dev jest@"30.5.2" from the root project
+                @jest/expect@"30.5.2" from @jest/globals@30.5.2
+                node_modules/@jest/globals
+                  @jest/globals@"30.5.2" from jest-runtime@30.5.2
+                  node_modules/jest-runtime
+                    jest-runtime@"30.5.2" from jest-circus@30.5.2
+                    node_modules/jest-circus
+                      jest-circus@"30.5.2" from jest-config@30.5.2
+                      node_modules/jest-cli/node_modules/jest-config
+                        jest-config@"30.5.2" from jest-cli@30.5.2
+                        node_modules/jest-cli
+                          jest-cli@"30.5.2" from jest@30.5.2
+                          node_modules/jest
+                            dev jest@"30.5.2" from the root project
+                      jest-circus@"30.5.2" from jest-config@30.5.2
+                      node_modules/@jest/core/node_modules/jest-config
+                        jest-config@"30.5.2" from @jest/core@30.5.2
+                        node_modules/@jest/core
+                          @jest/core@"30.5.2" from jest@30.5.2
+                          node_modules/jest
+                            dev jest@"30.5.2" from the root project
+                          @jest/core@"30.5.2" from jest-cli@30.5.2
+                          node_modules/jest-cli
+                            jest-cli@"30.5.2" from jest@30.5.2
+                            node_modules/jest
+                              dev jest@"30.5.2" from the root project
+                    jest-runtime@"30.5.2" from jest-runner@30.5.2
+                    node_modules/jest-runner
+                      jest-runner@"30.5.2" from @jest/core@30.5.2
+                      node_modules/@jest/core
+                        @jest/core@"30.5.2" from jest@30.5.2
+                        node_modules/jest
+                          dev jest@"30.5.2" from the root project
+                        @jest/core@"30.5.2" from jest-cli@30.5.2
+                        node_modules/jest-cli
+                          jest-cli@"30.5.2" from jest@30.5.2
+                          node_modules/jest
+                            dev jest@"30.5.2" from the root project
+                      jest-runner@"30.5.2" from jest-config@30.5.2
+                      node_modules/jest-cli/node_modules/jest-config
+                        jest-config@"30.5.2" from jest-cli@30.5.2
+                        node_modules/jest-cli
+                          jest-cli@"30.5.2" from jest@30.5.2
+                          node_modules/jest
+                            dev jest@"30.5.2" from the root project
+                      jest-runner@"30.5.2" from jest-config@30.5.2
+                      node_modules/@jest/core/node_modules/jest-config
+                        jest-config@"30.5.2" from @jest/core@30.5.2
+                        node_modules/@jest/core
+                          @jest/core@"30.5.2" from jest@30.5.2
+                          node_modules/jest
+                            dev jest@"30.5.2" from the root project
+                          @jest/core@"30.5.2" from jest-cli@30.5.2
+                          node_modules/jest-cli
+                            jest-cli@"30.5.2" from jest@30.5.2
+                            node_modules/jest
+                              dev jest@"30.5.2" from the root project
+                    jest-runtime@"30.5.2" from @jest/core@30.5.2
+                    node_modules/@jest/core
+                      @jest/core@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+                      @jest/core@"30.5.2" from jest-cli@30.5.2
+                      node_modules/jest-cli
+                        jest-cli@"30.5.2" from jest@30.5.2
+                        node_modules/jest
+                          dev jest@"30.5.2" from the root project
+            @jest/transform@"30.5.2" from jest-runner@30.5.2
+            node_modules/jest-runner
+              jest-runner@"30.5.2" from @jest/core@30.5.2
+              node_modules/@jest/core
+                @jest/core@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+                @jest/core@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+              jest-runner@"30.5.2" from jest-config@30.5.2
+              node_modules/jest-cli/node_modules/jest-config
+                jest-config@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+              jest-runner@"30.5.2" from jest-config@30.5.2
+              node_modules/@jest/core/node_modules/jest-config
+                jest-config@"30.5.2" from @jest/core@30.5.2
+                node_modules/@jest/core
+                  @jest/core@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+                  @jest/core@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+            @jest/transform@"30.5.2" from jest-runtime@30.5.2
+            node_modules/jest-runtime
+              jest-runtime@"30.5.2" from jest-circus@30.5.2
+              node_modules/jest-circus
+                jest-circus@"30.5.2" from jest-config@30.5.2
+                node_modules/jest-cli/node_modules/jest-config
+                  jest-config@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                jest-circus@"30.5.2" from jest-config@30.5.2
+                node_modules/@jest/core/node_modules/jest-config
+                  jest-config@"30.5.2" from @jest/core@30.5.2
+                  node_modules/@jest/core
+                    @jest/core@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                    @jest/core@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+              jest-runtime@"30.5.2" from jest-runner@30.5.2
+              node_modules/jest-runner
+                jest-runner@"30.5.2" from @jest/core@30.5.2
+                node_modules/@jest/core
+                  @jest/core@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+                  @jest/core@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                jest-runner@"30.5.2" from jest-config@30.5.2
+                node_modules/jest-cli/node_modules/jest-config
+                  jest-config@"30.5.2" from jest-cli@30.5.2
+                  node_modules/jest-cli
+                    jest-cli@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                jest-runner@"30.5.2" from jest-config@30.5.2
+                node_modules/@jest/core/node_modules/jest-config
+                  jest-config@"30.5.2" from @jest/core@30.5.2
+                  node_modules/@jest/core
+                    @jest/core@"30.5.2" from jest@30.5.2
+                    node_modules/jest
+                      dev jest@"30.5.2" from the root project
+                    @jest/core@"30.5.2" from jest-cli@30.5.2
+                    node_modules/jest-cli
+                      jest-cli@"30.5.2" from jest@30.5.2
+                      node_modules/jest
+                        dev jest@"30.5.2" from the root project
+              jest-runtime@"30.5.2" from @jest/core@30.5.2
+              node_modules/@jest/core
+                @jest/core@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+                @jest/core@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project
+            @jest/transform@"30.5.2" from @jest/core@30.5.2
+            node_modules/@jest/core
+              @jest/core@"30.5.2" from jest@30.5.2
+              node_modules/jest
+                dev jest@"30.5.2" from the root project
+              @jest/core@"30.5.2" from jest-cli@30.5.2
+              node_modules/jest-cli
+                jest-cli@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+            @jest/transform@"30.5.2" from @jest/reporters@30.5.2
+            node_modules/@jest/reporters
+              @jest/reporters@"30.5.2" from @jest/core@30.5.2
+              node_modules/@jest/core
+                @jest/core@"30.5.2" from jest@30.5.2
+                node_modules/jest
+                  dev jest@"30.5.2" from the root project
+                @jest/core@"30.5.2" from jest-cli@30.5.2
+                node_modules/jest-cli
+                  jest-cli@"30.5.2" from jest@30.5.2
+                  node_modules/jest
+                    dev jest@"30.5.2" from the root project

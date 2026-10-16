@@ -1,0 +1,412 @@
+TAP version 13
+# Subtest: tailwindcss: actual fast-glob rejects nested input before recursion
+ok 1 - tailwindcss: actual fast-glob rejects nested input before recursion
+  ---
+  duration_ms: 23.246209
+  type: 'test'
+  ...
+# Subtest: tailwindcss: parse bounds nested pattern
+ok 2 - tailwindcss: parse bounds nested pattern
+  ---
+  duration_ms: 0.121917
+  type: 'test'
+  ...
+# Subtest: tailwindcss: compile bounds nested pattern
+ok 3 - tailwindcss: compile bounds nested pattern
+  ---
+  duration_ms: 0.119166
+  type: 'test'
+  ...
+# Subtest: tailwindcss: expand bounds nested pattern
+ok 4 - tailwindcss: expand bounds nested pattern
+  ---
+  duration_ms: 0.062792
+  type: 'test'
+  ...
+# Subtest: tailwindcss: stringify bounds nested pattern
+ok 5 - tailwindcss: stringify bounds nested pattern
+  ---
+  duration_ms: 0.072167
+  type: 'test'
+  ...
+# Subtest: tailwindcss: nesting boundary cannot be relaxed by caller options
+ok 6 - tailwindcss: nesting boundary cannot be relaxed by caller options
+  ---
+  duration_ms: 0.321
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct compile AST walkers bound deep or cyclic nodes
+ok 7 - tailwindcss: direct compile AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.315125
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct stringify AST walkers bound deep or cyclic nodes
+ok 8 - tailwindcss: direct stringify AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.148166
+  type: 'test'
+  ...
+# Subtest: tailwindcss: direct expand AST walkers bound deep or cyclic nodes
+ok 9 - tailwindcss: direct expand AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.343666
+  type: 'test'
+  ...
+# Subtest: tailwindcss: shallow braces keep expansion and compile semantics
+ok 10 - tailwindcss: shallow braces keep expansion and compile semantics
+  ---
+  duration_ms: 0.775167
+  type: 'test'
+  ...
+# Subtest: tailwindcss: escaped, quoted, bracket and sibling braces keep semantics
+ok 11 - tailwindcss: escaped, quoted, bracket and sibling braces keep semantics
+  ---
+  duration_ms: 0.472709
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: actual fast-glob rejects nested input before recursion
+ok 12 - @next/eslint-plugin-next: actual fast-glob rejects nested input before recursion
+  ---
+  duration_ms: 6.430542
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: parse bounds nested pattern
+ok 13 - @next/eslint-plugin-next: parse bounds nested pattern
+  ---
+  duration_ms: 0.063834
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: compile bounds nested pattern
+ok 14 - @next/eslint-plugin-next: compile bounds nested pattern
+  ---
+  duration_ms: 0.046041
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: expand bounds nested pattern
+ok 15 - @next/eslint-plugin-next: expand bounds nested pattern
+  ---
+  duration_ms: 0.044583
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: stringify bounds nested pattern
+ok 16 - @next/eslint-plugin-next: stringify bounds nested pattern
+  ---
+  duration_ms: 0.094041
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: nesting boundary cannot be relaxed by caller options
+ok 17 - @next/eslint-plugin-next: nesting boundary cannot be relaxed by caller options
+  ---
+  duration_ms: 0.180792
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct compile AST walkers bound deep or cyclic nodes
+ok 18 - @next/eslint-plugin-next: direct compile AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.120667
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct stringify AST walkers bound deep or cyclic nodes
+ok 19 - @next/eslint-plugin-next: direct stringify AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.279542
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: direct expand AST walkers bound deep or cyclic nodes
+ok 20 - @next/eslint-plugin-next: direct expand AST walkers bound deep or cyclic nodes
+  ---
+  duration_ms: 0.265625
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: shallow braces keep expansion and compile semantics
+ok 21 - @next/eslint-plugin-next: shallow braces keep expansion and compile semantics
+  ---
+  duration_ms: 0.122958
+  type: 'test'
+  ...
+# Subtest: @next/eslint-plugin-next: escaped, quoted, bracket and sibling braces keep semantics
+ok 22 - @next/eslint-plugin-next: escaped, quoted, bracket and sibling braces keep semantics
+  ---
+  duration_ms: 0.046667
+  type: 'test'
+  ...
+# Subtest: argparse sprintf: rejects %.101f before native numeric formatting
+ok 23 - argparse sprintf: rejects %.101f before native numeric formatting
+  ---
+  duration_ms: 0.278542
+  type: 'test'
+  ...
+# Subtest: argparse sprintf: rejects %.101e before native numeric formatting
+ok 24 - argparse sprintf: rejects %.101e before native numeric formatting
+  ---
+  duration_ms: 0.084833
+  type: 'test'
+  ...
+# Subtest: argparse sprintf: rejects %.101g before native numeric formatting
+ok 25 - argparse sprintf: rejects %.101g before native numeric formatting
+  ---
+  duration_ms: 0.023125
+  type: 'test'
+  ...
+# Subtest: argparse sprintf: rejects %.999999999999999999999999f before native numeric formatting
+ok 26 - argparse sprintf: rejects %.999999999999999999999999f before native numeric formatting
+  ---
+  duration_ms: 0.022625
+  type: 'test'
+  ...
+# Subtest: argparse vsprintf: rejects %.101f before native numeric formatting
+ok 27 - argparse vsprintf: rejects %.101f before native numeric formatting
+  ---
+  duration_ms: 0.030708
+  type: 'test'
+  ...
+# Subtest: argparse vsprintf: rejects %.101e before native numeric formatting
+ok 28 - argparse vsprintf: rejects %.101e before native numeric formatting
+  ---
+  duration_ms: 0.29625
+  type: 'test'
+  ...
+# Subtest: argparse vsprintf: rejects %.101g before native numeric formatting
+ok 29 - argparse vsprintf: rejects %.101g before native numeric formatting
+  ---
+  duration_ms: 0.0635
+  type: 'test'
+  ...
+# Subtest: argparse vsprintf: rejects %.999999999999999999999999f before native numeric formatting
+ok 30 - argparse vsprintf: rejects %.999999999999999999999999f before native numeric formatting
+  ---
+  duration_ms: 0.092667
+  type: 'test'
+  ...
+# Subtest: argparse format: rejects %.101f before native numeric formatting
+ok 31 - argparse format: rejects %.101f before native numeric formatting
+  ---
+  duration_ms: 0.060459
+  type: 'test'
+  ...
+# Subtest: argparse format: rejects %.101e before native numeric formatting
+ok 32 - argparse format: rejects %.101e before native numeric formatting
+  ---
+  duration_ms: 0.071417
+  type: 'test'
+  ...
+# Subtest: argparse format: rejects %.101g before native numeric formatting
+ok 33 - argparse format: rejects %.101g before native numeric formatting
+  ---
+  duration_ms: 0.041292
+  type: 'test'
+  ...
+# Subtest: argparse format: rejects %.999999999999999999999999f before native numeric formatting
+ok 34 - argparse format: rejects %.999999999999999999999999f before native numeric formatting
+  ---
+  duration_ms: 0.037542
+  type: 'test'
+  ...
+# Subtest: argparse: direct format rejects malformed precision before invoking an argument callback
+ok 35 - argparse: direct format rejects malformed precision before invoking an argument callback
+  ---
+  duration_ms: 0.175042
+  type: 'test'
+  ...
+# Subtest: argparse: retained valid numeric, named, positional and string formats
+ok 36 - argparse: retained valid numeric, named, positional and string formats
+  ---
+  duration_ms: 0.271167
+  type: 'test'
+  ...
+# Subtest: direct expansion bounds nested queue values as well as AST nodes
+ok 37 - direct expansion bounds nested queue values as well as AST nodes
+  ---
+  duration_ms: 0.484416
+  type: 'test'
+  ...
+# Subtest: format snapshots precision before caller-controlled getters or callbacks can mutate it
+ok 38 - format snapshots precision before caller-controlled getters or callbacks can mutate it
+  ---
+  duration_ms: 0.0545
+  type: 'test'
+  ...
+# Subtest: sprintf src/sprintf.js: captured numeric and parsed zero precision preserve native rounding
+ok 39 - sprintf src/sprintf.js: captured numeric and parsed zero precision preserve native rounding
+  ---
+  duration_ms: 0.107792
+  type: 'test'
+  ...
+# Subtest: sprintf src/sprintf.js: captured numeric and parsed zero precision preserve native rounding
+ok 40 - sprintf src/sprintf.js: captured numeric and parsed zero precision preserve native rounding
+  ---
+  duration_ms: 0.034459
+  type: 'test'
+  ...
+# Subtest: sprintf src/sprintf.js: zero significant-digit precision rejects before callbacks
+ok 41 - sprintf src/sprintf.js: zero significant-digit precision rejects before callbacks
+  ---
+  duration_ms: 0.063833
+  type: 'test'
+  ...
+# Subtest: sprintf src/sprintf.js: distributed formatter retains valid output and rejects excessive precision
+ok 42 - sprintf src/sprintf.js: distributed formatter retains valid output and rejects excessive precision
+  ---
+  duration_ms: 0.1115
+  type: 'test'
+  ...
+# Subtest: sprintf dist/sprintf.min.js: captured numeric and parsed zero precision preserve native rounding
+ok 43 - sprintf dist/sprintf.min.js: captured numeric and parsed zero precision preserve native rounding
+  ---
+  duration_ms: 0.433375
+  type: 'test'
+  ...
+# Subtest: sprintf dist/sprintf.min.js: captured numeric and parsed zero precision preserve native rounding
+ok 44 - sprintf dist/sprintf.min.js: captured numeric and parsed zero precision preserve native rounding
+  ---
+  duration_ms: 0.049667
+  type: 'test'
+  ...
+# Subtest: sprintf dist/sprintf.min.js: zero significant-digit precision rejects before callbacks
+ok 45 - sprintf dist/sprintf.min.js: zero significant-digit precision rejects before callbacks
+  ---
+  duration_ms: 0.049166
+  type: 'test'
+  ...
+# Subtest: sprintf dist/sprintf.min.js: distributed formatter retains valid output and rejects excessive precision
+ok 46 - sprintf dist/sprintf.min.js: distributed formatter retains valid output and rejects excessive precision
+  ---
+  duration_ms: 0.118375
+  type: 'test'
+  ...
+# Subtest: cold upstream install applies all ten repaired files, reads back and repeats idempotently
+ok 47 - cold upstream install applies all ten repaired files, reads back and repeats idempotently
+  ---
+  duration_ms: 54.4565
+  type: 'test'
+  ...
+# Subtest: installer refuses changed upstream source without applying any other target
+ok 48 - installer refuses changed upstream source without applying any other target
+  ---
+  duration_ms: 38.143208
+  type: 'test'
+  ...
+# Subtest: installer refuses missing installed package without applying any other target
+ok 49 - installer refuses missing installed package without applying any other target
+  ---
+  duration_ms: 34.279916
+  type: 'test'
+  ...
+# Subtest: installer refuses wrong package version without applying any other target
+ok 50 - installer refuses wrong package version without applying any other target
+  ---
+  duration_ms: 44.979958
+  type: 'test'
+  ...
+# Subtest: installer refuses malformed lock without applying any other target
+ok 51 - installer refuses malformed lock without applying any other target
+  ---
+  duration_ms: 31.746916
+  type: 'test'
+  ...
+# Subtest: installer refuses empty lock inventory without applying any other target
+ok 52 - installer refuses empty lock inventory without applying any other target
+  ---
+  duration_ms: 31.942583
+  type: 'test'
+  ...
+# Subtest: installer refuses unsafe lock path without applying any other target
+ok 53 - installer refuses unsafe lock path without applying any other target
+  ---
+  duration_ms: 38.104791
+  type: 'test'
+  ...
+# Subtest: installer refuses unreviewed locked version without applying any other target
+ok 54 - installer refuses unreviewed locked version without applying any other target
+  ---
+  duration_ms: 35.4695
+  type: 'test'
+  ...
+# Subtest: installer refuses symlinked source without applying any other target
+ok 55 - installer refuses symlinked source without applying any other target
+  ---
+  duration_ms: 35.881125
+  type: 'test'
+  ...
+# Subtest: installer refuses dangling helper symlink without applying any other target
+ok 56 - installer refuses dangling helper symlink without applying any other target
+  ---
+  duration_ms: 36.008791
+  type: 'test'
+  ...
+# Subtest: installer refuses existing wrong helper without applying any other target
+ok 57 - installer refuses existing wrong helper without applying any other target
+  ---
+  duration_ms: 36.031583
+  type: 'test'
+  ...
+# Subtest: omit-dev install distinguishes absent tooling packages from applied repairs
+ok 58 - omit-dev install distinguishes absent tooling packages from applied repairs
+  ---
+  duration_ms: 11.825458
+  type: 'test'
+  ...
+# Subtest: symlinked node_modules refuses before creating a lock in its target
+ok 59 - symlinked node_modules refuses before creating a lock in its target
+  ---
+  duration_ms: 7.5805
+  type: 'test'
+  ...
+# Subtest: invalid boolean modes cannot skip repair validation
+ok 60 - invalid boolean modes cannot skip repair validation
+  ---
+  duration_ms: 7.185292
+  type: 'test'
+  ...
+# Subtest: held concurrent installer lock fails visibly and preserves the owner lock
+ok 61 - held concurrent installer lock fails visibly and preserves the owner lock
+  ---
+  duration_ms: 40.382417
+  type: 'test'
+  ...
+# Subtest: two real installer processes cannot overlap patch publication
+ok 62 - two real installer processes cannot overlap patch publication
+  ---
+  duration_ms: 99.159542
+  type: 'test'
+  ...
+# Subtest: production mode rejects absent traversal entries rather than reporting them omitted
+ok 63 - production mode rejects absent traversal entries rather than reporting them omitted
+  ---
+  duration_ms: 37.866
+  type: 'test'
+  ...
+# Subtest: check refuses missing mandatory unmodified braces/index.js
+ok 64 - check refuses missing mandatory unmodified braces/index.js
+  ---
+  duration_ms: 44.04425
+  type: 'test'
+  ...
+# Subtest: check refuses missing mandatory unmodified braces/lib/constants.js
+ok 65 - check refuses missing mandatory unmodified braces/lib/constants.js
+  ---
+  duration_ms: 45.150375
+  type: 'test'
+  ...
+# Subtest: check refuses changed main export even with unchanged name and version
+ok 66 - check refuses changed main export even with unchanged name and version
+  ---
+  duration_ms: 44.364
+  type: 'test'
+  ...
+# Subtest: production mode refuses a dangling installed package link
+ok 67 - production mode refuses a dangling installed package link
+  ---
+  duration_ms: 33.898959
+  type: 'test'
+  ...
+1..67
+# tests 67
+# suites 0
+# pass 67
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 824.712417

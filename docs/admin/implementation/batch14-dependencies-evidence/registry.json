@@ -1,0 +1,76 @@
+{
+  "braces": {
+    "command": [
+      "npm",
+      "view",
+      "braces",
+      "version",
+      "--json",
+      "--cache",
+      "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+    ],
+    "exit_code": 0,
+    "stdout": "\"3.0.3\"\n",
+    "stderr": ""
+  },
+  "sprintf-js": {
+    "command": [
+      "npm",
+      "view",
+      "sprintf-js",
+      "version",
+      "--json",
+      "--cache",
+      "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+    ],
+    "exit_code": 0,
+    "stdout": "\"1.1.3\"\n",
+    "stderr": ""
+  },
+  "@istanbuljs/load-nyc-config": {
+    "command": [
+      "npm",
+      "view",
+      "@istanbuljs/load-nyc-config",
+      "version",
+      "dependencies",
+      "--json",
+      "--cache",
+      "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+    ],
+    "exit_code": 0,
+    "stdout": "{\n  \"version\": \"1.1.0\",\n  \"dependencies\": {\n    \"camelcase\": \"^5.3.1\",\n    \"find-up\": \"^4.1.0\",\n    \"get-package-type\": \"^0.1.0\",\n    \"js-yaml\": \"^3.13.1\",\n    \"resolve-from\": \"^5.0.0\"\n  }\n}\n",
+    "stderr": ""
+  },
+  "js-yaml@3.15.2": {
+    "command": [
+      "npm",
+      "view",
+      "js-yaml@3.15.2",
+      "version",
+      "dependencies",
+      "--json",
+      "--cache",
+      "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+    ],
+    "exit_code": 0,
+    "stdout": "{\n  \"version\": \"3.15.2\",\n  \"dependencies\": {\n    \"esprima\": \"^4.0.0\",\n    \"argparse\": \"^1.0.7\"\n  }\n}\n",
+    "stderr": ""
+  },
+  "argparse@2.0.1": {
+    "command": [
+      "npm",
+      "view",
+      "argparse@2.0.1",
+      "version",
+      "dependencies",
+      "engines",
+      "--json",
+      "--cache",
+      "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/npm-cache"
+    ],
+    "exit_code": 0,
+    "stdout": "\"2.0.1\"\n",
+    "stderr": ""
+  }
+}

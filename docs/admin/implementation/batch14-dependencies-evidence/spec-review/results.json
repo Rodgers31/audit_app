@@ -1,0 +1,453 @@
+{
+  "runtime": {
+    "node": "v22.19.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "roots": [
+    {
+      "label": "baseline",
+      "root": "/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend",
+      "hashes": {
+        "package.json": "a5c78d7d9e3a18ef1cb0be64eb1302d32e141ed8db0b603fa8050dda45bc7d92",
+        "package-lock.json": "46569a23bd8d750b57e2d0dc44b0ddf6c8498a27c22ea82d0a8e5c80b88858dc",
+        "scripts/apply-tooling-repairs.cjs": "acd61ee77794572624afa1cfdb030ca80bf482148a3b4a213681e1bc453956fa"
+      },
+      "versions": {
+        "yaml": "3.15.2",
+        "argparse": "1.0.10"
+      },
+      "nyc": [
+        {
+          "name": "valid",
+          "status": "resolved",
+          "value": {
+            "cwd": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline",
+            "checkCoverage": true,
+            "include": [
+              "src/**/*.js"
+            ],
+            "lines": 91
+          }
+        },
+        {
+          "name": "empty",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "Cannot convert undefined or null to object"
+        },
+        {
+          "name": "null",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "Cannot convert undefined or null to object"
+        },
+        {
+          "name": "malformed",
+          "status": "rejected",
+          "nameOfError": "YAMLException",
+          "message": "unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^"
+        },
+        {
+          "name": "invalid-extends",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline/invalid-extends.yaml contains an invalid 'extends' option"
+        },
+        {
+          "name": "missing-extends",
+          "status": "rejected",
+          "nameOfError": "Error",
+          "message": "Could not resolve configuration file ./missing.yaml from /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline."
+        },
+        {
+          "name": "circular",
+          "status": "rejected",
+          "nameOfError": "Error",
+          "message": "Circular extended configurations: '/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline/circular.yaml'."
+        },
+        {
+          "name": "inherited",
+          "status": "resolved",
+          "value": {
+            "cwd": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline",
+            "exclude": [
+              "dist"
+            ],
+            "reportDir": "coverage-custom",
+            "include": [
+              "lib"
+            ]
+          }
+        },
+        {
+          "name": "absent",
+          "status": "rejected",
+          "message": "Requested configuration file absent.yaml not found"
+        }
+      ],
+      "cli": [
+        {
+          "name": "help",
+          "args": [
+            "--help"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\n\nPositional arguments:\n  file           File to read, utf-8 encoded without BOM\n\nOptional arguments:\n  -h, --help     Show this help message and exit.\n  -v, --version  Show program's version number and exit.\n  -c, --compact  Display errors in compact mode\n  -t, --trace    Show stack trace on error\n",
+          "stderr": ""
+        },
+        {
+          "name": "version",
+          "args": [
+            "--version"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "3.15.2\n",
+          "stderr": ""
+        },
+        {
+          "name": "stdin-yaml",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"a\": 1,\n  \"b\": [\n    \"x\",\n    \"y\"\n  ]\n}\n",
+          "stderr": ""
+        },
+        {
+          "name": "stdin-json",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "a: 1\n\n",
+          "stderr": ""
+        },
+        {
+          "name": "empty",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "null\n",
+          "stderr": ""
+        },
+        {
+          "name": "unknown",
+          "args": [
+            "--unknown"
+          ],
+          "status": 2,
+          "signal": null,
+          "stdout": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\n",
+          "stderr": "js-yaml: error: Unrecognized arguments: --unknown.\n"
+        },
+        {
+          "name": "missing-file",
+          "args": [
+            "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline/absent.yaml"
+          ],
+          "status": 2,
+          "signal": null,
+          "stdout": "",
+          "stderr": "File not found: /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline/absent.yaml\n"
+        },
+        {
+          "name": "compact-malformed",
+          "args": [
+            "--compact"
+          ],
+          "status": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "YAMLException: unexpected end of the stream within a flow collection\n"
+        },
+        {
+          "name": "trace-malformed",
+          "args": [
+            "--trace"
+          ],
+          "status": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "YAMLException: unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^\n    at generateError (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:185:10)\n    at throwError (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:191:9)\n    at readFlowCollection (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:805:3)\n    at composeNode (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1395:11)\n    at readBlockMapping (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1124:11)\n    at composeNode (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1394:12)\n    at readDocument (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1560:3)\n    at loadDocuments (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1623:5)\n    at Object.loadAll (/Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1636:19)\n    at /Users/roger/.codex/worktrees/compatible-dependencies/audit_app/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js:108:14\n"
+        },
+        {
+          "name": "deprecated-json",
+          "args": [
+            "--to-json"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"a\": 1\n}\n",
+          "stderr": ""
+        },
+        {
+          "name": "explicit-file",
+          "args": [
+            "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/baseline/valid.yaml"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"check-coverage\": true,\n  \"include\": [\n    \"src/**/*.js\"\n  ],\n  \"lines\": 91\n}\n",
+          "stderr": ""
+        },
+        {
+          "name": "multi-doc",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "[\n  {\n    \"a\": 1\n  },\n  {\n    \"b\": 2\n  }\n]\n",
+          "stderr": ""
+        }
+      ],
+      "repair": [
+        {
+          "production": false,
+          "status": "resolved",
+          "packages": [
+            "node_modules/braces",
+            "node_modules/sprintf-js"
+          ],
+          "absent": []
+        },
+        {
+          "production": true,
+          "status": "resolved",
+          "packages": [
+            "node_modules/braces",
+            "node_modules/sprintf-js"
+          ],
+          "absent": []
+        }
+      ],
+      "lockPackages": [
+        {
+          "p": "node_modules/@istanbuljs/load-nyc-config/node_modules/argparse",
+          "version": "1.0.10"
+        },
+        {
+          "p": "node_modules/argparse",
+          "version": "2.0.1"
+        },
+        {
+          "p": "node_modules/sprintf-js",
+          "version": "1.0.3"
+        }
+      ]
+    },
+    {
+      "label": "candidate",
+      "root": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend",
+      "hashes": {
+        "package.json": "5a6a00d523e19a1d95af7b55c0967349008825505e541e2ae75b9140b48c4ad5",
+        "package-lock.json": "fda6befb45060e569b869902e165d8cd47f2dd0d0e19048ad968f7f8715e2d37",
+        "scripts/apply-tooling-repairs.cjs": "acd61ee77794572624afa1cfdb030ca80bf482148a3b4a213681e1bc453956fa"
+      },
+      "versions": {
+        "yaml": "3.15.2",
+        "argparse": "2.0.1"
+      },
+      "nyc": [
+        {
+          "name": "valid",
+          "status": "resolved",
+          "value": {
+            "cwd": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate",
+            "checkCoverage": true,
+            "include": [
+              "src/**/*.js"
+            ],
+            "lines": 91
+          }
+        },
+        {
+          "name": "empty",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "Cannot convert undefined or null to object"
+        },
+        {
+          "name": "null",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "Cannot convert undefined or null to object"
+        },
+        {
+          "name": "malformed",
+          "status": "rejected",
+          "nameOfError": "YAMLException",
+          "message": "unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^"
+        },
+        {
+          "name": "invalid-extends",
+          "status": "rejected",
+          "nameOfError": "TypeError",
+          "message": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate/invalid-extends.yaml contains an invalid 'extends' option"
+        },
+        {
+          "name": "missing-extends",
+          "status": "rejected",
+          "nameOfError": "Error",
+          "message": "Could not resolve configuration file ./missing.yaml from /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate."
+        },
+        {
+          "name": "circular",
+          "status": "rejected",
+          "nameOfError": "Error",
+          "message": "Circular extended configurations: '/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate/circular.yaml'."
+        },
+        {
+          "name": "inherited",
+          "status": "resolved",
+          "value": {
+            "cwd": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate",
+            "exclude": [
+              "dist"
+            ],
+            "reportDir": "coverage-custom",
+            "include": [
+              "lib"
+            ]
+          }
+        },
+        {
+          "name": "absent",
+          "status": "rejected",
+          "message": "Requested configuration file absent.yaml not found"
+        }
+      ],
+      "cli": [
+        {
+          "name": "help",
+          "args": [
+            "--help"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\n\npositional arguments:\n  file           File to read, utf-8 encoded without BOM\n\noptional arguments:\n  -h, --help     show this help message and exit\n  -v, --version  show program's version number and exit\n  -c, --compact  Display errors in compact mode\n  -t, --trace    Show stack trace on error\n",
+          "stderr": ""
+        },
+        {
+          "name": "version",
+          "args": [
+            "--version"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "name": "stdin-yaml",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"a\": 1,\n  \"b\": [\n    \"x\",\n    \"y\"\n  ]\n}\n",
+          "stderr": "(node:545) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:545) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:545) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:545) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:545) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:545) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:545) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:545) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        },
+        {
+          "name": "stdin-json",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "a: 1\n\n",
+          "stderr": "(node:546) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:546) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:546) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:546) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:546) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:546) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:546) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:546) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        },
+        {
+          "name": "empty",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "null\n",
+          "stderr": "(node:548) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:548) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:548) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:548) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:548) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:548) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:548) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:548) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        },
+        {
+          "name": "unknown",
+          "args": [
+            "--unknown"
+          ],
+          "status": 2,
+          "signal": null,
+          "stdout": "",
+          "stderr": "usage: js-yaml [-h] [-v] [-c] [-t] [file]\njs-yaml: error: unrecognized arguments: --unknown\n"
+        },
+        {
+          "name": "missing-file",
+          "args": [
+            "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate/absent.yaml"
+          ],
+          "status": 2,
+          "signal": null,
+          "stdout": "",
+          "stderr": "(node:550) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:550) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:550) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:550) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:550) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:550) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:550) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:550) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\nFile not found: /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate/absent.yaml\n"
+        },
+        {
+          "name": "compact-malformed",
+          "args": [
+            "--compact"
+          ],
+          "status": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "(node:552) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:552) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:552) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:552) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:552) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:552) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:552) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:552) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\nYAMLException: unexpected end of the stream within a flow collection\n"
+        },
+        {
+          "name": "trace-malformed",
+          "args": [
+            "--trace"
+          ],
+          "status": 1,
+          "signal": null,
+          "stdout": "",
+          "stderr": "(node:554) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:554) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:554) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:554) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:554) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:554) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:554) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:554) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\nYAMLException: unexpected end of the stream within a flow collection at line 2, column 1:\n    \n    ^\n    at generateError (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:185:10)\n    at throwError (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:191:9)\n    at readFlowCollection (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:805:3)\n    at composeNode (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1395:11)\n    at readBlockMapping (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1124:11)\n    at composeNode (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1394:12)\n    at readDocument (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1560:3)\n    at loadDocuments (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1623:5)\n    at Object.loadAll (/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/lib/js-yaml/loader.js:1636:19)\n    at /Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/argparse2-candidate/frontend/node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml/bin/js-yaml.js:108:14\n"
+        },
+        {
+          "name": "deprecated-json",
+          "args": [
+            "--to-json"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"a\": 1\n}\n",
+          "stderr": "(node:555) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:555) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:555) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:555) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:555) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:555) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:555) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:555) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        },
+        {
+          "name": "explicit-file",
+          "args": [
+            "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/ENGINEERING_BATCH_14/dependencies/spec-review/candidate/valid.yaml"
+          ],
+          "status": 0,
+          "signal": null,
+          "stdout": "{\n  \"check-coverage\": true,\n  \"include\": [\n    \"src/**/*.js\"\n  ],\n  \"lines\": 91\n}\n",
+          "stderr": "(node:557) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:557) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:557) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:557) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:557) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:557) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:557) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:557) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        },
+        {
+          "name": "multi-doc",
+          "args": [],
+          "status": 0,
+          "signal": null,
+          "stdout": "[\n  {\n    \"a\": 1\n  },\n  {\n    \"b\": 2\n  }\n]\n",
+          "stderr": "(node:560) DeprecationWarning: ArgumentParser(): following options are renamed: 'addHelp' -> 'add_help'\n(Use `node --trace-deprecation ...` to show where the warning was created)\n(node:560) DeprecationWarning: The \"version\" argument to ArgumentParser is deprecated. Please use add_argument(..., { action: 'version', version: 'N', ... }) instead.\n(node:560) DeprecationWarning: _ActionsContainer.addArgument() is renamed to _ActionsContainer.add_argument()\n(node:560) DeprecationWarning: use add_argument('-c', '--compact', {...}) instead of add_argument([ '-c', '--compact' ], { ... })\n(node:560) DeprecationWarning: {action: \"storeTrue\"} is renamed to {action: \"store_true\"}\n(node:560) DeprecationWarning: use argparse.SUPPRESS instead of argparse.Const.SUPPRESS\n(node:560) DeprecationWarning: add_argument(): following options are renamed: 'defaultValue' -> 'default'\n(node:560) DeprecationWarning: ArgumentParser.parseArgs() is renamed to ArgumentParser.parse_args()\n"
+        }
+      ],
+      "repair": [
+        {
+          "production": false,
+          "status": "rejected",
+          "message": "tooling repair: unpatched node_modules/braces/lib/audit-bounds.js; run npm ci with scripts enabled"
+        },
+        {
+          "production": true,
+          "status": "rejected",
+          "message": "tooling repair: unpatched node_modules/braces/lib/audit-bounds.js; run npm ci with scripts enabled"
+        }
+      ],
+      "lockPackages": [
+        {
+          "p": "node_modules/argparse",
+          "version": "2.0.1"
+        }
+      ]
+    }
+  ]
+}
