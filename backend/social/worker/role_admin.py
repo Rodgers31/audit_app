@@ -34,8 +34,11 @@ def main(argv=None):
         if engine is not None:
             try:
                 engine.dispose()
+            except KeyboardInterrupt:
+                result = 130
             except Exception:
-                result = 1
+                if result != 130:
+                    result = 1
     # Only fixed output; no role, DSN, SQL, driver exception or connection rows.
     status = 'interrupted' if result == 130 else 'unavailable' if result else 'ok'
     print('{"event":"worker_role_' + ('installed' if args.install else 'verified') + '","status":"' + status + '"}')

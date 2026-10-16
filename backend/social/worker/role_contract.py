@@ -52,6 +52,13 @@ TABLE_PRIVILEGES = """unnest(ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE
 OUTSIDE_AUTHORITY = """
 SELECT NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
          WHERE p.prosecdef AND """ + INVENTORIED + """ AND has_function_privilege(:oid,p.oid,'EXECUTE'))
+  -- Non-table delegation is authority too, including otherwise ordinary
+  -- invoker routines, type usage and trusted-language usage.
+  AND NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+         WHERE """ + INVENTORIED + """ AND has_function_privilege(:oid,p.oid,'EXECUTE WITH GRANT OPTION'))
+  AND NOT EXISTS(SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid=t.typnamespace
+         WHERE """ + INVENTORIED + """ AND has_type_privilege(:oid,t.oid,'USAGE WITH GRANT OPTION'))
+  AND NOT EXISTS(SELECT 1 FROM pg_language l WHERE has_language_privilege(:oid,l.oid,'USAGE WITH GRANT OPTION'))
   -- An owner may ALTER or DROP its object (a guard function, a type, ...) in any
   -- database. pg_shdepend records ownership of every object class; only the
   -- login's own temporary relations, row types and functions are exempt.
@@ -133,12 +140,13 @@ def _identity(conn, role, schema, *, current):
     _require(conn.execute(text('SELECT NOT EXISTS(SELECT 1 FROM pg_database WHERE datdba=:oid)'), {'oid': oid}).scalar())
     _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_namespace WHERE nspowner=:oid AND nspname NOT LIKE 'pg_temp_%' AND nspname NOT LIKE 'pg_toast_temp_%')"), {'oid': oid}).scalar())
     _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.relowner=:oid AND " + INVENTORIED + ")"), {'oid': oid}).scalar())
-    _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_namespace n WHERE " + INVENTORIED + " AND has_schema_privilege(:oid,n.oid,'CREATE'))"), {'oid': oid}).scalar())
-    _require(not conn.execute(text("SELECT has_database_privilege(:oid,current_database(),'CREATE')"), {'oid': oid}).scalar())
+    _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_namespace n WHERE " + INVENTORIED + " AND (has_schema_privilege(:oid,n.oid,'CREATE') OR has_schema_privilege(:oid,n.oid,'USAGE WITH GRANT OPTION')))"), {'oid': oid}).scalar())
+    _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_database WHERE has_database_privilege(:oid,oid,'CREATE') OR has_database_privilege(:oid,oid,'CONNECT WITH GRANT OPTION,TEMP WITH GRANT OPTION,CREATE WITH GRANT OPTION'))"), {'oid': oid}).scalar())
     _require(conn.execute(text(OUTSIDE_AUTHORITY), {'oid': oid}).scalar())
     _require(conn.execute(text("SHOW session_replication_role")).scalar() == 'origin')
-    # Explicit future table/sequence grants must not silently widen this role.
-    _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_default_acl d CROSS JOIN LATERAL aclexplode(d.defaclacl) a WHERE d.defaclobjtype IN ('r','S') AND a.grantee IN (0,:oid))"), {'oid': oid}).scalar())
+    # Explicit default ACLs of any object class must not widen future access.
+    # This includes function EXECUTE and schema/type delegation, not only rows.
+    _require(conn.execute(text("SELECT NOT EXISTS(SELECT 1 FROM pg_default_acl d CROSS JOIN LATERAL aclexplode(d.defaclacl) a WHERE a.grantee IN (0,:oid))"), {'oid': oid}).scalar())
     _require(conn.execute(text('SELECT to_regnamespace(:schema) IS NOT NULL'), {'schema': schema}).scalar())
     if current:
         identity = conn.execute(text('SELECT current_user,session_user')).one()

@@ -70,7 +70,8 @@ PUBLIC grants recorded in `pg_init_privs` plus information_schema's public views
 catalog routines initdb withholds from PUBLIC; any accessible SECURITY DEFINER
 routine; parameter ACL rows (pg_settings hides superuser-only parameters from
 the worker); large-object, foreign-data-wrapper, foreign-server and user-mapping
-access; and login defaults, since `SET LOCAL ROLE` never applies them. A
+access; schema/database/routine/type/language grant options; explicit default
+ACL grants to the worker or PUBLIC for every object class; and login defaults, since `SET LOCAL ROLE` never applies them. A
 database-wide default may set only built-in user-context parameters or custom
 placeholders outside every installed extension's prefix; extension settings
 (such as `plpgsql.*`, which changes how the guard functions resolve names) are
@@ -99,7 +100,10 @@ Verification requires the existing controls singleton, matching RLS policies and
 exact effective privileges, including column grants and inherited PUBLIC access.
 A privileged operator session cannot pass runtime login verification. Both
 commands emit fixed diagnostics without SQL, DSNs or row data, including on
-Ctrl-C (exit 130). The native worker also requires its existing separate
+Ctrl-C (exit 130), including interruptions during disposal. A pending interrupt
+retains exit 130 through later cleanup failures; installed signal handlers and
+the owned worker are still closed before native-context and engine cleanup.
+The native worker also requires its existing separate
 native/media operational gates. Configure `--schema` for the operator or
 `--database-schema` for a worker only for a trusted schema. With `--worker-role`
 (default schema `public`) or an explicit `--database-schema`, every physical
