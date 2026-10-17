@@ -8,7 +8,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 
 revision = 'a704b15a0001'
-down_revision = 'a545b14a0001'
+down_revision = 'a701b15a0001'
 branch_labels = None
 depends_on = None
 TABLES = ('social_generation_controls', 'social_source_cursors', 'social_source_events', 'social_automation_rule_versions', 'social_shadow_decisions')
