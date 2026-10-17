@@ -17,6 +17,9 @@ READ_TABLES = frozenset({
     'social_post_targets', 'social_post_revisions', 'social_publish_attempts',
     'social_credentials', 'social_media_assets', 'social_worker_heartbeats',
     'social_worker_runtime_ownership', 'social_worker_runtime_history',
+    'social_posts', 'social_source_events', 'social_source_cursors',
+    'social_automation_rule_versions', 'social_policy_operating_evidence',
+    'social_authorized_policy_snapshots', 'social_policy_selection', 'social_policy_decisions',
 })
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
@@ -271,6 +274,7 @@ def _check_policies(conn, oid, schema, *, complete):
 # are schema-independent (pg_proc.prosrc); a future guard migration must update
 # this contract deliberately. No function is installed/repaired by this check.
 GUARD_SOURCES = {
+    'social_guard_policy_decision': 'd7cd5ec9550449b8834346d12f7faed8cab5ad6442d518a335b63f9b66946f18',
     'social_deny_history_mutation': '0d32cba5e232bfff95b7e2d23ad1fe311b40da64258e6ef6c0e945fd811d957a',
     'social_guard_target_payload': '866879740f52eb3f17888c801729695c56e9fd5f1f4213804da1887f12e9618c',
     'social_guard_authorization': '2a825e76bd7af78352e7b59d019bf88e07fd19432b38a5e4e28294c97a344ec9',
@@ -280,6 +284,13 @@ GUARD_SOURCES = {
     'social_worker_history_guard': '6fab44b2ffff522a542da51786a36b592afb96cb84e172b60068d17f330c5fbe',
 }
 TRIGGERS = {
+    ('social_publications', 'social_publication_policy_immutable'): ('social_guard_policy_decision', 19),
+    ('social_source_events', 'social_source_events_immutable'): ('social_deny_history_mutation', 27),
+    ('social_automation_rule_versions', 'social_automation_rule_versions_immutable'): ('social_deny_history_mutation', 27),
+    ('social_policy_operating_evidence', 'social_policy_operating_evidence_immutable'): ('social_deny_history_mutation', 27),
+    ('social_authorized_policy_snapshots', 'social_authorized_policy_snapshots_immutable'): ('social_deny_history_mutation', 27),
+    ('social_policy_decisions', 'social_policy_decisions_immutable'): ('social_deny_history_mutation', 27),
+
     ('social_post_revisions', 'social_revision_immutable'): ('social_deny_history_mutation', 27),
     ('social_audit_events', 'social_audit_immutable'): ('social_deny_history_mutation', 27),
     ('social_post_targets', 'social_target_payload_immutable'): ('social_guard_target_payload', 19),

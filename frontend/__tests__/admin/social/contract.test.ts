@@ -40,3 +40,12 @@ test('future schedule uses its selected zone and rejects DST gaps or invalid dat
   expect(resolveCivilTime('2027-02-30T10:00', 'Africa/Nairobi').error).toBeDefined();
   expect(resolveCivilTime('2027-01-05T10:00', 'Not/AZone').error).toMatch(/IANA/);
 });
+
+
+test('policy authority preserves nullable human identity and strict enabled controls', () => {
+  const p = post({ editorial_state: 'approved', publication: { approved_by: null } });
+  expect(decodePost(p).publication?.approved_by).toBeNull();
+  expect(decodeSystem({ ...system, auto_approve_enabled: true, auto_schedule_enabled: true, auto_publish_enabled: true }).auto_publish_enabled).toBe(true);
+  expect(() => decodeSystem({ ...system, auto_approve_enabled: 'true' })).toThrow(SocialApiError);
+  expect(() => decodePost({ ...p, publication: { ...p.publication, approved_by: 'None' } })).toThrow(SocialApiError);
+});

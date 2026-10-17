@@ -7,6 +7,8 @@ from .connections import models as _connection_models
 from .media import models as _media_models
 from .privacy import models as _privacy_models
 from .privacy import workflow_models as _privacy_workflow_models
+from .generation import models as _generation_models
+from .automation import models as _automation_models
 
 # Register the complete additive schema before callers capture its table set.
 # Both supported import modes retain their own application's existing Base.
