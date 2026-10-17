@@ -52,6 +52,19 @@ class R2Storage:
     # Both browser grants and finalization use If-None-Match: *. Retaining the
     # committed keys fences those conditional writes at R2's atomic commit.
     retained_create_only = True
+    permanent_payload_fence = True
+
+    def require_fence_capability(self):
+        try:
+            members = self.client.meta.service_model.operation_model('PutObject').input_shape.members
+            if not {'IfMatch', 'IfNoneMatch', 'ContentLength', 'ContentType', 'Metadata'} <= set(members):
+                raise StorageFailure('Conditional replacement is unavailable')
+        except Exception:
+            raise StorageFailure('Conditional replacement is unavailable') from None
+
+    def retire_payload(self, key, operation_id, maximum):
+        from .fencing import replace_with_fence
+        return replace_with_fence(self, key, operation_id, maximum)
 
     def __init__(self, client, bucket: str, endpoint: str):
         self.client, self.bucket = client, bucket
@@ -84,9 +97,13 @@ class R2Storage:
         except Exception:
             raise StorageFailure('Storage upload authorization is unavailable') from None
 
-    def head(self, key):
+    def head(self, key, *, strict_ack=False):
         try:
             value = self.client.head_object(Bucket=self.bucket, Key=key)
+            if strict_ack:
+                from .fencing import _status
+                if not _status(value, 200):
+                    raise StorageFailure('Object observation is unconfirmed')
             size, etag = value['ContentLength'], value['ETag']; bounded(size)
             version = value.get('VersionId')
             if not isinstance(etag, str) or not etag or version is not None and (not isinstance(version, str) or not version):
@@ -97,7 +114,7 @@ class R2Storage:
         except Exception:
             raise StorageFailure('Object is unavailable') from None
 
-    def _read(self, key, snapshot, maximum, consume):
+    def _read(self, key, snapshot, maximum, consume, *, strict_ack=False):
         bounded(maximum); bounded(snapshot.size)
         if snapshot.size > maximum: raise StorageFailure('Object exceeds the bounded upload')
         body = None; failure = None
@@ -106,6 +123,10 @@ class R2Storage:
             if snapshot.version: params['VersionId'] = snapshot.version
             response = self.client.get_object(**params)
             body = response.get('Body')
+            if strict_ack:
+                from .fencing import _status
+                if not _status(response, 200):
+                    raise StorageFailure('Object read is unconfirmed')
             bounded(response.get('ContentLength'))
             if response.get('ETag') != snapshot.etag or response.get('ContentLength') != snapshot.size or response.get('VersionId') != snapshot.version:
                 raise StorageFailure('Object changed before inspection')
@@ -118,7 +139,8 @@ class R2Storage:
                     raise StorageFailure('Object exceeds the bounded upload')
                 consume(chunk)
             if count != snapshot.size: raise StorageFailure('Object upload is incomplete')
-            if self.head(key) != snapshot: raise StorageFailure('Object changed during inspection')
+            current = self.head(key, strict_ack=True) if strict_ack else self.head(key)
+            if current != snapshot: raise StorageFailure('Object changed during inspection')
         except Exception:
             failure = StorageFailure('Object inspection download failed or changed')
         finally:
@@ -127,9 +149,9 @@ class R2Storage:
                 except Exception: failure = StorageFailure('Object inspection stream did not close')
         if failure: raise failure from None
 
-    def download(self, key, snapshot, path, maximum):
+    def download(self, key, snapshot, path, maximum, *, strict_ack=False):
         try:
-            with path.open('xb') as target: self._read(key, snapshot, maximum, target.write)
+            with path.open('xb') as target: self._read(key, snapshot, maximum, target.write, strict_ack=strict_ack)
         except StorageFailure:
             raise
         except Exception:

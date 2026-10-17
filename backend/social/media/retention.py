@@ -52,6 +52,17 @@ def retain_ready(service, actor, asset_id, version, request_id):
             raise SocialError('PERMISSION_DENIED', 'Only the initiating administrator may retain this upload.', 403)
         if upload.version != version:
             raise SocialError('VERSION_CONFLICT', 'This media upload changed.')
+        if upload.fenced_copies:
+            # Completed quarantine retirement supersedes retained-copy byte
+            # verification. Its permanent marker and ledger must survive replay.
+            from sqlalchemy import select
+            from .models import SocialMediaDeletion
+            completed = service.db.scalar(select(SocialMediaDeletion.operation_id).where(
+                SocialMediaDeletion.asset_id == asset_id, SocialMediaDeletion.state == 'complete',
+                SocialMediaDeletion.mode == 'quarantine'))
+            if asset.state == 'ready' and upload.fenced_copies == 1 and completed:
+                return service._dto(asset, upload)
+            raise SocialError('MEDIA_RETENTION_INVALID', 'Payload retirement requires its original operation.', 409)
         if (asset.state != 'ready' or not upload.finalization_settled
                 or not isinstance(asset.codec_metadata, dict)
                 or upload.reservation_released or upload.quarantine_cleaned

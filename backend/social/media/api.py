@@ -8,12 +8,20 @@ from .contracts import CompleteUpload, MediaAssetDTO, MediaCapabilities, MediaLi
 from .http import MediaRoute
 from .runtime import request_media_runtime
 from .service import MediaService
+from .deletion import PrivacyMediaDeletionCommand, PrivacyMediaDeletionResult, execute_deletion, MediaDeletionInventory, inspect_deletion_scope
+from .operator import OperatorReport, prepare_reconciliation
+from ..service import SocialError
 
 router = APIRouter(prefix='/api/v1/admin/social/media', tags=['Admin Social Media'], dependencies=[Depends(social_admin)], route_class=MediaRoute)
 
 
 def service(request: Request, db: Session = Depends(get_db)):
-    return MediaService(db, request_media_runtime(request))
+    runtime = request_media_runtime(request)
+    from .privacy_adapter import PrivacyWorkflowMediaAdapter
+    privacy_port = getattr(request.app.state, 'social_privacy_media_port', None)
+    if isinstance(privacy_port, PrivacyWorkflowMediaAdapter) and privacy_port.runtime is runtime:
+        runtime = privacy_port.authorized_runtime()
+    return MediaService(db, runtime)
 
 Service = Annotated[MediaService, Depends(service)]
 Key = Annotated[UUID, Header(alias='Idempotency-Key')]
@@ -23,6 +31,24 @@ Admin = Annotated[AdminUser, Depends(social_admin)]
 @router.get('/capabilities', response_model=MediaCapabilities)
 def capabilities(svc: Service):
     return svc.capabilities()
+
+
+@router.get('/maintenance', response_model=OperatorReport)
+def maintenance(svc: Service, limit: int = Query(20, ge=1, le=20), after_asset_id: UUID | None = None):
+    return prepare_reconciliation(svc, limit=limit, after_asset_id=after_asset_id)
+
+
+@router.post('/assets/{asset_id}/retire', response_model=PrivacyMediaDeletionResult)
+def retire(asset_id: UUID, body: PrivacyMediaDeletionCommand, svc: Service):
+    if body.asset_id != asset_id:
+        raise SocialError('INVALID_REQUEST', 'The deletion command must name this media asset.', 422)
+    return execute_deletion(svc, body)
+
+
+@router.get('/assets/{asset_id}/retirement-scope', response_model=MediaDeletionInventory)
+def retirement_scope(asset_id: UUID, svc: Service):
+    with svc.db.begin():
+        return inspect_deletion_scope(svc, asset_id)
 
 
 @router.post('/uploads', response_model=UploadAuthorization, status_code=201)
