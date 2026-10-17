@@ -1967,6 +1967,8 @@ from social.privacy.startup import configure_meta_privacy
 from database import SessionLocal as _SocialSessionLocal
 
 configure_meta_privacy(app, _SocialSessionLocal)
+from social.privacy.workflow_startup import configure_privacy_workflow
+configure_privacy_workflow(app)
 
 try:
     from routers.etl_admin import router as etl_admin_router
