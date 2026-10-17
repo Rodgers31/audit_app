@@ -1,0 +1,103 @@
+"""Default-off post-commit generation; financial and draft outcomes stay distinct."""
+import logging
+import os
+import re
+
+from models import IngestionJob, IngestionStatus
+from .source_observations import SourceObservationUnavailable, read_county_budget_record_ids
+
+logger = logging.getLogger("seeding.generation")
+COUNTERS = ("processed", "drafts_created", "baselines", "unchanged", "refused")
+
+
+def _result(state, reason):
+    return {"state": state, "reason": reason, **dict.fromkeys(COUNTERS, 0)}
+
+
+def _unverified(reason):
+    return {"state": "failed", "reason": reason, "execution_unverified": True,
+            **dict.fromkeys(COUNTERS, None)}
+
+
+def _invoke(factory, record_ids, ingestion_id):
+    # Import only after the explicit environment ceiling and committed-source
+    # guards. An older installation needs no social schema/import to ingest.
+    from social.generation.integration import maybe_generate_committed
+    return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
+
+
+def _validate_result(value, expected):
+    if (type(value) is not dict or set(value) != {"state", "reason", *COUNTERS}
+            or value["state"] not in ("disabled", "completed", "unavailable", "failed")
+            or type(value["reason"]) is not str
+            or not re.fullmatch(r"[A-Za-z_]{1,160}", value["reason"])
+            or any(type(value[k]) is not int or not 0 <= value[k] <= expected for k in COUNTERS)
+            or sum(value[k] for k in COUNTERS[1:]) != value["processed"]
+            or value["state"] == "completed" and (value["processed"] != expected or value["refused"] != 0)):
+        raise ValueError("Invalid generation outcome")
+    return dict(value)
+
+
+def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run):
+    """Called after CLI session closure; never changes financial terminal status.
+
+    No automatic retry follows an uncertain generation outcome. The operator's
+    idempotent detect command is the recovery path. The hook owns its own atomic
+    event/audit transactions; this module writes only separate job telemetry.
+    """
+    if domain != "counties_budget" or dry_run is not False:
+        return None
+    if type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
+        raise ValueError("Positive bounded ingestion ID required")
+    flag = os.environ.get("SOCIAL_GENERATION_HOOK_ENABLED", "false")
+    if flag == "false":
+        return None
+    if flag != "true":
+        outcome = _result("unavailable", "invalid_generation_hook_flag")
+    else:
+        invoked = False
+        try:
+            record_ids = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+            if record_ids:
+                invoked = True
+                outcome = _validate_result(_invoke(factory, record_ids, ingestion_id), len(record_ids))
+            else:
+                outcome = _result("completed", "no_new_record_lineage")
+        except SourceObservationUnavailable:
+            outcome = (_unverified("generation_execution_unverified") if invoked
+                       else _result("unavailable", "source_lineage_unavailable"))
+        except ModuleNotFoundError:
+            # Conservatively retain unknown progress: an installed hook could
+            # have committed a record before a later lazy import failed.
+            outcome = _unverified("generation_dependency_execution_unverified")
+        except Exception:
+            logger.warning("post_commit_generation_failed")
+            outcome = (_unverified("generation_execution_unverified") if invoked
+                       else _result("failed", "generation_source_read_failed"))
+    _record_outcome(factory, domain, ingestion_id, outcome)
+    return outcome
+
+
+def record_generation_timeout(factory, *, domain, ingestion_id):
+    if domain != "counties_budget" or type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
+        raise ValueError("Bounded CoB ingestion identity required")
+    outcome = _unverified("generation_timeout_execution_unverified")
+    _record_outcome(factory, domain, ingestion_id, outcome)
+    return outcome
+
+
+def _record_outcome(factory, domain, ingestion_id, outcome):
+    try:
+        with factory.begin() as db:
+            from .source_observations import _read_limits
+            if db.get_bind().dialect.name == "postgresql":
+                _read_limits(db)
+            job = db.get(IngestionJob, ingestion_id, with_for_update=True)
+            if (job is None or job.domain != domain or job.dry_run is not False
+                    or job.status != IngestionStatus.COMPLETED):
+                raise ValueError("Committed job required for generation telemetry")
+            job.meta = {**(job.meta or {}), "post_commit_generation": outcome}
+    except Exception:
+        # Facts were committed before this boundary. A telemetry write failure
+        # cannot truthfully become an ETL rollback/failure or release uncertainty.
+        logger.error("post_commit_generation_receipt_unavailable")

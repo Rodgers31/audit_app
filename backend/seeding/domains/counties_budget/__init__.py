@@ -56,6 +56,7 @@ def run(
         dry_run=context.dry_run,
         errors=errors,
         metadata={
+            "verified_qualification": stats.qualification,
             "skipped": stats.skipped,
             "superseded": stats.superseded,
             "source_urls": sorted({record.source_url for record in records if record.source_url}),
