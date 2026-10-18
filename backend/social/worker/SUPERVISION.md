@@ -28,7 +28,7 @@ Do not enable any setting from this document without separate coordinator
 acceptance.
 
 Initial worker profile: one external slot (accepted code ceiling two), two DB
-connections/no overflow, two DB executor threads, active scans5s, idle scans60s,
+connections/no overflow, two shared DB/native I/O executor threads, active scans5s, idle scans60s,
 active heartbeat15s and idle heartbeat60s. Connections use lock timeout2s and
 statement timeout5s. These limits and the explicit schema path are reapplied with
 snapshot-free `SET LOCAL` statements at every transaction boundary, because a
@@ -171,3 +171,27 @@ key/privacy/media/provider gates, rollback/receipt custody and real operator
 closure. All publishing/native/upload/retained-write flags remain OFF until then.
 
 Coordinator follow-ups are tracked separately in #685 (issued intent completion) and #686 (direct-call bounds and shutdown drain). These concern unmerged candidate defects and local inert reproductions; they are not claims of production provider activity.
+
+## Uploads-off native material reads (Batch15, #700)
+
+`SOCIAL_WORKER_MEDIA_READS_ENABLED` is an independent, strict, default-false
+opt-in. With the existing native/material/operational configuration validated,
+it permits native material reads while `SOCIAL_MEDIA_ENABLED=false`. The read
+configuration validates the same R2 endpoint, bucket, credentials and inspectors;
+it does not override the HTTP flag. Native material receives only head, bounded
+download and signed preview methods, with no upload/finalization/deletion or SDK
+client port. The underlying SDK is still owned and closed by native composition.
+
+The web application keeps its separate disabled upload runtime. When the native
+registration needs material reads it owns a separate read client; HTTP upload
+capabilities remain unavailable. Legacy upload-enabled composition keeps its
+existing enablement requirements. This separation does not establish live
+storage permissions, provider readiness, resource capacity or operational gates.
+
+`tools/worker_rehearsal/README.md` documents the opt-in internal-network Linux
+rehearsal with the actual supervisor, Gunicorn/API, native CLI, HTTPX/boto3 and
+owned PostgreSQL. It includes positive pipe custody, sticky crash ownership,
+privileged release rollback and a sustained bounded workload. Only its retained
+source-bound results establish what ran; this document is not acceptance proof.
+The supervisor now emits measured worker stop and web/reap durations. No local
+drain setting is installed automatically and no production configuration changes.
