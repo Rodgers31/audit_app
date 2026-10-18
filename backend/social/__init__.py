@@ -12,6 +12,7 @@ from .automation import models as _automation_models
 from .platform_connections import models as _platform_connection_models
 from . import platform_budget as _platform_budget_models
 from . import platform_event_models as _platform_event_models
+from .studio import models as _studio_models
 
 # Register the complete additive schema before callers capture its table set.
 # Both supported import modes retain their own application's existing Base.
