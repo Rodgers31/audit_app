@@ -30,11 +30,17 @@ def main(argv=None):
         from database import SessionLocal
         from social.studio.analytics import collect
         collection_id = collect(SessionLocal, args.target_id, runtime, enabled=True, authorization=command)
+        from social.studio.models import MetricCollection
+        with SessionLocal() as db:
+            row = db.get(MetricCollection, collection_id)
+            if row is None or row.state not in {'collected', 'unavailable'}:
+                raise ValueError('Durable collection outcome unavailable')
+            state = row.state
     except Exception:
         # No traceback/provider/configuration material reaches operator logs.
         print('Native metrics collection refused or failed; inspect stored collection history. No automatic retry.')
         return 1
-    print(json.dumps({'collection_id': str(collection_id), 'state': 'collected'}))
+    print(json.dumps({'collection_id': str(collection_id), 'state': state}))
     return 0
 
 
