@@ -1,5 +1,5 @@
 import SocialComposer from '@/components/admin/social/SocialComposer';
-import SocialWorkspace from '@/components/admin/social/SocialWorkspace';
+import SocialWorkspace, { SocialEditorPage } from '@/components/admin/social/SocialWorkspace';
 import api from '@/lib/api/axios';
 import { decodePost, SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
@@ -84,4 +84,34 @@ test('legacy archived history without a timestamp remains visible and read-only'
   expect(screen.getByLabelText('Internal title')).toBeDisabled();
   expect(screen.getByRole('heading', { name: 'Archived history' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Duplicate as new manual draft' })).toBeEnabled();
+});
+
+
+test('valid eligible draft metadata is accepted and remains editable', () => {
+  const p = fixture(); p.archive = { eligible: true, archived_at: null, message: 'x' };
+  expect(decodePost(p)).toEqual(p);
+  mount(decodePost(p));
+  expect(screen.getByLabelText('Internal title')).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Archive post' })).toBeEnabled();
+});
+
+
+test.each(['draft', 'pending_review', 'approved', 'rejected'] as const)('a timestamp cannot contradict non-archived state %s for either eligibility', editorial_state => {
+  for (const eligible of [false, true]) {
+    expect(() => decodePost({ ...fixture(), editorial_state, archive: { eligible, archived_at: '2026-10-18T12:00:00Z', message: 'Retained' } })).toThrow();
+  }
+});
+
+
+test('inconsistent timestamp returned by the API cannot render an editable composer', async () => {
+  const p = fixture(); p.archive = { eligible: false, archived_at: '2026-10-18T12:00:00Z', message: 'Retained' };
+  get.mockImplementation(async (path: string) => ({ data: path.includes('/system/') ? { ...system, publishing_enabled: false } : path.endsWith('/accounts') ? { accounts: [] } : p }));
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(<QueryClientProvider client={qc}><SocialEditorPage postId={p.id} /></QueryClientProvider>);
+  await waitFor(() => expect(screen.queryByText('Loading draft…')).not.toBeInTheDocument());
+  expect(screen.getByRole('alert')).toHaveTextContent('INVALID RESPONSE');
+  expect(screen.queryByLabelText('Internal title')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Save draft' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Archive post' })).not.toBeInTheDocument();
+  expect(send).not.toHaveBeenCalled(); expect(api.patch).not.toHaveBeenCalled();
 });
