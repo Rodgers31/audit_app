@@ -164,15 +164,22 @@ def supervise(web_argv, worker_argv_factory, seconds):
         if web.poll() is not None:
             result = 1
         deadline = time.monotonic() + seconds
+        shutdown_started = time.monotonic()
         if worker is not None:
+            worker_stop_started = time.monotonic()
             joined, forced = _stop_group(worker, deadline)
+            emit('social_worker_stop_measured', elapsed_seconds=time.monotonic()-worker_stop_started,
+                 group_joined=joined, deadline_kill=forced)
             report_worker(joined, forced)
             if forced or not joined or worker.returncode != 0:
                 result = 1
+        web_stop_started = time.monotonic()
         joined, forced = _stop_group(web, deadline)
         if not joined or forced:
             result = 1
-        emit('social_supervisor_stopped', web_joined=joined, exit_code=result)
+        emit('social_supervisor_stopped', web_joined=joined, exit_code=result,
+             web_stop_seconds=time.monotonic()-web_stop_started,
+             total_stop_seconds=time.monotonic()-shutdown_started)
         return result
     finally:
         # A spawn/pipe/wait error also owns cleanup; never orphan the earlier child.

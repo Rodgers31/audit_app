@@ -1,6 +1,7 @@
 """Independent CLI lifecycle checks with explicit inert preflight/owner seams."""
 import asyncio
 from contextlib import contextmanager, asynccontextmanager
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import signal
 from types import SimpleNamespace
@@ -77,6 +78,7 @@ def f(monkeypatch):
         failed = False
 
         def __init__(self, repository, **kwargs):
+            self.executor = ThreadPoolExecutor(max_workers=2)
             self.kwargs = kwargs
             instances.append(self)
             events.append('construct')
@@ -88,6 +90,7 @@ def f(monkeypatch):
             events.append(('run', once))
 
         async def close(self):
+            self.executor.shutdown(wait=True)
             events.append('worker_close')
 
     monkeypatch.setattr(cli, 'SocialWorker', Worker)
