@@ -7,49 +7,12 @@ from urllib.parse import urlsplit
 
 from ..contracts import OperationResult, ReconciliationResult, canonical_hash
 from ..worker.materials import ProviderFetchURL
-from .common import MetaAdapter, caption, issue, public_url
+from .common import MetaAdapter, caption, public_url
 from .meta_http import MetaHTTPFailure, remote_id
+from .meta_validation import InstagramFacebookLoginValidation
 
 
-class InstagramFacebookLoginAdapter(MetaAdapter):
-    platform = "instagram"
-    product = "instagram_graph_facebook_login"
-    checkpoint_name = "instagram_facebook_login-v1"
-    formats = ("image",)
-    scopes = ("instagram_basic", "instagram_content_publish", "pages_read_engagement", "pages_show_list")
-    source_links = ("https://developers.facebook.com/documentation/instagram-platform/content-publishing",
-        "https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/media",
-        "https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-container")
-    limits = {"max_text_length": 2200, "max_hashtags": 30, "max_media_count": 1,
-        "max_image_bytes": 8000000, "min_image_width": 320, "max_image_width": 1440,
-        "max_alt_text_length": 1000, "max_mentions": 20, "max_publications_24h": 100,
-        "max_containers_24h": 400}
-    phases = {"creation_uncertain": set(), "quota_checked": set(), "container_created": {"container_id"},
-        "container_ready": {"container_id"}, "publish_ready": {"container_id"},
-        "publication_uncertain": {"container_id"}, "media_created": {"container_id", "media_id"}}
-
-    def _content_errors(self, payload):
-        errors = []
-        rendered = caption(payload)
-        if len(rendered) > 2200:
-            errors.append(issue("CAPTION_TOO_LONG", "text", "The full Instagram caption exceeds 2200 characters."))
-        if len(re.findall(r"(?<!\w)#\w+", rendered)) > 30:
-            errors.append(issue("TOO_MANY_HASHTAGS", "hashtags", "The full caption exceeds 30 hashtags."))
-        if len(re.findall(r"(?<![\w@])@[A-Za-z0-9_.]+", rendered)) > 20:
-            errors.append(issue("TOO_MANY_MENTIONS", "text", "The full caption exceeds 20 mentions."))
-        for asset in payload.assets:
-            if asset.mime_type != "image/jpeg" or asset.duration_ms is not None:
-                errors.append(issue("UNSUPPORTED_IMAGE_TYPE", "assets", "Instagram requires one inspected static JPEG."))
-            if asset.byte_size > 8000000:
-                errors.append(issue("IMAGE_TOO_LARGE", "assets", "The JPEG exceeds the 8000000 byte application ceiling."))
-            if asset.width is None or asset.height is None:
-                errors.append(issue("MEDIA_DIMENSIONS_REQUIRED", "assets", "The JPEG needs inspected dimensions."))
-            elif not (320 <= asset.width <= 1440 and 5 * asset.width >= 4 * asset.height and 100 * asset.width <= 191 * asset.height):
-                errors.append(issue("INSTAGRAM_IMAGE_DIMENSIONS", "assets", "Use width 320–1440 and aspect ratio 4:5–1.91:1 for this slice."))
-            if asset.alt_text is not None and len(asset.alt_text) > 1000:
-                errors.append(issue("ALT_TEXT_TOO_LONG", "assets", "Instagram image descriptions are limited to 1000 characters."))
-        return errors
-
+class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidation):
     def next_operation(self, payload, checkpoint):
         state = self._checkpoint(payload, checkpoint)
         if state is None or state.phase in {"container_created", "container_ready", "media_created", "creation_uncertain", "publication_uncertain"}:

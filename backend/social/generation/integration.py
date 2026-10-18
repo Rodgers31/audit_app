@@ -48,7 +48,45 @@ def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchan
     return dict(state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
 
 
-def maybe_generate_committed(factory, *, record_ids, ingestion_id):
+def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters):
+    if __package__.startswith('backend.'):
+        from ...seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
+    else:
+        from seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
+    # Reads occur before each separate mutation transaction, so one pooled
+    # connection is sufficient. ETL's completed transaction is never borrowed.
+    for offset in range(0, len(record_ids), 25):
+        for record_id in record_ids[offset:offset + 25]:
+            _remaining_ms(deadline)
+            try:
+                observation = read_county_budget_observation(factory, record_id=record_id, ingestion_id=ingestion_id)
+            except SourceObservationUnavailable:
+                counts['processed'] += 1
+                counts['refused'] += 1
+                _remaining_ms(deadline)
+                continue
+            _remaining_ms(deadline)
+            db = factory()
+            if db.in_transaction() or db.new or db.dirty or db.deleted or db.identity_map:
+                return _result('unavailable', 'FRESH_SESSION_REQUIRED', **counts)
+            with db:
+                svc = SocialService(db, available_adapters=adapters)
+                svc.actor_kind = 'pipeline'
+                svc.request_id = f'etl-generation:{ingestion_id}:{record_id}'
+                with db.begin():
+                    _transaction_limits(db, deadline)
+                    result = consume_observation(svc, observation)
+                    _remaining_ms(deadline)
+            counts['processed'] += 1
+            counts[{'draft_created': 'drafts_created', 'baseline': 'baselines', 'unchanged': 'unchanged'}[result['status']]] += 1
+            _remaining_ms(deadline)
+    if counts['refused']:
+        logger.warning('generation_hook_evidence_unavailable', extra={'refused_count': counts['refused'], 'processed_count': counts['processed']})
+        return _result('unavailable', 'SOURCE_EVIDENCE_INELIGIBLE', **counts)
+    return _result('completed', 'COMMITTED_EVIDENCE_CONSUMED', **counts)
+
+
+def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_registration=None):
     """Only call after a successful live non-dry county-budget fact commit.
 
     The source adapter independently rechecks that prerequisite. Environment and
@@ -78,41 +116,40 @@ def maybe_generate_committed(factory, *, record_ids, ingestion_id):
             _remaining_ms(deadline)
             if cfg is None or cfg.drafts_enabled is not True or 'cob' not in cfg.source_allowlist:
                 return _result('disabled', 'RUNTIME_SOURCE_DISABLED')
-        if __package__.startswith('backend.'):
-            from ...seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
-        else:
-            from seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
-        # Reads occur before each separate mutation transaction, so one pooled
-        # connection is sufficient. ETL's completed transaction is never borrowed.
-        for offset in range(0, len(record_ids), 25):
-            for record_id in record_ids[offset:offset + 25]:
-                _remaining_ms(deadline)
-                try:
-                    observation = read_county_budget_observation(factory, record_id=record_id, ingestion_id=ingestion_id)
-                except SourceObservationUnavailable:
-                    counts['processed'] += 1
-                    counts['refused'] += 1
-                    _remaining_ms(deadline)
-                    continue
-                _remaining_ms(deadline)
-                db = factory()
-                if db.in_transaction() or db.new or db.dirty or db.deleted or db.identity_map:
-                    return _result('unavailable', 'FRESH_SESSION_REQUIRED', **counts)
-                with db:
-                    svc = SocialService(db)
-                    svc.actor_kind = 'pipeline'
-                    svc.request_id = f'etl-generation:{ingestion_id}:{record_id}'
-                    with db.begin():
-                        _transaction_limits(db, deadline)
-                        result = consume_observation(svc, observation)
-                        _remaining_ms(deadline)
-                counts['processed'] += 1
-                counts[{'draft_created': 'drafts_created', 'baseline': 'baselines', 'unchanged': 'unchanged'}[result['status']]] += 1
-                _remaining_ms(deadline)
-        if counts['refused']:
-            logger.warning('generation_hook_evidence_unavailable', extra={'refused_count': counts['refused'], 'processed_count': counts['processed']})
-            return _result('unavailable', 'SOURCE_EVIDENCE_INELIGIBLE', **counts)
-        return _result('completed', 'COMMITTED_EVIDENCE_CONSUMED', **counts)
+            engine = reader.get_bind()
+            policy_requested = False
+            if os.environ.get('SOCIAL_POLICY_AUTOMATION_ENABLED') == 'true':
+                from ..models import SocialControls
+                policy = reader.get(SocialControls, 1)
+                policy_requested = policy is not None and policy.auto_approve_enabled is True
+        def consume(adapters):
+            return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters)
+        if not policy_requested:
+            return consume({})  # Draft-only never loads native rules/material.
+        from ..adapters.validation_registry import load_native_validation_registry, registry_adapters
+        reason = None
+        try:
+            # Borrow a caller-owned installation, or construct only the exact
+            # native content rules. Neither path owns a client or event loop.
+            registration = native_registration
+            if registration is None:
+                registration = load_native_validation_registry()
+            if registration is None:
+                reason = 'NATIVE_REGISTRY_UNAVAILABLE'
+                adapters = {}
+            else:
+                adapters = registry_adapters(registration, engine, borrowed=native_registration is not None)
+        except SocialError as error:
+            if error.code not in {'NATIVE_CONFIGURATION_INVALID', 'NATIVE_REGISTRY_INVALID'}:
+                raise
+            reason = 'NATIVE_REGISTRY_UNAVAILABLE' if error.code == 'NATIVE_CONFIGURATION_INVALID' else error.code
+            adapters = {}
+            logger.error('generation_native_validation_unavailable', extra={'error_code': error.code})
+        _remaining_ms(deadline)
+        result = consume(adapters)
+        if reason and result['state'] == 'completed':
+            return _result('unavailable', reason, **counts)
+        return result
     except GenerationDeadlineExceeded:
         logger.error('generation_hook_deadline_exceeded', extra={'processed_count': counts['processed']})
         return _result('failed', 'GENERATION_DEADLINE_EXCEEDED', **counts)

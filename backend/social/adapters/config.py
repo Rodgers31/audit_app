@@ -20,3 +20,7 @@ class MetaAdapterConfig:
     @property
     def ready(self):
         return self.enabled and self.operational_gates_verified
+
+
+def native_app_material_valid(config):
+    return bool(config.app_secret) and all(33 <= ord(c) <= 126 for c in config.app_secret)
