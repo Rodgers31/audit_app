@@ -22,6 +22,14 @@ def retained(media):
     return MediaService(original.db, MediaRuntime(config, storage, original.runtime.inspector)), storage
 
 
+def historical(media):
+    """Record the conditional protocol at admission, without retaining yet."""
+    original, storage = media
+    storage.retained_create_only = storage.permanent_payload_fence = True
+    config = replace(original.config, fenced_retirement_enabled=True)
+    return MediaService(original.db, replace(original.runtime, config=config)), storage
+
+
 def initiate(svc, storage):
     grant = svc.initiate(ACTOR, uuid4(), intent(), uuid4())
     storage.objects[storage.last_key] = (png(), 'image/png', None)
@@ -88,7 +96,7 @@ def test_unknown_creation_is_explicitly_recovered_with_same_original(media):
 
 @pytest.mark.parametrize('damage', ['quarantine_missing','quarantine_changed','original_changed','lease_lost','version_changed','ledger_drift'])
 def test_failed_retention_keeps_pending_and_all_bytes(media, damage):
-    original, storage = media
+    original, storage = historical(media)
     identity, key = initiate(original, storage)
     original.complete(ACTOR, identity, key, 1, uuid4())
     svc, _ = retained(media)
@@ -115,7 +123,7 @@ def test_failed_retention_keeps_pending_and_all_bytes(media, damage):
 
 
 def test_metadata_io_occurs_outside_transactions_and_default_stays_off(media):
-    svc, storage = media; identity, key = initiate(svc, storage)
+    svc, storage = historical(media); identity, key = initiate(svc, storage)
     svc.complete(ACTOR, identity, key, 1, uuid4())
     with pytest.raises(SocialError, match='MEDIA_RECOVERY_UNAVAILABLE'):
         retain_ready(svc, ACTOR, identity, 2, uuid4())
@@ -158,7 +166,7 @@ def test_reconciliation_cannot_invalidate_retained_history(media):
 
 
 def test_retention_rechecks_both_byte_ledgers_after_storage_io(media):
-    original, storage = media
+    original, storage = historical(media)
     identity, key = initiate(original, storage)
     original.complete(ACTOR, identity, key, 1, uuid4())
     svc, _ = retained(media)

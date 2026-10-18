@@ -37,7 +37,8 @@ def test_report_preserves_unknown_epochs_two_copy_quota_and_makes_no_object_call
     assert report.actor_ledger_discrepancies == 0 and report.reason_codes == ()
     row, = report.uploads
     assert (row.asset_id, row.upload_version, row.grant_epoch, row.finalization_epoch) == (grant.asset.id, 1, 1, 7)
-    assert row.reason_codes == ('BROWSER_WRITE_PROOF_REQUIRED', 'SERVER_WRITE_PROOF_REQUIRED')
+    assert row.reason_codes == ('LEGACY_WRITE_HISTORY_UNPROVEN',
+        'BROWSER_WRITE_PROOF_REQUIRED', 'SERVER_WRITE_PROOF_REQUIRED')
     assert not report.quota_release_authorized and not report.write_quiescence_proven
     assert all(secret not in report.model_dump_json() for secret in ('quarantine/', 'ready/', 'fixture=', 'actual.png', str(ACTOR)))
     assert svc.cleanup() == 0
