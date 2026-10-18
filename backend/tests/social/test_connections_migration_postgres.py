@@ -19,6 +19,7 @@ CURRENT_CONNECTION_DESCENDANTS = (
     'a490b15a0001_retained_media_fences.py',
     'a545b14a0001_social_worker_global_owner.py',
     'a701b15a0001_media_payload_retirement.py',
+    'a706b17a0001_owned_media_writes.py',
 )
 
 

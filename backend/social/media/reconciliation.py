@@ -49,6 +49,18 @@ class ReconcileUpload(ReconciliationModel):
     receipt: WriteQuiescenceReceipt
 
 
+class ReconcileOwnedUpload(ReconciliationModel):
+    expected_version: PositiveVersion
+    expected_grant_epoch: Epoch
+    expected_finalization_epoch: Optional[PositiveVersion]
+
+
+class OwnedReconciliationCommand(ReconcileOwnedUpload):
+    actor_id: UUID
+    asset_id: UUID
+    command_id: UUID
+
+
 class WriteQuiescenceVerifier(Protocol):
     def verify(self, scope: WriteQuiescenceScope, receipt: WriteQuiescenceReceipt) -> Optional[WriteQuiescenceEvidence]: ...
 

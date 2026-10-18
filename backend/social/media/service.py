@@ -17,6 +17,7 @@ from .identity import object_identity_matches, object_identity_conditions
 from .models import SocialMediaBudget, SocialMediaUpload
 from .storage import ObjectSnapshot, StorageFailure
 from .reconciliation import ReconcileUpload, WriteQuiescenceEvidence, WriteQuiescenceScope
+from . import owned_writes
 
 
 class MediaService:
@@ -96,11 +97,12 @@ class MediaService:
                     if (getattr(storage, 'retained_create_only', None) is not True
                             or getattr(storage, 'permanent_payload_fence', None) is not True):
                         raise SocialError('MEDIA_RECOVERY_UNAVAILABLE', 'Permanent payload fencing is unavailable.', 503)
+                    protocol = WRITE_PROTOCOL
+                if self.config.fenced_retirement_enabled or self.config.owned_quiescence_enabled:
                     total = self.db.scalar(select(func.count()).select_from(SocialMediaUpload))
                     own = self.db.scalar(select(func.count()).select_from(SocialMediaUpload).where(SocialMediaUpload.actor_id == actor))
                     if total >= self.config.max_total_assets or own >= self.config.max_actor_assets:
                         raise SocialError('MEDIA_QUOTA_EXCEEDED', 'Lifetime media admission capacity has been reached.', 429)
-                    protocol = WRITE_PROTOCOL
                 if budgets[0].bytes_used + reservation > self.config.total_quota_bytes or budgets[1].bytes_used + reservation > self.config.actor_quota_bytes or budgets[1].pending_count >= self.config.max_pending:
                     raise SocialError('MEDIA_QUOTA_EXCEEDED', 'The media budget or pending-upload limit has been reached.', 429)
                 identity = uuid4()
@@ -108,6 +110,8 @@ class MediaService:
                 upload = SocialMediaUpload(asset_id=identity, actor_id=actor, initiation_key=key, request_hash=digest, quarantine_key=f'quarantine/{actor}/{identity}/source', declared_mime_type=body.declared_mime_type, declared_size=body.declared_size, reserved_bytes=reservation, expires_at=now + timedelta(hours=self.config.orphan_hours), grant_renewal_deadline=now + timedelta(seconds=self.config.upload_ttl), grant_epoch=0, grant_settled_epoch=0, pending_released=0, version=1, reservation_released=0, finalization_settled=0)
                 upload.write_protocol = protocol
                 self.db.add(asset); self.db.flush(); self.db.add(upload)
+                self.db.flush()
+                owned_writes.allocate(self, asset, upload)
                 for budget in budgets:
                     budget.bytes_used += reservation; budget.pending_count += 1
                 self._audit(actor, request_id, asset, 'media.upload_initiated', None)
@@ -122,15 +126,26 @@ class MediaService:
             upload.grant_expires_at = None
             upload.write_quiescence_receipt_hash = None
             identity, epoch, version = asset.id, upload.grant_epoch, upload.version
+            signing_operation = owned_writes.admit(self, asset, upload, 'grant', epoch)
         try:
             access = storage.authorize_upload(quarantine, body.declared_size, body.declared_mime_type, ttl)
         except StorageFailure:
+            if signing_operation is not None:
+                # R2's concrete signer performs no remote I/O and no bearer is
+                # returned from this call. A crash before this persist stays held.
+                with self.db.begin():
+                    self._budgets(actor)
+                    asset, upload = self._rows(identity)
+                    owned_writes.finish(self, asset, upload, 'grant', epoch, signing_operation, 'not_issued')
             raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Storage upload authorization is unavailable. Retry the same command.', 503, retryable=True) from None
         if not isinstance(access.expires_at, datetime) or access.expires_at.tzinfo is None or access.expires_at.utcoffset() is None:
             raise SocialError('MEDIA_STORAGE_UNAVAILABLE', 'Storage did not confirm the upload signature expiration.', 503)
         with self.db.begin():
             self._budgets(actor)
             asset, upload = self._rows(identity)
+            # Persist possible escape before any return, even if a later
+            # response validation fails. No client cancellation clears it.
+            owned_writes.finish(self, asset, upload, 'grant', epoch, signing_operation, 'issued')
             now = self.now()
             if asset.state != 'pending' or upload.version != version:
                 raise SocialError('MEDIA_GRANT_FENCED', 'This authorization changed before it could be returned. Retry the original command.', retryable=True)
@@ -169,6 +184,9 @@ class MediaService:
         with self.db.begin():
             self._budgets(actor)
             asset, upload = self._rows(asset_id)
+            write_owner = owned_writes.owner(self, asset, upload)
+            if write_owner is not None and write_owner.state != 'open':
+                raise owned_writes.refused()
             if recover_unknown:
                 from .retention import RetainedRecovery
                 recovery = RetainedRecovery.model_validate(recovery_scope)
@@ -219,6 +237,7 @@ class MediaService:
                     self._fence(asset, token, epoch)
                     upload.finalization_epoch = epoch
                     upload.finalization_settled = 0
+                    finalization_operation = owned_writes.admit(self, asset, upload, 'finalize', epoch)
                 final = storage.finalize(path, final_key, inspected.byte_size, inspected.mime_type, inspected.sha256)
                 # Record known completion even when this worker lost its lease.
                 # Cleanup cannot interpret expiry as proof remote I/O stopped.
@@ -226,6 +245,7 @@ class MediaService:
                     asset, upload = self._rows(asset_id)
                     if upload.finalization_epoch == epoch:
                         upload.finalization_settled = 1
+                    owned_writes.finish(self, asset, upload, 'finalize', epoch, finalization_operation, 'completed')
             with self.db.begin():
                 budgets = self._budgets(actor)
                 asset, upload = self._rows(asset_id)
@@ -320,7 +340,7 @@ class MediaService:
     def _referenced(self, identity):
         return self.db.scalar(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == identity).limit(1)) is not None
 
-    def reconcile(self, actor, asset_id, body, request_id):
+    def reconcile(self, actor, asset_id, body, request_id, *, _owned_command_hash=None):
         """Freeze renewal; accept only an injected verifier's scoped evidence.
 
         A failed verification leaves renewal frozen and quota reserved. The
@@ -357,6 +377,9 @@ class MediaService:
                 raise SocialError('MEDIA_REFERENCED', 'Historical revision evidence protects this original.')
             previous = asset.state
             upload.grant_renewal_deadline = min(utc(upload.grant_renewal_deadline), now)
+            if owned_writes.owner(self, asset, upload) is not None and _owned_command_hash is None:
+                raise owned_writes.refused()
+            owned_writes.close(self, asset, upload)
             upload.version += 1
             token = uuid4()
             asset.lease_token = token
@@ -365,14 +388,21 @@ class MediaService:
             scope, epoch, uploader = self._scope(asset, upload), asset.lease_epoch, upload.actor_id
             self._audit(actor, request_id, asset, 'media.reconciliation_started', previous)
         try:
-            evidence = self.runtime.write_quiescence_verifier.verify(scope, body.receipt)
+            verifier = self.runtime.write_quiescence_verifier
+            if _owned_command_hash is not None:
+                verifier = owned_writes.OwnedWriteQuiescenceVerifier(self)
+                body = body.model_copy(update={'receipt': verifier.issue(scope, body.receipt.receipt_id)})
+            evidence = verifier.verify(scope, body.receipt)
             if not isinstance(evidence, WriteQuiescenceEvidence):
                 raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted evidence that all outstanding writes stopped is unavailable.', 503)
             evidence = WriteQuiescenceEvidence.model_validate(evidence)
             if evidence.scope != scope or evidence.receipt != body.receipt:
                 raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Trusted evidence that all outstanding writes stopped is unavailable.', 503)
             with self.db.begin():
-                self._budgets(uploader)
+                budgets = self._budgets(uploader)
+                budget_snapshot = [(b.scope, b.bytes_used, b.pending_count) for b in budgets]
+                if _owned_command_hash is not None:
+                    owned_writes.check_accounting(self, uploader, budgets)
                 asset, upload = self._rows(asset_id)
                 current = self.now()
                 if self._scope(asset, upload) != scope or asset.state != previous or asset.lease_token != token or asset.lease_epoch != epoch or asset.lease_expires_at is None or utc(asset.lease_expires_at) <= current:
@@ -384,6 +414,8 @@ class MediaService:
                     raise SocialError('MEDIA_WRITE_QUIESCENCE_UNCONFIRMED', 'Write settlement evidence is stale or future dated.', 503)
                 if asset.state != 'ready' and self._referenced(asset.id):
                     raise SocialError('MEDIA_REFERENCED', 'Historical revision evidence protects this original.')
+                if _owned_command_hash is not None and owned_writes.manifest(self, asset, upload, scope) != body.receipt.evidence_hash:
+                    raise owned_writes.refused()
                 upload.grant_settled_epoch = upload.grant_epoch
                 if upload.finalization_epoch is not None:
                     upload.finalization_settled = 1
@@ -395,8 +427,13 @@ class MediaService:
                 if asset.state != 'ready':
                     asset.state = 'archived'
                 asset.lease_token, asset.lease_expires_at = None, None
-                self.db.add(SocialAuditEvent(actor_id=actor, actor_kind='admin', action='media.writes_reconciled', previous_state=previous, new_state=asset.state, details={'asset_id': str(asset.id), 'grant_epoch': scope.grant_epoch, 'finalization_epoch': scope.finalization_epoch, 'receipt_id': str(body.receipt.receipt_id), 'evidence_hash': body.receipt.evidence_hash}, request_id=str(request_id)))
-                return self._dto(asset, upload)
+                event = SocialAuditEvent(id=uuid4(), actor_id=actor, actor_kind='admin', action='media.writes_reconciled', previous_state=previous, new_state=asset.state, details={'asset_id': str(asset.id), 'grant_epoch': scope.grant_epoch, 'finalization_epoch': scope.finalization_epoch, 'receipt_id': str(body.receipt.receipt_id), 'evidence_hash': body.receipt.evidence_hash}, request_id=str(request_id))
+                self.db.add(event)
+                result = self._dto(asset, upload)
+                if _owned_command_hash is not None:
+                    owned_writes.audit_readback(self, event)
+                    owned_writes.settle(self, asset, upload, body.receipt.receipt_id, _owned_command_hash, result, event, scope, budget_snapshot)
+                return result
         except Exception as error:
             with self.db.begin():
                 self._budgets(uploader)

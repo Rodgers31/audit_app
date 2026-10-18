@@ -47,7 +47,9 @@ def privacy_pg():
             for name in ('f38c61a9d203_social_manual_domain_queue.py', 'c96d13e2f411_social_meta_credentials.py',
                          'a42b86e1d310_social_private_media_intake.py', 'b73e19a4f602_social_media_write_settlement.py',
                          'd8f4a619b203_social_privacy_receipts.py','a490b15a0001_retained_media_fences.py',
-                         'a701b15a0001_media_payload_retirement.py'):
+                         'a701b15a0001_media_payload_retirement.py',
+                         'a704b15a0001_social_generation_shadow.py','a706b15a0001_social_policy_authority.py',
+                         'a706b17a0001_owned_media_writes.py'):
                 migration(name).upgrade()
         yield engine
     finally:

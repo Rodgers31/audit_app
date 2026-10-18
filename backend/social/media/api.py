@@ -10,6 +10,8 @@ from .runtime import request_media_runtime
 from .service import MediaService
 from .deletion import PrivacyMediaDeletionCommand, PrivacyMediaDeletionResult, execute_deletion, MediaDeletionInventory, inspect_deletion_scope
 from .operator import OperatorReport, prepare_reconciliation
+from .reconciliation import ReconcileOwnedUpload
+from .owned_writes import reconcile_owned
 from ..service import SocialError
 
 router = APIRouter(prefix='/api/v1/admin/social/media', tags=['Admin Social Media'], dependencies=[Depends(social_admin)], route_class=MediaRoute)
@@ -59,6 +61,11 @@ def initiate(body: UploadIntent, request: Request, svc: Service, admin: Admin, k
 @router.post('/uploads/{asset_id}/complete', response_model=MediaAssetDTO)
 def complete(asset_id: UUID, body: CompleteUpload, request: Request, svc: Service, admin: Admin, key: Key):
     return svc.complete(UUID(admin.id), asset_id, key, body.expected_version, request.state.social_request_id)
+
+
+@router.post('/uploads/{asset_id}/reconcile-owned', response_model=MediaAssetDTO)
+def owned_reconciliation(asset_id: UUID, body: ReconcileOwnedUpload, request: Request, svc: Service, admin: Admin, key: Key):
+    return reconcile_owned(svc, UUID(admin.id), asset_id, key, body, request.state.social_request_id)
 
 
 @router.get('/assets', response_model=MediaLibrary)
