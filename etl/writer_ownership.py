@@ -1,6 +1,6 @@
 """Legacy loader authority using the reviewed native domain claim protocol.
 
-Reference rows are shared by fourteen native domains. Acquire that conservative
+Reference rows are shared by fifteen native domains. Acquire that conservative
 set in lexical order before any loader effect, regardless of the document kind.
 Learning hub and IMF WEO write independent tables and remain concurrent.
 """
@@ -12,20 +12,22 @@ from functools import wraps
 import logging
 import sys
 from threading import get_ident
+from uuid import UUID, uuid4
 
-from sqlalchemy import event, inspect, select
+from sqlalchemy import event, inspect, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from models import EtlDispatchDomain, IngestionJob, IngestionStatus, SeedingDomainClaim
-from seeding.exclusion import DomainOwnershipError, enter_domain
+from seeding.exclusion import (DomainOwnershipError, DomainBusyError, DomainExecution,
+    _dispatch_scope, clock, entry_digest, reserve, terminal_observation, unclaimed_running)
 
 logger = logging.getLogger(__name__)
 LEGACY_DOMAINS = (
     "audits", "counties_budget", "county_officials", "cra", "debt_timeline",
     "economic_indicators", "fiscal_summary", "national_budget", "national_debt",
-    "national_gdp", "pending_bills", "population", "revenue_by_source", "stalled_projects",
+    "national_gdp", "opendata", "pending_bills", "population", "revenue_by_source", "stalled_projects",
 )
 _scope = ContextVar("legacy_loader_writer", default=None)
 
@@ -64,6 +66,12 @@ def check_ready(engine):
         raise DomainOwnershipError("Legacy writer requires the shared ownership migration") from None
 
 
+class LegacyDomainExecution(DomainExecution):
+    """A group member cannot commit away the other members' continuity locks."""
+    def acknowledge(self, job_id):
+        raise DomainOwnershipError("Legacy ownership requires the complete scope receipt")
+
+
 class WriterScope:
     def __init__(self, engine):
         self.engine = engine_for(engine)
@@ -76,6 +84,7 @@ class WriterScope:
         self.uncertain = False
         self.manual_token = None
         self.pending_domain = None
+        self.guard = None
 
     def note_failure(self, exc_type):
         self.failed = True
@@ -86,12 +95,27 @@ class WriterScope:
             raise DomainOwnershipError("Legacy ownership cannot be inherited by another caller")
 
     def acquire(self):
+        if _dispatch_scope.get() is not None:
+            raise DomainOwnershipError("Legacy ownership cannot inherit a dispatch execution")
         check_ready(self.engine)
         for domain in LEGACY_DOMAINS:
             self.pending_domain = domain
-            execution = enter_domain(self.factory, domain, False)
-            self.executions.append(execution)
+            execution = LegacyDomainExecution(self.factory, domain, uuid4())
+            if self.guard is None:
+                self.guard = execution
+                execution.open()
+            elif self.guard.connection is not None:
+                execution.connection, execution.pid = self.guard.connection, self.guard.pid
+                if not self.guard.continuous() or not execution.connection.scalar(
+                        text("SELECT pg_try_advisory_xact_lock(:key)"), {"key": execution.key}):
+                    raise DomainBusyError("Legacy execution domain is already owned")
+            entry = uuid4()
             with self.factory.begin() as db:
+                legacy = db.get(EtlDispatchDomain, domain)
+                if (legacy is not None and legacy.command_id is not None
+                        or unclaimed_running(db, domain)
+                        or not reserve(db, domain, execution.identity, entry=entry)):
+                    raise DomainOwnershipError("Legacy domain ownership unavailable; reconcile retained execution")
                 job = IngestionJob(domain=domain, status=IngestionStatus.RUNNING,
                     dry_run=False, started_at=datetime.now(timezone.utc),
                     items_processed=0, items_created=0, items_updated=0, errors=[],
@@ -100,6 +124,8 @@ class WriterScope:
                 db.add(job)
                 db.flush()
                 self.jobs[domain] = job.id
+            execution.entered, execution.entry = True, entry
+            self.executions.append(execution)
         self.pending_domain = None
 
     def finish(self):
@@ -122,14 +148,51 @@ class WriterScope:
                 job.status = IngestionStatus.FAILED if self.failed else IngestionStatus.COMPLETED
                 job.finished_at = datetime.now(timezone.utc)
                 job.errors = ["legacy loader call failed"] if self.failed else []
-        for execution in reversed(self.executions):
-            # Shared API proves and commits each release on its lock backend.
-            execution.acknowledge(self.jobs[execution.domain])
+        if self.executions:
+            self._acknowledge_all()
+
+    def _acknowledge_all(self):
+        # All keys share one physical transaction, leaving a second connection
+        # for loader/observation work even with pool_size=2, max_overflow=0.
+        # Validate and release the whole set on that backend, in one commit.
+        with self.guard._acknowledgement_transaction() as db:
+            expected = {}
+            table = SeedingDomainClaim.__table__
+            with db.no_autoflush:
+                for execution in self.executions:
+                    claim = db.get(SeedingDomainClaim, execution.identity, with_for_update=True)
+                    if (not execution.entered or not isinstance(execution.entry, UUID)
+                            or not execution.continuous()
+                            or claim is None or claim.domain != execution.domain
+                            or claim.kind != "native" or claim.command_id is not None
+                            or claim.entry_id != entry_digest(execution.entry)
+                            or claim.entered_at is None or claim.returned_at is not None
+                            or claim.released_at is not None
+                            or terminal_observation(db, claim, self.jobs[execution.domain]) is None):
+                        raise DomainOwnershipError("Legacy terminal observation unverified; ownership retained")
+                    claim.returned_at = clock(db)
+                    claim.released_at = claim.returned_at
+                    claim.job_id = self.jobs[execution.domain]
+                    expected[claim.id] = {c.name: getattr(claim, c.name) for c in table.columns}
+            db.flush()
+            if self.engine.dialect.name == "postgresql":
+                db.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+            stored = db.execute(select(table).where(table.c.id.in_(expected))).mappings().all()
+            def normalized(value):
+                if isinstance(value, datetime) and value.tzinfo is None:
+                    return value.replace(tzinfo=timezone.utc)
+                return value
+            if len(stored) != len(expected) or any(
+                    row["id"] not in expected or any(
+                        type(row[name]) is not type(value)
+                        or normalized(row[name]) != normalized(value)
+                        for name, value in expected[row["id"]].items()) for row in stored):
+                raise DomainOwnershipError("Legacy stored release unverified; ownership retained")
 
     def close(self):
-        for execution in reversed(self.executions):
+        if self.guard is not None:
             try:
-                execution.close()
+                self.guard.close()
             except SQLAlchemyError:
                 logger.error("Legacy continuity connection lost; durable ownership retained")
 

@@ -16,16 +16,17 @@ from routers.admin_operations import DISPATCH_ERROR, PRIVATE_HEADERS, bounded_in
 from utils.audit_policy import safe_audit_payload
 
 SOURCES = ("treasury", "cob", "oag", "knbs", "opendata", "cra")
-SOURCE_DOMAINS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population", "cra": "cra"}
+SOURCE_DOMAINS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population", "cra": "cra", "opendata": "opendata"}
 SOURCE_SCOPE = {
     "oag": "OAG audit domain.",
     "treasury": "National fiscal summaries: Treasury, CoB and CBK inputs.",
     "cob": "CoB county budgets; excludes national budgets and pending bills.",
     "knbs": "Population: KNBS county census and World Bank national series.",
     "cra": "CRA FY2026/27 Table 5.2 recommended allocations only; excludes enacted budgets and actual revenue.",
+    "opendata": "KNBS 2026 workbook Table 5.13 county revenue cells only; published discrepancies, missing values and provisional labels retained; publication unqualified.",
 }
 SOURCE_GAPS = {
-    "opendata": "OpenData has no reviewed dataset contract; its official ArcGIS catalog reported subscription canceled during source validation (#621).",
+    "opendata": "OpenData requires explicit SEED_OPENDATA_INGESTION_ENABLED=true and the pinned official KNBS workbook handler (#621).",
     "cra": "CRA requires explicit SEED_CRA_INGESTION_ENABLED=true and the reviewed native recommendation handler.",
 }
 Source = Literal["treasury", "cob", "oag", "knbs", "opendata", "cra"]

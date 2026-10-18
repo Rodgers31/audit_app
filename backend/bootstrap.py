@@ -111,7 +111,7 @@ BOOTSTRAP_EFFECT_DOMAINS = (
     "debt_timeline", "economic_indicators", "fiscal_summary", "imf_weo",
     "learning_hub", "national_debt", "national_gdp", "pending_bills",
     "population", "revenue_by_source", "stalled_projects",
-    "cra",
+    "cra", "opendata",
 )
 STALE_AFTER_DAYS = 180
 
