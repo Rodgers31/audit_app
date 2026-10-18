@@ -1,5 +1,6 @@
 """Actual loader/native CLI/dedicated worker interleavings on owned PostgreSQL."""
 import os
+from hashlib import sha256
 from pathlib import Path
 import signal
 import subprocess
@@ -162,7 +163,7 @@ def test_legacy_first_blocks_native_or_dispatch_then_next_run(db, tmp_path, nati
             legacy_claim_ids = connection.execute(text(
                 "SELECT id::text FROM seeding_domain_claims WHERE released_at IS NULL"
             )).scalars().all()
-        assert len(legacy_claim_ids) == 14
+        assert len(legacy_claim_ids) == 15
         if native_kind == "dispatch":
             # A queued successor may acquire ownership as soon as legacy exits.
             # Hold its real handler before effects to observe that transfer.
@@ -317,7 +318,7 @@ def test_scheduling_parent_death_does_not_release_live_writing_child(db, tmp_pat
         entered(engine, "legacy")
         os.kill(parent.pid, signal.SIGKILL)
         parent.wait(timeout=5)
-        assert retained(engine) == 14
+        assert retained(engine) == 15
         other = start(tmp_path, "native")
         assert other.wait(timeout=15) == 1 and effects(engine) == 0
         mode(engine, "legacy", "normal")
@@ -340,14 +341,21 @@ def test_legacy_lock_backend_death_retains_all_claims(db, tmp_path):
     try:
         entered(engine, "legacy")
         with engine.begin() as conn:
-            pids = conn.scalars(text("SELECT DISTINCT pid FROM pg_locks WHERE locktype='advisory' AND granted")).all()
-            assert len(pids) == 14
-            assert conn.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": pids[0]}) is True
+            locks = conn.execute(text("SELECT pid,classid::bigint AS high,objid::bigint AS low FROM pg_locks "
+                "WHERE locktype='advisory' AND granted AND objsubid=1 "
+                "AND database=(SELECT oid FROM pg_database WHERE datname=current_database())")).all()
+            keys = [int.from_bytes(sha256(("seeding:" + d).encode()).digest()[:8], "big") & ((1 << 63) - 1)
+                    for d in ownership_module().LEGACY_DOMAINS]
+            assert len(locks) == 15
+            assert {(r.high, r.low) for r in locks} == {(k >> 32, k & 0xffffffff) for k in keys}
+            pids = {r.pid for r in locks}
+            assert len(pids) == 1
+            assert conn.scalar(text("SELECT pg_terminate_backend(:pid)"), {"pid": next(iter(pids))}) is True
         other = start(tmp_path, "native")
         assert other.wait(timeout=15) == 1
         mode(engine, "legacy", "normal")
         assert owner.wait(timeout=20) == 1
-        assert effects(engine) == 1 and retained(engine) == 14
+        assert effects(engine) == 1 and retained(engine) == 15
     finally:
         stop(owner)
         if other:
@@ -387,7 +395,7 @@ def test_invalid_then_valid_receipt_preserves_lock_and_releases(db):
         execution = scope.executions[0]
         with pytest.raises(ownership.DomainOwnershipError):
             execution.acknowledge(scope.jobs[execution.domain])
-        assert execution.continuous() is True and retained(engine) == 14
+        assert execution.continuous() is True and retained(engine) == 15
     assert retained(engine) == 0
 
 
@@ -403,7 +411,7 @@ def test_manual_session_transaction_failure_retains_on_close(db):
     finally:
         with pytest.raises(ownership.DomainOwnershipError):
             session.close()
-    assert retained(engine) == 14
+    assert retained(engine) == 15
 
 
 @pytest.mark.parametrize("ambient", [None, "false", "different-inert-value"])

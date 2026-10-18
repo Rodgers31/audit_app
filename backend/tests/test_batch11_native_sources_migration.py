@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from batch11_native_sources_fixture.owned_postgres import command_environment
 from test_batch11_native_sources import cra_url, BACKEND
+from tests.admin_audit_epoch.ephemeral_database import head
 
 
 @pytest.fixture
@@ -35,9 +36,9 @@ def test_reserved_migration_is_single_ordered_head_and_empty_round_trip(migrated
     # Alembic heads has no positional target; execute its real command separately.
     result = subprocess.run([sys.executable, "-m", "alembic", "heads"], cwd=BACKEND,
                             env=command_environment(), text=True, capture_output=True, timeout=20)
-    assert result.returncode == 0 and result.stdout.strip() == "a611b12a0001 (head)"
+    assert result.returncode == 0 and result.stdout.strip() == head() + " (head)"
     with engine.connect() as c:
-        assert c.scalar(text("SELECT version_num FROM alembic_version")) == "a611b12a0001"
+        assert c.scalar(text("SELECT version_num FROM alembic_version")) == head()
         before = c.execute(text("SELECT c.relname,c.relrowsecurity,c.relacl::text FROM pg_class c WHERE c.relname IN ('etl_dispatch_commands','etl_dispatch_domains','etl_dispatch_worker') ORDER BY 1")).all()
     assert migrate("downgrade", "e554b10a0001").returncode == 0
     assert migrate("upgrade", "head").returncode == 0

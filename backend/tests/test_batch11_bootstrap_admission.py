@@ -236,8 +236,8 @@ def test_group_release_refuses_uncertain_members(admission_database, monkeypatch
 def test_current_builtin_writer_inventory_is_fenced():
     from bootstrap import BOOTSTRAP_EFFECT_DOMAINS, BOOTSTRAP_DOMAIN
     from seeding.registries import _BUILTIN_DOMAIN_PACKAGES
-    # CRA's reviewed opt-in entrypoint is deliberately outside scheduled --all.
-    domains = {name.rsplit(".", 1)[1] for name in _BUILTIN_DOMAIN_PACKAGES} | {"cra"}
+    # Reviewed opt-in entrypoints remain outside scheduled --all.
+    domains = {name.rsplit(".", 1)[1] for name in _BUILTIN_DOMAIN_PACKAGES} | {"cra", "opendata"}
     assert domains == (set(BOOTSTRAP_EFFECT_DOMAINS) - {BOOTSTRAP_DOMAIN}) | {"national_budget"}
 
 

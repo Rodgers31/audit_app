@@ -29,6 +29,15 @@ def ready_domains():
     for source in selected_sources():
         domain = SOURCE_DOMAINS[source]
         try:
+            if source == "opendata":
+                from seeding.config import SeedingSettings
+                try:
+                    opendata_enabled = SeedingSettings().opendata_ingestion_enabled is True
+                except ValueError:
+                    logging.getLogger(__name__).warning("dispatch_opendata_flag_invalid", extra={"domain": domain})
+                    continue
+                if not opendata_enabled:
+                    continue
             if source == "cra":
                 from seeding.config import SeedingSettings
                 try:

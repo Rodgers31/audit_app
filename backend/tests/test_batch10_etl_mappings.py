@@ -286,7 +286,10 @@ def test_default_source_selection_and_invalid_shapes(pg, monkeypatch):
     monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", "cra")
     assert selected_sources() == ("cra",)
     assert capabilities["cra"]["available"] is False
-    for value in ("", "oag,oag", "unknown", "oag,", " oag", "opendata"):
+    monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", "opendata")
+    assert selected_sources() == ("opendata",)
+    assert capabilities["opendata"]["available"] is False
+    for value in ("", "oag,oag", "unknown", "oag,", " oag"):
         monkeypatch.setenv("ADMIN_ETL_DISPATCH_SOURCES", value)
         with pytest.raises(ValueError, match="source selection"):
             selected_sources()

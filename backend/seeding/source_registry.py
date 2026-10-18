@@ -126,6 +126,15 @@ SOURCE_REGISTRY: Dict[str, SourceDataset] = {
     d.dataset_id: d
     for d in [
         SourceDataset(
+            dataset_id="knbs_county_revenue_2026_table_5_13",
+            publisher="Kenya National Bureau of Statistics",
+            publisher_url="https://www.knbs.or.ke/",
+            doc_type="REPORT",
+            description="Economic Survey 2026 Table 5.13 county revenue; pinned workbook cells, mixed as published; publication unqualified.",
+            parser_id="knbs-economic-survey-2026-table-5.13-v1",
+            match_keywords=("Chapter-5-Public-Finance",),
+        ),
+        SourceDataset(
             dataset_id="cra_recommendations",
             publisher="Commission on Revenue Allocation",
             publisher_url="https://cra.go.ke",

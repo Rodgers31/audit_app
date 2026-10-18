@@ -29,7 +29,7 @@ from test_media_support import ACTOR, ENDPOINT, intent, png
 
 
 @pytest.fixture(scope='module')
-def template():
+def template(request):
     value=os.getenv('B17_MEDIA_TEST_DATABASE_URL')
     if not value:
         pytest.skip('Owned B17 media PostgreSQL prerequisite is not assigned')
@@ -38,6 +38,14 @@ def template():
             or target.port!=55417 or target.username!='b17_media' or target.password
             or target.path!='/b17_media_test' or target.query or target.fragment):
         raise ValueError('Refused an unowned B17 media fixture')
+    selected=getattr(request, 'param', None)
+    if selected is None:
+        revision='a706b17a0001'  # Preserve the fixed historical protocol cohort.
+    elif type(selected) is str and selected=='current':
+        from tests.admin_audit_epoch.ephemeral_database import head
+        revision=head()
+    else:
+        raise ValueError('Unknown owned media migration selection')
     admin=create_engine(value,isolation_level='AUTOCOMMIT',pool_size=2,max_overflow=0)
     name='b17_media_template_'+uuid4().hex
     with admin.connect() as conn: conn.execute(text('CREATE DATABASE '+name))
@@ -45,7 +53,7 @@ def template():
     scripts=ScriptDirectory(str(Path(__file__).resolve().parents[2]/'alembic'))
     try:
         with engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
-            for rev in reversed(list(scripts.walk_revisions(base='base',head='a706b17a0001'))):
+            for rev in reversed(list(scripts.walk_revisions(base='base',head=revision))):
                 rev.module.upgrade()
         engine.dispose()
         yield value,admin,name

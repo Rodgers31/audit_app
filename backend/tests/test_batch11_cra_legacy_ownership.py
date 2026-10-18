@@ -80,7 +80,7 @@ def cra_effects(engine):
 
 def test_cra_is_enrolled_in_the_legacy_claim_set():
     domains = legacy_domains()
-    assert "cra" in domains and list(domains) == sorted(domains) and len(domains) == len(set(domains)) == 14
+    assert "cra" in domains and list(domains) == sorted(domains) and len(domains) == len(set(domains)) == 15
 
 
 def test_legacy_claims_cra_before_effects_and_blocks_native_cra_then_next_run(legacy_db, tmp_path):

@@ -12,6 +12,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 import test_integration_pipeline as pipeline
+from tests.admin_audit_epoch.ephemeral_database import head as current_audit_head
 
 
 def local_client(app):
@@ -40,7 +41,7 @@ def runtime_engine():
     try:
         with engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
             scripts = ScriptDirectory(str(Path(__file__).parents[2] / 'alembic'))
-            for revision in reversed(list(scripts.walk_revisions(base='base', head='a706b17a0001'))):
+            for revision in reversed(list(scripts.walk_revisions(base='base', head=current_audit_head()))):
                 revision.module.upgrade()
         yield engine
     finally:

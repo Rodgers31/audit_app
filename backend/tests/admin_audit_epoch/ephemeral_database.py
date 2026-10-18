@@ -82,9 +82,13 @@ def profile(raw):
 def head():
     config = Config(str(BACKEND / "alembic.ini"))
     config.set_main_option("script_location", str(BACKEND / "alembic"))
-    heads = ScriptDirectory.from_config(config).get_heads()
-    if heads != ["a611b12a0001"]:
-        raise RuntimeError("Reviewed single durable audit head required")
+    scripts = ScriptDirectory.from_config(config)
+    heads = scripts.get_heads()
+    if len(heads) != 1 or type(heads[0]) is not str or not heads[0]:
+        raise RuntimeError("Single durable audit descendant head required")
+    ancestors = {revision.revision for revision in scripts.walk_revisions(base="base", head=heads[0])}
+    if "a611b12a0001" not in ancestors:
+        raise RuntimeError("Single durable audit descendant head required")
     return heads[0]
 
 

@@ -10,6 +10,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from test_batch10_etl_mappings import mapping_url, MAPPINGS
+from tests.admin_audit_epoch.ephemeral_database import head
 
 BACKEND = Path(__file__).resolve().parents[1]
 
@@ -40,7 +41,7 @@ def test_complete_chain_and_empty_round_trip_preserves_private_schema(migrated):
     result = migrate('upgrade','head')
     assert result.returncode == 0, result.stderr
     with engine.begin() as c:
-        assert c.scalar(text('SELECT version_num FROM alembic_version')) == 'a611b12a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version')) == head()
         for role in ('anon','authenticated'):
             c.execute(text(f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='{role}') THEN CREATE ROLE {role}; END IF; END $$"))
         c.execute(text("INSERT INTO ingestion_jobs(domain,status,dry_run,started_at,items_processed,items_created,items_updated,errors,metadata) VALUES ('audits','PENDING',false,now(),0,0,0,'[]',jsonb_build_object('manual_trigger',true))"))

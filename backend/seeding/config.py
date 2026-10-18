@@ -15,6 +15,18 @@ from .utils import parse_rate_limit
 class SeedingSettings(BaseSettings):
     """Configuration options controlling seeding behaviour."""
 
+    opendata_ingestion_enabled: bool = Field(
+        default=False,
+        description="Explicit opt-in to the pinned KNBS 2026 Table 5.13 workbook; publication remains separately gated.",
+    )
+
+    @field_validator("opendata_ingestion_enabled", mode="before")
+    @classmethod
+    def explicit_opendata_opt_in(cls, value):
+        if type(value) is not bool and (type(value) is not str or value not in ("true", "false")):
+            raise ValueError("OpenData opt-in requires true or false")
+        return value
+
     cob_verified_qualification_enabled: bool = Field(
         default=False,
         description="Operator qualification of newly inserted CoB PDF rows only; never clears existing holds.",
