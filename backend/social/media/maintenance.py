@@ -5,6 +5,8 @@ request. Cleanup is opt-in; report-only is the default. No reconciliation proof
 is fabricated by this runner or the production media runtime.
 """
 import json
+import os
+import stat
 from uuid import UUID
 
 from sqlalchemy.orm import sessionmaker
@@ -17,6 +19,23 @@ from .runtime import media_runtime
 from .service import MediaService
 from .operator import prepare_reconciliation, validate_report_page
 from .retention import RetainedRecovery, recover_retained
+from .deletion import PrivacyMediaDeletionCommand, execute_deletion
+
+
+def read_retirement_command(path):
+    # Nonblocking open precedes fstat so a FIFO/device cannot hold the operator
+    # before its size bound or policy checks. The fd pins the checked object.
+    descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise CLIInputError()
+        with os.fdopen(descriptor, 'rb', closefd=False) as source:
+            encoded = source.read(4097)
+        if len(encoded) > 4096:
+            raise SocialError('INVALID_REQUEST', 'The retirement command exceeds its bounded metadata limit.', 422)
+        return PrivacyMediaDeletionCommand.model_validate_json(encoded)
+    finally:
+        os.close(descriptor)
 
 
 def run_once(session_factory, runtime, *, allow_cleanup=False, limit=20):
@@ -48,6 +67,7 @@ def main(argv=None):
     parser.add_argument('--expected-version', type=int)
     parser.add_argument('--expected-grant-epoch', type=int)
     parser.add_argument('--expected-finalization-epoch', type=int)
+    parser.add_argument('--retire-command', help='Bounded JSON command with exact approved scope; original file is required for explicit retry')
     engine = None
     try:
         args = parser.parse_args(bounded_arguments(argv))
@@ -57,6 +77,13 @@ def main(argv=None):
                 or args.after_asset_id is not None and not args.prepare_reconciliation):
             raise SocialError('INVALID_REQUEST', 'Reconciliation preparation is read-only and cannot be combined with cleanup.', 422)
         recovery = None
+        retirement = None
+        if args.retire_command is not None:
+            if (args.allow_cleanup or args.prepare_reconciliation or args.after_asset_id is not None
+                    or args.recover_retained_upload is not None or any(value is not None for value in
+                    (args.actor_id, args.expected_version, args.expected_grant_epoch, args.expected_finalization_epoch))):
+                raise SocialError('INVALID_REQUEST', 'Payload retirement is one separately authorized command.', 422)
+            retirement = read_retirement_command(args.retire_command)
         if args.recover_retained_upload is not None:
             if args.allow_cleanup or args.prepare_reconciliation or args.after_asset_id is not None:
                 raise SocialError('INVALID_REQUEST', 'Retained recovery is one separate command.', 422)
@@ -70,13 +97,18 @@ def main(argv=None):
         cursor = UUID(args.after_asset_id) if args.after_asset_id is not None else None
         engine = create_worker_engine(WorkerConfig(database_url=args.database_url))
         factory, runtime = sessionmaker(engine, expire_on_commit=False), media_runtime()
-        if recovery is not None:
+        if retirement is not None:
+            with factory() as db:
+                result = execute_deletion(MediaService(db, runtime), retirement)
+        elif recovery is not None:
             from uuid import uuid4
             with factory() as db:
                 result = recover_retained(MediaService(db, runtime), actor, identity, recovery, uuid4())
         else:
             result = report_once(factory, runtime, limit=args.limit, after_asset_id=cursor) if args.prepare_reconciliation else run_once(factory, runtime, allow_cleanup=args.allow_cleanup, limit=args.limit)
         print(result.model_dump_json())
+        if retirement is not None and result.state != 'complete':
+            return 1
         return 0
     except Exception as error:
         # Database/SDK exception strings can contain DSNs, object keys or grants.

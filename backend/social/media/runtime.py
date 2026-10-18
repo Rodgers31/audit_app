@@ -6,6 +6,7 @@ from .config import MediaConfig, config_from_environment
 from .inspection import LocalInspector
 from .storage import MediaStorage, R2Storage
 from .reconciliation import UnsupportedWriteQuiescenceVerifier, WriteQuiescenceVerifier
+from .deletion import UnsupportedMediaDeletionAuthority, MediaDeletionAuthorityVerifier
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class MediaRuntime:
     inspector: LocalInspector | None
     unavailable_reason: str | None = None
     write_quiescence_verifier: WriteQuiescenceVerifier = field(default_factory=UnsupportedWriteQuiescenceVerifier)
+    deletion_authority: MediaDeletionAuthorityVerifier = field(default_factory=UnsupportedMediaDeletionAuthority)
 
     def available_mimes(self):
         if not self.config.enabled or self.storage is None or self.inspector is None:
@@ -35,6 +37,8 @@ def build_media_runtime(config):
         storage = R2Storage(client, config.bucket, config.endpoint)
         # No network request; reject SDK signing that drops the length/create guard.
         storage.authorize_upload('capability/probe', 1, 'image/png', config.upload_ttl)
+        if config.fenced_retirement_enabled:
+            storage.require_fence_capability()
         inspector = LocalInspector(config)
         if not inspector.available_mimes():
             return MediaRuntime(config, None, None, 'Required media inspectors are unavailable.')
