@@ -149,7 +149,8 @@ class ThreadsAdapter:
                 errors.append(issue('UNSUPPORTED_MEDIA_OPTIONS', 'assets', 'Use alt text up to 1000 characters and burned-in video captions.'))
         return ValidationResult(valid=not errors, errors=tuple(errors))
 
-    def _checkpoint(self, payload, value):
+    @staticmethod
+    def _checkpoint(payload, value):
         if value == {}:
             return None
         state = ThreadsCheckpoint.model_validate(value)
