@@ -57,7 +57,18 @@ def upgrade():
 
 def downgrade():
     # Refuse rather than discard durable policy authority or disable active work.
-    op.execute("DO $$ BEGIN IF EXISTS(SELECT 1 FROM social_publications WHERE authorization_kind='policy') OR EXISTS(SELECT 1 FROM social_controls WHERE auto_approve_enabled OR auto_schedule_enabled OR auto_publish_enabled) THEN RAISE EXCEPTION 'Policy history/controls prevent downgrade'; END IF; END $$")
+    connection = op.get_bind()
+    if connection.execute(sa.text("SELECT current_setting('transaction_isolation')")).scalar() != 'read committed':
+        raise RuntimeError('Policy downgrade requires READ COMMITTED')
+    op.execute("SET LOCAL lock_timeout='2s'")
+    op.execute("SET LOCAL statement_timeout='30s'")
+    op.execute('LOCK TABLE social_controls, social_publications, ' + ','.join(TABLES) + ' IN ACCESS EXCLUSIVE MODE')
+    op.execute('SET LOCAL row_security=off')
+    retained = ' OR '.join('EXISTS(SELECT 1 FROM ' + table + ')' for table in TABLES)
+    retained += " OR EXISTS(SELECT 1 FROM social_publications WHERE authorization_kind='policy' OR policy_decision_id IS NOT NULL)"
+    retained += ' OR EXISTS(SELECT 1 FROM social_controls WHERE generation_enabled OR auto_approve_enabled OR auto_schedule_enabled OR auto_publish_enabled)'
+    if connection.execute(sa.text('SELECT ' + retained)).scalar():
+        raise RuntimeError('Policy history/controls prevent downgrade')
     op.execute('DROP TRIGGER social_publication_policy_immutable ON social_publications')
     op.execute('DROP FUNCTION social_guard_policy_decision()')
     op.drop_constraint('fk_social_publication_policy_authority', 'social_publications', type_='foreignkey')
