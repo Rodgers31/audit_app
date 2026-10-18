@@ -28,9 +28,12 @@ class ConnectionConfig:
     # Exact console-approved Accounts API application configuration, never inferred.
     tiktok_oauth: object | None = field(default=None, repr=False)
     tiktok_requested_scopes: tuple[str, ...] = ()
+    threads_insights_enabled: bool = False
 
     @property
     def scopes(self):
+        if self.platform == 'threads' and self.threads_insights_enabled is True:
+            return SCOPES['threads'] + ('threads_manage_insights',)
         return self.tiktok_requested_scopes if self.platform == 'tiktok' else SCOPES.get(self.platform, ())
 
     def valid_redirect(self, value):
@@ -49,6 +52,8 @@ class ConnectionConfig:
 
     def blockers(self):
         result = []
+        if type(self.threads_insights_enabled) is not bool or self.platform != 'threads' and self.threads_insights_enabled:
+            result.append('INSIGHTS_CONFIGURATION_INVALID')
         if self.platform == 'tiktok':
             from ..adapters.tiktok_oauth import TikTokOAuthConfig
             if (not isinstance(self.tiktok_oauth, TikTokOAuthConfig) or self.tiktok_oauth.product_access_verified is not True

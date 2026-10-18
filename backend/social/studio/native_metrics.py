@@ -1,4 +1,4 @@
-"""Explicit Meta v26 metrics reads. No scheduler, uploads, writes or paid APIs."""
+"""Explicit native metrics. No scheduler, uploads, publishing or paid APIs."""
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -20,6 +20,7 @@ from ..contracts import Hash, StrictModel, ResolvedPostPayload, canonical_hash
 from ..models import SocialAccount, SocialPostTarget
 from ..service import SocialError, utc
 from .contracts import Metric, MetricRequest
+from . import platform_metrics
 
 METRICS = {
     'facebook': {'post_media_view': 'count', 'post_total_media_view_unique': 'unique_accounts', 'post_clicks': 'count'},
@@ -35,8 +36,8 @@ class CollectionCommand(StrictModel):
     account_id: UUID
     credential_id: UUID
     credential_version: Annotated[int, Field(strict=True, gt=0)]
-    parent_credential_id: UUID
-    parent_credential_version: Annotated[int, Field(strict=True, gt=0)]
+    parent_credential_id: UUID | None = None
+    parent_credential_version: Annotated[int, Field(strict=True, gt=0)] | None = None
     payload_hash: Hash
     remote_id: Annotated[str, Field(strict=True, min_length=1, max_length=512)]
     runtime_hash: Hash
@@ -116,30 +117,47 @@ class AnalyticsRuntime:
     cipher: CredentialCipher | None = field(default=None, repr=False)
     app_secret: str = field(default='', repr=False)
     generation: int = 1
+    # Exact operator-accepted product access and (TikTok) Analytics opt-in.
+    authorized_native_accounts: tuple[UUID, ...] = ()
 
     def __post_init__(self):
         if type(self.generation) is not int or not 1 <= self.generation <= 2**31-1:
             raise ValueError('Invalid analytics runtime generation')
         if (any(type(v) is not bool for v in (self.enabled, self.operational_gates_verified, self.free_access_verified))
                 or type(self.authorized_platforms) is not tuple or len(set(self.authorized_platforms)) != len(self.authorized_platforms)
-                or any(p not in METRICS for p in self.authorized_platforms)):
+                or any(p not in METRICS and p not in platform_metrics.COUNTS for p in self.authorized_platforms)
+                or type(self.authorized_native_accounts) is not tuple or len(self.authorized_native_accounts) > 50
+                or any(type(v) is not UUID for v in self.authorized_native_accounts)
+                or len(set(self.authorized_native_accounts)) != len(self.authorized_native_accounts)):
             raise ValueError('Invalid analytics runtime')
         if self.enabled and (not self.authorized_platforms or not self.operational_gates_verified
                 or not self.free_access_verified or not isinstance(self.cipher, CredentialCipher)
-                or not isinstance(self.app_secret, str) or not 1 <= len(self.app_secret) <= 16384
-                or any(ord(c) < 33 or ord(c) > 126 for c in self.app_secret)):
+                or (any(p in METRICS for p in self.authorized_platforms) and (not isinstance(self.app_secret, str)
+                    or not 1 <= len(self.app_secret) <= 16384 or any(ord(c) < 33 or ord(c) > 126 for c in self.app_secret)))
+                or (any(p in platform_metrics.COUNTS for p in self.authorized_platforms) and not self.authorized_native_accounts)):
             raise ValueError('Verified free native analytics material is required')
 
     def fingerprint(self):
         sources = [Path(__file__), Path(__file__).with_name('analytics.py'), Path(__file__).with_name('contracts.py'),
-                   Path(__file__).parent.parent / 'adapters' / 'meta_http.py']
+                   Path(__file__).with_name('platform_metrics.py'), Path(__file__).parent.parent / 'adapters' / 'meta_http.py',
+                   Path(__file__).parent.parent / 'adapters' / 'threads.py', Path(__file__).parent.parent / 'adapters' / 'tiktok_http.py',
+                   Path(__file__).parent.parent / 'adapters' / 'platform_http.py']
         return canonical_hash({'sources': {str(p.name): hashlib.sha256(p.read_bytes()).hexdigest() for p in sources},
             'enabled': self.enabled, 'platforms': self.authorized_platforms, 'generation': self.generation,
-            'operational': self.operational_gates_verified, 'free': self.free_access_verified, 'version': 'v26.0'})
+            'operational': self.operational_gates_verified, 'free': self.free_access_verified,
+            'native_accounts': [str(v) for v in self.authorized_native_accounts], 'versions': {'meta': 'v26.0', **platform_metrics.VERSIONS}})
 
     def material(self, db, target, command, *, decrypt=True):
         if type(command) is not CollectionCommand or not self.enabled or command.runtime_hash != self.fingerprint():
             raise SocialError('ANALYTICS_DISABLED', 'Exact enabled native analytics runtime authorization is required.', 503)
+        try:
+            command = CollectionCommand.model_validate(command.model_dump(mode='python'))
+        except ValueError:
+            raise SocialError('METRICS_AUTHORIZATION_CHANGED', 'The exact authorization has invalid fields.') from None
+        # Platform credentials live in their own encrypted namespace.
+        candidate = db.get(SocialAccount, command.account_id)
+        if candidate and candidate.platform in platform_metrics.COUNTS:
+            return platform_metrics.material(self, db, target, command, decrypt=decrypt)
         account = db.scalar(select(SocialAccount).where(SocialAccount.id == command.account_id).with_for_update().execution_options(populate_existing=True))
         if (not account or target.account_id != account.id or account.platform not in self.authorized_platforms
                 or account.api_product != PRODUCTS[account.platform] or account.connection_method != 'facebook_login'
@@ -203,6 +221,9 @@ class AnalyticsRuntime:
         platform, token = self.material(db, target, command)
         if request.platform != platform:
             raise SocialError('METRICS_REQUEST_CHANGED', 'The requested provider differs from its authorization.')
+        if platform in platform_metrics.COUNTS:
+            account = db.get(SocialAccount, command.account_id)
+            return platform_metrics.PlatformMetricsPort(platform, canonical_hash(request.model_dump(mode='json')), account.external_account_id, token)
         return MetaMetricsPort(platform, canonical_hash(request.model_dump(mode='json')),
             MetaAdapterConfig('v26.0', True, True, self.app_secret), token)
 
@@ -221,7 +242,8 @@ def configured_runtime(environ=None):
     from ..connections.config import load_config
     config = load_config(values)
     return AnalyticsRuntime(True, tuple(values.get('SOCIAL_ANALYTICS_PLATFORMS', '').split(',')), True, True,
-        CredentialCipher(config.active_key_version, config.encryption_keys), config.app_secret, int(values['SOCIAL_ANALYTICS_GENERATION']))
+        CredentialCipher(config.active_key_version, config.encryption_keys), config.app_secret, int(values['SOCIAL_ANALYTICS_GENERATION']),
+        tuple(UUID(v) for v in values.get('SOCIAL_ANALYTICS_NATIVE_ACCOUNT_IDS', '').split(',') if v))
 
 
 def request_analytics_runtime(request):
@@ -243,16 +265,21 @@ def capability_status(db, runtime):
         SocialPostTarget.state == 'published', SocialPostTarget.visibility_state == 'public').order_by(SocialPostTarget.id).limit(50)).all()
     for target in targets:
         account = db.get(SocialAccount, target.account_id)
-        credential = db.get(SocialCredential, account.credential_id) if account.credential_id else None
-        parent = db.get(SocialCredential, credential.parent_credential_id) if credential and credential.parent_credential_id else None
-        if credential is None or parent is None:
+        if account.platform in platform_metrics.COUNTS:
+            from ..platform_connections.models import PlatformCredential
+            credential = db.scalar(select(PlatformCredential).where(PlatformCredential.account_id == account.id))
+            parent = None
+        else:
+            credential = db.get(SocialCredential, account.credential_id) if account.credential_id else None
+            parent = db.get(SocialCredential, credential.parent_credential_id) if credential and credential.parent_credential_id else None
+        if credential is None or (account.platform in METRICS and parent is None):
             continue
         try:
             command = CollectionCommand(account_id=account.id, credential_id=credential.id, credential_version=credential.version,
-                parent_credential_id=parent.id, parent_credential_version=parent.version, payload_hash=target.payload_hash,
+                parent_credential_id=parent.id if parent else None, parent_credential_version=parent.version if parent else None, payload_hash=target.payload_hash,
                 remote_id=target.primary_remote_id, runtime_hash=runtime.fingerprint())
             runtime.material(db, target, command)
         except (SocialError, ValueError, TypeError):
             continue
-        return True, 'Native zero-cost collection is available for an authorized published Meta target. Use the explicit one-target operator command; account quotas still apply.'
-    return False, 'No eligible native target found in the bounded capability check (50 targets maximum). Check product, existing insights permissions, credential generations and expiry. X, Threads and TikTok metrics are unavailable.'
+        return True, f'Native zero-cost collection is available for an authorized published {account.platform} target. Use the explicit one-target operator command; other products, formats and accounts require independent admission. X remains unavailable at zero budget.'
+    return False, 'No eligible native target found in the bounded capability check (50 targets maximum). Check product, existing insights permissions, credential generations and expiry. Threads requires its insights grant; TikTok requires approved Accounts API video.list access and Analytics opt-in. X remains unavailable at zero budget.'

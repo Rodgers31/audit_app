@@ -199,22 +199,31 @@ class ThreadsAdapter:
             raise MetaHTTPFailure('TOKEN_EXPIRED', retry_safe=True)
         return credential
 
-    async def _request(self, method, node, material, *, edge=None, fields=None, data=None):
+    async def _request(self, method, node, material, *, edge=None, fields=None, data=None, metrics=None, maximum_bytes=65536):
         remote_id(node)
-        if edge not in {None, 'threads', 'threads_publish', 'threads_publishing_limit'}:
+        if (type(maximum_bytes) is not int or not 1 <= maximum_bytes <= 65536
+                or (metrics is not None and (edge != 'insights' or method != 'GET' or fields is not None or data is not None
+                    or metrics != 'views,likes,replies,reposts,quotes,shares'))
+                or (edge == 'insights' and metrics is None)):
+            raise ValueError('Invalid bounded insights request')
+        if edge not in {None, 'threads', 'threads_publish', 'threads_publishing_limit', 'insights'}:
             raise ValueError('Unsupported Threads endpoint')
         response = None
         try:
             request = self.client.build_request(method, f'https://graph.threads.com/{self.config.api_version}/{node}' + ('/' + edge if edge else ''),
-                params={'fields': fields} if fields else None, data=data,
+                params={'metric': metrics} if metrics else {'fields': fields} if fields else None, data=data,
                 headers={'Authorization':'Bearer ' + material.page_access_token,'Accept-Encoding':'identity'})
             response = await self.client.send(request, stream=True)
+            if metrics is not None and response.status_code == 429:
+                # A read throttle is authoritative even with malformed error JSON.
+                raise MetaHTTPFailure('RATE_LIMITED', http_status=429,
+                    next_action_at=parse_retry_after(response.headers.get('retry-after'), self.now()))
             if response.headers.get('content-encoding','identity') != 'identity':
                 raise ValueError('Compressed response')
             body = bytearray()
             async for chunk in response.aiter_bytes(chunk_size=16384):
                 body.extend(chunk)
-                if len(body) > 65536:
+                if len(body) > maximum_bytes:
                     raise ValueError('Response exceeds bound')
             value = json.loads(body, object_pairs_hook=_no_duplicates,
                 parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))

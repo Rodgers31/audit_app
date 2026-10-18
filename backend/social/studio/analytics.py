@@ -6,7 +6,7 @@ import os
 import signal
 from uuid import uuid4
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from ..contracts import canonical_json, canonical_hash
 from ..models import SocialAccount, SocialAuditEvent, SocialPostTarget
@@ -89,12 +89,20 @@ def collect(factory, target_id, ports, *, enabled=False, authorization=None):
         from .native_metrics import AnalyticsRuntime
         native = type(ports) is AnalyticsRuntime
         request = MetricRequest(platform=account.platform, account_id=account.id, target_id=target.id, remote_id=target.primary_remote_id, deadline=now + timedelta(seconds=10))
+        if account.platform == 'x':
+            raise SocialError('METRICS_UNAVAILABLE', 'X metrics are unavailable at zero budget; no request is authorized.', 503)
         port = ports.prepare(db, target, authorization, request) if native else ports.get(account.platform)
         # No X reads under the zero-spend contract, even if a port is installed.
         if account.platform == 'x' or port is None or port.platform != account.platform or port.zero_cost is not True:
             raise SocialError('METRICS_UNAVAILABLE', 'An authorized zero-cost provider metrics port is unavailable.', 503)
         if account.connection_state != 'connected':
             raise SocialError('METRICS_UNAVAILABLE', 'Reconnect the provider account before collection.', 503)
+        from .platform_metrics import check_read_hold
+        latest = db.scalar(select(MetricCollection).where(MetricCollection.account_id == account.id).order_by(MetricCollection.created_at.desc(), MetricCollection.id.desc()).limit(1))
+        if latest is not None:
+            check_read_hold(latest.reason, now)
+            if native and account.platform in {'threads', 'tiktok'} and latest.state == 'reserved':
+                raise SocialError('METRICS_COLLECTION_HELD', 'An interrupted metrics read retains its reservation; inspect history before any new collection.', 409)
         quota = db.scalar(select(func.count()).select_from(MetricCollection).where(MetricCollection.account_id == account.id, MetricCollection.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0)))
         recent = db.scalar(select(MetricCollection.id).where(MetricCollection.account_id == account.id, MetricCollection.created_at > now - timedelta(hours=1)).limit(1))
         if quota >= 24 or recent:
@@ -104,10 +112,12 @@ def collect(factory, target_id, ports, *, enabled=False, authorization=None):
         db.add(row)
         collection_id = row.id
         if native:
-            db.add(SocialAuditEvent(actor_kind='metrics', action='metrics.reserved', target_id=target_id,
+            audit = SocialAuditEvent(id=uuid4(), actor_kind='metrics', action='metrics.reserved', target_id=target_id,
                 details={'collection_id': str(row.id), 'authorization': authorization.model_dump(mode='json'),
                          'request_hash': canonical_hash(request.model_dump(mode='json'))},
-                request_id=str(collection_id)))
+                request_id=str(collection_id))
+            db.add(audit)
+            _verify_writes(db, row, audit)
     # The reservation is durable before the provider read; failure consumes quota.
     # Platform transport owns deadline/byte enforcement; fixture ports are never
     # automatically registered as native adapters.
@@ -155,10 +165,37 @@ def collect(factory, target_id, ports, *, enabled=False, authorization=None):
 def _save_observations(db, row, metrics, target_id, collection_id):
     if row.state != 'reserved':
         raise SocialError('METRICS_COLLECTION_CONFLICT', 'The collection reservation changed.')
-    row.state = 'collected'
-    for metric in metrics:
-        db.add(MetricObservation(collection_id=row.id, metric=metric.model_dump(mode='json')))
-    db.add(SocialAuditEvent(actor_kind='metrics', action='metrics.collected', target_id=target_id, details={'collection_id': str(row.id), 'observations': len(metrics)}, request_id=str(collection_id)))
+    from .platform_metrics import RATE_HOLD, RATE_PREFIX
+    limited = {m.reason for m in metrics if m.reason == RATE_HOLD or isinstance(m.reason, str) and m.reason.startswith(RATE_PREFIX)}
+    if len(limited) > 1:
+        raise SocialError('METRICS_COLLECTION_FAILED', 'Inconsistent provider throttle observations.')
+    row.state = 'unavailable' if row.platform in {'threads', 'tiktok'} and all(m.status == 'unavailable' for m in metrics) else 'collected'
+    row.reason = next(iter(limited)) if limited else None
+    written = [MetricObservation(id=uuid4(), collection_id=row.id, metric=metric.model_dump(mode='json')) for metric in metrics]
+    db.add_all(written)
+    audit = SocialAuditEvent(id=uuid4(), actor_kind='metrics', action='metrics.collected', target_id=target_id, details={'collection_id': str(row.id), 'observations': len(metrics)}, request_id=str(collection_id))
+    db.add(audit)
+    _verify_writes(db, row, audit, written)
+
+
+def _verify_writes(db, row, audit, written=()):
+    """Database readback, including deferred triggers, precedes success/dispatch."""
+    expected = (row.account_id, row.target_id, row.platform, row.remote_id, row.state, row.reason, utc(row.created_at))
+    audit_expected = (audit.action, audit.actor_kind, audit.target_id, audit.request_id, canonical_json(audit.details))
+    observations_expected = {m.id: canonical_json(m.metric) for m in written}
+    db.flush()
+    if db.bind.dialect.name == 'postgresql':
+        db.execute(text('SET CONSTRAINTS ALL IMMEDIATE'))
+    actual = db.execute(select(MetricCollection.account_id, MetricCollection.target_id, MetricCollection.platform,
+        MetricCollection.remote_id, MetricCollection.state, MetricCollection.reason, MetricCollection.created_at).where(MetricCollection.id == row.id)).one_or_none()
+    stored = db.execute(select(SocialAuditEvent.action, SocialAuditEvent.actor_kind, SocialAuditEvent.target_id,
+        SocialAuditEvent.request_id, SocialAuditEvent.details).where(SocialAuditEvent.id == audit.id)).one_or_none()
+    if actual is None or (*actual[:6], utc(actual[6])) != expected or stored is None or (*stored[:4], canonical_json(stored[4])) != audit_expected:
+        raise SocialError('METRICS_PERSISTENCE_FAILED', 'Stored collection or audit differs; dispatch/success refused.', 503)
+    if written:
+        actual_metrics = db.execute(select(MetricObservation.id, MetricObservation.metric).where(MetricObservation.collection_id == row.id)).all()
+        if {key: canonical_json(value) for key, value in actual_metrics} != observations_expected:
+            raise SocialError('METRICS_PERSISTENCE_FAILED', 'Stored observations differ; success refused.', 503)
 
 
 def observations(db, target_id, page=1, now=None):

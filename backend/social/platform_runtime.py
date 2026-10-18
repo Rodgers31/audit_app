@@ -15,6 +15,7 @@ from .service import SocialError
 
 class PlatformPolicy(StrictModel):
     connections_enabled: StrictBool = False
+    threads_insights_enabled: StrictBool = False
     adapter_enabled: StrictBool = False
     access_verified: StrictBool = False
     operational_gates_verified: StrictBool = False
@@ -93,7 +94,7 @@ def load_platform_settings(values):
                     raise ValueError()
             config=ConnectionConfig(platform=name,enabled=policy.connections_enabled,access_verified=policy.access_verified,
                 client_id=client_id,client_secret=secret,redirect_uris=tuple(redirects),active_key_version=active,encryption_keys=keys,
-                connection_budget_microusd=policy.connection_budget_microusd,tiktok_oauth=tiktok,tiktok_requested_scopes=policy.scopes)
+                connection_budget_microusd=policy.connection_budget_microusd,tiktok_oauth=tiktok,tiktok_requested_scopes=policy.scopes,threads_insights_enabled=policy.threads_insights_enabled)
             if policy.connections_enabled:
                 config.require_ready()
             connections[name]=config
