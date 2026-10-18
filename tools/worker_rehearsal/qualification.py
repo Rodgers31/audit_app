@@ -33,6 +33,7 @@ def pairs(starts, completed, window_start, window_end):
     completed_ids = [row.get('request_id') for row in completed]
     require(all(type(value) is str and value in by_id for value in completed_ids)
             and len(set(completed_ids)) == len(completed_ids), 'Unmatched/duplicate operation completion')
+    require(set(completed_ids) == set(by_id), 'Incomplete operation observations')
     require(all(window_start <= number(row['started'], positive=True) <= window_end for row in starts),
             'Operation start outside measured API window')
     for row in completed:
@@ -52,6 +53,14 @@ def statement_counts(rows):
                 and row['query'] not in counts, 'Invalid/duplicate SQL fingerprint')
         counts[row['query']] = integer(row['calls'])
     return counts
+
+
+def wire_failure_free(before, after):
+    require(type(before) is dict and type(after) is dict, 'Missing wire observation')
+    for wire in (before, after):
+        integer(wire.get('upstream_failures'))
+    require(after['upstream_failures'] == before['upstream_failures'],
+            'Upstream connection failure during measurement')
 
 
 def assess(samples, latencies, census, wire_before, wire_after, requests, duration, thresholds):
@@ -114,11 +123,12 @@ def assess(samples, latencies, census, wire_before, wire_after, requests, durati
     require(sql_calls > 0, 'No server statements within measurement')
     for wire in (wire_before, wire_after):
         require(type(wire) is dict, 'Missing wire observation')
-        for key in ('server_bytes', 'client_bytes', 'connections', 'active', 'peak_active'):
+        for key in ('server_bytes', 'client_bytes', 'connections', 'active', 'peak_active', 'upstream_failures'):
             integer(wire[key])
         require(0 <= wire['active'] <= wire['peak_active'] <= wire['connections']
                 and 1 <= wire['peak_active'] <= thresholds['worker_connections'],
                 'Observed connection counters inconsistent/over ceiling')
+    wire_failure_free(wire_before, wire_after)
     received = wire_after['server_bytes'] - wire_before['server_bytes']
     sent = wire_after['client_bytes'] - wire_before['client_bytes']
     require(wire_after['connections'] >= wire_before['connections']
