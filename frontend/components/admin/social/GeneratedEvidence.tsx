@@ -1,0 +1,33 @@
+'use client';
+import { useState } from 'react';
+import { useSocialMutation } from '@/lib/hooks/useSocial';
+import { decodeDecision, describeShadowReason, ShadowDecision } from '@/lib/api/socialGeneration';
+import { useQuery } from '@tanstack/react-query';
+import { generationApi, EvidenceReport } from '@/lib/api/socialGeneration';
+import { useAuth } from '@/lib/auth/AuthProvider';
+import { useAdmin } from '@/lib/auth/admin';
+import { httpsUrl } from './socialDocument';
+import { SocialErrorBanner } from './SocialNotice';
+import styles from './social.module.css';
+
+function ReportSource({ report }: { report: EvidenceReport }) {
+  return <article className={styles.fields} aria-label='Neutral report evidence'>
+    <strong>{report.publisher} report · {report.entity}</strong>
+    <p>Verified reporting scope: {report.period} ({report.period_start} to {report.period_end})</p>
+    <p>Publisher publication date: {report.published_on} · {report.locator}</p>
+    <p>This announcement describes the source report. Financial claims remain separate and require human review.</p>
+    {httpsUrl(report.document_url) && <a href={httpsUrl(report.document_url)} target='_blank' rel='noopener noreferrer'>Open publisher report</a>}
+    <p className={styles.muted}>Retrieved {report.retrieved_at} · Verified {report.verified_at}</p>
+    <p className={styles.muted}>Document {report.source_document_id} · Publication evidence {report.publication_extraction_id} · Qualified scope evidence {report.qualification_extraction_id}</p>
+    <p className={styles.muted} style={{ overflowWrap: 'anywhere' }}>Checksum: {report.document_checksum}</p>
+  </article>;
+}
+
+export default function GeneratedEvidence({ postId, revisionId, expectedVersion }: { postId: string; revisionId: string; expectedVersion: number }) {
+  const { user } = useAuth(); const { isAdmin } = useAdmin();
+  const result = useQuery({ queryKey: ['admin', 'social', user?.id, 'evidence', postId, revisionId], queryFn: ({ signal }) => generationApi.evidence(postId, revisionId, signal), enabled: isAdmin, staleTime: 60_000, retry: false, refetchOnWindowFocus: false });
+  const rules = useQuery({ queryKey: ['admin', 'social', user?.id, 'generation', 'rules', 1], queryFn: ({ signal }) => generationApi.rules(1, signal), enabled: isAdmin, retry: false, refetchOnWindowFocus: false });
+  const [selected, setSelected] = useState(''); const [decision, setDecision] = useState<ShadowDecision>(); const mutation = useSocialMutation();
+  async function evaluate() { const r = rules.data?.items.find(r => `${r.id}:${r.version}` === selected); if (!r) return; try { setDecision(await mutation.run(`/posts/${postId}/shadow`, { expected_version: expectedVersion, revision_id: revisionId, rule_id: r.id, rule_version: r.version }, decodeDecision, { postId })); } catch { /* Keep the typed command error. */ } }
+  return <section className={styles.evidence} aria-label='Generated factual evidence'><h3>Generated factual evidence</h3><p>Review every figure and source against this exact revision. Human approval remains required.</p>{result.isPending && <p role='status'>Loading immutable evidence…</p>}{result.error && <SocialErrorBanner error={result.error} onRetry={() => result.refetch()} />}{result.data && <><p>Evidence version {result.data.evidence.evidence_version} · Template {result.data.generator_metadata?.template_version} · Event {result.data.source_event_id}</p><p className={styles.muted}>Source {result.data.evidence.source?.source_type} · {result.data.evidence.source?.source_key} · Ingestion {result.data.evidence.source?.ingestion_id}</p>{result.data.evidence.source?.report && <ReportSource report={result.data.evidence.source.report} />}{result.data.evidence.source?.facts.map(f => <article key={f.fact_id} className={styles.fields}><strong>{f.entity}: {f.metric}</strong><p>{f.value} {f.scale} {f.unit} · {f.classification} · {f.period}</p><p>Basis: {f.comparison_basis}</p><p>{f.publisher} · Published {f.published_on} · {f.locator}</p>{httpsUrl(f.document_url) && <a href={httpsUrl(f.document_url)} target='_blank' rel='noopener noreferrer'>Open supporting source</a>}<p className={styles.muted}>Retrieved {f.retrieved_at} · Verified {f.verified_at}</p><p className={styles.muted} style={{ overflowWrap: 'anywhere' }}>Checksum: {f.document_checksum}</p></article>)}</>}<label>Shadow rule version<select value={selected} onChange={e => { setSelected(e.target.value); setDecision(undefined); }}><option value=''>Choose a rule version</option>{rules.data?.items.map(r => <option key={`${r.id}:${r.version}`} value={`${r.id}:${r.version}`}>{r.definition.name} v{r.version} · {r.definition.mode}</option>)}</select></label><button type='button' className={styles.button} disabled={!selected || mutation.isPending} onClick={evaluate}>Inspect shadow decision</button>{rules.error && <SocialErrorBanner error={rules.error} onRetry={() => rules.refetch()} />}{mutation.error && <SocialErrorBanner error={mutation.error} />}{decision && <div role='status'><p>{decision.outcome === 'would_allow' ? 'Would allow — human approval still required' : 'Human review required'}</p><p>{decision.reasons.map(describeShadowReason).join(' ')}</p><p className={styles.muted} style={{ overflowWrap: 'anywhere' }}>Evaluated {decision.created_at}. Rule hash: {decision.rule_hash}</p></div>}</section>;
+}

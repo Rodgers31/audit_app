@@ -29,6 +29,7 @@ def main(argv=None):
     parser.add_argument('--deployment-version', default='batch-1')
     parser.add_argument('--once', action='store_true')
     parser.add_argument('--native-meta', action='store_true')
+    parser.add_argument('--native-platforms', action='store_true')
     parser.add_argument('--supervisor-receipt-fd', type=int)
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format='%(message)s')
@@ -57,7 +58,8 @@ def main(argv=None):
             if re.fullmatch(r'[A-Z][A-Z0-9_]{0,127}', args.database_url_env) is None:
                 raise ValueError()
             database_url = os.environ.get(args.database_url_env)
-        if args.native_meta and not args.worker_role:
+        native = args.native_meta or args.native_platforms
+        if native and not args.worker_role:
             raise ValueError()
         if args.supervisor_receipt_fd is not None and args.supervisor_receipt_fd < 3:
             raise ValueError()
@@ -68,8 +70,11 @@ def main(argv=None):
             signal.signal(sig, stop)
         engine = create_worker_engine(config)
         if args.worker_role:
-            verify_worker_role(engine, args.worker_role, schema)
-        if not args.native_meta:
+            if args.native_platforms:
+                verify_worker_role(engine, args.worker_role, schema, platforms=True)
+            else:
+                verify_worker_role(engine, args.worker_role, schema)
+        if not native:
             # This diagnostic has no adapters, claims, recovery or resident loop.
             if not args.once:
                 raise ValueError()
@@ -77,6 +82,10 @@ def main(argv=None):
                 if conn.execute(text('SELECT EXISTS(SELECT 1 FROM social_post_targets)')).scalar_one():
                     raise ValueError()
         else:
+            if not args.native_platforms:
+                from ..platform_runtime import load_platform_settings
+                if any(item.ready for item in load_platform_settings(os.environ).adapters.values()):
+                    raise ValueError('Native platform configuration requires explicit CLI opt-in')
             validate_worker_native_environment(os.environ)
             if stopped.is_set():
                 raise RuntimeError('Stopped before acquisition')
@@ -101,9 +110,12 @@ def main(argv=None):
                             raise ValueError()
                         worker = SocialWorker(repository, adapters=registration.adapters,
                             credential_loader=registration.credential_loader, media_access=registration.media_access)
-                        if stopped.is_set():
-                            worker.stop()
                         try:
+                            # This CLI owns its asyncio.run loop. Material/DNS
+                            # offloads share the DB executor's two-thread budget.
+                            asyncio.get_running_loop().set_default_executor(worker.executor)
+                            if stopped.is_set():
+                                worker.stop()
                             await worker.run(once=args.once)
                         except KeyboardInterrupt:
                             interrupted = True

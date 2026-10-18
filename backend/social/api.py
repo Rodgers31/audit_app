@@ -35,7 +35,7 @@ class PublicationDTO(StrictModel):
     scheduled_for: Union[datetime, None]
     version: int
     approved_at: datetime
-    approved_by: UUID
+    approved_by: Union[UUID, None]
     schedule_timezone: Union[str, None]
     requested_local_time: Union[str, None]
     cancel_requested_at: Union[datetime, None]
@@ -44,7 +44,7 @@ class HistoricalTargetDTO(TargetDTO):
     publication_id: UUID
     revision_id: UUID
     approved_at: datetime
-    approved_by: UUID
+    approved_by: Union[UUID, None]
     scheduled_for: Union[datetime, None]
     cancel_requested_at: Union[datetime, None]
     revoked_at: Union[datetime, None]
@@ -129,9 +129,9 @@ class ControlsDTO(StrictModel):
     version: int
     publishing_enabled: bool
     generation_enabled: Literal[False]
-    auto_approve_enabled: Literal[False]
-    auto_schedule_enabled: Literal[False]
-    auto_publish_enabled: Literal[False]
+    auto_approve_enabled: StrictBool
+    auto_schedule_enabled: StrictBool
+    auto_publish_enabled: StrictBool
 
 class WorkerDTO(StrictModel):
     state: str
@@ -146,9 +146,9 @@ class SystemDTO(StrictModel):
     adapters_available: tuple[str, ...]
     media_upload_available: StrictBool
     generation_enabled: Literal[False]
-    auto_approve_enabled: Literal[False]
-    auto_schedule_enabled: Literal[False]
-    auto_publish_enabled: Literal[False]
+    auto_approve_enabled: StrictBool
+    auto_schedule_enabled: StrictBool
+    auto_publish_enabled: StrictBool
 
 def service(request: Request, db: Session=Depends(get_db)):
     from .worker.native_runtime import registered_adapters
@@ -167,8 +167,8 @@ Admin = Annotated[AdminUser, Depends(social_admin)]
 Service = Annotated[SocialService, Depends(service)]
 
 @router.get('/posts', response_model=PostList)
-def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all'):
-    return svc.posts(page, page_size, editorial_state, delivery_filter)
+def list_posts(svc: Service, page: int=Query(1, ge=1, le=2_147_483_647), page_size: int=Query(20, ge=1, le=100), editorial_state: Union[EditorialState, None]=None, delivery_filter: Literal['all', 'scheduled', 'history', 'needs_attention']='all', origin_type: Union[Literal['manual', 'generated'], None]=None, content_type: Union[str, None]=Query(None, max_length=64)):
+    return svc.posts(page, page_size, editorial_state, delivery_filter, origin_type, content_type)
 
 @router.post('/posts', response_model=PostDetail, status_code=201)
 def create_post(request: Request, body: CreatePost, svc: Service, admin: Admin, key: IdempotencyKey):
@@ -258,8 +258,18 @@ def set_controls(request: Request, body: ControlsCommand, svc: Service, admin: A
 # the editorial router rather than nesting under its prefix a second time.
 from .connections.api import router as connection_router
 from .media.api import router as media_router
+from .platform_connections.api import router as platform_connection_router
+from .platform_events import router as platform_events_router, maintenance_router as platform_events_maintenance_router
 _editorial_router = router
 router = APIRouter()
 router.include_router(_editorial_router)
 router.include_router(connection_router)
 router.include_router(media_router)
+from .generation.api import router as generation_router
+router.include_router(generation_router)
+
+from .automation.api import router as automation_router
+router.include_router(automation_router)
+router.include_router(platform_connection_router)
+router.include_router(platform_events_router)
+router.include_router(platform_events_maintenance_router)

@@ -57,6 +57,7 @@ class SocialService:
         from types import MappingProxyType
         self.available_adapters = MappingProxyType(dict(available_adapters)) if isinstance(available_adapters, Mapping) else frozenset(available_adapters)
         self.actor = None
+        self.actor_kind = "admin"
         self.request_id = None
 
     def now(self):
@@ -88,7 +89,7 @@ class SocialService:
         return status, result
 
     def audit(self, action, *, post=None, target=None, previous=None, new=None, reason=None, details=None):
-        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind="admin", action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
+        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind=self.actor_kind, action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
 
     def _post(self, post_id):
         post = self.db.get(SocialPost, post_id)
@@ -132,7 +133,7 @@ class SocialService:
         post.row_version += 1
         post.updated_at = self.now()
 
-    def _new_revision(self, post, document, references, revision_no):
+    def _new_revision(self, post, document, references, revision_no, *, evidence_snapshot=None, generator_metadata=None):
         ids = all_asset_ids(document)
         assets = list(self.db.scalars(select(SocialMediaAsset).where(SocialMediaAsset.id.in_(ids))
             .order_by(SocialMediaAsset.id).with_for_update().execution_options(populate_existing=True))) if ids else []
@@ -141,8 +142,10 @@ class SocialService:
         if any(asset.state != 'ready' or asset.deleted_at is not None for asset in assets):
             raise SocialError("TARGET_VALIDATION_FAILED", "Referenced media assets must be ready and available.", 422)
         evidence = {"references": [r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in references]}
+        if evidence_snapshot is not None:
+            evidence = {**evidence_snapshot, **evidence}
         value = document_json(document)
-        revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, created_by=self.actor)
+        revision = SocialPostRevision(id=uuid4(), post_id=post.id, revision_no=revision_no, document=value, content_hash=canonical_hash({"document": value, "evidence_snapshot": evidence}), evidence_snapshot=evidence, generator_metadata=generator_metadata, created_by=self.actor)
         self.db.add(revision)
         self.db.flush()
         for asset_id in sorted(ids):
@@ -188,7 +191,7 @@ class SocialService:
             post.content_type = body.content_type
         document = body.document if body.document is not None else PostDocument.model_validate(old.document)
         references = body.references if body.references is not None else old.evidence_snapshot["references"]
-        new = self._new_revision(post, document, references, old.revision_no + 1)
+        new = self._new_revision(post, document, references, old.revision_no + 1, evidence_snapshot=old.evidence_snapshot if post.origin_type == "generated" else None, generator_metadata=old.generator_metadata)
         post.editorial_state = "draft"
         self._touch(post)
         self.audit("post.revised", post=post, previous=previous, new="draft", details={"revision_id": str(new.id), "previous_revision_id": str(old.id)})
@@ -216,6 +219,8 @@ class SocialService:
         return self.detail(post.id)
 
     def _validate_authorization(self, post, revision, body):
+        from .generation.service import verify_generated_revision
+        verify_generated_revision(self.db, post, revision)
         if revision.id != body.revision_id:
             raise SocialError("VERSION_CONFLICT", "The selected revision changed. Refresh before approval.")
         if post.editorial_state not in {"draft", "pending_review", "approved"}:
@@ -234,21 +239,31 @@ class SocialService:
 
     def _authorize(self, post, revision, publication, body, validation):
         if publication:
+            if publication.authorization_kind != "human":
+                raise SocialError("POLICY_COMMAND_REQUIRED", "Use the policy scheduling command or revise for human approval.")
             if publication.revision_id != revision.id or publication.approved_hash != revision.content_hash:
                 raise SocialError("VERSION_CONFLICT", "The active authorization does not match this revision.")
             if publication.cancel_requested_at:
                 raise SocialError("INVALID_STATE", "This publication was cancelled. Create a new revision or duplicate it.")
             return publication
-        now = self.now()
-        publication = SocialPublication(id=uuid4(), post_id=post.id, revision_id=revision.id, authorization_kind="human", approved_by=self.actor, approved_at=now, approved_hash=revision.content_hash)
+        previous = post.editorial_state
+        publication = self._store_authorization(post, revision, validation)
+        post.editorial_state = "approved"
+        self.audit("post.approved", post=post, previous=previous, new="approved", details={"publication_id": str(publication.id), "revision_id": str(revision.id), "content_hash": revision.content_hash, "attestation": body.review_attestation.model_dump() if body.review_attestation else None})
+        self.db.flush()
+        return publication
+
+    def _store_authorization(self, post, revision, validation, *, authorization_kind="human", policy_id=None, policy_version=None, policy_decision_id=None):
+        publication = SocialPublication(id=uuid4(), post_id=post.id, revision_id=revision.id,
+            authorization_kind=authorization_kind, approved_by=self.actor if authorization_kind == "human" else None,
+            approved_at=self.now(), approved_hash=revision.content_hash, policy_id=policy_id,
+            policy_version=policy_version, policy_decision_id=policy_decision_id)
         self.db.add(publication)
         self.db.flush()
         for result in validation.targets:
             payload = result.resolved_preview
             self.db.add(SocialPostTarget(id=uuid4(), publication_id=publication.id, account_id=result.account_id, resolved_payload=payload.model_dump(mode="json"), payload_hash=payload.content_hash, capability_version=payload.capability_version, state="ready"))
-        previous = post.editorial_state
         post.editorial_state = "approved"
-        self.audit("post.approved", post=post, previous=previous, new="approved", details={"publication_id": str(publication.id), "revision_id": str(revision.id), "content_hash": revision.content_hash, "attestation": body.review_attestation.model_dump() if body.review_attestation else None})
         self.db.flush()
         return publication
 
@@ -272,6 +287,9 @@ class SocialService:
 
     def _publishing_gates(self, post, revision, body):
         """All outbound admin commands use the same current policy gates."""
+        active = self._publication(post)
+        if active and active.authorization_kind != "human":
+            raise SocialError("POLICY_COMMAND_REQUIRED", "Policy authority cannot be reused by a human queue command.")
         controls = self.db.get(SocialControls, 1)
         if not controls or not controls.publishing_enabled:
             raise SocialError("PUBLISHING_PAUSED", "Publishing is paused. Your draft is preserved.")
@@ -281,9 +299,19 @@ class SocialService:
             raise SocialError("WARNINGS_NOT_ACKNOWLEDGED", "Review and acknowledge every publication warning.", 422)
         if any(controls.platform_controls.get(t.platform, {}).get("publishing_enabled") is False for t in result.targets):
             raise SocialError("PUBLISHING_PAUSED", "One selected platform is paused. All targets remain unqueued.")
-        if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if any(t.platform == "x" for t in result.targets) and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
         return result
+
+    def _future_delivery_gates(self, result):
+        from .validation import capability_context
+        for target in result.targets:
+            if target.platform == 'tiktok':
+                account=self.db.get(SocialAccount,target.account_id)
+                caps=capability_for(account,self.available_adapters,capability_context(self.db,account))
+                if caps.feature_states.get('unattended_publication') != 'supported':
+                    raise SocialError('UNATTENDED_WORKFLOW_UNVERIFIED','TikTok future delivery requires a separately accepted unattended workflow.',422)
 
     def publish(self, post_id, body, *, scheduled=False):
         post, revision, publication = self._locked(post_id, body.expected_version)
@@ -293,11 +321,19 @@ class SocialService:
             due = resolve_schedule(body.schedule, now) if scheduled else now
         except ValueError:
             raise SocialError("INVALID_SCHEDULE_TIME", "Choose a future civil time and matching timezone offset.", 422) from None
+        if scheduled:
+            self._future_delivery_gates(result)
         publication = self._authorize(post, revision, publication, body, result)
         if publication.dispatch_requested_at is not None:
             if scheduled and due != utc(publication.scheduled_for):
                 raise SocialError("INVALID_STATE", "This revision is already queued with another schedule. Cancel it and revise the draft before scheduling again.")
             return self.accepted(post, publication)
+        return self._queue_authorization(post, publication, result, due,
+            timezone=body.schedule.timezone if scheduled else "UTC",
+            local_time=body.schedule.local_time if scheduled else due.replace(tzinfo=None).isoformat(), scheduled=scheduled)
+
+    def _queue_authorization(self, post, publication, result, due, *, timezone, local_time, scheduled=True):
+        now = self.now()
         # Use the frozen approved targets; never silently replace the selected subset.
         frozen = {t.account_id: t for t in self._targets(publication)}
         if set(frozen) != {t.account_id for t in result.targets}:
@@ -307,10 +343,11 @@ class SocialService:
             if target.payload_hash != validated.resolved_preview.content_hash:
                 raise SocialError("REVISION_INTEGRITY_FAILED", "The account or media changed after approval. Create and approve a new revision.")
         publication.scheduled_for = due
-        publication.schedule_timezone = body.schedule.timezone if scheduled else "UTC"
-        publication.requested_local_time = body.schedule.local_time if scheduled else due.replace(tzinfo=None).isoformat()
-        publication.start_deadline = due + timedelta(hours=1)
-        publication.retry_deadline = due + timedelta(hours=24)
+        publication.schedule_timezone = timezone
+        publication.requested_local_time = local_time
+        validity = utc(publication.content_valid_until) if publication.content_valid_until else None
+        publication.start_deadline = min(due + timedelta(hours=1), validity) if validity else due + timedelta(hours=1)
+        publication.retry_deadline = min(due + timedelta(hours=24), validity) if validity else due + timedelta(hours=24)
         publication.dispatch_requested_at = now
         publication.version += 1
         publication.updated_at = now
@@ -369,12 +406,15 @@ class SocialService:
             raise SocialError("WARNINGS_NOT_ACKNOWLEDGED", "Review and acknowledge the unsent destination warnings.", 422, field_errors=[w.model_dump(mode="json") for w in missing])
         if any(controls.platform_controls.get(t.platform, {}).get("publishing_enabled") is False for t in result.targets):
             raise SocialError("PUBLISHING_PAUSED", "An unsent platform is paused. The schedule was preserved.")
-        if any(t.platform == "x" for t in result.targets) and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if any(t.platform == "x" for t in result.targets) and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X publishing requires an explicitly approved API budget.")
         try:
             due = resolve_schedule(body.schedule, now) if scheduled else now
         except ValueError:
             raise SocialError("INVALID_SCHEDULE_TIME", "Choose a future civil time and matching timezone offset.", 422) from None
+        if scheduled:
+            self._future_delivery_gates(result)
         validity = utc(publication.content_valid_until) if publication.content_valid_until else None
         if validity and due >= validity:
             raise SocialError("AUTHORIZATION_EXPIRED", "The requested time is outside the original content validity. Review a new revision.")
@@ -440,6 +480,8 @@ class SocialService:
         if set(frozen) != {t.account_id for t in result.targets} or any(frozen[v.account_id].payload_hash != v.resolved_preview.content_hash for v in result.targets):
             raise SocialError("REVISION_INTEGRITY_FAILED", "Destinations or media changed. Create and review a new revision.")
         due = max(now, utc(publication.scheduled_for)) if publication.scheduled_for else now
+        if due>now:
+            self._future_delivery_gates(result)
         publication.cancel_requested_at = None
         if publication.dispatch_requested_at is None:
             publication.dispatch_requested_at = now
@@ -471,6 +513,8 @@ class SocialService:
         account = self.db.scalar(select(SocialAccount).where(SocialAccount.id == initial.account_id).with_for_update())
         publication = self.db.scalar(select(SocialPublication).where(SocialPublication.id == initial.publication_id).with_for_update())
         target = self.db.scalar(select(SocialPostTarget).where(SocialPostTarget.id == target_id).with_for_update().execution_options(populate_existing=True))
+        if publication.authorization_kind != "human":
+            raise SocialError("POLICY_COMMAND_REQUIRED", "Policy retries require fresh worker admission.")
         if target.state in {"outcome_unknown", "reconciling", "dispatching", "processing"}:
             raise SocialError("RECONCILIATION_REQUIRED", "The prior send may have been accepted. Reconcile it before any retry.")
         if target.state != "failed" or target.primary_remote_id or target.published_at:
@@ -484,15 +528,21 @@ class SocialService:
             raise SocialError("RETRY_NOT_SAFE", "This authorization is cancelled, expired or exhausted. Review a new draft.")
         if not controls or not controls.publishing_enabled:
             raise SocialError("PUBLISHING_PAUSED", "Publishing is paused; retry remains unqueued.")
-        caps = capability_for(account, self.available_adapters)
+        from .validation import capability_context
+        caps = capability_for(account, self.available_adapters, capability_context(self.db,account))
         if account.connection_state != "connected" or not account.publishing_enabled or account.hold_reason or not caps.eligible:
             raise SocialError("ACCOUNT_UNAVAILABLE", "Reconnect and validate the failed account before retry.")
         if not caps.adapter_available:
             raise SocialError("ADAPTER_NOT_AVAILABLE", "The platform adapter is unavailable in this batch.")
         if controls.platform_controls.get(account.platform, {}).get("publishing_enabled") is False:
             raise SocialError("PUBLISHING_PAUSED", "This platform is paused; retry remains unqueued.")
-        if account.platform == "x" and controls.budget_controls.get("x_budget_microusd", 0) <= 0:
+        from .platform_budget import x_global_budget_enabled
+        if account.platform == "x" and not x_global_budget_enabled(controls.budget_controls):
             raise SocialError("BUDGET_UNAVAILABLE", "X retry requires an explicitly approved API budget.")
+        if (account.platform == 'tiktok' and publication.scheduled_for and publication.dispatch_requested_at
+                and utc(publication.scheduled_for)>utc(publication.dispatch_requested_at)
+                and caps.feature_states.get('unattended_publication') != 'supported'):
+            raise SocialError('UNATTENDED_WORKFLOW_UNVERIFIED','TikTok future delivery requires a separately accepted unattended workflow.',422)
         revision = self.db.get(SocialPostRevision, publication.revision_id)
         document = PostDocument.model_validate(revision.document)
         selected = tuple(t for t in document.targets if t.account_id == target.account_id)
@@ -530,7 +580,7 @@ class SocialService:
         controls.updated_by, controls.updated_at = self.actor, self.now()
         self.audit("controls.updated", reason=body.reason, details={"publishing_enabled": controls.publishing_enabled, "version": controls.version})
         self.db.flush()
-        return {"version": controls.version, "publishing_enabled": controls.publishing_enabled, "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        return {"version": controls.version, "publishing_enabled": controls.publishing_enabled, "generation_enabled": False, "auto_approve_enabled": bool(controls and controls.auto_approve_enabled), "auto_schedule_enabled": bool(controls and controls.auto_schedule_enabled), "auto_publish_enabled": bool(controls and controls.auto_publish_enabled)}
 
     def _target_dto(self, target):
         return {"id": str(target.id), "account_id": str(target.account_id), "platform": target.resolved_payload["platform"], "state": target.state, "remote_url": target.remote_url, "safe_error_message": target.safe_error_message, "next_action_at": iso(target.next_action_at), "published_at": iso(target.published_at)}
@@ -558,7 +608,7 @@ class SocialService:
         return "queued"
 
     def _publication_dto(self, publication):
-        return {"id": str(publication.id), "revision_id": str(publication.revision_id), "version": publication.version, "approved_at": iso(publication.approved_at), "approved_by": str(publication.approved_by), "scheduled_for": iso(publication.scheduled_for), "schedule_timezone": publication.schedule_timezone, "requested_local_time": publication.requested_local_time, "cancel_requested_at": iso(publication.cancel_requested_at)} if publication else None
+        return {"id": str(publication.id), "revision_id": str(publication.revision_id), "version": publication.version, "approved_at": iso(publication.approved_at), "approved_by": str(publication.approved_by) if publication.approved_by else None, "scheduled_for": iso(publication.scheduled_for), "schedule_timezone": publication.schedule_timezone, "requested_local_time": publication.requested_local_time, "cancel_requested_at": iso(publication.cancel_requested_at)} if publication else None
 
     def _compact_publications(self, post_ids):
         from types import SimpleNamespace
@@ -577,13 +627,19 @@ class SocialService:
         result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []))
         return result
 
-    def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all"):
+    def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all", origin_type=None, content_type=None):
         if type(page) is not int or not 1 <= page <= 2_147_483_647 or type(page_size) is not int or not 1 <= page_size <= 100:
             raise SocialError("INVALID_REQUEST", "Choose a valid post page and page size.", 422)
         if delivery_filter not in {"all", "scheduled", "history", "needs_attention"}:
             raise SocialError("INVALID_REQUEST", "Choose a supported delivery filter.", 422)
         now = self.now()
         condition = [SocialPost.editorial_state == editorial_state] if editorial_state else []
+        if origin_type is not None:
+            if origin_type not in {"manual", "generated"}:
+                raise SocialError("INVALID_REQUEST", "Choose a supported origin filter.", 422)
+            condition.append(SocialPost.origin_type == origin_type)
+        if content_type is not None:
+            condition.append(SocialPost.content_type == content_type)
         if delivery_filter != "all":
             membership = [SocialPublication.post_id == SocialPost.id]
             if delivery_filter == "scheduled":
@@ -616,7 +672,7 @@ class SocialService:
         ).where(target.state.in_(("published", "failed", "cancelled", "outcome_unknown", "blocked", "reconciling")))
 
     def _historical_target_dto(self, row):
-        return {key: str(row[key]) if key in {"id", "publication_id", "revision_id", "account_id", "approved_by"}
+        return {key: str(row[key]) if row[key] is not None and key in {"id", "publication_id", "revision_id", "account_id", "approved_by"}
             else iso(row[key]) if key in {"next_action_at", "published_at", "updated_at", "approved_at", "scheduled_for", "cancel_requested_at", "revoked_at"}
             else row[key] for key in row if key not in {"post_id", "history_rank", "history_count", "total"}}
 
@@ -671,7 +727,8 @@ class SocialService:
                   SocialAccount.api_product, SocialAccount.external_account_id, SocialAccount.granted_scopes)
         accounts = (SimpleNamespace(**row._mapping) for row in self.db.execute(
             select(*fields).order_by(SocialAccount.display_name, SocialAccount.id).limit(100)))
-        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters).model_dump(mode="json")} for a in accounts]}
+        from .validation import capability_context
+        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters,capability_context(self.db,a)).model_dump(mode="json")} for a in accounts]}
 
     def platforms(self):
         from .contracts import CapabilitySet
@@ -696,7 +753,7 @@ class SocialService:
                 worker_state = heart.state
         counts = dict(self.db.execute(select(SocialPostTarget.state, func.count()).group_by(SocialPostTarget.state)).all())
         available = sorted({key[0] if isinstance(key, tuple) else key for key in self.available_adapters})
-        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": available, "media_upload_available": bool(self.media_runtime is not None and self.media_runtime.available_mimes()), "generation_enabled": False, "auto_approve_enabled": False, "auto_schedule_enabled": False, "auto_publish_enabled": False}
+        return {"publishing_enabled": bool(controls and controls.publishing_enabled), "controls_version": controls.version if controls else 1, "worker": {"state": worker_state, "heartbeat_at": iso(heart.heartbeat_at) if heart else None, "last_scan_at": iso(heart.last_scan_at) if heart else None}, "queue_counts": counts, "adapters_available": available, "media_upload_available": bool(self.media_runtime is not None and self.media_runtime.available_mimes()), "generation_enabled": False, "auto_approve_enabled": bool(controls and controls.auto_approve_enabled), "auto_schedule_enabled": bool(controls and controls.auto_schedule_enabled), "auto_publish_enabled": bool(controls and controls.auto_publish_enabled)}
 
     def accepted(self, post, publication):
         targets = self._targets(publication)

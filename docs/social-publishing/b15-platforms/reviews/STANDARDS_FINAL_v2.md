@@ -1,0 +1,16 @@
+# Independent Standards review — final v2
+
+**No remaining actionable candidate Standards finding in the reviewed scope.** Initial P1/P2 findings are independently repaired. This is local source-hashed candidate verification, not deployed/live-provider acceptance.
+
+Checkout `/Users/roger/.codex/worktrees/b15-platforms/audit_app`, branch `codex/b15-platforms`, HEAD/base `06896185005d822c4b29888138b984510dd1fdbd`; uncommitted candidate. Applied mandatory coordination contract; code-review Fowler baseline; guardian, audit-api-fastapi, state-persistence-invariants, claims-need-receipts and receipt-provenance. No applicable AGENTS/CONTRIBUTING/CODING_STANDARDS file found.
+
+- `platform_budget.py:51–57` now executes deferred constraints and checks the exact typed stored reservation. Unchanged external regression rejects suppression and coherent BEFORE/AFTER/deferred alterations; owned schema removal is asserted. This satisfies the state-persistence rule requiring exact saved values rather than rowcount alone.
+- `adapters/x.py:332–333` now refuses absent expiry. The unchanged regression produced `TOKEN_EXPIRED` with zero HTTP for the missing-expiry write; reconciliation stayed `unknown` without its GET. Other recorded numeric/access controls still refuse. Initial red files remain unchanged.
+- Optional role selection (`worker/role_contract.py:60`, CLI `--native-platforms`) preserves baseline grants, explicitly opts into narrowly scoped platform columns, and keeps OAuth authority excluded. Actual normal/optimized PostgreSQL login tests passed, including scoped cleanup assertions. Startup ownership/detachment, actual loader interfaces, callbacks, provider-event transaction wrapping and bounded recovery tests passed.
+- Consent wiring (`SocialComposer.tsx:112`, `tiktokConsent.ts:21`) invalidates confirmations when effective account content changes, preserving unaffected overrides. Independent 26-case consent suite passed.
+
+**Executed source-stable results:** 628 Python tests; 152 optimized-Python tests; 2 PostgreSQL role tests under normal and optimized Python; 57 platform frontend tests plus 26 distinct consent tests. Selections overlap; do not sum across normal/optimized cohorts. Raw output, JUnit, unique testcase identities, full source inventories and generator/helper hashes are retained and independently read back; receipt-integrity validation passed. `git diff --check` passed.
+
+**Limitations:** Separate unchanged `test_native_lifecycle.py` replay retains **1 failed, 7 passed**, child exit1; the failing old CLI fixture is not relabeled green. Parent separately reproduced it at accepted baseline. TypeScript compilation was not rerun here; parent reports accepted-baseline StyledGeography failure. Dependencies were borrowed read-only; no installs. Full migration/worker PostgreSQL suite and final aggregate replay are parent-owned. Historical author capture scripts/receipts are not current acceptance; parent must explicitly supersede their old replay instructions during documentation publication. No provider traffic, paid operations, live grants, deployment or product edits occurred.
+
+Evidence: `STANDARDS_FINAL_v2_COMMANDS.md`, bound receipts/logs/XML, validation JSON and SOURCE_HASHES manifest beside this report.

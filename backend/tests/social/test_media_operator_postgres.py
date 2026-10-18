@@ -56,7 +56,7 @@ def test_pg_report_executes_read_only_and_compares_exact_actor_ledger(operator_p
     try: report = prepare_reconciliation(svc)
     finally: event.remove(svc.db.bind, 'before_cursor_execute', trace)
     assert statements[0] == 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY'
-    assert len([statement for statement in statements if statement.startswith('SELECT')]) == 3
+    assert len([statement for statement in statements if statement.startswith('SELECT')]) == 4
     assert report.uploads[0].asset_id == grant.asset.id
     assert report.reason_codes == () and report.actor_ledger_discrepancies == 0
     assert report.ledger_reserved_bytes == report.upload_reserved_bytes == 2 * len(png())

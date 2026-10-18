@@ -1,0 +1,18 @@
+{
+  "generated_by": "/private/tmp/b15_platforms_archive_evidence.py",
+  "generator_sha256": "adf482812aa899038807e074aceb38b70d9ccc8a381c43dfdb69f5f6d0ebac6d",
+  "generated_at": "2026-10-16T20:20:35.662741+00:00",
+  "status": "SUPERSEDED_FOR_CURRENT_ACCEPTANCE",
+  "historical_receipt": "connections-verification.json",
+  "historical_receipt_sha256": "222df9e2d17f5df155110aa9f9d224cdb2d19e62cb08f9a54c085dc5400a9728",
+  "historical_generator_sha256": "a633e03da59aa75d8629685a2cbf86c4d3679ca1c51f52150d9c8518b5b2c381",
+  "reason": "The integrated candidate changed after the historical subtask run. Fixed-path/ambient-environment producer scripts are archival and unsupported. Original receipt and raw-output bytes are retained.",
+  "untrustworthy_as_current": [
+    "verdict",
+    "runs",
+    "uncommitted_source_hashes",
+    "source_hashes",
+    "test_counts"
+  ],
+  "superseded_by": "HANDOFF.md and final-20261016T201824Z-2e59c5e5/index.json; changed candidate sources, not relabeled historical outcomes"
+}

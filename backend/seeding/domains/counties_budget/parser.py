@@ -45,6 +45,8 @@ class BudgetRecord:
     artifact_sha256: Optional[str] = None
     revenue_coverage: Optional[Dict[str, Any]] = None
     source_evidence: list = field(default_factory=list)
+    publication_evidence: object = None
+    publication_refusal: Optional[str] = None
 
 
 def _iter_records(payload: Any) -> Iterable[Dict[str, Any]]:
@@ -109,6 +111,7 @@ def _amount(raw: Dict[str, Any], *keys: str) -> Optional[Decimal]:
 
 
 def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
+    from .publication import PublicationDateEvidence
     normalized: List[BudgetRecord] = []
 
     for raw in _iter_records(payload):
@@ -167,6 +170,14 @@ def parse_budget_payload(payload: Dict[str, Any]) -> List[BudgetRecord]:
                 raw["revenue_coverage"] if isinstance(raw.get("revenue_coverage"), dict) else None
             ),
             source_evidence=raw.get("source_evidence") or [],
+            publication_evidence=(raw.get("publication_evidence")
+                if isinstance(raw.get("publication_evidence"), PublicationDateEvidence) else None),
+            publication_refusal=(raw.get("publication_refusal")
+                if raw.get("publication_refusal") in {
+                    "qualification_disabled", "publication_acquisition_unavailable", "publication_official_pdf_required",
+                    "publication_retained_bytes_mismatch", "publication_page_text_limit", "publication_date_missing_or_ambiguous",
+                    "publication_date_chronology_invalid", "publication_source_changed_during_parse", "publication_date_evidence_invalid"
+                } else "publication_parser_authority_unavailable"),
         )
         normalized.append(record)
 

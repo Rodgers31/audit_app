@@ -1959,6 +1959,12 @@ from social.http_policy import SocialNoStoreMiddleware
 
 app.add_middleware(SocialNoStoreMiddleware)
 app.include_router(social_admin_router)
+from social.studio.api import router as social_studio_router
+app.include_router(social_studio_router)
+from social.studio.runtime import configure_studio
+configure_studio(app)
+from social.studio.native_metrics import configured_runtime as configured_analytics_runtime
+app.state.social_analytics_runtime = configured_analytics_runtime()
 logger.info("Social admin router registered at /api/v1/admin/social")
 
 # Explicit privacy ingress can stay enabled after new Meta connections are
@@ -1967,6 +1973,8 @@ from social.privacy.startup import configure_meta_privacy
 from database import SessionLocal as _SocialSessionLocal
 
 configure_meta_privacy(app, _SocialSessionLocal)
+from social.privacy.workflow_startup import configure_privacy_workflow
+configure_privacy_workflow(app)
 
 try:
     from routers.etl_admin import router as etl_admin_router

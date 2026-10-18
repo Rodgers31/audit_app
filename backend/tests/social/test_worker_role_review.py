@@ -106,11 +106,14 @@ def test_native_interrupt_drains_owned_cleanup_before_exit130(monkeypatch, caplo
     monkeypatch.setattr(worker_cli, 'native_runtime', native)
     class Worker:
         failed = False
-        def __init__(self, *args, **kwargs): pass
+        def __init__(self, *args, **kwargs):
+            from concurrent.futures import ThreadPoolExecutor
+            self.executor = ThreadPoolExecutor(max_workers=2)
         def stop(self): pass
         async def run(self, **kwargs):
             if failure != 'signal_interrupt': raise KeyboardInterrupt('PRIVATE_RUN')
         async def close(self):
+            self.executor.shutdown(wait=True)
             events.append('worker_close')
             if failure == 'worker_close': raise RuntimeError('PRIVATE_CLOSE')
     monkeypatch.setattr(worker_cli, 'SocialWorker', Worker)

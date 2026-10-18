@@ -1,0 +1,67 @@
+{
+  "generated_by": "docs/social-publishing/b15-platforms/tiktok_capture_evidence.py",
+  "generator_sha256": "fce1ffc152d4b6221406617566608e99bd87f63ef2bc504c391c5dec9e063474",
+  "generated_at": "2026-10-16T19:52:31.118194+00:00",
+  "target_commit": "06896185005d822c4b29888138b984510dd1fdbd",
+  "source_kind": "uncommitted combined platform candidate, specific source bytes bound below",
+  "source_sha256": {
+    "backend/social/adapters/tiktok.py": "032f35da84954c41aff56e98f124e66ebb1f41e9045468e85629ef2607e5812a",
+    "backend/social/adapters/tiktok_http.py": "c37baea22776c0270b32879fb36ce739ee8b0487d70511e3f88ccfc82c8e6e36",
+    "backend/social/adapters/tiktok_oauth.py": "5fb75f4fe866d39ae6aa3ec2802cb68b67ed636641e173e158fbb00b56cb4bd0",
+    "backend/tests/social/test_tiktok_adapter.py": "d209b96091eed2c071a11e7fae4ec7c2f7cd8fd4687be55cf32c3c7295d952d4",
+    "backend/social/contracts.py": "4186f19effd60df708a5ce8896515ededb30aa06b408ab502d53096eb80d6bad",
+    "backend/social/native_admission.py": "a00c13fb531ccd1414249d7922b0ded9457e156816f7765d6b288817d2302c06",
+    "backend/social/worker/materials.py": "13ed41956068aaf0b65bdc51c2116e0d8a5212e111bd8f479370387b11b8f45a",
+    "backend/social/adapters/common.py": "7ef0975b2b1ad72f6a6fde9485e7a0ae4d819b834d1343bdbb46fae8e375e977",
+    "backend/social/adapters/meta_http.py": "bd54476f7c46b02ee48c1942522a9fd89504eda511437df2e8ba95ae79ae88f0"
+  },
+  "source_unchanged_during_run": true,
+  "python_version": "3.13.9 (main, Oct 14 2025, 13:52:31) [Clang 17.0.0 (clang-1700.3.19.1)]",
+  "tests": [
+    {
+      "mode": "normal",
+      "command": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-m",
+        "pytest",
+        "--confcutdir=backend/tests/social",
+        "backend/tests/social/test_tiktok_adapter.py",
+        "-q"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/b15-platforms/audit_app",
+      "exit_code": 0,
+      "output_file": "docs/social-publishing/b15-platforms/tiktok-normal.txt",
+      "output_sha256": "093da2a4ba6faa05f5920d5de5946f89fea4410ef3ee7ab749c8a2130ef6226e",
+      "output": "........................................................................ [ 93%]\n.....                                                                    [100%]\n=============================== warnings summary ===============================\nbackend/models.py:29\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n77 passed, 1 warning in 0.30s\n"
+    },
+    {
+      "mode": "optimized",
+      "command": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-O",
+        "-m",
+        "pytest",
+        "--confcutdir=backend/tests/social",
+        "backend/tests/social/test_tiktok_adapter.py",
+        "-q"
+      ],
+      "cwd": "/Users/roger/.codex/worktrees/b15-platforms/audit_app",
+      "exit_code": 0,
+      "output_file": "docs/social-publishing/b15-platforms/tiktok-optimized.txt",
+      "output_sha256": "cf5d8bcd87f584dc9856f6f083d8f691e19648c996e5a2fedf1b493088997011",
+      "output": "........................................................................ [ 93%]\n.....                                                                    [100%]\n=============================== warnings summary ===============================\n../../../../Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/config/__init__.py:1304\n  /Users/roger/Documents/projects/audit_app/venv/lib/python3.13/site-packages/_pytest/config/__init__.py:1304: PytestConfigWarning: assertions not in test modules or plugins will be ignored because assert statements are not executed by the underlying Python interpreter (are you using python -O?)\n  \n    self._warn_about_missing_assertion(mode)\n\nbackend/models.py:29\n  /Users/roger/.codex/worktrees/b15-platforms/audit_app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)\n    Base = declarative_base()\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n77 passed, 2 warnings in 0.30s\n"
+    }
+  ],
+  "verdict": "PASSED",
+  "scope": "Injected sanitized HTTP fixtures only; no live provider acceptance, policy approval, upload, publication or deployed-state proof.",
+  "behavioral_regression_red": {
+    "file": "tiktok-delayed-red.txt",
+    "sha256": "25404a3524ce9a95900bdfb00996a86793f0e73a999a9893fa198aa53dc894f8",
+    "scope": "Observed candidate failure before correcting the original creator-choice upper age check. Raw red is historical; current source-bound runs cover the corrected regression."
+  },
+  "historical_red": {
+    "file": "tiktok-observed-red.txt",
+    "sha256": "9ae053801207d4447b71e06f22edd97249627477647003b39ab7032355dc38a8",
+    "scope": "Historical preimplementation import failure (module absent); generator did not yet exist. Not current validation or an observed behavioral regression."
+  }
+}

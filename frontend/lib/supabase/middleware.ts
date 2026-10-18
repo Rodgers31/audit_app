@@ -25,7 +25,7 @@ export async function updateSession(request: NextRequest) {
   // the OAuth query. Redirecting an expired session would copy code/state to
   // the public page and its analytics. It exposes no account data or grant;
   // completing a connection still requires the verified admin session API.
-  if (pathname === '/admin/social/accounts/callback') {
+  if (pathname === '/admin/social/accounts/callback' || pathname === '/admin/social/accounts/platform-callback' || pathname === '/admin/social/accounts/platform-callback/') {
     return NextResponse.next({ request });
   }
 

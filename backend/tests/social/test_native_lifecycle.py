@@ -92,18 +92,34 @@ def test_explicit_mapping_never_borrows_credentials_from_process(monkeypatch):
     assert actual.app_secret=='' and actual.app_id==''
     assert actual.enabled is False
 
-def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch):
+@pytest.mark.parametrize('initial_clock', [0.0, 0.1, 59.999, 60.0, 6000.0])
+def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch, initial_clock):
+    import os
+    import threading
+    from social.worker import ownership
     import social.worker.__main__ as cli
+    import social.worker.runner as runner
+    # Patch only the worker's clock reference, preserving asyncio's real clock.
+    monkeypatch.setattr(runner, 'time', SimpleNamespace(monotonic=lambda: initial_clock))
     module=ready(monkeypatch);base=module.load_media_runtime({});events=[]
     monkeypatch.setenv('SOCIAL_NATIVE_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED','true')
     monkeypatch.setattr(cli,'verify_worker_role',lambda *args:None)
+    monkeypatch.setattr(cli,'validate_worker_native_environment',lambda values:None)
+    def acquire(engine, worker_id, version):
+        authority=ownership.RuntimeAuthority(worker_id,1)
+        monkeypatch.setitem(ownership._issued,(os.getpid(),id(authority)),authority)
+        return authority
+    monkeypatch.setattr(cli,'acquire_authority',acquire)
     engine=create_engine('sqlite://')
     original=engine.dispose
     def dispose():events.append('engine');original()
     monkeypatch.setattr(engine,'dispose',dispose)
     monkeypatch.setattr(cli,'create_worker_engine',lambda cfg:engine)
     class Repo:
-        def __init__(self,eng,config,worker_id):self.config=config
+        def __init__(self,eng,config,worker_id,*,authority):
+            self.config=config;self.authority=authority;self.admission_stopped=threading.Event()
+        def check_authority(self):events.append('authority')
+        def drained(self):events.append('drained');return True
         def validate_schema(self):events.append('schema')
         def recover_expired(self):events.append('recover')
         def claim_due(self,n):events.append('scan');return []
@@ -115,7 +131,7 @@ def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch):
         async with native_runtime(engine,environ=ENABLED,transport_factory=lambda:Transport(events,'transport')) as reg:yield reg
     monkeypatch.setattr(cli,'native_runtime',composition)
     assert cli.main(['--database-url','postgresql://fixture@invalid/fixture','--once','--native-meta','--worker-role','inert_worker'])==0
-    assert events==['schema','recover','scan','heartbeat','heartbeat','transport','transport','storage','engine']
+    assert events==['authority','schema','recover','scan','heartbeat','heartbeat','transport','transport','storage','drained','engine']
 
 @pytest.mark.asyncio
 async def test_real_app_lifespan_stops_work_before_native_close(monkeypatch):
