@@ -213,8 +213,13 @@ def test_pg_owned_guard_follows_the_installing_schema(pg_owned,monkeypatch):
 def test_pg_lost_commit_ack_or_backend_loss_never_reports_false_completion(pg_owned,monkeypatch,point):
     svc,io,engine=pg_owned
     identity=failed_intent(svc,io,monkeypatch)
-    body=scope(svc,identity); key=uuid4(); fired=[]
+    body=scope(svc,identity); key=uuid4(); fired=[]; nested=[]
     def lose(session):
+        # Session commit events also fire when the owner-census savepoint is
+        # released. This control must interrupt the physical outer commit.
+        if session.in_nested_transaction():
+            nested.append(point)
+            return
         if fired or not any(isinstance(obj,SocialMediaWriteOwner) and obj.state=='settled'
                 for obj in session.identity_map.values()): return
         fired.append(point)
@@ -222,6 +227,9 @@ def test_pg_lost_commit_ack_or_backend_loss_never_reports_false_completion(pg_ow
             pid=session.connection().execute(text('SELECT pg_backend_pid()')).scalar_one()
             with engine.begin() as other: other.execute(text('SELECT pg_terminate_backend(:pid)'),{'pid':pid})
         else:
+            with engine.connect() as other:
+                assert other.scalar(select(SocialMediaWriteOwner.state).where(
+                    SocialMediaWriteOwner.asset_id==identity))=='settled'
             raise RuntimeError('owned control loses acknowledgement after actual commit')
     event.listen(svc.db,point,lose)
     try:
@@ -231,6 +239,7 @@ def test_pg_lost_commit_ack_or_backend_loss_never_reports_false_completion(pg_ow
         event.remove(svc.db,point,lose)
         svc.db.close()
     assert fired==[point]
+    assert nested  # The ignored savepoint event was exercised, not inferred.
     with Session(engine,expire_on_commit=False) as fresh:
         restarted=MediaService(fresh,svc.runtime)
         if point=='after_commit':

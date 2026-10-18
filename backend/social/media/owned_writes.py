@@ -9,6 +9,7 @@ from uuid import UUID
 from urllib.parse import urlsplit
 
 from sqlalchemy import case, func, select, text
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..contracts import canonical_hash
 from ..models import SocialAuditEvent
@@ -24,11 +25,11 @@ def refused():
         'Complete owned write history is unavailable. Capacity remains held.', 503)
 
 
-def binding(service, asset, upload):
+def binding(service, asset, upload, *, require_enabled=True):
     storage, config = service.runtime.storage, service.config
     # This protocol relies on the concrete local-only signer and bounded
     # synchronous finalizer. A capability Boolean on an arbitrary port is not proof.
-    if (not config.owned_quiescence_enabled or type(storage) is not R2Storage
+    if (require_enabled and not config.owned_quiescence_enabled or type(storage) is not R2Storage
             or asset.storage_provider != 'r2' or storage.bucket != asset.bucket
             or config.bucket != asset.bucket or storage.origin != urlsplit(config.endpoint).hostname):
         raise refused()
@@ -51,9 +52,30 @@ def allocate(service, asset, upload):
             raise refused()
 
 
-def owner(service, asset, upload):
-    row = service.db.get(SocialMediaWriteOwner, asset.id, populate_existing=True)
-    if row is not None and row.binding_hash != binding(service, asset, upload):
+def _owner_census(service, asset_id):
+    if service.db.get_bind().dialect.name != 'postgresql':
+        return service.db.get(SocialMediaWriteOwner, asset_id, populate_existing=True)
+    try:
+        # A filtered owner must not look historical. row_security=off refuses
+        # filtered reads; it grants no privileges. The savepoint also restores
+        # the setting if PostgreSQL aborts the census statement under RLS.
+        with service.db.begin_nested():
+            previous = service.db.scalar(text('SHOW row_security'))
+            service.db.execute(text('SET LOCAL row_security = off'))
+            row = service.db.get(SocialMediaWriteOwner, asset_id, populate_existing=True)
+            restored = service.db.scalar(text("SELECT set_config('row_security', :previous, true)"),
+                {'previous': previous})
+            if restored != previous:
+                raise refused()
+            return row
+    except SQLAlchemyError:
+        raise refused() from None
+
+
+def owner(service, asset, upload, *, allow_disabled=False):
+    row = _owner_census(service, asset.id)
+    if row is not None and row.binding_hash != binding(service, asset, upload,
+            require_enabled=not allow_disabled):
         raise refused()
     return row
 
@@ -79,13 +101,19 @@ def admit(service, asset, upload, kind, epoch):
 
 
 def finish(service, asset, upload, kind, epoch, operation_id, state):
+    ownership = owner(service, asset, upload, allow_disabled=True)
     if operation_id is None:
+        if ownership is not None:
+            raise refused()
         return
-    owner(service, asset, upload)
-    row = service.db.get(SocialMediaWriteAttempt, (asset.id, kind, epoch), populate_existing=True)
     allowed = {'grant': {'not_issued', 'issued'}, 'finalize': {'completed'}}
-    if (row is None or row.operation_id != operation_id or row.state != 'admitted'
-            or state not in allowed[kind]):
+    if (ownership is None or ownership.state not in ('open', 'closed')
+            or type(operation_id) is not UUID or not operation_id.int
+            or type(epoch) is not int or epoch < 1 or type(kind) is not str
+            or kind not in allowed or type(state) is not str or state not in allowed[kind]):
+        raise refused()
+    row = service.db.get(SocialMediaWriteAttempt, (asset.id, kind, epoch), populate_existing=True)
+    if row is None or row.operation_id != operation_id or row.state != 'admitted':
         raise refused()
     row.state = state
     service.db.flush()

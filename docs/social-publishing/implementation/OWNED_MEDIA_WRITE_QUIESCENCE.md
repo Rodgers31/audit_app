@@ -40,7 +40,14 @@ attempt stays uncertain on timeout, cancellation or failure to persist. All
 mutations share global-budget, actor-budget, asset/upload locking. Closing an
 owner is permanent and prevents every application re-entry from admitting a new
 writer, including after the flag is disabled. An already admitted operation can
-record its actual terminal acknowledgement after closure.
+record its actual terminal acknowledgement after closure or flag disablement,
+with the same exact operation, epoch and object/credential binding. Disablement
+does not authorize a new admission or recovery command.
+
+The PostgreSQL owner census refuses reads affected by row-level security rather
+than treating a hidden owner as historical. Its transaction-local check grants
+no bypass privilege and restores the caller's previous row-security setting,
+including when the census refuses.
 
 Reconciliation first freezes renewal, closes ownership and advances the asset
 lease/version in the database. The bounded verifier checks the complete grant
