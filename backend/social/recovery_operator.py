@@ -10,19 +10,39 @@ import json
 import os
 from pathlib import Path
 import re
+import ipaddress
+import socket
+from sqlalchemy.engine import make_url
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from .connections.recovery import parse_keyring, read_keyring_backup
 from .connections.rotation import rotate_retained_envelopes
 from .privacy.private_io import read_private, write_private
 from .privacy.restoration import reapply_deletion_ledger
-from .recovery_database import export_database_backup, verify_database_restore, MAX_TOTAL_BYTES, MAX_MANIFEST
+from .recovery_database import export_database_backup, verify_database_restore, MAX_TOTAL_BYTES, MAX_MANIFEST, _validate_connection_target
 
 
 class PrivateParser(argparse.ArgumentParser):
     def error(self, message):
         # argparse's ordinary diagnostic includes unknown private arguments.
         raise ValueError('RECOVERY_OPERATOR_REFUSED')
+
+
+def _database_target(raw):
+    url = make_url(raw)
+    if not set(url.query) <= {'sslmode', 'sslrootcert'}:
+        raise ValueError('RECOVERY_OPERATOR_REFUSED')
+    _validate_connection_target(url)
+    try:
+        address = str(ipaddress.ip_address(url.host))
+    except ValueError:
+        if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.-]{0,252}', url.host) is None:
+            raise ValueError('RECOVERY_OPERATOR_REFUSED') from None
+        address = str(ipaddress.ip_address(socket.getaddrinfo(url.host, url.port or 5432,
+            type=socket.SOCK_STREAM)[0][4][0]))
+    # Resolve once. Both SQLAlchemy and the isolated exporter retain the DNS
+    # hostname for TLS verification and use this same concrete network address.
+    return url.set(port=url.port or 5432, query=dict(url.query, hostaddr=address))
 
 
 def main(argv=None):
@@ -53,7 +73,8 @@ def main(argv=None):
         url=os.environ.get(args.database_url_env)
         if type(url) is not str or not url.startswith(('postgresql://','postgresql+psycopg2://')):
             raise ValueError()
-        engine=create_engine(url, pool_size=2, max_overflow=0, connect_args={'connect_timeout':5})
+        target = _database_target(url)
+        engine=create_engine(target, pool_size=2, max_overflow=0, connect_args={'connect_timeout':5})
         if args.operation=='export':
             if args.backup is None or args.manifest is None or args.signing_key is None or args.pg_dump is None or args.apply:
                 raise ValueError()

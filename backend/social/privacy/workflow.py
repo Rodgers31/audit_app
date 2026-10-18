@@ -37,6 +37,16 @@ class PrivacyWorkflow:
         config.validate()
         self.db, self.config, self.cipher, self.ledger, self.media = db, config, cipher, ledger, media
 
+    def _receipt(self, receipt_id):
+        return self.db.scalar(select(SocialPrivacyReceipt).where(
+            SocialPrivacyReceipt.id == receipt_id,
+            SocialPrivacyReceipt.app_id == self.config.app_id))
+
+    def _app_plan(self, plan_id):
+        return self.db.scalar(select(PrivacyPlan).join(SocialPrivacyReceipt,
+            PrivacyPlan.receipt_id == SocialPrivacyReceipt.id).where(
+                PrivacyPlan.id == plan_id, SocialPrivacyReceipt.app_id == self.config.app_id))
+
     def _enabled(self, execution=False):
         if not self.config.enabled or (execution and not self.config.execution_enabled):
             raise SocialError('PRIVACY_WORKFLOW_DISABLED', 'Privacy execution is disabled pending operator approval.', 503)
@@ -70,12 +80,14 @@ class PrivacyWorkflow:
             ConnectionService(self.db, None)._controls_lock()
             prior = self.db.get(PrivacyPlan, command_id)
             if prior:
+                if self._receipt(prior.receipt_id) is None:
+                    raise refuse('IDEMPOTENCY_CONFLICT')
                 if prior.proposed_by != actor or prior.evidence != command.evidence or prior.receipt_id != command.receipt_id or prior.policy_key != command.policy_key or prior.policy_hash != command.policy_hash or any(
                     sorted(e['id'] for e in prior.scope[k]) != sorted(str(i) for i in ids) for k, ids in (
                         ('credentials', command.erase_credentials), ('flows', command.erase_flows), ('media_assets', command.media_assets))):
                     raise refuse('IDEMPOTENCY_CONFLICT')
                 return self._plan(prior)
-            receipt = self.db.get(SocialPrivacyReceipt, command.receipt_id)
+            receipt = self._receipt(command.receipt_id)
             if receipt is None or receipt.kind != 'data_deletion' or not receipt.affected or not receipt.resolution.startswith('indexed_partial'):
                 raise refuse('PRIVACY_OWNERSHIP_UNRESOLVED')
             # Frozen callback mappings bound the candidate credential/flow set.
@@ -118,7 +130,7 @@ class PrivacyWorkflow:
             raise SocialError('PERMISSION_DENIED', 'An explicitly configured privacy approver is required.', 403)
         with self.db.begin():
             ConnectionService(self.db, None)._controls_lock()
-            plan = self.db.get(PrivacyPlan, plan_id)
+            plan = self._app_plan(plan_id)
             if plan is None:
                 raise SocialError('NOT_FOUND', 'Privacy plan was not found.', 404)
             self._policy(plan.policy_key, plan.policy_hash)
@@ -144,7 +156,7 @@ class PrivacyWorkflow:
 
     def get(self, plan_id):
         with self.db.begin():
-            plan = self.db.get(PrivacyPlan, plan_id)
+            plan = self._app_plan(plan_id)
             if plan is None:
                 raise SocialError('NOT_FOUND', 'Privacy plan was not found.', 404)
             result = self._plan(plan)
@@ -192,7 +204,7 @@ class PrivacyWorkflow:
             raise refuse('PRIVACY_CUSTODY_UNAVAILABLE')
         with self.db.begin():
             ConnectionService(self.db, None)._controls_lock()
-            plan = self.db.get(PrivacyPlan, plan_id)
+            plan = self._app_plan(plan_id)
             decision = self.db.scalar(select(PrivacyDecision).where(PrivacyDecision.plan_id == plan_id))
             execution = self.db.scalar(select(PrivacyExecution).where(PrivacyExecution.plan_id == plan_id).with_for_update().execution_options(populate_existing=True))
             if plan is None or decision is None or decision.decision != 'approved' or execution is None or decision.plan_hash != plan.plan_hash:
@@ -320,7 +332,7 @@ class PrivacyWorkflow:
             raise refuse()
         with self.db.begin():
             ConnectionService(self.db, None)._controls_lock()
-            plan = self.db.get(PrivacyPlan, plan_id)
+            plan = self._app_plan(plan_id)
             execution = self.db.scalar(select(PrivacyExecution).where(PrivacyExecution.plan_id == plan_id).with_for_update().execution_options(populate_existing=True))
             decision = self.db.scalar(select(PrivacyDecision).where(PrivacyDecision.plan_id == plan_id))
             if plan is None or execution is None or decision is None or decision.decision != 'approved' or decision.plan_hash != plan.plan_hash:

@@ -42,6 +42,8 @@ class PrivacyWorkflowConfig:
     policies: tuple[tuple[str, str], ...] = ()
     approvers: tuple[UUID, ...] = ()
 
+    app_id: str = ''
+
     def validate(self):
         import re
         if (type(self.enabled) is not bool or type(self.execution_enabled) is not bool
@@ -54,5 +56,7 @@ class PrivacyWorkflowConfig:
                 or type(self.approvers) is not tuple or len(self.approvers) > 100
                 or any(type(a) is not UUID or a.int == 0 for a in self.approvers)
                 or len(set(self.approvers)) != len(self.approvers)
-                or (self.enabled and (not self.policies or not self.approvers))):
+                or type(self.app_id) is not str
+                or (self.app_id != '' and re.fullmatch('[0-9]{1,64}', self.app_id) is None)
+                or (self.enabled and (not self.policies or not self.approvers or not self.app_id))):
             raise ValueError('PRIVACY_WORKFLOW_CONFIGURATION_INVALID')

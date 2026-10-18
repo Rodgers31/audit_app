@@ -63,8 +63,8 @@ def workflow(request: Request, db: Session = Depends(get_db)):
 @router.get('/requests', response_model=PrivacyQueue)
 def requests(request: Request, page: int = Query(1, ge=1, le=10000), page_size: int = Query(20, ge=1, le=100), svc=Depends(workflow)):
     with svc.db.begin():
-        count = svc.db.scalar(select(func.count()).select_from(SocialPrivacyReceipt))
-        rows = svc.db.scalars(select(SocialPrivacyReceipt).order_by(SocialPrivacyReceipt.received_at.desc(), SocialPrivacyReceipt.id).offset((page-1)*page_size).limit(page_size)).all()
+        count = svc.db.scalar(select(func.count()).select_from(SocialPrivacyReceipt).where(SocialPrivacyReceipt.app_id == svc.config.app_id))
+        rows = svc.db.scalars(select(SocialPrivacyReceipt).where(SocialPrivacyReceipt.app_id == svc.config.app_id).order_by(SocialPrivacyReceipt.received_at.desc(), SocialPrivacyReceipt.id).offset((page-1)*page_size).limit(page_size)).all()
         return {'requests': [dict(id=r.id, kind=r.kind, state=r.state, resolution=r.resolution, affected_count=len(r.affected)) for r in rows],
             'page': page, 'page_size': page_size, 'total': count, 'has_more': page*page_size<count,
             'workflow_enabled': svc.config.enabled, 'execution_enabled': svc.config.execution_enabled, 'policies': dict(svc.config.policies)}
@@ -99,7 +99,7 @@ class RequestView(ReceiptSummary):
 @router.get('/requests/{receipt_id}', response_model=RequestView)
 def request_detail(receipt_id: UUID, svc=Depends(workflow)):
     with svc.db.begin():
-        row = svc.db.get(SocialPrivacyReceipt, receipt_id)
+        row = svc._receipt(receipt_id)
         if row is None:
             raise SocialError('NOT_FOUND', 'Privacy request was not found.', 404)
         plans = list(svc.db.scalars(select(PrivacyPlan.id).where(PrivacyPlan.receipt_id == receipt_id).order_by(PrivacyPlan.created_at.desc(), PrivacyPlan.id).limit(50)))
