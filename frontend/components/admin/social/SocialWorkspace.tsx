@@ -11,8 +11,8 @@ import { SocialErrorBanner } from './SocialNotice';
 import { httpsUrl, platformLabels } from './socialDocument';
 import styles from './social.module.css';
 
-type View = 'drafts' | 'pending' | 'scheduled' | 'history' | 'needs_attention';
-const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History', needs_attention: 'Needs attention' };
+type View = 'drafts' | 'pending' | 'scheduled' | 'history' | 'needs_attention' | 'archived';
+const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History', needs_attention: 'Needs attention', archived: 'Archived' };
 export function SocialSystemStrip({ status, error, refresh }: { status?: SocialSystemStatus; error?: unknown; refresh: () => void }) {
   const [editingControls, setEditingControls] = useState(false);
   const [reason, setReason] = useState('');
@@ -74,7 +74,7 @@ export default function SocialWorkspace() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string>();
   const [unsaved, setUnsaved] = useState(false);
-  const list = useSocialPosts(page, view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all', origin || undefined, category || undefined);
+  const list = useSocialPosts(page, view === 'archived' ? 'archived' : view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all', origin || undefined, category || undefined);
   const detail = useSocialPost(selected, view !== 'history');
   const accounts = useSocialAccounts();
   const system = useSocialSystem();

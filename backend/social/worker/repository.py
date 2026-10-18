@@ -28,6 +28,8 @@ ACTIONABLE_STATES = ("queued", "retry_wait", "processing", "reconciling")
 # This is a scheduling filter only: admission rechecks controls under its locks.
 _QUEUE_ELIGIBILITY_SQL = """
     t.state IN ('queued','retry_wait','processing','reconciling')
+    AND EXISTS (SELECT 1 FROM social_publications ap JOIN social_posts sp ON sp.id=ap.post_id
+                WHERE ap.id=t.publication_id AND sp.editorial_state <> 'archived' AND sp.archived_at IS NULL)
     AND (
         t.state IN ('processing','reconciling')
         OR NOT EXISTS (
@@ -254,6 +256,9 @@ class QueueRepository:
             if self.admission_stopped.is_set():
                 return None
             now = self._current(conn, claim, target)
+            archived = conn.execute(text("SELECT editorial_state='archived' OR archived_at IS NOT NULL FROM social_posts WHERE id=:post"), {"post": pub["post_id"]}).scalar_one()
+            if archived:
+                raise GateRejected("POST_ARCHIVED")
             pending = conn.execute(text("SELECT operation_id FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid) AND lease_epoch=:epoch AND completed_at IS NULL LIMIT 1"), self._params(claim)).scalar()
             if pending is not None:
                 raise GateRejected("OPERATION_ALREADY_STARTED")
