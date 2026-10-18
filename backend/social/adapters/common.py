@@ -10,11 +10,11 @@ from uuid import UUID, uuid4
 
 from pydantic import Field, field_validator
 
-from ..contracts import (CapabilitySet, Hash, OperationPlan, OperationResult,
-    ResolvedPostPayload, StrictModel, ValidationIssue, ValidationResult, canonical_hash)
+from ..contracts import (Hash, OperationPlan, OperationResult, StrictModel, ValidationResult, canonical_hash)
 from ..worker.materials import WorkerCredentialMaterial
 from ..native_admission import NativeCapabilityAdmission, native_capability_matches
 from .meta_http import MetaHTTP, MetaHTTPFailure, remote_id
+from .meta_validation import MetaValidation, caption, issue
 
 
 class Checkpoint(StrictModel):
@@ -51,19 +51,6 @@ class Checkpoint(StrictModel):
         return remote_id(value, composite=True) if value is not None else None
 
 
-def caption(payload, *, include_link=True):
-    parts = [payload.text]
-    if payload.hashtags:
-        parts.append(" ".join(tag if tag.startswith("#") else "#" + tag for tag in payload.hashtags))
-    if include_link and payload.link:
-        parts.append(payload.link)
-    return "\n\n".join(part for part in parts if part)
-
-
-def issue(code, field, message):
-    return ValidationIssue(code=code, field=field, message=message)
-
-
 def public_url(value, platform):
     if not isinstance(value, str) or len(value) > 2048 or any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in value):
         raise ValueError("Invalid public permalink")
@@ -82,66 +69,14 @@ def public_url(value, platform):
     return value
 
 
-class MetaAdapter:
-    platform = ""
-    product = ""
-    checkpoint_name = ""
-    formats = ()
-    scopes = ()
-    source_links = ()
-    limits = {}
-    phases = {}
-
+class MetaAdapter(MetaValidation):
     def __init__(self, config, *, transport, now=None):
-        self.config = config
+        super().__init__(config)
         self.now = now or (lambda: datetime.now(timezone.utc))
         self.http = MetaHTTP(config, transport=transport, now=self.now)
 
     async def close(self):
         await self.http.close()
-
-    def capabilities(self, account):
-        granted = account.get("granted_scopes", ())
-        if not isinstance(granted, (list, tuple)) or any(not isinstance(s, str) for s in granted):
-            granted = ()
-        prior = account.get("capability_snapshot", {})
-        eligible = bool(isinstance(prior, dict) and prior.get("eligible") is True and
-            account.get("platform") == self.platform and account.get("api_product") == self.product and
-            account.get("connection_state") == "connected" and set(self.scopes) <= set(granted))
-        return CapabilitySet(provider_api_version=self.config.graph_version,
-            eligible=eligible, supported_formats=self.formats,
-            feature_states={"publishing": "supported" if self.config.ready and eligible else "restricted",
-                            "media_upload": "supported", "carousel": "unsupported", "video": "unsupported", "reel": "unsupported"},
-            limits=self.limits, granted_scopes=tuple(sorted(set(granted))), required_scopes=self.scopes,
-            price_class="free", source_links=self.source_links, verified_at=datetime(2026, 10, 8, tzinfo=timezone.utc),
-            adapter_available=self.config.ready)
-
-    def validate(self, payload: ResolvedPostPayload, capabilities: CapabilitySet):
-        errors = []
-        if not self.config.ready or not capabilities.adapter_available or not capabilities.eligible:
-            errors.append(issue("ADAPTER_NOT_AVAILABLE", "capabilities", "Native publishing requires explicit server construction and operational acceptance."))
-        if payload.platform != self.platform or payload.api_product != self.product:
-            errors.append(issue("ACCOUNT_PRODUCT_MISMATCH", "account_id", "Use the exact connected Meta API product."))
-        if payload.format not in self.formats:
-            errors.append(issue("UNSUPPORTED_FORMAT", "format", "This native adapter supports only its advertised formats."))
-        if not set(self.scopes) <= set(capabilities.granted_scopes):
-            errors.append(issue("PERMISSION_DENIED", "scopes", "The account lacks a required Meta permission."))
-        if canonical_hash(payload.model_dump(mode="json", exclude={"content_hash"})) != payload.content_hash:
-            errors.append(issue("PAYLOAD_HASH_MISMATCH", "content_hash", "The immutable publishing payload no longer matches its authorized hash."))
-        try:
-            remote_id(payload.external_account_id)
-        except ValueError:
-            errors.append(issue("ACCOUNT_ID_INVALID", "account_id", "The connected Meta identity is invalid."))
-        if payload.disclosures:
-            errors.append(issue("UNSUPPORTED_DISCLOSURE", "disclosures", "This publishing slice does not support provider disclosure settings."))
-        if any(not re.fullmatch(r"#?\w+", tag) for tag in payload.hashtags):
-            errors.append(issue("INVALID_HASHTAG", "hashtags", "Use individual hashtags containing letters, numbers or underscores."))
-        if payload.format == "text" and payload.assets or payload.format == "image" and len(payload.assets) != 1:
-            errors.append(issue("FORMAT_MEDIA_MISMATCH", "assets", "Select the advertised number of inspected assets."))
-        if any(a.caption_asset_id is not None or a.caption_sha256 is not None for a in payload.assets):
-            errors.append(issue("UNSUPPORTED_CAPTION_ASSET", "assets", "Caption assets are unsupported for static image publishing."))
-        errors.extend(self._content_errors(payload))
-        return ValidationResult(valid=not errors, errors=tuple(errors))
 
     def _material(self, payload, credential):
         if not self.config.ready:

@@ -33,11 +33,12 @@ def create_native_registration(engine, config, *, cipher, storage, storage_origi
     from sqlalchemy.engine import Engine
     from ..connections.crypto import CredentialCipher
     from ..adapters import MetaAdapterConfig, FacebookPageAdapter, InstagramFacebookLoginAdapter
+    from ..adapters.config import native_app_material_valid
     if not isinstance(config, MetaAdapterConfig):
         raise ValueError('Explicit native adapter configuration is required')
     if not config.ready:
         return NativeRegistration(MappingProxyType({}), None, None)
-    if (not config.app_secret or any(ord(c) < 33 or ord(c) > 126 for c in config.app_secret)
+    if (not native_app_material_valid(config)
             or not callable(transport_factory) or not isinstance(engine, Engine)
             or not isinstance(cipher, CredentialCipher) or getattr(storage, 'provider', None) != 'r2'
             or not isinstance(getattr(storage, 'bucket', None), str)

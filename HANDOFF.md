@@ -133,3 +133,43 @@ Parent #476 remains open. Local coding/tests do not establish full-plan/live com
 Owned PostgreSQL55406 and Chrome33509 resources are cleaned up with exact container,
 mount/volume and reusable-port readback recorded externally. The worktree and owned
 cached runtime clones remain for review. No peer process/resource was stopped.
+
+## 17 October post-commit registry correction (PR714 follow-up)
+
+The initial ab51f7b delivery's actual post-commit caller constructed SocialService
+without an available adapter mapping. Its synthetic direct-consumer proofs did
+not establish that real hook path; an independent hook repro produced a human
+review draft with TARGET_VALIDATION_FAILED instead of the eligible policy queue.
+The follow-up passes the actual native content/capability rules into that service.
+Standalone ETL builds a typed immutable local validation registry, guarded by
+native operational flags and the existing validated/pinned Meta configuration.
+The delivery adapters inherit exactly those extracted pure rules. Account proof
+still must match current native admission; no stored snapshot is upgraded.
+No R2/HTTP client, delivery runtime, event loop, worker or scheduler is constructed
+by this hook, and it does not require the web media-upload feature. Existing
+callers may lend their installed typed NativeRegistration without transferring
+ownership. Empty/malformed/unavailable registries advance source supersession
+and the human draft with explicit unavailable results and no policy queue.
+Draft-only execution bypasses native imports; the original transaction/deadline,
+partial counts and safe-replay behavior remain. Worker material/provider/readiness
+checks still occur independently before an actual mutation.
+
+The TikTok guard now consumes canonical `unattended_publication`. This corrects
+static cross-lane interface drift; it does not claim an observed live TikTok bug.
+Native TikTok has no neutral-text format, so the current conservative generated
+text policy remains refused by format validation. No media intake/eligibility
+expansion or peer707 product implementation was imported.
+
+New tracked tests cover the actual hook→shared queue→policy worker gate, no-client
+construction in an existing event loop, default draft-only native import denial,
+caller-owned native registration, malformed/forged/empty registry refusal with
+source supersession, configuration/API/material boundaries, legacy account
+refusal, pure/live rule identity and actual existing native delivery baselines.
+All fixtures are synthetic and inert; no operating/live acceptance is established.
+Fresh source-bound normal/-O verification and independent Spec/Standards reports
+are under external evidence `review-fixes-v1/`. These supplement the historical
+ab51f7b tests above, which remain bound to their original exact source and must
+not be represented as current full-suite/PG/frontend acceptance for the follow-up.
+No new migration, PG, web UI, deployment, grant, production flag/credential,
+provider or upload operation is part of this correction. Root owns combined707/
+worker/migration acceptance and must consume the new immutable follow-up head.
