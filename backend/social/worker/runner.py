@@ -34,7 +34,7 @@ class SocialWorker:
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="social-db")
         self.stop_event = asyncio.Event()
         self.tasks = set()
-        self._last_heartbeat = 0.0
+        self._last_heartbeat = None
         self._last_success = False
         self.failed = False
         self._running = False
@@ -81,7 +81,7 @@ class SocialWorker:
                         task.add_done_callback(self.tasks.discard)
                     active = bool(self.tasks or claims)
                     interval = self.config.active_heartbeat_seconds if active else self.config.idle_heartbeat_seconds
-                    if time.monotonic()-self._last_heartbeat >= interval:
+                    if self._last_heartbeat is None or time.monotonic()-self._last_heartbeat >= interval:
                         await self.db(self.repository.heartbeat, state="active" if active else "idle",
                                       active_claims=len(self.tasks), scanned=True,
                                       success=self._last_success)
