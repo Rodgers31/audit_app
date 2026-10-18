@@ -46,7 +46,7 @@ def retirement_pg():
     # Execute every checked-in revision's real upgrade in Alembic order. No
     # stamp/create_all shortcut, and no implicit production URL or .env load.
     scripts = ScriptDirectory(str(Path(__file__).resolve().parents[2] / 'alembic'))
-    chain = list(reversed(list(scripts.walk_revisions(base='base', head='a701b15a0001'))))
+    chain = list(reversed(list(scripts.walk_revisions(base='base', head='a706b17a0001'))))
     with engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
         for revision in chain:
             revision.module.upgrade()

@@ -38,6 +38,14 @@ def retirement_migration():
     return module
 
 
+def owned_migration():
+    path = Path(__file__).resolve().parents[2] / 'alembic/versions/a706b17a0001_owned_media_writes.py'
+    spec = importlib.util.spec_from_file_location('media_owned_migration', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def upgrade(engine, *, current=True):
     with engine.begin() as conn:
         with Operations.context(MigrationContext.configure(conn)):
@@ -49,6 +57,7 @@ def upgrade(engine, *, current=True):
             retained_migration().upgrade()
             if current:
                 retirement_migration().upgrade()
+                owned_migration().upgrade()
 
 
 def test_media_upgrade_rls_no_public_grants_empty_downgrade(pg_engine):

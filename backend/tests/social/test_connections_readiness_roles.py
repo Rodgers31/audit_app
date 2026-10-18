@@ -28,6 +28,7 @@ MIGRATIONS = (
     "b73e19a4f602_social_media_write_settlement.py",
     "a490b15a0001_retained_media_fences.py",
     "a701b15a0001_media_payload_retirement.py",
+    "a706b17a0001_owned_media_writes.py",
 )
 SCHEMA = "readiness_local"
 ROLE_NAMES = ("readiness_owner", "anon", "authenticated", "readiness_backend", "readiness_browser_parent")
@@ -139,7 +140,15 @@ def test_current_migrations_enable_rls_and_revoke_seeded_browser_defaults(readin
                                        "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace "
                                        "JOIN pg_roles r ON r.oid=c.relowner "
                                        "WHERE n.nspname=:schema AND c.relkind='r' ORDER BY c.relname"), {"schema": SCHEMA}).all()
-        assert len(rows) == 16
+        assert {row[0] for row in rows} == {
+            "social_accounts", "social_audit_events", "social_command_receipts",
+            "social_controls", "social_credentials", "social_media_assets",
+            "social_media_budgets", "social_media_deletions", "social_media_uploads",
+            "social_media_write_attempts", "social_media_write_owners", "social_oauth_flows",
+            "social_post_revisions", "social_post_targets", "social_posts",
+            "social_publications", "social_publish_attempts", "social_revision_assets",
+            "social_worker_heartbeats",
+        }
         assert all(rls and not forced and owner == "readiness_owner" for _, rls, forced, owner in rows)
         assert connection.execute(text("SELECT count(*) FROM pg_policies WHERE schemaname=:schema"), {"schema": SCHEMA}).scalar() == 0
         defaults = connection.execute(text("SELECT count(*) FROM pg_default_acl d,LATERAL aclexplode(d.defaclacl) a "

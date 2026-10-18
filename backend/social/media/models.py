@@ -51,6 +51,37 @@ class SocialMediaBudget(Base):
     __table_args__ = (CheckConstraint('bytes_used >= 0 AND pending_count >= 0', name='ck_social_media_budget_nonnegative'),)
 
 
+class SocialMediaWriteOwner(Base):
+    """Complete from allocation, never a backfill of historical writers."""
+    __tablename__ = 'social_media_write_owners'
+    asset_id = Column(Uuid(as_uuid=True), ForeignKey('social_media_uploads.asset_id'), primary_key=True)
+    generation = Column(Uuid(as_uuid=True), nullable=False, unique=True)
+    binding_hash = Column(String(64), nullable=False)
+    state = Column(Text, nullable=False)
+    receipt_id = Column(Uuid(as_uuid=True), unique=True)
+    command_hash = Column(String(64))
+    result_hash = Column(String(64))
+    created_at = created()
+    __table_args__ = (
+        CheckConstraint("state IN ('open','closed','settled')", name='ck_social_media_write_owner_state'),
+        CheckConstraint("(state = 'settled') = (receipt_id IS NOT NULL AND command_hash IS NOT NULL AND result_hash IS NOT NULL)", name='ck_social_media_write_owner_result'),
+    )
+
+
+class SocialMediaWriteAttempt(Base):
+    __tablename__ = 'social_media_write_attempts'
+    asset_id = Column(Uuid(as_uuid=True), ForeignKey('social_media_write_owners.asset_id'), primary_key=True)
+    kind = Column(Text, primary_key=True)
+    epoch = Column(BigInteger, primary_key=True)
+    operation_id = Column(Uuid(as_uuid=True), nullable=False, unique=True)
+    state = Column(Text, nullable=False)
+    created_at = created()
+    __table_args__ = (
+        CheckConstraint("kind IN ('grant','finalize') AND epoch > 0 AND state IN ('admitted','not_issued','issued','completed')", name='ck_social_media_write_attempt_state'),
+        CheckConstraint("(kind='grant' AND state IN ('admitted','not_issued','issued')) OR (kind='finalize' AND state IN ('admitted','completed'))", name='ck_social_media_write_attempt_kind'),
+    )
+
+
 class SocialMediaDeletion(Base):
     """Durable effect ledger. History is retained even after payload retirement."""
     __tablename__ = 'social_media_deletions'
