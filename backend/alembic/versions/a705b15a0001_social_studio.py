@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 
 revision = 'a705b15a0001'
-down_revision = 'a545b14a0001'
+down_revision = 'a703b15a0001'
 branch_labels = None
 depends_on = None
 TABLES = ('social_render_jobs', 'social_metric_collections', 'social_metric_observations')
