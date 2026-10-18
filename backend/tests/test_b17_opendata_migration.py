@@ -71,3 +71,35 @@ def test_new_history_prevents_downgrade(migrated,kind):
     result=migrate('downgrade','a705b15a0001')
     assert result.returncode!=0 and 'OpenData mapping history exists' in result.stderr
     with engine.connect() as c: assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e621b17a0001'
+
+
+def test_mapping_roundtrip_preserves_owned_media_history(migrated):
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy.orm import Session
+    from social.models import SocialMediaAsset
+    from social.media.models import SocialMediaUpload, SocialMediaWriteOwner
+    engine, migrate = migrated
+    assert migrate('upgrade', 'a706b17a0001').returncode == 0
+    actor, identity = uuid4(), uuid4()
+    now = datetime.now(timezone.utc)
+    with Session(engine) as db, db.begin():
+        db.add(SocialMediaAsset(id=identity, storage_provider='r2', bucket='inert', storage_key='original',
+            original_filename='inert.png', created_by=actor))
+        db.flush()
+        db.add(SocialMediaUpload(asset_id=identity, actor_id=actor, initiation_key=uuid4(),
+            request_hash='a'*64, quarantine_key='quarantine', declared_mime_type='image/png',
+            declared_size=1, expires_at=now+timedelta(minutes=5), grant_renewal_deadline=now+timedelta(hours=1),
+            reserved_bytes=2, reservation_released=0, quarantine_cleaned=0, finalization_settled=0))
+        db.flush()
+        db.add(SocialMediaWriteOwner(asset_id=identity, generation=uuid4(), binding_hash='b'*64, state='open'))
+    def snapshot():
+        with engine.connect() as connection:
+            return {name: connection.execute(text('SELECT * FROM '+name+' ORDER BY 1')).all() for name in
+                ('social_media_assets','social_media_uploads','social_media_write_owners','social_media_write_attempts')}
+    before = snapshot()
+    for operation, target in [('upgrade','head'), ('downgrade','a706b17a0001'), ('upgrade','head')]:
+        assert migrate(operation, target).returncode == 0
+        assert snapshot() == before
+    refused = migrate('downgrade', 'a705b15a0001')
+    assert refused.returncode != 0 and 'Owned write history prevents downgrade' in refused.stderr
+    assert snapshot() == before

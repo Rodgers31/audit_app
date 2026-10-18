@@ -20,9 +20,11 @@ from .service import MediaService
 from .operator import prepare_reconciliation, validate_report_page
 from .retention import RetainedRecovery, recover_retained
 from .deletion import PrivacyMediaDeletionCommand, execute_deletion
+from .reconciliation import OwnedReconciliationCommand, ReconcileOwnedUpload
+from .owned_writes import reconcile_owned
 
 
-def read_retirement_command(path):
+def read_retirement_command(path, *, model=PrivacyMediaDeletionCommand):
     # Nonblocking open precedes fstat so a FIFO/device cannot hold the operator
     # before its size bound or policy checks. The fd pins the checked object.
     descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
@@ -33,7 +35,7 @@ def read_retirement_command(path):
             encoded = source.read(4097)
         if len(encoded) > 4096:
             raise SocialError('INVALID_REQUEST', 'The retirement command exceeds its bounded metadata limit.', 422)
-        return PrivacyMediaDeletionCommand.model_validate_json(encoded)
+        return model.model_validate_json(encoded)
     finally:
         os.close(descriptor)
 
@@ -68,6 +70,7 @@ def main(argv=None):
     parser.add_argument('--expected-grant-epoch', type=int)
     parser.add_argument('--expected-finalization-epoch', type=int)
     parser.add_argument('--retire-command', help='Bounded JSON command with exact approved scope; original file is required for explicit retry')
+    parser.add_argument('--reconcile-owned-command', help='Bounded JSON command for complete owned write history; never supplies external proof')
     engine = None
     try:
         args = parser.parse_args(bounded_arguments(argv))
@@ -78,6 +81,14 @@ def main(argv=None):
             raise SocialError('INVALID_REQUEST', 'Reconciliation preparation is read-only and cannot be combined with cleanup.', 422)
         recovery = None
         retirement = None
+        owned = None
+        if args.reconcile_owned_command is not None:
+            if (args.allow_cleanup or args.prepare_reconciliation or args.after_asset_id is not None
+                    or args.recover_retained_upload is not None or args.retire_command is not None
+                    or any(value is not None for value in (args.actor_id, args.expected_version,
+                        args.expected_grant_epoch, args.expected_finalization_epoch))):
+                raise SocialError('INVALID_REQUEST', 'Owned reconciliation is one separate command.', 422)
+            owned = read_retirement_command(args.reconcile_owned_command, model=OwnedReconciliationCommand)
         if args.retire_command is not None:
             if (args.allow_cleanup or args.prepare_reconciliation or args.after_asset_id is not None
                     or args.recover_retained_upload is not None or any(value is not None for value in
@@ -100,6 +111,12 @@ def main(argv=None):
         if retirement is not None:
             with factory() as db:
                 result = execute_deletion(MediaService(db, runtime), retirement)
+        elif owned is not None:
+            from uuid import uuid4
+            with factory() as db:
+                body = ReconcileOwnedUpload.model_validate(owned.model_dump(exclude={'actor_id', 'asset_id', 'command_id'}))
+                result = reconcile_owned(MediaService(db, runtime), owned.actor_id, owned.asset_id,
+                    owned.command_id, body, uuid4())
         elif recovery is not None:
             from uuid import uuid4
             with factory() as db:

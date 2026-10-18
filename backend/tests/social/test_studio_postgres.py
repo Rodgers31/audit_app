@@ -33,7 +33,7 @@ def pg():
         raise ValueError('Use only owned rendering PostgreSQL database on port55402')
     engine = create_engine(url.set(query={'hostaddr': '127.0.0.1'}), pool_size=4, max_overflow=0)
     with engine.connect() as connection:
-        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == 'a705b15a0001'
+        assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one() == 'a706b17a0001'
     yield engine
     engine.dispose()
 

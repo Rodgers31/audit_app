@@ -112,9 +112,10 @@ def test_migrated_cleaned_ready_recovers_only_after_verified_fresh_delete(pg_eng
         assert row['quarantine_cleaned'] == 1 and row['pending_released'] == 1 - pending
         assert row['grant_epoch'] == 1 and row['grant_settled_epoch'] == 0 and row['grant_expires_at'] is None
         with Operations.context(MigrationContext.configure(conn)):
-            from test_media_migration_postgres import retained_migration, retirement_migration
+            from test_media_migration_postgres import retained_migration, retirement_migration, owned_migration
             retained_migration().upgrade()
             retirement_migration().upgrade()
+            owned_migration().upgrade()
 
     config = MediaConfig(enabled=True, endpoint=ENDPOINT, bucket=storage.bucket, access_key='fixture', secret_key='fixture')
     runtime = MediaRuntime(config, storage, LocalInspector(config))

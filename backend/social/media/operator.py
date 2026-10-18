@@ -14,13 +14,14 @@ from sqlalchemy import String, and_, case, cast, exists, func, or_, select, text
 from ..contracts import StrictModel
 from ..models import SocialMediaAsset, SocialRevisionAsset
 from ..service import SocialError, utc
-from .models import SocialMediaBudget, SocialMediaUpload, SocialMediaDeletion
+from .models import SocialMediaBudget, SocialMediaUpload, SocialMediaDeletion, SocialMediaWriteOwner
 from .identity import object_identity_matches
 
 Count = Annotated[int, Field(strict=True, ge=0)]
 
 
 class UploadObservation(StrictModel):
+    owned_writer_state: Optional[Literal['open', 'closed', 'settled']] = None
     write_protocol: Optional[str] = None
     payload_fenced_copies: Count = 0
     retained_fence_recorded: bool = False
@@ -146,16 +147,18 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
         referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
         query = select(SocialMediaAsset, SocialMediaUpload, referenced,
                        SocialMediaBudget.scope, SocialMediaBudget.bytes_used, SocialMediaBudget.pending_count,
-                       expected.c.bytes, expected.c.pending).join(
+                       expected.c.bytes, expected.c.pending, SocialMediaWriteOwner.state).join(
             SocialMediaUpload, SocialMediaAsset.id == SocialMediaUpload.asset_id).join(
             expected, expected.c.actor == SocialMediaUpload.actor_id).outerjoin(
             SocialMediaBudget, _actor_match(SocialMediaBudget.scope, SocialMediaUpload.actor_id, dialect)
-        ).order_by(SocialMediaUpload.asset_id).limit(limit + 1).execution_options(populate_existing=True)
+        ).outerjoin(SocialMediaWriteOwner, SocialMediaWriteOwner.asset_id == SocialMediaUpload.asset_id).order_by(SocialMediaUpload.asset_id).limit(limit + 1).execution_options(populate_existing=True)
         if after_asset_id is not None: query = query.where(SocialMediaUpload.asset_id > after_asset_id)
         rows = db.execute(query).all()
         uploads = []
-        for asset, upload, protected, actor_scope, actor_bytes, actor_pending, expected_bytes, expected_pending in rows[:limit]:
+        for asset, upload, protected, actor_scope, actor_bytes, actor_pending, expected_bytes, expected_pending, owned_state in rows[:limit]:
             codes = []
+            if owned_state:
+                codes.append('OWNED_WRITE_HISTORY_' + owned_state.upper())
             if not object_identity_matches(asset, upload):
                 codes.append('OBJECT_IDENTITY_MISMATCH')
             if upload.fenced_copies:
@@ -178,6 +181,7 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
             if upload.quarantine_cleaned or upload.reservation_released: codes.append('PRIOR_CLEANUP_REQUIRES_INVENTORY')
             if not codes: codes.append('SETTLED_QUARANTINE_CLEANUP_CANDIDATE' if asset.state == 'ready' else 'SETTLED_ORPHAN_CLEANUP_CANDIDATE')
             uploads.append(UploadObservation(
+                owned_writer_state=owned_state,
                 write_protocol=upload.write_protocol, payload_fenced_copies=upload.fenced_copies,
                 retained_fence_recorded=upload.retained_write_fence is not None,
                 asset_id=asset.id, upload_version=upload.version, grant_epoch=upload.grant_epoch,

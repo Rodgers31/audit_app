@@ -29,9 +29,10 @@ class MediaConfig:
     max_actor_assets: int = 1000
     max_total_assets: int = 10000
     retirement_policy_hashes: tuple[str, ...] = ()
+    owned_quiescence_enabled: bool = False
 
     def validate(self):
-        if any(type(value) is not bool for value in (self.enabled, self.retained_writes_enabled, self.fenced_retirement_enabled)):
+        if any(type(value) is not bool for value in (self.enabled, self.retained_writes_enabled, self.fenced_retirement_enabled, self.owned_quiescence_enabled)):
             raise ValueError('Media feature flag must be boolean')
         if self.ffprobe_path is not None and not isinstance(self.ffprobe_path, str):
             raise ValueError('Media inspection executable path must be a string or unset')
@@ -65,9 +66,10 @@ def config_from_environment(environ=None):
     enabled = values.get('SOCIAL_MEDIA_ENABLED', 'false').lower()
     retained = values.get('SOCIAL_MEDIA_RETAINED_WRITES_ENABLED', 'false')
     retirement = values.get('SOCIAL_MEDIA_FENCED_RETIREMENT_ENABLED', 'false')
+    owned = values.get('SOCIAL_MEDIA_OWNED_QUIESCENCE_ENABLED', 'false')
     policies = values.get('SOCIAL_MEDIA_RETIREMENT_POLICY_HASHES', '')
     if type(policies) is not str:
         raise ValueError('Invalid approved media retirement policy hashes')
-    if enabled not in {'true', 'false'} or retained not in {'true', 'false'} or retirement not in {'true', 'false'}:
+    if enabled not in {'true', 'false'} or retained not in {'true', 'false'} or retirement not in {'true', 'false'} or owned not in {'true', 'false'}:
         raise ValueError('Invalid media enablement')
-    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', ''), retained_writes_enabled=retained == 'true', fenced_retirement_enabled=retirement == 'true', retirement_policy_hashes=tuple(policies.split(',')) if policies else ()).validate()
+    return MediaConfig(enabled=enabled == 'true', endpoint=values.get('SOCIAL_MEDIA_R2_ENDPOINT', ''), bucket=values.get('SOCIAL_MEDIA_BUCKET', ''), access_key=values.get('SOCIAL_MEDIA_ACCESS_KEY', ''), secret_key=values.get('SOCIAL_MEDIA_SECRET_KEY', ''), ffprobe_path=values.get('SOCIAL_MEDIA_FFPROBE_PATH', ''), retained_writes_enabled=retained == 'true', fenced_retirement_enabled=retirement == 'true', retirement_policy_hashes=tuple(policies.split(',')) if policies else (), owned_quiescence_enabled=owned == 'true').validate()

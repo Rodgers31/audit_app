@@ -1,9 +1,9 @@
-"""Default-off official workbook mapping, after accepted Batch 15 schema."""
+"""Default-off official workbook mapping, after owned media history."""
 from alembic import op
 import sqlalchemy as sa
 
 revision = 'e621b17a0001'
-down_revision = 'a705b15a0001'
+down_revision = 'a706b17a0001'
 branch_labels = None
 depends_on = None
 PREVIOUS_MAPPING = "(source='oag' AND domain='audits') OR (source='treasury' AND domain='fiscal_summary') OR (source='cob' AND domain='counties_budget') OR (source='knbs' AND domain='population') OR (source='cra' AND domain='cra')"
