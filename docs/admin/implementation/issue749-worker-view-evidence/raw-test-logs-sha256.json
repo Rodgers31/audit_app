@@ -1,0 +1,12 @@
+{
+  "clean-normal.log": "f07837b929ee0a903f81c70be4ea561e10bb41ee49026a7a06e69d5b2432b536",
+  "clean-optimized.log": "5f0ea9f83a0153e6bded23671bdbc43e2711901c055017f9d8d95df913adc406",
+  "historical-normal.log": "27a33d9386b2d6aad007284c3520ba0ab264636edb452d49e25229895536c37f",
+  "historical-optimized.log": "b28ed86f04fe79b4822628442ab7e2014693c01b1603219f04b133ddb4232c21",
+  "minimum-client/clean-normal.log": "2c77705d57c58450682d552fb95c615781bc1f398d3f19bd910cd108fd22fdd1",
+  "minimum-client/clean-optimized.log": "d58caa2410581d8fe3efa6dea8fca1d766b107f3ed7e92f1efa56e2c51ce459a",
+  "minimum-client/historical-normal.log": "d6116dd356e6aa7bc6d379c764496f268df7bb1536a1f9c96f1e7adbd2a0c670",
+  "minimum-client/historical-optimized.log": "f38ca7c1afa27bd7a4ae3163099d654c4619012e3ae9ac3ebb46183a0a2b1db6",
+  "spec-normal.log": "f1adadb0029a55d148c47aae0900839f9edf56b3c0f82418dda18d87eb0988d8",
+  "spec-optimized.log": "8f14cdf1757d2f09a2f77b60fa877e98b7a6c277bb1304c47c5b00c9a70de8d5"
+}

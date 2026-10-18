@@ -18,3 +18,5 @@ Archived .py.txt producers bind to the exact local coordinator checkout and owne
 ## Separate deployment access prerequisite
 
 The current existing worker login also lacks nine current-contract SELECT reads and eight role-specific scw_read policies. That is separate from this code fix. No grants, credentials, policies, role attributes, schema migration, worker activation, provider request, publication or upload is changed by this PR. The existing operator installer still requires a separately approved narrow access update and full deployed verification. Actual-host custody/capacity and Meta/provider acceptance remain open. This PR must not be described as whole-system readiness.
+
+Raw console logs retain their exact bytes (including pytest whitespace) inside raw-test-logs.tar.gz; raw-test-logs-sha256.json verifies each extracted file. XML/JSON summaries remain directly readable.
