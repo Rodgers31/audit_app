@@ -4,6 +4,8 @@ Invoked with -I. No provider transport, shell, remote URLs, supplied font/filter
 expressions or executable templates. OS limits also bound an orphan after SIGKILL.
 """
 import json
+import hashlib
+import hmac
 import os
 from pathlib import Path
 import resource
@@ -24,6 +26,12 @@ def main():
     # Linux additionally supports a reliable total address-space ceiling.
     if sys.platform.startswith('linux'):
         resource.setrlimit(resource.RLIMIT_AS, (2 * 1024**3, 2 * 1024**3))
+    raw = sys.stdin.buffer.read(32769)
+    if (len(sys.argv) != 4 or not raw or len(raw) > 32768
+            or not hmac.compare_digest(hashlib.sha256(raw).hexdigest(), sys.argv[3])):
+        raise ValueError('RENDER_INPUT_INTEGRITY')
+    spec = json.loads(raw)['composition']
+
     def monitor_memory():
         # macOS does not implement a usable RLIMIT_DATA/AS. A private process
         # group census bounds aggregate RSS (sampled every 200 ms) on both OSes.
@@ -40,7 +48,6 @@ def main():
     threading.Thread(target=monitor_memory, daemon=True).start()
     from PIL import Image, ImageDraw, ImageFont
     work, ffmpeg = Path(sys.argv[1]), sys.argv[2]
-    spec = json.loads((work / 'input.json').read_text())
     font = ImageFont.load_default(size=30)
     small = ImageFont.load_default(size=22)
     facts = {f['id']: f for f in spec['facts']}

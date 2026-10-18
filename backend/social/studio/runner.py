@@ -2,6 +2,7 @@
 from dataclasses import asdict
 from datetime import datetime, timedelta, timezone
 import json
+import hashlib
 import os
 from pathlib import Path
 import signal
@@ -14,7 +15,8 @@ from sqlalchemy import select
 
 from ..media.config import MediaConfig
 from ..media.inspection import LocalInspector
-from ..models import SocialAuditEvent
+from ..models import SocialAuditEvent, SocialPostRevision
+from ..contracts import canonical_json
 from ..service import SocialError, utc
 from .contracts import Composition
 from .models import RenderJob
@@ -39,6 +41,12 @@ def run_job(factory, runtime, job_id):
         if db.scalar(select(RenderJob.id).where(RenderJob.state == 'running').limit(1)):
             raise SocialError('RENDER_BUSY', 'Another local render retains execution ownership.')
         spec = bound_composition(db, row)
+        revision = db.get(SocialPostRevision, row.revision_id)
+        payload = canonical_json({'composition': spec.model_dump(mode='json'),
+            'revision_hash': revision.content_hash}).encode('utf-8')
+        input_hash = row.input_hash
+        if len(payload) > 32768 or hashlib.sha256(payload).hexdigest() != input_hash:
+            raise SocialError('RENDER_INTEGRITY', 'The child input differs from its approved source.')
         row.state, row.token, row.started_at = 'running', token, datetime.now(timezone.utc)
         row.version += 1
     process, error, inspection, runtime_hash = None, None, None, None
@@ -49,7 +57,13 @@ def run_job(factory, runtime, job_id):
         (directory / 'input.json').write_text(spec.model_dump_json())
         runtime_hash = runtime.fingerprint()
         with (directory / 'tool.log').open('xb') as errors:
-            process = subprocess.Popen([sys.executable, '-I', '-B', str(Path(__file__).with_name('render_child.py')), str(directory), runtime.ffmpeg], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=errors, start_new_session=True, env={'PATH': '/usr/bin:/bin', 'LANG': 'C'})
+            process = subprocess.Popen([sys.executable, '-I', '-B', str(Path(__file__).with_name('render_child.py')), str(directory), runtime.ffmpeg, input_hash], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=errors, start_new_session=True, env={'PATH': '/usr/bin:/bin', 'LANG': 'C'})
+            # The child consumes these authenticated bytes once. The retained
+            # input.json is diagnostic only and is never rendered.
+            try:
+                process.stdin.write(payload)
+            finally:
+                process.stdin.close()
             deadline = time.monotonic() + TIMEOUT
             while process.poll() is None:
                 if time.monotonic() >= deadline:
