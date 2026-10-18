@@ -48,7 +48,7 @@ class NativeCapabilityAdmission(StrictModel):
             publishing_state=caps.feature_states.get("publishing", "unverified"), price_class=caps.price_class)
 
 
-def native_capability_matches(stored, current) -> bool:
+def native_capability_matches(stored, current, *, allow_paid=False) -> bool:
     """Missing/malformed state or any changed admission field blocks mutation."""
     try:
         prior = NativeCapabilityAdmission.from_snapshot(stored)
@@ -56,4 +56,4 @@ def native_capability_matches(stored, current) -> bool:
     except (ValueError, TypeError):
         return False
     return (prior.eligible and prior.adapter_available and prior.publishing_state == "supported"
-            and prior.price_class == "free" and prior == expected)
+            and (prior.price_class == "free" or allow_paid is True and prior.price_class == "paid") and prior == expected)

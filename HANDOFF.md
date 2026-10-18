@@ -1,5 +1,5 @@
 # Batch15 consolidated review stack
 
-This branch is the recovery/media lifecycle increment, grouping original PRs702,705,711. The original handoffs are preserved in docs/social-publishing/batch15-handoffs/.
+Delivery increment combines original PR707 with the resumed worker lane when delivered. Its base is the editorial increment (704/714/706/713), above lifecycle (702/705/711). Original handoffs are preserved in docs/social-publishing/batch15-handoffs/.
 
-No production migration, grants, activation or deployment. Publishing and uploads remain off. Source evidence and integration checks are recorded in FULL_PLAN_COMPLETION_B15/SESSION_RECOVERY_20261017. Later stack increments cover editorial, delivery and studio; their existence is not acceptance of this increment.
+Publishing and uploads remain off. No production migration, activation, grants, merge to main or deployment is included. Combined evidence and exact source bindings are in FULL_PLAN_COMPLETION_B15/SESSION_RECOVERY_20261017.

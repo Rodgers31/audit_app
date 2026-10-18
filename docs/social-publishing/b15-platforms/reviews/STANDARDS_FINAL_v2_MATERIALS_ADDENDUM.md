@@ -1,0 +1,13 @@
+# Final Standards v2 — materials correction addendum
+
+**No remaining actionable candidate Standards finding in the reviewed scope.** This addendum is the current review conclusion and supersedes whole-backend acceptance wording in the original final-v2 report. Historical bytes remain unchanged.
+
+Parent's broader suite exposed the shared image ceiling regression: permitting 100 MB video reads had also permitted an image caller to request 8,000,001 bytes. I reviewed the correction in `backend/social/worker/materials.py:217–220`: an explicit InspectedAsset guard, 100 MB ceiling only for MP4, 8 MB otherwise, strict integer request bound and asset-size check before storage work. No product edits were made by this reviewer.
+
+Independent current replay passed **707 normal Python tests**, **231 optimized Python tests**, and **5 real PostgreSQL native-flow cases** (Threads, TikTok direct/draft, target-only retry and X). Each captured unchanged backend source before and after execution; raw logs and JUnit retain unique testcase identities and no XPASS. This broadens the earlier selection by the 79 material regressions and exercises the corrected shared code through actual native publication fixtures.
+
+The frontend's frozen 57 platform tests plus 26 consent-binding cases remain source-current. PostgreSQL role tests previously passed 2 normal and 2 optimized; those role files are byte-identical, while their earlier whole-backend inventories are explicitly historical. The separate old lifecycle fixture remains a retained failure, never a pass. Parent owns full migration/worker and final aggregate qualification, accepted-baseline failure proofs, live/external acceptance and publication.
+
+Exact manifest comparison confirms **one backend file changed** after the original v2 runs: worker/materials.py. `STANDARDS_FINAL_v2_SUPERSESSION.json` binds old and new hashes and preserves former verdicts; output movement is attributed to target-source drift, not altered probe bytes. `STANDARDS_FINAL_v2_materials_validation.json` read back generator/helper/source/log/JUnit bytes and returned PASS for all five current cohorts. Current source manifests and exact commands are in the materials appendices beside this file.
+
+Initial P1/P2 corrections remain covered by the normal regression suite. No new Fowler heuristic concern rose to actionable severity. In-repo capture producers remain archival only: the parent must mark their historical instructions/outputs superseded. No provider traffic, paid operations, live actions, installs or production changes were performed; owned fixture schema cleanup assertions passed.

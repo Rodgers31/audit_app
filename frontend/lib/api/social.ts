@@ -10,7 +10,14 @@ export type TargetState = 'ready' | 'queued' | 'claimed' | 'dispatching' | 'proc
 export interface MediaReference { asset_id: string; alt_text?: string | null; caption_asset_id: string | null }
 export interface SocialContent { text: string; link: string | null; hashtags: string[]; media: MediaReference[] }
 export type SocialOverrides = { [K in keyof SocialContent]?: { mode: 'replace'; value: SocialContent[K] } };
-export interface DocumentTarget { account_id: string; format: SocialFormat; overrides: SocialOverrides }
+export interface TikTokPostOptions {
+  mode: 'direct' | 'draft'; privacy_level: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'FOLLOWER_OF_CREATOR' | 'SELF_ONLY';
+  disable_comment: boolean; disable_duet: boolean; disable_stitch: boolean; commercial_content: boolean;
+  is_brand_organic: boolean; is_branded_content: boolean; is_ai_generated: boolean;
+  upload_consent: boolean; music_usage_confirmed: boolean; branded_content_policy_confirmed: boolean;
+  creator_settings_checked_at: string; creator_settings_hash: string; photo_title: string;
+}
+export interface DocumentTarget { account_id: string; format: SocialFormat; overrides: SocialOverrides; tiktok_options?: TikTokPostOptions }
 export interface SocialDocument { schema_version: 1; master: SocialContent; targets: DocumentTarget[] }
 export interface SocialReference { url: string; label?: string | null }
 export interface SocialTarget {
@@ -55,13 +62,13 @@ export interface SocialCapabilities {
 export interface SocialIssue { code: string; field: string; message: string; account_id?: string }
 export interface InspectedAsset {
   asset_id: string; sha256: string; mime_type: string; byte_size: number;
-  width: number | null; height: number | null; duration_ms: number | null;
+  width: number | null; height: number | null; duration_ms: number | null; frame_rate_milli_fps?: number;
   alt_text: string | null; caption_asset_id: string | null; caption_sha256: string | null;
 }
 export interface ResolvedPostPayload {
   schema_version: 1; account_id: string; platform: SocialPlatform; api_product: string;
   external_account_id: string; format: SocialFormat; text: string; link: string | null;
-  hashtags: string[]; assets: InspectedAsset[]; visibility: 'public'; disclosures: string[];
+  hashtags: string[]; assets: InspectedAsset[]; visibility: 'public'; disclosures: string[]; tiktok_options?: TikTokPostOptions;
   capability_version: string; evidence_hash: string; content_hash: string;
 }
 export interface TargetValidation {
@@ -122,6 +129,11 @@ const targetStates: TargetState[] = ['ready', 'queued', 'claimed', 'dispatching'
 const editorialStates: EditorialState[] = ['draft', 'pending_review', 'approved', 'rejected', 'archived'];
 function media(v: unknown): MediaReference[] { return arr(v).map(item => { const o = obj(item); return { asset_id: str(o.asset_id), caption_asset_id: nullable(o.caption_asset_id), ...(o.alt_text === undefined ? {} : { alt_text: nullable(o.alt_text) }) }; }); }
 function content(v: unknown): SocialContent { const o = obj(v); return { text: str(o.text), link: nullable(o.link), hashtags: arr(o.hashtags).map(str), media: media(o.media) }; }
+export function decodeTikTokOptions(v: unknown): TikTokPostOptions {
+  const o = exactObject(v, ['mode','privacy_level','disable_comment','disable_duet','disable_stitch','commercial_content','is_brand_organic','is_branded_content','is_ai_generated','upload_consent','music_usage_confirmed','branded_content_policy_confirmed','creator_settings_checked_at','creator_settings_hash','photo_title']);
+  return { mode: oneOf(o.mode,['direct','draft']), privacy_level: oneOf(o.privacy_level,['PUBLIC_TO_EVERYONE','MUTUAL_FOLLOW_FRIENDS','FOLLOWER_OF_CREATOR','SELF_ONLY']),
+    disable_comment: bool(o.disable_comment), disable_duet: bool(o.disable_duet), disable_stitch: bool(o.disable_stitch), commercial_content: bool(o.commercial_content), is_brand_organic: bool(o.is_brand_organic), is_branded_content: bool(o.is_branded_content), is_ai_generated: bool(o.is_ai_generated), upload_consent: bool(o.upload_consent), music_usage_confirmed: bool(o.music_usage_confirmed), branded_content_policy_confirmed: bool(o.branded_content_policy_confirmed), creator_settings_checked_at: timestamp(o.creator_settings_checked_at), creator_settings_hash: hash(o.creator_settings_hash), photo_title: boundedText(o.photo_title,90) };
+}
 export function decodeDocument(v: unknown): SocialDocument {
   const o = obj(v); if (o.schema_version !== 1) throw contractError();
   return { schema_version: 1, master: content(o.master), targets: arr(o.targets).map(item => {
@@ -134,7 +146,7 @@ export function decodeDocument(v: unknown): SocialDocument {
       if (key === 'hashtags') overrides.hashtags = { mode: 'replace', value: arr(field.value).map(str) };
       if (key === 'media') overrides.media = { mode: 'replace', value: media(field.value) };
     }
-    return { account_id: str(t.account_id), format: oneOf(t.format, formats), overrides };
+    return { account_id: str(t.account_id), format: oneOf(t.format, formats), overrides, ...(t.tiktok_options === undefined ? {} : { tiktok_options: decodeTikTokOptions(t.tiktok_options) }) };
   }) };
 }
 function decodeTarget(v: unknown): SocialTarget {
@@ -194,17 +206,17 @@ export function decodePost(v: unknown): SocialPost {
 }
 function issues(v: unknown): SocialIssue[] { return arr(v).map(item => { const o = obj(item); return { code: str(o.code), field: str(o.field), message: str(o.message), ...(typeof o.account_id === 'string' ? { account_id: o.account_id } : {}) }; }); }
 export function decodeInspectedAsset(v: unknown): InspectedAsset {
-  const o = exactObject(v, ['asset_id', 'sha256', 'mime_type', 'byte_size', 'width', 'height', 'duration_ms', 'alt_text', 'caption_asset_id', 'caption_sha256']);
-  return { asset_id: uuid(o.asset_id), sha256: hash(o.sha256), mime_type: str(o.mime_type), byte_size: integer(o.byte_size), width: nullableInteger(o.width), height: nullableInteger(o.height), duration_ms: nullableInteger(o.duration_ms), alt_text: nullable(o.alt_text), caption_asset_id: o.caption_asset_id === null ? null : uuid(o.caption_asset_id), caption_sha256: o.caption_sha256 === null ? null : hash(o.caption_sha256) };
+  const o = exactObject(v, ['asset_id', 'sha256', 'mime_type', 'byte_size', 'width', 'height', 'duration_ms', 'alt_text', 'caption_asset_id', 'caption_sha256', ...(Object.prototype.hasOwnProperty.call(obj(v), 'frame_rate_milli_fps') ? ['frame_rate_milli_fps'] : [])]);
+  return { ...(o.frame_rate_milli_fps === undefined ? {} : { frame_rate_milli_fps: integer(o.frame_rate_milli_fps) }), asset_id: uuid(o.asset_id), sha256: hash(o.sha256), mime_type: str(o.mime_type), byte_size: integer(o.byte_size), width: nullableInteger(o.width), height: nullableInteger(o.height), duration_ms: nullableInteger(o.duration_ms), alt_text: nullable(o.alt_text), caption_asset_id: o.caption_asset_id === null ? null : uuid(o.caption_asset_id), caption_sha256: o.caption_sha256 === null ? null : hash(o.caption_sha256) };
 }
 export function decodeResolvedPostPayload(v: unknown): ResolvedPostPayload {
-  const o = exactObject(v, ['schema_version', 'account_id', 'platform', 'api_product', 'external_account_id', 'format', 'text', 'link', 'hashtags', 'assets', 'visibility', 'disclosures', 'capability_version', 'evidence_hash', 'content_hash']);
+  const o = exactObject(v, ['schema_version', 'account_id', 'platform', 'api_product', 'external_account_id', 'format', 'text', 'link', 'hashtags', 'assets', 'visibility', 'disclosures', 'capability_version', 'evidence_hash', 'content_hash', ...(Object.prototype.hasOwnProperty.call(obj(v), 'tiktok_options') ? ['tiktok_options'] : [])]);
   if (o.schema_version !== 1) throw contractError();
   const external_account_id = str(o.external_account_id);
   if (!external_account_id.trim()) throw contractError();
   const hashtags = arr(o.hashtags);
   if (hashtags.length > 50) throw contractError();
-  return { schema_version: 1, account_id: uuid(o.account_id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), api_product: str(o.api_product), external_account_id, format: oneOf(o.format, formats), text: boundedText(o.text, 20_000), link: resolvedLink(o.link), hashtags: hashtags.map(value => boundedText(value, 100, 1)), assets: arr(o.assets).map(decodeInspectedAsset), visibility: oneOf(o.visibility, ['public']), disclosures: arr(o.disclosures).map(str), capability_version: str(o.capability_version), evidence_hash: hash(o.evidence_hash), content_hash: hash(o.content_hash) };
+  return { ...(o.tiktok_options === undefined ? {} : { tiktok_options: decodeTikTokOptions(o.tiktok_options) }), schema_version: 1, account_id: uuid(o.account_id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), api_product: str(o.api_product), external_account_id, format: oneOf(o.format, formats), text: boundedText(o.text, 20_000), link: resolvedLink(o.link), hashtags: hashtags.map(value => boundedText(value, 100, 1)), assets: arr(o.assets).map(decodeInspectedAsset), visibility: oneOf(o.visibility, ['public']), disclosures: arr(o.disclosures).map(str), capability_version: str(o.capability_version), evidence_hash: hash(o.evidence_hash), content_hash: hash(o.content_hash) };
 }
 export function decodeValidation(v: unknown): SocialValidation {
   const o = obj(v); return { valid: bool(o.valid), rules_version: oneOf(o.rules_version, ['social-v1']), errors: issues(o.errors), warnings: issues(o.warnings), targets: arr(o.targets).map(item => {

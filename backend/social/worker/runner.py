@@ -69,6 +69,8 @@ class SocialWorker:
             while not self.stop_event.is_set():
                 try:
                     await self.db(self.repository.recover_expired)
+                    if any(platform in {'threads','tiktok'} for platform,_ in self.adapters):
+                        await self.db(self.repository.process_provider_events)
                     free = max(0, self.config.external_slots-len(self.tasks))
                     claims = await self.db(self.repository.claim_due, free) if free else []
                     for claim in claims:
@@ -166,7 +168,8 @@ class SocialWorker:
                 return
             reconciling = claim.previous_state == "reconciling"
             if reconciling:
-                plan = OperationPlan(operation_id=uuid4(), operation="reconcile",
+                recovery_plan = getattr(adapter, 'reconciliation_operation', None)
+                plan = OperationPlan.model_validate(recovery_plan(payload, snapshot['checkpoint'])) if callable(recovery_plan) else OperationPlan(operation_id=uuid4(), operation="reconcile",
                                      publication_capable=False, safe_replay_class="read_only",
                                      checkpoint=snapshot["checkpoint"])
             else:
@@ -210,8 +213,9 @@ class SocialWorker:
             media_access = self.media_access.for_payload(payload) if self.media_access else None
             try:
                 if reconciling:
+                    bound_reconcile = getattr(adapter, 'reconcile_operation', None)
                     remote = await asyncio.wait_for(
-                        adapter.reconcile(payload, snapshot["checkpoint"], snapshot["last_attempt"], credential, media_access),
+                        bound_reconcile(payload, plan, snapshot['last_attempt'], credential, media_access) if callable(bound_reconcile) else adapter.reconcile(payload, snapshot["checkpoint"], snapshot["last_attempt"], credential, media_access),
                         timeout=plan.timeout_seconds)
                 else:
                     remote = await asyncio.wait_for(adapter.execute(payload, plan, credential, media_access),
@@ -338,6 +342,13 @@ class SocialWorker:
                 result = safe.model_copy(update={"error_code": policy.reason})
         elif reconciliation.outcome == "still_processing":
             state, action = "processing", "poll"
+            delay = self._delay(reconciliation.next_action_at, snapshot, 30)
+        elif (reconciliation.outcome == 'still_reconciling' and reconciliation.next_action_at is not None
+              and reconciliation.next_action_at.tzinfo is not None
+              and 0 < (reconciliation.next_action_at-snapshot['database_now']).total_seconds() <= 301):
+            # Wait only for an explicitly bounded read window. This state never
+            # authorizes the original mutation or treats the provider as absent.
+            state, action = 'reconciling', 'reconcile'
             delay = self._delay(reconciliation.next_action_at, snapshot, 30)
         else:
             state, action, delay = "outcome_unknown", None, None

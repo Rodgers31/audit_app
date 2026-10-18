@@ -13,6 +13,7 @@ from ..media.runtime import MediaRuntime, build_media_runtime
 from ..media.storage import R2Storage
 from ..service import SocialError
 from .native_runtime import create_native_registration
+from ..platform_runtime import load_platform_settings
 
 
 def load_media_runtime(values):
@@ -21,17 +22,20 @@ def load_media_runtime(values):
 
 def validate_worker_native_environment(values):
     """Pure preflight before reserving authority or constructing any SDK."""
-    if (values.get('SOCIAL_NATIVE_ENABLED', 'false') != 'true'
-            or values.get('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED', 'false') != 'true'):
+    platforms = load_platform_settings(values)
+    if values.get('SOCIAL_NATIVE_ENABLED', 'false') == 'true':
+        if values.get('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED', 'false') != 'true':
+            raise ValueError('Native worker gates are not accepted')
+        load_meta_config(values).require_ready()
+    elif not any(config.ready for config in platforms.adapters.values()):
         raise ValueError('Native worker gates are not accepted')
-    load_meta_config(values).require_ready()
     if not config_from_environment(values).enabled:
         raise ValueError('Private media gates are not accepted')
 
 
 async def _close(registration, transports, runtime):
     failed = cancelled = False
-    closers = [registration.close] if registration is not None else [item.aclose for item in transports]
+    closers = ([registration.close] if registration is not None else []) + [item.aclose for item in transports]
     for close in closers:
         try:
             await close()
@@ -55,6 +59,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
     transports = []
     invalid = False
     try:
+        platforms = load_platform_settings(values)
         enabled = values.get('SOCIAL_NATIVE_ENABLED', 'false')
         verified = values.get('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED', 'false')
         if enabled not in ('true', 'false') or verified not in ('true', 'false'):
@@ -84,6 +89,28 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
                 cipher=CredentialCipher(config.active_key_version, config.encryption_keys),
                 storage=selected_runtime.storage, storage_origin=selected_runtime.storage.origin,
                 transport_factory=transport)
+            transports.clear()  # Successful registration owns these transports.
+        if any(config.ready for config in platforms.adapters.values()):
+            from .native_runtime import create_platform_registration, combine_native_registrations
+            selected_runtime = shared_media_runtime or runtime
+            if selected_runtime is None:
+                runtime = selected_runtime = load_media_runtime(values)
+            if not isinstance(selected_runtime,MediaRuntime) or not selected_runtime.config.enabled or not isinstance(selected_runtime.storage,R2Storage):
+                raise ValueError()
+            if transport_factory is None:
+                import httpx
+                transport_factory = lambda: httpx.AsyncHTTPTransport(retries=0,trust_env=False,
+                    limits=httpx.Limits(max_connections=2,max_keepalive_connections=2))
+            def platform_transport():
+                result = transport_factory()
+                transports.append(result)
+                return result
+            added = create_platform_registration(engine,platforms.adapters,cipher=platforms.cipher,
+                storage=selected_runtime.storage,storage_origin=selected_runtime.storage.origin,
+                transport_factory=platform_transport,connection_configurations=platforms.connections,
+                tiktok_verified_origins=platforms.tiktok_verified_origins)
+            registration = combine_native_registrations(registration,added) if registration is not None else added
+            transports.clear()
     except Exception:
         # Raise after leaving the handler; secret-bearing decoder/SDK exceptions
         # must not survive as __context__ on a public startup error.
@@ -93,7 +120,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
         if cancelled:
             raise asyncio.CancelledError()
         raise SocialError('NATIVE_CONFIGURATION_INVALID',
-            'Explicit validated Meta and private-media configuration is required.', 503)
+            'Explicit validated provider and private-media configuration is required.', 503)
     try:
         yield registration
     finally:
@@ -105,10 +132,20 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
             raise SocialError('NATIVE_SHUTDOWN_FAILED', 'Native resources could not all be closed.', 503)
 
 
+def _detach_owned_state(state, installed):
+    """Never erase a successor owner's replacement while closing this context."""
+    for name, value in installed.items():
+        if getattr(state, name, None) is value:
+            delattr(state, name)
+
+
 @asynccontextmanager
 async def installed_native_runtime(app, engine, **kwargs):
     if hasattr(app.state, 'social_native_registration') or hasattr(app.state, 'social_media_runtime'):
         raise SocialError('NATIVE_CONFIGURATION_INVALID', 'Native adapters are already installed.', 503)
+    if hasattr(app.state,'social_platform_connections_config') or hasattr(app.state,'social_platform_events_config'):
+        raise SocialError('PLATFORM_CONFIGURATION_INVALID','Platform configuration is already installed.',503)
+    installed = {}
     values = kwargs.get('environ')
     values = os.environ if values is None else values
     try:
@@ -116,21 +153,23 @@ async def installed_native_runtime(app, engine, **kwargs):
     except Exception:
         shared = MediaRuntime(MediaConfig(), None, None, 'Media storage or inspection configuration is unavailable.')
     try:
-        app.state.social_media_runtime = shared
+        platforms = load_platform_settings(values)
+        for name, value in (('social_platform_connections_config', platforms.connections),
+                ('social_platform_events_config', platforms.events), ('social_media_runtime', shared)):
+            setattr(app.state, name, value)
+            installed[name] = value
         async with native_runtime(engine, shared_media_runtime=shared, **kwargs) as registration:
             if registration is not None:
                 app.state.social_native_registration = registration
+                installed['social_native_registration'] = registration
             try:
                 yield registration
             finally:
-                if registration is not None and getattr(app.state, 'social_native_registration', None) is registration:
-                    del app.state.social_native_registration
-                if getattr(app.state, 'social_media_runtime', None) is shared:
-                    del app.state.social_media_runtime
+                _detach_owned_state(app.state, installed)
     finally:
         pending_cancel = isinstance(sys.exc_info()[1], asyncio.CancelledError)
-        if getattr(app.state, 'social_media_runtime', None) is shared:
-            del app.state.social_media_runtime
+        # Also runs when native_runtime.__aenter__ refuses before yielding.
+        _detach_owned_state(app.state, installed)
         failed, cancelled = await _close(None, [], shared)
         if cancelled or pending_cancel:
             raise asyncio.CancelledError()
