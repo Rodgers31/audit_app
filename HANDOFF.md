@@ -1,5 +1,5 @@
-# Batch15 consolidated review stack
+# Batch15 consolidated editorial review
 
-This branch is the recovery/media lifecycle increment, grouping original PRs702,705,711. The original handoffs are preserved in docs/social-publishing/batch15-handoffs/.
+Draft716 groups original704/714/706/713 after lifecycle715. Original handoffs and policy registry correction are archived in docs/social-publishing/batch15-handoffs/. Pure configured validation reaches the actual postcommit hook without constructing SDK clients; provider-worker admission remains separate.
 
-No production migration, grants, activation or deployment. Publishing and uploads remain off. Source evidence and integration checks are recorded in FULL_PLAN_COMPLETION_B15/SESSION_RECOVERY_20261017. Later stack increments cover editorial, delivery and studio; their existence is not acceptance of this increment.
+Neutral availability producer719 remains a coding hold in a separate owned session. Financial budget claims remain human-only. Publishing and uploads stay off; no production migration, activation, grants, merge to main or deployment. Source-bound combined evidence is in FULL_PLAN_COMPLETION_B15/SESSION_RECOVERY_20261017.

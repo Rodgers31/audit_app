@@ -14,6 +14,21 @@ rolls back the nested policy work, preserves the pending human draft and records
 and roll back the source transaction. Existing post-commit caller integration
 and real qualified source data remain dependencies of the event boundary.
 
+The actual post-commit `maybe_generate_committed` hook now passes a native
+capability/content-validation mapping into SocialService. Standalone ETL uses
+the exact pure Meta rules also inherited by delivery adapters, behind explicit
+native operational flags, validated Meta app configuration and the pinned API
+version. It constructs no HTTP/storage client, worker, scheduler or event loop;
+web media-upload enablement is unnecessary for this no-media policy slice.
+Persisted account admission must still match the current native rules, so this
+mapping cannot upgrade a legacy or unverified account. An existing caller can
+instead lend its typed installed NativeRegistration; its lifetime stays owned
+by that caller. Malformed/empty/unavailable registries preserve the source
+cursor, supersession and human draft and report an explicit unavailable result.
+Draft-only calls never import that registry. Local validation availability does
+not establish worker startup, private-media, credential or provider readiness;
+fresh mutation-time admission remains the worker's responsibility.
+
 ## Durable authority and operator ports
 
 All endpoints use the existing admin authentication, private/no-store responses,
@@ -73,6 +88,9 @@ budget. Paid reservations are not invented; peer platform code is not imported.
 TikTok additionally requires explicit human acceptance of its exact API product
 for unattended use plus a supported unattended capability. This grants no product
 access and is separate from ordinary authenticated account connectivity.
+The canonical capability key is `unattended_publication`, matching the platform
+adapter contract. That guard does not add TikTok text support: the current
+generated factual text still fails the native format gate before this guard.
 
 The global SocialControls ordering lock serializes policy selection, rule
 supersession, source supersession, authorization/reservations and worker permits.

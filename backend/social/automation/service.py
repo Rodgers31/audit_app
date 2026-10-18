@@ -90,6 +90,11 @@ def runtime_gates(db, cfg, snapshot, *, scheduling=False, dispatch=False):
     require(selected is not None and selected.snapshot_id == snapshot.id, 'POLICY_SELECTION_CHANGED')
 
 
+def require_unattended_product(account, cap, evidence):
+    require(evidence is not None and evidence.evidence.get('tiktok_unattended_product') == account.api_product
+        and cap.feature_states.get('unattended_publication') == 'supported', 'TIKTOK_UNATTENDED_UNACCEPTED')
+
+
 def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_account=None):
     db = svc.db
     verify_generated_revision(db, post, revision, lock=False)
@@ -132,7 +137,7 @@ def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_
         require(account.platform != 'x' and cap.price_class == 'free', 'BUDGET_UNAVAILABLE')
         if account.platform == 'tiktok':
             evidence = fresh(db, OperatingEvidence, snapshot.operating_evidence_id)
-            require(evidence.evidence.get('tiktok_unattended_product') == account.api_product and cap.feature_states.get('unattended_publishing') == 'supported', 'TIKTOK_UNATTENDED_UNACCEPTED')
+            require_unattended_product(account, cap, evidence)
     return result, accounts, min(expiry, utc(snapshot.valid_until)), event
 
 
