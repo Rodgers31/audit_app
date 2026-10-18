@@ -60,6 +60,8 @@ class ReelObservation(StrictModel):
     def exact_product_url(self):
         if self.api_product!=PRODUCTS[self.platform]:
             raise ValueError('Observation identifies a different Meta product')
+        if any(c.isspace() or ord(c)<32 or ord(c)==127 for c in self.remote_url):
+            raise ValueError('Use the exact canonical Reel permalink')
         parsed = urlsplit(self.remote_url)
         if (parsed.scheme!='https' or parsed.netloc not in {self.platform+'.com','www.'+self.platform+'.com'}
                 or parsed.query or parsed.fragment):

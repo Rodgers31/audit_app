@@ -154,3 +154,18 @@ def test_completed_operator_contract_exposes_bounded_reels_with_manual_confirmat
     assert caps.feature_states['reel_operator_confirmation']=='supported'
     assert caps.feature_states['reel_automatic_confirmation']=='unsupported'
     assert provider.validate(value,caps).valid
+
+
+@pytest.mark.parametrize('url',[
+    'https://www.facebook.com/re\nel/701',
+    '\x00https://www.facebook.com/reel/701',
+    ' https://www.facebook.com/reel/701',
+    'https://www.facebook.com/reel/701\n',
+    'https://www.instagram.com/re\tel/fixture/',
+])
+def test_raw_noncanonical_url_is_refused_before_parser_normalization(db,url):
+    platform='instagram' if 'instagram' in url else 'facebook'
+    target_id=seed(db,platform)
+    context=MetaReelsRecoveryService(db).context(target_id)
+    with pytest.raises(ValueError,match='canonical'):
+        observation(context,remote_url=url)
