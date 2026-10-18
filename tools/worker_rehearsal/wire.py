@@ -5,18 +5,24 @@ import socket
 import threading
 import time
 
-totals = dict(client_bytes=0, server_bytes=0, connections=0, active=0, peak_active=0)
+totals = dict(client_bytes=0, server_bytes=0, connections=0, active=0, peak_active=0, upstream_failures=0)
 lock = threading.Lock()
 
 
 def serve(client):
-    upstream = socket.create_connection(('b15-worker-db', 5432), timeout=5)
-    upstream.settimeout(None)
+    upstream = None
     with lock:
         totals['connections'] += 1
         totals['active'] += 1
         totals['peak_active'] = max(totals['peak_active'], totals['active'])
     try:
+        try:
+            upstream = socket.create_connection(('b15-worker-db', 5432), timeout=5)
+            upstream.settimeout(None)
+        except OSError:
+            with lock:
+                totals['upstream_failures'] += 1
+            return
         while True:
             readable, _, _ = select.select([client, upstream], [], [], 1)
             for source in readable:
@@ -28,10 +34,15 @@ def serve(client):
                 with lock:
                     totals['client_bytes' if source is client else 'server_bytes'] += len(data)
     finally:
-        client.close()
-        upstream.close()
-        with lock:
-            totals['active'] -= 1
+        try:
+            client.close()
+        finally:
+            try:
+                if upstream is not None:
+                    upstream.close()
+            finally:
+                with lock:
+                    totals['active'] -= 1
 
 
 def report():

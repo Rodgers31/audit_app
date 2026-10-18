@@ -28,7 +28,7 @@ def setup(db, config, graph, tmp_path):
     ledger_dir = tmp_path / 'custody'
     ledger_dir.mkdir(mode=0o700)
     ledger = FileDeletionLedger(ledger_dir, b'k' * 32)
-    cfg = PrivacyWorkflowConfig(True, True, (POLICY,), (APPROVER, ACTOR))
+    cfg = PrivacyWorkflowConfig(True, True, (POLICY,), (APPROVER, ACTOR), app_id=config.app_id)
     cipher = CredentialCipher(config.active_key_version, config.encryption_keys)
     svc = PrivacyWorkflow(db, cfg, cipher=cipher, ledger=ledger)
     command = PrivacyProposal(receipt_id=receipt_id, policy_key=POLICY[0], policy_hash=POLICY[1],

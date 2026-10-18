@@ -25,7 +25,7 @@ def evidence():
     samples = [dict(memory=200 * 1024 ** 2, peak=250 * 1024 ** 2, elapsed=1 + i * 8.9,
         cpu={'usage_usec': str(1000000 + i * 100000)}, oom={'oom_kill': '0'},
         processes=deepcopy(processes)) for i in range(21)]
-    before = dict(wall_started=1, measurement_started=1, server_bytes=100, client_bytes=100, active=1, connections=1, peak_active=1)
+    before = dict(wall_started=1, measurement_started=1, server_bytes=100, client_bytes=100, active=1, connections=1, peak_active=1, upstream_failures=0)
     after = dict(before, wall_completed=181, measurement_completed=181, server_bytes=1000, client_bytes=1000)
     census = dict(connections=1, statements=[dict(query='SELECT fixture', calls=2)],
         statements_before=[dict(query='SELECT fixture',calls=1)],

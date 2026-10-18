@@ -386,6 +386,8 @@ print(json.dumps(dict(memory=int((p/'memory.current').read_text()),peak=int((p/'
             time.sleep(THRESHOLDS['minimum_idle_seconds'])
             after = self.snapshot(case, 'steady', database)
             wire_after = self.wire()
+            from qualification import wire_failure_free
+            wire_failure_free(wire_before, wire_after)
             bytes_out = wire_after['server_bytes'] - wire_before['server_bytes']
             require(type(bytes_out) is int and 0 < bytes_out * (30 * 86400 / 65)
                     <= THRESHOLDS['idle_monthly_server_bytes'], 'Idle protocol egress budget failed')

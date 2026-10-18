@@ -79,3 +79,10 @@ rerun into a fresh directory after a repair. A partial `--cases` run qualifies
 only its named cases; it cannot establish all eight or full capacity.
 
 Use `--optimized --cases idle` for a separate real native/control Python-O release/rollback cohort. This option never reads optimization mode from the host environment. The runner records optimization readback in every controller result and the resolved native environment.
+
+
+Qualification requires an exact completion for every observed provider/storage
+request start and explicit upstream-failure counters in both wire snapshots.
+The failure count must remain unchanged during busy and idle measurement.
+Older receipts without these fields remain historical evidence; they cannot
+qualify the current recorder. Run a fresh owned cohort before activation.

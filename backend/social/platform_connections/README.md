@@ -84,10 +84,14 @@ alteration, refresh rotation and concurrent disconnect during creator reads.
 Independent Spec/Standards review and full PostgreSQL migration replay are owned
 by the parent implementation lane; this README does not claim either passed.
 
-`connections-verification.json` in the lane documentation records generating
-tool hash, current source hashes and the full normal/optimized test output. Run
-`backend/tests/social/platform_connections_verify.py --output <receipt-path>`
-with the existing supported Python interpreter to refresh it after source edits.
+`connections-verification.json` and its old recorder are historical provenance,
+not supported acceptance tools. Do not execute
+`backend/tests/social/platform_connections_verify.py` to refresh them. Follow
+[the append-only evidence status](../../../docs/social-publishing/b15-platforms/EVIDENCE_STATUS.md)
+and [the final verification flow](../../../docs/social-publishing/b15-platforms/VERIFICATION.md):
+use a fresh run directory, explicit inert environment, source hashes before/after,
+raw logs, JUnit/structured results and independently read-back receipts. Preserve
+prior failed and superseded artifacts.
 
 Observed red regressions during implementation, before correction:
 
