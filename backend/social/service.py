@@ -83,13 +83,27 @@ class SocialService:
             self.db.flush()
             now = self.now()
             resource_id = result.get("id") or result.get("post_id")
-            self.db.add(SocialCommandReceipt(actor_key=str(actor), route_key=route, idempotency_key=key, request_hash=request_hash, resource_id=UUID(resource_id) if resource_id else None, http_status=status, response=result, expires_at=now + timedelta(days=30)))
+            receipt = SocialCommandReceipt(actor_key=str(actor), route_key=route, idempotency_key=key, request_hash=request_hash, resource_id=UUID(resource_id) if resource_id else None, http_status=status, response=result, expires_at=now + timedelta(days=30))
+            self.db.add(receipt)
             self.db.flush()
+            if self.db.bind.dialect.name == "postgresql":
+                # Settle deferred receipt effects before checking durable success.
+                self.db.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+            # A BEFORE trigger may suppress or alter an insert without raising.
+            # A command is only idempotent when its exact receipt was persisted.
+            stored = self.db.execute(select(SocialCommandReceipt.__table__).where(SocialCommandReceipt.id == receipt.id)).mappings().first()
+            fields = ('actor_key', 'route_key', 'idempotency_key', 'request_hash', 'resource_id', 'http_status')
+            if (stored is None or any(stored[name] != getattr(receipt, name) for name in fields)
+                    or canonical_hash(stored['response']) != canonical_hash(result)
+                    or iso(stored['expires_at']) != iso(receipt.expires_at)):
+                raise SocialError('COMMAND_RECEIPT_FAILED', 'The durable command receipt could not be confirmed. The transaction was rolled back; retry the same command.', 503)
         log_event("social.command_committed", request_id=request_id, post_id=resource_id, action=route, result="committed")
         return status, result
 
     def audit(self, action, *, post=None, target=None, previous=None, new=None, reason=None, details=None):
-        self.db.add(SocialAuditEvent(post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind=self.actor_kind, action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id)))
+        event = SocialAuditEvent(id=uuid4(), post_id=post.id if post else None, target_id=target.id if target else None, account_id=target.account_id if target else None, actor_id=self.actor, actor_kind=self.actor_kind, action=action, previous_state=previous, new_state=new, reason=reason, details=details or {}, request_id=str(self.request_id))
+        self.db.add(event)
+        return event
 
     def _post(self, post_id):
         post = self.db.get(SocialPost, post_id)
@@ -109,7 +123,7 @@ class SocialService:
     def _targets(self, publication):
         return list(self.db.scalars(select(SocialPostTarget).where(SocialPostTarget.publication_id == publication.id).order_by(SocialPostTarget.id))) if publication else []
 
-    def _locked(self, post_id, expected_version):
+    def _locked(self, post_id, expected_version, *, allow_archived=False):
         require_positive_version(expected_version)
         post = self._post(post_id)
         revision = self._revision(post)
@@ -127,7 +141,18 @@ class SocialService:
         post = self.db.scalar(select(SocialPost).where(SocialPost.id == post_id).with_for_update().execution_options(populate_existing=True))
         if post.row_version != expected_version:
             raise SocialError("VERSION_CONFLICT", "This post changed. Refresh it before continuing.")
+        if not allow_archived:
+            self._require_unarchived(post)
         return post, self._revision(post), self._publication(post)
+
+    @staticmethod
+    def _require_unarchived(post):
+        if post.editorial_state == "archived" or post.archived_at is not None:
+            raise SocialError("POST_ARCHIVED", "This post is archived and retained read-only. Duplicate it as a new manual draft to recover content; fresh review and authorization are required.")
+
+    def archive(self, post_id, body):
+        from .archive import archive_post
+        return archive_post(self, post_id, body)
 
     def _touch(self, post):
         post.row_version += 1
@@ -224,7 +249,7 @@ class SocialService:
         if revision.id != body.revision_id:
             raise SocialError("VERSION_CONFLICT", "The selected revision changed. Refresh before approval.")
         if post.editorial_state not in {"draft", "pending_review", "approved"}:
-            raise SocialError("INVALID_STATE", "Revise this rejected or archived post before authorizing it.")
+            raise SocialError("INVALID_STATE", "Revise this rejected post before authorizing it.")
         if post.origin_type == "generated" or post.content_type in SENSITIVE_CATEGORIES:
             attestation = body.review_attestation
             if not attestation or not attestation.facts_checked or not attestation.sources_checked or not revision.evidence_snapshot.get("references"):
@@ -502,7 +527,7 @@ class SocialService:
 
     def duplicate(self, post_id, body):
         from .contracts import CreatePost
-        post, revision, publication = self._locked(post_id, body.expected_version)
+        post, revision, publication = self._locked(post_id, body.expected_version, allow_archived=True)
         return self.create(CreatePost(title=post.title, content_type=post.content_type, document=PostDocument.model_validate(revision.document), references=revision.evidence_snapshot.get("references", [])), duplicated_from=post.id)
 
     def retry(self, target_id, body):
@@ -513,6 +538,8 @@ class SocialService:
         account = self.db.scalar(select(SocialAccount).where(SocialAccount.id == initial.account_id).with_for_update())
         publication = self.db.scalar(select(SocialPublication).where(SocialPublication.id == initial.publication_id).with_for_update())
         target = self.db.scalar(select(SocialPostTarget).where(SocialPostTarget.id == target_id).with_for_update().execution_options(populate_existing=True))
+        post = self.db.scalar(select(SocialPost).where(SocialPost.id == publication.post_id).with_for_update().execution_options(populate_existing=True))
+        self._require_unarchived(post)
         if publication.authorization_kind != "human":
             raise SocialError("POLICY_COMMAND_REQUIRED", "Policy retries require fresh worker admission.")
         if target.state in {"outcome_unknown", "reconciling", "dispatching", "processing"}:
@@ -553,7 +580,6 @@ class SocialService:
             raise SocialError("TARGET_VALIDATION_FAILED", "The failed destination needs revalidation before retry.", 422, target_errors=[{"account_id": str(t.account_id), **e.model_dump(mode="json")} for t in validation.targets for e in t.errors])
         if validation.targets[0].resolved_preview.content_hash != target.payload_hash:
             raise SocialError("REVISION_INTEGRITY_FAILED", "The failed destination's account or media changed. Create and approve a new revision.")
-        post = self._post(publication.post_id)
         target.state, target.next_action, target.next_action_at = "retry_wait", "publish", now
         target.error_code = target.safe_error_message = None
         target.updated_at = now
@@ -624,7 +650,8 @@ class SocialService:
         revision = self._revision(post)
         publication = self._publication(post)
         result = self._summary(post, publication, self._targets(publication), history=self._compact_history([post.id]).get(post.id))
-        result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []))
+        from .archive import archive_status
+        result.update(document=revision.document, references=revision.evidence_snapshot.get("references", []), archive=archive_status(self.db, post))
         return result
 
     def posts(self, page=1, page_size=20, editorial_state=None, delivery_filter="all", origin_type=None, content_type=None):

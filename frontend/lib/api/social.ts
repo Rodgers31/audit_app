@@ -44,6 +44,7 @@ export interface SocialSummary {
 }
 export interface SocialPost extends SocialSummary {
   document: SocialDocument; references: SocialReference[];
+  archive?: { eligible: boolean; archived_at: string | null; message: string };
   cancellation?: { in_flight_target_ids: string[]; message: string } | null;
 }
 export interface SocialList { posts: SocialSummary[]; total: number; page: number; page_size: number; has_more: boolean }
@@ -201,8 +202,11 @@ export function decodeSummary(v: unknown): SocialSummary {
 }
 export function decodePost(v: unknown): SocialPost {
   const o = obj(v);
+  const archive = o.archive === undefined ? undefined : exactObject(o.archive, ['eligible', 'archived_at', 'message']);
+  const archiveStatus = archive ? { eligible: bool(archive.eligible), archived_at: nullableTimestamp(archive.archived_at), message: str(archive.message) } : undefined;
+  if (archiveStatus && ((archiveStatus.archived_at !== null && o.editorial_state !== 'archived') || (archiveStatus.eligible && o.editorial_state === 'archived'))) throw contractError();
   const cancellation = o.cancellation === undefined || o.cancellation === null ? o.cancellation : obj(o.cancellation);
-  return { ...decodeSummary(o), document: decodeDocument(o.document), references: arr(o.references).map(item => { const r = obj(item); return { url: str(r.url), ...(r.label === undefined ? {} : { label: nullable(r.label) }) }; }), ...(cancellation === undefined ? {} : { cancellation: cancellation === null ? null : { in_flight_target_ids: arr(cancellation.in_flight_target_ids).map(str), message: str(cancellation.message) } }) };
+  return { ...decodeSummary(o), ...(archiveStatus ? { archive: archiveStatus } : {}), document: decodeDocument(o.document), references: arr(o.references).map(item => { const r = obj(item); return { url: str(r.url), ...(r.label === undefined ? {} : { label: nullable(r.label) }) }; }), ...(cancellation === undefined ? {} : { cancellation: cancellation === null ? null : { in_flight_target_ids: arr(cancellation.in_flight_target_ids).map(str), message: str(cancellation.message) } }) };
 }
 function issues(v: unknown): SocialIssue[] { return arr(v).map(item => { const o = obj(item); return { code: str(o.code), field: str(o.field), message: str(o.message), ...(typeof o.account_id === 'string' ? { account_id: o.account_id } : {}) }; }); }
 export function decodeInspectedAsset(v: unknown): InspectedAsset {

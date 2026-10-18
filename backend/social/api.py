@@ -79,7 +79,13 @@ class CancellationDTO(StrictModel):
     in_flight_target_ids: tuple[UUID, ...]
     message: str
 
+class ArchiveDTO(StrictModel):
+    eligible: StrictBool
+    archived_at: Union[datetime, None]
+    message: str
+
 class PostDetail(PostSummary):
+    archive: Union[ArchiveDTO, None] = None
     document: PostDocument
     references: tuple[Reference, ...]
     cancellation: Union[CancellationDTO, None] = None
@@ -194,6 +200,10 @@ def patch_post(post_id: UUID, request: Request, body: PatchPost, svc: Service, a
 def validate_post(post_id: UUID, svc: Service, body: Union[ValidateCommand, None]=None):
     return svc.validate(post_id, body or ValidateCommand())
 
+@router.post('/posts/{post_id}/archive', response_model=PostDetail)
+def archive_post(post_id: UUID, request: Request, body: VersionCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: svc.archive(post_id, body))
+
 @router.post('/posts/{post_id}/submit', response_model=PostDetail)
 def submit_post(post_id: UUID, request: Request, body: VersionCommand, svc: Service, admin: Admin, key: IdempotencyKey):
     return command(request, svc, admin, key, body, lambda: svc.submit(post_id, body))
@@ -273,6 +283,10 @@ router.include_router(automation_router)
 router.include_router(platform_connection_router)
 router.include_router(platform_events_router)
 router.include_router(platform_events_maintenance_router)
+
+# Scoped operator recovery; imported explicitly so a broken route fails startup.
+from .threads_recovery_api import router as threads_recovery_router
+router.include_router(threads_recovery_router)
 
 from .meta_reels_recovery_api import router as meta_reels_recovery_router
 router.include_router(meta_reels_recovery_router)

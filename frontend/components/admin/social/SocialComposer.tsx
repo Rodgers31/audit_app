@@ -1,6 +1,7 @@
 'use client';
 
 import GeneratedEvidence from './GeneratedEvidence';
+import SocialArchiveControls from './SocialArchiveControls';
 
 import { decodePost, decodePublication, DocumentTarget, PublishInput, SocialAccount, SocialApiError, SocialDraftInput, SocialPost, SocialSystemStatus, SocialValidation, socialApi, toSocialError } from '@/lib/api/social';
 import { useSocialDeliveryStatus, useSocialMutation, useSocialPost } from '@/lib/hooks/useSocial';
@@ -39,7 +40,10 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const composerContext = useId();
   const mediaOperations = useRef(new Set<string>());
   const [mediaPending, setMediaPending] = useState(false);
-  const commandBusy = busy || mediaPending;
+  const archiveRunning = useRef(false);
+  const [archivePending, setArchivePending] = useState(false);
+  function archiveBusyChanged(active: boolean) { archiveRunning.current = active; setArchivePending(active); }
+  const commandBusy = busy || mediaPending || archivePending;
   function mediaBusyChanged(scope: string, active: boolean) {
     if (active) mediaOperations.current.add(scope); else mediaOperations.current.delete(scope);
     setMediaPending(mediaOperations.current.size > 0);
@@ -67,7 +71,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const civil = useMemo(() => resolveCivilTime(localTime, timezone), [localTime, timezone]);
   const selectedTime = civil.candidates.length === 1 ? civil.candidates[0] : civil.candidates.find(c => c.offset === offsetChoice);
   const stale = !!(latestPost && post && latestPost.version > post.version);
-  const locked = dispatchStarted(latestPost) || dispatchStarted(post) || post?.editorial_state === 'archived';
+  const locked = dispatchStarted(latestPost) || dispatchStarted(post) || effectivePost?.editorial_state === 'archived';
   const target = input.document.targets.find(t => t.account_id === activeAccount);
   const account = accounts.find(a => a.id === target?.account_id);
   const valid = !dirty && !stale && !!post && validation?.version === post.version ? validation.value : undefined;
@@ -139,7 +143,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     adopt(saved); return saved;
   }
   async function perform(action: () => Promise<void>) {
-    if (running.current || mediaOperations.current.size > 0) return;
+    if (running.current || archiveRunning.current || mediaOperations.current.size > 0) return;
     running.current = true; setBusy(true); setError(undefined); setMessage('');
     try { await action(); } catch (e) {
       const failure = toSocialError(e);
@@ -224,7 +228,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       {currentPublication && currentPublication.approved_by === null && <p className={styles.notice}>Authorized by an approved policy. Human schedule changes require a new reviewed revision.</p>}
       {currentPublication?.scheduled_for && <p className={styles.notice}>Scheduled for {currentPublication.scheduled_for} (UTC). Editing unsent content creates a new revision and requires approval again.</p>}
       <div className={`${styles.tabs} ${styles.mobileSwitch}`} aria-label='Mobile workspace view'><button type='button' aria-pressed={mobilePanel === 'editor'} onClick={() => setMobilePanel('editor')}>Editor</button><button type='button' aria-pressed={mobilePanel === 'preview'} onClick={() => setMobilePanel('preview')}>Preview</button></div>
-      <fieldset disabled={busy} className={styles.destinations}>
+      <fieldset disabled={busy || archivePending} className={styles.destinations}>
         <div className={styles.composerGrid}>
           <fieldset disabled={locked} className={`${styles.destinations} ${styles.fields} ${mobilePanel === 'preview' ? styles.mobileHidden : ''}`}>
             <div className={styles.twoFields}><label>Internal title<input value={input.title} {...fieldIssueProps('title')} onChange={e => edit({ ...input, title: e.target.value })} /></label><label>Content type<input value={input.content_type} {...fieldIssueProps('content_type')} onChange={e => edit({ ...input, content_type: e.target.value })} /></label></div>
@@ -250,8 +254,8 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
         </div>
       </fieldset>
       {valid && <section className={styles.validation} aria-label='Backend validation'><h3>Saved revision validation</h3><p>{allValid ? 'All selected destinations passed.' : 'Publication blocked. Every selected destination must pass.'} · {valid.rules_version}</p>{valid.errors.map((issue, i) => <p className={styles.notice} key={i}>{issue.message}</p>)}{valid.targets.map((t, index) => <div className={styles.validationTarget} key={`${t.account_id}-${index}`}><strong>{t.platform ? platformLabels[t.platform] : 'Unknown platform'} · {accounts.find(a => a.id === t.account_id)?.display_name ?? 'Unavailable account'} · {t.valid ? 'Valid' : 'Needs attention'}</strong><ul>{[...t.errors, ...t.warnings].map((issue, i) => <li key={i}>{issue.message}</li>)}</ul></div>)}{warningCodes.map(code => <label className={styles.reviewCheck} key={code}><input type='checkbox' checked={acknowledged.includes(code)} disabled={commandBusy} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, code] : acknowledged.filter(c => c !== code))} />Acknowledge {code}: {warnings.filter(w => w.code === code).map(w => w.message).join(' ')}</label>)}</section>}
-      {post && effectivePost?.publication && effectivePost.publication.approved_by !== null && <SocialScheduleControls post={effectivePost} system={system} disabled={commandBusy || dirty || stale} onUpdated={adopt} />}
-      {post && <><div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || live.isFetching} onClick={() => live.refetch()}>Refresh revision & results</button></div><SocialResults targets={latestResults} accounts={accounts} postId={post.id} />{effectivePost?.cancellation && <p className={styles.notice}>{effectivePost.cancellation.message} · {effectivePost.cancellation.in_flight_target_ids.length} in-flight destination(s) reported.</p>}</>}
+      {post && effectivePost?.editorial_state !== 'archived' && effectivePost?.publication && effectivePost.publication.approved_by !== null && <SocialScheduleControls post={effectivePost} system={system} disabled={commandBusy || dirty || stale} onUpdated={adopt} />}
+      {post && <><div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || live.isFetching} onClick={() => live.refetch()}>Refresh revision & results</button></div><SocialResults readOnly={effectivePost?.editorial_state === 'archived'} targets={latestResults} accounts={accounts} postId={post.id} />{effectivePost?.cancellation && <p className={styles.notice}>{effectivePost.cancellation.message} · {effectivePost.cancellation.in_flight_target_ids.length} in-flight destination(s) reported.</p>}</>}
       {!!effectivePost?.historical_target_count && <SocialDeliveryHistory key={effectivePost.id} postId={effectivePost.id} preview={effectivePost.historical_targets} count={effectivePost.historical_target_count} accounts={accounts} />}
     </div>
     <div className={styles.footer}>
@@ -264,7 +268,8 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
         {post?.editorial_state === 'pending_review' && <div className={styles.fields}><label>Reason to reject<input value={rejectReason} disabled={commandBusy} onChange={e => setRejectReason(e.target.value)} /></label><button type='button' className={styles.button} disabled={commandBusy || stale || dirty || !rejectReason.trim()} onClick={() => editorial('reject')}>Reject draft</button></div>}
         {cancelledAuthorization && <div className={styles.fields}><label>Reason to resume<input value={resumeReason} disabled={commandBusy} onChange={e => setResumeReason(e.target.value)} /></label><button type='button' className={styles.button} disabled={!canResume} onClick={resume}>Resume unsent deliveries</button><p className={styles.muted}>The server checks that every destination is unchanged, unsent and within its original deadlines. Future schedules are kept; expired or attempted deliveries require a new draft.</p></div>}
       </>}
-      {post && <div className={styles.actions}>{currentPublication && <button type='button' className={styles.button} disabled={commandBusy || stale || dirty} onClick={() => editorial('cancel')}>Cancel unsent deliveries</button>}<button type='button' className={styles.button} disabled={commandBusy || dirty || stale} onClick={() => editorial('duplicate')}>Duplicate as new manual draft</button></div>}
+      {post && effectivePost && <SocialArchiveControls onBusyChange={archiveBusyChanged} post={effectivePost} disabled={commandBusy || dirty || stale} onUpdated={adopt} />}
+      {post && <div className={styles.actions}>{currentPublication && effectivePost?.editorial_state !== 'archived' && <button type='button' className={styles.button} disabled={commandBusy || stale || dirty} onClick={() => editorial('cancel')}>Cancel unsent deliveries</button>}<button type='button' className={styles.button} disabled={commandBusy || dirty || stale} onClick={() => editorial('duplicate')}>Duplicate as new manual draft</button></div>}
     </div>
     {isMobile ? createPortal(<div className={styles.workspace} data-social-actions-portal>{primaryActions}</div>, document.body) : primaryActions}
   </article>;
