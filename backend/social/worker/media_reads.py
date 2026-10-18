@@ -33,3 +33,7 @@ class ReadStorage:
 
     def preview(self, key, snapshot, ttl):
         return self.__storage.preview(key, snapshot, ttl)
+
+    def provider_fetch(self, key, snapshot, ttl):
+        """Bounded signed GET for the separately accepted provider transfer."""
+        return self.__storage.provider_fetch(key, snapshot, ttl)

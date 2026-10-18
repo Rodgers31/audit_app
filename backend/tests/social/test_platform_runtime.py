@@ -163,7 +163,12 @@ def test_platform_only_startup_uses_existing_registration_factory_and_owned_shut
             assert app.state.social_platform_events_config == {}
         assert len(seen) == 1 and seen[0][0] is engine
         assert seen[0][1]['threads'].ready
-        assert seen[0][2]['storage'] is shared.storage
+        port = seen[0][2]['storage']
+        assert not hasattr(port, 'client')
+        assert port.bucket == shared.storage.bucket
+        shared.storage.client.head_object.return_value = {'ContentLength': 1, 'ETag': 'fixture', 'Metadata': {}, 'ContentType': 'image/png'}
+        assert port.head('fixture').size == 1
+        shared.storage.client.head_object.assert_called_once_with(Bucket=shared.storage.bucket, Key='fixture')
         assert events == ['platform-close', 'storage-close']
         assert all(not hasattr(app.state, name) for name in STATE_NAMES)
     run(exercise())

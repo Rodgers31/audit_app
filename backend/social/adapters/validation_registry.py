@@ -50,17 +50,35 @@ def load_native_validation_registry(environ=None):
         raise SocialError('NATIVE_CONFIGURATION_INVALID', 'Native validation configuration is unavailable.', 503)
 
 
+def _loader_bound_to_engine(loader, engine):
+    """Only the actual native composition shapes, never arbitrary callables.
+
+    Combined loaders have two known leaf slots. Do not recurse into malformed
+    nesting or cycles, and do not accept a leaf tied to another database.
+    """
+    from ..worker.materials import CredentialMaterialLoader
+    from ..platform_materials import PlatformCredentialMaterialLoader, CombinedCredentialLoader
+    if type(loader) in (CredentialMaterialLoader, PlatformCredentialMaterialLoader):
+        return loader.engine is engine
+    if type(loader) is not CombinedCredentialLoader:
+        return False
+    meta, platforms = loader.meta, loader.platforms
+    return ((meta is not None or platforms is not None)
+        and (meta is None or type(meta) is CredentialMaterialLoader and meta.engine is engine)
+        and (platforms is None or type(platforms) is PlatformCredentialMaterialLoader and platforms.engine is engine))
+
+
 def registry_adapters(registration, engine, *, borrowed=False):
     """Validate the trusted typed port; never accept legacy platform-name sets."""
     if not borrowed:
         typed = isinstance(registration, NativeValidationRegistry)
     else:
         from ..worker.native_runtime import NativeRegistration
-        from ..worker.materials import CredentialMaterialLoader, VerifiedMediaAccess
+        from ..worker.materials import VerifiedMediaAccess
         typed = (isinstance(registration, NativeRegistration)
-            and isinstance(registration.credential_loader, CredentialMaterialLoader)
-            and registration.credential_loader.engine is engine
-            and isinstance(registration.media_access, VerifiedMediaAccess))
+            and _loader_bound_to_engine(registration.credential_loader, engine)
+            and isinstance(registration.media_access, VerifiedMediaAccess)
+            and registration.media_access.engine is engine)
     adapters = getattr(registration, 'adapters', None)
     if not typed or not isinstance(adapters, Mapping) or not adapters:
         raise SocialError('NATIVE_REGISTRY_INVALID', 'A nonempty native validation registry is required.', 503)

@@ -61,6 +61,19 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
     runtime = None
     transports = []
     invalid = False
+
+    def selected_media_runtime():
+        # Prefer this context's owned read client over the borrowed, disabled
+        # HTTP upload runtime when composing a second provider registration.
+        nonlocal runtime
+        selected = runtime if runtime is not None else shared_media_runtime
+        if selected is None:
+            runtime = selected = load_media_runtime(values)
+        reads = read_config(values)
+        if reads.enabled and not selected.config.enabled:
+            runtime = selected = build_media_runtime(reads)
+        return selected
+
     try:
         platforms = load_platform_settings(values)
         enabled = values.get('SOCIAL_NATIVE_ENABLED', 'false')
@@ -72,14 +85,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
                 raise ValueError()
             config = load_meta_config(values)
             config.require_ready()
-            selected_runtime = shared_media_runtime
-            if selected_runtime is None:
-                runtime = selected_runtime = load_media_runtime(values)
-            reads = read_config(values)
-            if reads.enabled and not selected_runtime.config.enabled:
-                # Keep app.state.social_media_runtime disabled for HTTP. This
-                # independently owned client is used only by native materials.
-                runtime = selected_runtime = build_media_runtime(reads)
+            selected_runtime = selected_media_runtime()
             if (not isinstance(selected_runtime, MediaRuntime) or not selected_runtime.config.enabled
                     or not isinstance(selected_runtime.storage, R2Storage)
                     or not {'image/jpeg', 'image/png'} <= set(selected_runtime.available_mimes())):
@@ -100,9 +106,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
             transports.clear()  # Successful registration owns these transports.
         if any(config.ready for config in platforms.adapters.values()):
             from .native_runtime import create_platform_registration, combine_native_registrations
-            selected_runtime = shared_media_runtime or runtime
-            if selected_runtime is None:
-                runtime = selected_runtime = load_media_runtime(values)
+            selected_runtime = selected_media_runtime()
             if not isinstance(selected_runtime,MediaRuntime) or not selected_runtime.config.enabled or not isinstance(selected_runtime.storage,R2Storage):
                 raise ValueError()
             if transport_factory is None:
@@ -114,7 +118,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
                 transports.append(result)
                 return result
             added = create_platform_registration(engine,platforms.adapters,cipher=platforms.cipher,
-                storage=selected_runtime.storage,storage_origin=selected_runtime.storage.origin,
+                storage=ReadStorage(selected_runtime.storage),storage_origin=selected_runtime.storage.origin,
                 transport_factory=platform_transport,connection_configurations=platforms.connections,
                 tiktok_verified_origins=platforms.tiktok_verified_origins)
             registration = combine_native_registrations(registration,added) if registration is not None else added
