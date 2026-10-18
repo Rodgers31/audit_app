@@ -12,7 +12,7 @@ from .platform_http import parse_retry_after
 
 BASE_URL = "https://business-api.tiktok.com/open_api/v1.3/"
 ALLOWED = {
-    ("GET", "business/video/settings/"), ("GET", "business/publish/status/"),
+    ("GET", "business/video/settings/"), ("GET", "business/video/list/"), ("GET", "business/publish/status/"),
     ("POST", "business/video/publish/"), ("POST", "business/photo/publish/"),
     ("POST", "tt_user/oauth2/token/"), ("POST", "tt_user/oauth2/refresh_token/"),
 }
@@ -65,22 +65,28 @@ class TikTokHTTP:
     async def close(self):
         await self.client.aclose()
 
-    async def request(self, method, path, *, token=None, data=None, params=None):
+    async def request(self, method, path, *, token=None, data=None, params=None, maximum_bytes=65536):
+        if type(maximum_bytes) is not int or not 1 <= maximum_bytes <= 65536:
+            raise ValueError("Invalid response bound")
         if (method, path) not in ALLOWED:
             raise ValueError("Unsupported TikTok operation")
         headers = {"Accept-Encoding": "identity"}
         if token is not None:
             headers["Access-Token"] = bounded_string(token)
         response = None
+        next_at = None
         try:
             request = self.client.build_request(method, BASE_URL + path, headers=headers, json=data, params=params)
             response = await self.client.send(request, stream=True)
+            # Header timing remains authoritative even when the bounded body
+            # cannot establish whether a mutation was accepted.
+            next_at = parse_retry_after(response.headers.get("retry-after"), self.now())
             if response.headers.get("content-encoding", "identity").lower() != "identity":
                 raise ValueError("Compressed response refused")
             chunks, size = [], 0
             async for chunk in response.aiter_bytes(chunk_size=16384):
                 size += len(chunk)
-                if size > 65536:
+                if size > maximum_bytes:
                     raise ValueError("Response exceeds bound")
                 chunks.append(chunk)
             value = json.loads(b"".join(chunks), object_pairs_hook=_unique,
@@ -89,25 +95,25 @@ class TikTokHTTP:
                 raise ValueError("Response must be an object")
         except (httpx.HTTPError, ValueError, TypeError, RecursionError):
             raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True,
-                http_status=response.status_code if response is not None else None) from None
+                http_status=response.status_code if response is not None else None,
+                next_action_at=next_at) from None
         finally:
             if response is not None:
                 await response.aclose()
         code = value.get("code")
         if type(code) is not int or not 0 <= code <= 2147483647:
-            raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code)
+            raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code, next_action_at=next_at)
         if not 200 <= response.status_code < 300 or code != 0:
             # A server failure or response containing accepted task data cannot
             # establish that a dispatched mutation did not happen.
             if response.status_code >= 500 or response.status_code < 200 or 300 <= response.status_code < 400 or value.get("data"):
-                raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code)
-            next_at = parse_retry_after(response.headers.get("retry-after"), self.now())
+                raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code, next_action_at=next_at)
             safe = "RATE_LIMITED" if response.status_code == 429 else "PROVIDER_REJECTED"
             if response.status_code in {401, 403}:
                 safe = "AUTHORIZATION_REQUIRED" if response.status_code == 401 else "PERMISSION_DENIED"
             raise TikTokHTTPFailure(safe, http_status=response.status_code, provider_code=str(code), next_action_at=next_at)
         if not isinstance(value.get("data"), dict):
-            raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code)
+            raise TikTokHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=response.status_code, next_action_at=next_at)
         request_id = value.get("request_id")
         if request_id is not None and (not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", request_id)):
             request_id = None

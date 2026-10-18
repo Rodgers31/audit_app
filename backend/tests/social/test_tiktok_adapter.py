@@ -451,6 +451,25 @@ def test_explicit_rate_rejection_preserves_exact_retry_after_without_wire_retry(
     run(exercise())
 
 
+@pytest.mark.parametrize("content", [
+    b'not-json',
+    b'{"code":42900,"data":{"share_id":"accepted-task"}}',
+])
+def test_uncertain_rate_limited_mutation_retains_delay_without_safe_retry(content):
+    async def exercise():
+        value, graph = payload(), Provider()
+        provider = adapter(graph)
+        checkpoint = await checked(provider, value, graph)
+        graph.override = lambda request: httpx.Response(429, headers={"retry-after": "4000"}, content=content)
+        result = await provider.execute(value, provider.next_operation(value, checkpoint), material(value, provider), Media())
+        assert result.outcome == "ambiguous" and not result.retry_safe
+        assert result.next_action_at == NOW + timedelta(seconds=4000)
+        assert result.checkpoint["phase"] == "submission_uncertain"
+        assert len([call for call in graph.calls if call[0] == "POST"]) == 1
+        await provider.close()
+    run(exercise())
+
+
 def test_cross_payload_checkpoint_and_forged_operation_cannot_dispatch():
     async def exercise():
         value, graph = payload(), Provider()
