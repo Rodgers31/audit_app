@@ -278,3 +278,154 @@ def test_claim_reader_cannot_reconstruct_live_ownership(opendata_url, mutation):
         with pytest.raises(source.OpenDataSourceRefused, match="execution lock"):
             persist(factory, ctx)
         assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+@pytest.mark.parametrize("association", ["country", "publisher"])
+def test_same_source_url_with_foreign_association_refuses_replay(opendata_url, association):
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        assert persist(factory, ctx) == {"created": 1, "unchanged": 0}
+        with engine.begin() as db:
+            if association == "country":
+                other = db.scalar(text("INSERT INTO countries(iso_code,name,currency,timezone,default_locale) "
+                    "VALUES ('UGA','Uganda','UGX','Africa/Kampala','en') RETURNING id"))
+                db.execute(text("UPDATE source_documents SET country_id=:country"), {"country": other})
+            else:
+                db.execute(text("UPDATE source_documents SET publisher='Unreviewed publisher'"))
+            before = db.execute(text("SELECT id,country_id,publisher,url FROM source_documents ORDER BY id")).all()
+        with pytest.raises(source.OpenDataSourceRefused, match="provenance differs"):
+            persist(factory, ctx)
+        with engine.connect() as db:
+            assert db.execute(text("SELECT id,country_id,publisher,url FROM source_documents ORDER BY id")).all() == before
+        assert counts(engine)["source_documents"] == counts(engine)["extractions"] == 1
+
+
+@pytest.mark.parametrize("table,change", [
+    ("source_documents", "NEW.publisher := 'Unreviewed publisher';"),
+    ("source_documents", "NEW.url := 'https://unreviewed.invalid/changed';"),
+    ("extractions", "NEW.extracted_json := jsonb_set(NEW.extracted_json,'{numeric_cells}','true');"),
+    ("extractions", "NEW.extractor := 'unreviewed-extractor';"),
+    ("source_documents", "NEW.created_at := NEW.created_at + interval '1 second';"),
+    ("extractions", "NEW.created_at := NEW.created_at + interval '1 second';"),
+])
+def test_inserted_source_values_are_read_back_before_success(opendata_url, table, change):
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        with engine.begin() as db:
+            db.execute(text("CREATE FUNCTION b17_change_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
+                            + change + " RETURN NEW; END $$"))
+            db.execute(text(f"CREATE TRIGGER b17_change_insert BEFORE INSERT ON {table} "
+                            "FOR EACH ROW EXECUTE FUNCTION b17_change_insert()"))
+        with pytest.raises(source.OpenDataSourceRefused, match="readback"):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+@pytest.mark.parametrize("table,change", [
+    ("source_documents", "UPDATE source_documents SET publisher='Unreviewed publisher' WHERE id=NEW.id;"),
+    ("extractions", "UPDATE extractions SET extracted_json=jsonb_set(extracted_json,'{numeric_cells}','true') WHERE id=NEW.id;"),
+    ("extractions", "DELETE FROM extractions WHERE id=NEW.id;"),
+])
+def test_deferred_insert_changes_are_checked_before_commit(opendata_url, table, change):
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        with engine.begin() as db:
+            db.execute(text("CREATE FUNCTION b17_defer_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
+                            + change + " RETURN NULL; END $$"))
+            db.execute(text(f"CREATE CONSTRAINT TRIGGER b17_defer_insert AFTER INSERT ON {table} "
+                            "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION b17_defer_insert()"))
+        with pytest.raises(source.OpenDataSourceRefused, match="readback"):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+@pytest.mark.parametrize("table", ["source_documents", "extractions"])
+def test_suppressed_insert_cannot_report_success(opendata_url, table):
+    from sqlalchemy.exc import SQLAlchemyError
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        with engine.begin() as db:
+            db.execute(text("CREATE FUNCTION b17_suppress_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$"))
+            db.execute(text(f"CREATE TRIGGER b17_suppress_insert BEFORE INSERT ON {table} FOR EACH ROW EXECUTE FUNCTION b17_suppress_insert()"))
+        with pytest.raises((source.OpenDataSourceRefused, SQLAlchemyError)):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+@pytest.mark.parametrize("table", ["source_documents", "extractions"])
+def test_deferred_unexpected_sibling_is_refused(opendata_url, table):
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        if table == "source_documents":
+            change = """IF NEW.title NOT LIKE '%unexpected sibling%' THEN
+                INSERT INTO source_documents(country_id,publisher,title,url,file_path,fetch_date,md5,doc_type,status,
+                    content_type,http_status,last_verified_at,last_seen_at,metadata,created_at)
+                SELECT country_id,publisher,title || ' (unexpected sibling)',url,file_path,fetch_date,md5,doc_type,status,
+                    content_type,http_status,last_verified_at,last_seen_at,metadata,created_at
+                FROM source_documents WHERE id=NEW.id; END IF;"""
+        else:
+            change = """IF NEW.extractor <> 'unexpected-sibling' THEN
+                INSERT INTO extractions(source_document_id,page_number,extracted_json,extractor,confidence,created_at)
+                SELECT source_document_id,page_number,extracted_json,'unexpected-sibling',confidence,created_at
+                FROM extractions WHERE id=NEW.id; END IF;"""
+        with engine.begin() as db:
+            db.execute(text("CREATE FUNCTION b17_duplicate_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
+                            + change + " RETURN NULL; END $$"))
+            db.execute(text(f"CREATE CONSTRAINT TRIGGER b17_duplicate_insert AFTER INSERT ON {table} "
+                            "DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION b17_duplicate_insert()"))
+        with pytest.raises(source.OpenDataSourceRefused, match="readback"):
+            persist(factory, ctx)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+def test_new_write_and_replay_use_the_real_non_utc_session_zone(opendata_url):
+    from sqlalchemy import event
+    def configure(engine):
+        @event.listens_for(engine, "checkout")
+        def set_zone(connection, record, proxy):
+            with connection.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'Africa/Nairobi'")
+            connection.commit()
+    # Set the zone before acquiring ownership AND creating the naive-column job;
+    # changing it only after job creation invalidates the existing time guard.
+    with owned(opendata_url, before_enter=configure) as (engine, factory, _, ctx):
+        with factory() as db:
+            assert db.scalar(text("SHOW TimeZone")) == "Africa/Nairobi"
+        assert persist(factory, ctx) == {"created": 1, "unchanged": 0}
+        assert persist(factory, ctx) == {"created": 0, "unchanged": 1}
+        assert counts(engine)["source_documents"] == counts(engine)["extractions"] == 1
+
+
+@pytest.mark.parametrize("model", ["source", "extraction"])
+def test_orm_hook_cannot_rewrite_both_intent_and_persisted_json(opendata_url, model):
+    from copy import deepcopy
+    from sqlalchemy import event
+    from models import SourceDocument, Extraction
+    target = SourceDocument if model == "source" else Extraction
+    def alter(mapper, connection, row):
+        if model == "source":
+            row.meta["verification_status"] = "tampered-before-insert"
+        else:
+            row.extracted_json["numeric_cells"] = True
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        event.listen(target, "before_insert", alter)
+        try:
+            with pytest.raises(source.OpenDataSourceRefused, match="readback"):
+                persist(factory, ctx, parsed=deepcopy(PARSED))
+        finally:
+            event.remove(target, "before_insert", alter)
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
+
+
+@pytest.mark.parametrize("field,value", [("numeric_cells", True), ("artifact_sha256", "a" * 64)])
+def test_parent_flush_cannot_change_validated_caller_observations(opendata_url, field, value):
+    from copy import deepcopy
+    from sqlalchemy import event
+    from models import SourceDocument
+    supplied = deepcopy(PARSED)
+    def alter(mapper, connection, row):
+        supplied[field] = value
+    with owned(opendata_url) as (engine, factory, _, ctx):
+        event.listen(SourceDocument, "before_insert", alter)
+        try:
+            with pytest.raises(source.OpenDataSourceRefused):
+                persist(factory, ctx, parsed=supplied)
+        finally:
+            event.remove(SourceDocument, "before_insert", alter)
+        assert supplied[field] == value
+        assert counts(engine) == dict.fromkeys(EFFECTS, 0)
