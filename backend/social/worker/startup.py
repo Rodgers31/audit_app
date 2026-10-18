@@ -13,6 +13,7 @@ from ..media.runtime import MediaRuntime, build_media_runtime
 from ..media.storage import R2Storage
 from ..service import SocialError
 from .native_runtime import create_native_registration
+from .media_reads import read_config, ReadStorage
 
 
 def load_media_runtime(values):
@@ -25,7 +26,9 @@ def validate_worker_native_environment(values):
             or values.get('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED', 'false') != 'true'):
         raise ValueError('Native worker gates are not accepted')
     load_meta_config(values).require_ready()
-    if not config_from_environment(values).enabled:
+    upload = config_from_environment(values)
+    reads = read_config(values)
+    if not upload.enabled and not reads.enabled:
         raise ValueError('Private media gates are not accepted')
 
 
@@ -67,6 +70,11 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
             selected_runtime = shared_media_runtime
             if selected_runtime is None:
                 runtime = selected_runtime = load_media_runtime(values)
+            reads = read_config(values)
+            if reads.enabled and not selected_runtime.config.enabled:
+                # Keep app.state.social_media_runtime disabled for HTTP. This
+                # independently owned client is used only by native materials.
+                runtime = selected_runtime = build_media_runtime(reads)
             if (not isinstance(selected_runtime, MediaRuntime) or not selected_runtime.config.enabled
                     or not isinstance(selected_runtime.storage, R2Storage)
                     or not {'image/jpeg', 'image/png'} <= set(selected_runtime.available_mimes())):
@@ -82,7 +90,7 @@ async def native_runtime(engine, *, environ=None, transport_factory=None, shared
             registration = create_native_registration(engine,
                 MetaAdapterConfig(config.graph_version, True, True, config.app_secret),
                 cipher=CredentialCipher(config.active_key_version, config.encryption_keys),
-                storage=selected_runtime.storage, storage_origin=selected_runtime.storage.origin,
+                storage=ReadStorage(selected_runtime.storage), storage_origin=selected_runtime.storage.origin,
                 transport_factory=transport)
     except Exception:
         # Raise after leaving the handler; secret-bearing decoder/SDK exceptions

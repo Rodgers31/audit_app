@@ -101,9 +101,12 @@ def main(argv=None):
                             raise ValueError()
                         worker = SocialWorker(repository, adapters=registration.adapters,
                             credential_loader=registration.credential_loader, media_access=registration.media_access)
-                        if stopped.is_set():
-                            worker.stop()
                         try:
+                            # This CLI owns its asyncio.run loop. Material/DNS
+                            # offloads share the DB executor's two-thread budget.
+                            asyncio.get_running_loop().set_default_executor(worker.executor)
+                            if stopped.is_set():
+                                worker.stop()
                             await worker.run(once=args.once)
                         except KeyboardInterrupt:
                             interrupted = True
