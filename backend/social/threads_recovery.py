@@ -10,17 +10,18 @@ from typing import Annotated, Literal
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import AfterValidator, BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import or_, select, text
 
 from .adapters.common import caption
 from .adapters.threads import ThreadsAdapter
+from .adapters.meta_http import remote_id
 from .contracts import Hash, PositiveVersion, Reason, ResolvedPostPayload, StrictModel, canonical_hash
 from .models import (SocialAccount, SocialAuditEvent, SocialCommandReceipt, SocialControls,
                      SocialPostRevision, SocialPostTarget, SocialPublication, SocialPublishAttempt)
 from .service import SocialError, SocialService, iso, utc
 
-Identity = Annotated[str, StringConstraints(strict=True, pattern=r'^[0-9]{1,100}$')]
+Identity = Annotated[str, StringConstraints(strict=True, min_length=1, max_length=64, pattern=r'^[0-9]{1,64}$'), AfterValidator(remote_id)]
 Narrative = Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=30, max_length=1000)]
 PROPOSED = 'threads.public_proof_proposed'
 ADMITTED = 'threads.public_proof_admitted'
@@ -85,11 +86,11 @@ class PublicProofContext(StrictModel):
     approved_hash: Hash
     payload_hash: Hash
     account_id: UUID
-    external_account_id: str
+    external_account_id: Identity
     binding_hash: Hash
     caption: str
     asset_sha256: tuple[Hash, ...]
-    known_remote_id: str | None
+    known_remote_id: Identity | None
     state: str
 
 
@@ -105,7 +106,7 @@ class SettlementDTO(StrictModel):
     target_id: UUID
     proof_id: UUID
     state: Literal['published']
-    remote_id: str
+    remote_id: Identity
     remote_url: str
     publication_version: PositiveVersion
 
@@ -180,6 +181,7 @@ class ThreadsRecoveryService(SocialService):
             raise SocialError('VERSION_CONFLICT', 'Publication changed. Obtain fresh evidence.')
         try:
             payload = ResolvedPostPayload.model_validate(target.resolved_payload)
+            remote_id(payload.external_account_id)
             if (account.platform != 'threads' or payload.platform != 'threads' or payload.account_id != account.id
                     or payload.external_account_id != account.external_account_id or payload.api_product != account.api_product
                     or canonical_hash(payload.model_dump(mode='json', exclude={'content_hash'})) != target.payload_hash
@@ -189,6 +191,9 @@ class ThreadsRecoveryService(SocialService):
             ThreadsAdapter._checkpoint(payload, target.checkpoint)
             if not isinstance(target.remote_refs, dict):
                 raise ValueError('Invalid remote references')
+            for identity in (target.primary_remote_id, target.remote_refs.get('post_id')):
+                if identity is not None:
+                    remote_id(identity)
         except (ValueError, TypeError, AttributeError):
             raise SocialError('PROOF_BINDING_INVALID', 'Approved Threads identity or payload is inconsistent.') from None
         if target.state not in {'processing', 'reconciling', 'outcome_unknown'} or target.submit_count < 1:
@@ -222,6 +227,7 @@ class ThreadsRecoveryService(SocialService):
             known_remote_id=target.primary_remote_id, state=target.state)
 
     def _observation(self, observation, account, target, payload):
+        observation = PublicObservation.model_validate(command_input(observation))
         now = self.now()
         if not now-timedelta(minutes=30) <= observation.observed_at <= now:
             raise SocialError('PROOF_EXPIRED', 'Observe public availability within the last thirty minutes.')

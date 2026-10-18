@@ -339,3 +339,10 @@ def test_actual_worker_claim_first_refuses_operator_and_keeps_ownership(recovery
         target = db.get(SocialPostTarget, target_id)
         assert str(target.lease_token) == claim.token and target.lease_epoch == claim.epoch and target.state == 'processing'
     repo.abandon(claim, state='outcome_unknown', code='FIXTURE_RECOVERY_COMPLETE')
+
+
+@pytest.mark.parametrize('size', [64,65])
+def test_canonical_operator_identity_boundary_on_postgres(recovery_pg,size):
+    from test_threads_recovery_identity import test_http_without_retained_id_only_accepts_canonical_publication
+    with Session(recovery_pg,expire_on_commit=False) as db:
+        test_http_without_retained_id_only_accepts_canonical_publication(db,size)

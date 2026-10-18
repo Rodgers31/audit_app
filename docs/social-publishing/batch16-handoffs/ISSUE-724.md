@@ -2,7 +2,7 @@
 
 Implemented and independently reviewed; draft PR delivery only. Do not close #724 or parent #476/#545 before accepted merge. No deploy or real proof acceptance occurred.
 
-Verified implementation head: `a1139d1f2b7333269b605b1741c1c923de7880c4`, baseline `5189675364648113c92b46b54d8f6a30b1bf00e2` (confirmed Git object). Branch `codex/b16-724-threads-settlement`; owned worktree `/Users/roger/.codex/worktrees/b16-724-threads-settlement/audit_app`. The final packaging commit adds only this handoff; its exact delivery SHA/PR/review snapshot is recorded in the PR and external `delivery.json` below. Accepted schema identity `a705b15a0001` is inherited release context, not a fresh production DB check.
+Initial verified implementation head: `a1139d1f2b7333269b605b1741c1c923de7880c4`, baseline `5189675364648113c92b46b54d8f6a30b1bf00e2` (confirmed Git object). Branch `codex/b16-724-threads-settlement`; owned worktree `/Users/roger/.codex/worktrees/b16-724-threads-settlement/audit_app`. The initial packaging commit adds only this handoff; its exact delivery SHA/PR/review snapshot is recorded in the PR and external `delivery.json` below. Accepted schema identity `a705b15a0001` is inherited release context, not a fresh production DB check.
 
 ## Implemented authority and commands
 
@@ -36,3 +36,14 @@ Shared edits: `backend/social/api.py` adds one explicit scoped router include at
 Publishing/uploads/native processing/supervision/provider activation were not changed. No actual post, upload, send, provider request/grant, credential, privacy execution, production mutation, paid review/service/resource or manual preview was created. GitHub Actions API readback reported `enabled:false` before push; no Actions enablement/requested bot review/hosted CI is claimed.
 
 Remaining acceptance: independent review/acceptance of the human custody procedure for real operators and evidence inventory; real provider/account/anonymous public observation acceptance only under separate authorization; production privilege/readback and any activation/deployment gates remain external. Human packet custody is deliberately the authority boundary, not missing automatic-provider-proof engineering. Root owns checklist continuation and merge ordering. This draft is not a merge/deploy approval and leaves live controls off.
+
+
+## PR729 identity-boundary follow-up — Copilot4307227306
+
+The earlier source/head and review counts above remain historical. A scoped follow-up fixes the canonical identity contract; its exact pushed head and complete post-push GitHub feedback snapshot are recorded in the evidence root's `review-4307227306/delivery.json` and in-thread classified reply.
+
+Finding **valid**, suggested64-digit bound correct. Author observed a65-digit post ID committed as Published on initial `f2251fd` (`red-corrected-fixture.log`); Standards independently reproduced the same pre-fix outcome. `Identity` now uses strict1–64 bounds and the unchanged canonical `meta_http.remote_id` validator. Both account/post observation fields and context/settlement DTOs share it. `_load` validates persisted approved owner and retained primary/post refs even with an empty checkpoint; the existing checkpoint validator covers checkpoint identities. `_observation` revalidates raw constructed models, protecting direct helper calls as well as propose/record-existing wrappers. The canonical adapter contract is unchanged.
+
+Final new tests cover exact64positive/65negative account and post IDs through schemas, context/stored identity checks, DTOs and constructed model helpers, plus actual PostgreSQL-backed64settlement/65refusal. The corrected red fixture recorded15 failures/7 passes before the fix. The initial normal follow-up selection passed113 on Python3.13 and cached3.12; two additional64positive retained-ID controls then passed in the25-case normal local identity selection. The final **115-case optimized selection passed on both Python versions**. These are separate overlapping runs, not a single aggregate normal+optimized total. Relevant receipts are in `review-4307227306/`.
+
+Independent Standards and Spec executable follow-up reviews found no remaining issue in the scoped patch. No UI changed and Chrome was not rerun for this schema/helper fix; the original genuine browser evidence remains bound to the initial feature implementation. No migration/transaction topology, provider grants/flags, publishing/upload controls, hosted CI or costs changed. The temporary owned PostgreSQL fixture was recreated only for local tests and removed with its anonymous volume; exact cleanup is in `review-4307227306/cleanup.json`. DraftPR729 stays open; no merge/deploy or live proof acceptance is authorized by this follow-up.
