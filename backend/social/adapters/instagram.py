@@ -107,7 +107,7 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
             checkpoint = self._state(payload, "publish_ready" if state else "quota_checked", previous=state)
             return self._success(checkpoint, response)
         except MetaHTTPFailure as error:
-            if not error.ambiguous:
+            if not error.ambiguous and error.code not in {"RATE_LIMITED", "TEMPORARY_REJECTION"}:
                 return self._failure(error, checkpoint)
             return self._processing(checkpoint, code="QUOTA_LOOKUP_UNAVAILABLE", next_action_at=error.next_action_at, http_status=error.http_status)
         except (ValueError, TypeError):

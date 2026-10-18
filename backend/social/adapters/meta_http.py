@@ -137,9 +137,11 @@ class MetaHTTP:
 
     async def _send(self, method, url, *, headers, maximum_bytes=MAX_RESPONSE_BYTES, **kwargs):
         response = None
+        next_at = None
         try:
             request = self.client.build_request(method, url, headers=headers, **kwargs)
             response = await self.client.send(request, stream=True)
+            next_at = _retry_time(response.headers.get("retry-after"), self.now())
             if response.headers.get("content-encoding", "identity").lower() != "identity":
                 raise ValueError("Unexpected compressed response")
             chunks, size = [], 0
@@ -154,19 +156,19 @@ class MetaHTTP:
                 raise ValueError("Graph response must be an object")
         except (httpx.HTTPError, ValueError, TypeError, RecursionError):
             raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True,
-                                  http_status=response.status_code if response else None) from None
+                                  http_status=response.status_code if response is not None else None,
+                                  next_action_at=next_at) from None
         finally:
             if response is not None:
                 await response.aclose()
         status = response.status_code
-        next_at = _retry_time(response.headers.get("retry-after"), self.now())
         error = value.get("error")
         if "error" in value or not 200 <= status < 300:
             # Server failures, redirects, response conflicts and malformed error
             # shapes cannot prove a dispatched mutation was rejected.
             code = error.get("code") if isinstance(error, dict) else None
             if status >= 500 or status < 400 or type(code) is not int or not 0 < code <= 2147483647 or "id" in value or "post_id" in value:
-                raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=status)
+                raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=status, next_action_at=next_at)
             if code == 190:
                 safe = "TOKEN_REVOKED"
             elif code in {10, 200, 283, 368}:

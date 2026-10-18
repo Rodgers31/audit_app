@@ -30,6 +30,8 @@ def reel_errors(payload):
     """Application slice within both products: inspected vertical 15–45s MP4."""
     errors = []
     for asset in payload.assets:
+        if asset.alt_text is not None:
+            errors.append(issue("UNSUPPORTED_REEL_ALT_TEXT", "assets", "Video alt text is unsupported for this Reels slice."))
         if asset.mime_type != "video/mp4" or type(asset.byte_size) is not int or not 0 < asset.byte_size <= REEL_MAX_BYTES:
             errors.append(issue("REEL_MEDIA_INVALID", "assets", "Select an inspected MP4 no larger than 50000000 bytes."))
         if (type(asset.width) is not int or type(asset.height) is not int or not 540 <= asset.width <= 1080

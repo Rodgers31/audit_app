@@ -123,3 +123,12 @@ test('each media control group keeps unique accessible descriptions when runtime
   });
   expect(new Set(ids).size).toBe(3);
 });
+
+test('explicitly removing unsupported video alt text writes null while typed empty image alt remains intentional', async () => {
+  mount(<Harness initial={[{ asset_id: id, alt_text: 'Previously generated description', caption_asset_id: null }]} />);
+  fireEvent.change(screen.getByLabelText('Master media 1 alt text'), { target: { value: '' } });
+  expect(JSON.parse(screen.getByTestId('document').textContent!)[0].alt_text).toBe('');
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Master media 1 alt text' }));
+  expect(JSON.parse(screen.getByTestId('document').textContent!)[0].alt_text).toBeNull();
+  expect(screen.getByLabelText('Master media 1 alt text')).toHaveValue('');
+});

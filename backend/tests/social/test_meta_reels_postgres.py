@@ -99,7 +99,7 @@ def inspected_video(tmp_path_factory):
         assert attached['document']['master']['media'][0]['asset_id'] == str(asset.id)
         assert reviewed['approved_sha256'] == hashlib.sha256(data).hexdigest()
         result = SimpleNamespace(media_path=runtime.directory(job_id)/'output.mp4',
-            inspection=SimpleNamespace(**job.inspection))
+            inspection=SimpleNamespace(**job.inspection),document=attached['document'])
     isolated.dispose()
     return result
 
@@ -125,7 +125,7 @@ def prepare_reel(engine, config, graph, monkeypatch, rendered, platform='faceboo
             codec_metadata={**inspection.codec_metadata,'storage_etag':snapshot.etag,'storage_version':snapshot.version})
         db.add(asset); db.commit()
         monkeypatch.setattr(native,'FETCH_URL', 'https://'+'a'*32+'.r2.cloudflarestorage.com/media-test/'+key+'?fixture=preview-secret')
-        body = draft_body(document={'master':{'text':'Verified announcement','media':[{'asset_id':str(asset.id)}]},
+        body = draft_body(document={'master':{**rendered.document['master'],'media':[{**rendered.document['master']['media'][0],'asset_id':str(asset.id)}]},
             'targets':[{'account_id':str(account.id),'format':'reel','overrides':{}}]})
         _,created = call(db,body,lambda service:service.create(body),adapters=reg.adapters,route='reels-create')
         approve = ApproveCommand(expected_version=created['version'],revision_id=created['revision_id'])
