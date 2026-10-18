@@ -1,0 +1,2 @@
+# Retained stdout/stderr must keep original CRLF/control/trailing-space bytes.
+*.log -text

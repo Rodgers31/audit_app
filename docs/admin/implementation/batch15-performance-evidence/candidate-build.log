@@ -1,0 +1,34 @@
+
+> audit-app-frontend@1.0.0 prebuild
+> node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs
+
+{"check":"source-bound-tooling-repairs","packages":["node_modules/braces","node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml"],"absentPackages":[],"changedFiles":0}
+{"check":"bounded-tooling-inputs","tailwindPatterns":["./pages/**/*.{js,ts,jsx,tsx,mdx}","./components/**/*.{js,ts,jsx,tsx,mdx}","./app/**/*.{js,ts,jsx,tsx,mdx}","./src/**/*.{js,ts,jsx,tsx,mdx}"],"nextRoot":"literal working directory","lintFilesChecked":318}
+
+> audit-app-frontend@1.0.0 build
+> next build
+
+[next.config] API rewrite target: http://127.0.0.1:33518
+   ▲ Next.js 15.5.27
+   - Experiments (use with caution):
+     ✓ scrollRestoration
+     · optimizePackageImports
+
+[next.config] API rewrite target: http://127.0.0.1:33518
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 4.7s
+   Linting and checking validity of types ...
+Failed to compile.
+
+./browser-fixtures/reset-loading/playwright.config.ts:8:64
+Type error: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'reducedMotion' does not exist in type 'UseOptions<PlaywrightTestOptions & CustomProperties<unknown>, PlaywrightWorkerOptions & CustomProperties<unknown>>'.
+
+[0m [90m  6 |[39m   workers[33m:[39m [35m1[39m[33m,[39m
+ [90m  7 |[39m   retries[33m:[39m [35m0[39m[33m,[39m
+[31m[1m>[22m[39m[90m  8 |[39m   use[33m:[39m { baseURL[33m:[39m [32m'http://127.0.0.1:33508'[39m[33m,[39m channel[33m:[39m [32m'chrome'[39m[33m,[39m reducedMotion[33m:[39m [32m'reduce'[39m }[33m,[39m
+ [90m    |[39m                                                                [31m[1m^[22m[39m
+ [90m  9 |[39m })[33m;[39m
+ [90m 10 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null

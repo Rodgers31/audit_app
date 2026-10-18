@@ -1,0 +1,52 @@
+const fs=require('node:fs'), path=require('node:path'), crypto=require('node:crypto');
+const root=process.argv[2], out=process.argv[3];
+if(!root || !out || fs.existsSync(out)) throw Error('explicit root and fresh output required');
+const cp=require('node:child_process');
+const files=cp.execFileSync('git',['ls-files','frontend','backend/tests/legacy_browser_fixture_api.py','backend/dev_fixtures.py'],{cwd:root,encoding:'utf8'}).trim().split('\n');
+const hash=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+const sources=Object.fromEntries(files.map(p=>[p,hash(path.join(root,p))]));
+const generatorHash=hash(__filename);
+const target=cp.execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const {chromium}=require(path.join(root,'frontend/node_modules/playwright'));
+(async()=>{
+const browser=await chromium.launch({channel:'chrome',headless:true});
+const measurements=[];
+try{
+for(const route of ['/counties','/','/reset-password?recovery=local-test','/admin']) {
+ const context=await browser.newContext({viewport:{width:1365,height:900},reducedMotion:'reduce'});
+ const page=await context.newPage(); const requests=[], blocked=[], errors=[];
+ await page.route('**/*',async r=>{
+ const u=new URL(r.request().url());
+ if(!['127.0.0.1','localhost'].includes(u.hostname)){blocked.push(u.origin); return r.abort();}
+ if(u.pathname.startsWith('/rest/v1/profiles') || u.pathname.startsWith('/api/v1/')) await new Promise(resolve=>setTimeout(resolve,1800));
+ return r.continue();
+ });
+ page.on('request',r=> {if(r.url().includes('/api/') || r.url().includes('/rest/'))requests.push(r.url())});
+ page.on('pageerror',e=>errors.push(e.message));
+ page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+ await page.addInitScript(()=>{
+ window.__metrics={lcp:[],shifts:[]};
+ new PerformanceObserver(list=>list.getEntries().forEach(e=>window.__metrics.lcp.push({time:e.startTime,size:e.size,tag:e.element?.tagName,text:e.element?.textContent?.slice(0,90)}))).observe({type:'largest-contentful-paint',buffered:true});
+ new PerformanceObserver(list=>list.getEntries().forEach(e=>{if(!e.hadRecentInput)window.__metrics.shifts.push({time:e.startTime,value:e.value,sources:e.sources?.map(s=>({tag:s.node?.tagName,text:s.node?.textContent?.slice(0,60),previous:s.previousRect.toJSON(),current:s.currentRect.toJSON()}))})})).observe({type:'layout-shift',buffered:true});
+ });
+ if(route.includes('reset') || route==='/admin'){
+ const uid='00000000-0000-4000-8000-000000000001'; const enc=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+ const token=enc({alg:'HS256',typ:'JWT'})+'.'+enc({sub:uid,exp:Math.floor(Date.now()/1000)+3600,aud:'authenticated',role:'authenticated'})+'.inert-signature';
+ const session={access_token:token,refresh_token:'inert',expires_at:Math.floor(Date.now()/1000)+3600,expires_in:3600,token_type:'bearer',user:{id:uid,email:'local@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{}}};
+ await context.addCookies([{name:'sb-127-auth-token',value:'base64-'+enc(session),domain:'127.0.0.1',path:'/',sameSite:'Lax'}]);
+ }
+ const t=Date.now(); await page.goto('http://127.0.0.1:33508'+route,{waitUntil:'domcontentloaded'});
+ await page.waitForTimeout(500);
+ const early=await page.evaluate(()=>({headings:[...document.querySelectorAll('h1')].map(x=>x.textContent),main:document.querySelector('main')?.getBoundingClientRect().toJSON(),footer:document.querySelector('footer')?.getBoundingClientRect().toJSON()}));
+ await page.waitForTimeout(5500);
+ const result=await page.evaluate(()=>({metrics:window.__metrics,headings:[...document.querySelectorAll('h1')].map(x=>x.textContent),main:document.querySelector('main')?.getBoundingClientRect().toJSON(),footer:document.querySelector('footer')?.getBoundingClientRect().toJSON(),navigation:performance.getEntriesByType('navigation').map(e=>({ttfb:e.responseStart,dom:e.domContentLoadedEventEnd}))}));
+ await page.screenshot({path:out.replace('.json','')+'-'+(route==='/'?'home':route.split('?')[0].slice(1))+'.png',fullPage:true});
+ measurements.push({route,url:page.url(),early,result,requests,blocked,errors,elapsed:Date.now()-t});
+ await context.close();
+}
+if(files.some(p=>hash(path.join(root,p))!==sources[p]) || hash(__filename)!==generatorHash) throw Error('source changed during capture');
+fs.writeFileSync(out,JSON.stringify({generated_by:__filename,generator_sha256:generatorHash,target_commit:target,source_sha256:sources,build_id:fs.readFileSync(path.join(root,'frontend/.next/BUILD_ID'),'utf8'),verdict:'OBSERVATIONS_ONLY',synthetic:true,chrome:browser.version(),viewport:{width:1365,height:900},delayMs:1800,measurements},null,2),{flag:'wx'});
+const readback=JSON.parse(fs.readFileSync(out,'utf8'));if(readback.generator_sha256!==generatorHash || readback.measurements.length!==4)throw Error('readback failed');
+console.log(measurements.map(x=>({route:x.route,early:x.early.headings,final:x.result.headings,lcp:x.result.metrics.lcp.at(-1),cls:x.result.metrics.shifts.reduce((n,e)=>n+e.value,0),requests:x.requests.length,errors:x.errors})));
+}finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});

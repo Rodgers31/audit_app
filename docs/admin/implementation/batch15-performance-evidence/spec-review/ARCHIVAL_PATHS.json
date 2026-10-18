@@ -1,0 +1,34 @@
+{
+  "wrong-layout.spec.ts": {
+    "retained_as": "wrong-layout.spec.ts.txt",
+    "sha256": "a179a2603d27ac6303a7876864d0424cb3150af3ce1a2221c6d0b987078ef7cd"
+  },
+  "source-hashes.json": {
+    "retained_as": "source-hashes.json",
+    "sha256": "69602e8404eec735b5381c2796bd153ca554ca2bf39053ab4c5afe5b68d1da35"
+  },
+  "report.md": {
+    "retained_as": "report.md",
+    "sha256": "5473e7b2eb6078513f29c6b6c6e026849da81d5d16856cb56c0df85867255fed"
+  },
+  "test.log": {
+    "retained_as": "test.log",
+    "sha256": "0d77291c7771a346d3110e4399d756ad97aad935fb027836e464fe145c4a3b58"
+  },
+  "error-profile.spec.ts": {
+    "retained_as": "error-profile.spec.ts.txt",
+    "sha256": "65c41e4a237c6b586598895042d1917838babfabe927cbf623ee20eddadfd492"
+  },
+  "playwright.config.ts": {
+    "retained_as": "playwright.config.ts.txt",
+    "sha256": "88047504740479fb9376113971d3cf07c8a5a0c20e55b6fea3251ea7e637828a"
+  },
+  "review-artifact-hashes.json": {
+    "retained_as": "review-artifact-hashes.json",
+    "sha256": "2f3e5524e7bbcf3d6e3a260a0f05f79fe462bcd8f7eafb60f999af28db2413d0"
+  },
+  "adversarial.log": {
+    "retained_as": "adversarial.log",
+    "sha256": "88a55296aef2bf1887a780b7aa89be46f99f618f65581c141ddff7fe5739b7e1"
+  }
+}

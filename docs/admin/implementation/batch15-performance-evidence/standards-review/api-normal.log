@@ -1,0 +1,36 @@
+/Users/roger/.codex/visualizations/2026/10/10/01a12626-69b6-7d82-9083-54e4bf07a86b/issue602/venv-current/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+2026-10-16 14:44:29,624 - cache.redis_cache - INFO - Cache keys scoped to namespace 'dev' (source: fallback (neither CACHE_VERSION nor RENDER_GIT_COMMIT is set))
+2026-10-16 14:44:29,624 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-16 14:44:29,631 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-16 14:44:29,631 - main - INFO - Redis cache initialized successfully
+2026-10-16 14:44:29,712 - main - INFO - Using in-memory rate limiting
+2026-10-16 14:44:29,712 - main - INFO - Security middleware registered (rate limit, audit log, headers)
+2026-10-16 14:44:29,836 - main - INFO - Social admin router registered at /api/v1/admin/social
+2026-10-16 14:44:29,857 - main - INFO - ETL admin router registered at /api/v1/admin/etl
+2026-10-16 14:44:29,872 - main - INFO - Economic data router registered at /api/v1/economic
+2026-10-16 14:44:29,876 - main - INFO - Admin router registered at /api/v1/admin
+2026-10-16 14:44:29,882 - main - INFO - Admin users router registered at /api/v1/admin/users
+2026-10-16 14:44:29,888 - main - INFO - Admin audit-log router registered at /api/v1/admin/audit-log
+2026-10-16 14:44:29,894 - main - INFO - User features router registered (newsletter endpoints)
+2026-10-16 14:44:29,902 - main - INFO - Audit dashboard router registered at /api/v1/audit
+2026-10-16 14:44:29,903 - main - INFO - Detailed health router registered at /health/detailed
+2026-10-16 14:44:29,907 - cache.redis_cache - INFO - Redis not configured — using in-memory cache (this is normal without a Redis add-on)
+2026-10-16 14:44:29,909 - main - INFO - Money flow router registered at /api/v1/counties/*/money-flow
+2026-10-16 14:44:29,912 - main - INFO - Data freshness router registered at /api/v1/data/freshness
+2026-10-16 14:44:29,913 - main - INFO - Cache invalidation registered at /api/v1/system/cache/invalidate
+2026-10-16 14:44:29,921 - main - INFO - Data provenance router registered at /api/v1/provenance
+PASS bind loopback33518
+PASS disposable root exists while fixture is running
+PASS SQLite isolated
+PASS startup mutators disabled
+PASS /auth/v1/user synthetic response
+PASS /auth/v1/user fixture CORS
+PASS /rest/v1/profiles synthetic response
+PASS /rest/v1/profiles fixture CORS
+PASS external Origin absent from CORS allowlist
+2026-10-16 14:44:30,014 - main - WARNING - {"event":"http_request","method":"GET","route":"unmatched","status":404,"duration_ms":30.7}
+PASS absent path fails404
+PASS external request rejected before network
+PASS external request rejected before network
+PASS disposable DB root removed on shutdown
