@@ -1,0 +1,95 @@
+"""Independent exact _views branch probes. Catalog rows are controlled, SQL/hash guard real."""
+import copy,hashlib,json,pathlib,subprocess,sys,unittest
+from types import SimpleNamespace
+from sqlalchemy.dialects.postgresql import dialect
+from social.worker import role_contract as rc
+P=pathlib.Path(__file__).resolve().parent
+ROOT=pathlib.Path('/Users/roger/.codex/worktrees/batch14-release/audit_app')
+CAPTURE=P.parent/'guard-adversarial/historical-view/result.json'
+ACTUAL=json.loads(CAPTURE.read_text())
+
+class Result:
+    def __init__(self,value):self.value=value
+    def mappings(self):return self.value
+    def scalar(self):return self.value
+class Conn:
+    dialect=dialect()
+    def __init__(self,rows,report=True):self.rows=rows;self.report=report;self.calls=[]
+    def execute(self,sql,args):
+        self.calls.append((str(sql),args))
+        if 'pg_get_viewdef' in str(sql):return Result(self.rows)
+        if 'SELECT EXISTS' in str(sql):return Result(self.report)
+        raise RuntimeError('Unexpected SQL')
+
+def rows(kind):
+    return [dict(relname=v['name'],reloptions=['security_barrier=true'],definition=v['definition'],source_owner=True,application_owner=True,
+                 types=['integer','integer','text'],exact_return_rule=True,columns=['record_id','ingestion_id','authority_fingerprint']) for v in ACTUAL[kind]['views']]
+
+def check(test,kind,mutate=None):
+    values=rows(kind)
+    if mutate:mutate(values)
+    conn=Conn(values)
+    if mutate:
+        with test.assertRaises(rc.WorkerRoleError):rc._views(conn,'public')
+    else:rc._views(conn,'public')
+    test.assertTrue(all(call[1]['schema']=='public' for call in conn.calls))
+
+class Review(unittest.TestCase):
+    def test_actual_recorded_clean_definition_is_accepted(self):check(self,'clean')
+    def test_actual_recorded_historical_definition_is_accepted(self):check(self,'historical')
+    def test_pre708_without_report_schema_is_accepted(self):rc._views(Conn([],False),'public')
+    def test_post708_missing_both_views_is_refused(self):
+        with self.assertRaises(rc.WorkerRoleError):rc._views(Conn([],True),'public')
+    def test_unrelated_version_of_either_locked_hash_never_accepted_under_snapshot(self):
+        for kind in ['clean','historical']:
+            with self.subTest(kind=kind):
+                check(self,kind,lambda r:r[1].update(definition=r[0]['definition']))
+    def test_original_constants_remain_exact(self):
+        self.assertEqual(rc.REPORT_VIEW_SHA256,{'social_report_source_authority':'f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0','social_report_source_authority_snapshot':'60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed'})
+        self.assertEqual(rc.REPORT_LOCKED_VIEW_HISTORICAL_SHA256,'a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0')
+        self.assertEqual(rc.READ_VIEWS,frozenset({'social_report_source_authority'}))
+    def test_new_hash_only_affects_acceptance_and_does_not_mutate_catalog(self):
+        conn=Conn(rows('historical'));rc._views(conn,'public')
+        self.assertEqual(len(conn.calls),2)
+        self.assertTrue(all(s.lstrip().startswith('SELECT') for s,p in conn.calls))
+    def test_historical_fails_old_guard(self):
+        source=subprocess.check_output(['git','show','HEAD:backend/social/worker/role_contract.py'],cwd=ROOT,text=True)
+        original={};exec(compile(source,'<accepted-main-role-contract>','exec'),original)
+        with self.assertRaises(original['WorkerRoleError']):original['_views'](Conn(rows('historical')),'public')
+        original['_views'](Conn(rows('clean')),'public')
+
+MUTATIONS={
+    'extra_sql_suffix':lambda r:r[0].update(definition=r[0]['definition']+' SELECT 1;'),
+    'extra_empty_comment':lambda r:r[0].update(definition=r[0]['definition']+' -- benign-looking drift'),
+    'changed_sql_literal':lambda r:r[0].update(definition=r[0]['definition'].replace("'source_mode'", "'public.source_mode'")),
+    'removed_entity_lock':lambda r:r[0].update(definition=r[0]['definition'].replace('FOR UPDATE OF e','FOR SHARE OF e')),
+    'removed_job_lock':lambda r:r[0].update(definition=r[0]['definition'].replace('FOR SHARE OF j','')),
+    'weakened_extraction_lock':lambda r:r[0].update(definition=r[0]['definition'].replace('FOR SHARE OF x','FOR KEY SHARE OF x')),
+    'altered_provenance_filter':lambda r:r[0].update(definition=r[0]['definition'].replace('c_1.entity_id = b.entity_id','c_1.entity_id <> b.entity_id')),
+    'removed_cohort_field':lambda r:r[0].update(definition=r[0]['definition'].replace('c_1.source_hash,','')),
+    'snapshot_added_sql':lambda r:r[1].update(definition=r[1]['definition']+' SELECT 1;'),
+    'source_owner_false':lambda r:r[0].update(source_owner=False),
+    'application_owner_false':lambda r:r[0].update(application_owner=False),
+    'snapshot_owner_false':lambda r:r[1].update(application_owner=False),
+    'return_rule_false':lambda r:r[0].update(exact_return_rule=False),
+    'snapshot_rule_false':lambda r:r[1].update(exact_return_rule=False),
+    'columns_renamed':lambda r:r[0].update(columns=['wrong_id','ingestion_id','authority_fingerprint']),
+    'column_order_changed':lambda r:r[0].update(columns=['ingestion_id','record_id','authority_fingerprint']),
+    'extra_column':lambda r:r[0].update(columns=['record_id','ingestion_id','authority_fingerprint','data']),
+    'wrong_type':lambda r:r[0].update(types=['bigint','integer','text']),
+    'owner_nonboolean':lambda r:r[0].update(source_owner=1),
+    'options_empty':lambda r:r[0].update(reloptions=[]),
+    'security_invoker_added':lambda r:r[0].update(reloptions=['security_barrier=true','security_invoker=true']),
+    'barrier_disabled':lambda r:r[0].update(reloptions=['security_barrier=false']),
+    'missing_snapshot':lambda r:r.pop(),
+    'unknown_name':lambda r:r[0].update(relname='other_authority'),
+}
+for label,mutate in MUTATIONS.items():
+    def method(self,mutate=mutate):
+        for kind in ['clean','historical']:
+            with self.subTest(kind=kind):check(self,kind,mutate)
+    setattr(Review,'test_refuse_'+label,method)
+
+if __name__=='__main__':
+    print(json.dumps({'role_contract_sha256':hashlib.sha256((ROOT/'backend/social/worker/role_contract.py').read_bytes()).hexdigest(),'capture_sha256':hashlib.sha256(CAPTURE.read_bytes()).hexdigest(),'optimized':not __debug__}),flush=True)
+    unittest.main(verbosity=2)

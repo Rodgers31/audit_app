@@ -1,0 +1,17 @@
+--- clean-reviewed-ddl
++++ documented-historical-order-reviewed-ddl
+@@ -53,11 +53,12 @@
+                     c_1.page_ref,
+                     c_1.notes,
+                     c_1.provenance,
++                    c_1.created_at,
++                    c_1.validation_warnings,
+                     c_1.source_hash,
+-                    c_1.created_at,
++                    c_1.confidence_score,
+                     c_1.line_type,
+                     c_1.extraction_id,
+-                    c_1.confidence_score,
+                     c_1.basis,
+                     c_1.publishable,
+                     c_1.quarantine_reason

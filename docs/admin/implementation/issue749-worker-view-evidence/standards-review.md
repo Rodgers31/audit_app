@@ -1,0 +1,9 @@
+# Standards review: exact historical report view pin
+
+**CLEAR**, scoped to the final source hashes in STANDARDS_REVIEW.json. Code change allows only the independently reproduced historical locked hash and only for locked authority view, after all existing structural checks. Existing clean/snapshot pins and all role identity/grant/trigger/security/owner/rule/type/column checks remain unchanged.
+
+Actual immutable cached PostgreSQL17.11 replay on two owned databases: clean and historical guard, installer and restricted-login verifier PASS. Formal application tests pass **22 normal +22 optimized**, no skips. The nine existing hostile view definitions/column/options/owner/rule/grant/unrelated/missing/literal cases still refuse installation and readiness on both schema shapes; using locked view as snapshot also refuses. Restricted login denies raw financial/document/receipt/job reads, snapshot view and view update. CPU platform worker contract tests pass21 normal +21 optimized.
+
+Exact source-before/source-after hashes equal. New controller uses immutable cached digest, --pull=never, bounded CPU/memory, tmpfs, loopback-only assigned55439 and shared B17 heavy lock. Owned container removed and loopback port verified closed. No app edits, commits, pushes, production database or grants performed by reviewer.
+
+Original actual historical-schema RED remains separate. First new fixture attempt ran7 cases successfully but4 hostile setup/restore commands tried pg_catalog because operator engine used hardened worker search_path. Root fixed only the operator fixture engine; initial errors/logs remain separate and no assertions were weakened. Final formal cases all execute and pass. Separate missing production read grants, real host shutdown and provider/activation acceptance are outside this code-review verdict.

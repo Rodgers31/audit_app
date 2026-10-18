@@ -27,6 +27,12 @@ REPORT_VIEW_SHA256 = {
     'social_report_source_authority': 'f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0',
     'social_report_source_authority_snapshot': '60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed',
 }
+# The same reviewed 708 DDL on the documented prebaseline production schema
+# expands the locked cohort's SELECT c.* in its historical physical order,
+# including validation_warnings and the preexisting confidence_score. Actual
+# PostgreSQL replay reproduces this exact body; joins, predicates and locks are
+# unchanged. Keep this one locked-view variant explicit, never normalize SQL.
+REPORT_LOCKED_VIEW_HISTORICAL_SHA256 = 'a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0'
 READ_VIEWS = frozenset({'social_report_source_authority'})
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
@@ -412,7 +418,10 @@ def _views(conn, schema):
         definition = row['definition']
         for clause in ('FROM ', 'JOIN '):
             definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
-        _require(hashlib.sha256(definition.encode()).hexdigest() == REPORT_VIEW_SHA256[row['relname']])
+        accepted = {REPORT_VIEW_SHA256[row['relname']]}
+        if row['relname'] == 'social_report_source_authority':
+            accepted.add(REPORT_LOCKED_VIEW_HISTORICAL_SHA256)
+        _require(hashlib.sha256(definition.encode()).hexdigest() in accepted)
 
 
 def _verify(conn, role, schema, *, current, platforms=False):

@@ -1,0 +1,67 @@
+{
+  "verdict": "CLEAR_SCOPED_STANDARDS_REVIEW",
+  "source_sha256": {
+    "backend/social/worker/role_contract.py": "2260d282036a42df0694c4dac208913b9b00892ae1e0a568e1ef3a82c0a4570f",
+    "backend/tests/social/test_report_authority_historical_schema.py": "0e45fa8ff26f846987d3505fdc7d3820e2bf0975e48f3dc1abb3e328f7f5ceea",
+    "backend/tests/social/test_report_authority_role.py": "934fbafe1c6d9b85c2fe8e60b8a0905cc2e8f9773ec71983def3717d2a05be78"
+  },
+  "source_stable": true,
+  "controller_sha256": "2bd76e42a8e26b73f870d4c00339cc177b37279ee9e438154e8cf3df678f26b9",
+  "actual_pg_cases": {
+    "clean-normal": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "historical-normal": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "clean-optimized": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "historical-optimized": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "actual_pg_total": 44,
+  "cpu_cases": {
+    "normal": {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "optimized": {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "cpu_total": 42,
+  "image": "postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+  "server": "17.11",
+  "heavy_lock": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/HEAVY_TEST.lock",
+  "clean_and_historical_full_verifier_pass": true,
+  "nine_existing_hostile_view_variants_refuse": true,
+  "locked_view_variant_as_snapshot_refuses": true,
+  "financial_raw_receipts_snapshot_view_and_view_write_access_denied": true,
+  "source_limits": "One additional exact locked hash only; clean map/snapshot pin and structural/owner/rule/type/security/identity/grant/trigger gates unchanged",
+  "owned_cleanup": {
+    "container_absent": true,
+    "tmpfs_removed": true
+  },
+  "loopback55439_absent": true,
+  "no_production_calls_or_grant_changes": true,
+  "historical_failures": "Original actual red and first4 fixture-setup failures retained in separate directories; no original failure relabelled passing"
+}
