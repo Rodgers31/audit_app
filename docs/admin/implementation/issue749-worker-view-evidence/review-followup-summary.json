@@ -1,0 +1,28 @@
+{
+  "classification": {
+    "inline4309058278": "REFUTED: actual pytest default assertion rewriting remains active normally and optimized",
+    "physical_fixture_destination": "VALID secondary finding: ambient PGHOSTADDR reproduced on inert loopback; oldfixture regression red, explicit owner/worker hostaddr fix green; issue751",
+    "always_on_view_guard": "Additional mandatory regression coverage now executes actual retained SQL hashing and structural checks without PG opt-in",
+    "seeded_witness": "Added synthetic unqualified record read/digest invalidation, not financial publication acceptance",
+    "historical_evidence_portability": "VALID bounded documentation/replay gap; preserve all historical artifacts, add portable cached digest-pinned controller and honest original mutable-tag qualification"
+  },
+  "runtime_role_contract_sha256": "2260d282036a42df0694c4dac208913b9b00892ae1e0a568e1ef3a82c0a4570f",
+  "formal_fixture_sha256": "1b96f2f828db0b8c9eda78f5e2ca0a319fee5d8411ba08366a7f242325c4d395",
+  "always_on_test_sha256": "f6d1b1039ce8c80e36f263f975de59f367be97adcc73f5e4eeffe987b10ab385",
+  "portable_controller_sha256": "f39f56ff74ab0ff60ba597195310de18421ee65af752c870533c289f647b550f",
+  "current_python": "3.13",
+  "minimum_python": "3.12.15 / SQLAlchemy2.0.23",
+  "cases_per_runtime_per_mode": {
+    "actual_postgresql": 24,
+    "cpu": 44
+  },
+  "modes": [
+    "normal",
+    "optimized"
+  ],
+  "independent_review": "Standards and Spec clear; separate portable-controller executable controls15/mode and final exact pytest assertion proof8controls",
+  "earlier_failures": "Retained separately: missing cached alias exit77; seeded AVAILABLE document URL prerequisite; wrong local driver collection; pre-fix daemon cleanup false-positive. None counted as passing product cases.",
+  "archive_sha256": "b80cfd866c72493b0a4dad8296a0f5f96e27b1d1234f4204417b56361084edf1",
+  "archive_members": 140,
+  "scope": "No runtime edit beyond original exact historical hash addition; no production/grants/provider/activation operation by these tests. Follow-up tests executed on source-bound uncommitted candidate, then matching bytes committed by coordinator."
+}

@@ -1,0 +1,76 @@
+[
+  {
+    "argv": [
+      "/usr/local/bin/python",
+      "-B",
+      "-m",
+      "pytest",
+      "-p",
+      "no:cacheprovider",
+      "--confcutdir=backend/tests",
+      "backend/tests/social/test_report_authority_historical_schema.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/evidence/clean-normal.xml",
+      "--basetemp=/tmp/clean-normal"
+    ],
+    "exit_code": 0,
+    "label": "clean-normal"
+  },
+  {
+    "argv": [
+      "/usr/local/bin/python",
+      "-B",
+      "-m",
+      "pytest",
+      "-p",
+      "no:cacheprovider",
+      "--confcutdir=backend/tests",
+      "backend/tests/social/test_report_authority_historical_schema.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/evidence/historical-normal.xml",
+      "--basetemp=/tmp/historical-normal"
+    ],
+    "exit_code": 0,
+    "label": "historical-normal"
+  },
+  {
+    "argv": [
+      "/usr/local/bin/python",
+      "-O",
+      "-B",
+      "-m",
+      "pytest",
+      "-p",
+      "no:cacheprovider",
+      "--confcutdir=backend/tests",
+      "backend/tests/social/test_report_authority_historical_schema.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/evidence/clean-optimized.xml",
+      "--basetemp=/tmp/clean-optimized"
+    ],
+    "exit_code": 0,
+    "label": "clean-optimized"
+  },
+  {
+    "argv": [
+      "/usr/local/bin/python",
+      "-O",
+      "-B",
+      "-m",
+      "pytest",
+      "-p",
+      "no:cacheprovider",
+      "--confcutdir=backend/tests",
+      "backend/tests/social/test_report_authority_historical_schema.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/evidence/historical-optimized.xml",
+      "--basetemp=/tmp/historical-optimized"
+    ],
+    "exit_code": 0,
+    "label": "historical-optimized"
+  }
+]

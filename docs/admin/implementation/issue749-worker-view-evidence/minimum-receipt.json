@@ -1,0 +1,58 @@
+{
+  "verdict": "CLEAR_MINIMUM_SUPPORTED_RUNTIME",
+  "source_stable": true,
+  "source_sha256": {
+    "backend/social/worker/role_contract.py": "2260d282036a42df0694c4dac208913b9b00892ae1e0a568e1ef3a82c0a4570f",
+    "backend/tests/social/test_report_authority_historical_schema.py": "0e45fa8ff26f846987d3505fdc7d3820e2bf0975e48f3dc1abb3e328f7f5ceea",
+    "backend/tests/social/test_report_authority_role.py": "934fbafe1c6d9b85c2fe8e60b8a0905cc2e8f9773ec71983def3717d2a05be78"
+  },
+  "versions": {
+    "python": "3.12.15 (main, Oct  6 2026, 02:08:11) [GCC 14.2.0]",
+    "sqlalchemy": "2.0.23",
+    "pytest": "9.1.1",
+    "entry_sha256": "89bdf29bdf5ec43c453f9c8caec03a2ad15e52dc8b0415c91f97b86df7795fe9"
+  },
+  "counts": {
+    "clean-normal": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "historical-normal": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "clean-optimized": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "historical-optimized": {
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "total": 44,
+  "normal_passed": 22,
+  "optimized_passed": 22,
+  "runtime_image": "sha256:fdf77fbd6b0e7a0e4ab205cc98e4ce2f0bbbd73f60b1876c3fb3d7c032a13650",
+  "pg_image": "postgres@sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+  "controller_sha256": "22800ce68c6726de76306128397d1b458cb41713ec3e4bb37957b9158a21dbc3",
+  "entry_sha256": "89bdf29bdf5ec43c453f9c8caec03a2ad15e52dc8b0415c91f97b86df7795fe9",
+  "floor_overlay": "Read-only cached SQLAlchemy2.0.23 package; floor-package.json hashes273files",
+  "proxy": "Same owned network namespace; loopback55439\u21925432, stdlib proxy; fixture boundary unchanged",
+  "heavy_lock": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/HEAVY_TEST.lock",
+  "owned_pg_cleanup": {
+    "container_absent": true,
+    "tmpfs_removed": true
+  },
+  "owned_minimum_client_absent": true,
+  "loopback55439_absent": true,
+  "no_pulls_installs_or_remote_operations": true
+}

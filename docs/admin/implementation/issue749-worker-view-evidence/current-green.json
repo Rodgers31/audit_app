@@ -1,0 +1,160 @@
+{
+  "clean": {
+    "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "columns": [
+      "id",
+      "entity_id",
+      "period_id",
+      "category",
+      "subcategory",
+      "allocated_amount",
+      "actual_spent",
+      "committed_amount",
+      "currency",
+      "source_document_id",
+      "page_ref",
+      "notes",
+      "provenance",
+      "source_hash",
+      "created_at",
+      "line_type",
+      "extraction_id",
+      "confidence_score",
+      "basis",
+      "publishable",
+      "quarantine_reason"
+    ],
+    "views": [
+      {
+        "name": "social_report_source_authority",
+        "definition": " SELECT b.id AS record_id,\n    j.id AS ingestion_id,\n    encode(sha256(convert_to(jsonb_build_array(to_jsonb(b.*) - 'provenance'::text - 'created_at'::text - 'updated_at'::text, lineage.entry, to_jsonb(e.*), to_jsonb(p.*), to_jsonb(d.*), jsonb_build_array(j.id, j.domain, j.status, j.dry_run, j.started_at, j.finished_at, j.errors, j.metadata ->> 'source_mode'::text), dated.item, receipts.items, cohort.items)::text, 'UTF8'::name)), 'hex'::text) AS authority_fingerprint\n   FROM budget_lines b\n     JOIN entities e ON e.id = b.entity_id\n     JOIN fiscal_periods p ON p.id = b.period_id\n     JOIN source_documents d ON d.id = b.source_document_id\n     CROSS JOIN LATERAL jsonb_array_elements(\n        CASE\n            WHEN jsonb_typeof(b.provenance) = 'array'::text THEN b.provenance\n            ELSE '[]'::jsonb\n        END) lineage(entry)\n     JOIN ingestion_jobs j ON j.id::text = (lineage.entry ->> 'ingestion_job_id'::text)\n     LEFT JOIN LATERAL ( SELECT to_jsonb(locked_date.*) AS item\n           FROM ( SELECT x.id,\n                    x.source_document_id,\n                    x.page_number,\n                    x.extracted_json,\n                    x.extractor,\n                    x.confidence,\n                    x.created_at\n                   FROM extractions x\n                  WHERE x.id::text = ((d.metadata -> 'publication_date_evidence'::text) ->> 'extraction_id'::text)\n                 FOR SHARE OF x) locked_date) dated ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(to_jsonb(x.*) ORDER BY x.id) AS items\n           FROM ( SELECT x_1.id,\n                    x_1.source_document_id,\n                    x_1.page_number,\n                    x_1.extracted_json,\n                    x_1.extractor,\n                    x_1.confidence,\n                    x_1.created_at\n                   FROM extractions x_1\n                  WHERE (EXISTS ( SELECT 1\n                           FROM jsonb_array_elements(\n                                CASE\n                                    WHEN jsonb_typeof(lineage.entry -> 'source_evidence'::text) = 'array'::text THEN lineage.entry -> 'source_evidence'::text\n                                    ELSE '[]'::jsonb\n                                END) evidence(value)\n                          WHERE x_1.id::text = ((evidence.value -> 'receipt'::text) ->> 'extraction_id'::text)))\n                 FOR SHARE OF x_1) x) receipts ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_array(c.id, c.source_document_id, c.period_id) ORDER BY c.id) AS items\n           FROM ( SELECT c_1.id,\n                    c_1.entity_id,\n                    c_1.period_id,\n                    c_1.category,\n                    c_1.subcategory,\n                    c_1.allocated_amount,\n                    c_1.actual_spent,\n                    c_1.committed_amount,\n                    c_1.currency,\n                    c_1.source_document_id,\n                    c_1.page_ref,\n                    c_1.notes,\n                    c_1.provenance,\n                    c_1.source_hash,\n                    c_1.created_at,\n                    c_1.line_type,\n                    c_1.extraction_id,\n                    c_1.confidence_score,\n                    c_1.basis,\n                    c_1.publishable,\n                    c_1.quarantine_reason\n                   FROM budget_lines c_1\n                  WHERE c_1.entity_id = b.entity_id AND c_1.provenance @> jsonb_build_array(jsonb_build_object('ingestion_job_id', j.id))\n                 FOR SHARE OF c_1) c) cohort ON true\n FOR SHARE OF b\n FOR SHARE OF p\n FOR SHARE OF d\n FOR SHARE OF j\n FOR UPDATE OF e;",
+        "digest": "f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0",
+        "expected": "f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0"
+      },
+      {
+        "name": "social_report_source_authority_snapshot",
+        "definition": " SELECT b.id AS record_id,\n    j.id AS ingestion_id,\n    encode(sha256(convert_to(jsonb_build_array(to_jsonb(b.*) - 'provenance'::text - 'created_at'::text - 'updated_at'::text, lineage.entry, to_jsonb(e.*), to_jsonb(p.*), to_jsonb(d.*), jsonb_build_array(j.id, j.domain, j.status, j.dry_run, j.started_at, j.finished_at, j.errors, j.metadata ->> 'source_mode'::text), to_jsonb(dated.*), receipts.items, cohort.items)::text, 'UTF8'::name)), 'hex'::text) AS authority_fingerprint\n   FROM budget_lines b\n     JOIN entities e ON e.id = b.entity_id\n     JOIN fiscal_periods p ON p.id = b.period_id\n     JOIN source_documents d ON d.id = b.source_document_id\n     CROSS JOIN LATERAL jsonb_array_elements(\n        CASE\n            WHEN jsonb_typeof(b.provenance) = 'array'::text THEN b.provenance\n            ELSE '[]'::jsonb\n        END) lineage(entry)\n     JOIN ingestion_jobs j ON j.id::text = (lineage.entry ->> 'ingestion_job_id'::text)\n     LEFT JOIN extractions dated ON dated.id::text = ((d.metadata -> 'publication_date_evidence'::text) ->> 'extraction_id'::text)\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(to_jsonb(x.*) ORDER BY x.id) AS items\n           FROM extractions x\n          WHERE (EXISTS ( SELECT 1\n                   FROM jsonb_array_elements(\n                        CASE\n                            WHEN jsonb_typeof(lineage.entry -> 'source_evidence'::text) = 'array'::text THEN lineage.entry -> 'source_evidence'::text\n                            ELSE '[]'::jsonb\n                        END) evidence(value)\n                  WHERE x.id::text = ((evidence.value -> 'receipt'::text) ->> 'extraction_id'::text)))) receipts ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_array(c.id, c.source_document_id, c.period_id) ORDER BY c.id) AS items\n           FROM budget_lines c\n          WHERE c.entity_id = b.entity_id AND c.provenance @> jsonb_build_array(jsonb_build_object('ingestion_job_id', j.id))) cohort ON true;",
+        "digest": "60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed",
+        "expected": "60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed"
+      }
+    ],
+    "views_guard": "PASS",
+    "install": "PASS",
+    "verify": "PASS",
+    "failure_frames": []
+  },
+  "historical": {
+    "server_version": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "columns": [
+      "id",
+      "entity_id",
+      "period_id",
+      "category",
+      "subcategory",
+      "allocated_amount",
+      "actual_spent",
+      "committed_amount",
+      "currency",
+      "source_document_id",
+      "page_ref",
+      "notes",
+      "provenance",
+      "created_at",
+      "validation_warnings",
+      "source_hash",
+      "confidence_score",
+      "line_type",
+      "extraction_id",
+      "basis",
+      "publishable",
+      "quarantine_reason"
+    ],
+    "views": [
+      {
+        "name": "social_report_source_authority",
+        "definition": " SELECT b.id AS record_id,\n    j.id AS ingestion_id,\n    encode(sha256(convert_to(jsonb_build_array(to_jsonb(b.*) - 'provenance'::text - 'created_at'::text - 'updated_at'::text, lineage.entry, to_jsonb(e.*), to_jsonb(p.*), to_jsonb(d.*), jsonb_build_array(j.id, j.domain, j.status, j.dry_run, j.started_at, j.finished_at, j.errors, j.metadata ->> 'source_mode'::text), dated.item, receipts.items, cohort.items)::text, 'UTF8'::name)), 'hex'::text) AS authority_fingerprint\n   FROM budget_lines b\n     JOIN entities e ON e.id = b.entity_id\n     JOIN fiscal_periods p ON p.id = b.period_id\n     JOIN source_documents d ON d.id = b.source_document_id\n     CROSS JOIN LATERAL jsonb_array_elements(\n        CASE\n            WHEN jsonb_typeof(b.provenance) = 'array'::text THEN b.provenance\n            ELSE '[]'::jsonb\n        END) lineage(entry)\n     JOIN ingestion_jobs j ON j.id::text = (lineage.entry ->> 'ingestion_job_id'::text)\n     LEFT JOIN LATERAL ( SELECT to_jsonb(locked_date.*) AS item\n           FROM ( SELECT x.id,\n                    x.source_document_id,\n                    x.page_number,\n                    x.extracted_json,\n                    x.extractor,\n                    x.confidence,\n                    x.created_at\n                   FROM extractions x\n                  WHERE x.id::text = ((d.metadata -> 'publication_date_evidence'::text) ->> 'extraction_id'::text)\n                 FOR SHARE OF x) locked_date) dated ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(to_jsonb(x.*) ORDER BY x.id) AS items\n           FROM ( SELECT x_1.id,\n                    x_1.source_document_id,\n                    x_1.page_number,\n                    x_1.extracted_json,\n                    x_1.extractor,\n                    x_1.confidence,\n                    x_1.created_at\n                   FROM extractions x_1\n                  WHERE (EXISTS ( SELECT 1\n                           FROM jsonb_array_elements(\n                                CASE\n                                    WHEN jsonb_typeof(lineage.entry -> 'source_evidence'::text) = 'array'::text THEN lineage.entry -> 'source_evidence'::text\n                                    ELSE '[]'::jsonb\n                                END) evidence(value)\n                          WHERE x_1.id::text = ((evidence.value -> 'receipt'::text) ->> 'extraction_id'::text)))\n                 FOR SHARE OF x_1) x) receipts ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_array(c.id, c.source_document_id, c.period_id) ORDER BY c.id) AS items\n           FROM ( SELECT c_1.id,\n                    c_1.entity_id,\n                    c_1.period_id,\n                    c_1.category,\n                    c_1.subcategory,\n                    c_1.allocated_amount,\n                    c_1.actual_spent,\n                    c_1.committed_amount,\n                    c_1.currency,\n                    c_1.source_document_id,\n                    c_1.page_ref,\n                    c_1.notes,\n                    c_1.provenance,\n                    c_1.created_at,\n                    c_1.validation_warnings,\n                    c_1.source_hash,\n                    c_1.confidence_score,\n                    c_1.line_type,\n                    c_1.extraction_id,\n                    c_1.basis,\n                    c_1.publishable,\n                    c_1.quarantine_reason\n                   FROM budget_lines c_1\n                  WHERE c_1.entity_id = b.entity_id AND c_1.provenance @> jsonb_build_array(jsonb_build_object('ingestion_job_id', j.id))\n                 FOR SHARE OF c_1) c) cohort ON true\n FOR SHARE OF b\n FOR SHARE OF p\n FOR SHARE OF d\n FOR SHARE OF j\n FOR UPDATE OF e;",
+        "digest": "a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0",
+        "expected": "f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0"
+      },
+      {
+        "name": "social_report_source_authority_snapshot",
+        "definition": " SELECT b.id AS record_id,\n    j.id AS ingestion_id,\n    encode(sha256(convert_to(jsonb_build_array(to_jsonb(b.*) - 'provenance'::text - 'created_at'::text - 'updated_at'::text, lineage.entry, to_jsonb(e.*), to_jsonb(p.*), to_jsonb(d.*), jsonb_build_array(j.id, j.domain, j.status, j.dry_run, j.started_at, j.finished_at, j.errors, j.metadata ->> 'source_mode'::text), to_jsonb(dated.*), receipts.items, cohort.items)::text, 'UTF8'::name)), 'hex'::text) AS authority_fingerprint\n   FROM budget_lines b\n     JOIN entities e ON e.id = b.entity_id\n     JOIN fiscal_periods p ON p.id = b.period_id\n     JOIN source_documents d ON d.id = b.source_document_id\n     CROSS JOIN LATERAL jsonb_array_elements(\n        CASE\n            WHEN jsonb_typeof(b.provenance) = 'array'::text THEN b.provenance\n            ELSE '[]'::jsonb\n        END) lineage(entry)\n     JOIN ingestion_jobs j ON j.id::text = (lineage.entry ->> 'ingestion_job_id'::text)\n     LEFT JOIN extractions dated ON dated.id::text = ((d.metadata -> 'publication_date_evidence'::text) ->> 'extraction_id'::text)\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(to_jsonb(x.*) ORDER BY x.id) AS items\n           FROM extractions x\n          WHERE (EXISTS ( SELECT 1\n                   FROM jsonb_array_elements(\n                        CASE\n                            WHEN jsonb_typeof(lineage.entry -> 'source_evidence'::text) = 'array'::text THEN lineage.entry -> 'source_evidence'::text\n                            ELSE '[]'::jsonb\n                        END) evidence(value)\n                  WHERE x.id::text = ((evidence.value -> 'receipt'::text) ->> 'extraction_id'::text)))) receipts ON true\n     LEFT JOIN LATERAL ( SELECT jsonb_agg(jsonb_build_array(c.id, c.source_document_id, c.period_id) ORDER BY c.id) AS items\n           FROM budget_lines c\n          WHERE c.entity_id = b.entity_id AND c.provenance @> jsonb_build_array(jsonb_build_object('ingestion_job_id', j.id))) cohort ON true;",
+        "digest": "60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed",
+        "expected": "60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed"
+      }
+    ],
+    "views_guard": "PASS",
+    "install": "PASS",
+    "verify": "PASS",
+    "failure_frames": []
+  },
+  "result": "ACCEPTS_EXACT_REVIEWED_CLEAN_AND_HISTORICAL_SCHEMAS",
+  "formal_tests": [
+    {
+      "argv": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-m",
+        "pytest",
+        "-p",
+        "no:cacheprovider",
+        "--confcutdir=backend/tests",
+        "backend/tests/social/test_report_authority_historical_schema.py",
+        "-q",
+        "--tb=short",
+        "--junitxml=/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/clean-normal.xml"
+      ],
+      "exit_code": 0,
+      "log": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/clean-normal.log"
+    },
+    {
+      "argv": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-m",
+        "pytest",
+        "-p",
+        "no:cacheprovider",
+        "--confcutdir=backend/tests",
+        "backend/tests/social/test_report_authority_historical_schema.py",
+        "-q",
+        "--tb=short",
+        "--junitxml=/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/historical-normal.xml"
+      ],
+      "exit_code": 0,
+      "log": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/historical-normal.log"
+    },
+    {
+      "argv": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-O",
+        "-m",
+        "pytest",
+        "-p",
+        "no:cacheprovider",
+        "--confcutdir=backend/tests",
+        "backend/tests/social/test_report_authority_historical_schema.py",
+        "-q",
+        "--tb=short",
+        "--junitxml=/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/clean-optimized.xml"
+      ],
+      "exit_code": 0,
+      "log": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/clean-optimized.log"
+    },
+    {
+      "argv": [
+        "/Users/roger/Documents/projects/audit_app/venv/bin/python",
+        "-O",
+        "-m",
+        "pytest",
+        "-p",
+        "no:cacheprovider",
+        "--confcutdir=backend/tests",
+        "backend/tests/social/test_report_authority_historical_schema.py",
+        "-q",
+        "--tb=short",
+        "--junitxml=/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/historical-optimized.xml"
+      ],
+      "exit_code": 0,
+      "log": "/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/FULL_PLAN_COMPLETION_B17/RELEASE_20261018/guard-adversarial/historical-view-green/historical-optimized.log"
+    }
+  ]
+}
