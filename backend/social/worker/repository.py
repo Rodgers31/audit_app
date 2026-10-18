@@ -344,6 +344,12 @@ class QueueRepository:
         actual_revision_hash = canonical_hash({"document": revision["document"], "evidence_snapshot": revision["evidence_snapshot"]})
         if revision["content_hash"] != pub["approved_hash"] or actual_revision_hash != pub["approved_hash"]:
             return "AUTHORIZATION_HASH_MISMATCH"
+        from ..generation.authority import verify_report_authority
+        from ..service import SocialError
+        try:
+            verify_report_authority(conn, revision['evidence_snapshot'].get('source'))
+        except SocialError as error:
+            return error.code
         if pub["authorization_kind"] == "policy":
             from ..automation.service import worker_gate
             code = worker_gate(conn, pub["id"], account["id"], account["platform"], now, public=public)

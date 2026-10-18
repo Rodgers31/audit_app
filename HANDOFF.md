@@ -1,6 +1,15 @@
-# Neutral report availability follow-up (in progress)
+# Neutral CoB report availability — #719
 
-Issue719 extends consolidated editorial9a5bf1eb80a3b95283984e13c45b76f6d198b479.
-The reviewed policy registry correction76b0e3e30645a37d4b4df81ff81d3c65a29fad42 is merged through ordinary history. Its complete handoff is preserved in docs/social-publishing/batch15-handoffs/policy-registry-76b0e3e.md; earlier lane handoffs remain archived beside it.
+Goal: finish the original generation scope with a genuine neutral report producer feeding dormant policy authority. Original #704 remains at `2f3b36e2749a48dbe7d93f001081ddc756a61412` and is unchanged.
 
-Original704 remains unchanged. This branch owns a separate genuine retained-report availability path, without relabelling financial budget claims. Implementation and combined verification are still in progress. Publishing/uploads and new behavior remain off; no production mutation, paid resource, hosted check, bot review, merge to main or deployment.
+Implementation is complete on `codex/b15-neutral-availability`, based on consolidated editorial #716 plus ordinary policy-registry history. The contract, defaults and SQL boundary are in [NEUTRAL_REPORT_AVAILABILITY.md](docs/social-publishing/NEUTRAL_REPORT_AVAILABILITY.md). Financial claims retain their existing path. Neutral observations contain real report/date/scope evidence and no monetary stand-in. Multiple qualified cells deduplicate per county/report. Current source authority is checked at shadow, approval, policy and both human/policy worker admission; locking plus a fresh READ COMMITTED reread closes concurrent source/cohort changes.
+
+Migration `a708b15a0001` follows `a706b15a0001`; the consolidator must serialize it before later platform/studio migrations. It adds nullable report baseline state and exact private digest views. The reviewed worker contract grants SELECT only on the locking view, never financial tables or the snapshot view. Production grant installation is outstanding and separately authorized.
+
+Verification is source-bound in `FULL_PLAN_COMPLETION_B15/lane/neutral-availability-evidence-v1` under the shared packet. The final focused backend CPU selection passes 159 cases normally and under `-O`; the separate32-case actual PostgreSQL/role suite also passes in both modes after the empty-chain replay. 28 frontend tests and actual Chrome desktop/390px mobile checks pass. The full empty migration chain reaches708 with no operating/policy/publication seeds or PUBLIC view access. Independent Standards executes198 distinct cases per mode (154 CPU/HTTP +44 real PostgreSQL), and Spec executes90 per mode; these overlap and must not be summed. Both report no unresolved findings. Their initial red receipts and preliminary reviews remain historical and unchanged.
+
+Full TypeScript remains blocked by the existing `frontend/components/map/StyledGeography.tsx:36` TS2322 CSSProperties mismatch. Cached Python3.14/runtime evidence does not establish independent Python3.12 install parity, hosted checks or live acceptance. All public outcomes and operating acceptance in tests are explicitly synthetic.
+
+No production mutation, publishing/upload, activation, paid resource, hosted Actions/preview, bot review, merge-to-main or deployment is authorized by this delivery. Default report, policy and publishing ceilings remain off. Parent issues476/545 remain open. Next steps are consolidated review/migration composition, real source/provider operating acceptance and separately authorized rollout; code completion alone does not satisfy those gates.
+
+The owned disposable PostgreSQL/Chrome fixture will be removed after delivery; its final replay is complete. No remote checks were submitted. Preserve the dedicated checkout and evidence; do not alter the dirty primary checkout. Earlier lane handoffs remain archived in `docs/social-publishing/batch15-handoffs/`.

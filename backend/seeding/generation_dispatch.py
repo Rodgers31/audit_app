@@ -26,6 +26,11 @@ def _invoke(factory, record_ids, ingestion_id):
     return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
 
 
+def _invoke_reports(factory, record_ids, ingestion_id):
+    from social.generation.integration import maybe_generate_reports_committed
+    return maybe_generate_reports_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
+
+
 def _validate_result(value, expected):
     if (type(value) is not dict or set(value) != {"state", "reason", *COUNTERS}
             or value["state"] not in ("disabled", "completed", "unavailable", "failed")
@@ -38,13 +43,15 @@ def _validate_result(value, expected):
     return dict(value)
 
 
-def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run):
+def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run, include_reports=True):
     """Called after CLI session closure; never changes financial terminal status.
 
     No automatic retry follows an uncertain generation outcome. The operator's
     idempotent detect command is the recovery path. The hook owns its own atomic
     event/audit transactions; this module writes only separate job telemetry.
     """
+    if type(include_reports) is not bool:
+        raise ValueError('Explicit report phase selection required')
     if domain != "counties_budget" or dry_run is not False:
         return None
     if type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
@@ -75,18 +82,65 @@ def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run):
             outcome = (_unverified("generation_execution_unverified") if invoked
                        else _result("failed", "generation_source_read_failed"))
     _record_outcome(factory, domain, ingestion_id, outcome)
+    if include_reports and flag == 'true' and os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false') != 'false':
+        dispatch_committed_report_generation(factory, domain=domain, ingestion_id=ingestion_id, dry_run=dry_run)
     return outcome
 
 
-def record_generation_timeout(factory, *, domain, ingestion_id):
+def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_run):
+    """Independent telemetry; never combine report and financial record counters."""
+    if domain != 'counties_budget' or dry_run is not False or os.environ.get('SOCIAL_GENERATION_HOOK_ENABLED','false') != 'true':
+        return None
+    if type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
+        raise ValueError('Positive bounded ingestion ID required')
+    flag = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false')
+    if flag != 'true':
+        outcome = _result('disabled' if flag == 'false' else 'unavailable',
+            'report_environment_disabled' if flag == 'false' else 'invalid_report_hook_flag')
+        _record_outcome(factory, domain, ingestion_id, outcome, key='post_commit_report_generation')
+        return outcome
+    invoked = False
+    try:
+        records = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+        if records:
+            invoked = True
+            outcome = _validate_result(_invoke_reports(factory, records, ingestion_id), len(records))
+        else:
+            outcome = _result('completed', 'no_new_record_lineage')
+    except SourceObservationUnavailable:
+        outcome = (_unverified('report_generation_execution_unverified') if invoked
+                   else _result('unavailable', 'source_lineage_unavailable'))
+    except Exception:
+        logger.warning('post_commit_report_generation_failed')
+        outcome = (_unverified('report_generation_execution_unverified') if invoked
+                   else _result('failed', 'report_source_read_failed'))
+    _record_outcome(factory, domain, ingestion_id, outcome, key='post_commit_report_generation')
+    return outcome
+
+
+def record_generation_timeout(factory, *, domain, ingestion_id, financial_outcome=None, reports_started=None):
     if domain != "counties_budget" or type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
         raise ValueError("Bounded CoB ingestion identity required")
     outcome = _unverified("generation_timeout_execution_unverified")
+    if financial_outcome is not None:
+        try:
+            processed = financial_outcome['processed']
+            if type(processed) is not int or not 0 <= processed <= 1000:
+                raise ValueError('Bounded confirmed result required')
+            outcome = _validate_result(financial_outcome, processed)
+        except (KeyError, TypeError, ValueError):
+            logger.error('generation_timeout_financial_result_unverified')
     _record_outcome(factory, domain, ingestion_id, outcome)
+    if os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false') != 'false':
+        report = (_result('unavailable','report_generation_not_started') if reports_started is False
+                  else _unverified('report_generation_timeout_execution_unverified'))
+        _record_outcome(factory, domain, ingestion_id, report, key='post_commit_report_generation')
     return outcome
 
 
-def _record_outcome(factory, domain, ingestion_id, outcome):
+def _record_outcome(factory, domain, ingestion_id, outcome, *, key='post_commit_generation'):
+    if key not in {'post_commit_generation', 'post_commit_report_generation'}:
+        raise ValueError('Known generation telemetry key required')
     try:
         with factory.begin() as db:
             from .source_observations import _read_limits
@@ -96,7 +150,7 @@ def _record_outcome(factory, domain, ingestion_id, outcome):
             if (job is None or job.domain != domain or job.dry_run is not False
                     or job.status != IngestionStatus.COMPLETED):
                 raise ValueError("Committed job required for generation telemetry")
-            job.meta = {**(job.meta or {}), "post_commit_generation": outcome}
+            job.meta = {**(job.meta or {}), key: outcome}
     except Exception:
         # Facts were committed before this boundary. A telemetry write failure
         # cannot truthfully become an ETL rollback/failure or release uncertainty.

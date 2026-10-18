@@ -48,13 +48,41 @@ def semantic_fingerprint(observation):
     for fact in value['facts']:
         fact.pop('retrieved_at')
         fact.pop('verified_at')
+    if observation.report is None:
+        value.pop('report', None)  # Preserve the fingerprint of delivered fact events.
+    else:
+        for key in ('retrieved_at', 'verified_at', 'publication_extraction_id', 'qualification_extraction_id', 'source_record_id', 'authority_fingerprint'):
+            value['report'].pop(key)
     value['facts'].sort(key=lambda f: f['fact_id'])
     return canonical_hash({'detector': DETECTOR_VERSION, 'source': value})
 
 
+def evidence_items(observation):
+    return (observation.report,) if observation.report else observation.facts
+
+
+def report_release_state(observation):
+    if observation.report is None:
+        return None
+    report = observation.report
+    identity = {key: getattr(report, key) for key in ('entity_id', 'entity', 'publisher', 'period')}
+    identity.update(period_start=report.period_start.isoformat(), period_end=report.period_end.isoformat(), published_on=report.published_on.isoformat())
+    return {'release_hash': canonical_hash(identity), 'published_on': identity['published_on'], 'period_end': identity['period_end']}
+
+
+def generator_metadata(observation):
+    value = {'template_version': 'report-availability-v1' if observation.report else TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
+    if observation.report:
+        value['report_source_document_id'] = observation.report.source_document_id
+    return value
+
+
 def render(observation):
     """Only supplied verified strings and exact decimals enter factual copy."""
-    if observation.category == 'dataset_availability':
+    if observation.report:
+        report = observation.report
+        copy = f'Report available from {report.publisher}. Verified reporting scope: {report.entity}, {report.period}. Publisher publication date: {report.published_on.isoformat()}.'
+    elif observation.category == 'dataset_availability':
         copy = f'{observation.title} is available on AuditGava.'
     elif observation.category == 'new_report':
         copy = f'{observation.facts[0].publisher} published {observation.title}.'
@@ -80,7 +108,7 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     if not observation.committed or observation.fixture or observation.quarantined or not observation.publishable:
         raise SocialError('SOURCE_NOT_ELIGIBLE', 'Only committed, publishable, nonfixture evidence can generate drafts.', 422)
     now = svc.now()
-    if any(utc(f.verified_at) > now or utc(f.retrieved_at) > now for f in observation.facts):
+    if any(utc(f.verified_at) > now or utc(f.retrieved_at) > now for f in evidence_items(observation)):
         raise SocialError('SOURCE_NOT_ELIGIBLE', 'Future evidence timestamps cannot certify a draft.', 422)
     cfg = controls(svc.db, lock=True)
     if not cfg.drafts_enabled or observation.source_type not in cfg.source_allowlist:
@@ -90,15 +118,28 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     _insert(svc.db, SocialControls, dict(id=1, version=1, publishing_enabled=False, generation_enabled=False, auto_approve_enabled=False, auto_schedule_enabled=False, auto_publish_enabled=False, platform_controls={}, budget_controls={}), ['id'])
     svc.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update().execution_options(populate_existing=True))
     fingerprint = semantic_fingerprint(observation)
+    release = report_release_state(observation)
     identity = dict(source_type=observation.source_type, source_key=observation.source_key, detector_version=DETECTOR_VERSION)
     initial_id = uuid4()
-    _insert(svc.db, SourceCursor, dict(id=initial_id, **identity, evidence_version=observation.evidence_version, sequence=0, fingerprint=fingerprint), list(identity))
+    _insert(svc.db, SourceCursor, dict(id=initial_id, **identity, evidence_version=observation.evidence_version, sequence=0, fingerprint=fingerprint, report_state=release), list(identity))
     cursor = svc.db.scalar(select(SourceCursor).filter_by(**identity).with_for_update().execution_options(populate_existing=True))
     initial = cursor.id == initial_id
+    old_event = svc.db.scalar(select(SourceEvent).where(SourceEvent.cursor_id == cursor.id, SourceEvent.sequence == cursor.sequence)) if cursor.sequence else None
+    refresh_backfill = bool(release and backfill and old_event and (
+        old_event.fingerprint != fingerprint or any(
+            old_event.observation['report'][key] != getattr(observation.report, key)
+            for key in ('source_record_id', 'authority_fingerprint'))))
     if not initial:
+        if release:
+            if not isinstance(cursor.report_state, dict) or set(cursor.report_state) != {'release_hash', 'published_on', 'period_end'}:
+                raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Report release state is unavailable.', 503)
+            if release['published_on'] < cursor.report_state['published_on'] or release['period_end'] < cursor.report_state['period_end']:
+                raise SocialError('REPORT_RELEASE_REGRESSION', 'An older report cannot replace the current report series.', 422)
         if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
             raise SocialError('EVIDENCE_VERSION_CONFLICT', 'Changed or stale evidence requires an explicit newer evidence version.')
-        if fingerprint == cursor.fingerprint and not (backfill and cursor.sequence == 0):
+        if refresh_backfill and observation.evidence_version <= old_event.evidence_version:
+            raise SocialError('EVIDENCE_VERSION_CONFLICT', 'Refreshed report authority requires a newer committed ingestion.')
+        if fingerprint == cursor.fingerprint and not (backfill and cursor.sequence == 0) and not refresh_backfill:
             cursor.evidence_version = observation.evidence_version
             return {'status': 'unchanged', 'event_id': None, 'post_id': None, 'sequence': cursor.sequence}
     if initial and not backfill:
@@ -106,23 +147,31 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
         svc.db.flush()
         return {'status': 'baseline', 'event_id': None, 'post_id': None, 'sequence': 0}
     if cursor.sequence > 0:
-        old_event = svc.db.scalar(select(SourceEvent).where(SourceEvent.cursor_id == cursor.id, SourceEvent.sequence == cursor.sequence))
         old_post = svc.db.scalar(select(SocialPost).where(SocialPost.source_event_id == old_event.id)) if old_event else None
         if old_post is not None and svc._publication(old_post) is not None:
             svc.cancel(old_post.id, VersionCommand(expected_version=old_post.row_version))
             svc.audit('generation.source_superseded', post=old_post, reason='New explicit source evidence version', details={'source_event_id': str(old_event.id), 'new_evidence_version': observation.evidence_version})
+    if release and not backfill and release['release_hash'] == cursor.report_state['release_hash']:
+        # A new acquisition/artifact can invalidate old authority without making
+        # another report available. Preserve the release baseline; create no copy.
+        cursor.evidence_version, cursor.fingerprint, cursor.observed_at = observation.evidence_version, fingerprint, now
+        cursor.report_state = release
+        svc.audit('generation.report_evidence_refreshed', details={**identity, 'evidence_version': observation.evidence_version, 'fingerprint': fingerprint})
+        svc.db.flush()
+        return {'status': 'unchanged', 'event_id': None, 'post_id': None, 'sequence': cursor.sequence}
     cursor.sequence += 1
     cursor.evidence_version, cursor.fingerprint, cursor.observed_at = observation.evidence_version, fingerprint, now
+    cursor.report_state = release
     event = SourceEvent(id=uuid4(), cursor_id=cursor.id, sequence=cursor.sequence, evidence_version=observation.evidence_version, fingerprint=fingerprint, observation=observation.model_dump(mode='json'))
     svc.db.add(event)
     svc.db.flush()
-    document = PostDocument.model_validate({'master': {'text': render(observation), 'link': observation.facts[0].canonical_url}, 'targets': cfg.targets})
-    references = [{'url': f.document_url, 'label': f'{f.publisher} · {f.locator}'} for f in observation.facts]
+    document = PostDocument.model_validate({'master': {'text': render(observation), 'link': evidence_items(observation)[0].canonical_url}, 'targets': cfg.targets})
+    references = [{'url': f.document_url, 'label': f'{f.publisher} · {f.locator}'} for f in evidence_items(observation)]
     evidence = {'references': references, 'source_event_id': str(event.id), 'evidence_version': event.evidence_version, 'source': event.observation, 'fingerprint': fingerprint}
     post = SocialPost(id=uuid4(), origin_type='generated', creation_method='pipeline', title=observation.title, content_type=observation.category, editorial_state='pending_review', source_event_id=event.id, created_by=svc.actor)
     svc.db.add(post)
     svc.db.flush()
-    revision = svc._new_revision(post, document, references, 1, evidence_snapshot=evidence, generator_metadata={'template_version': TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]})
+    revision = svc._new_revision(post, document, references, 1, evidence_snapshot=evidence, generator_metadata=generator_metadata(observation))
     svc.audit('generation.draft_created', post=post, new='pending_review', details={'event_id': str(event.id), 'sequence': event.sequence, 'revision_id': str(revision.id), 'content_hash': revision.content_hash, 'backfill': backfill})
     svc.db.flush()
     from ..automation.service import maybe_automate_generated
@@ -191,8 +240,14 @@ class GenerationService:
         else:
             observation = SourceObservation.model_validate(event.observation)
             cursor = self.db.get(SourceCursor, event.cursor_id)
-            if cursor.sequence != event.sequence:
+            if cursor.sequence != event.sequence or observation.report and cursor.fingerprint != event.fingerprint:
                 reasons.append('SOURCE_SUPERSEDED')
+            if observation.report:
+                from .authority import verify_report_authority
+                try:
+                    verify_report_authority(self.db, event.observation)
+                except SocialError as error:
+                    reasons.append(error.code)
             if observation.category not in definition.categories or observation.source_type not in definition.source_allowlist:
                 reasons.append('SOURCE_CATEGORY_NOT_ALLOWLISTED')
             if revision.document.get('master', {}).get('text', '') != render(observation):
@@ -200,7 +255,7 @@ class GenerationService:
             if observation.correction_pending or observation.category == 'correction':
                 reasons.append('CORRECTION_REQUIRES_REVIEW')
             now = self.svc.now()
-            if any(utc(f.verified_at) > now or utc(f.verified_at) < now - timedelta(hours=definition.freshness_hours) for f in observation.facts):
+            if any(utc(f.verified_at) > now or utc(f.verified_at) < now - timedelta(hours=definition.freshness_hours) for f in evidence_items(observation)):
                 reasons.append('EVIDENCE_STALE')
             if semantic_fingerprint(observation) != event.fingerprint or revision.evidence_snapshot.get('source_event_id') != str(event.id) or revision.evidence_snapshot.get('source') != event.observation:
                 reasons.append('EVIDENCE_INTEGRITY_FAILED')
@@ -261,8 +316,12 @@ def verify_generated_revision(db, post, revision, *, lock=True):
     cursor = db.scalar(stmt.with_for_update() if lock else stmt) if event else None
     if not event or not cursor or cursor.sequence != event.sequence:
         raise SocialError('SOURCE_REVIEW_REQUIRED', 'Source evidence changed. Review the newer generated draft.', 422)
+    if event.observation.get('report') and cursor.fingerprint != event.fingerprint:
+        raise SocialError('SOURCE_REVIEW_REQUIRED', 'The report artifact changed. Review its current evidence.', 422)
     if revision.evidence_snapshot.get('source_event_id') != str(event.id) or revision.evidence_snapshot.get('source') != event.observation:
         raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Generated provenance does not match its immutable source event.', 503)
+    from .authority import verify_report_authority
+    verify_report_authority(db, event.observation)
     if unresolved_placeholders(revision.document) or unresolved_placeholders(revision.evidence_snapshot):
         raise SocialError('UNRESOLVED_TEMPLATE', 'Resolve every placeholder before authorization.', 422)
 

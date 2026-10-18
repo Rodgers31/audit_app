@@ -21,6 +21,13 @@ READ_TABLES = frozenset({
     'social_automation_rule_versions', 'social_policy_operating_evidence',
     'social_authorized_policy_snapshots', 'social_policy_selection', 'social_policy_decisions',
 })
+# Exact digest-only definer view from a708b15a0001, normalized schema name.
+REPORT_VIEW_SHA256 = {
+    'social_report_source_authority': 'f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0',
+    'social_report_source_authority_snapshot': '60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed',
+}
+READ_VIEWS = frozenset({'social_report_source_authority'})
+READ_RELATIONS = READ_TABLES | READ_VIEWS
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
     'social_accounts': frozenset('hold_reason publish_lease_target_id publish_lease_token publish_lease_expires_at updated_at'.split()),
@@ -175,6 +182,8 @@ def _grants(conn, role, schema, *, complete):
     found = set()
     for obj in objects:
         table = obj['relname'] if obj['nspname'] == schema else None
+        if table in READ_VIEWS:
+            _require(obj['relkind'] == 'v' and obj['relrowsecurity'] is False)
         if table in TABLES:
             found.add(table)
             _require(obj['relkind'] == 'r' and obj['relrowsecurity'] is True)
@@ -191,7 +200,7 @@ def _grants(conn, role, schema, *, complete):
     """), {'role': role})
     # Baseline catalog access is tolerated, never required: revoking it only narrows.
     for namespace, table, privilege, present, grantable, baseline in tables:
-        required = namespace == schema and table in READ_TABLES and privilege == 'SELECT'
+        required = namespace == schema and table in READ_RELATIONS and privilege == 'SELECT'
         _require(not grantable and (not present or required or baseline)
                  and (not complete or not required or present))
     columns = conn.execute(text("""
@@ -206,7 +215,7 @@ def _grants(conn, role, schema, *, complete):
     """), {'role': role})
     for namespace, table, column, privilege, present, grantable, baseline in columns:
         required = namespace == schema and (
-            table in READ_TABLES if privilege == 'SELECT' else
+            table in READ_RELATIONS if privilege == 'SELECT' else
             column in (INSERTS if privilege == 'INSERT' else
                        UPDATES if privilege == 'UPDATE' else {}).get(table, ()))
         _require(not grantable and (not present or required or baseline)
@@ -337,9 +346,42 @@ def _triggers(conn, schema):
     """), {'schema': schema, 'tables': sorted(TABLES)}).scalar())
 
 
+def _views(conn, schema):
+    rows = list(conn.execute(text("""SELECT c.relname,c.reloptions,pg_get_viewdef(c.oid,true) AS definition,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.social_source_events')) AS source_owner,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.budget_lines')) AS application_owner,
+        ARRAY(SELECT a.atttypid::regtype::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS types,
+        (SELECT count(*)=1 AND bool_and(r.rulename='_RETURN' AND r.ev_type='1' AND r.is_instead AND r.ev_enabled='O') FROM pg_rewrite r WHERE r.ev_class=c.oid) AS exact_return_rule,
+        ARRAY(SELECT a.attname::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS columns
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=:schema AND c.relname=ANY(:views) AND c.relkind='v'"""),
+        {'schema': schema, 'views': sorted(REPORT_VIEW_SHA256)}).mappings())
+    # Historical pre-708 schemas have no report authority. A 708 schema must
+    # contain the exact view even when no report has been generated yet.
+    report_schema = conn.execute(text('''SELECT EXISTS(SELECT 1 FROM pg_attribute
+        WHERE attrelid=to_regclass(quote_ident(:schema)||'.social_source_cursors')
+          AND attname='report_state' AND NOT attisdropped)'''), {'schema': schema}).scalar()
+    if not rows:
+        _require(report_schema is False)
+        return
+    _require(len(rows) == len(REPORT_VIEW_SHA256) and report_schema is True)
+    for row in rows:
+        _require(row['relname'] in REPORT_VIEW_SHA256
+                 and row['source_owner'] is True and row['application_owner'] is True
+                 and row['exact_return_rule'] is True
+             and list(row['types']) == ['integer', 'integer', 'text']
+             and list(row['reloptions'] or []) == ['security_barrier=true']
+             and list(row['columns']) == ['record_id', 'ingestion_id', 'authority_fingerprint'])
+        definition = row['definition']
+        for clause in ('FROM ', 'JOIN '):
+            definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
+        _require(hashlib.sha256(definition.encode()).hexdigest() == REPORT_VIEW_SHA256[row['relname']])
+
+
 def _verify(conn, role, schema, *, current):
     oid = _identity(conn, role, schema, current=current)
     _triggers(conn, schema)
+    _views(conn, schema)
     _grants(conn, role, schema, complete=True)
     _check_policies(conn, oid, schema, complete=True)
     # This proves the lock-only policy sees the actual singleton; an UPDATE
@@ -376,11 +418,14 @@ def install_worker_role(engine, role, schema='public'):
             _limits(conn)
             oid = _identity(conn, role, schema, current=False)
             _triggers(conn, schema)
+            _views(conn, schema)
             _grants(conn, role, schema, complete=False)
             existing = _check_policies(conn, oid, schema, complete=False)
             quoted_role, quoted_schema = _quoted(conn, role), _quoted(conn, schema)
             conn.execute(text('GRANT USAGE ON SCHEMA ' + quoted_schema + ' TO ' + quoted_role))
-            for table in sorted(READ_TABLES):
+            for table in sorted(READ_RELATIONS):
+                if table in READ_VIEWS and conn.execute(text('SELECT to_regclass(quote_ident(:schema)||\'.\'||quote_ident(:table)) IS NULL'), {'schema': schema, 'table': table}).scalar():
+                    continue
                 conn.execute(text('GRANT SELECT ON ' + quoted_schema + '.' + _quoted(conn, table) + ' TO ' + quoted_role))
             for command, matrix in [('INSERT', INSERTS), ('UPDATE', UPDATES)]:
                 for table, columns in sorted(matrix.items()):

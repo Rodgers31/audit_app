@@ -56,3 +56,39 @@ def test_operator_projection_never_hides_malformed_generation_receipts(raw):
     assert receipt["state"] == "unavailable" and receipt["execution_unverified"] is True
     assert receipt["processed"] is None
     assert "PRIVATE_DIAGNOSTIC" not in str(out)
+
+
+@pytest.mark.parametrize('phase', ['financial', 'report'])
+def test_native_report_alarm_preserves_confirmed_financial_progress(monkeypatch, phase):
+    from seeding import cli
+    from contextlib import nullcontext
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED', 'true')
+    monkeypatch.setattr(cli, '_domain_timeout', lambda seconds: nullcontext())
+    confirmed = {'state':'completed','reason':'COMMITTED_EVIDENCE_CONSUMED','processed':2,
+                 'drafts_created':1,'baselines':1,'unchanged':0,'refused':0}
+    def financial(*args, **kwargs):
+        assert kwargs['include_reports'] is False
+        if phase == 'financial': raise cli.DomainTimeoutError()
+        return confirmed
+    def report(*args, **kwargs): raise cli.DomainTimeoutError()
+    recorded = {}
+    monkeypatch.setattr(bridge, 'dispatch_committed_generation', financial)
+    monkeypatch.setattr(bridge, 'dispatch_committed_report_generation', report)
+    monkeypatch.setattr(bridge, '_record_outcome', lambda *args, key='post_commit_generation': recorded.update({key:args[-1]}))
+    cli._post_commit_generation(object(), domain='counties_budget', ingestion_id=1, dry_run=False)
+    financial_result = recorded['post_commit_generation']
+    report_result = recorded['post_commit_report_generation']
+    if phase == 'report':
+        assert financial_result == confirmed
+        assert report_result['execution_unverified'] is True and report_result['processed'] is None
+    else:
+        assert financial_result['execution_unverified'] is True and financial_result['processed'] is None
+        assert report_result['processed'] == 0 and report_result['reason'] == 'report_generation_not_started'
+
+
+def test_timeout_cannot_promote_malformed_financial_summary(monkeypatch):
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED', 'true')
+    monkeypatch.setattr(bridge, '_record_outcome', lambda *args, **kwargs: None)
+    result = bridge.record_generation_timeout(object(), domain='counties_budget', ingestion_id=1,
+        financial_outcome={'processed':True}, reports_started=True)
+    assert result['execution_unverified'] is True and result['processed'] is None
