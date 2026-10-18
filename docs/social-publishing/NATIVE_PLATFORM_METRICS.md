@@ -23,4 +23,6 @@ Observation value0 is available only if supplied as an actual integer zero. Miss
 
 ## Separate acceptance
 
+Review hardening: Threads material requires matching, future, timezone-aware data-access expiry in both durable credentials and the encrypted bundle. A Threads HTTP429 closes the response without reading its body; its Retry-After header is retained without accepting error-body data. TikTok captures valid Retry-After before bounded body validation, retaining the deadline even on malformed responses. An uncertain mutation remains uncertain and never becomes a safe write retry merely because that header exists.
+
 Controlled inert transport fixtures and owned PG establish implementation behavior. Genuine Threads insights grant/approved use case, TikTok approved Accounts API scope/Analytics opt-in, exact deployed operational roles/cost authority and an independently authorized real read remain pending. X remains intentionally unavailable under zero budget. No fixture counts or operator flags are represented as actual provider approval, public-post proof or production activation.

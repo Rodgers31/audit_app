@@ -59,6 +59,9 @@ def platform_fixture(db, platform='threads'):
         issued_at=datetime.now(timezone.utc)-timedelta(days=1), access_expires_at=expires)
     bundle = {'access_token': 'inert-metric-token', 'subject': account.external_account_id,
         'scopes': account.granted_scopes, 'expires_at': expires.isoformat()}
+    if platform == 'threads':
+        cred.data_access_expires_at = expires + timedelta(days=1)
+        bundle['data_access_expires_at'] = cred.data_access_expires_at.isoformat()
     if platform == 'tiktok':
         bundle['open_id'] = account.external_account_id
     cred.key_version, cred.encrypted_bundle = cipher.encrypt(cred.id, f'platform:{platform}:credential', bundle)
@@ -246,6 +249,62 @@ def test_default_off_exact_account_and_x_no_port(db,monkeypatch):
     acc=db.get(SocialAccount,target.account_id);acc.platform='x';db.commit()
     monkeypatch.setattr('social.studio.platform_metrics.httpx.AsyncHTTPTransport',lambda **_:pytest.fail('X must deny before transport'))
     with pytest.raises(SocialError,match='METRICS_UNAVAILABLE'):collect(sessionmaker(bind=db.bind),target.id,runtime,enabled=True,authorization=command)
+
+
+@pytest.mark.parametrize('change', ['missing', 'expired', 'malformed', 'naive', 'mismatched'])
+def test_threads_encrypted_data_access_expiry_must_match_before_read(db, monkeypatch, change):
+    target, runtime, command = platform_fixture(db, 'threads')
+    credential = db.get(PlatformCredential, command.credential_id)
+    bundle = runtime.cipher.decrypt(credential.id, 'platform:threads:credential', credential.key_version, credential.encrypted_bundle)
+    if change == 'missing':
+        bundle.pop('data_access_expires_at')
+    elif change == 'expired':
+        bundle['data_access_expires_at'] = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    elif change == 'malformed':
+        bundle['data_access_expires_at'] = 'invalid'
+    elif change == 'naive':
+        bundle['data_access_expires_at'] = credential.data_access_expires_at.replace(tzinfo=None).isoformat()
+    else:
+        bundle['data_access_expires_at'] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    credential.key_version, credential.encrypted_bundle = runtime.cipher.encrypt(credential.id, 'platform:threads:credential', bundle)
+    db.commit()
+    monkeypatch.setattr('social.studio.analytics.bounded_collect', lambda *_: pytest.fail('invalid encrypted grant must refuse before transport'))
+    with pytest.raises(SocialError, match='METRICS_MATERIAL_UNAVAILABLE'):
+        collect(sessionmaker(bind=db.bind), target.id, runtime, enabled=True, authorization=command)
+    assert db.scalar(select(MetricCollection.id)) is None
+
+
+@pytest.mark.parametrize('mode', ['html', 'oversize', 'accepted-data', 'duplicate', 'compressed'])
+def test_tiktok_malformed_rate_response_retains_provider_delay(db, monkeypatch, mode):
+    target, runtime, command = platform_fixture(db, 'tiktok')
+    calls = []
+    def read(port, request):
+        def wire(_):
+            calls.append(mode)
+            headers = {'Retry-After': '7200'}
+            if mode == 'accepted-data':
+                return httpx.Response(429, headers=headers, json={'code': 1, 'data': {'task_id': 'uncertain'}})
+            content = {'html': b'<html>rate limited</html>', 'oversize': b'x' * 32769,
+                       'duplicate': b'{"code":1,"code":1}', 'compressed': b'ignored'}[mode]
+            if mode == 'compressed':
+                headers['Content-Encoding'] = 'gzip'
+                class Body(httpx.AsyncByteStream):
+                    async def __aiter__(self):
+                        yield content
+                return httpx.Response(429, headers=headers, stream=Body())
+            return httpx.Response(429, headers=headers, content=content)
+        return asyncio.run(port._read(request, transport=httpx.MockTransport(wire)))
+    monkeypatch.setattr('social.studio.analytics.bounded_collect', read)
+    factory = sessionmaker(bind=db.bind)
+    ident = collect(factory, target.id, runtime, enabled=True, authorization=command)
+    with factory() as restarted, restarted.begin():
+        row = restarted.get(MetricCollection, ident)
+        assert row.state == 'unavailable' and row.reason.startswith('Provider rate limited; retry after ')
+        row.created_at = datetime.now(timezone.utc) - timedelta(hours=2)
+    monkeypatch.setattr('social.studio.analytics.bounded_collect', lambda *_: pytest.fail('provider delay must survive restart'))
+    with pytest.raises(SocialError, match='METRICS_RATE_LIMITED'):
+        collect(factory, target.id, runtime, enabled=True, authorization=command)
+    assert calls == [mode]
 
 
 def test_future_threads_insights_scope_is_explicit_and_never_implicit():

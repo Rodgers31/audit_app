@@ -123,6 +123,7 @@ def material(runtime, db, target, command, *, decrypt=True):
     if (not credential or credential.account_id != account.id or credential.platform != account.platform
             or credential.version != command.credential_version or credential.revoked_at is not None
             or credential.refresh_claim is not None or utc(credential.access_expires_at) <= now+timedelta(seconds=10)
+            or account.platform == 'threads' and credential.data_access_expires_at is None
             or credential.data_access_expires_at is not None and utc(credential.data_access_expires_at) <= now+timedelta(seconds=10)
             or type(account.granted_scopes) is not list or any(type(s) is not str for s in account.granted_scopes)
             or not SCOPES[account.platform] <= set(account.granted_scopes)):
@@ -135,6 +136,7 @@ def material(runtime, db, target, command, *, decrypt=True):
                 or any(type(s) is not str for s in bundle['scopes'])
                 or set(bundle['scopes']) != set(account.granted_scopes)
                 or (account.platform == 'tiktok' and bundle.get('open_id') != account.external_account_id)
+                or (account.platform == 'threads' and datetime.fromisoformat(bundle['data_access_expires_at']) != utc(credential.data_access_expires_at))
                 or datetime.fromisoformat(bundle['expires_at']) != utc(credential.access_expires_at)):
             raise ValueError()
         return account.platform, token(bundle.get('access_token'))
