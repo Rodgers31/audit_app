@@ -199,3 +199,28 @@ def test_readonly_reconcile_refuses_malformed_historical_identity_and_completion
         db.add(SocialMediaDeletion(**values))
     assert adapter.reconcile(command).state == 'outcome_unknown'
     assert storage.sdk.puts == []
+
+
+def test_documented_exact_media_retry_works_after_parent_unknown(bridge):
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from social.media.api import router
+    from social.http_boundary import AdminUser,get_db,require_admin
+    adapter,command,storage,factory,Plan,Decision,Execution,ledger=bridge
+    storage.sdk.lose_response=True
+    first=adapter.execute(command)
+    assert first.state=='outcome_unknown'
+    with factory() as session,session.begin(): session.get(Execution,command.operation_id).state='outcome_unknown'
+    before=list(storage.sdk.puts)
+    assert adapter.reconcile(command).state=='outcome_unknown' and storage.sdk.puts==before
+    internal=adapter._command(command,read_only=True)
+    assert internal is not None
+    app=FastAPI();app.state.social_media_runtime=adapter.runtime;app.state.social_privacy_media_port=adapter;app.include_router(router)
+    def database():
+        with factory() as session: yield session
+    app.dependency_overrides[get_db]=database
+    app.dependency_overrides[require_admin]=lambda:AdminUser(id=str(UUID(int=1)),email=None,roles=['admin'])
+    with TestClient(app) as client:
+        response=client.post(f'/api/v1/admin/social/media/assets/{command.asset_id}/retire',json=internal.model_dump(mode='json'))
+    reconciled=adapter.reconcile(command)
+    assert response.status_code==200 and response.json()['verified_deleted'] is True and reconciled.verified_deleted

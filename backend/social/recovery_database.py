@@ -303,6 +303,24 @@ def verify_database_restore(engine, manifest, *, schema, public_key, backup_sha2
     raise DatabaseRecoveryError()
 
 
+def _validate_connection_target(url):
+    import ipaddress
+    require(url.drivername in {'postgresql', 'postgresql+psycopg2'}
+        and all(type(v) is str and bool(v) for v in (url.host, url.database, url.username))
+        and 1 <= (url.port if url.port is not None else 5432) <= 65535
+        and set(url.query) <= {'sslmode', 'sslrootcert', 'hostaddr'}
+        and all(type(value) is str for value in url.query.values())
+        and url.query.get('sslmode', 'prefer') in {'disable','allow','prefer','require','verify-ca','verify-full'})
+    if 'sslrootcert' in url.query:
+        require(Path(url.query['sslrootcert']).is_absolute())
+    if 'hostaddr' in url.query:
+        try:
+            address = str(ipaddress.ip_address(url.query['hostaddr']))
+        except ValueError:
+            raise DatabaseRecoveryError() from None
+        require(address == url.query['hostaddr'])
+
+
 def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
     """Bounded child, same exported snapshot; no credentials in arguments/logs."""
     import os
@@ -314,6 +332,7 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
     from .privacy.private_io import write_private
     # Process groups alone cannot account for a detached descendant. The
     # dedicated Linux guardian uses kernel adoption; unsupported hosts refuse.
+    _validate_connection_target(engine.url)
     require(sys.platform == 'linux')
     require(type(pg_dump) is type(Path()) and pg_dump.is_absolute() and pg_dump.is_file())
     require(type(destination) is type(Path()) and destination.is_absolute() and not destination.exists() and not destination.is_symlink())
@@ -324,6 +343,8 @@ def _dump_snapshot(engine, snapshot, schema, destination, pg_dump):
         'PGUSER': url.username, 'PGDATABASE': url.database, 'PGCONNECT_TIMEOUT': '5',
         'PGSSLMODE': url.query.get('sslmode', 'prefer'), 'LC_ALL': 'C',
         'PGPASSFILE': '/dev/null', 'PGSERVICEFILE': '/dev/null'}
+    if 'hostaddr' in url.query:
+        environ['PGHOSTADDR'] = url.query['hostaddr']
     if url.password is not None:
         environ['PGPASSWORD'] = url.password
     # Existing provider TLS root may be explicitly selected by this URL.
@@ -379,6 +400,7 @@ def export_database_backup(engine, *, schema, destination, signing_key, pg_dump,
     writes only a fresh private local file, never uploads or changes the DB.
     """
     try:
+        _validate_connection_target(engine.url)
         require(type(signing_key) is bytes and len(signing_key) == 32)
         backups = None
         if keyring_backup is not None or digest_backup is not None:

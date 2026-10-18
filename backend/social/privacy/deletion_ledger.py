@@ -95,6 +95,15 @@ class FileDeletionLedger:
         from cryptography.hazmat.primitives import serialization
         self.public_key = self._key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
 
+    def validate_custody(self):
+        directory = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            info = os.fstat(directory)
+            if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+                raise ValueError('PRIVACY_LEDGER_REFUSED')
+        finally:
+            os.close(directory)
+
     def persist(self, intent):
         validate_intent(intent)
         # No recursive mkdir: custody location must already be provisioned.
