@@ -25,6 +25,18 @@ class RetainedRecovery(ReconciliationModel):
     expected_finalization_epoch: PositiveVersion | None
 
 
+def require_recorded_protocol(upload):
+    """Today's storage implementation cannot certify yesterday's writers.
+
+    This field is recorded only at allocation and is immutable in PostgreSQL.
+    Never populate it from a recovery command, HEAD, age or a capability flag.
+    """
+    from .fencing import WRITE_PROTOCOL
+    if upload.write_protocol != WRITE_PROTOCOL:
+        raise SocialError('MEDIA_WRITE_HISTORY_UNPROVEN',
+            'This upload has no recorded conditional-write history. Its objects and capacity remain held.', 409)
+
+
 def scope(asset, upload):
     return canonical_hash({'asset': str(asset.id), 'actor': str(upload.actor_id),
         'provider': asset.storage_provider, 'bucket': asset.bucket,
@@ -52,6 +64,7 @@ def retain_ready(service, actor, asset_id, version, request_id):
             raise SocialError('PERMISSION_DENIED', 'Only the initiating administrator may retain this upload.', 403)
         if upload.version != version:
             raise SocialError('VERSION_CONFLICT', 'This media upload changed.')
+        require_recorded_protocol(upload)
         if upload.fenced_copies:
             # Completed quarantine retirement supersedes retained-copy byte
             # verification. Its permanent marker and ledger must survive replay.
@@ -157,6 +170,7 @@ def recover_retained(service, actor, asset_id, body, request_id):
     with service.db.begin():
         service._budgets(service._upload_actor(asset_id))
         asset, upload = service._rows(asset_id)
+        require_recorded_protocol(upload)
         if (upload.version, upload.grant_epoch, upload.finalization_epoch) != (body.expected_version, body.expected_grant_epoch, body.expected_finalization_epoch):
             raise SocialError('VERSION_CONFLICT', 'This recovery scope changed.')
         ready = asset.state == 'ready'

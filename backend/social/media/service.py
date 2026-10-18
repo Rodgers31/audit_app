@@ -92,11 +92,12 @@ class MediaService:
             else:
                 reservation = 2 * body.declared_size
                 protocol = None
-                if self.config.fenced_retirement_enabled:
+                if self.config.fenced_retirement_enabled or self.config.retained_writes_enabled:
                     from .fencing import WRITE_PROTOCOL
                     if (getattr(storage, 'retained_create_only', None) is not True
-                            or getattr(storage, 'permanent_payload_fence', None) is not True):
-                        raise SocialError('MEDIA_RECOVERY_UNAVAILABLE', 'Permanent payload fencing is unavailable.', 503)
+                            or self.config.fenced_retirement_enabled
+                            and getattr(storage, 'permanent_payload_fence', None) is not True):
+                        raise SocialError('MEDIA_RECOVERY_UNAVAILABLE', 'Conditional payload fencing is unavailable.', 503)
                     protocol = WRITE_PROTOCOL
                 if self.config.fenced_retirement_enabled or self.config.owned_quiescence_enabled:
                     total = self.db.scalar(select(func.count()).select_from(SocialMediaUpload))
@@ -127,6 +128,14 @@ class MediaService:
             upload.write_quiescence_receipt_hash = None
             identity, epoch, version = asset.id, upload.grant_epoch, upload.version
             signing_operation = owned_writes.admit(self, asset, upload, 'grant', epoch)
+            if self.config.retained_writes_enabled:
+                from .retention import require_recorded_protocol
+                # Check persisted admission, including insert/flush hooks and
+                # same-intent retries allocated before retained mode existed.
+                # Failure rolls back this admission before any bearer escapes.
+                self.db.flush()
+                self.db.refresh(upload)
+                require_recorded_protocol(upload)
         try:
             access = storage.authorize_upload(quarantine, body.declared_size, body.declared_mime_type, ttl)
         except StorageFailure:
@@ -184,6 +193,9 @@ class MediaService:
         with self.db.begin():
             self._budgets(actor)
             asset, upload = self._rows(asset_id)
+            if self.config.retained_writes_enabled:
+                from .retention import require_recorded_protocol
+                require_recorded_protocol(upload)
             write_owner = owned_writes.owner(self, asset, upload)
             if write_owner is not None and write_owner.state != 'open':
                 raise owned_writes.refused()

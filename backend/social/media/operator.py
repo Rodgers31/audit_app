@@ -165,6 +165,9 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
                 codes.append('PAYLOAD_FENCED_NOT_WRITE_DRAINED')
             if upload.write_protocol is not None:
                 codes.append('CONDITIONAL_CREATE_PROTOCOL_RECORDED')
+            elif (upload.grant_settled_epoch < upload.grant_epoch
+                    or upload.finalization_epoch is not None and not upload.finalization_settled):
+                codes.append('LEGACY_WRITE_HISTORY_UNPROVEN')
             if upload.retained_write_fence is not None:
                 codes.append('RETAINED_CREATE_ONLY_FENCE_RECORDED')
             storage = service.runtime.storage

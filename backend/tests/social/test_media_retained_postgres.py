@@ -72,6 +72,10 @@ def test_concurrent_retention_charges_once_and_cleanup_never_touches_keys(pg_eng
     runtime = fixture(pg_engine)
     # First complete without retained mode, then race two independent DB sessions.
     original = MediaRuntime(replace(runtime.config, retained_writes_enabled=False), runtime.storage, runtime.inspector)
+    # Historical recovery must carry a protocol recorded at allocation. Keep
+    # retained mode off for the race, using the existing retirement admission.
+    runtime.storage.permanent_payload_fence = True
+    original = replace(original, config=replace(original.config, fenced_retirement_enabled=True))
     result = ready(pg_engine, original)
     def retain(_):
         with Session(pg_engine, expire_on_commit=False) as db:
@@ -170,3 +174,28 @@ def test_downgrade_serializes_retained_history_check_with_concurrent_writer(pg_e
     with pg_engine.begin() as conn:
         assert 'retained_write_fence' in {c['name'] for c in inspect(conn).get_columns('social_media_uploads')}
         assert conn.execute(text('SELECT retained_write_fence FROM social_media_uploads WHERE asset_id=:id'),{'id':result.id}).scalar() == '{}'
+
+
+def test_unknown_legacy_protocol_cannot_be_backfilled_or_recovered(pg_engine):
+    upgrade(pg_engine)
+    runtime = fixture(pg_engine)
+    original = replace(runtime, config=replace(runtime.config, retained_writes_enabled=False))
+    result = ready(pg_engine, original)
+    with pg_engine.connect() as conn:
+        assert conn.scalar(text('SELECT write_protocol FROM social_media_uploads WHERE asset_id=:id'),
+            {'id': result.id}) is None
+    # The real DB trigger prevents retroactively declaring unknown admissions
+    # conditional. Recovery cannot manufacture its own historical prerequisite.
+    with pytest.raises(DBAPIError):
+        with pg_engine.begin() as conn:
+            conn.execute(text("UPDATE social_media_uploads SET write_protocol='conditional_create_v1' WHERE asset_id=:id"),
+                {'id': result.id})
+    before = list(runtime.storage.operations)
+    with Session(pg_engine, expire_on_commit=False) as db:
+        with pytest.raises(SocialError, match='MEDIA_WRITE_HISTORY_UNPROVEN'):
+            retain_ready(MediaService(db, runtime), ACTOR, result.id, 2, uuid4())
+    assert runtime.storage.operations == before
+    with pg_engine.connect() as conn:
+        row = conn.execute(text('SELECT pending_released,reservation_released,retained_write_fence,reserved_bytes FROM social_media_uploads WHERE asset_id=:id'),
+            {'id': result.id}).one()
+        assert tuple(row) == (0, 0, None, 2 * len(png()))
