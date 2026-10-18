@@ -92,11 +92,15 @@ def test_explicit_mapping_never_borrows_credentials_from_process(monkeypatch):
     assert actual.app_secret=='' and actual.app_id==''
     assert actual.enabled is False
 
-def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch):
+@pytest.mark.parametrize('initial_clock', [0.0, 0.1, 59.999, 60.0, 6000.0])
+def test_cli_real_worker_bounded_scan_closes_native_then_engine(monkeypatch, initial_clock):
     import os
     import threading
     from social.worker import ownership
     import social.worker.__main__ as cli
+    import social.worker.runner as runner
+    # Patch only the worker's clock reference, preserving asyncio's real clock.
+    monkeypatch.setattr(runner, 'time', SimpleNamespace(monotonic=lambda: initial_clock))
     module=ready(monkeypatch);base=module.load_media_runtime({});events=[]
     monkeypatch.setenv('SOCIAL_NATIVE_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED','true')
     monkeypatch.setattr(cli,'verify_worker_role',lambda *args:None)
