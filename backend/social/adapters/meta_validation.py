@@ -64,11 +64,13 @@ class MetaValidation:
             account.get("platform") == self.platform and account.get("api_product") == self.product and
             account.get("connection_state") == "connected" and set(self.scopes) <= set(granted))
         return CapabilitySet(provider_api_version=self.config.graph_version,
-            eligible=eligible, supported_formats=tuple(value for value in self.formats if value != 'reel'),
+            eligible=eligible, supported_formats=self.formats,
             feature_states={"publishing": "supported" if self.config.ready and eligible else "restricted",
                             "media_upload": "supported", "carousel": "unsupported", "video": "unsupported",
-                            "reel": "requires_review" if "reel" in self.formats else "unsupported",
-                            "reel_public_confirmation": "unverified"},
+                            "reel": "supported" if "reel" in self.formats else "unsupported",
+                            "reel_public_confirmation": "requires_review",
+                            "reel_operator_confirmation": "supported",
+                            "reel_automatic_confirmation": "unsupported"},
             limits=self.limits, granted_scopes=tuple(sorted(set(granted))), required_scopes=self.scopes,
             price_class="free", source_links=self.source_links, verified_at=datetime(2026, 10, 8, tzinfo=timezone.utc),
             adapter_available=self.config.ready)
@@ -81,8 +83,8 @@ class MetaValidation:
             errors.append(issue("ACCOUNT_PRODUCT_MISMATCH", "account_id", "Use the exact connected Meta API product."))
         if payload.format not in self.formats or payload.format not in capabilities.supported_formats:
             errors.append(issue("UNSUPPORTED_FORMAT", "format", "This native adapter supports only its advertised formats."))
-        if payload.format == 'reel' and capabilities.feature_states.get('reel_public_confirmation') != 'supported':
-            errors.append(issue('REEL_PUBLIC_PROOF_UNAVAILABLE', 'format', 'Reels delivery is unavailable until its public confirmation contract is reviewed and integrated.'))
+        if payload.format == 'reel' and capabilities.feature_states.get('reel_operator_confirmation') != 'supported':
+            errors.append(issue('REEL_PUBLIC_PROOF_UNAVAILABLE', 'format', 'Reels delivery requires the reviewed independent operator confirmation contract.'))
         if not set(self.scopes) <= set(capabilities.granted_scopes):
             errors.append(issue("PERMISSION_DENIED", "scopes", "The account lacks a required Meta permission."))
         if canonical_hash(payload.model_dump(mode="json", exclude={"content_hash"})) != payload.content_hash:

@@ -43,7 +43,7 @@ def rehash(value):
 def credential(value):
     kind = FacebookPageAdapter if value.platform == "facebook" else InstagramFacebookLoginAdapter
     admission = NativeCapabilityAdmission.from_snapshot(CapabilitySet(provider_api_version="v26.0", eligible=True,
-        supported_formats=tuple(format for format in kind.formats if format != "reel"), required_scopes=kind.scopes, granted_scopes=tuple(sorted(SCOPES)),
+        supported_formats=kind.formats, required_scopes=kind.scopes, granted_scopes=tuple(sorted(SCOPES)),
         limits=kind.limits, adapter_available=True, feature_states={"publishing": "supported"}, price_class="free"))
     return WorkerCredentialMaterial(value.account_id, uuid4(), 1, value.platform, value.api_product,
         value.external_account_id, "901", TOKEN, SCOPES, NOW + timedelta(days=1), NOW + timedelta(days=1), admission)
@@ -207,7 +207,7 @@ async def test_material_mismatch_and_expiry_never_reach_http(changes):
 
 
 @pytest.mark.parametrize("platform,format,changes,expected", [
-    ("facebook", "reel", {}, "UNSUPPORTED_FORMAT"),
+    ("facebook", "video", {}, "UNSUPPORTED_FORMAT"),
     ("instagram", "text", {}, "UNSUPPORTED_FORMAT"),
     ("facebook", "image", {"text": "", "hashtags": ()}, "FACEBOOK_MESSAGE_REQUIRED"),
     ("instagram", "image", {"text": "a" * 2200}, "CAPTION_TOO_LONG"),

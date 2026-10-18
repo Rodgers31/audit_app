@@ -34,24 +34,8 @@ import test_meta_reels_delivery as reels_fixture
 import test_native_meta_adapters as native
 
 
-def registration(engine,config,storage,graph):
-    # Offline-only admission fixture; ordinary registration remains restricted.
-    from types import MappingProxyType
-    from social.adapters import MetaAdapterConfig
-    from social.worker.native_runtime import NativeRegistration
-    from test_meta_reels_delivery import OfflineFacebook, OfflineInstagram
-    actual = real_registration(engine,config,storage,graph)
-    asyncio.run(actual.close())
-    settings = MetaAdapterConfig('v26.0',True,True,'fake-native-app-secret')
-    adapters = {('facebook','facebook_pages'):OfflineFacebook(settings,transport=httpx.MockTransport(graph)),
-        ('instagram','instagram_graph_facebook_login'):OfflineInstagram(settings,transport=httpx.MockTransport(graph))}
-    return NativeRegistration(MappingProxyType(adapters),actual.credential_loader,actual.media_access)
-
-
-def step(engine,config,storage,graph,**kwargs):
-    from unittest.mock import patch
-    with patch('test_native_worker_postgres.registration',registration):
-        return real_step(engine,config,storage,graph,**kwargs)
+registration = real_registration
+step = real_step
 
 
 @pytest.fixture
@@ -60,12 +44,13 @@ def engine():
     if not raw:
         pytest.skip('Set an owned Meta Reels loopback fixture DSN')
     url = make_url(raw)
-    assert '?' not in raw and url.host == '127.0.0.1' and url.port == 62323
-    assert url.database == 'social_worker_test' and url.username == 'reels723' and not url.query
+    if ('?' in raw or url.drivername!='postgresql+psycopg2' or url.host!='127.0.0.1' or url.port!=62323
+            or url.database!='social_worker_test' or url.username!='reels723' or url.query):
+        raise ValueError('Use only the exact owned Meta Reels loopback fixture')
     engine = create_engine(url.set(query={'hostaddr':'127.0.0.1'}), pool_size=2, max_overflow=0)
     with engine.connect() as conn:
-        assert conn.execute(text('select current_user')).scalar() == 'reels723'
-        assert conn.execute(text('show server_version_num')).scalar().startswith('17')
+        if conn.execute(text('select current_user')).scalar()!='reels723' or not conn.execute(text('show server_version_num')).scalar().startswith('17'):
+            raise ValueError('Owned PostgreSQL17 identity is required')
     SocialPost.metadata.create_all(engine, tables=SOCIAL_TABLES)
     names = ','.join('"'+table.name+'"' for table in SOCIAL_TABLES)
     with engine.begin() as conn:
@@ -249,11 +234,11 @@ def test_repository_restart_with_lost_receipt_never_repeats_accepted_mutation(en
     assert len(uploads)==1 and len(finishes)==1 and target.submit_count==1
 
 
-def test_real_registration_rejects_fixture_expanded_reels_before_provider_mutation(engine,config,monkeypatch,inspected_video):
+def test_real_registration_admits_only_delivery_and_retains_operator_confirmation(engine,config,monkeypatch,inspected_video):
     graph = ReelGraph(); storage,target_id,asset_id = prepare_reel(engine,config,graph,monkeypatch,inspected_video)
-    # Even a stored expanded fixture snapshot cannot upgrade the real registry.
+    # Real native admission authorizes bounded delivery, never automatic public confirmation.
     due(engine,target_id); real_step(engine,config,storage,graph)
     with Session(engine) as db:
         target = db.get(SocialPostTarget,target_id)
-        assert target.state == 'failed' and target.error_code == 'TARGET_VALIDATION_FAILED'
-    assert graph.calls == []
+        assert target.state == 'queued' and target.checkpoint['phase']=='session_created'
+    assert len(graph.calls)==1 and graph.published is False

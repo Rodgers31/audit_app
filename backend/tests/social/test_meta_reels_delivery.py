@@ -11,35 +11,12 @@ import test_native_meta_adapters as native
 VIDEO = b'owned-inspected-mp4-fixture'
 
 
-class OfflineReelCapability:
-    """Explicit inert capability ONLY to exercise dormant transport integration.
-
-    This is not provider/public-visibility proof and is never runtime registered.
-    Production capabilities remain unavailable; tested separately below.
-    """
-    def capabilities(self, account):
-        caps = super().capabilities(account)
-        return caps.model_copy(update={'supported_formats':self.formats,
-            'feature_states':{**caps.feature_states,'reel':'supported','reel_public_confirmation':'supported'}})
-
-
-class OfflineFacebook(OfflineReelCapability, FacebookPageAdapter):
-    pass
-
-
-class OfflineInstagram(OfflineReelCapability, InstagramFacebookLoginAdapter):
-    pass
-
-
 def adapter(value,graph):
-    kind = OfflineFacebook if value.platform=='facebook' else OfflineInstagram
-    return kind(MetaAdapterConfig('v26.0',True,True),transport=httpx.MockTransport(graph),now=lambda:native.NOW)
+    return native.adapter(value,graph)
 
 
 def credential(value):
-    material = native.credential(value)
-    formats = OfflineFacebook.formats if value.platform=='facebook' else OfflineInstagram.formats
-    return replace(material,capability_admission=material.capability_admission.model_copy(update={'supported_formats':formats}))
+    return native.credential(value)
 
 
 def reel(platform='facebook', **changes):
@@ -361,11 +338,12 @@ async def test_reels_status_rate_limit_preserves_authoritative_retry_after(platf
 
 
 @pytest.mark.parametrize('platform',['facebook','instagram'])
-def test_production_capabilities_cannot_admit_reels_without_complete_public_proof(platform):
-    value = reel(platform); provider = native.adapter(value,native.Graph())
+def test_default_native_gates_still_refuse_reels_before_activation(platform):
+    value = reel(platform)
+    kind = FacebookPageAdapter if platform=='facebook' else InstagramFacebookLoginAdapter
+    provider = kind(MetaAdapterConfig('v26.0'),transport=httpx.MockTransport(native.Graph()))
     caps = native.capabilities(provider,value)
-    assert 'reel' not in caps.supported_formats
-    assert caps.feature_states['reel'] in {'unsupported','requires_review','restricted'}
+    assert not caps.adapter_available and caps.feature_states['publishing']=='restricted'
     assert not provider.validate(value,caps).valid
     account = dict(platform=value.platform,api_product=value.api_product,connection_state='connected',
         granted_scopes=native.SCOPES,capability_snapshot=caps.model_dump(mode='json'))
