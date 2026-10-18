@@ -405,10 +405,21 @@ class DefinitiveAbsenceProof(StrictModel):
         return value
 
 
+class NonPublicContinuationProof(StrictModel):
+    """Resume a known nonpublic session; never authorize publication replay."""
+    kind: Literal["provider_nonpublic_checkpoint"]
+    account_id: UUID
+    operation_id: UUID
+    content_hash: Hash
+    request_fingerprint: Hash
+    checkpoint_hash: Hash
+
+
 class ReconciliationResult(StrictModel):
     outcome: Literal["confirmed_published", "definitively_unpublished", "still_processing", "still_reconciling", "unknown"]
     evidence: dict[str, Any] = Field(default_factory=dict)
     absence_proof: Union[DefinitiveAbsenceProof, None] = None
+    continuation_proof: NonPublicContinuationProof | None = None
     result: Union[OperationResult, None] = None
     next_action_at: Union[datetime, None] = None
 

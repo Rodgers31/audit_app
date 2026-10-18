@@ -355,6 +355,7 @@ class SocialWorker:
         await self._save(claim, intent, snapshot, result, state=state, next_action=action,
                          delay=delay, duration_ms=int((time.monotonic()-started)*1000),
                          extra_receipt={"reconciliation_evidence": reconciliation.evidence,
+                                        "nonpublic_continuation": reconciliation.continuation_proof.model_dump(mode="json") if reconciliation.continuation_proof else None,
                                         "absence_proof": absence_proof.model_dump(mode="json") if valid_absence else None})
 
     @staticmethod

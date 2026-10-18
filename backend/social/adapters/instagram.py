@@ -1,4 +1,4 @@
-"""Instagram Facebook Login single JPEG flow; no ambiguous publish replay."""
+"""Instagram Facebook Login JPEG/Reels flow; no ambiguous publish replay."""
 from __future__ import annotations
 
 from datetime import timedelta
@@ -54,8 +54,13 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
                 return self._failure(MetaHTTPFailure("MEDIA_ACCESS_UNAVAILABLE", retry_safe=True), checkpoint)
             uncertain = self._state(payload, "creation_uncertain")
             try:
+                data = {"caption": caption(payload)}
+                if payload.format == "reel":
+                    data.update(video_url=access.url, media_type="REELS")
+                else:
+                    data.update(image_url=access.url, alt_text=asset.alt_text or "")
                 response = await self.http.request("POST", payload.external_account_id, token=material.page_access_token,
-                    edge="media", data={"image_url": access.url, "caption": caption(payload), "alt_text": asset.alt_text or ""})
+                    edge="media", data=data)
                 container_id = remote_id(response.value.get("id"))
                 checkpoint = self._state(payload, "container_created", container_id=container_id)
                 return self._success(checkpoint, response)
@@ -104,7 +109,7 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
         except MetaHTTPFailure as error:
             if not error.ambiguous:
                 return self._failure(error, checkpoint)
-            return self._processing(checkpoint, code="QUOTA_LOOKUP_UNAVAILABLE")
+            return self._processing(checkpoint, code="QUOTA_LOOKUP_UNAVAILABLE", next_action_at=error.next_action_at, http_status=error.http_status)
         except (ValueError, TypeError):
             return self._processing(checkpoint, code="QUOTA_PROOF_INVALID")
 
@@ -133,7 +138,7 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
         except MetaHTTPFailure as error:
             if not error.ambiguous and error.code in {"TOKEN_REVOKED", "PERMISSION_DENIED"}:
                 return self._failure(error, checkpoint)
-            return self._processing(checkpoint, code="CONTAINER_LOOKUP_UNAVAILABLE")
+            return self._processing(checkpoint, code="CONTAINER_LOOKUP_UNAVAILABLE", next_action_at=error.next_action_at, http_status=error.http_status)
         except (ValueError, TypeError):
             return self._failure(MetaHTTPFailure("CONTAINER_PROOF_INVALID", ambiguous=True), checkpoint)
 
@@ -146,12 +151,18 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
             response = await self.http.request("GET", state.media_id, token=material.page_access_token,
                 fields="id,owner{id},media_type,media_product_type,permalink,shortcode,caption")
             value = response.value
-            if value.get("id") != state.media_id or not isinstance(value.get("owner"), dict) or value["owner"].get("id") != payload.external_account_id or value.get("media_type") != "IMAGE" or value.get("media_product_type") != "FEED" or value.get("caption", "") != caption(payload):
+            reel = payload.format == "reel"
+            if value.get("id") != state.media_id or not isinstance(value.get("owner"), dict) or value["owner"].get("id") != payload.external_account_id or value.get("media_type") != ("VIDEO" if reel else "IMAGE") or value.get("media_product_type") != ("REELS" if reel else "FEED") or value.get("caption", "") != caption(payload):
                 raise ValueError("Published media ownership or content was not verified")
             url = public_url(value.get("permalink"), "instagram")
             shortcode = value.get("shortcode")
-            if not isinstance(shortcode, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", shortcode) or urlsplit(url).path != "/p/" + shortcode + "/":
+            if not isinstance(shortcode, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", shortcode) or urlsplit(url).path != ("/reel/" if reel else "/p/") + shortcode + "/":
                 raise ValueError("Permalink does not identify the media")
+            if reel:
+                # Owner-authenticated media read and a permalink establish an
+                # accepted identity, not public accessibility or lack of limits.
+                # Do not invent a visibility field in the official IG contract.
+                return self._processing(checkpoint, code="PUBLIC_VISIBILITY_UNCONFIRMED")
             return OperationResult(outcome="confirmed_success", primary_remote_id=state.media_id, remote_url=url,
                 visibility_state="public", confirmation_kind="instagram_owned_feed_image_read",
                 checkpoint=checkpoint, remote_refs={"container_id": state.container_id, "media_id": state.media_id},
@@ -160,7 +171,7 @@ class InstagramFacebookLoginAdapter(MetaAdapter, InstagramFacebookLoginValidatio
         except MetaHTTPFailure as error:
             if not error.ambiguous and error.code in {"TOKEN_REVOKED", "PERMISSION_DENIED"}:
                 return self._failure(error, checkpoint)
-            return self._processing(checkpoint, code="PUBLICATION_LOOKUP_UNAVAILABLE")
+            return self._processing(checkpoint, code="PUBLICATION_LOOKUP_UNAVAILABLE", next_action_at=error.next_action_at, http_status=error.http_status)
         except (ValueError, TypeError):
             return self._failure(MetaHTTPFailure("PUBLICATION_PROOF_INVALID", ambiguous=True), checkpoint)
 

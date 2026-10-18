@@ -139,9 +139,10 @@ class MetaAdapter(MetaValidation):
             retry_safe=error.retry_safe, http_status=error.http_status,
             provider_code=error.provider_code, next_action_at=error.next_action_at, checkpoint=checkpoint)
 
-    def _processing(self, checkpoint, *, code=None):
+    def _processing(self, checkpoint, *, code=None, next_action_at=None, http_status=None):
         return OperationResult(outcome="processing", checkpoint=checkpoint, error_code=code,
-                               next_action_at=self.now() + timedelta(seconds=60))
+                               next_action_at=max(self.now() + timedelta(seconds=60), next_action_at) if next_action_at else self.now() + timedelta(seconds=60),
+                               http_status=http_status)
 
     def _success(self, checkpoint, response):
         state = Checkpoint.model_validate(checkpoint)

@@ -11,7 +11,16 @@ from .meta_validation import FacebookPageValidation
 
 
 class FacebookPageAdapter(MetaAdapter, FacebookPageValidation):
+    def _checkpoint(self, payload, value):
+        if payload.format == 'reel':
+            from .facebook_reels import checkpoint
+            return checkpoint(payload, value)
+        return super()._checkpoint(payload, value)
+
     def next_operation(self, payload, checkpoint):
+        if payload.format == 'reel':
+            from .facebook_reels import FacebookReels
+            return FacebookReels(self).next_operation(payload, checkpoint)
         state = self._checkpoint(payload, checkpoint)
         if state is None:
             return self._plan("upload" if payload.format == "image" else "publish", checkpoint)
@@ -22,6 +31,9 @@ class FacebookPageAdapter(MetaAdapter, FacebookPageValidation):
         raise ValueError("Unsupported Facebook checkpoint phase")
 
     async def execute(self, payload, operation, credential, media_access):
+        if payload.format == 'reel':
+            from .facebook_reels import FacebookReels
+            return await FacebookReels(self).execute(payload, operation, credential, media_access)
         try:
             material, state = self._admission(payload, operation, credential)
         except MetaHTTPFailure as error:
@@ -124,6 +136,9 @@ class FacebookPageAdapter(MetaAdapter, FacebookPageValidation):
             return self._failure(MetaHTTPFailure("PUBLICATION_PROOF_INVALID", ambiguous=True), checkpoint)
 
     async def reconcile(self, payload, checkpoint, attempt, credential, media_access):
+        if payload.format == 'reel':
+            from .facebook_reels import FacebookReels
+            return await FacebookReels(self).reconcile(payload, checkpoint, attempt, credential)
         try:
             material = self._material(payload, credential)
             state = self._checkpoint(payload, checkpoint)

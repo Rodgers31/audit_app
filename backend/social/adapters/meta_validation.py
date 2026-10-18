@@ -23,6 +23,25 @@ def issue(code, field, message):
     return ValidationIssue(code=code, field=field, message=message)
 
 
+REEL_MAX_BYTES = 50_000_000
+
+
+def reel_errors(payload):
+    """Application slice within both products: inspected vertical 15–45s MP4."""
+    errors = []
+    for asset in payload.assets:
+        if asset.mime_type != "video/mp4" or type(asset.byte_size) is not int or not 0 < asset.byte_size <= REEL_MAX_BYTES:
+            errors.append(issue("REEL_MEDIA_INVALID", "assets", "Select an inspected MP4 no larger than 50000000 bytes."))
+        if (type(asset.width) is not int or type(asset.height) is not int or not 540 <= asset.width <= 1080
+                or asset.width * 16 != asset.height * 9):
+            errors.append(issue("REEL_DIMENSIONS_INVALID", "assets", "Use inspected 9:16 video, width 540–1080."))
+        if type(asset.duration_ms) is not int or not 15000 <= asset.duration_ms <= 45000:
+            errors.append(issue("REEL_DURATION_INVALID", "assets", "Use an inspected 15–45 second video."))
+        if type(asset.frame_rate_milli_fps) is not int or not 24000 <= asset.frame_rate_milli_fps <= 60000:
+            errors.append(issue("REEL_FRAME_RATE_INVALID", "assets", "Use an inspected 24–60 fps video."))
+    return errors
+
+
 class MetaValidation:
     platform = ""
     product = ""
@@ -45,9 +64,11 @@ class MetaValidation:
             account.get("platform") == self.platform and account.get("api_product") == self.product and
             account.get("connection_state") == "connected" and set(self.scopes) <= set(granted))
         return CapabilitySet(provider_api_version=self.config.graph_version,
-            eligible=eligible, supported_formats=self.formats,
+            eligible=eligible, supported_formats=tuple(value for value in self.formats if value != 'reel'),
             feature_states={"publishing": "supported" if self.config.ready and eligible else "restricted",
-                            "media_upload": "supported", "carousel": "unsupported", "video": "unsupported", "reel": "unsupported"},
+                            "media_upload": "supported", "carousel": "unsupported", "video": "unsupported",
+                            "reel": "requires_review" if "reel" in self.formats else "unsupported",
+                            "reel_public_confirmation": "unverified"},
             limits=self.limits, granted_scopes=tuple(sorted(set(granted))), required_scopes=self.scopes,
             price_class="free", source_links=self.source_links, verified_at=datetime(2026, 10, 8, tzinfo=timezone.utc),
             adapter_available=self.config.ready)
@@ -58,8 +79,10 @@ class MetaValidation:
             errors.append(issue("ADAPTER_NOT_AVAILABLE", "capabilities", "Native publishing requires explicit server construction and operational acceptance."))
         if payload.platform != self.platform or payload.api_product != self.product:
             errors.append(issue("ACCOUNT_PRODUCT_MISMATCH", "account_id", "Use the exact connected Meta API product."))
-        if payload.format not in self.formats:
+        if payload.format not in self.formats or payload.format not in capabilities.supported_formats:
             errors.append(issue("UNSUPPORTED_FORMAT", "format", "This native adapter supports only its advertised formats."))
+        if payload.format == 'reel' and capabilities.feature_states.get('reel_public_confirmation') != 'supported':
+            errors.append(issue('REEL_PUBLIC_PROOF_UNAVAILABLE', 'format', 'Reels delivery is unavailable until its public confirmation contract is reviewed and integrated.'))
         if not set(self.scopes) <= set(capabilities.granted_scopes):
             errors.append(issue("PERMISSION_DENIED", "scopes", "The account lacks a required Meta permission."))
         if canonical_hash(payload.model_dump(mode="json", exclude={"content_hash"})) != payload.content_hash:
@@ -72,7 +95,7 @@ class MetaValidation:
             errors.append(issue("UNSUPPORTED_DISCLOSURE", "disclosures", "This publishing slice does not support provider disclosure settings."))
         if any(not re.fullmatch(r"#?\w+", tag) for tag in payload.hashtags):
             errors.append(issue("INVALID_HASHTAG", "hashtags", "Use individual hashtags containing letters, numbers or underscores."))
-        if payload.format == "text" and payload.assets or payload.format == "image" and len(payload.assets) != 1:
+        if payload.format == "text" and payload.assets or payload.format in {"image", "reel"} and len(payload.assets) != 1:
             errors.append(issue("FORMAT_MEDIA_MISMATCH", "assets", "Select the advertised number of inspected assets."))
         if any(a.caption_asset_id is not None or a.caption_sha256 is not None for a in payload.assets):
             errors.append(issue("UNSUPPORTED_CAPTION_ASSET", "assets", "Caption assets are unsupported for static image publishing."))
@@ -84,25 +107,29 @@ class FacebookPageValidation(MetaValidation):
     platform = "facebook"
     product = "facebook_pages"
     checkpoint_name = "facebook_pages-v1"
-    formats = ("text", "image")
+    formats = ("text", "image", "reel")
     scopes = ("pages_manage_posts", "pages_read_engagement", "pages_show_list")
     source_links = ("https://developers.facebook.com/docs/graph-api/reference/v26.0/page/feed",
                     "https://developers.facebook.com/docs/graph-api/reference/photo/",
-                    "https://developers.facebook.com/documentation/pages-api/posts")
+                    "https://developers.facebook.com/documentation/pages-api/posts",
+                    "https://developers.facebook.com/documentation/video-api/guides/reels-publishing")
     limits = {"max_text_length": 20000, "max_hashtags": 50, "max_media_count": 1,
-              "max_image_bytes": 8000000, "max_alt_text_length": 2000}
+              "max_image_bytes": 8000000, "max_alt_text_length": 2000,
+              "max_reel_bytes": REEL_MAX_BYTES, "min_reel_duration_ms": 15000, "max_reel_duration_ms": 45000}
     phases = {"upload_uncertain": set(), "photo_uploaded": {"photo_id"},
               "publication_uncertain": {"photo_id"}, "post_created": {"photo_id", "post_id"}}
 
     def _content_errors(self, payload):
         errors = []
-        rendered = caption(payload, include_link=payload.format == "image")
+        rendered = caption(payload, include_link=payload.format in {"image", "reel"})
         if not rendered.strip() and not payload.link:
             errors.append(issue("FACEBOOK_MESSAGE_REQUIRED", "text", "Add a nonblank caption or link for this Page feed publishing slice."))
         if len(rendered) > 20000:
             errors.append(issue("CAPTION_TOO_LONG", "text", "The full Page message exceeds the application's 20000 character ceiling."))
         if len(payload.hashtags) > 50:
             errors.append(issue("TOO_MANY_HASHTAGS", "hashtags", "The separate Page hashtag list exceeds the application's 50-tag ceiling."))
+        if payload.format == "reel":
+            return errors + reel_errors(payload)
         for asset in payload.assets:
             if asset.mime_type not in {"image/jpeg", "image/png"} or asset.duration_ms is not None:
                 errors.append(issue("UNSUPPORTED_IMAGE_TYPE", "assets", "Select one inspected static JPEG or PNG."))
@@ -119,15 +146,17 @@ class InstagramFacebookLoginValidation(MetaValidation):
     platform = "instagram"
     product = "instagram_graph_facebook_login"
     checkpoint_name = "instagram_facebook_login-v1"
-    formats = ("image",)
+    formats = ("image", "reel")
     scopes = ("instagram_basic", "instagram_content_publish", "pages_read_engagement", "pages_show_list")
     source_links = ("https://developers.facebook.com/documentation/instagram-platform/content-publishing",
         "https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/media",
-        "https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-container")
+        "https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-container",
+        "https://developers.facebook.com/documentation/instagram-platform/content-publishing/resumable-uploads")
     limits = {"max_text_length": 2200, "max_hashtags": 30, "max_media_count": 1,
         "max_image_bytes": 8000000, "min_image_width": 320, "max_image_width": 1440,
         "max_alt_text_length": 1000, "max_mentions": 20, "max_publications_24h": 100,
-        "max_containers_24h": 400}
+        "max_containers_24h": 400, "max_reel_bytes": REEL_MAX_BYTES,
+        "min_reel_duration_ms": 15000, "max_reel_duration_ms": 45000}
     phases = {"creation_uncertain": set(), "quota_checked": set(), "container_created": {"container_id"},
         "container_ready": {"container_id"}, "publish_ready": {"container_id"},
         "publication_uncertain": {"container_id"}, "media_created": {"container_id", "media_id"}}
@@ -141,6 +170,8 @@ class InstagramFacebookLoginValidation(MetaValidation):
             errors.append(issue("TOO_MANY_HASHTAGS", "hashtags", "The full caption exceeds 30 hashtags."))
         if len(re.findall(r"(?<![\w@])@[A-Za-z0-9_.]+", rendered)) > 20:
             errors.append(issue("TOO_MANY_MENTIONS", "text", "The full caption exceeds 20 mentions."))
+        if payload.format == "reel":
+            return errors + reel_errors(payload)
         for asset in payload.assets:
             if asset.mime_type != "image/jpeg" or asset.duration_ms is not None:
                 errors.append(issue("UNSUPPORTED_IMAGE_TYPE", "assets", "Instagram requires one inspected static JPEG."))
