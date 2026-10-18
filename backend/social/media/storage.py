@@ -198,6 +198,14 @@ class R2Storage:
 
     def preview(self, key, snapshot, ttl):
         bounded(ttl, 300)
+        return self._signed_get(key, snapshot, ttl)
+
+    def provider_fetch(self, key, snapshot, ttl):
+        """Explicit provider transfer port; browser previews retain their ceiling."""
+        bounded(ttl, 1860)
+        return self._signed_get(key, snapshot, ttl)
+
+    def _signed_get(self, key, snapshot, ttl):
         try:
             params = {'Bucket': self.bucket, 'Key': key, 'ResponseContentType': snapshot.mime_type, 'ResponseContentDisposition': 'inline'}
             if snapshot.version: params['VersionId'] = snapshot.version

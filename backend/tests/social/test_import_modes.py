@@ -24,7 +24,8 @@ def _assert_complete_public_prefix(app):
     )
     assert all(path in paths and 'get' in paths[path] for path in required), paths
     assert not any('/social/api/v1/' in path for path in paths), paths
-    assert all(path.startswith('/api/v1/admin/social/') for path in paths), paths
+    callbacks={'/api/v1/social/platform-events/threads','/api/v1/social/platform-events/{provider}'}
+    assert all(path.startswith('/api/v1/admin/social/') or path in callbacks for path in paths), paths
     with TestClient(app) as client:
         for path in required:
             response = client.get(path)

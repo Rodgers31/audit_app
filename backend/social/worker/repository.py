@@ -12,7 +12,7 @@ import json
 import threading
 from uuid import UUID, uuid4
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -162,6 +162,13 @@ class QueueRepository:
             """)).scalar()
         return min(ceiling, max(0.01, float(delay))) if delay is not None else ceiling
 
+    def process_provider_events(self):
+        from ..platform_events import process_pending_events
+        with self.engine.begin() as conn:
+            self._authority(conn)
+            with Session(bind=conn,join_transaction_mode='rollback_only') as db:
+                return process_pending_events(db,limit=25)
+
     def load(self, claim: Claim) -> dict:
         with self.engine.connect() as conn:
             self._authority(conn)
@@ -172,7 +179,7 @@ class QueueRepository:
                        c.version AS admitted_credential_version, p.post_id, p.revision_id, p.approved_hash,
                        p.approved_at, p.authorization_kind, p.approved_by,
                        p.cancel_requested_at, p.revoked_at, p.start_deadline,
-                       p.retry_deadline, p.content_valid_until, p.dispatch_requested_at,
+                       p.retry_deadline, p.content_valid_until, p.dispatch_requested_at, p.scheduled_for,
                        r.content_hash AS revision_hash
                 FROM social_post_targets t
                 JOIN social_accounts a ON a.id=t.account_id
@@ -186,8 +193,22 @@ class QueueRepository:
             if row is None:
                 raise LeaseLost()
             data = dict(row)
+            if data['platform'] in {'threads', 'x', 'tiktok'}:
+                from ..platform_connections.models import PlatformCredential
+                credential = conn.execute(select(PlatformCredential.id, PlatformCredential.version).where(
+                    PlatformCredential.account_id == data['account_id'], PlatformCredential.revoked_at.is_(None))).mappings().first()
+                data['admitted_credential_id'] = credential['id'] if credential else None
+                data['admitted_credential_version'] = credential['version'] if credential else None
+            if data['platform'] == 'x':
+                from ..platform_budget import SocialPlatformBudget, budget_available
+                budget = conn.execute(select(SocialPlatformBudget.__table__).where(
+                    SocialPlatformBudget.account_id == data['account_id'])).mappings().first()
+                data['x_access_verified'] = bool(budget and budget['access_verified'] is True and budget['enabled'] is True)
+                data['x_budget_remaining_microusd'] = budget['limit_microusd'] - budget['reserved_microusd'] - budget['spent_microusd'] if budget_available(budget, 1) else 0
+            if data['platform'] == 'tiktok':
+                data['tiktok_product_approved'] = data['capability_snapshot'].get('eligible') is True
             attempt = conn.execute(text("""
-                SELECT id, operation_id, operation, outcome, receipt,
+                SELECT id, operation_id, operation, outcome, receipt, request_fingerprint,
                        dispatch_started_at, sequence
                 FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)
                 ORDER BY CASE WHEN :reconciling AND receipt->'intent'->>'mutating'='true'
@@ -238,7 +259,7 @@ class QueueRepository:
                 raise GateRejected("OPERATION_ALREADY_STARTED")
             if target["checkpoint"] != checkpoint_input:
                 raise GateRejected("CHECKPOINT_CONFLICT")
-            if estimated_cost_microusd:
+            if account['platform'] != 'x' and estimated_cost_microusd:
                 # Paid reads also need a reviewed accounting reservation. Pause
                 # permits status reads, but never implicitly authorizes spending.
                 self._transition(conn, claim, target, "blocked", "BUDGET_RESERVATION_UNAVAILABLE")
@@ -293,6 +314,24 @@ class QueueRepository:
                         publish_lease_expires_at=clock_timestamp()+make_interval(secs => :lease_seconds),
                         updated_at=now() WHERE id=CAST(:account AS uuid)
                 """), {**self._params(claim), "lease_seconds": self.config.lease_seconds})
+            if account['platform'] == 'x':
+                from ..platform_budget import reserve_x_operation
+                global_budget = (controls['budget_controls'] or {}).get('x_budget_microusd') if controls else None
+                # Includes status/recovery reads. Zero estimates cannot bypass
+                # spending admission, and an uncertain request retains its cost.
+                if type(global_budget) is not int or global_budget <= 0 or not reserve_x_operation(conn, account['id'], estimated_cost_microusd):
+                    self._transition(conn, claim, target, 'blocked', 'BUDGET_EXHAUSTED')
+                    return None
+            if account['platform'] == 'tiktok' and mutating:
+                counts = conn.execute(text('''SELECT
+                    count(*) FILTER (WHERE created_at > :now - interval '1 minute') AS minute_count,
+                    count(*) AS day_count FROM social_publish_attempts
+                    WHERE target_id IN (SELECT id FROM social_post_targets WHERE account_id=CAST(:account AS uuid))
+                      AND operation IN ('publish','upload') AND created_at > :now - interval '24 hours'
+                '''), {**self._params(claim), 'now': now}).mappings().one()
+                if counts['minute_count'] >= 6 or counts['day_count'] >= 15:
+                    self._transition(conn, claim, target, 'blocked', 'RATE_LIMITED')
+                    return None
             sequence = conn.execute(text("SELECT COALESCE(MAX(sequence),0)+1 FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)"),
                                     self._params(claim)).scalar_one()
             receipt = {"intent": {"publication_capable": publication_capable,
@@ -307,11 +346,12 @@ class QueueRepository:
                 VALUES (CAST(:attempt AS uuid),CAST(:id AS uuid),:sequence,CAST(:operation_id AS uuid),
                         :operation,:fingerprint,:epoch,
                         CASE WHEN :public THEN clock_timestamp() ELSE NULL END,'intent',CAST(:receipt AS jsonb),
-                        :cost,'not_required',clock_timestamp())
+                        :cost,:reservation_state,clock_timestamp())
             """), {**self._params(claim), "attempt": str(uuid4()), "sequence": sequence,
                     "operation_id": str(operation_id), "operation": operation,
                     "fingerprint": request_fingerprint, "public": publication_capable,
-                    "receipt": _json(receipt), "cost": estimated_cost_microusd})
+                    "receipt": _json(receipt), "cost": estimated_cost_microusd,
+                    "reservation_state": 'reserved' if account['platform'] == 'x' else 'not_required'})
             conn.execute(text("""
                 UPDATE social_post_targets SET state=CASE WHEN :public THEN 'dispatching' ELSE state END,
                     submit_count=submit_count+CASE WHEN :public THEN 1 ELSE 0 END,
@@ -377,7 +417,10 @@ class QueueRepository:
             return "PERMISSION_DENIED"
         if capability.feature_states.get("publishing") != "supported":
             return "CAPABILITY_UNAVAILABLE"
-        if capability.price_class != "free":
+        if (account['platform']=='tiktok' and pub['scheduled_for'] is not None and pub['dispatch_requested_at'] is not None
+                and pub['scheduled_for']>pub['dispatch_requested_at'] and capability.feature_states.get('unattended_publication') != 'supported'):
+            return 'UNATTENDED_WORKFLOW_UNVERIFIED'
+        if capability.price_class != "free" and not (account['platform'] == 'x' and capability.price_class == 'paid'):
             return "BUDGET_RESERVATION_UNAVAILABLE"
         if target["capability_version"] != capability.rules_version or payload.capability_version != capability.rules_version:
             return "CAPABILITY_VERSION_CHANGED"

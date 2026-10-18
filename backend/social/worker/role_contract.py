@@ -5,8 +5,10 @@ an operator action; verification describes current SQL access, not deployment,
 key custody, provider permissions or publishing authorization.
 """
 from dataclasses import dataclass
+from collections.abc import Mapping
 import hashlib
 import re
+from types import MappingProxyType
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -21,13 +23,11 @@ READ_TABLES = frozenset({
     'social_automation_rule_versions', 'social_policy_operating_evidence',
     'social_authorized_policy_snapshots', 'social_policy_selection', 'social_policy_decisions',
 })
-# Exact digest-only definer view from a708b15a0001, normalized schema name.
 REPORT_VIEW_SHA256 = {
     'social_report_source_authority': 'f140c09463d68b7878d4f7b199d04f15ef3b95e109cfbb5820572c9d5e0a84f0',
     'social_report_source_authority_snapshot': '60d9f03c6a0586c236e51f25fba05bc3659c72101bc3021fb0f7b887152f78ed',
 }
 READ_VIEWS = frozenset({'social_report_source_authority'})
-READ_RELATIONS = READ_TABLES | READ_VIEWS
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
     'social_accounts': frozenset('hold_reason publish_lease_target_id publish_lease_token publish_lease_expires_at updated_at'.split()),
@@ -44,6 +44,40 @@ INSERTS = {
     'social_audit_events': frozenset('id post_id target_id account_id actor_kind action previous_state new_state details request_id created_at'.split()),
 }
 TABLES = READ_TABLES | INSERTS.keys()
+PLATFORM_READ_TABLES = frozenset({'social_platform_credentials', 'social_platform_budgets', 'social_platform_event_inbox'})
+PLATFORM_LOCK_TABLES = frozenset({'social_platform_credentials'})
+PLATFORM_UPDATES = {
+    'social_platform_credentials': frozenset({'id'}),
+    'social_platform_budgets': frozenset({'reserved_microusd', 'version'}),
+    'social_platform_event_inbox': frozenset({'processing_state', 'processed_at'}),
+}
+
+
+@dataclass(frozen=True)
+class RoleContract:
+    read_tables: frozenset[str]
+    lock_tables: frozenset[str]
+    updates: Mapping[str, frozenset[str]]
+    inserts: Mapping[str, frozenset[str]]
+
+    @property
+    def read_relations(self):
+        return self.read_tables | READ_VIEWS
+
+    @property
+    def tables(self):
+        return self.read_tables | self.inserts.keys()
+
+
+def selected_contract(*, platforms=False):
+    """Platform authority is an explicit boolean opt-in, never inferred from SQL."""
+    _require(type(platforms) is bool)
+    return RoleContract(READ_TABLES | PLATFORM_READ_TABLES if platforms else READ_TABLES,
+        LOCK_TABLES | PLATFORM_LOCK_TABLES if platforms else LOCK_TABLES,
+        MappingProxyType(UPDATES | PLATFORM_UPDATES if platforms else dict(UPDATES)),
+        MappingProxyType(dict(INSERTS)))
+
+
 IDENTIFIER = re.compile(r'[a-z][a-z0-9_]{0,62}\Z')
 # Temporary schemas hold only the inspecting session's own objects. Every other
 # schema, including pg_catalog and information_schema, is inventoried.
@@ -167,7 +201,8 @@ def _identity(conn, role, schema, *, current):
     return oid
 
 
-def _grants(conn, role, schema, *, complete):
+def _grants(conn, role, schema, *, complete, platforms=False):
+    contract = selected_contract(platforms=platforms)
     # Three catalog queries regardless of relation/column count. Checking every
     # privilege with a separate round trip makes startup prohibitively slow on
     # a hosted database shared with the application's other tables.
@@ -184,11 +219,11 @@ def _grants(conn, role, schema, *, complete):
         table = obj['relname'] if obj['nspname'] == schema else None
         if table in READ_VIEWS:
             _require(obj['relkind'] == 'v' and obj['relrowsecurity'] is False)
-        if table in TABLES:
+        if table in contract.tables:
             found.add(table)
             _require(obj['relkind'] == 'r' and obj['relrowsecurity'] is True)
         _require(obj['sequence_access'] is False)
-    _require(found == TABLES)
+    _require(found == contract.tables)
     tables = conn.execute(text("""
         SELECT n.nspname,c.relname,p.privilege,
                has_table_privilege(:role,c.oid,p.privilege) AS present,
@@ -200,7 +235,7 @@ def _grants(conn, role, schema, *, complete):
     """), {'role': role})
     # Baseline catalog access is tolerated, never required: revoking it only narrows.
     for namespace, table, privilege, present, grantable, baseline in tables:
-        required = namespace == schema and table in READ_RELATIONS and privilege == 'SELECT'
+        required = namespace == schema and table in contract.read_relations and privilege == 'SELECT'
         _require(not grantable and (not present or required or baseline)
                  and (not complete or not required or present))
     columns = conn.execute(text("""
@@ -215,9 +250,9 @@ def _grants(conn, role, schema, *, complete):
     """), {'role': role})
     for namespace, table, column, privilege, present, grantable, baseline in columns:
         required = namespace == schema and (
-            table in READ_RELATIONS if privilege == 'SELECT' else
-            column in (INSERTS if privilege == 'INSERT' else
-                       UPDATES if privilege == 'UPDATE' else {}).get(table, ()))
+            table in contract.read_relations if privilege == 'SELECT' else
+            column in (contract.inserts if privilege == 'INSERT' else
+                       contract.updates if privilege == 'UPDATE' else {}).get(table, ()))
         _require(not grantable and (not present or required or baseline)
                  and (not complete or not required or present))
 
@@ -232,19 +267,20 @@ class Policy:
     check: str | None
 
 
-def _policies():
-    result = [Policy(table, 'scw_read', 'r', True, 'true', None) for table in sorted(READ_TABLES)]
-    for table in sorted(UPDATES):
-        using, check = ('true', 'false') if table in LOCK_TABLES else ('(completed_at IS NULL)', '(completed_at IS NOT NULL)') if table == 'social_publish_attempts' else ('true', 'true')
+def _policies(*, platforms=False):
+    contract = selected_contract(platforms=platforms)
+    result = [Policy(table, 'scw_read', 'r', True, 'true', None) for table in sorted(contract.read_tables)]
+    for table in sorted(contract.updates):
+        using, check = ('true', 'false') if table in contract.lock_tables else ('(completed_at IS NULL)', '(completed_at IS NOT NULL)') if table == 'social_publish_attempts' else ('true', 'true')
         result.extend(Policy(table, name, 'w', permissive, using, check) for name, permissive in [('scw_update', True), ('scw_update_fence', False)])
-    for table in sorted(INSERTS):
+    for table in sorted(contract.inserts):
         check = ("(actor_kind = 'worker'::text)" if table == 'social_audit_events' else
                  "(event = 'acquired'::text)" if table == 'social_worker_runtime_history' else 'true')
         result.extend(Policy(table, name, 'a', permissive, None, check) for name, permissive in [('scw_insert', True), ('scw_insert_fence', False)])
     return result
 
 
-def _policy_rows(conn, oid, schema):
+def _policy_rows(conn, oid, schema, *, platforms=False):
     # A policy does not grant table access. Unrelated PUBLIC policies cannot
     # affect the worker while _grants denies all out-of-contract privileges.
     # Still inventory every explicit worker policy and reserved policy name.
@@ -258,7 +294,7 @@ def _policy_rows(conn, oid, schema):
         WHERE n.nspname=:schema AND (
             p.polroles @> ARRAY[CAST(:oid AS oid)] OR p.polname LIKE 'scw_%'
             OR (c.relname=ANY(:tables) AND p.polroles @> ARRAY[CAST(0 AS oid)]))
-    '''), {'oid': oid, 'schema': schema, 'tables': sorted(TABLES)}).mappings())
+    '''), {'oid': oid, 'schema': schema, 'tables': sorted(selected_contract(platforms=platforms).tables)}).mappings())
 
 
 def _policy_matches(row, policy, oid):
@@ -267,9 +303,9 @@ def _policy_matches(row, policy, oid):
             and list(row['roles']) == [oid] and row['using'] == policy.using and row['check'] == policy.check)
 
 
-def _check_policies(conn, oid, schema, *, complete):
-    expected = {(p.table, p.name): p for p in _policies()}
-    rows = _policy_rows(conn, oid, schema)
+def _check_policies(conn, oid, schema, *, complete, platforms=False):
+    expected = {(p.table, p.name): p for p in _policies(platforms=platforms)}
+    rows = _policy_rows(conn, oid, schema, platforms=platforms)
     seen = set()
     for row in rows:
         key = row['table'], row['name']
@@ -311,7 +347,8 @@ TRIGGERS = {
 }
 
 
-def _triggers(conn, schema):
+def _triggers(conn, schema, *, platforms=False):
+    contract = selected_contract(platforms=platforms)
     rows = conn.execute(text("""
         SELECT c.relname,t.tgname,t.tgtype,t.tgenabled,t.tgqual IS NULL AS unqualified,
                cardinality(t.tgattr::int2[])=0 AS all_columns,
@@ -322,7 +359,7 @@ def _triggers(conn, schema):
         JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace pn ON pn.oid=p.pronamespace
         JOIN pg_language l ON l.oid=p.prolang
         WHERE n.nspname=:schema AND c.relname=ANY(:tables) AND NOT t.tgisinternal
-    """), {'schema': schema, 'tables': sorted(TABLES)}).mappings()
+    """), {'schema': schema, 'tables': sorted(contract.tables)}).mappings()
     seen = set()
     for row in rows:
         key = row['relname'], row['tgname']
@@ -343,7 +380,7 @@ def _triggers(conn, schema):
     _require(conn.execute(text("""
         SELECT NOT EXISTS(SELECT 1 FROM pg_rewrite r JOIN pg_class c ON c.oid=r.ev_class
           JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema AND c.relname=ANY(:tables))
-    """), {'schema': schema, 'tables': sorted(TABLES)}).scalar())
+    """), {'schema': schema, 'tables': sorted(contract.tables)}).scalar())
 
 
 def _views(conn, schema):
@@ -378,32 +415,33 @@ def _views(conn, schema):
         _require(hashlib.sha256(definition.encode()).hexdigest() == REPORT_VIEW_SHA256[row['relname']])
 
 
-def _verify(conn, role, schema, *, current):
+def _verify(conn, role, schema, *, current, platforms=False):
     oid = _identity(conn, role, schema, current=current)
-    _triggers(conn, schema)
+    _triggers(conn, schema, platforms=platforms)
     _views(conn, schema)
-    _grants(conn, role, schema, complete=True)
-    _check_policies(conn, oid, schema, complete=True)
+    _grants(conn, role, schema, complete=True, platforms=platforms)
+    _check_policies(conn, oid, schema, complete=True, platforms=platforms)
     # This proves the lock-only policy sees the actual singleton; an UPDATE
     # policy with only WITH CHECK false can otherwise silently hide the row.
     _require(list(conn.execute(text('SELECT id FROM ' + _quoted(conn, schema) + '.social_controls WHERE id=1 FOR UPDATE')).scalars()) == [1])
 
 
-def verify_worker_role(engine, role, schema='public'):
+def verify_worker_role(engine, role, schema='public', *, platforms=False):
     failed = False
     try:
         _scope(role, schema)
+        selected_contract(platforms=platforms)
         _require(isinstance(engine, Engine))
         with engine.begin() as conn:
             _limits(conn)
-            _verify(conn, role, schema, current=True)
+            _verify(conn, role, schema, current=True, platforms=platforms)
     except Exception:
         failed = True
     if failed:
         raise WorkerRoleError('WORKER_ROLE_UNAVAILABLE')
 
 
-def install_worker_role(engine, role, schema='public'):
+def install_worker_role(engine, role, schema='public', *, platforms=False):
     """Grant only this contract to an existing role, atomically or not at all.
 
     Never create/alter a login, password, database or default/PUBLIC privilege.
@@ -413,25 +451,26 @@ def install_worker_role(engine, role, schema='public'):
     failed = False
     try:
         _scope(role, schema)
+        contract = selected_contract(platforms=platforms)
         _require(isinstance(engine, Engine))
         with engine.begin() as conn:
             _limits(conn)
             oid = _identity(conn, role, schema, current=False)
-            _triggers(conn, schema)
+            _triggers(conn, schema, platforms=platforms)
             _views(conn, schema)
-            _grants(conn, role, schema, complete=False)
-            existing = _check_policies(conn, oid, schema, complete=False)
+            _grants(conn, role, schema, complete=False, platforms=platforms)
+            existing = _check_policies(conn, oid, schema, complete=False, platforms=platforms)
             quoted_role, quoted_schema = _quoted(conn, role), _quoted(conn, schema)
             conn.execute(text('GRANT USAGE ON SCHEMA ' + quoted_schema + ' TO ' + quoted_role))
-            for table in sorted(READ_RELATIONS):
+            for table in sorted(contract.read_relations):
                 if table in READ_VIEWS and conn.execute(text('SELECT to_regclass(quote_ident(:schema)||\'.\'||quote_ident(:table)) IS NULL'), {'schema': schema, 'table': table}).scalar():
                     continue
                 conn.execute(text('GRANT SELECT ON ' + quoted_schema + '.' + _quoted(conn, table) + ' TO ' + quoted_role))
-            for command, matrix in [('INSERT', INSERTS), ('UPDATE', UPDATES)]:
+            for command, matrix in [('INSERT', contract.inserts), ('UPDATE', contract.updates)]:
                 for table, columns in sorted(matrix.items()):
                     fields = ','.join(_quoted(conn, column) for column in sorted(columns))
                     conn.execute(text('GRANT ' + command + '(' + fields + ') ON ' + quoted_schema + '.' + _quoted(conn, table) + ' TO ' + quoted_role))
-            for policy in _policies():
+            for policy in _policies(platforms=platforms):
                 if (policy.table, policy.name) in existing:
                     continue
                 command = {'r': 'SELECT', 'w': 'UPDATE', 'a': 'INSERT'}[policy.command]
@@ -442,10 +481,10 @@ def install_worker_role(engine, role, schema='public'):
                 if policy.check is not None:
                     sql += ' WITH CHECK (' + policy.check + ')'
                 conn.execute(text(sql))
-            _verify(conn, role, schema, current=False)
+            _verify(conn, role, schema, current=False, platforms=platforms)
             # SET LOCAL never persists a changed identity in the operator pool.
             conn.execute(text('SET LOCAL ROLE ' + quoted_role))
-            _verify(conn, role, schema, current=False)
+            _verify(conn, role, schema, current=False, platforms=platforms)
     except Exception:
         failed = True
     if failed:

@@ -10,6 +10,8 @@ import { draftFingerprint, emptyDocument, httpsUrl, platformLabels, resolveCivil
 import SocialMedia from './SocialMedia';
 import SocialScheduleControls from './SocialScheduleControls';
 import { SocialErrorBanner } from './SocialNotice';
+import TikTokControls from './TikTokControls';
+import { clearChangedTikTokConfirmations } from './tiktokConsent';
 import SocialOverrides from './SocialOverrides';
 import SocialPreview from './SocialPreview';
 import SocialResults from './SocialResults';
@@ -109,7 +111,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', linkGuard, true); };
   }, [dirty]);
 
-  function edit(next: SocialDraftInput) { setInput(next); setDirty(true); setValidation(undefined); setAcknowledged([]); setAttested(false); setDiscard(false); setError(undefined); setMessage(''); }
+  function edit(next: SocialDraftInput) { setInput(previous => clearChangedTikTokConfirmations(previous, next)); setDirty(true); setValidation(undefined); setAcknowledged([]); setAttested(false); setDiscard(false); setError(undefined); setMessage(''); }
   function fieldIssueProps(field: string) {
     const invalid = error?.fieldErrors.some(issue => issue.field === field || issue.field.endsWith(`.${field}`));
     return { 'aria-invalid': invalid || undefined, 'aria-describedby': invalid ? 'social-command-error' : undefined };
@@ -243,7 +245,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
             <h3>Account preview & overrides</h3>
             <div className={styles.tabs} aria-label='Account preview tabs'>{input.document.targets.map((t, index) => { const a = accounts.find(a => a.id === t.account_id); return <button type='button' key={`${t.account_id}-${index}`} aria-pressed={activeAccount === t.account_id} onClick={() => setActiveAccount(t.account_id)}>{a ? `${platformLabels[a.platform]} · ${a.display_name}` : 'Unavailable account'}</button>; })}</div>
             <SocialPreview master={input.document.master} target={target} account={account} validation={valid?.targets.find(t => t.account_id === target?.account_id)} />
-            {target && <fieldset disabled={locked} className={`${styles.destinations} ${styles.fields}`}><label>Account format<select value={target.format} onChange={e => changeTarget({ ...target, format: e.target.value as DocumentTarget['format'] })}>{(['text', 'image', 'carousel', 'video', 'reel'] as const).map(format => <option key={format} value={format}>{format}{supportedFormats(account).length && !supportedFormats(account).includes(format) ? ' · unsupported' : ''}</option>)}</select></label>{targetHints(input.document.master, target, account).map((hint, index) => <p className={styles.notice} key={index}>{hint}</p>)}<p className={styles.muted}>{Array.from(resolveContent(input.document.master, target).text).length} characters · provisional account count</p><SocialOverrides key={target.account_id} contextKey={post?.id ?? composerContext} master={input.document.master} target={target} onMediaBusyChange={active => mediaBusyChanged(`account:${target.account_id}`, active)} onChange={changeTarget} /></fieldset>}
+            {target && <fieldset disabled={locked} className={`${styles.destinations} ${styles.fields}`}><label>Account format<select value={target.format} onChange={e => changeTarget({ ...target, format: e.target.value as DocumentTarget['format'] })}>{(['text', 'image', 'carousel', 'video', 'reel'] as const).map(format => <option key={format} value={format}>{format}{supportedFormats(account).length && !supportedFormats(account).includes(format) ? ' · unsupported' : ''}</option>)}</select></label>{targetHints(input.document.master, target, account).map((hint, index) => <p className={styles.notice} key={index}>{hint}</p>)}<p className={styles.muted}>{Array.from(resolveContent(input.document.master, target).text).length} characters · provisional account count</p>{account?.platform === 'tiktok' && <TikTokControls key={`tiktok:${target.account_id}`} target={target} onChange={changeTarget} />}<SocialOverrides key={target.account_id} contextKey={post?.id ?? composerContext} master={input.document.master} target={target} onMediaBusyChange={active => mediaBusyChanged(`account:${target.account_id}`, active)} onChange={changeTarget} /></fieldset>}
           </div>
         </div>
       </fieldset>

@@ -27,6 +27,12 @@ class WorkerCredentialMaterial:
     access_expires_at: datetime | None
     data_access_expires_at: datetime | None
     capability_admission: NativeCapabilityAdmission | None = field(default=None, repr=False)
+    x_access_verified: bool = False
+    x_budget_remaining_microusd: int = 0
+    x_reserved_cost_microusd: int = 0
+    x_reservation_operation_id: UUID | None = None
+    tiktok_product_approved: bool = False
+    tiktok_verified_origins: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -172,12 +178,17 @@ class CredentialMaterialLoader:
 
 class VerifiedMediaAccess:
     """A payload-scoped port that only exposes verified immutable final objects."""
-    def __init__(self, engine, storage, *, allowed_origin: str, assets=()):
+    def __init__(self, engine, storage, *, allowed_origin: str, assets=(), allow_long_provider_fetch=False, provider_ttl_seconds=300):
         self.engine, self.storage, self.allowed_origin = engine, storage, allowed_origin
         self.assets = {asset.asset_id: asset for asset in assets}
+        if type(allow_long_provider_fetch) is not bool or type(provider_ttl_seconds) is not int or provider_ttl_seconds not in {300,1860} or provider_ttl_seconds == 1860 and not allow_long_provider_fetch:
+            raise ValueError('Explicit bounded provider URL policy required')
+        self.allow_long_provider_fetch, self.provider_ttl_seconds = allow_long_provider_fetch, provider_ttl_seconds
 
     def for_payload(self, payload):
-        return VerifiedMediaAccess(self.engine, self.storage, allowed_origin=self.allowed_origin, assets=payload.assets)
+        return VerifiedMediaAccess(self.engine, self.storage, allowed_origin=self.allowed_origin, assets=payload.assets,
+            allow_long_provider_fetch=self.allow_long_provider_fetch,
+            provider_ttl_seconds=1860 if payload.platform == 'tiktok' and self.allow_long_provider_fetch else 300)
 
     def _snapshot(self, asset):
         from sqlalchemy.orm import Session
@@ -191,7 +202,8 @@ class VerifiedMediaAccess:
                     or row.storage_provider != self.storage.provider or row.bucket != self.storage.bucket
                     or (row.sha256, row.mime_type, row.byte_size, row.width, row.height, row.duration_ms)
                     != (asset.sha256, asset.mime_type, asset.byte_size, asset.width, asset.height, asset.duration_ms)
-                    or row.mime_type not in {'image/jpeg', 'image/png'}
+                    or row.mime_type not in {'image/jpeg', 'image/png', 'video/mp4'}
+                    or (int(row.frame_rate * 1000) if row.frame_rate is not None else None) != asset.frame_rate_milli_fps
                     or not isinstance(row.codec_metadata.get('storage_etag'), str)
                     or not row.codec_metadata['storage_etag']):
                 raise MaterialUnavailable('MEDIA_FINAL_IDENTITY_CHANGED')
@@ -202,7 +214,10 @@ class VerifiedMediaAccess:
         import hashlib
         from pathlib import Path
         from tempfile import TemporaryDirectory
-        if type(maximum_bytes) is not int or not 1 <= maximum_bytes <= 8_000_000 or asset.byte_size > maximum_bytes:
+        if not isinstance(asset,InspectedAsset):
+            raise MaterialUnavailable('MEDIA_OUTSIDE_AUTHORIZATION')
+        ceiling=100_000_000 if asset.mime_type=='video/mp4' else 8_000_000
+        if type(maximum_bytes) is not int or not 1 <= maximum_bytes <= ceiling or asset.byte_size > maximum_bytes:
             raise MaterialUnavailable('MEDIA_BYTE_LIMIT')
         key, expected = self._snapshot(asset)
         try:
@@ -226,12 +241,14 @@ class VerifiedMediaAccess:
     def _fetch_url(self, asset, minimum_ttl_seconds):
         from datetime import timedelta, timezone
         from urllib.parse import parse_qs, quote, urlsplit
-        if type(minimum_ttl_seconds) is not int or not 1 <= minimum_ttl_seconds <= 240:
+        ttl = self.provider_ttl_seconds
+        if type(minimum_ttl_seconds) is not int or not 1 <= minimum_ttl_seconds <= ttl - 60:
             raise MaterialUnavailable('MEDIA_FETCH_TTL_INVALID')
-        self._read(asset, 8_000_000)
+        self._read(asset, 100_000_000 if asset.mime_type == 'video/mp4' else 8_000_000)
         key, expected = self._snapshot(asset)
         try:
-            signed = self.storage.preview(key, expected, 300)
+            signer = self.storage.provider_fetch if ttl > 300 else self.storage.preview
+            signed = signer(key, expected, ttl)
             if (not isinstance(signed.url, str) or not 1 <= len(signed.url) <= 8000
                     or '\\' in signed.url or any(ord(c) < 33 or ord(c) > 126 for c in signed.url)):
                 raise ValueError()
@@ -242,9 +259,9 @@ class VerifiedMediaAccess:
             # R2Storage derives expiry from this signature. Abstract test ports
             # may attest expiry directly, but cannot contradict present fields.
             if 'X-Amz-Date' in query or 'X-Amz-Expires' in query:
-                if len(query.get('X-Amz-Date', [])) != 1 or query.get('X-Amz-Expires') != ['300']:
+                if len(query.get('X-Amz-Date', [])) != 1 or query.get('X-Amz-Expires') != [str(ttl)]:
                     raise ValueError()
-                actual_expiry = datetime.strptime(query['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc) + timedelta(seconds=300)
+                actual_expiry = datetime.strptime(query['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ').replace(tzinfo=timezone.utc) + timedelta(seconds=ttl)
                 if actual_expiry != signed.expires_at:
                     raise ValueError()
             now = datetime.now(timezone.utc)
@@ -253,7 +270,7 @@ class VerifiedMediaAccess:
                     or parsed.path != '/' + quote(self.storage.bucket, safe='') + '/' + quote(key, safe='/')
                     or not isinstance(signed.expires_at, datetime) or signed.expires_at.tzinfo is None
                     or signed.expires_at < now + timedelta(seconds=minimum_ttl_seconds)
-                    or signed.expires_at > now + timedelta(seconds=301)
+                    or signed.expires_at > now + timedelta(seconds=ttl + 1)
                     or self.storage.head(key) != expected):
                 raise ValueError()
             return ProviderFetchURL(signed.url, signed.expires_at, asset.asset_id, asset.sha256)
