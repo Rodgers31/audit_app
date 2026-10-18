@@ -27,9 +27,12 @@ def historical_report_role():
         raise RuntimeError('Only the assigned owned B17 PostgreSQL fixture is allowed')
     role = url.database
     owner = create_engine(url, pool_size=2, max_overflow=0,
-                          connect_args={'connect_timeout': 5,
+                          connect_args={'hostaddr': '127.0.0.1', 'connect_timeout': 5,
                                         'options': '-clock_timeout=2000 -cstatement_timeout=5000'})
-    worker = create_worker_engine(WorkerConfig(str(url.set(username=role)), database_schema='public'))
+    # Pin libpq's physical destination as well as its nominal host. Ambient
+    # PGHOSTADDR must never redirect this superuser-only fixture connection.
+    worker_url = url.set(username=role, query={'hostaddr': '127.0.0.1'})
+    worker = create_worker_engine(WorkerConfig(str(worker_url), database_schema='public'))
     try:
         with owner.begin() as conn:
             assert conn.scalar(text('SELECT current_database()')) == url.database
@@ -80,3 +83,67 @@ def test_locked_variant_is_not_accepted_as_snapshot(historical_report_role):
         with owner.begin() as conn:
             conn.execute(text('CREATE OR REPLACE VIEW social_report_source_authority_snapshot WITH (security_barrier=true) AS '+original))
     verify_worker_role(worker, role)
+
+
+def test_seeded_source_changes_invalidate_only_a_digest_witness(historical_report_role):
+    """Synthetic source rows qualify the witness port, never publication/data gates."""
+    from datetime import datetime, timezone
+    from uuid import uuid4
+    from sqlalchemy.orm import Session
+    from models import (BudgetLine, Country, DocumentType, Entity, EntityType,
+                        FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument)
+    owner, worker, _ = historical_report_role
+    now = datetime.now(timezone.utc)
+    rows = []
+    try:
+        with Session(owner, expire_on_commit=False) as db, db.begin():
+            country = Country(iso_code='ZZZ', name='Synthetic owned view fixture', currency='KES',
+                              timezone='UTC', default_locale='en')
+            db.add(country); db.flush(); rows.append(country)
+            entity = Entity(country_id=country.id, type=EntityType.COUNTY,
+                            canonical_name='Synthetic owned county', slug='view-' + uuid4().hex)
+            period = FiscalPeriod(country_id=country.id, label='Synthetic fixture period',
+                                  start_date=now, end_date=now)
+            document = SourceDocument(country_id=country.id, publisher='Synthetic fixture',
+                                      title='Synthetic fixture', url='https://owned.invalid/synthetic-report.pdf',
+                                      fetch_date=now, doc_type=DocumentType.REPORT)
+            job = IngestionJob(domain='counties_budget', status=IngestionStatus.COMPLETED,
+                               dry_run=True, started_at=now, finished_at=now, errors=[],
+                               meta={'source_mode': 'fixture'})
+            db.add_all([entity, period, document, job]); db.flush()
+            rows.extend([entity, period, document, job])
+            record = BudgetLine(entity_id=entity.id, period_id=period.id, category='Synthetic fixture',
+                                currency='KES', source_document_id=document.id, notes='before',
+                                publishable=False, provenance=[{'ingestion_job_id': job.id}])
+            db.add(record); db.flush(); rows.append(record)
+        query = text('SELECT record_id,ingestion_id,authority_fingerprint FROM '
+                     'social_report_source_authority WHERE record_id=:record')
+        def witness():
+            with worker.begin() as conn:
+                result = conn.execute(query, {'record': record.id}).mappings().one()
+                assert dict(result).keys() == {'record_id', 'ingestion_id', 'authority_fingerprint'}
+                assert result['ingestion_id'] == job.id
+                assert len(result['authority_fingerprint']) == 64
+                return result['authority_fingerprint']
+        original = witness()
+        with owner.begin() as conn:
+            conn.execute(text("UPDATE budget_lines SET notes='after' WHERE id=:id"), {'id': record.id})
+        changed = witness()
+        assert changed != original
+        with owner.begin() as conn:
+            historical = conn.scalar(text("SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE "
+                "attrelid='public.budget_lines'::regclass AND attname='validation_warnings' AND NOT attisdropped)"))
+            if historical:
+                conn.execute(text("UPDATE budget_lines SET validation_warnings='[\"synthetic change\"]'::jsonb WHERE id=:id"),
+                             {'id': record.id})
+        if historical:
+            assert witness() != changed
+        verify_worker_role(worker, historical_report_role[2])
+    finally:
+        # This test's committed synthetic rows only; never truncate fixture history.
+        with Session(owner) as db, db.begin():
+            for row in reversed(rows):
+                value = db.get(type(row), row.id)
+                if value is not None:
+                    db.delete(value)
+                    db.flush()
