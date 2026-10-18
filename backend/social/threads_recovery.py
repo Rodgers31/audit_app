@@ -56,6 +56,10 @@ class PublicObservation(StrictModel):
     @classmethod
     def permalink(cls, value):
         import re
+        # urlsplit discards leading C0/space and embedded tab/CR/LF. Refuse
+        # those original bytes before parsing; never attest a normalized URL.
+        if not isinstance(value, str) or any(not 0x21 <= ord(char) <= 0x7E for char in value):
+            raise ValueError('Use an exact printable ASCII Threads permalink without whitespace or controls')
         parsed = urlsplit(value)
         if (parsed.scheme != 'https' or parsed.netloc not in {'www.threads.com', 'threads.com', 'www.threads.net', 'threads.net'}
                 or parsed.query or parsed.fragment
