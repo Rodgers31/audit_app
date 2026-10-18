@@ -50,11 +50,11 @@ def postgres():
         backend = Path(__file__).resolve().parents[1]
         env = {"PATH": os.environ["PATH"], "PYTHONPATH": str(backend),
                "PYTHON_DOTENV_DISABLED": "1", "DATABASE_URL": URL}
-        subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"],
+        subprocess.run([sys.executable, "-m", "alembic", "upgrade", "a545b14a0001"],
                        cwd=backend, env=env, check=True, timeout=90)
         with engine.connect() as db:
             if db.scalar(text("SELECT version_num FROM alembic_version")) != "a545b14a0001":
-                raise RuntimeError("Full accepted migration chain required")
+                raise RuntimeError("Frozen accepted ETL schema required")
         yield sessionmaker(bind=engine), engine
     finally:
         if engine is not None:

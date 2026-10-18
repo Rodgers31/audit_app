@@ -31,7 +31,9 @@ def configure_privacy_workflow(app, environ=None):
                 raise ValueError()
             policies = tuple(policy.items())
             approvers = tuple(UUID(a) for a in actors)
-        config = PrivacyWorkflowConfig(enabled == 'true', execution == 'true', policies, approvers)
+        registration = getattr(app.state, 'social_privacy_registration', None)
+        app_id = registration.config.app_id if registration is not None else ''
+        config = PrivacyWorkflowConfig(enabled == 'true', execution == 'true', policies, approvers, app_id)
         config.validate()
         if config.execution_enabled:
             path, key = values.get('SOCIAL_PRIVACY_LEDGER_DIRECTORY'), values.get('SOCIAL_PRIVACY_LEDGER_SIGNING_KEY')
@@ -41,6 +43,7 @@ def configure_privacy_workflow(app, environ=None):
             if base64.urlsafe_b64encode(decoded).decode() != key:
                 raise ValueError()
             ledger = FileDeletionLedger(Path(path), decoded)
+            ledger.validate_custody()
     except Exception:
         pass
     else:

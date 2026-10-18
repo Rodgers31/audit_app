@@ -3,7 +3,8 @@
 Callers own the transaction. PostgreSQL source-row locks serialize semantics;
 unique event/post constraints remain the final duplicate boundary.
 """
-from datetime import timedelta
+from datetime import date, timedelta
+import re
 from uuid import UUID, uuid4
 
 from pydantic import ValidationError
@@ -61,13 +62,26 @@ def evidence_items(observation):
     return (observation.report,) if observation.report else observation.facts
 
 
+def valid_report_release_state(value):
+    if (type(value) is not dict or set(value) != {'release_hash', 'published_on', 'period_start', 'period_end'}
+            or type(value['release_hash']) is not str or re.fullmatch('[a-f0-9]{64}', value['release_hash']) is None):
+        return False
+    try:
+        dates = {key: date.fromisoformat(value[key]) for key in ('published_on', 'period_start', 'period_end')
+            if type(value[key]) is str and len(value[key]) == 10}
+        return (len(dates) == 3 and all(dates[key].isoformat() == value[key] for key in dates)
+            and dates['period_start'] <= dates['period_end'])
+    except (ValueError, TypeError):
+        return False
+
+
 def report_release_state(observation):
     if observation.report is None:
         return None
     report = observation.report
     identity = {key: getattr(report, key) for key in ('entity_id', 'entity', 'publisher', 'period')}
     identity.update(period_start=report.period_start.isoformat(), period_end=report.period_end.isoformat(), published_on=report.published_on.isoformat())
-    return {'release_hash': canonical_hash(identity), 'published_on': identity['published_on'], 'period_end': identity['period_end']}
+    return {'release_hash': canonical_hash(identity), **{key: identity[key] for key in ('published_on', 'period_start', 'period_end')}}
 
 
 def generator_metadata(observation):
@@ -131,9 +145,9 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
             for key in ('source_record_id', 'authority_fingerprint'))))
     if not initial:
         if release:
-            if not isinstance(cursor.report_state, dict) or set(cursor.report_state) != {'release_hash', 'published_on', 'period_end'}:
+            if not valid_report_release_state(cursor.report_state):
                 raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Report release state is unavailable.', 503)
-            if release['published_on'] < cursor.report_state['published_on'] or release['period_end'] < cursor.report_state['period_end']:
+            if any(release[key] < cursor.report_state[key] for key in ('published_on', 'period_start', 'period_end')):
                 raise SocialError('REPORT_RELEASE_REGRESSION', 'An older report cannot replace the current report series.', 422)
         if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
             raise SocialError('EVIDENCE_VERSION_CONFLICT', 'Changed or stale evidence requires an explicit newer evidence version.')
