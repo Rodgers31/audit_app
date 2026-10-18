@@ -75,6 +75,7 @@ export function parseIngestionJob(raw: unknown): IngestionJob {
   for (const key of ['manual_trigger', 'dropped_by_global_budget', 'dry_run']) if (typeof meta[key] === 'boolean') metadata[key] = meta[key];
   if (typeof meta.since === 'string') metadata.since = date(meta.since);
   if ('post_commit_generation' in meta) metadata.post_commit_generation = parseGenerationOutcome(meta.post_commit_generation);
+  if ('post_commit_report_generation' in meta) metadata.post_commit_report_generation = parseGenerationOutcome(meta.post_commit_report_generation);
   return { id: integer(v.id,1,2147483647), domain, status, dry_run:boolean(v.dry_run),
     started_at:date(v.started_at), finished_at:v.finished_at === null ? null : date(v.finished_at),
     duration_seconds:duration as number | null, items_processed:integer(v.items_processed),

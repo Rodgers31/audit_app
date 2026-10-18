@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 
 from sqlalchemy import func, select, text
 
-from models import BudgetLine, DocumentStatus, Entity, Extraction, IngestionJob, IngestionStatus, SourceDocument
+from models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
 from services.entity_financials import budget_line_is_unreported
 from services.figure_qualification import qualify_rows
 
@@ -79,6 +79,19 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
     this explicit record is read. Publication date must be stored evidence, never
     inferred from a fiscal year or retrieval timestamp.
     """
+    return _read_county_evidence(factory, record_id=record_id, ingestion_id=ingestion_id, report=False)
+
+
+def read_county_report_observation(factory, *, record_id, ingestion_id):
+    """A separate neutral scope from retained/date-bound, public-eligible evidence.
+
+    Neither amounts nor invented counts leave this port. A job with multiple
+    report/period identities for the same county is ambiguous, never 'latest'.
+    """
+    return _read_county_evidence(factory, record_id=record_id, ingestion_id=ingestion_id, report=True)
+
+
+def _read_county_evidence(factory, *, record_id, ingestion_id, report):
     _positive_id(record_id)
     _positive_id(ingestion_id)
     db = factory()
@@ -153,6 +166,8 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
             published = date.fromisoformat(meta["publication_date"])
         except (ValueError, TypeError, KeyError):
             raise SourceObservationUnavailable("Publisher publication date unavailable") from None
+        if report and "publication_date_evidence" not in meta:
+            raise SourceObservationUnavailable("Neutral reports require retained publisher date authority")
         if "publication_date_evidence" in meta:
             proof = meta["publication_date_evidence"]
             if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
@@ -178,6 +193,8 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
         entity = db.get(Entity, row.entity_id)
         if entity is None or not entity.canonical_name:
             raise SourceObservationUnavailable("Source entity unavailable")
+        if report and entity.type != EntityType.COUNTY:
+            raise SourceObservationUnavailable("County report entity required")
         amount = format(Decimal(row.actual_spent), "f")
         if not re.fullmatch(r"(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,8})?", amount):
             raise SourceObservationUnavailable("Bounded exact monetary value required")
@@ -198,6 +215,33 @@ def read_county_budget_observation(factory, *, record_id, ingestion_id):
         if any(not isinstance(fact[key], str) or not fact[key].strip() or len(fact[key]) > 300
                for key in ("entity", "metric", "period", "locator", "publisher")):
             raise SourceObservationUnavailable("Bounded fact text required")
+        if report:
+            cohort = db.execute(select(BudgetLine.source_document_id, BudgetLine.period_id).where(
+                BudgetLine.entity_id == row.entity_id,
+                BudgetLine.provenance.contains([{"ingestion_job_id": ingestion_id}])).limit(1001)).all()
+            if not cohort or len(cohort) > 1000 or any(pair != (doc.id, row.period_id) for pair in cohort):
+                raise SourceObservationUnavailable("One bounded unambiguous county report and period required")
+            period = db.get(FiscalPeriod, row.period_id)
+            location = proof.get('locator')
+            if (period is None or not isinstance(period.start_date, datetime) or not isinstance(period.end_date, datetime)
+                    or not isinstance(location, dict) or type(location.get('page')) is not int or not 1 <= location['page'] <= 3
+                    or type(location.get('text_span')) is not str or not location['text_span'].strip()):
+                raise SourceObservationUnavailable("Exact report period and publication locator required")
+            neutral = {key: fact[key] for key in ('entity', 'period', 'source_document_id', 'document_url',
+                'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at', 'canonical_url')}
+            from social.generation.authority import current_report_authority
+            authority = current_report_authority(db, record_id, ingestion_id, lock=False)
+            if authority is None:
+                raise SourceObservationUnavailable("Current report authority unavailable")
+            neutral.update(entity_id=entity.id, source_record_id=record_id, authority_fingerprint=authority,
+                period_start=period.start_date.date().isoformat(),
+                period_end=period.end_date.date().isoformat(), publication_extraction_id=proof['extraction_id'],
+                qualification_extraction_id=q['receipt_id'], locator=f"PDF page {location['page']}; {location['text_span']}")
+            return {'schema_version': 1, 'source_type': 'cob', 'source_key': f'cob:county:{entity.id}:reports',
+                'evidence_version': ingestion_id, 'ingestion_id': str(ingestion_id),
+                'category': 'dataset_availability', 'title': f'Controller of Budget report · {entity.canonical_name}',
+                'committed': True, 'fixture': False, 'quarantined': False, 'publishable': True,
+                'correction_pending': False, 'facts': [], 'report': neutral}
         return {"schema_version": 1, "source_type": "cob", "source_key": fact["fact_id"],
                 "evidence_version": ingestion_id, "ingestion_id": str(ingestion_id),
                 "category": "budget_update", "title": f"{entity.canonical_name} expenditure data",

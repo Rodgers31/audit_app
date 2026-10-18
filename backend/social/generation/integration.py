@@ -48,19 +48,18 @@ def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchan
     return dict(state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
 
 
-def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters):
-    if __package__.startswith('backend.'):
-        from ...seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
-    else:
-        from seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
+def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, *, reports=False):
+    from importlib import import_module
+    adapter = import_module('backend.seeding.source_observations' if __package__.startswith('backend.') else 'seeding.source_observations')
+    read = getattr(adapter, 'read_county_report_observation' if reports else 'read_county_budget_observation')
     # Reads occur before each separate mutation transaction, so one pooled
     # connection is sufficient. ETL's completed transaction is never borrowed.
     for offset in range(0, len(record_ids), 25):
         for record_id in record_ids[offset:offset + 25]:
             _remaining_ms(deadline)
             try:
-                observation = read_county_budget_observation(factory, record_id=record_id, ingestion_id=ingestion_id)
-            except SourceObservationUnavailable:
+                observation = read(factory, record_id=record_id, ingestion_id=ingestion_id)
+            except adapter.SourceObservationUnavailable:
                 counts['processed'] += 1
                 counts['refused'] += 1
                 _remaining_ms(deadline)
@@ -72,7 +71,7 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
             with db:
                 svc = SocialService(db, available_adapters=adapters)
                 svc.actor_kind = 'pipeline'
-                svc.request_id = f'etl-generation:{ingestion_id}:{record_id}'
+                svc.request_id = f'etl-{"report" if reports else "generation"}:{ingestion_id}:{record_id}'
                 with db.begin():
                     _transaction_limits(db, deadline)
                     result = consume_observation(svc, observation)
@@ -87,6 +86,15 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
 
 
 def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_registration=None):
+    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=False)
+
+
+def maybe_generate_reports_committed(factory, *, record_ids, ingestion_id, native_registration=None):
+    """Separate default-off neutral report path; financial observations stay intact."""
+    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=True)
+
+
+def _generate_committed(factory, *, record_ids, ingestion_id, native_registration, reports):
     """Only call after a successful live non-dry county-budget fact commit.
 
     The source adapter independently rechecks that prerequisite. Environment and
@@ -103,6 +111,12 @@ def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_regist
         return _result('unavailable', 'INVALID_HOOK_FLAG')
     if flag != 'true':
         return _result('disabled', 'ENVIRONMENT_DISABLED')
+    if reports:
+        report_flag = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false')
+        if report_flag not in {'true', 'false'}:
+            return _result('unavailable', 'INVALID_REPORT_HOOK_FLAG')
+        if report_flag != 'true':
+            return _result('disabled', 'REPORT_ENVIRONMENT_DISABLED')
     counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0)
     deadline = time.monotonic() + 30
     try:
@@ -123,6 +137,8 @@ def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_regist
                 policy = reader.get(SocialControls, 1)
                 policy_requested = policy is not None and policy.auto_approve_enabled is True
         def consume(adapters):
+            if reports:
+                return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, reports=True)
             return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters)
         if not policy_requested:
             return consume({})  # Draft-only never loads native rules/material.

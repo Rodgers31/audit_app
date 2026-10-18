@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SocialAutomation from '@/components/admin/social/SocialAutomation';
 import GeneratedEvidence from '@/components/admin/social/GeneratedEvidence';
-import { decodeDraftControls, decodeRule, decodeDecision, describeShadowReason, generationApi } from '@/lib/api/socialGeneration';
+import { decodeDraftControls, decodeRule, decodeDecision, decodeEvidence, describeShadowReason, generationApi } from '@/lib/api/socialGeneration';
 const mockRun = jest.fn();
 jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: 'fixture-actor' } }) }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -15,3 +15,32 @@ test('source review shows exact decimals, classification, period and source loca
 test('response contracts reject false success and malformed controls', () => { for (const payload of [null, {}, { version: 1, drafts_enabled: 'false', shadow_enabled: false, source_allowlist: [], targets: [] }]) expect(() => decodeDraftControls(payload)).toThrow(); expect(() => decodeRule({ id: 'x', version: 1, definition: { mode: 'live' } })).toThrow(); expect(() => decodeDecision({ outcome: 'published' })).toThrow(); });
 
 test('shadow decisions explain the reason without asserting live approval', () => { expect(describeShadowReason('ALL_SHADOW_GATES_PASSED_HUMAN_APPROVAL_REQUIRED')).toMatch('Human approval is still required'); expect(describeShadowReason('SOURCE_SUPERSEDED')).toMatch('newer source event'); expect(describeShadowReason('FUTURE_REASON')).toBe('Unrecognized decision reason: FUTURE_REASON'); });
+
+const report = { source_record_id: 1, authority_fingerprint: 'a'.repeat(64), entity_id: 1, entity: 'Nairobi City County', period: 'FY2025/26', period_start: '2025-07-01', period_end: '2026-06-30', source_document_id: 12,
+  document_url: 'https://cob.go.ke/owned-report.pdf', document_checksum: 'a'.repeat(64), publisher: 'Controller of Budget', published_on: '2026-07-01',
+  retrieved_at: '2026-10-17T00:00:00Z', verified_at: '2026-10-17T00:00:01Z', canonical_url: 'https://www.auditgava.com/counties/1',
+  locator: 'PDF page 1; Publication date: 2026-07-01', publication_extraction_id: 23, qualification_extraction_id: 24 };
+const reportEvidence = { post_id: 'p1', revision_id: 'r1', source_event_id: 'e1', generator_metadata: { template_version: 'report-availability-v1' },
+  evidence: { evidence_version: 2, source: { source_type: 'cob', source_key: 'cob:county:1:reports', ingestion_id: '42', facts: [], report } } };
+
+test('neutral report review shows retained identity and date proof without a financial stand-in', async () => {
+  (generationApi.evidence as jest.Mock).mockResolvedValue(decodeEvidence(reportEvidence));
+  mount(<GeneratedEvidence postId='p1' revisionId='r1' expectedVersion={1} />);
+  expect(await screen.findByRole('article', { name: 'Neutral report evidence' })).toHaveTextContent('Controller of Budget report · Nairobi City County');
+  expect(screen.getByText(/Publication evidence 23 · Qualified scope evidence 24/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open publisher report' })).toHaveAttribute('href', report.document_url);
+  expect(screen.queryByText(/1 report|KES/)).not.toBeInTheDocument();
+});
+
+test.each([0, false, null, '23'])('neutral evidence decoder refuses invalid date proof identity %p', value => {
+  expect(() => decodeEvidence({ ...reportEvidence, evidence: { ...reportEvidence.evidence, source: { ...reportEvidence.evidence.source, report: { ...report, publication_extraction_id: value } } } })).toThrow();
+});
+
+test('neutral evidence decoder refuses mixed financial and report claims', () => {
+  expect(() => decodeEvidence({ ...reportEvidence, evidence: { source: { ...reportEvidence.evidence.source, facts: [{}] } } })).toThrow();
+});
+
+
+test.each(['', 'a'.repeat(63), 'g'.repeat(64), null, false])('neutral evidence decoder refuses malformed current source authority %p', value => {
+  expect(() => decodeEvidence({ ...reportEvidence, evidence: { ...reportEvidence.evidence, source: { ...reportEvidence.evidence.source, report: { ...report, authority_fingerprint: value } } } })).toThrow();
+});

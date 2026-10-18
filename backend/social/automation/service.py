@@ -16,7 +16,7 @@ from ..service import SocialError, utc, iso
 from ..validation import validate_document, capability_for
 from ..generation.models import AutomationRuleVersion, ShadowDecision, SourceEvent, SourceCursor
 from ..generation.contracts import RuleCommand, SourceObservation
-from ..generation.service import _insert, render, semantic_fingerprint, verify_generated_revision, TEMPLATE_VERSION, DETECTOR_VERSION
+from ..generation.service import _insert, render, semantic_fingerprint, verify_generated_revision, generator_metadata, evidence_items, TEMPLATE_VERSION, DETECTOR_VERSION
 from .contracts import OperatingEvidenceCommand, SnapshotCommand, PolicyControlsCommand, AuthorizePolicyCommand, SchedulePolicyCommand
 from .models import OperatingEvidence, AuthorizedPolicySnapshot, PolicyDecision, PolicySelection
 
@@ -42,7 +42,13 @@ def require(condition, code='POLICY_AUTHORITY_INVALID'):
 def source_scope(observation):
     # Initial rollout is one deterministic, actual dataset announcement. Approved
     # source/entity/metric/period/comparison semantics cannot drift with new values.
-    require(observation.category == 'dataset_availability' and len(observation.facts) == 1, 'HUMAN_REVIEW_REQUIRED')
+    require(observation.category == 'dataset_availability', 'HUMAN_REVIEW_REQUIRED')
+    if observation.report:
+        report = observation.report
+        return canonical_hash({'source_type': observation.source_type, 'source_key': observation.source_key,
+            'template': 'report-availability-v1', 'entity_id': report.entity_id, 'entity': report.entity,
+            'publisher': report.publisher, 'canonical_url': report.canonical_url})
+    require(len(observation.facts) == 1, 'HUMAN_REVIEW_REQUIRED')
     fact = observation.facts[0]
     require(fact.classification == 'actual', 'HUMAN_REVIEW_REQUIRED')
     values = fact.model_dump(mode='json', exclude={'value', 'published_on', 'retrieved_at', 'verified_at', 'document_checksum'})
@@ -110,15 +116,26 @@ def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_
     require(prior is not None, 'MATERIALITY_REVIEW_REQUIRED')
     prior_observation = SourceObservation.model_validate(prior.observation)
     require(source_scope(prior_observation) == source_scope(observation), 'MATERIALITY_REVIEW_REQUIRED')
-    threshold = snapshot.snapshot['minimum_absolute_change']
-    require(type(threshold) is str and Decimal(threshold).is_finite() and Decimal(threshold) > 0)
-    require(abs(Decimal(observation.facts[0].value) - Decimal(prior_observation.facts[0].value)) >= Decimal(threshold), 'BELOW_MATERIALITY')
+    if observation.report:
+        # Materiality is a genuinely later reporting release, never an amount,
+        # synthetic count, different acquisition or same-period correction.
+        require(snapshot.snapshot.get('materiality_mode') == 'new_reporting_release', 'REPORT_RELEASE_REVIEW_REQUIRED')
+        previous, current = prior_observation.report, observation.report
+        require(previous is not None and current.published_on > previous.published_on
+            and current.period_start > previous.period_start and current.period_end > previous.period_end
+            and current.source_document_id != previous.source_document_id
+            and current.document_url != previous.document_url, 'REPORT_RELEASE_REVIEW_REQUIRED')
+    else:
+        require(snapshot.snapshot.get('materiality_mode', 'numeric_change') == 'numeric_change', 'MATERIALITY_REVIEW_REQUIRED')
+        threshold = snapshot.snapshot['minimum_absolute_change']
+        require(type(threshold) is str and Decimal(threshold).is_finite() and Decimal(threshold) > 0)
+        require(abs(Decimal(observation.facts[0].value) - Decimal(prior_observation.facts[0].value)) >= Decimal(threshold), 'BELOW_MATERIALITY')
     require(semantic_fingerprint(observation) == event.fingerprint == revision.evidence_snapshot.get('fingerprint'))
-    require(revision.generator_metadata == {'template_version': TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]})
+    require(revision.generator_metadata == generator_metadata(observation))
     document = PostDocument.model_validate(revision.document)
-    require(document.master.text == render(observation) and document.master.link == observation.facts[0].canonical_url and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
-    expiry = min(utc(f.verified_at) + timedelta(hours=definition.freshness_hours) for f in observation.facts)
-    require(now < expiry and all(utc(f.verified_at) <= now and utc(f.retrieved_at) <= now for f in observation.facts), 'EVIDENCE_STALE')
+    require(document.master.text == render(observation) and document.master.link == evidence_items(observation)[0].canonical_url and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
+    expiry = min(utc(f.verified_at) + timedelta(hours=definition.freshness_hours) for f in evidence_items(observation))
+    require(now < expiry and all(utc(f.verified_at) <= now and utc(f.retrieved_at) <= now for f in evidence_items(observation)), 'EVIDENCE_STALE')
     accounts = sorted(str(t.account_id) for t in document.targets)
     require(accounts and set(accounts) <= {str(a) for a in definition.account_allowlist}, 'ACCOUNT_NOT_ALLOWLISTED')
     cfg = fresh(db, SocialControls, 1)
@@ -182,7 +199,7 @@ class AutomationService:
         global_controls(self.db)
         require(self.svc.actor_kind == 'admin' and self.svc.actor is not None, 'HUMAN_ACCEPTANCE_REQUIRED')
         rule, definition = current_rule(self.db, body.rule_id, body.rule_version, body.rule_hash)
-        scopes, outcomes = set(), []
+        scopes, outcomes, modes = set(), [], set()
         for identity in body.shadow_decision_ids:
             decision = fresh(self.db, ShadowDecision, identity)
             require(decision is not None and decision.rule_version_id == rule.id and decision.outcome == 'would_allow', 'OPERATING_EVIDENCE_INVALID')
@@ -197,8 +214,10 @@ class AutomationService:
             require(not observation.correction_pending and not observation.fixture and observation.publishable and not observation.quarantined, 'OPERATING_EVIDENCE_INVALID')
             require(revision.content_hash == canonical_hash({'document': revision.document, 'evidence_snapshot': revision.evidence_snapshot}) == decision.content_hash)
             scopes.add(source_scope(observation))
+            modes.add('new_reporting_release' if observation.report else 'numeric_change')
             outcomes.append(dict(shadow_decision_id=str(decision.id), publication_id=str(publication.id), content_hash=decision.content_hash, revision_id=str(revision.id)))
-        value = {**body.model_dump(mode='json'), 'human_outcomes': outcomes, 'source_scopes': sorted(scopes), 'approved_by': str(self.svc.actor)}
+        require(len(modes) == 1, 'MATERIALITY_SCOPE_MISMATCH')
+        value = {**body.model_dump(mode='json'), 'human_outcomes': outcomes, 'source_scopes': sorted(scopes), 'materiality_mode': next(iter(modes)), 'approved_by': str(self.svc.actor)}
         row = OperatingEvidence(id=uuid4(), rule_version_id=rule.id, evidence=value, evidence_hash=canonical_hash(value), approved_by=self.svc.actor)
         self.db.add(row)
         self.svc.audit('automation.operating_evidence_accepted', reason=body.reason, details={'operating_evidence_id': str(row.id), 'evidence_hash': row.evidence_hash})
@@ -212,9 +231,10 @@ class AutomationService:
         rule, definition = current_rule(self.db, body.rule_id, body.rule_version, body.rule_hash)
         evidence = fresh(self.db, OperatingEvidence, body.operating_evidence_id)
         require(evidence is not None and evidence.rule_version_id == rule.id and evidence.evidence_hash == canonical_hash(evidence.evidence), 'OPERATING_EVIDENCE_REQUIRED')
+        require(body.materiality_mode == evidence.evidence.get('materiality_mode', 'numeric_change'), 'MATERIALITY_SCOPE_MISMATCH')
         now = self.svc.now()
         require(now < utc(body.valid_until) <= now + timedelta(days=30), 'INVALID_POLICY_VALIDITY')
-        value = dict(rule_id=str(rule.rule_id), version=rule.version, rule_hash=rule.definition_hash, definition=rule.definition, operating_evidence_hash=evidence.evidence_hash, source_scopes=evidence.evidence['source_scopes'], minimum_absolute_change=body.minimum_absolute_change, approved_by=str(self.svc.actor), valid_until=iso(body.valid_until))
+        value = dict(rule_id=str(rule.rule_id), version=rule.version, rule_hash=rule.definition_hash, definition=rule.definition, operating_evidence_hash=evidence.evidence_hash, source_scopes=evidence.evidence['source_scopes'], materiality_mode=body.materiality_mode, minimum_absolute_change=body.minimum_absolute_change, approved_by=str(self.svc.actor), valid_until=iso(body.valid_until))
         row = AuthorizedPolicySnapshot(id=uuid4(), rule_version_id=rule.id, operating_evidence_id=evidence.id, version=rule.version, snapshot=value, snapshot_hash=canonical_hash(value), approved_by=self.svc.actor, valid_until=body.valid_until)
         self.db.add(row)
         self.svc.audit('automation.policy_snapshot_authorized', reason=body.reason, details={'snapshot_id': str(row.id), 'snapshot_hash': row.snapshot_hash})

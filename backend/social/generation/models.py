@@ -23,6 +23,7 @@ class SourceCursor(Base):
     evidence_version = Column(Integer, nullable=False)
     sequence = Column(Integer, nullable=False, default=0)
     fingerprint = Column(Text, nullable=False)
+    report_state = Column(J, nullable=True)
     observed_at = created()
     __table_args__ = (UniqueConstraint('source_type', 'source_key', 'detector_version', name='uq_social_source_cursor'), CheckConstraint('sequence >= 0 AND evidence_version > 0 AND detector_version > 0', name='ck_social_cursor_versions'))
 

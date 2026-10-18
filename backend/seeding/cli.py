@@ -123,6 +123,22 @@ def _domain_timeout(seconds: int) -> Iterator[None]:
         signal.signal(signal.SIGALRM, previous)
 
 
+def _post_commit_generation(factory, *, domain, ingestion_id, dry_run):
+    """One hard budget; keep the first phase's confirmed result on later timeout."""
+    from .generation_dispatch import dispatch_committed_generation, dispatch_committed_report_generation, record_generation_timeout
+    financial_outcome, reports_started = None, False
+    try:
+        with _domain_timeout(30):
+            financial_outcome = dispatch_committed_generation(factory, domain=domain,
+                ingestion_id=ingestion_id, dry_run=dry_run, include_reports=False)
+            if os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false':
+                reports_started = True
+                dispatch_committed_report_generation(factory, domain=domain, ingestion_id=ingestion_id, dry_run=dry_run)
+    except DomainTimeoutError:
+        record_generation_timeout(factory, domain=domain, ingestion_id=ingestion_id,
+            financial_outcome=financial_outcome, reports_started=reports_started)
+
+
 def _ensure_db_sessionlocal() -> None:
     if SessionLocal is None:
         raise RuntimeError("SessionLocal could not be imported from database module")
@@ -583,15 +599,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     and result is not None and not result.errors
                     and freshness.get(domain).get("mode") == freshness.LIVE
                     and os.environ.get("SOCIAL_GENERATION_HOOK_ENABLED", "false") != "false"):
-                from .generation_dispatch import dispatch_committed_generation, record_generation_timeout
-                try:
-                    with _domain_timeout(30):
-                        dispatch_committed_generation(SessionLocal, domain=domain,
-                                                      ingestion_id=job_id, dry_run=dry_run)
-                except DomainTimeoutError:
-                    # Some generation records may already have committed. The
-                    # financial commit remains successful; no automatic replay.
-                    record_generation_timeout(SessionLocal, domain=domain, ingestion_id=job_id)
+                _post_commit_generation(SessionLocal, domain=domain, ingestion_id=job_id, dry_run=dry_run)
 
             # Session closure and a coherent persisted observation are required.
             # A process exit or an expired connection/lease cannot reach this ack.
