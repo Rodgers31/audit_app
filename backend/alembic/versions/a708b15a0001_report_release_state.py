@@ -75,6 +75,12 @@ def upgrade():
 def downgrade():
     # Discarding a report baseline could reclassify retained releases as new.
     connection = op.get_bind()
+    if connection.execute(sa.text("SELECT current_setting('transaction_isolation')")).scalar() != 'read committed':
+        raise RuntimeError('Report downgrade requires READ COMMITTED')
+    op.execute("SET LOCAL lock_timeout='2s'")
+    op.execute("SET LOCAL statement_timeout='30s'")
+    op.execute('LOCK TABLE social_source_cursors IN ACCESS EXCLUSIVE MODE')
+    op.execute('SET LOCAL row_security=off')
     if connection.execute(sa.text('SELECT 1 FROM social_source_cursors WHERE report_state IS NOT NULL LIMIT 1')).first():
         raise RuntimeError('Retain report release history before downgrade')
     op.execute('DROP VIEW social_report_source_authority, social_report_source_authority_snapshot')

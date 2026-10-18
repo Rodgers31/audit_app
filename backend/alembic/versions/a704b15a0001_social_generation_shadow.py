@@ -42,6 +42,20 @@ def upgrade():
 
 
 def downgrade():
+    connection = op.get_bind()
+    if connection.execute(sa.text("SELECT current_setting('transaction_isolation')")).scalar() != 'read committed':
+        raise RuntimeError('Generation downgrade requires READ COMMITTED')
+    op.execute("SET LOCAL lock_timeout='2s'")
+    op.execute("SET LOCAL statement_timeout='30s'")
+    # Serialize the retention decision with every writer before dropping its
+    # evidence or source link. Disabling generation does not erase its history.
+    op.execute('LOCK TABLE social_controls, social_posts, ' + ','.join(TABLES) + ' IN ACCESS EXCLUSIVE MODE')
+    op.execute('SET LOCAL row_security=off')
+    retained = ' OR '.join('EXISTS(SELECT 1 FROM ' + table + ')' for table in TABLES)
+    retained += ' OR EXISTS(SELECT 1 FROM social_posts WHERE source_event_id IS NOT NULL)'
+    retained += ' OR EXISTS(SELECT 1 FROM social_controls WHERE generation_enabled OR auto_approve_enabled OR auto_schedule_enabled OR auto_publish_enabled)'
+    if connection.execute(sa.text('SELECT ' + retained)).scalar():
+        raise RuntimeError('Generation history/controls prevent downgrade')
     op.drop_constraint('uq_social_post_source_event', 'social_posts', type_='unique')
     op.drop_constraint('fk_social_post_source_event', 'social_posts', type_='foreignkey')
     for table in reversed(TABLES):
