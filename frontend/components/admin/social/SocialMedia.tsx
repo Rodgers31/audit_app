@@ -37,6 +37,7 @@ export default function SocialMedia({ media, onChange, label, contextKey = label
       <span className={styles.mediaId}>{index + 1}. Asset {asset.asset_id}</span>
       <AssetPreview id={asset.asset_id} alt={asset.alt_text} />
       <label>{label} media {index + 1} alt text<input maxLength={2000} disabled={busy} value={asset.alt_text ?? ''} onChange={e => onChange(media.map((item, i) => i === index ? { ...item, alt_text: e.target.value } : item))} /></label>
+      <button type='button' className={styles.button} disabled={busy || asset.alt_text == null} aria-label={`Remove ${label} media ${index + 1} alt text`} onClick={() => onChange(media.map((item, i) => i === index ? { ...item, alt_text: null } : item))}>Remove alt text</button>
       {asset.caption_asset_id && <p className={styles.muted}>Caption asset: {asset.caption_asset_id}</p>}
       <div className={styles.mediaControls}><button type='button' className={styles.button} disabled={busy || index === 0} aria-label={`Move ${label} media ${index + 1} earlier`} onClick={() => move(index, -1)}>Earlier</button><button type='button' className={styles.button} disabled={busy || index === media.length - 1} aria-label={`Move ${label} media ${index + 1} later`} onClick={() => move(index, 1)}>Later</button><button type='button' className={styles.button} disabled={busy} aria-label={`Remove ${label} media ${index + 1}`} onClick={() => onChange(media.filter((_, i) => i !== index))}>Remove</button></div>
     </li>)}</ol>

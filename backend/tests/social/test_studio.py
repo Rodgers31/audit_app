@@ -72,6 +72,7 @@ def test_render_real_graphic_deterministic_restart_approval_and_attach(db, runti
     assert attached['editorial_state'] == 'draft'
     assert attached['revision_id'] != post['revision_id']
     assert attached['document']['master']['media'][0]['asset_id'] == str(asset_id)
+    assert attached['document']['master']['media'][0]['alt_text'] == ' '.join(f['text'] for f in row.composition['facts'])
     # Same template/source produces the same actual graphics bytes across jobs.
     another = source(db)
     second = enqueue(db, runtime, another)

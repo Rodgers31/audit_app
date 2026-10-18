@@ -207,7 +207,7 @@ async def test_material_mismatch_and_expiry_never_reach_http(changes):
 
 
 @pytest.mark.parametrize("platform,format,changes,expected", [
-    ("facebook", "reel", {}, "UNSUPPORTED_FORMAT"),
+    ("facebook", "video", {}, "UNSUPPORTED_FORMAT"),
     ("instagram", "text", {}, "UNSUPPORTED_FORMAT"),
     ("facebook", "image", {"text": "", "hashtags": ()}, "FACEBOOK_MESSAGE_REQUIRED"),
     ("instagram", "image", {"text": "a" * 2200}, "CAPTION_TOO_LONG"),

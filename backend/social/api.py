@@ -287,3 +287,6 @@ router.include_router(platform_events_maintenance_router)
 # Scoped operator recovery; imported explicitly so a broken route fails startup.
 from .threads_recovery_api import router as threads_recovery_router
 router.include_router(threads_recovery_router)
+
+from .meta_reels_recovery_api import router as meta_reels_recovery_router
+router.include_router(meta_reels_recovery_router)

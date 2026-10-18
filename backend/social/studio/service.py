@@ -143,7 +143,7 @@ class StudioService:
         if not asset or asset.state != 'ready' or asset.deleted_at or asset.sha256 != row.approved_sha256 or asset.mime_type != row.inspection['mime_type'] or asset.byte_size != row.inspection['byte_size']:
             raise SocialError('RENDER_INTEGRITY', 'Select the inspected media asset with the exact approved checksum.')
         value = dict(revision.document)
-        value['master'] = {**value['master'], 'media': [*value['master']['media'], {'asset_id': str(asset.id), 'alt_text': ' '.join(f['text'] for f in row.composition['facts']), 'caption_asset_id': None}]}
+        value['master'] = {**value['master'], 'media': [*value['master']['media'], {'asset_id': str(asset.id), 'alt_text': ' '.join(f['text'] for f in row.composition['facts']) if asset.mime_type.startswith('image/') else None, 'caption_asset_id': None}]}
         result = self.social.patch(post.id, PatchPost(expected_version=expected_version, document=PostDocument.model_validate(value)))
         self.social.audit('render.attached', post=post, details={'job_id': str(row.id), 'asset_id': str(asset.id), 'sha256': row.approved_sha256, 'source_revision_id': str(row.revision_id), 'new_revision_id': result['revision_id']})
         return result

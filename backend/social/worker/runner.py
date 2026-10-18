@@ -298,7 +298,7 @@ class SocialWorker:
         elif result.outcome == "processing":
             state, action, delay = "processing", "poll", self._delay(result.next_action_at, snapshot, 30)
         elif result.outcome == "ambiguous":
-            state, action, delay = "reconciling", "reconcile", 30
+            state, action, delay = "reconciling", "reconcile", self._delay(result.next_action_at, snapshot, 30)
         else:
             policy = await self.db(self.repository.retry_policy, claim, result)
             state = {"retry": "retry_wait", "block": "blocked", "fail": "failed", "reconcile": "reconciling"}[policy.action]
@@ -306,7 +306,8 @@ class SocialWorker:
             if policy.action == "retry":
                 action, delay = "publish", self._delay(policy.next_action_at, snapshot, 30)
             elif policy.action == "reconcile":
-                action, delay = "reconcile", 30
+                action, delay = "reconcile", max(self._delay(result.next_action_at, snapshot, 30),
+                                                  self._delay(policy.next_action_at, snapshot, 30))
         await self._save(claim, intent, snapshot, result, state=state, next_action=action,
                          delay=delay, duration_ms=int((time.monotonic()-started)*1000))
 
@@ -355,6 +356,7 @@ class SocialWorker:
         await self._save(claim, intent, snapshot, result, state=state, next_action=action,
                          delay=delay, duration_ms=int((time.monotonic()-started)*1000),
                          extra_receipt={"reconciliation_evidence": reconciliation.evidence,
+                                        "nonpublic_continuation": reconciliation.continuation_proof.model_dump(mode="json") if reconciliation.continuation_proof else None,
                                         "absence_proof": absence_proof.model_dump(mode="json") if valid_absence else None})
 
     @staticmethod

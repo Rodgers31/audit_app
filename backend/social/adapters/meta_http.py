@@ -101,7 +101,7 @@ class MetaHTTP:
 
     async def request(self, method, node, *, token, edge=None, fields=None, data=None, files=None, query=None, maximum_bytes=MAX_RESPONSE_BYTES):
         remote_id(node, composite=True)
-        if method not in {"GET", "POST"} or edge not in {None, "feed", "photos", "media", "media_publish", "content_publishing_limit", "insights"}:
+        if method not in {"GET", "POST"} or edge not in {None, "feed", "photos", "media", "media_publish", "content_publishing_limit", "insights", "video_reels"}:
             raise ValueError("Unsupported Graph operation")
         if type(maximum_bytes) is not int or not 1 <= maximum_bytes <= MAX_RESPONSE_BYTES:
             raise ValueError("Invalid Graph response bound")
@@ -118,13 +118,30 @@ class MetaHTTP:
         path = node + ("/" + edge if edge else "")
         params = query if edge == "insights" else ({"fields": fields} if fields else {})
         proof = hmac.new(self.config.app_secret.encode(), token.encode(), hashlib.sha256).hexdigest() if self.config.app_secret else None
+        return await self._send(method, f"https://graph.facebook.com/{self.config.graph_version}/{path}",
+            headers={"Authorization": "Bearer " + token, "Accept-Encoding": "identity"},
+            params=params, data=data, files=files, extensions={"meta_private_proof": proof}, maximum_bytes=maximum_bytes)
+
+    async def upload_reel(self, video_id, *, token, content, offset):
+        """Only canonical Facebook rupload; no supplied URL, redirects or retry."""
+        remote_id(video_id)
+        if (type(content) is not bytes or not 0 < len(content) <= 50_000_000
+                or type(offset) is not int or not 0 <= offset < len(content)):
+            raise ValueError("Invalid bounded reel upload")
+        if not isinstance(token, str) or not 0 < len(token) <= 16384 or any(ord(c) < 32 or ord(c) == 127 for c in token):
+            raise MetaHTTPFailure("AUTHORIZATION_REQUIRED", retry_safe=True)
+        return await self._send("POST", f"https://rupload.facebook.com/video-upload/{self.config.graph_version}/{video_id}",
+            headers={"Authorization": "OAuth " + token, "Accept-Encoding": "identity",
+                "Content-Type": "application/octet-stream", "offset": str(offset), "file_size": str(len(content))},
+            content=content[offset:])
+
+    async def _send(self, method, url, *, headers, maximum_bytes=MAX_RESPONSE_BYTES, **kwargs):
         response = None
+        next_at = None
         try:
-            request = self.client.build_request(method,
-                f"https://graph.facebook.com/{self.config.graph_version}/{path}", params=params,
-                headers={"Authorization": "Bearer " + token, "Accept-Encoding": "identity"},
-                data=data, files=files, extensions={"meta_private_proof": proof})
+            request = self.client.build_request(method, url, headers=headers, **kwargs)
             response = await self.client.send(request, stream=True)
+            next_at = _retry_time(response.headers.get("retry-after"), self.now())
             if response.headers.get("content-encoding", "identity").lower() != "identity":
                 raise ValueError("Unexpected compressed response")
             chunks, size = [], 0
@@ -139,19 +156,19 @@ class MetaHTTP:
                 raise ValueError("Graph response must be an object")
         except (httpx.HTTPError, ValueError, TypeError, RecursionError):
             raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True,
-                                  http_status=response.status_code if response else None) from None
+                                  http_status=response.status_code if response is not None else None,
+                                  next_action_at=next_at) from None
         finally:
             if response is not None:
                 await response.aclose()
         status = response.status_code
-        next_at = _retry_time(response.headers.get("retry-after"), self.now())
         error = value.get("error")
         if "error" in value or not 200 <= status < 300:
             # Server failures, redirects, response conflicts and malformed error
             # shapes cannot prove a dispatched mutation was rejected.
             code = error.get("code") if isinstance(error, dict) else None
             if status >= 500 or status < 400 or type(code) is not int or not 0 < code <= 2147483647 or "id" in value or "post_id" in value:
-                raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=status)
+                raise MetaHTTPFailure("PROVIDER_OUTCOME_UNCERTAIN", ambiguous=True, http_status=status, next_action_at=next_at)
             if code == 190:
                 safe = "TOKEN_REVOKED"
             elif code in {10, 200, 283, 368}:

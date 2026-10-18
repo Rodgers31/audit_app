@@ -137,8 +137,13 @@ def validate_document(db: Session, document: PostDocument, evidence, available_a
             if caption_id and (not caption or caption.state != "ready" or caption.deleted_at is not None):
                 errors.append(issue("MEDIA_NOT_READY", path + ".caption_asset_id", "The caption asset is not ready."))
                 continue
+            meta_reel = target.format == "reel" and (account.platform, account.api_product) in {
+                ("facebook", "facebook_pages"), ("instagram", "instagram_graph_facebook_login")}
+            alt_text = reference.get("alt_text")
+            if alt_text is None and not meta_reel:
+                alt_text = asset.default_alt_text
             try:
-                inspected.append(InspectedAsset(asset_id=asset.id, sha256=asset.sha256, mime_type=asset.mime_type, byte_size=asset.byte_size, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, frame_rate_milli_fps=int(asset.frame_rate * 1000) if asset.frame_rate is not None else None, alt_text=reference.get("alt_text") if reference.get("alt_text") is not None else asset.default_alt_text, caption_asset_id=caption_id, caption_sha256=caption.sha256 if caption else None))
+                inspected.append(InspectedAsset(asset_id=asset.id, sha256=asset.sha256, mime_type=asset.mime_type, byte_size=asset.byte_size, width=asset.width, height=asset.height, duration_ms=asset.duration_ms, frame_rate_milli_fps=int(asset.frame_rate * 1000) if asset.frame_rate is not None else None, alt_text=alt_text, caption_asset_id=caption_id, caption_sha256=caption.sha256 if caption else None))
             except ValidationError:
                 errors.append(issue("MEDIA_NOT_READY", path, "The inspected asset metadata is incomplete."))
                 continue

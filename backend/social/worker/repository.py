@@ -546,6 +546,8 @@ class QueueRepository:
                     "confirmation": confirmation_kind})
             if state in ("reconciling", "outcome_unknown"):
                 self._hold_account(conn, claim)
+            elif state == 'processing' and completed['operation'] == 'reconcile' and self._nonpublic_continuation_matches(conn, claim, receipt, target, checkpoint, outcome):
+                self._clear_hold(conn, claim)
             elif state == "published" or (valid_absence and state in ("retry_wait", "blocked", "failed")):
                 self._clear_hold(conn, claim)
             self._transition(conn, claim, target, state, error_code, delay, next_action)
@@ -573,6 +575,16 @@ class QueueRepository:
         """), self._params(claim)).scalar()
         return (proof.verified is True and proof.coverage_complete is True and
                 str(proof.account_id) == claim.account_id and str(proof.operation_id) == str(original))
+
+    def _nonpublic_continuation_matches(self, conn, claim, receipt, target, checkpoint, outcome):
+        from .continuation import nonpublic_continuation_matches
+        original = conn.execute(text('''
+            SELECT operation_id,operation,dispatch_started_at,receipt,request_fingerprint
+            FROM social_publish_attempts WHERE target_id=CAST(:id AS uuid)
+              AND receipt->'intent'->>'mutating'='true' ORDER BY sequence DESC LIMIT 1
+        '''), self._params(claim)).mappings().first()
+        return bool(original and nonpublic_continuation_matches((receipt or {}).get('nonpublic_continuation'), original,
+            account_id=claim.account_id, payload_hash=target['payload_hash'], checkpoint=checkpoint, outcome=outcome))
 
     def _clear_hold(self, conn, claim):
         conn.execute(text("UPDATE social_accounts SET hold_reason=NULL,updated_at=now() WHERE id=CAST(:account AS uuid) AND hold_reason=:hold"), {**self._params(claim), "hold": "RECONCILIATION_REQUIRED:"+claim.target_id})
