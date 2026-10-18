@@ -57,7 +57,10 @@ def test_optional_policies_include_lock_only_fence_and_no_oauth_authority():
 @pytest.mark.parametrize('platforms', [False, True])
 def test_installer_emits_only_selected_matrix_and_threads_verification(monkeypatch, platforms):
     statements, calls = [], []
-    conn = SimpleNamespace(dialect=dialect(), execute=lambda sql, *args: statements.append(str(sql)))
+    def execute(sql, *args):
+        statements.append(str(sql))
+        return SimpleNamespace(scalar=lambda: False)
+    conn = SimpleNamespace(dialect=dialect(), execute=execute)
     class Engine:
         @contextmanager
         def begin(self): yield conn
@@ -65,10 +68,15 @@ def test_installer_emits_only_selected_matrix_and_threads_verification(monkeypat
     monkeypatch.setattr(contract, '_limits', lambda c: None)
     monkeypatch.setattr(contract, '_identity', lambda *a, **kw: 99)
     monkeypatch.setattr(contract, '_triggers', lambda *a, **kw: calls.append(('triggers', kw)))
+    view_checks = []
+    monkeypatch.setattr(contract, '_views', lambda c, schema: view_checks.append(schema))
     monkeypatch.setattr(contract, '_grants', lambda *a, **kw: calls.append(('grants', kw)))
     monkeypatch.setattr(contract, '_check_policies', lambda *a, **kw: calls.append(('policies', kw)) or set())
     monkeypatch.setattr(contract, '_verify', lambda *a, **kw: calls.append(('verify', kw)))
     contract.install_worker_role(Engine(), 'fixture_worker', 'fixture_schema', platforms=platforms)
+    assert view_checks == ['fixture_schema']
+    assert any(sql.startswith('GRANT SELECT ON') and '"social_report_source_authority"' in sql for sql in statements)
+    assert not any('GRANT ' in sql and 'social_report_source_authority_snapshot' in sql for sql in statements)
     for table in EXTRA_READ:
         assert any(sql.startswith('GRANT SELECT ON') and table in sql for sql in statements) is platforms
     assert all(call[1]['platforms'] is platforms for call in calls)

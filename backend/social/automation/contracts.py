@@ -1,7 +1,7 @@
 """Explicit human operating acceptance and exact immutable authorization commands."""
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 from pydantic import Field, StrictBool, StringConstraints, field_validator, model_validator
 from ..contracts import StrictModel, PositiveVersion, Reason
@@ -37,6 +37,7 @@ class SnapshotCommand(StrictModel):
     rule_version: PositiveVersion
     rule_hash: Digest
     valid_until: datetime
+    materiality_mode: Literal['numeric_change', 'new_reporting_release'] = 'numeric_change'
     minimum_absolute_change: Annotated[str, StringConstraints(strict=True, pattern=r'^(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,8})?$')] = '1'
     reason: Reason
 
