@@ -163,7 +163,11 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     if cursor.sequence > 0:
         old_post = svc.db.scalar(select(SocialPost).where(SocialPost.source_event_id == old_event.id)) if old_event else None
         if old_post is not None and svc._publication(old_post) is not None:
-            svc.cancel(old_post.id, VersionCommand(expected_version=old_post.row_version))
+            # Archive has already established terminal delivery state and retains
+            # its authorization as evidence. Superseding source data must create
+            # a new draft without reopening/cancelling that read-only history.
+            if old_post.editorial_state != 'archived' and old_post.archived_at is None:
+                svc.cancel(old_post.id, VersionCommand(expected_version=old_post.row_version))
             svc.audit('generation.source_superseded', post=old_post, reason='New explicit source evidence version', details={'source_event_id': str(old_event.id), 'new_evidence_version': observation.evidence_version})
     if release and not backfill and release['release_hash'] == cursor.report_state['release_hash']:
         # A new acquisition/artifact can invalidate old authority without making

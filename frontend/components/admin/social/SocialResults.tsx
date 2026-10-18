@@ -7,7 +7,7 @@ import { SocialErrorBanner } from './SocialNotice';
 import { httpsUrl, platformLabels } from './socialDocument';
 import styles from './social.module.css';
 
-export default function SocialResults({ targets, accounts, postId }: { targets: SocialTarget[]; accounts: SocialAccount[]; postId: string }) {
+export default function SocialResults({ targets, accounts, postId, readOnly = false }: { readOnly?: boolean; targets: SocialTarget[]; accounts: SocialAccount[]; postId: string }) {
   const mutation = useSocialMutation();
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
@@ -38,7 +38,7 @@ export default function SocialResults({ targets, accounts, postId }: { targets: 
         {target.published_at && <p className={styles.muted}>Confirmed publication: {target.published_at} (UTC)</p>}
         {url ? <a href={url} target='_blank' rel='noopener noreferrer'>View {platformLabels[target.platform]} post</a> : target.state === 'published' && <p className={styles.muted}>Published; a verified HTTPS post link is unavailable.</p>}
         {ambiguous && <p className={styles.notice}>The platform may have accepted this post. Reconciliation is required; another send is unavailable.</p>}
-        {target.state === 'failed' && <div className={styles.fields}><label htmlFor={`retry-${target.id}`}>Reason to retry {platformLabels[target.platform]}<input id={`retry-${target.id}`} value={reasons[target.id] ?? ''} onChange={e => setReasons({ ...reasons, [target.id]: e.target.value })} /></label><button className={styles.button} type='button' disabled={mutation.isPending || !reasons[target.id]?.trim()} onClick={() => retry(target.id)}>Request safe retry for {platformLabels[target.platform]}</button><p className={styles.muted}>The server checks retry eligibility. Other destinations keep their existing results.</p></div>}
+        {!readOnly && target.state === 'failed' && <div className={styles.fields}><label htmlFor={`retry-${target.id}`}>Reason to retry {platformLabels[target.platform]}<input id={`retry-${target.id}`} value={reasons[target.id] ?? ''} onChange={e => setReasons({ ...reasons, [target.id]: e.target.value })} /></label><button className={styles.button} type='button' disabled={mutation.isPending || !reasons[target.id]?.trim()} onClick={() => retry(target.id)}>Request safe retry for {platformLabels[target.platform]}</button><p className={styles.muted}>The server checks retry eligibility. Other destinations keep their existing results.</p></div>}
       </article>;
     })}
   </section>;
