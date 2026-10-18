@@ -19,13 +19,13 @@ export interface SocialTarget {
   next_action_at: string | null; published_at: string | null;
 }
 export interface SocialHistoricalTarget extends SocialTarget {
-  publication_id: string; revision_id: string; approved_at: string; approved_by: string;
+  publication_id: string; revision_id: string; approved_at: string; approved_by: string | null;
   scheduled_for: string | null; cancel_requested_at: string | null; revoked_at: string | null; updated_at: string;
 }
 export interface SocialHistory { post_id: string; targets: SocialHistoricalTarget[]; total: number; page: number; page_size: number; has_more: boolean }
 export type DeliveryFilter = 'all' | 'scheduled' | 'history' | 'needs_attention';
 export interface SocialSchedule {
-  id: string; revision_id: string; version: number; approved_at: string; approved_by: string;
+  id: string; revision_id: string; version: number; approved_at: string; approved_by: string | null;
   scheduled_for: string | null; schedule_timezone: string | null;
   requested_local_time: string | null; cancel_requested_at: string | null;
 }
@@ -71,7 +71,7 @@ export interface TargetValidation {
 export interface SocialValidation { valid: boolean; rules_version: string; targets: TargetValidation[]; errors: SocialIssue[]; warnings: SocialIssue[] }
 export interface SocialControls {
   version: number; publishing_enabled: boolean; generation_enabled: false;
-  auto_approve_enabled: false; auto_schedule_enabled: false; auto_publish_enabled: false;
+  auto_approve_enabled: boolean; auto_schedule_enabled: boolean; auto_publish_enabled: boolean;
 }
 export interface SocialSystemStatus extends Omit<SocialControls, 'version'> {
   controls_version: number; worker: { state: string; heartbeat_at: string | null; last_scan_at: string | null };
@@ -159,7 +159,7 @@ function decodeHistoricalTarget(v: unknown): SocialHistoricalTarget {
   const o = exactObject(v, ['id', 'account_id', 'platform', 'state', 'remote_url', 'safe_error_message', 'next_action_at', 'published_at', 'publication_id', 'revision_id', 'approved_at', 'approved_by', 'scheduled_for', 'cancel_requested_at', 'revoked_at', 'updated_at']);
   return { ...decodeTarget(o), id: uuid(o.id), account_id: uuid(o.account_id),
     state: oneOf(o.state, ['published', 'failed', 'cancelled', 'outcome_unknown', 'blocked', 'reconciling']),
-    publication_id: uuid(o.publication_id), revision_id: uuid(o.revision_id), approved_at: timestamp(o.approved_at), approved_by: uuid(o.approved_by),
+    publication_id: uuid(o.publication_id), revision_id: uuid(o.revision_id), approved_at: timestamp(o.approved_at), approved_by: o.approved_by === null ? null : uuid(o.approved_by),
     scheduled_for: nullableTimestamp(o.scheduled_for), cancel_requested_at: nullableTimestamp(o.cancel_requested_at), revoked_at: nullableTimestamp(o.revoked_at),
     next_action_at: nullableTimestamp(o.next_action_at), published_at: nullableTimestamp(o.published_at), updated_at: timestamp(o.updated_at) };
 }
@@ -180,7 +180,7 @@ function decodeSchedule(v: unknown): SocialSchedule | null {
   const zone = nullable(o.schedule_timezone), local = nullable(o.requested_local_time);
   if (zone !== null) { try { new Intl.DateTimeFormat('en', { timeZone: zone }); } catch { throw contractError(); } }
   if (local !== null && !validCivilTimestamp(local)) throw contractError();
-  return { id: uuid(o.id), revision_id: uuid(o.revision_id), version: integer(o.version), approved_at: timestamp(o.approved_at), approved_by: uuid(o.approved_by), scheduled_for: nullableTimestamp(o.scheduled_for), schedule_timezone: zone, requested_local_time: local, cancel_requested_at: nullableTimestamp(o.cancel_requested_at) };
+  return { id: uuid(o.id), revision_id: uuid(o.revision_id), version: integer(o.version), approved_at: timestamp(o.approved_at), approved_by: o.approved_by === null ? null : uuid(o.approved_by), scheduled_for: nullableTimestamp(o.scheduled_for), schedule_timezone: zone, requested_local_time: local, cancel_requested_at: nullableTimestamp(o.cancel_requested_at) };
 }
 export function decodeSummary(v: unknown): SocialSummary {
   const o = obj(v), historical_targets = historicalTargets(o.historical_targets), historical_target_count = integer(o.historical_target_count, 0);
@@ -215,11 +215,15 @@ export function decodeValidation(v: unknown): SocialValidation {
   }) };
 }
 function falseFlag(v: unknown): false { if (v !== false) throw contractError(); return false; }
-function disabledAutomation(o: Obj) { return { generation_enabled: falseFlag(o.generation_enabled), auto_approve_enabled: falseFlag(o.auto_approve_enabled), auto_schedule_enabled: falseFlag(o.auto_schedule_enabled), auto_publish_enabled: falseFlag(o.auto_publish_enabled) }; }
-export function decodeControls(v: unknown): SocialControls { const o = obj(v); return { version: integer(o.version), publishing_enabled: bool(o.publishing_enabled), ...disabledAutomation(o) }; }
+function automationControls(o: Obj) {
+  const approval = bool(o.auto_approve_enabled), schedule = bool(o.auto_schedule_enabled), publish = bool(o.auto_publish_enabled);
+  if (publish && !schedule || schedule && !approval) throw contractError();
+  return { generation_enabled: falseFlag(o.generation_enabled), auto_approve_enabled: approval, auto_schedule_enabled: schedule, auto_publish_enabled: publish };
+}
+export function decodeControls(v: unknown): SocialControls { const o = obj(v); return { version: integer(o.version), publishing_enabled: bool(o.publishing_enabled), ...automationControls(o) }; }
 export function decodeSystem(v: unknown): SocialSystemStatus {
   const o = obj(v), worker = obj(o.worker);
-  return { publishing_enabled: bool(o.publishing_enabled), controls_version: integer(o.controls_version), worker: { state: str(worker.state), heartbeat_at: nullable(worker.heartbeat_at), last_scan_at: nullable(worker.last_scan_at) }, queue_counts: Object.fromEntries(Object.entries(obj(o.queue_counts)).map(([k, count]) => [k, integer(count, 0)])), adapters_available: arr(o.adapters_available).map(str), media_upload_available: bool(o.media_upload_available), ...disabledAutomation(o) };
+  return { publishing_enabled: bool(o.publishing_enabled), controls_version: integer(o.controls_version), worker: { state: str(worker.state), heartbeat_at: nullable(worker.heartbeat_at), last_scan_at: nullable(worker.last_scan_at) }, queue_counts: Object.fromEntries(Object.entries(obj(o.queue_counts)).map(([k, count]) => [k, integer(count, 0)])), adapters_available: arr(o.adapters_available).map(str), media_upload_available: bool(o.media_upload_available), ...automationControls(o) };
 }
 function decodeCapabilities(v: unknown): SocialCapabilities {
   const o = obj(v);
@@ -249,7 +253,7 @@ export async function sendSocialCommand<T>(path: string, body: object, key: stri
   try { return decode((await api[method](`/admin/social${path}`, body, { headers: { 'Idempotency-Key': key } })).data); } catch (e) { throw toSocialError(e); }
 }
 export const socialApi = {
-  posts: (page: number, editorial_state?: EditorialState, signal?: AbortSignal, delivery_filter: DeliveryFilter = 'all') => read('/posts', v => { const o = obj(v); return { posts: arr(o.posts).map(decodeSummary), total: integer(o.total, 0), page: integer(o.page), page_size: integer(o.page_size), has_more: bool(o.has_more) }; }, signal, { page, page_size: 20, delivery_filter, ...(editorial_state ? { editorial_state } : {}) }),
+  posts: (page: number, editorial_state?: EditorialState, signal?: AbortSignal, delivery_filter: DeliveryFilter = 'all', origin_type?: string, content_type?: string) => read('/posts', v => { const o = obj(v); return { posts: arr(o.posts).map(decodeSummary), total: integer(o.total, 0), page: integer(o.page), page_size: integer(o.page_size), has_more: bool(o.has_more) }; }, signal, { page, page_size: 20, delivery_filter, ...(origin_type ? { origin_type } : {}), ...(content_type ? { content_type } : {}), ...(editorial_state ? { editorial_state } : {}) }),
   post: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}`, v => { const post = decodePost(v); if (post.id !== id) throw contractError(); return post; }, signal),
   postStatus: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/status`, v => { const post = decodeSummary(v); if (post.id !== id) throw contractError(); return post; }, signal),
   history: (id: string, page: number, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/history`, v => { const result = decodeHistory(v); if (result.post_id !== id || result.page !== page || result.page_size !== 20) throw contractError(); return result; }, signal, { page, page_size: 20 }),

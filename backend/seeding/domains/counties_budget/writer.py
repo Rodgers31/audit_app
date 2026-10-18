@@ -40,6 +40,7 @@ class PersistenceStats:
     #: Rows removed because their document now files them under another period.
     superseded: int = 0
     errors: List[str] = field(default_factory=list)
+    qualification: dict = field(default_factory=dict)
 
 
 def _source_metadata_for_update(source: SourceDocument) -> dict:
@@ -427,6 +428,7 @@ def persist_budget_records(
     from ...utils import canonicalize_slug, normalize_fiscal_label
 
     stats = PersistenceStats()
+    stats.qualification = {"enabled": settings.cob_verified_qualification_enabled, "qualified": 0, "withheld": 0, "reasons": {}}
     records = list(records)
     stats.processed = len(records)
     if not records:
@@ -539,6 +541,8 @@ def persist_budget_records(
             stats.errors.append(message)
             stats.skipped += len(resolvable)
             return stats
+    prior_document_digests = {source.id: _source_metadata_for_update(source).get("sha256")
+        for source in existing_sources.values()}
 
     sources_by_url: dict[str, SourceDocument] = {}
     for record in resolvable:
@@ -667,6 +671,8 @@ def persist_budget_records(
         existing_lines = {
             (l.entity_id, l.period_id, l.category, l.subcategory): l for l in rows
         }
+    prior_sources = {key: (line.source_document_id, line.source_hash, line.publishable,
+        prior_document_digests.get(line.source_document_id)) for key, line in existing_lines.items()}
 
     # ── 5. Resolve every record against the in-memory dicts ──────
     # New rows are buffered into `new_line_values` and emitted as a
@@ -787,6 +793,10 @@ def persist_budget_records(
     if new_line_values:
         session.execute(insert(BudgetLine), new_line_values)
 
+    session.flush()
+    _qualify_written_records(session, resolvable, settings, context, claimed_keys,
+        entities_by_slug, periods_by_key, prior_sources, stats)
+
     # ── 7. A document's rows live only in the periods it covers ───
     # The upsert key includes the period, so re-filing a document under the
     # right period INSERTS beside the old rows and never touches them. That is
@@ -843,6 +853,87 @@ def persist_budget_records(
     )
 
     return stats
+
+
+def _qualify_written_records(session, records, settings, context, new_keys, entities, periods, prior_sources, stats):
+    """Explicit new-row qualification; existing manual holds are never released."""
+    from collections import Counter
+    from types import SimpleNamespace
+    from ...utils import normalize_fiscal_label
+    from services.figure_qualification import qualify_rows
+    from .publication import bind_publication_date
+    if not settings.cob_verified_qualification_enabled and not any(prior[2] is True for prior in prior_sources.values()):
+        return
+    inputs = {}
+    for record in records:
+        entity = entities[record.entity_slug]
+        period = periods[(entity.country_id, normalize_fiscal_label(record.period_label))]
+        key = (entity.id, period.id, record.category, record.subcategory)
+        inputs.setdefault(key, []).append(record)
+    if settings.cob_verified_qualification_enabled and (context.dry_run or type(context.job_id) is not int or context.job_id <= 0 or len(inputs) > 1000):
+        raise ValueError("Bounded committed CoB qualification context required")
+    rows = session.scalars(select(BudgetLine).where(BudgetLine.entity_id.in_({k[0] for k in inputs}),
+        BudgetLine.period_id.in_({k[1] for k in inputs})).with_for_update().execution_options(populate_existing=True)).all()
+    reasons = Counter()
+    bound_dates = {}
+    for row in rows:
+        key = (row.entity_id, row.period_id, row.category, row.subcategory)
+        if key not in inputs:
+            continue
+        candidates = inputs[key]
+        reason, record = None, candidates[0]
+        if len(candidates) != 1:
+            reason = "ambiguous_record_qualification"
+        source = session.get(SourceDocument, row.source_document_id)
+        if not settings.cob_verified_qualification_enabled:
+            prior = prior_sources.get(key)
+            if (prior and row.publishable is True and not row.quarantine_reason
+                    and (prior[:2] != (row.source_document_id, row.source_hash)
+                        or prior[3] != record.artifact_sha256)):
+                row.publishable = False
+                row.quarantine_reason = "cob_changed_qualification_disabled"
+                reasons["changed_qualification_disabled"] += 1
+                stats.qualification["withheld"] += 1
+            continue
+        lineage = [p for p in (row.provenance or []) if isinstance(p, dict)
+            and type(p.get("ingestion_job_id")) is int and p["ingestion_job_id"] == context.job_id]
+        if len(lineage) != 1 or record.source_url != source.url or record.artifact_sha256 != source.meta.get("sha256"):
+            reason = reason or "exact_ingestion_artifact_required"
+        if row.quarantine_reason or key not in new_keys and row.publishable is not True:
+            reason = "existing_publication_hold"
+        elif key not in new_keys and prior_sources.get(key, (None, None))[0] != row.source_document_id:
+            reason = "source_changed_review_required"
+        elif record.data_quality != "official":
+            reason = reason or "official_source_required"
+        if reason is None:
+            cache_key = (source.id, id(record.publication_evidence), record.artifact_sha256)
+            if cache_key not in bound_dates:
+                bound_dates[cache_key] = bind_publication_date(session, source,
+                    record.publication_evidence, digest=record.artifact_sha256)
+            publication, refusal = bound_dates[cache_key]
+            if publication is None:
+                reason = record.publication_refusal or refusal
+            else:
+                source.meta = {**source.meta, "publication_date": publication["publication_date"],
+                    "publication_date_evidence": publication}
+                view = SimpleNamespace(**{c.key: getattr(row, c.key) for c in row.__table__.columns})
+                view.provenance = lineage
+                verdict = qualify_rows(session, "budget_lines", [view])[row.id]["actual_spent"]
+                if (verdict["status"] != "verified" or verdict["source_kind"] != "pdf"
+                        or verdict["document_bytes_checked"] is not True or verdict["value_checked"] is not True
+                        or verdict["digest"] != record.artifact_sha256):
+                    reason = "actual_spending_evidence_unverified"
+        if reason:
+            reasons[reason] += 1
+            stats.qualification["withheld"] += 1
+            if row.publishable is True and not row.quarantine_reason:
+                row.publishable = False
+                row.quarantine_reason = "cob_verified_qualification_refused"
+        else:
+            row.publishable = True
+            stats.qualification["qualified"] += 1
+    stats.qualification["reasons"] = dict(reasons)
+    session.flush()
 
 
 def _remove_revenue_receipts_not_reasserted(

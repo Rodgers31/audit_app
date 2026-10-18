@@ -22,7 +22,7 @@ export default function SocialDeliveryHistory({ postId, preview, count, accounts
       return <article key={target.id} className={styles.result} aria-label={`${platformLabels[target.platform]} historical delivery`}>
         <div className={styles.resultHeader}><strong>{platformLabels[target.platform]} · {accounts.find(a => a.id === target.account_id)?.display_name ?? target.account_id}</strong><span className={styles.badge}>{target.state.replaceAll('_', ' ')}</span></div>
         <p className={styles.muted}>Reviewed revision {target.revision_id} · authorization {target.publication_id}</p>
-        <p className={styles.muted}>Approved by {target.approved_by} at {target.approved_at} (UTC)</p>
+        <p className={styles.muted}>Authorized by {target.approved_by ?? 'approved policy'} at {target.approved_at} (UTC)</p>
         {target.scheduled_for && <p className={styles.muted}>Original due time: {target.scheduled_for} (UTC)</p>}
         <p className={styles.muted}>Delivery updated: {target.updated_at} (UTC)</p>
         {target.cancel_requested_at && <p className={styles.muted}>Cancellation requested: {target.cancel_requested_at} (UTC)</p>}
