@@ -3,7 +3,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = 'a703b15a0001'
-down_revision = 'a545b14a0001'
+down_revision = 'a706b15a0001'
 branch_labels = None
 depends_on = None
 TABLES = ('social_platform_oauth_flows', 'social_platform_credentials', 'social_platform_budgets', 'social_platform_connection_budgets', 'social_platform_event_inbox')

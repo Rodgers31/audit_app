@@ -1,4 +1,4 @@
-"""Optional provider authority never widens the default worker contract."""
+"""Optional provider authority preserves the composed policy and worker contract."""
 from contextlib import contextmanager
 from types import SimpleNamespace
 
@@ -10,7 +10,10 @@ from social.worker import __main__ as cli, role_admin, role_contract as contract
 
 BASE_READ = frozenset({'social_controls', 'social_accounts', 'social_publications', 'social_post_targets',
     'social_post_revisions', 'social_publish_attempts', 'social_credentials', 'social_media_assets',
-    'social_worker_heartbeats', 'social_worker_runtime_ownership', 'social_worker_runtime_history'})
+    'social_worker_heartbeats', 'social_worker_runtime_ownership', 'social_worker_runtime_history',
+    'social_posts', 'social_source_events', 'social_source_cursors',
+    'social_automation_rule_versions', 'social_policy_operating_evidence',
+    'social_authorized_policy_snapshots', 'social_policy_selection', 'social_policy_decisions'})
 EXTRA_READ = frozenset({'social_platform_credentials', 'social_platform_budgets', 'social_platform_event_inbox'})
 
 

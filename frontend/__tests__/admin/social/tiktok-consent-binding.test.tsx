@@ -4,6 +4,7 @@ import type { DocumentTarget, SocialAccount, SocialDraftInput, TikTokPostOptions
 import { clearChangedTikTokConfirmations } from '@/components/admin/social/tiktokConsent';
 import { accounts, facebookId, post, system } from '../../../tests/socialFixtures';
 
+jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: null }) }));
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn() } }));
 jest.mock('@/lib/hooks/useSocial', () => ({ useSocialMutation: () => ({ run: jest.fn() }), useSocialPost: () => ({}), useSocialDeliveryStatus: () => ({}) }));
 jest.mock('@/components/admin/social/SocialMedia', () => ({ __esModule: true, default: () => null }));
