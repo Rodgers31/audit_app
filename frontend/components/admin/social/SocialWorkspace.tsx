@@ -84,6 +84,7 @@ export default function SocialWorkspace() {
   function changeView(next: View) { if (next !== view && mayLeave()) { setView(next); setPage(1); setSelected(undefined); setUnsaved(false); } }
   return <div className={styles.workspace}>
     <div className={styles.toolbar}><p><strong>Manual approval</strong> is the default. Review the evidence and every selected account.</p><Link href='/admin/social/new' className={`${styles.button} ${styles.primary}`}>Create manual post</Link></div>
+    <Link href='/admin/social/studio' className={styles.button}>Graphics, calendar and analytics</Link>
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
     <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/automation' className={styles.button}>Drafts & shadow rules</Link><Link href='/admin/social/accounts' className={styles.button}>Accounts</Link><Link href='/admin/social/privacy' className={styles.button}>Privacy review</Link></nav>
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}

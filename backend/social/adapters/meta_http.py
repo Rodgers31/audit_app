@@ -99,14 +99,24 @@ class MetaHTTP:
     async def close(self):
         await self.client.aclose()
 
-    async def request(self, method, node, *, token, edge=None, fields=None, data=None, files=None):
+    async def request(self, method, node, *, token, edge=None, fields=None, data=None, files=None, query=None, maximum_bytes=MAX_RESPONSE_BYTES):
         remote_id(node, composite=True)
-        if method not in {"GET", "POST"} or edge not in {None, "feed", "photos", "media", "media_publish", "content_publishing_limit"}:
+        if method not in {"GET", "POST"} or edge not in {None, "feed", "photos", "media", "media_publish", "content_publishing_limit", "insights"}:
             raise ValueError("Unsupported Graph operation")
+        if type(maximum_bytes) is not int or not 1 <= maximum_bytes <= MAX_RESPONSE_BYTES:
+            raise ValueError("Invalid Graph response bound")
+        if edge == "insights":
+            if (method != "GET" or fields is not None or data is not None or files is not None
+                    or type(query) is not dict or set(query) != {"metric", "period"}
+                    or query["period"] != "lifetime" or not isinstance(query["metric"], str)
+                    or not re.fullmatch(r"[a-z_]+(?:,[a-z_]+){0,19}", query["metric"])):
+                raise ValueError("Invalid read-only insights request")
+        elif query is not None:
+            raise ValueError("Query is only supported for insights")
         if not isinstance(token, str) or not 0 < len(token) <= 16384 or any(ord(c) < 32 or ord(c) == 127 for c in token):
             raise MetaHTTPFailure("AUTHORIZATION_REQUIRED", retry_safe=True)
         path = node + ("/" + edge if edge else "")
-        params = {"fields": fields} if fields else {}
+        params = query if edge == "insights" else ({"fields": fields} if fields else {})
         proof = hmac.new(self.config.app_secret.encode(), token.encode(), hashlib.sha256).hexdigest() if self.config.app_secret else None
         response = None
         try:
@@ -120,7 +130,7 @@ class MetaHTTP:
             chunks, size = [], 0
             async for chunk in response.aiter_bytes(chunk_size=16384):
                 size += len(chunk)
-                if size > MAX_RESPONSE_BYTES:
+                if size > maximum_bytes:
                     raise ValueError("Response exceeded bound")
                 chunks.append(chunk)
             value = json.loads(b"".join(chunks), object_pairs_hook=_no_duplicates,
