@@ -1,7 +1,7 @@
-# Batch15 consolidated delivery review
+# Batch15 delivery integration review
 
-Draft717 follows editorial716 and lifecycle715. Includes original707, worker720/d8aa521, and policy registry correction76b0e3e. Original commits and committed worker tools/RESULTS.md remain available.
+Draft717 follows715 lifecycle and716 editorial. Original worker720, policy714 and neutral producer721 commits and handoffs are retained. Report authority is separate from financial drafts: current retained source witnesses gate shadow, human/policy approval and worker admission; numeric claims remain human-only.
 
-Root integration fixes preserve one owned read-only media runtime across Meta/platform startup with HTTP uploads off, and strict same-engine typed credential binding for actual combined registrations. Six real SDK startup controls and actual combined-policy hook were observed red before repair;343 focused tests plus52subtests pass in each normal/optimized mode, with independent executable Spec/Standards reviews. Receipts bind tested workingtree bytes before this commit.
+The composed role contract preserves optional provider authority and grants only the exact locking report view, never the producer snapshot or underlying financial tables. The unapplied chain is a545→a700→a701→a704→a706→a708→a703, with studioa705 added in718. Local combined verification is in progress under FULL_PLAN_COMPLETION_B15/NEUTRAL_INTEGRATION_20261017; no final integration pass is claimed here yet.
 
-Worker fresh full8 and optimized release/rollback are isolated Meta-profile evidence, not actual-host or all-platform capacity acceptance. Neutral producer719 and live acceptance remain holds. Publishing/uploads stay off. No production migration, activation, grants, merge to main or deployment. Evidence: FULL_PLAN_COMPLETION_B15/SESSION_RECOVERY_20261017.
+Publishing/uploads and all production activation remain off. No merge to main, deployment, production grants or paid resource is included. Original neutral acceptance limits remain in neutral-9fa91da1.md; actual host/provider/capacity/retention/operating acceptance remains outstanding.

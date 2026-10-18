@@ -129,6 +129,15 @@ def decisions(svc: Service, page: int=Query(1, ge=1, le=1000000), post_id: Union
 
 @router.post('/generation/detect', response_model=DetectionDTO)
 def detect(request: Request, body: DetectCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return _detect(request, body, svc, admin, key, reports=False)
+
+
+@router.post('/generation/detect-reports', response_model=DetectionDTO)
+def detect_reports(request: Request, body: DetectCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return _detect(request, body, svc, admin, key, reports=True)
+
+
+def _detect(request, body, svc, admin, key, *, reports):
     # Release the read-only receipt lookup before opening a committed source
     # reader. Holding one pool connection while borrowing another can starve
     # every concurrent detector at the configured pool boundary.
@@ -142,25 +151,26 @@ def detect(request: Request, body: DetectCommand, svc: Service, admin: Admin, ke
             raise SocialError('REPLAY_UNAVAILABLE', 'The original receipt is unavailable. Inspect the existing drafts before retrying.', 503)
         return command(request, svc, admin, key, body, receipt_only)
     from sqlalchemy.orm import sessionmaker
+    from importlib import import_module
     try:
-        if __package__.startswith('backend.'):
-            from ...seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
-        else:
-            from seeding.source_observations import read_county_budget_observation, SourceObservationUnavailable
+        adapter = import_module('backend.seeding.source_observations' if __package__.startswith('backend.') else 'seeding.source_observations')
     except ModuleNotFoundError as error:
         if error.name not in {'seeding.source_observations', 'backend.seeding.source_observations'}:
             raise
         raise SocialError('SOURCE_ADAPTER_UNAVAILABLE', 'The reviewed committed-evidence adapter is not installed.', 503) from None
+    reader = getattr(adapter, 'read_county_report_observation' if reports else 'read_county_budget_observation', None)
+    if not callable(reader):
+        raise SocialError('SOURCE_ADAPTER_UNAVAILABLE', 'The reviewed committed-evidence adapter is not installed.', 503)
     factory = sessionmaker(bind=svc.db.get_bind(), expire_on_commit=False)
     values = []
     for record_id in body.record_ids:
         try:
-            value = read_county_budget_observation(factory, record_id=record_id, ingestion_id=body.ingestion_id)
-        except SourceObservationUnavailable:
+            value = reader(factory, record_id=record_id, ingestion_id=body.ingestion_id)
+        except adapter.SourceObservationUnavailable:
             raise SocialError('SOURCE_NOT_ELIGIBLE', 'Committed evidence is incomplete or ineligible. Inspect the ETL source record.', 422) from None
         values.append(SourceObservation.model_validate(value))
     def action():
         results = [consume_observation(svc, value, backfill=body.backfill) for value in values]
-        svc.audit('generation.detected', reason=body.reason, details={'record_ids': list(body.record_ids), 'ingestion_id': body.ingestion_id, 'backfill': body.backfill})
+        svc.audit('generation.reports_detected' if reports else 'generation.detected', reason=body.reason, details={'record_ids': list(body.record_ids), 'ingestion_id': body.ingestion_id, 'backfill': body.backfill})
         return {'results': results}
     return command(request, svc, admin, key, body, action)

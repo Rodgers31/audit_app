@@ -90,9 +90,10 @@ def safe_job_metadata(raw):
             result["since"] = datetime.fromisoformat(since).isoformat()
         except ValueError:
             pass
-    if "post_commit_generation" in raw:
-        from services.generation_outcome import safe_generation_outcome
-        result["post_commit_generation"] = safe_generation_outcome(raw["post_commit_generation"])
+    for key in ('post_commit_generation', 'post_commit_report_generation'):
+        if key in raw:
+            from services.generation_outcome import safe_generation_outcome
+            result[key] = safe_generation_outcome(raw[key])
     return result
 
 

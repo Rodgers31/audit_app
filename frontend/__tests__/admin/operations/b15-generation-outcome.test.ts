@@ -25,3 +25,12 @@ test.each([
 ])('malformed outcomes never become completed generation: %p', change => {
   expect(() => parseGenerationOutcome({ ...known, ...change })).toThrow();
 });
+
+
+test('financial completion and unknown report execution remain independent', () => {
+  const unknown = { state: 'failed', execution_unverified: true, processed: null, drafts_created: null, baselines: null, unchanged: null, refused: null };
+  const parsed = parseIngestionJob({ ...job, metadata: { post_commit_generation: known, post_commit_report_generation: unknown } });
+  expect(parsed.status).toBe('completed');
+  expect(parsed.metadata.post_commit_generation).toEqual(known);
+  expect(parsed.metadata.post_commit_report_generation).toEqual(unknown);
+});
