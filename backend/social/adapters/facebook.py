@@ -5,44 +5,12 @@ import json
 from urllib.parse import parse_qs, urlsplit
 
 from ..contracts import OperationResult, ReconciliationResult, canonical_hash
-from .common import MetaAdapter, caption, issue, public_url, verify_bytes
+from .common import MetaAdapter, caption, public_url, verify_bytes
 from .meta_http import MetaHTTPFailure, remote_id
+from .meta_validation import FacebookPageValidation
 
 
-class FacebookPageAdapter(MetaAdapter):
-    platform = "facebook"
-    product = "facebook_pages"
-    checkpoint_name = "facebook_pages-v1"
-    formats = ("text", "image")
-    scopes = ("pages_manage_posts", "pages_read_engagement", "pages_show_list")
-    source_links = ("https://developers.facebook.com/docs/graph-api/reference/v26.0/page/feed",
-                    "https://developers.facebook.com/docs/graph-api/reference/photo/",
-                    "https://developers.facebook.com/documentation/pages-api/posts")
-    limits = {"max_text_length": 20000, "max_hashtags": 50, "max_media_count": 1,
-              "max_image_bytes": 8000000, "max_alt_text_length": 2000}
-    phases = {"upload_uncertain": set(), "photo_uploaded": {"photo_id"},
-              "publication_uncertain": {"photo_id"}, "post_created": {"photo_id", "post_id"}}
-
-    def _content_errors(self, payload):
-        errors = []
-        rendered = caption(payload, include_link=payload.format == "image")
-        if not rendered.strip() and not payload.link:
-            errors.append(issue("FACEBOOK_MESSAGE_REQUIRED", "text", "Add a nonblank caption or link for this Page feed publishing slice."))
-        if len(rendered) > 20000:
-            errors.append(issue("CAPTION_TOO_LONG", "text", "The full Page message exceeds the application's 20000 character ceiling."))
-        if len(payload.hashtags) > 50:
-            errors.append(issue("TOO_MANY_HASHTAGS", "hashtags", "The separate Page hashtag list exceeds the application's 50-tag ceiling."))
-        for asset in payload.assets:
-            if asset.mime_type not in {"image/jpeg", "image/png"} or asset.duration_ms is not None:
-                errors.append(issue("UNSUPPORTED_IMAGE_TYPE", "assets", "Select one inspected static JPEG or PNG."))
-            if asset.byte_size > 8000000:
-                errors.append(issue("IMAGE_TOO_LARGE", "assets", "The image exceeds the application's 8000000 byte ceiling."))
-            if asset.width is None or asset.height is None:
-                errors.append(issue("MEDIA_DIMENSIONS_REQUIRED", "assets", "The image needs inspected dimensions."))
-            if asset.alt_text is not None and len(asset.alt_text) > 2000:
-                errors.append(issue("ALT_TEXT_TOO_LONG", "assets", "The image description exceeds the application's 2000 character ceiling."))
-        return errors
-
+class FacebookPageAdapter(MetaAdapter, FacebookPageValidation):
     def next_operation(self, payload, checkpoint):
         state = self._checkpoint(payload, checkpoint)
         if state is None:
