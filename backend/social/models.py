@@ -103,6 +103,7 @@ class SocialMediaAsset(Base):
         CheckConstraint("duration_ms IS NULL OR duration_ms > 0", name="ck_social_asset_duration"),
         CheckConstraint("state <> 'ready' OR (mime_type IS NOT NULL AND byte_size IS NOT NULL AND sha256 IS NOT NULL)", name="ck_social_asset_ready"),
         Index("ix_social_asset_state", "state"),
+        Index("ix_social_asset_parent", "parent_asset_id"),
     )
 
 
@@ -110,6 +111,7 @@ class SocialRevisionAsset(Base):
     __tablename__ = "social_revision_assets"
     revision_id = Column(Uuid(as_uuid=True), ForeignKey("social_post_revisions.id"), primary_key=True)
     asset_id = Column(Uuid(as_uuid=True), ForeignKey("social_media_assets.id"), primary_key=True)
+    __table_args__ = (Index("ix_social_revision_asset_lookup", "asset_id", "revision_id"),)
 
 
 class SocialAccount(Base):

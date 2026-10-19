@@ -72,3 +72,26 @@ Chrome exercises production components/hooks/parsers with labelled synthetic
 assets and inert API responses; it performs no real upload/archive/provider
 operation. Real worker/storage/provider activation and lifecycle acceptance stay
 in #699/#490/#488.
+## Reverse lookup indexes
+
+Migration `a756b20a0001` follows `e621b17a0001` and adds nonunique Btree
+indexes on `social_revision_assets(asset_id, revision_id)` and
+`social_media_assets(parent_asset_id)`. The existing revision-first primary key
+continues to serve revision lookups. Full indexes keep PostgreSQL and SQLite ORM
+fixtures aligned; no new partial-index predicate becomes a query requirement.
+These paths are shared by library usage/archive, reference refusal, maintenance
+candidate selection and reconciliation. They change lookup cost, not eligibility,
+locking, object retention, quota or permissions.
+
+Apply in a bounded transaction with lock and statement timeouts, while existing
+publishing/uploads/native/supervision switches remain off. Both indexes commit
+together; name collisions or lock failures must abort rather than be ignored.
+Use the existing Alembic chain, verify both column orders and validity afterward,
+and preserve the prior table data, ACL/RLS and trigger contracts. Downgrading to
+`e621b17a0001` removes only these two indexes and retains media history; it does
+not authorize any older data-destructive downgrade. Index creation uses existing
+database storage and build resources; no new service or paid plan is required.
+
+Local populated fixtures measure ordinary PostgreSQL plans after committed DDL
+and fresh transactions, with statistics refreshed and no planner-forcing flags.
+Those selective-query observations do not establish sustained production capacity.

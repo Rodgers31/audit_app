@@ -42,7 +42,7 @@ def test_prior_mappings_history_acl_rls_and_additive_roundtrip(migrated):
             with c.begin_nested(): insert(c,'opendata','opendata')
     assert migrate('upgrade','head').returncode==0
     with engine.begin() as c:
-        assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e621b17a0001'
+        assert c.scalar(text('SELECT version_num FROM alembic_version'))=='a756b20a0001'
         assert c.execute(text('SELECT * FROM etl_dispatch_commands ORDER BY id')).all()==before
         assert c.execute(text("SELECT relname,relrowsecurity,relacl::text FROM pg_class WHERE relname IN ('etl_dispatch_commands','etl_dispatch_domains','etl_dispatch_worker') ORDER BY 1")).all()==acl
         for source,domain in [('opendata','population'),('knbs','opendata'),('cra','opendata'),('opendata','cra')]:
@@ -70,7 +70,7 @@ def test_new_history_prevents_downgrade(migrated,kind):
         else: insert(c,'opendata','opendata')
     result=migrate('downgrade','a705b15a0001')
     assert result.returncode!=0 and 'OpenData mapping history exists' in result.stderr
-    with engine.connect() as c: assert c.scalar(text('SELECT version_num FROM alembic_version'))=='e621b17a0001'
+    with engine.connect() as c: assert c.scalar(text('SELECT version_num FROM alembic_version'))=='a756b20a0001'
 
 
 def test_mapping_roundtrip_preserves_owned_media_history(migrated):
