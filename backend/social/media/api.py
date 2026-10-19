@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.orm import Session
 
 from ..http_boundary import AdminUser, get_db, social_admin
-from .contracts import CompleteUpload, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, UploadAuthorization, UploadIntent
+from .contracts import ArchiveMedia, CompleteUpload, MediaAssetDTO, MediaCapabilities, MediaLibrary, MediaPreview, MediaUsage, UploadAuthorization, UploadIntent
 from .http import MediaRoute
 from .runtime import request_media_runtime
 from .service import MediaService
@@ -76,3 +76,13 @@ def library(svc: Service, page: int = Query(1, ge=1), page_size: int = Query(20,
 @router.get('/assets/{asset_id}/preview', response_model=MediaPreview)
 def preview(asset_id: UUID, svc: Service):
     return svc.preview(asset_id)
+
+
+@router.get('/assets/{asset_id}/usage', response_model=MediaUsage)
+def usage(asset_id: UUID, svc: Service, page: int = Query(1, ge=1, le=1_000_000), page_size: int = Query(20, ge=1, le=50)):
+    return svc.asset_usage(asset_id, page, page_size)
+
+
+@router.post('/assets/{asset_id}/archive', response_model=MediaAssetDTO)
+def archive(asset_id: UUID, body: ArchiveMedia, request: Request, svc: Service, admin: Admin, key: Key):
+    return svc.archive_asset(UUID(admin.id), asset_id, key, body, request.state.social_request_id)

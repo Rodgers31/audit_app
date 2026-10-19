@@ -3,10 +3,12 @@ import { useId, useState } from 'react';
 import { MediaAsset } from '@/lib/api/socialMedia';
 import { useMediaLibrary } from '@/lib/hooks/useSocialMedia';
 import AssetPreview, { assetMetadata } from './AssetPreview';
+import MediaAssetDetails from './MediaAssetDetails';
 import styles from './media.module.css';
 
-export default function MediaPicker({ onSelect, onClose, selected }: { onSelect: (asset: MediaAsset) => void; onClose: () => void; selected: string[] }) {
+export default function MediaPicker({ onSelect, onClose, selected = [] }: { onSelect?: (asset: MediaAsset) => void; onClose?: () => void; selected?: string[] }) {
   const [page, setPage] = useState(1), [search, setSearch] = useState(''), [query, setQuery] = useState(''), [kind, setKind] = useState<'' | 'image' | 'video'>('');
+  const [detail, setDetail] = useState<string>();
   const title = useId(), library = useMediaLibrary(page, query, kind, true);
   return <section className={styles.panel} aria-labelledby={title}>
     <h3 id={title}>Choose inspected media</h3>
@@ -24,10 +26,12 @@ export default function MediaPicker({ onSelect, onClose, selected }: { onSelect:
       <ul className={styles.list}>{library.data.assets.map(asset => <li className={styles.item} key={asset.id}>
         <strong>{asset.filename}</strong><p className={styles.muted}>{assetMetadata(asset)}</p>
         <AssetPreview id={asset.id} alt={asset.default_alt_text} />
-        <button type='button' className={`${styles.button} ${styles.primary}`} disabled={selected.includes(asset.id)} onClick={() => onSelect(asset)}>{selected.includes(asset.id) ? 'Already selected' : `Use ${asset.filename}`}</button>
+        {onSelect && <button type='button' className={`${styles.button} ${styles.primary}`} disabled={selected.includes(asset.id)} onClick={() => onSelect(asset)}>{selected.includes(asset.id) ? 'Already selected' : `Use ${asset.filename}`}</button>}
+        <button type='button' className={styles.button} aria-expanded={detail === asset.id} onClick={() => setDetail(detail === asset.id ? undefined : asset.id)}>View usage for {asset.filename}</button>
       </li>)}</ul>
       <div className={styles.actions}><button type='button' className={styles.button} disabled={page === 1} onClick={() => setPage(page - 1)}>Previous media page</button><button type='button' className={styles.button} disabled={!library.data.has_more} onClick={() => setPage(page + 1)}>Next media page</button></div>
     </>}
-    <button type='button' className={styles.button} onClick={onClose}>Close media library</button>
+    {detail && <MediaAssetDetails key={detail} id={detail} selected={selected.includes(detail)} onArchived={() => void library.refetch()} />}
+    {onClose && <button type='button' className={styles.button} onClick={onClose}>Close media library</button>}
   </section>;
 }
