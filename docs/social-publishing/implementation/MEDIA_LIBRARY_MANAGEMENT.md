@@ -83,8 +83,10 @@ These paths are shared by library usage/archive, reference refusal, maintenance
 candidate selection and reconciliation. They change lookup cost, not eligibility,
 locking, object retention, quota or permissions.
 
-Apply in a bounded transaction with lock and statement timeouts, while existing
-publishing/uploads/native/supervision switches remain off. Both indexes commit
+Both upgrade and downgrade set PostgreSQL transaction-local `lock_timeout=2s`
+and `statement_timeout=30s` before DDL; these settings expire at transaction end.
+Apply within a transaction while existing publishing/uploads/native/supervision
+switches remain off. Both indexes commit
 together; name collisions or lock failures must abort rather than be ignored.
 Use the existing Alembic chain, verify both column orders and validity afterward,
 and preserve the prior table data, ACL/RLS and trigger contracts. Downgrading to

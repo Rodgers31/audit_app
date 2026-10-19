@@ -117,8 +117,27 @@ def test_pg_second_index_lock_timeout_rolls_back_first_index(pg_engine):
         blocker.execute(text('LOCK TABLE social_media_assets IN ACCESS EXCLUSIVE MODE'))
         with pytest.raises(DBAPIError, match='lock timeout'):
             with pg_engine.begin() as conn:
-                conn.execute(text("SET LOCAL lock_timeout='100ms'"))
+                conn.execute(text("SET LOCAL lock_timeout='0'"))
+                # Outer safety ceiling also makes a missing local lock limit fail.
+                conn.execute(text("SET LOCAL statement_timeout='5s'"))
                 migrate(conn, 'upgrade')
     with pg_engine.connect() as conn:
         assert not any(i['column_names'][0] == 'asset_id' for i in inspect(conn).get_indexes('social_revision_assets'))
         assert not any(i['column_names'][0] == 'parent_asset_id' for i in inspect(conn).get_indexes('social_media_assets'))
+
+
+@pytest.mark.parametrize('direction', ['upgrade', 'downgrade'])
+def test_pg_index_ddl_supplies_transaction_local_timeouts(pg_engine, direction):
+    if direction == 'downgrade':
+        with pg_engine.begin() as conn:
+            migrate(conn, 'upgrade')
+    with pg_engine.connect() as conn:
+        baseline = tuple(conn.scalar(text('SHOW '+name)) for name in ('lock_timeout', 'statement_timeout'))
+        conn.rollback()
+        with conn.begin():
+            conn.execute(text("SET LOCAL lock_timeout='0'"))
+            conn.execute(text("SET LOCAL statement_timeout='0'"))
+            migrate(conn, direction)
+            assert conn.scalar(text('SHOW lock_timeout')) == '2s'
+            assert conn.scalar(text('SHOW statement_timeout')) == '30s'
+        assert tuple(conn.scalar(text('SHOW '+name)) for name in ('lock_timeout', 'statement_timeout')) == baseline
