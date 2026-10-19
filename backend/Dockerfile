@@ -3,13 +3,16 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Debian packages ffprobe in ffmpeg; only bounded local inspection uses it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     pkg-config \
     libpq-dev \
     python3-dev \
     curl \
+    ffmpeg \
+    && /usr/bin/ffprobe -version >/dev/null \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -25,6 +28,7 @@ RUN mkdir -p uploads logs
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV SOCIAL_MEDIA_FFPROBE_PATH=/usr/bin/ffprobe
 
 # Expose port
 EXPOSE 8000

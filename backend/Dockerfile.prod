@@ -31,9 +31,12 @@ RUN groupadd -r appuser \
     && useradd -r -g appuser -m -d /home/appuser -s /bin/bash appuser
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+# Debian packages ffprobe in ffmpeg; only bounded local inspection uses it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    ffmpeg \
+    && /usr/bin/ffprobe -version >/dev/null \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder
@@ -55,6 +58,7 @@ USER appuser
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+ENV SOCIAL_MEDIA_FFPROBE_PATH=/usr/bin/ffprobe
 ENV ENVIRONMENT=production
 
 # Expose the default port so platforms that auto-detect from EXPOSE
