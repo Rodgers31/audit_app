@@ -66,6 +66,36 @@ class MediaPreview(StrictModel):
     expires_at: datetime
 
 
+class ArchiveMedia(StrictModel):
+    expected_version: PositiveVersion
+    reason: Annotated[str, StringConstraints(strict=True, min_length=1, max_length=500)]
+
+    @field_validator('reason')
+    @classmethod
+    def reason_required(cls, value):
+        if not value.strip() or any(ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError('A plain-text archive reason is required')
+        return value.strip()
+
+
+class MediaReference(StrictModel):
+    post_id: UUID
+    revision_id: UUID
+    revision_no: PositiveVersion
+    title: str
+
+
+class MediaUsage(StrictModel):
+    asset: MediaAssetDTO
+    references: tuple[MediaReference, ...]
+    total: Annotated[int, Field(strict=True, ge=0)]
+    page: PositiveVersion
+    page_size: Annotated[int, Field(strict=True, ge=1, le=50)]
+    has_more: bool
+    archive_eligible: bool
+    archive_reason: str
+
+
 class MediaCapabilities(StrictModel):
     upload_available: bool
     library_available: bool

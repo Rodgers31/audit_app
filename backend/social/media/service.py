@@ -36,6 +36,14 @@ class MediaService:
             raise SocialError('MEDIA_UNAVAILABLE', 'Private media storage is unavailable.', 503)
         return self.runtime.storage
 
+    def asset_usage(self, asset_id, page=1, page_size=20):
+        from .management import asset_usage
+        return asset_usage(self, asset_id, page, page_size)
+
+    def archive_asset(self, actor, asset_id, key, body, request_id):
+        from .management import archive_asset
+        return archive_asset(self, actor, asset_id, key, body, request_id)
+
     def _budgets(self, actor):
         # All mutations acquire global, actor, then asset/upload in this order.
         dialect = self.db.bind.dialect.name
@@ -464,7 +472,9 @@ class MediaService:
 
     def _cleanup_conditions(self, now):
         referenced = exists(select(SocialRevisionAsset.asset_id).where(SocialRevisionAsset.asset_id == SocialMediaUpload.asset_id))
-        return [*object_identity_conditions(self.db.bind.dialect.name), SocialMediaUpload.write_protocol.is_(None), SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
+        # A metadata archive of an inspected original never grants orphan
+        # deletion authority. Conservatively retain any archived checksum.
+        return [or_(SocialMediaAsset.state != 'archived', SocialMediaAsset.sha256.is_(None)), *object_identity_conditions(self.db.bind.dialect.name), SocialMediaUpload.write_protocol.is_(None), SocialMediaUpload.retained_write_fence.is_(None), SocialMediaUpload.expires_at <= now, SocialMediaUpload.reservation_released == 0, SocialMediaUpload.quarantine_cleaned == 0, SocialMediaUpload.grant_settled_epoch == SocialMediaUpload.grant_epoch, or_(SocialMediaUpload.finalization_epoch.is_(None), SocialMediaUpload.finalization_settled == 1), or_(SocialMediaAsset.lease_expires_at.is_(None), SocialMediaAsset.lease_expires_at <= now), or_(SocialMediaAsset.state == 'ready', ~referenced)]
 
     def backlog(self):
         """One aggregate and one compact ledger read; no keys, grants or bodies."""
@@ -505,6 +515,7 @@ class MediaService:
                 asset, upload = self._rows(identity)
                 if upload.write_protocol is not None: continue
                 if upload.retained_write_fence is not None: continue
+                if asset.state == 'archived' and asset.sha256 is not None: continue
                 # Candidate lists are snapshots. Another cleanup or completion
                 # may have settled this reservation before these locks arrived.
                 if upload.reservation_released or upload.quarantine_cleaned or utc(upload.expires_at) > self.now(): continue

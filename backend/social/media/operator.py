@@ -157,6 +157,8 @@ def prepare_reconciliation(service, *, limit=20, after_asset_id=None):
         uploads = []
         for asset, upload, protected, actor_scope, actor_bytes, actor_pending, expected_bytes, expected_pending, owned_state in rows[:limit]:
             codes = []
+            if asset.state == 'archived' and asset.sha256 is not None:
+                codes.append('ARCHIVED_ORIGINAL_RETAINED')
             if owned_state:
                 codes.append('OWNED_WRITE_HISTORY_' + owned_state.upper())
             if not object_identity_matches(asset, upload):

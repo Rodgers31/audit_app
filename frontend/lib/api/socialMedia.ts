@@ -7,6 +7,7 @@ export interface MediaAsset { id: string; version: number; filename: string; sta
 export interface MediaCapabilities { upload_available: boolean; library_available: boolean; allowed_mime_types: MediaMime[]; max_image_bytes: number; max_video_bytes: number; unavailable_reason: string | null }
 export interface MediaLibrary { assets: MediaAsset[]; total: number; page: number; page_size: number; has_more: boolean }
 export interface MediaPreview { asset: MediaAsset; url: string; expires_at: string }
+export interface MediaUsage { asset: MediaAsset; references: { post_id: string; revision_id: string; revision_no: number; title: string }[]; total: number; page: number; page_size: number; has_more: boolean; archive_eligible: boolean; archive_reason: string }
 export interface UploadIntent { filename: string; declared_mime_type: MediaMime; declared_size: number; alt_text: string | null }
 export interface UploadGrant extends MediaPreview { method: 'PUT'; headers: { 'Content-Type': MediaMime; 'If-None-Match': '*' } }
 const mimes: MediaMime[] = ['image/jpeg', 'image/png', 'video/mp4'];
@@ -57,6 +58,13 @@ export function decodeMediaLibrary(v: unknown): MediaLibrary {
   if (assets.some(a => a.state !== 'ready') || new Set(assets.map(a => a.id)).size !== assets.length || assets.length > page_size || has_more !== (page * page_size < total) || assets.length !== Math.max(0, Math.min(page_size, total - (page - 1) * page_size))) throw bad();
   return { assets, total, page, page_size, has_more };
 }
+export function decodeMediaUsage(v: unknown): MediaUsage {
+  const o = object(v, ['asset', 'references', 'total', 'page', 'page_size', 'has_more', 'archive_eligible', 'archive_reason']);
+  const asset = decodeMediaAsset(o.asset), total = number(o.total, 0), page = number(o.page), page_size = number(o.page_size, 1, 50), has_more = bool(o.has_more), archive_eligible = bool(o.archive_eligible);
+  const references = array(o.references).map(value => { const r = object(value, ['post_id', 'revision_id', 'revision_no', 'title']); return { post_id: uuid(r.post_id), revision_id: uuid(r.revision_id), revision_no: number(r.revision_no), title: string(r.title) }; });
+  if (references.length !== Math.max(0, Math.min(page_size, total - (page - 1) * page_size)) || has_more !== (page * page_size < total) || new Set(references.map(r => r.revision_id)).size !== references.length || archive_eligible && (total !== 0 || asset.state !== 'ready')) throw bad();
+  return { asset, references, total, page, page_size, has_more, archive_eligible, archive_reason: string(o.archive_reason) };
+}
 function expiry(v: unknown, url: string, maximum: number): string {
   const s = date(v), delta = Date.parse(s) - Date.now(), params = new URL(url).searchParams;
   const signed = params.get('X-Amz-Date')!;
@@ -86,6 +94,7 @@ export const socialMediaApi = {
   capabilities: (signal?: AbortSignal) => get('/capabilities', decodeMediaCapabilities, signal),
   library: (page: number, q: string, kind: '' | 'image' | 'video', signal?: AbortSignal) => get('/assets', v => { const result = decodeMediaLibrary(v); if (result.page !== page || result.page_size !== 20) throw bad(); return result; }, signal, { page, page_size: 20, q, ...(kind ? { kind } : {}) }),
   preview: (id: string, signal?: AbortSignal) => get(`/assets/${encodeURIComponent(id)}/preview`, v => { const result = decodeMediaPreview(v); if (result.asset.id !== id.toLowerCase()) throw bad(); return result; }, signal),
+  usage: (id: string, page: number, signal?: AbortSignal) => get(`/assets/${encodeURIComponent(id)}/usage`, v => { const result = decodeMediaUsage(v); if (result.asset.id !== id.toLowerCase() || result.page !== page || result.page_size !== 20) throw bad(); return result; }, signal, { page, page_size: 20 }),
   initiate: (body: UploadIntent, key: string) => post('/uploads', body, key, v => { const grant = decodeUploadGrant(v); if (grant.asset.filename !== body.filename || grant.headers['Content-Type'] !== body.declared_mime_type) throw bad(); return grant; }),
   complete: (id: string, version: number, key: string) => post(`/uploads/${encodeURIComponent(id)}/complete`, { expected_version: version }, key, v => { const asset = decodeMediaAsset(v); if (asset.id !== id || asset.state !== 'ready' || asset.version !== version + 1) throw bad(); return asset; }),
 };
