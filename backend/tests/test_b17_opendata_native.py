@@ -42,7 +42,7 @@ def opendata_url(tmp_path_factory):
         try:
             with engine.connect() as db:
                 assert tuple(db.execute(text("SELECT current_database(),current_user")).one()) == (target.database, target.username)
-                assert db.scalar(text("SELECT version_num FROM alembic_version")) == "e621b17a0001"
+                assert db.scalar(text("SELECT version_num FROM alembic_version")) == "a756b20a0001"
         finally:
             engine.dispose()
         yield external
