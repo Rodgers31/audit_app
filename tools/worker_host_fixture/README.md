@@ -8,6 +8,12 @@ The user accepted brief maintenance on 20 October 2026. Do not run this alongsid
 the live API in one 512 MiB instance. Do not add a service, paid disk, job, plan,
 Actions run, bot review, credential or database access grant for qualification.
 
+The build validates the complete exact-version lock before installing anything,
+then installs one distribution per pip process with a fresh environment and all
+pip configuration disabled. Every installed version is read back and final
+`pip check` must succeed. This bounds retained installer state without changing
+the locked runtime versions or treating a failed installation as a usable image.
+
 ## Boundary and actual workload
 
 The entrypoint requires actual outer PID1, nonroot UID/GID10001, 512 MiB without

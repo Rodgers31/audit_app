@@ -353,6 +353,38 @@ class HostFixtureTests(unittest.TestCase):
                 prep.prepared(address,fake.Endpoint)
             opened.assert_not_called()
 
+    def test_serial_build_install_requires_exact_complete_lock_and_success(self):
+        import subprocess
+        installer = module('install_locked')
+        with tempfile.TemporaryDirectory() as folder:
+            lock = Path(folder)/'requirements.lock'
+            for text in ('', '# empty\n', 'a>=1', '-r other.txt', 'https://example.test/a.whl',
+                         'a==1\na==1', 'Some_Name==1\nsome-name==2', 'a==1; echo bad',
+                         'a==1\nbad==1!!2', 'a==1\nbad==1+', 'a==1\nbad==1..2', 'a==1\nbad-==1'):
+                lock.write_text(text)
+                with patch.object(installer.subprocess,'run') as run, self.assertRaises(ValueError):
+                    installer.install(lock)
+                run.assert_not_called()
+            lock.write_text('a==1\nb==2\n')
+            with patch.object(installer.subprocess,'run') as run, \
+                    patch.object(installer.importlib.metadata,'version',side_effect=['1','2']):
+                installer.install(lock)
+                self.assertEqual(run.call_count,3)
+                self.assertEqual([c.args[0][-1] for c in run.call_args_list],['a==1','b==2','check'])
+                self.assertTrue(all(c.kwargs['check'] is True
+                    and c.kwargs['env'] == dict(PATH='/usr/local/bin:/usr/bin:/bin',HOME='/tmp',
+                        LC_ALL='C.UTF-8',PIP_CONFIG_FILE='/dev/null') for c in run.call_args_list))
+                self.assertIn('--no-deps',run.call_args_list[0].args[0])
+            with patch.object(installer.subprocess,'run',side_effect=subprocess.CalledProcessError(1,'pip')) as run, \
+                    self.assertRaises(subprocess.CalledProcessError):
+                installer.install(lock)
+            self.assertEqual(run.call_count,1)
+            with patch.object(installer.subprocess,'run') as run, \
+                    patch.object(installer.importlib.metadata,'version',return_value='wrong'), \
+                    self.assertRaises(RuntimeError):
+                installer.install(lock)
+            self.assertEqual(run.call_count,1)
+
 
 
 if __name__ == '__main__':

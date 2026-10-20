@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ffmpeg postgresql-17 postgresql-contrib-17 \
     && rm -rf /var/lib/apt/lists/*
 COPY tools/worker_host_fixture/requirements.lock /input/requirements.lock
-RUN pip install --no-cache-dir -r /input/requirements.lock
+COPY tools/worker_host_fixture/install_locked.py /input/install_locked.py
+RUN python -I -B /input/install_locked.py /input/requirements.lock
 COPY backend /input/backend
 COPY tools/worker_rehearsal /input/rehearsal
 COPY tools/worker_host_fixture /input/host
