@@ -1,0 +1,225 @@
+"""Mount-free, fail-closed boundary for the explicitly selected host fixture.
+
+No production environment is consumed here. The outer container remains PID1;
+only its user/mount/network namespaces change. No mount or production signal is
+attempted. The copied root is built as UID0, outside the single nonzero UID map.
+"""
+import ctypes
+import errno
+import fcntl
+import os
+from pathlib import Path
+import re
+import resource
+import socket
+import stat
+import struct
+import sys
+
+LIBC = ctypes.CDLL(None, use_errno=True)
+NAMESPACES = ('user', 'mnt', 'net')
+UID = 10001
+
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+
+def call(result, operation):
+    if result != 0:
+        raise OSError(ctypes.get_errno(), operation)
+
+
+def private_mounts(content):
+    require(type(content) is str and 0 < len(content) <= 524288, 'Mount inventory bound')
+    lines = content.splitlines()
+    require(0 < len(lines) <= 2048, 'Mount census required')
+    identities, roots = set(), 0
+    for line in lines:
+        parts = line.split(' - ')
+        require(len(parts) == 2, 'Mount shape')
+        left, right = parts[0].split(), parts[1].split()
+        # Optional fields include shared/master propagation. Unknown fields also
+        # refuse rather than silently assuming a mount is private.
+        require(len(left) == 6 and len(right) == 3, 'Nonprivate/unknown mount')
+        require(re.fullmatch('[1-9][0-9]*', left[0]) and left[0] not in identities,
+                'Mount identity')
+        identities.add(left[0])
+        require(re.fullmatch('[0-9]+', left[1]) and re.fullmatch('[0-9]+:[0-9]+', left[2])
+                and left[3].startswith('/') and left[4].startswith('/'), 'Mount fields')
+        require(re.fullmatch('[A-Za-z0-9_.-]+', right[0]), 'Filesystem identity')
+        for options in (left[5], right[2]):
+            tokens = options.split(',')
+            require(tokens[0] in ('ro', 'rw') and not {'ro', 'rw'} <= set(tokens)
+                    and all(re.fullmatch(r'[A-Za-z0-9_.=:/\\+@%~-]+', x) for x in tokens),
+                    'Mount options')
+        roots += left[4] == '/'
+    require(roots == 1, 'One root mount required')
+    return len(lines)
+
+
+def enter_namespaces():
+    require(os.getpid() == 1 and os.getuid() == UID and os.getgid() == UID,
+            'Actual nonroot outer PID1 required')
+    before = {k: os.readlink('/proc/self/ns/' + k) for k in NAMESPACES}
+    call(LIBC.unshare(0x10000000 | 0x00020000 | 0x40000000), 'unshare')
+    Path('/proc/self/setgroups').write_text('deny')
+    Path('/proc/self/uid_map').write_text(f'{UID} {UID} 1\n')
+    Path('/proc/self/gid_map').write_text(f'{UID} {UID} 1\n')
+    require(os.getuid() == UID and os.getgid() == UID, 'Mapped identity changed')
+    after = {k: os.readlink('/proc/self/ns/' + k) for k in NAMESPACES}
+    require(all(before[k] != after[k] for k in NAMESPACES), 'Namespace identity unchanged')
+    mounts = private_mounts(Path('/proc/self/mountinfo').read_text())
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        req = struct.pack('16sH', b'lo', 0)
+        flags = struct.unpack('16sH', fcntl.ioctl(sock.fileno(), 0x8913, req)[:18])[1]
+        fcntl.ioctl(sock.fileno(), 0x8914, struct.pack('16sH', b'lo', flags | 1))
+    require(len(Path('/proc/net/route').read_text().splitlines()) == 1, 'Outside route refused')
+    with socket.socket() as sock:
+        sock.settimeout(1)
+        require(sock.connect_ex(('192.0.2.1', 443)) == errno.ENETUNREACH,
+                'Outside connection not refused')
+    return dict(before=before, after=after, private_mount_count=mounts,
+                outside_connect_errno=errno.ENETUNREACH, outer_pid=1)
+
+
+def drop_capabilities():
+    class Header(ctypes.Structure):
+        _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]
+    class Data(ctypes.Structure):
+        _fields_ = [('effective', ctypes.c_uint32), ('permitted', ctypes.c_uint32),
+                    ('inheritable', ctypes.c_uint32)]
+    # Drop the complete bounding set while CAP_SETPCAP is still available.
+    last = int(Path('/proc/sys/kernel/cap_last_cap').read_text())
+    require(0 <= last <= 63, 'Known capability range required')
+    for number in range(last + 1):
+        call(LIBC.prctl(24, number, 0, 0, 0), 'drop bounding capability')
+    call(LIBC.prctl(47, 4, 0, 0, 0), 'clear ambient capabilities')
+    header, data = Header(0x20080522, 0), (Data * 2)()
+    call(LIBC.capset(ctypes.byref(header), ctypes.byref(data)), 'clear capabilities')
+    call(LIBC.prctl(38, 1, 0, 0, 0), 'no new privileges')
+
+
+def jail(root, *, keep_fds=()):
+    require(root == '/fixture-root' and not Path(root).is_symlink()
+            and Path(root).stat().st_uid == 65534
+            and stat.S_IMODE(Path(root).stat().st_mode) & 0o022 == 0,
+            'Immutable unmapped copied root required')
+    stdio_boundary()
+    # Read capability range before chroot removes proc. chroot needs CAP_SYS_CHROOT,
+    # so retain it until this exact call, then discard ALL capabilities below.
+    last = int(Path('/proc/sys/kernel/cap_last_cap').read_text())
+    require(0 <= last <= 63, 'Known capability range required')
+    resource.setrlimit(resource.RLIMIT_NOFILE, (512, 512))
+    resource.setrlimit(resource.RLIMIT_NPROC, (128, 128))
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+    # No inherited directory, network, credential or proc descriptor enters app
+    # code. Only ordinary stdin/out/err pipes may survive.
+    require(keep_fds == (), 'Outside descriptor inheritance refused')
+    for path in list(Path('/proc/self/fd').iterdir()):
+        fd = int(path.name)
+        if fd > 2:
+            try:
+                os.close(fd)
+            except OSError as error:
+                require(error.errno == errno.EBADF, 'Descriptor close failed')
+    os.chroot(root)
+    os.chdir('/')
+    # cap_last_cap is no longer available; a fixed checked upper bound was
+    # captured before entering. Drop unsupported numbers only outside that bound.
+    for number in range(last + 1):
+        call(LIBC.prctl(24, number, 0, 0, 0), 'drop bounding capability')
+    call(LIBC.prctl(47, 4, 0, 0, 0), 'clear ambient capabilities')
+    class Header(ctypes.Structure):
+        _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]
+    class Data(ctypes.Structure):
+        _fields_ = [('effective', ctypes.c_uint32), ('permitted', ctypes.c_uint32),
+                    ('inheritable', ctypes.c_uint32)]
+    header, data = Header(0x20080522, 0), (Data * 2)()
+    call(LIBC.capset(ctypes.byref(header), ctypes.byref(data)), 'clear capabilities')
+    call(LIBC.prctl(38, 1, 0, 0, 0), 'no new privileges')
+    require(not Path('/proc').exists() and not Path('/sys').exists(), 'Kernel filesystem refused')
+
+
+def post_exec():
+    """Executed afresh inside the copied root, after capabilities were dropped."""
+    require(os.getuid() == UID and os.getgid() == UID, 'Nonzero fixed identity required')
+    require(not Path('/proc').exists() and not Path('/sys').exists(), 'Outside kernel path')
+    for root in ('/', '/app', '/harness', '/host'):
+        info = Path(root).stat()
+        require(info.st_uid == 65534 and stat.S_IMODE(info.st_mode) & 0o022 == 0,
+                'Source root writable or replaceable by fixture identity')
+    require(LIBC.prctl(39, 0, 0, 0, 0) == 1, 'No-new-privileges absent')
+    class Header(ctypes.Structure):
+        _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]
+    class Data(ctypes.Structure):
+        _fields_ = [('effective', ctypes.c_uint32), ('permitted', ctypes.c_uint32),
+                    ('inheritable', ctypes.c_uint32)]
+    header, data = Header(0x20080522, 0), (Data * 2)()
+    call(LIBC.capget(ctypes.byref(header), ctypes.byref(data)), 'read post-exec capabilities')
+    require(all(d.effective == d.permitted == d.inheritable == 0 for d in data),
+            'Post-exec capabilities retained')
+    checked = 0
+    for cap in range(64):
+        value = LIBC.prctl(23, cap, 0, 0, 0)
+        if value == -1 and ctypes.get_errno() == errno.EINVAL:
+            break
+        require(value == 0 and LIBC.prctl(47, 1, cap, 0, 0) == 0,
+                'Bounding/ambient capability retained')
+        checked += 1
+    require(checked > 0, 'Capability census absent')
+    require(resource.getrlimit(resource.RLIMIT_NOFILE) == (512, 512)
+            and resource.getrlimit(resource.RLIMIT_NPROC) == (128, 128), 'Resource bounds differ')
+    helpers = {
+        'import endpoints; endpoints.main("127.0.0.4",prewarm=True)': 'endpoint',
+        'import wire; wire.main("127.0.0.3")': 'wire'}
+    log_name = helpers.get(sys.orig_argv[-1]) if (len(sys.orig_argv) == 4
+        and sys.orig_argv[:3] == [sys.executable, '-B', '-c']) else None
+    if sys.orig_argv == [sys.executable, '-B', '/host/endpoint.py']:
+        log_name = 'endpoint'
+    stdio_boundary(log_name=log_name)
+    allowed = set()
+    if 'social.worker' in sys.orig_argv:
+        # Import the public fixture checker by its fixed immutable location.
+        # This pipe is the sole extra descriptor the actual launcher supplies.
+        import runpy
+        allowed.add(runpy.run_path('/host/custody.py')['receipt_descriptor'](sys.orig_argv))
+    for fd in range(3, 512):
+        try:
+            os.fstat(fd)
+        except OSError as error:
+            require(error.errno == errno.EBADF, 'Descriptor census failed')
+        else:
+            require(fd in allowed, 'Unexpected post-exec descriptor')
+    with socket.socket() as sock:
+        sock.settimeout(1)
+        require(sock.connect_ex(('192.0.2.1', 443)) == errno.ENETUNREACH, 'Outside route available')
+    try:
+        fd = os.open('/app/.write-refusal-control', os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except PermissionError:
+        pass
+    else:
+        os.close(fd)
+        raise RuntimeError('App source write admitted')
+    return dict(uid=UID, capabilities_zero=True, no_new_privileges=True,
+                proc_absent=True, source_write_refused=True, outside_unreachable=True)
+
+
+def stdio_boundary(*, log_name=None):
+    require(log_name in (None, 'endpoint', 'wire'), 'Fixed private helper log required')
+    incoming = os.fstat(0)
+    require(stat.S_ISCHR(incoming.st_mode) and incoming.st_rdev == os.makedev(1, 3),
+            'Real null stdin required')
+    for fd in (1, 2):
+        observed = os.fstat(fd)
+        if log_name is None:
+            require(stat.S_ISFIFO(observed.st_mode), 'Only ordinary stdout/stderr pipes admitted')
+        else:
+            path = Path('/evidence/' + log_name + '.log')
+            expected = path.stat()
+            require(not path.is_symlink() and stat.S_ISREG(observed.st_mode)
+                    and observed.st_uid == os.getuid() and observed.st_nlink == 1
+                    and stat.S_IMODE(observed.st_mode) == 0o600
+                    and (observed.st_dev, observed.st_ino) == (expected.st_dev, expected.st_ino),
+                    'Exact private helper log descriptor required')
