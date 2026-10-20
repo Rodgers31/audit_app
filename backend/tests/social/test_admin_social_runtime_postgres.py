@@ -125,6 +125,7 @@ GET /generation/controls
 GET /media/assets
 GET /media/assets/{asset_id}/preview
 GET /media/assets/{asset_id}/retirement-scope
+GET /media/assets/{asset_id}/usage
 GET /media/capabilities
 GET /media/maintenance
 GET /platform-connections/{provider}/accounts/{account_id}/creator-settings
@@ -164,6 +165,7 @@ POST /connections/meta/flows/{flow_id}/select
 POST /connections/meta/start
 POST /generation/detect
 POST /generation/detect-reports
+POST /media/assets/{asset_id}/archive
 POST /media/assets/{asset_id}/retire
 POST /media/uploads
 POST /media/uploads/{asset_id}/complete
@@ -206,7 +208,7 @@ POST /targets/{target_id}/public-proof
 POST /targets/{target_id}/record-existing
 POST /targets/{target_id}/retry
 """.strip().splitlines()}
-    assert len(routes) == len(set(routes)) == 92
+    assert len(routes) == len(set(routes)) == 94
     assert {(method, path.removeprefix('/api/v1/admin/social')) for method, path in routes} == expected
     for status in (401,403):
         def denied():

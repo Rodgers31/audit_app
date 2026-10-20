@@ -1,11 +1,10 @@
-"""Owned PostgreSQL + actual PDF/parser/writer + exact generation704 dependency.
+"""Owned PostgreSQL + actual PDF/parser/writer + integrated generation code.
 
 Sanitized captured-response fixtures prove code, never real publisher acceptance.
 No provider call, post publication, upload or production credential is used.
 """
 from contextlib import contextmanager
 from datetime import datetime, timezone
-import importlib.util
 import os
 from pathlib import Path
 import socket
@@ -18,17 +17,7 @@ import pytest
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import sessionmaker
 
-ROOT = Path(__file__).resolve().parents[2]
-GEN = Path('/Users/roger/.codex/worktrees/b15-generation/audit_app')
-GEN_HEAD = '2f3b36e2749a48dbe7d93f001081ddc756a61412'
-if subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=GEN, text=True).strip() != GEN_HEAD:
-    raise RuntimeError('Exact reviewed generation704 dependency required')
-if 'social' not in sys.modules:
-    spec = importlib.util.spec_from_file_location('social', GEN / 'backend/social/__init__.py',
-        submodule_search_locations=[str(GEN / 'backend/social')])
-    module = importlib.util.module_from_spec(spec)
-    sys.modules['social'] = module
-    spec.loader.exec_module(module)
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 from social.generation.contracts import GenerationControlsCommand
 from social.generation.service import GenerationService
 from social.generation.models import SourceEvent
@@ -78,9 +67,9 @@ def owned_postgres():
                 if time.monotonic() > deadline:
                     raise
                 time.sleep(.1)
-        env = {'PATH': os.environ['PATH'], 'PYTHONPATH': str(GEN / 'backend'),
+        env = {'PATH': os.environ['PATH'], 'PYTHONPATH': str(BACKEND_ROOT),
             'PYTHON_DOTENV_DISABLED': '1', 'PYTHONDONTWRITEBYTECODE': '1', 'DATABASE_URL': URL}
-        subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', 'head'], cwd=GEN / 'backend',
+        subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', 'head'], cwd=BACKEND_ROOT,
             env=env, check=True, timeout=90, capture_output=True)
         yield sessionmaker(bind=engine, expire_on_commit=False), engine
     finally:
