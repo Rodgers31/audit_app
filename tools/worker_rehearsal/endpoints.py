@@ -117,7 +117,11 @@ class Endpoint(BaseHTTPRequestHandler):
         self.respond(head=True)
 
 
-def main():
+def main(bind='0.0.0.0', *, prewarm=False):
+    if bind not in ('0.0.0.0', '127.0.0.4') or type(prewarm) is not bool:
+        raise ValueError('Fixed inert fixture endpoint required')
+    if prewarm:
+        image()
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'b15-worker-inert')])
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name)
@@ -135,7 +139,7 @@ def main():
                                          serialization.NoEncryption()))
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.load_cert_chain(ROOT / 'ca.pem', private)
-    server = ThreadingHTTPServer(('0.0.0.0', 443), Endpoint)
+    server = ThreadingHTTPServer((bind, 443), Endpoint)
     server.socket = context.wrap_socket(server.socket, server_side=True)
     print('INERT_ENDPOINT_READY', flush=True)
     server.serve_forever()

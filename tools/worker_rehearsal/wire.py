@@ -52,11 +52,18 @@ def report():
         time.sleep(1)
 
 
-threading.Thread(target=report, daemon=True).start()
-listener = socket.socket()
-listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listener.bind(('0.0.0.0', 5432))
-listener.listen(8)
-while True:
-    child, _ = listener.accept()
-    threading.Thread(target=serve, args=(child,), daemon=True).start()
+def main(bind='0.0.0.0'):
+    if bind not in ('0.0.0.0', '127.0.0.3'):
+        raise ValueError('Fixed inert fixture proxy required')
+    threading.Thread(target=report, daemon=True).start()
+    listener = socket.socket()
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind((bind, 5432))
+    listener.listen(8)
+    while True:
+        child, _ = listener.accept()
+        threading.Thread(target=serve, args=(child,), daemon=True).start()
+
+
+if __name__ == '__main__':
+    main()
