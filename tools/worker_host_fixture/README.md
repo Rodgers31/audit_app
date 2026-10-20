@@ -13,6 +13,10 @@ then installs one distribution per pip process with a fresh environment and all
 pip configuration disabled. Every installed version is read back and final
 `pip check` must succeed. This bounds retained installer state without changing
 the locked runtime versions or treating a failed installation as a usable image.
+The copied root's real null device comes from a fixed 10KiB USTAR archive,
+validated byte-for-byte before Docker ADD extracts it. Build and runtime checks
+require character device1:3 without following links. No build-time mknod syscall
+or extra runtime capability is needed.
 
 ## Boundary and actual workload
 
@@ -112,7 +116,7 @@ service srv-d6hr3t5m5p6s73bomqu0. No migration is part of this fixture.
 
 The proposed temporary settings are: root directory empty, repository-root Docker
 context `.`, Dockerfile `tools/worker_host_fixture/Dockerfile`, blank Docker command,
-health path `/fixture-health`, auto-deployOFF and the existing90-second stop
+the existing blank health path, auto-deployOFF and the existing90-second stop
 window. Production environment values are not edited; entry discards them before
 executing any helper. A bounded target-host qualification trial requires frozen
 runtime source, target-architecture build/import checks, exact dependency readback,

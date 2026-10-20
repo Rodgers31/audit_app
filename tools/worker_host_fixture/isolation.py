@@ -142,6 +142,13 @@ def jail(root, *, keep_fds=()):
     require(not Path('/proc').exists() and not Path('/sys').exists(), 'Kernel filesystem refused')
 
 
+def null_device():
+    info = os.stat('/dev/null', follow_symlinks=False)
+    require(stat.S_ISCHR(info.st_mode) and info.st_rdev == os.makedev(1, 3),
+            'Real copied null device required')
+    return True
+
+
 def post_exec():
     """Executed afresh inside the copied root, after capabilities were dropped."""
     require(os.getuid() == UID and os.getgid() == UID, 'Nonzero fixed identity required')
@@ -150,6 +157,8 @@ def post_exec():
         info = Path(root).stat()
         require(info.st_uid == 65534 and stat.S_IMODE(info.st_mode) & 0o022 == 0,
                 'Source root writable or replaceable by fixture identity')
+    if null_device() is not True:
+        raise RuntimeError('Null device validation refused')
     require(LIBC.prctl(39, 0, 0, 0, 0) == 1, 'No-new-privileges absent')
     class Header(ctypes.Structure):
         _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]

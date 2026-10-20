@@ -95,6 +95,51 @@ class HostFixtureTests(unittest.TestCase):
             with self.subTest(value=str(value)[:50]), self.assertRaises(RuntimeError):
                 isolation.private_mounts(value)
 
+    def test_copied_null_device_refuses_regular_links_and_other_devices(self):
+        import stat
+        isolation = module('isolation')
+        valid = SimpleNamespace(st_mode=stat.S_IFCHR|0o666,st_rdev=os.makedev(1,3))
+        with patch.object(isolation.os,'stat',return_value=valid) as observed:
+            self.assertIs(isolation.null_device(),True)
+            observed.assert_called_once_with('/dev/null',follow_symlinks=False)
+        for mode,device in ((stat.S_IFREG|0o666,os.makedev(1,3)),
+                            (stat.S_IFLNK|0o777,os.makedev(1,3)),
+                            (stat.S_IFCHR|0o666,os.makedev(1,5))):
+            with patch.object(isolation.os,'stat',return_value=SimpleNamespace(st_mode=mode,st_rdev=device)), \
+                    self.assertRaises(RuntimeError):
+                isolation.null_device()
+
+    def test_device_archive_has_one_canonical_safe_device(self):
+        import tarfile
+        builder = module('build_root')
+        self.assertIs(builder.validate_device_archive(HERE/'dev-null.tar'),True)
+        with tempfile.TemporaryDirectory() as folder:
+            for field,value in (('name','../../etc/passwd'),('type',tarfile.SYMTYPE),
+                                ('devmajor',8),('devminor',5),('uid',10001),('mode',0o777),
+                                ('linkname','/dev/null'),('mtime',1),('uname','unexpected'),
+                                ('gname','unexpected')):
+                target = Path(folder)/'bad.tar'
+                item=tarfile.TarInfo('dev/null');item.type=tarfile.CHRTYPE
+                item.devmajor=1;item.devminor=3;item.mode=0o666
+                setattr(item,field,value)
+                with tarfile.open(target,'w',format=tarfile.USTAR_FORMAT) as archive:
+                    archive.addfile(item)
+                with self.subTest(field=field),self.assertRaises(RuntimeError):
+                    builder.validate_device_archive(target)
+            for form in (tarfile.GNU_FORMAT, tarfile.PAX_FORMAT):
+                with tarfile.open(target,'w',format=form) as archive:
+                    item=tarfile.TarInfo('dev/null');item.type=tarfile.CHRTYPE
+                    item.devmajor=1;item.devminor=3;item.mode=0o666
+                    if form == tarfile.PAX_FORMAT:
+                        item.pax_headers={'comment':'unexpected'}
+                    archive.addfile(item)
+                with self.subTest(format=form),self.assertRaises(RuntimeError):
+                    builder.validate_device_archive(target)
+            altered=bytearray((HERE/'dev-null.tar').read_bytes());altered[2048]=1
+            target.write_bytes(altered)
+            with self.assertRaises(RuntimeError):
+                builder.validate_device_archive(target)
+
     def test_root_replacement_permissions_refuse_before_capability_checks(self):
         isolation = module('isolation')
         class FakePath:
