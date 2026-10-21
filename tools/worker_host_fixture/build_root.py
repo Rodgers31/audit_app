@@ -4,37 +4,17 @@ import importlib.metadata
 import json
 import os
 import platform
+import runpy
 from pathlib import Path
 import shutil
 import subprocess
-import tarfile
 
 ROOT = Path('/fixture-root')
-
-
-def validate_device_archive(path):
-    if Path(path).stat().st_size != 10240:
-        raise RuntimeError('Fixed device archive size required')
-    if hashlib.sha256(Path(path).read_bytes()).hexdigest() != '4e6b96140ce8ce0c7c69c20eb04efcea455656a55e702bd62425e61e045abb52':
-        raise RuntimeError('Canonical USTAR device archive bytes required')
-    with tarfile.open(path, mode='r:') as archive:
-        rows = archive.getmembers()
-        if len(rows) != 1:
-            raise RuntimeError('One fixed null-device entry required')
-        item = rows[0]
-        if (item.name != 'dev/null' or item.type != tarfile.CHRTYPE
-                or (item.devmajor, item.devminor) != (1, 3)
-                or (item.uid, item.gid, item.mode, item.size, item.mtime) != (0, 0, 0o666, 0, 0)
-                or item.linkname or item.pax_headers):
-            raise RuntimeError('Exact public null-device metadata required')
-    return True
 
 
 def main():
     if os.getuid() != 0 or ROOT.exists():
         raise RuntimeError('Fresh build root required')
-    if validate_device_archive('/input/host/dev-null.tar') is not True:
-        raise RuntimeError('Device archive validation refused')
     ROOT.mkdir(mode=0o755)
     shutil.copytree('/usr', ROOT / 'usr', symlinks=True)
     for name in ('bin', 'sbin', 'lib', 'lib64'):
@@ -51,9 +31,8 @@ def main():
     # These links come only from the public build image, never a live host.
     shutil.copytree('/etc/alternatives', ROOT / 'etc/alternatives', symlinks=True)
     shutil.copytree('/etc/ssl', ROOT / 'etc/ssl', symlinks=True)
-    (ROOT / 'etc/hosts').write_text('127.0.0.1 localhost b15-worker-api\n'
-        '127.0.0.2 b15-worker-db\n127.0.0.3 b15-worker-wire\n'
-        '127.0.0.4 graph.facebook.com auth.fixture.test ' + 'a' * 32 + '.r2.cloudflarestorage.com\n')
+    HOSTS = runpy.run_path('/input/host/host_config.py')['HOSTS']
+    (ROOT / 'etc/b29-hosts').write_text(HOSTS)
     (ROOT / 'etc/nsswitch.conf').write_text('hosts: files\npasswd: files\ngroup: files\n')
     (ROOT / 'etc/passwd').write_text('fixture:x:10001:10001:Inert fixture:/tmp:/bin/false\n')
     (ROOT / 'etc/group').write_text('fixture:x:10001:\n')
@@ -91,8 +70,7 @@ def main():
         dest.mkdir(parents=True, exist_ok=True)
         os.chown(dest, 10001, 10001)
         dest.chmod(0o700)
-    # Docker ADD supplies the validated device metadata after this step. The
-    # unprivileged build executor need not perform a mknod syscall.
+    (ROOT / 'outside-denied-marker').write_text('Public synthetic denial control\n')
     inventory = {}
     for directory in ('app', 'harness', 'host'):
         for p in (ROOT / directory).rglob('*'):
@@ -102,11 +80,18 @@ def main():
             elif p.is_dir():
                 p.chmod(0o555)
         (ROOT / directory).chmod(0o555)
+    resolvers = list((ROOT / 'usr/lib').glob('*/libnss_wrapper.so'))
+    if len(resolvers) != 1 or resolvers[0].is_symlink():
+        raise RuntimeError('One immutable vendor resolver required')
+    resolver = resolvers[0]
     manifest = dict(version=1, files=inventory, packages={d.metadata['Name']: d.version
         for d in importlib.metadata.distributions()}, production_accepted=False,
         python=platform.python_version(), architecture=platform.machine(),
         harness_realpath='/fixture/tools/worker_rehearsal',
-        device_archive_sha256=hashlib.sha256(Path('/input/host/dev-null.tar').read_bytes()).hexdigest(),
+        confinement='landlock-seccomp-v1',
+        resolver={'path':'/' + str(resolver.relative_to(ROOT)),
+                  'sha256':hashlib.sha256(resolver.read_bytes()).hexdigest()},
+        hosts_sha256=hashlib.sha256(HOSTS.encode()).hexdigest(),
         os_release=Path('/etc/os-release').read_text(),
         os_packages=subprocess.check_output(['dpkg-query','-W','-f=${binary:Package}=${Version}\n'], text=True))
     encoded = json.dumps(manifest, sort_keys=True, indent=2)

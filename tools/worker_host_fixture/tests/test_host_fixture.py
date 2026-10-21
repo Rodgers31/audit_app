@@ -24,6 +24,34 @@ def module(name):
 
 
 class HostFixtureTests(unittest.TestCase):
+    def test_resolver_guard_loads_fixed_config_before_helper_search_path(self):
+        isolation = module('isolation')
+        config = module('host_config')
+        library = '/usr/lib/x86_64-linux-gnu/libnss_wrapper.so'
+        hosts = config.HOSTS.encode()
+        manifest = dict(confinement='landlock-seccomp-v1',
+            hosts_sha256=hashlib.sha256(hosts).hexdigest(),
+            resolver=dict(path=library, sha256=hashlib.sha256(b'library').hexdigest()))
+        def fixed_config(path):
+            self.assertEqual(path, '/host/host_config.py')
+            return dict(HOSTS=config.HOSTS, resolver_library=lambda: library)
+        def resolve(name, *args):
+            address = ('127.0.0.2' if name == 'b15-worker-db' else
+                       '127.0.0.3' if name == 'b15-worker-wire' else
+                       '127.0.0.1' if name == 'b15-worker-api' else '127.0.0.4')
+            return [(None, None, None, None, (address, 443))]
+        with patch.dict(os.environ, dict(B29_SANDBOX='landlock-seccomp-v1',
+                LD_PRELOAD=library, NSS_WRAPPER_HOSTS='/etc/b29-hosts'), clear=True), \
+                patch.dict(sys.modules, {'host_config':None}), \
+                patch('runpy.run_path', side_effect=fixed_config) as load, \
+                patch.object(Path, 'read_text', return_value=json.dumps(manifest)), \
+                patch.object(Path, 'stat', return_value=SimpleNamespace(st_mode=0o100444, st_uid=65534)), \
+                patch.object(Path, 'read_bytes', side_effect=lambda: None) as read, \
+                patch.object(isolation.socket, 'getaddrinfo', side_effect=resolve):
+            read.side_effect = [hosts, b'library']
+            self.assertTrue(isolation.resolver_boundary())
+            load.assert_called_once_with('/host/host_config.py')
+
     def setUp(self):
         self.decode = module('decode').decode
         self.custody = module('custody')
@@ -109,36 +137,44 @@ class HostFixtureTests(unittest.TestCase):
                     self.assertRaises(RuntimeError):
                 isolation.null_device()
 
-    def test_device_archive_has_one_canonical_safe_device(self):
-        import tarfile
-        builder = module('build_root')
-        self.assertIs(builder.validate_device_archive(HERE/'dev-null.tar'),True)
-        with tempfile.TemporaryDirectory() as folder:
-            for field,value in (('name','../../etc/passwd'),('type',tarfile.SYMTYPE),
-                                ('devmajor',8),('devminor',5),('uid',10001),('mode',0o777),
-                                ('linkname','/dev/null'),('mtime',1),('uname','unexpected'),
-                                ('gname','unexpected')):
-                target = Path(folder)/'bad.tar'
-                item=tarfile.TarInfo('dev/null');item.type=tarfile.CHRTYPE
-                item.devmajor=1;item.devminor=3;item.mode=0o666
-                setattr(item,field,value)
-                with tarfile.open(target,'w',format=tarfile.USTAR_FORMAT) as archive:
-                    archive.addfile(item)
-                with self.subTest(field=field),self.assertRaises(RuntimeError):
-                    builder.validate_device_archive(target)
-            for form in (tarfile.GNU_FORMAT, tarfile.PAX_FORMAT):
-                with tarfile.open(target,'w',format=form) as archive:
-                    item=tarfile.TarInfo('dev/null');item.type=tarfile.CHRTYPE
-                    item.devmajor=1;item.devminor=3;item.mode=0o666
-                    if form == tarfile.PAX_FORMAT:
-                        item.pax_headers={'comment':'unexpected'}
-                    archive.addfile(item)
-                with self.subTest(format=form),self.assertRaises(RuntimeError):
-                    builder.validate_device_archive(target)
-            altered=bytearray((HERE/'dev-null.tar').read_bytes());altered[2048]=1
-            target.write_bytes(altered)
-            with self.assertRaises(RuntimeError):
-                builder.validate_device_archive(target)
+    def test_syscall_policy_executes_architecture_socket_and_namespace_rules(self):
+        policy=module('confinement')
+        def evaluate(machine,nr,args=(),architecture=None):
+            arch,sock,pair,denied=policy.syscall_numbers(machine)
+            words={0:nr,4:arch if architecture is None else architecture}
+            words.update({16+i*8:v for i,v in enumerate(args)})
+            rows=policy.instructions(machine);pc=0;acc=0
+            for _ in range(300):
+                op,jt,jf,k=rows[pc]
+                if op==0x20:acc=words.get(k,0);pc+=1
+                elif op==0x15:pc+=1+(jt if acc==k else jf)
+                elif op==0x45:pc+=1+(jt if acc&k else jf)
+                elif op==0x54:acc &= k;pc+=1
+                elif op==0x06:return k
+                else:raise AssertionError('Unknown BPF')
+            raise AssertionError('Unterminated filter')
+        for machine in ('x86_64','aarch64'):
+            arch,sock,pair,denied=policy.syscall_numbers(machine)
+            for nr in denied:
+                self.assertEqual(evaluate(machine,nr),0x50001)
+            for nr in (428,429,430,431,432,433,442):
+                self.assertEqual(evaluate(machine,nr),0x50001)
+            for family in (0,1,16,17,40):
+                self.assertEqual(evaluate(machine,sock,(family,1,0)),0x50001)
+            for family in (2,10):
+                self.assertEqual(evaluate(machine,sock,(family,1,0)),0x7fff0000)
+            for args in ((1,1,0),(1,1|0x80000|0x800,0)):
+                self.assertEqual(evaluate(machine,pair,args),0x7fff0000)
+            for args in ((1,2,0),(1,3,0),(2,1,0),(1,1,1),(1,1|0x10000,0)):
+                self.assertEqual(evaluate(machine,pair,args),0x50001)
+            clone=56 if machine=='x86_64' else 220
+            self.assertEqual(evaluate(machine,clone,(0x10000,)),0x7fff0000)
+            for flag in (0x80,0x20000,0x2000000,0x4000000,0x8000000,0x10000000,0x20000000,0x40000000):
+                self.assertEqual(evaluate(machine,clone,(flag,)),0x50001)
+            self.assertEqual(evaluate(machine,435),0x50000|38)
+            self.assertEqual(evaluate(machine,0,architecture=0),0x80000000)
+        self.assertEqual(evaluate('x86_64',0x40000000|41,(1,1,0)),0x50001)
+        with self.assertRaises(RuntimeError):policy.instructions('unknown')
 
     def test_root_replacement_permissions_refuse_before_capability_checks(self):
         isolation = module('isolation')
@@ -154,6 +190,44 @@ class HostFixtureTests(unittest.TestCase):
                 patch.object(isolation, 'LIBC', SimpleNamespace()):
             with self.assertRaisesRegex(RuntimeError, 'replaceable'):
                 isolation.post_exec()
+
+    def test_only_exact_readonly_public_resolver_descriptor_is_admitted(self):
+        import stat
+        isolation=module('isolation')
+        valid=dict(st_mode=stat.S_IFREG|0o644,st_uid=65534,st_nlink=1,st_dev=7,st_ino=9)
+        for change,flags in (({},os.O_RDONLY),({'st_ino':8},os.O_RDONLY),
+                             ({'st_uid':10001},os.O_RDONLY),({'st_nlink':2},os.O_RDONLY),
+                             ({'st_mode':stat.S_IFLNK|0o777},os.O_RDONLY),
+                             ({'st_mode':stat.S_IFREG|0o666},os.O_RDONLY),
+                             ({},os.O_RDWR),({},getattr(os,'O_PATH',0x200000))):
+            with patch.object(isolation.os,'fstat',return_value=SimpleNamespace(**(valid|change))), \
+                    patch.object(isolation.os,'stat',return_value=SimpleNamespace(**valid)), \
+                    patch.object(isolation.fcntl,'fcntl',return_value=flags):
+                self.assertIs(isolation.resolver_descriptor(3),not change and flags==os.O_RDONLY)
+        for fd in (True,None,-1,0,2,512):
+            with self.assertRaises(RuntimeError):isolation.resolver_descriptor(fd)
+
+    def test_landlock_fixed_leaves_never_admit_directory_subtrees(self):
+        import stat
+        policy=module('confinement')
+        for malformed in (None,'/etc/passwd','/dev/null'):
+            closed=[]
+            def observed(path,**kwargs):
+                mode=stat.S_IFDIR if path in policy.DIRECTORIES+policy.WRITABLE else stat.S_IFREG
+                if path=='/dev/null':mode=stat.S_IFCHR
+                if path==malformed:mode=stat.S_IFDIR
+                return SimpleNamespace(st_mode=mode,st_rdev=os.makedev(1,3))
+            def syscall(n,*args):
+                return (4 if args[0] is None else 7) if n==444 else 0
+            fake=SimpleNamespace(stat=observed,open=lambda *a:9,close=closed.append,
+                O_PATH=0,O_CLOEXEC=0,O_NOFOLLOW=0,makedev=os.makedev)
+            with patch.object(policy,'os',fake),patch.object(policy,'LIBC',SimpleNamespace(syscall=syscall)), \
+                    patch.object(policy,'platform',SimpleNamespace(machine=lambda:'x86_64')):
+                if malformed is None:self.assertEqual(policy.restrict_filesystem(),4)
+                else:
+                    with self.assertRaisesRegex(RuntimeError,'leaf type'):
+                        policy.restrict_filesystem()
+            self.assertIn(7,closed)
 
     def test_mapped_identity_drift_refuses_before_observer_or_network(self):
         isolation = module('isolation')
@@ -254,9 +328,15 @@ class HostFixtureTests(unittest.TestCase):
         sys.path.insert(0, str(HERE.parent / 'worker_rehearsal'))
         try:
             from bounded_profile import inert_environment
-            with patch.dict(os.environ, {'DATABASE_URL':'production-not-admitted', 'SECRET_KEY':'private'}, clear=True):
+            with patch.dict(os.environ, {'DATABASE_URL':'production-not-admitted', 'SECRET_KEY':'private'}, clear=True), \
+                    patch.object(config.platform,'machine',return_value='x86_64'):
                 values = config.environment('0'*12)
             inert_environment(values)
+            for key in ('B29_SANDBOX','LD_PRELOAD','NSS_WRAPPER_HOSTS'):
+                bad=dict(values);bad.pop(key)
+                with self.assertRaises(ValueError):inert_environment(bad)
+                bad=dict(values);bad[key]='unexpected'
+                with self.assertRaises(ValueError):inert_environment(bad)
             self.assertNotIn('production-not-admitted', values.values())
             self.assertEqual(values['SOCIAL_MEDIA_ENABLED'], 'false')
             self.assertEqual(values['SOCIAL_MEDIA_RETAINED_WRITES_ENABLED'], 'false')

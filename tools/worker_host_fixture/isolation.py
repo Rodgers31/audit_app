@@ -1,12 +1,14 @@
-"""Mount-free, fail-closed boundary for the explicitly selected host fixture.
+"""Namespace plus Landlock/seccomp boundary for the public host fixture.
 
-No production environment is consumed here. The outer container remains PID1;
-only its user/mount/network namespaces change. No mount or production signal is
-attempted. The copied root is built as UID0, outside the single nonzero UID map.
+No production environment is consumed. Actual outer PID1 is preserved. No mount
+or production signal is attempted; content outside fixed public paths is denied.
+Image UID0 is deliberately outside the single nonzero runtime UID map.
 """
 import ctypes
 import errno
 import fcntl
+import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -101,22 +103,16 @@ def drop_capabilities():
     call(LIBC.prctl(38, 1, 0, 0, 0), 'no new privileges')
 
 
-def jail(root, *, keep_fds=()):
-    require(root == '/fixture-root' and not Path(root).is_symlink()
-            and Path(root).stat().st_uid == 65534
-            and stat.S_IMODE(Path(root).stat().st_mode) & 0o022 == 0,
-            'Immutable unmapped copied root required')
+def confine(*, keep_fds=()):
+    require(keep_fds == (), 'Outside descriptor inheritance refused')
+    for root in ('/', '/app', '/harness', '/host', '/fixture', '/fixture/tools'):
+        info = Path(root).stat()
+        require(info.st_uid == 65534 and stat.S_IMODE(info.st_mode) & 0o022 == 0,
+                'Immutable unmapped public root required')
     stdio_boundary()
-    # Read capability range before chroot removes proc. chroot needs CAP_SYS_CHROOT,
-    # so retain it until this exact call, then discard ALL capabilities below.
-    last = int(Path('/proc/sys/kernel/cap_last_cap').read_text())
-    require(0 <= last <= 63, 'Known capability range required')
     resource.setrlimit(resource.RLIMIT_NOFILE, (512, 512))
     resource.setrlimit(resource.RLIMIT_NPROC, (128, 128))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    # No inherited directory, network, credential or proc descriptor enters app
-    # code. Only ordinary stdin/out/err pipes may survive.
-    require(keep_fds == (), 'Outside descriptor inheritance refused')
     for path in list(Path('/proc/self/fd').iterdir()):
         fd = int(path.name)
         if fd > 2:
@@ -124,22 +120,66 @@ def jail(root, *, keep_fds=()):
                 os.close(fd)
             except OSError as error:
                 require(error.errno == errno.EBADF, 'Descriptor close failed')
-    os.chroot(root)
+    drop_capabilities()
+    from confinement import install
+    boundary = install()
+    require(type(boundary) is dict and boundary.get('kind') == 'landlock-seccomp',
+            'Mountless confinement refused')
     os.chdir('/')
-    # cap_last_cap is no longer available; a fixed checked upper bound was
-    # captured before entering. Drop unsupported numbers only outside that bound.
-    for number in range(last + 1):
-        call(LIBC.prctl(24, number, 0, 0, 0), 'drop bounding capability')
-    call(LIBC.prctl(47, 4, 0, 0, 0), 'clear ambient capabilities')
-    class Header(ctypes.Structure):
-        _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]
-    class Data(ctypes.Structure):
-        _fields_ = [('effective', ctypes.c_uint32), ('permitted', ctypes.c_uint32),
-                    ('inheritable', ctypes.c_uint32)]
-    header, data = Header(0x20080522, 0), (Data * 2)()
-    call(LIBC.capset(ctypes.byref(header), ctypes.byref(data)), 'clear capabilities')
-    call(LIBC.prctl(38, 1, 0, 0, 0), 'no new privileges')
-    require(not Path('/proc').exists() and not Path('/sys').exists(), 'Kernel filesystem refused')
+    return boundary
+
+
+def content_boundary():
+    # Landlock confines content access rather than hiding path metadata. These
+    # known-existing public/self paths must refuse an open, never merely miss.
+    for name in ('/outside-denied-marker', '/proc/self/environ',
+                 '/sys/fs/cgroup/memory.current'):
+        try:
+            with open(name, 'rb') as source:
+                source.read(1)
+        except PermissionError:
+            pass
+        else:
+            raise RuntimeError('Outside content read admitted')
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM):
+            pass
+    except OSError as error:
+        require(error.errno == errno.EPERM, 'UNIX socket refusal differs')
+    else:
+        raise RuntimeError('Pathname UNIX socket admitted')
+    require(LIBC.prctl(21, 0, 0, 0, 0) == 2, 'Syscall filter absent')
+    return True
+
+
+def resolver_boundary():
+    # sitecustomize runs before Python adds the script's /host directory.
+    # Load only the already-inventoried immutable helper, without ambient imports.
+    import runpy
+    config = runpy.run_path('/host/host_config.py')
+    path = config['resolver_library']()
+    require(os.environ.get('B29_SANDBOX') == 'landlock-seccomp-v1'
+            and os.environ.get('LD_PRELOAD') == path
+            and os.environ.get('NSS_WRAPPER_HOSTS') == '/etc/b29-hosts',
+            'Fixed synthetic resolver configuration required')
+    manifest = json.loads(Path('/manifest.json').read_text())
+    hosts = Path('/etc/b29-hosts')
+    info = hosts.stat(follow_symlinks=False)
+    require(manifest.get('confinement') == 'landlock-seccomp-v1'
+            and stat.S_ISREG(info.st_mode) and info.st_uid == 65534
+            and stat.S_IMODE(info.st_mode) & 0o022 == 0
+            and hosts.read_bytes() == config['HOSTS'].encode()
+            and manifest.get('hosts_sha256') == hashlib.sha256(config['HOSTS'].encode()).hexdigest()
+            and manifest.get('resolver') == dict(path=path,
+                sha256=hashlib.sha256(Path(path).read_bytes()).hexdigest()),
+            'Immutable vendor resolver differs')
+    for name, address in (('b15-worker-db','127.0.0.2'), ('b15-worker-wire','127.0.0.3'),
+                          ('b15-worker-api','127.0.0.1'), ('graph.facebook.com','127.0.0.4'),
+                          ('auth.fixture.test','127.0.0.4'),
+                          ('a'*32+'.r2.cloudflarestorage.com','127.0.0.4')):
+        rows = socket.getaddrinfo(name, 443, socket.AF_INET, socket.SOCK_STREAM)
+        require(rows and {row[4][0] for row in rows} == {address}, 'Private resolver differs')
+    return True
 
 
 def null_device():
@@ -149,16 +189,32 @@ def null_device():
     return True
 
 
+def resolver_descriptor(fd):
+    """Only the vendor resolver's already-readable, immutable public cache."""
+    require(type(fd) is int and 3 <= fd < 512, 'Bounded non-stdio resolver FD required')
+    actual = os.fstat(fd)
+    expected = os.stat('/etc/b29-hosts', follow_symlinks=False)
+    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+    return (stat.S_ISREG(actual.st_mode) and stat.S_ISREG(expected.st_mode)
+            and actual.st_uid == expected.st_uid == 65534
+            and actual.st_nlink == expected.st_nlink == 1
+            and stat.S_IMODE(actual.st_mode) & 0o022 == 0
+            and (actual.st_dev, actual.st_ino) == (expected.st_dev, expected.st_ino)
+            and flags & os.O_ACCMODE == os.O_RDONLY
+            and not flags & getattr(os, 'O_PATH', 0x200000))
+
+
 def post_exec():
     """Executed afresh inside the copied root, after capabilities were dropped."""
     require(os.getuid() == UID and os.getgid() == UID, 'Nonzero fixed identity required')
-    require(not Path('/proc').exists() and not Path('/sys').exists(), 'Outside kernel path')
-    for root in ('/', '/app', '/harness', '/host'):
+    for root in ('/', '/app', '/harness', '/host', '/fixture', '/fixture/tools'):
         info = Path(root).stat()
         require(info.st_uid == 65534 and stat.S_IMODE(info.st_mode) & 0o022 == 0,
                 'Source root writable or replaceable by fixture identity')
     if null_device() is not True:
         raise RuntimeError('Null device validation refused')
+    require(content_boundary() is True, 'Outside content boundary refused')
+    require(resolver_boundary() is True, 'Synthetic resolver refused')
     require(LIBC.prctl(39, 0, 0, 0, 0) == 1, 'No-new-privileges absent')
     class Header(ctypes.Structure):
         _fields_ = [('version', ctypes.c_uint32), ('pid', ctypes.c_int)]
@@ -194,13 +250,17 @@ def post_exec():
         # This pipe is the sole extra descriptor the actual launcher supplies.
         import runpy
         allowed.add(runpy.run_path('/host/custody.py')['receipt_descriptor'](sys.orig_argv))
+    resolver_fds = []
     for fd in range(3, 512):
         try:
             os.fstat(fd)
         except OSError as error:
             require(error.errno == errno.EBADF, 'Descriptor census failed')
         else:
-            require(fd in allowed, 'Unexpected post-exec descriptor')
+            if fd not in allowed:
+                require(resolver_descriptor(fd) is True, 'Unexpected post-exec descriptor')
+                resolver_fds.append(fd)
+    require(len(resolver_fds) <= 1, 'Duplicate public resolver descriptors')
     with socket.socket() as sock:
         sock.settimeout(1)
         require(sock.connect_ex(('192.0.2.1', 443)) == errno.ENETUNREACH, 'Outside route available')
@@ -212,7 +272,7 @@ def post_exec():
         os.close(fd)
         raise RuntimeError('App source write admitted')
     return dict(uid=UID, capabilities_zero=True, no_new_privileges=True,
-                proc_absent=True, source_write_refused=True, outside_unreachable=True)
+                outside_content_denied=True, source_write_refused=True, outside_unreachable=True)
 
 
 def stdio_boundary(*, log_name=None):

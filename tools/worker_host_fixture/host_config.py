@@ -2,13 +2,30 @@
 import base64
 import json
 import re
+import platform
+
+HOSTS = ('127.0.0.1 localhost b15-worker-api\n'
+         '127.0.0.2 b15-worker-db\n127.0.0.3 b15-worker-wire\n'
+         '127.0.0.4 graph.facebook.com auth.fixture.test ' +
+         'a' * 32 + '.r2.cloudflarestorage.com\n')
+
+
+def resolver_library():
+    paths = {'x86_64':'/usr/lib/x86_64-linux-gnu/libnss_wrapper.so',
+             'aarch64':'/usr/lib/aarch64-linux-gnu/libnss_wrapper.so'}
+    try:
+        return paths[platform.machine()]
+    except KeyError:
+        raise RuntimeError('Unsupported resolver architecture') from None
 
 
 def environment(run_id):
     if type(run_id) is not str or not re.fullmatch('[0-9a-f]{12}', run_id):
         raise ValueError('Owned run identity required')
     db = 'b15_worker_capacity'
-    return dict(PATH='/usr/local/bin:/usr/bin:/bin', LANG='C.UTF-8', HOME='/tmp',
+    return dict(B29_SANDBOX='landlock-seccomp-v1', LD_PRELOAD=resolver_library(),
+        NSS_WRAPPER_HOSTS='/etc/b29-hosts',
+        PATH='/usr/local/bin:/usr/bin:/bin', LANG='C.UTF-8', HOME='/tmp',
         PYTHONUNBUFFERED='1', PYTHONDONTWRITEBYTECODE='1', PYTHONOPTIMIZE='0',
         PYTHONPATH='/harness:/app:/app/tests/social', PORT='33501', WEB_CONCURRENCY='1',
         ENVIRONMENT='test', SECRET_KEY='inert-rehearsal-signing-key', AUTO_SEEDER_ENABLED='false',

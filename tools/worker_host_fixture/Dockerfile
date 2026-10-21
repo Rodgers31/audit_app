@@ -4,7 +4,7 @@ ARG BASE_IMAGE=public.ecr.aws/docker/library/python:3.12.15-slim-trixie@sha256:2
 FROM ${BASE_IMAGE} AS bundle
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 ffmpeg postgresql-17 postgresql-contrib-17 \
+    libpq5 ffmpeg postgresql-17 postgresql-contrib-17 libnss-wrapper \
     && rm -rf /var/lib/apt/lists/*
 COPY tools/worker_host_fixture/requirements.lock /input/requirements.lock
 COPY tools/worker_host_fixture/install_locked.py /input/install_locked.py
@@ -13,17 +13,14 @@ COPY backend /input/backend
 COPY tools/worker_rehearsal /input/rehearsal
 COPY tools/worker_host_fixture /input/host
 RUN python -I -B /input/host/build_root.py
-ADD tools/worker_host_fixture/dev-null.tar /fixture-root/
-RUN chroot /fixture-root /usr/local/bin/python -I -B -S -c "import ctypes,ssl,zlib;print('COPIED_STDLIB_LOADS')" \
-    && chroot /fixture-root /usr/local/bin/python -I -B -S -c "import runpy;runpy.run_path('/host/isolation.py')['null_device']()" \
-    && chroot /fixture-root /usr/lib/postgresql/17/bin/postgres --version \
-    && chroot /fixture-root /usr/bin/ffprobe -version >/dev/null
 
 FROM ${BASE_IMAGE}
 USER root
-COPY --from=bundle /fixture-root /fixture-root
-COPY tools/worker_host_fixture /host
+COPY --from=bundle /fixture-root/ /
 USER 10001:10001
+RUN python -I -B -S -c "import ctypes,ssl,zlib;print('PUBLIC_STDLIB_LOADS')" \
+    && /usr/lib/postgresql/17/bin/postgres --version \
+    && /usr/bin/ffprobe -version >/dev/null
 WORKDIR /
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 EXPOSE 8000

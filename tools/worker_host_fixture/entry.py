@@ -24,11 +24,11 @@ def main():
     if set(os.environ) != {'B28_CLEAN', 'B28_PORT', 'LC_ALL'} or os.environ['LC_ALL'] != 'C.UTF-8':
         raise RuntimeError('Uncleared entry environment')
     sys.path.insert(0, '/host')
-    from isolation import enter_namespaces, jail, require
+    from isolation import enter_namespaces, confine, require
     import socket
     from uuid import uuid4
     import platform
-    manifest = json.loads(Path('/fixture-root/manifest.json').read_text())
+    manifest = json.loads(Path('/manifest.json').read_text())
     for p in Path('/host').glob('*.py'):
         require(not p.is_symlink() and hashlib.sha256(p.read_bytes()).hexdigest()
                 == manifest['files']['host/' + p.name], 'Outer helper differs from immutable bundle')
@@ -39,9 +39,10 @@ def main():
     require(len(cpu) == 2 and all(x.isascii() and x.isdecimal() for x in cpu)
             and int(cpu[1]) > 0 and int(cpu[0]) * 2 == int(cpu[1]), 'Half-CPU service required')
     identity = dict(run_id=uuid4().hex[:12],
-        manifest_sha256=hashlib.sha256(Path('/fixture-root/manifest.json').read_bytes()).hexdigest(),
+        manifest_sha256=hashlib.sha256(Path('/manifest.json').read_bytes()).hexdigest(),
         python=platform.python_version(), architecture=platform.machine(),
-        private_tcp_translation={'127.0.0.4:443':'127.0.0.4:8443'})
+        private_tcp_translation={'127.0.0.4:443':'127.0.0.4:8443'},
+        confinement='landlock-seccomp-v1', synthetic_resolver='libnss_wrapper')
     # This listener is opened before network isolation. Only the observer keeps
     # it. It serves fixed maintenance responses, never an app or artifact API.
     listener = socket.socket()
@@ -50,7 +51,7 @@ def main():
     listener.listen(8)
     listener.setblocking(False)
     identity['isolation'] = enter_namespaces()
-    root_evidence = Path('/fixture-root/evidence')
+    root_evidence = Path('/evidence')
     require(not list(root_evidence.iterdir()), 'Fresh image-owned evidence required')
     (root_evidence / 'identity.json').write_text(json.dumps(identity, sort_keys=True))
     print('HOST_FIXTURE_IDENTITY ' + json.dumps(identity, sort_keys=True), flush=True)
@@ -63,7 +64,7 @@ def main():
     # Import config before root confinement; it admits no production value.
     from host_config import environment
     values = environment(identity['run_id'])
-    jail('/fixture-root')
+    confine()
     os.execve('/usr/local/bin/python', ['/usr/local/bin/python', '-B', '/host/boot.py'], values)
 
 

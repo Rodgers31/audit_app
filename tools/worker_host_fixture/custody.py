@@ -76,7 +76,8 @@ def closure_backup(payload):
     # legitimate descriptors must not be mistaken for a jail escape.
     from bounded_profile import inert_environment
     inert_environment(dict(os.environ))
-    if (os.getuid() != 10001 or Path('/proc').exists() or Path('/sys').exists()
+    from isolation import content_boundary
+    if (os.getuid() != 10001 or content_boundary() is not True
             or Path('/').stat().st_uid != 65534 or not Path('/manifest.json').is_file()):
         raise RuntimeError('Isolated immutable fixture root required')
     target = Path('/evidence/closure.dump')

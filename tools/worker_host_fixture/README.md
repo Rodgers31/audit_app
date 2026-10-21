@@ -1,152 +1,120 @@
 # Existing-service worker qualification
 
-This opt-in **maintenance image** is separate from the production Dockerfiles.
-It is not selected by any default application flag or startup path. The image
-has not passed target-host acceptance merely because its unit tests pass.
+This opt-in maintenance image is separate from production Dockerfiles and startup
+flags. Publishing, uploads and production worker activation remainOFF. The user
+accepted brief maintenance on20October2026. Use only the existing512MiB/0.5CPU
+service; do not add plans, resources, credentials, hostedActions or bot reviews.
 
-The user accepted brief maintenance on 20 October 2026. Do not run this alongside
-the live API in one 512 MiB instance. Do not add a service, paid disk, job, plan,
-Actions run, bot review, credential or database access grant for qualification.
+## Mountless public runtime boundary
 
-The build validates the complete exact-version lock before installing anything,
-then installs one distribution per pip process with a fresh environment and all
-pip configuration disabled. Every installed version is read back and final
-`pip check` must succeed. This bounds retained installer state without changing
-the locked runtime versions or treating a failed installation as a usable image.
-The copied root's real null device comes from a fixed 10KiB USTAR archive,
-validated byte-for-byte before Docker ADD extracts it. Build and runtime checks
-require character device1:3 without following links. No build-time mknod syscall
-or extra runtime capability is needed.
+Render rejected both build-time creation/extraction of a copied null device and a
+private-child runtime bind. The B29 image therefore uses the container engine's
+real `/dev/null`, a public image root, private USER/MOUNT/NET namespaces and
+unprivileged Landlock filesystem confinement plus an inherited seccomp filter.
+It performs no mount or chroot syscall. Path metadata remains visible; content
+outside an explicit allowlist is denied. This is a changed qualification boundary,
+not a claim that the failed copied-root image passed.
 
-## Boundary and actual workload
+Actual outerPID1/nonroot10001 is required. Entry re-execs with only a validated
+public port and fixed clean markers, closes all descriptors above2, and never
+passes production credentials into the workload. The private NET namespace has
+loopback only and must refuse an outside connection with ENETUNREACH. UID0 is
+unmapped by the single10001→10001 map, so immutable image paths appear as65534.
+All capabilities and bounding/ambient sets are removed; no-new-privileges is set.
+RLIMIT_NOFILE512/NPROC128/core0 and the actual512MiB/no-swap/half-CPU cgroup remain
+required. The resource assessor and thresholds remain unchanged.
 
-The entrypoint requires actual outer PID1, nonroot UID/GID10001, 512 MiB without
-swap and exactly half a CPU. It re-execs with an empty production environment,
-admitting only a validated public port. It changes user/mount/network namespaces
-without changing the actual container PID1. No mount syscall is attempted: all
-inherited mounts must already be private. Loopback is the only usable network.
-The static copied root contains Python, PostgreSQL17, ffprobe, public application
-source and synthetic helper data. Root-owned source is outside the single UID
-map. Chroot is followed by complete capability/bounding/ambient removal and
-no-new-privileges. A fresh Python exec checks those properties, absence of proc
-and sys, real null stdin/ordinary stdout pipes, descriptor inventory and source
-write refusal. Missing support refuses; there is no host-network fallback.
+Before any workload exec or thread, Landlock ABI3+ handles all filesystem rights
+through REFER/TRUNCATE. Only public `/usr`, source/helper trees and fixed public
+configuration leaves are readable. `/state`, `/evidence`, `/tmp` and `/dev/shm`
+permit bounded fixture writes but not executable files, device nodes, symlinks or
+filesystem sockets. The real null device permits reads/writes. Kernel proc/sys
+content, secrets and other paths are not admitted to the workload. Fresh execs
+must refuse opens of known-existing outside/proc/sys controls, pathname UNIX
+socket creation, source writes and unexpected descriptors. Missing policy support
+or any failed syscall refuses startup; there is no unconfined fallback.
+The vendor resolver may retain one read-only public hosts-file descriptor. The
+fresh-exec census admits only that exact immutable inode, owner, mode and access
+mode; foreign, writable, duplicate or outside descriptors still refuse.
 
-The actual application supervisor ultimately execs as **outer PID1**. Its real
-Gunicorn and native commands run unchanged, with the actual restricted database
-role contract. PostgreSQL, TLS Graph/auth/R2 stand-ins, protocol proxy, image
-seeding, capacity driver and kernel observer all share the service cgroup.
-RLIMIT_NOFILE512 and RLIMIT_NPROC128 add descriptor/process limits; these are not
-a substitute for the aggregate memory/CPU cgroup. The local Docker test also
-uses pids.max128. Render's inherited pids.max must be separately recorded.
+The seccomp filter checks native architecture and x32, refuses new namespace,
+mount/chroot, ptrace/process-memory/FD-acquisition, perf/BPF and io_uring paths.
+It permits IPv4/IPv6 sockets in the independently isolated network and only
+AF_UNIX/protocol0 connected STREAM socketpairs for asyncio wakeups. Datagram pairs
+and pathname UNIX client sockets are denied. PostgreSQL uses TCP only. Ordinary
+process/thread creation inherits both policies; clone3 returns ENOSYS for libc's
+ordinary clone fallback, while namespace clone flags are denied.
 
-The observer retains only a fixed public maintenance listener and read-only
-kernel observation outside the chroot, in the private network. Native/app code
-gets neither that listener nor any outside directory/proc/cgroup descriptor.
-Ordinary requests, including `/health/ready`, return503. `/fixture-health` means
-only fixture liveness and returns200; it never claims application readiness.
-Within the private root, the actual API must pass readiness/upload refusal and
-the same actual API/native operations and 180-second qualification thresholds
-as the qualified local fixture. All nine human-approved synthetic targets are
-prepared before the API/native processes start. A bounded PostgreSQL update sets
-their actual next_action_at values to0/0/0/25/50/75/100/125/150seconds after the
-measured database clock, before releasing the native gate. The worker's genuine
-due-queue logic drives sustained activity; no claimed provider operation is
-simulated by the driver. Exact target/time readback is retained. Lightweight
-psql snapshots avoid concurrently importing the heavy test seeder.
+The pre-policy forked observer has its own Landlock/seccomp policy: public code,
+read-only proc/cgroup content and writes only under `/evidence`. It retains only
+the fixed maintenance listener opened before NET isolation. App code inherits
+neither this listener nor outside descriptors. `/fixture-health` returns200 for
+fixture liveness only; all ordinary paths, including application readiness,
+return503. Observer aborts at480MiB current memory, any OOM or600seconds. These
+failures do not count as a Render shutdown pass or automatic service restoration.
 
-Fresh private network namespaces prohibit unprivileged TCP443. This image keeps
-all capabilities dropped and changes no host sysctl: its explicit fixture-only
-socket shim translates only127.0.0.4:443 to127.0.0.4:8443, with a matching inert
-server bind. URL/SNI/certificate and actual SDK/HTTP operations remain unchanged.
-The translation is recorded in launch identity; production TCP443 parity is not
-claimed. No other destination is translated and no external route exists.
+Docker/Render replace outer `/etc/hosts`. The image uses Debian's public
+`libnss-wrapper` with an immutable, fixed synthetic hosts file and an explicit
+B29-only environment discriminator. Preload path and hosts file must match the
+architecture; partial/extra resolver configuration refuses. The library hash is
+bound in the build manifest. Fresh Python execs verify every synthetic name/IP;
+the real local PostgreSQL/libpq connection must also succeed before workload.
+TLS verification and original Graph/R2 names/SANs are retained. The existing
+fixture-only443→8443 translation remains explicit; production DNS/TCP443 parity
+is not claimed.
 
-Verification advises dropping unused source-file cache pages after hashing.
-The frozen helper generates its exact JPEG and TLS certificate in a short-lived
-preparation process. The resident synthetic endpoint uses the identical protocol
-class with stdlib TLS and those prepared bytes, avoiding resident image-generation
-and certificate-generation libraries. The real API/native allocators and the
-qualification limits are unchanged; measured cgroup values decide.
-The fixed internal `/harness` alias resolves to a deep immutable source path so
-the existing rehearsal module can import without changing its qualified bytes.
+## Workload and evidence
 
-The driver emits `HOST_FIXTURE_READY_FOR_RENDER_STOP` only after requalifying
-the raw current-run dataset, current observer/census/source hashes and exact
-seeded image cohort. It then exits. It never sends a shutdown signal on success.
-Raw workload observations are retained before assessment even when the capacity
-gate refuses them. Render must stop the real outer supervisor when the accepted deployment is
-restored. A600-second watchdog or any failed workload sendsTERM only to this
-explicit fixture PID1 and emits failure; neither counts as a Render stop pass.
+The actual application supervisor execs as outerPID1, with genuine Gunicorn and
+native worker commands. Synthetic PostgreSQL17, the actual restricted worker-role
+contract, private TLS/auth/Graph/R2 endpoints, wire proxy, capacity driver and
+kernel observer share the service cgroup. Nine approved synthetic targets are
+prepared before resident API/native work, then scheduled at0/0/0/25/50/75/100/
+125/150seconds using the actual database clock and genuine due-queue logic.
 
-## Evidence and recovery boundary
+The existing180-second workload must meet its unchanged460MiB peak reserve,
+480MiB current abort,0.4CPU,3s maximum/1s p95 API limits, minimum API/sample counts
+and sustained provider/wire activity. Raw observations are retained before the
+assessor runs. READY is emitted only after actual source/run/cohort qualification;
+the driver never sends a shutdown signal on success. Render must terminate the
+real outer supervisor when the accepted image is restored.
 
-The fixture-only Python startup shim preserves the B27 observation seams. It
-copies raw Python lifecycle lines while keeping Render stdout direct, so final
-PID1 output does not depend on a dying observer forwarding a pipe. It does not
-invent a launcher proof. After the actual native code closes resources and
-prepares its genuine private-pipe receipt, the shim first captures a consistent
-bounded dump of **only the inert local fixture database**, then passes the
-original receipt bytes unchanged. The authentic supervisor must still reap the
-worker group before adding process_joined/exit_code proof.
+The native closure shim captures a bounded consistent dump of only the inert
+local database after resources close, then passes genuine receipt bytes unchanged
+to the authentic launcher. The launcher must reap the process group and produce
+its real closure proof. Numbered exports bind run/build/producer/size/hash;
+`decode.py` refuses missing/duplicate/foreign chunks, malformed data and expansion
+beyond4MiB. Downloaded chunks alone are not external identity proof. An off-host
+dump/restore exercise does not prove persistence of Render's ephemeral disk.
+Missing host stop, capacity or recovery evidence remains incomplete, never inferred.
 
-Backup and capacity artifacts use complete numbered log chunks with run, build,
-producer, size and SHA256 binding. `decode.py` rejects missing/duplicate/foreign
-chunks, malformed encodings, trailing streams and expansion beyond4MiB. Expected
-run/build/producer identities must come from the reviewed build and launch record,
-not be trusted merely because they appear in downloaded chunks. The capture is
-an off-host backup/restore exercise. **It does not prove persistence of Render's
-ephemeral disk.** Restore into an owned local PostgreSQL fixture, compare the
-retained owner/history with the actual native and launcher receipts, then execute
-the existing guarded release/rollback/contender controls there. Missing stop or
-backup evidence remains a failed/incomplete acceptance, never an inferred pass.
+The complete exact-version lock is validated before installation. Each of90 pins
+is installed in a fresh isolated pip process, read back, and followed by mandatory
+pip check. The84 accepted production Python package versions must match. The OS
+package inventory and vendor resolver hash are recorded rather than assumed.
 
-Only public synthetic data appears in these exports. Production publishing,
-uploads, native activation and configuration stay OFF. Simulated publication
-goes only to private loopback fixture endpoints. No production DSN, keys, token,
-account, media object or public provider mutation is passed into the root.
+## Maintenance configuration and restoration
 
-## Concrete maintenance configuration and rollback
+Record the actual accepted source, configuration deployment, schema, flags and
+retained data before any host trial. Current accepted source is
+e26d142dd1aa02b817f19957411b16788c356420/configuration deployment
+ dep-dbbr198ae00c73aj98qg/schemaa756b20a0001 on existing service
+srv-d6hr3t5m5p6s73bomqu0. No migration or production environment edit is included.
 
-Before changing Render, record source/build IDs, all existing service settings,
-accepted deployment identity, effective OFF flags, health and retained data.
-The currently accepted backend is e26d142dd1aa02b817f19957411b16788c356420,
-configuration deployment dep-dbbr198ae00c73aj98qg, schema a756b20a0001 on existing
-service srv-d6hr3t5m5p6s73bomqu0. No migration is part of this fixture.
+Temporary build settings: rootempty, context `.`, Dockerfile
+`tools/worker_host_fixture/Dockerfile`, blank command and unchanged blank health,
+main/autoDeployOFF, existing90-second shutdown delay. Use only a frozen reviewed
+commit with target-architecture build/import/version checks, demonstrated kernel
+admission and a known accepted rollback artifact. Current host qualification is
+pending; B27's local eight-case pass is historical local evidence, and B28's ARM
+reserve/emulation-FD failures are not host passes.
 
-The proposed temporary settings are: root directory empty, repository-root Docker
-context `.`, Dockerfile `tools/worker_host_fixture/Dockerfile`, blank Docker command,
-the existing blank health path, auto-deployOFF and the existing90-second stop
-window. Production environment values are not edited; entry discards them before
-executing any helper. A bounded target-host qualification trial requires frozen
-runtime source, target-architecture build/import checks, exact dependency readback,
-independent review, confirmed isolation/resource admission, an available accepted
-rollback artifact and the user's maintenance authorization. Current production
-defaults remain unchanged in Git.
-
-B27's full local aggregate qualified on ARM. The B28 lean ARM variant completed
-the workload but exceeded the460MiB reserve (490012672B peak), so it is not a
-capacity pass. A discarded setup-cache experiment hit the480MiB abort. Local
-x86_64 emulation refused an extra inherited descriptor; that guard was preserved.
-These failures remain distinct from a physical target-host trial. Only measured
-target-host data satisfying the unchanged thresholds can establish host capacity;
-the trial never authorizes production worker activation.
-
-Keep Chrome open and supervise the window. Abort on namespace/config refusal,
-missing post-exec evidence, readiness/role failure, stale observer, 480MiB current
-memory, any OOM, API latency above3s, failed capacity qualification, missing
-export chunks or unexpected public connectivity. On success restore immediately
-after READY, also capturing the Render deployment termination event and raw
-launcher stop lines. Reserve75 seconds for measured stop within the90-second
-host window. A watchdog timeout is failure, not an automatic rollback.
-
-Rollback restores root directory `backend`, Docker context `.`, Dockerfile
-`./Dockerfile.prod`, blank Docker command and the original blank health path.
-Restore the exact accepted existing image/configuration deployment through
-Render's rollback UI; do not rebuild ranged production dependencies and call it
-the same image. Keep auto-deployOFF,90-second delay and every existing production
-activation flag unchanged. Verify actual accepted source identity, live/ready200,
-two connected accounts with publishingfalse, unchanged owner/history and media
-census, and all effective OFF flags before ending maintenance. If browser control
-fails, the operator must restore that accepted deployment in Render; do not leave
-the maintenance image unattended or claim rollback happened automatically.
+Supervise Chrome. On READY, restore the exact accepted existing deployment image
+through Render's rollback UI and capture actual stop/lifecycle events. Reserve75s
+inside the90s host window. Also restore root `backend`, Dockerfile
+`./Dockerfile.prod`, context `.`, blank command/health, main/autoDeployOFF. Do not
+rebuild ranged production dependencies and call it the same accepted artifact.
+Check accepted source, live/ready200, all12 effectiveOFF flags, unchanged retained
+data, private media tables and both connected accounts with publishingfalse before
+ending. If the candidate refuses or a guard fails, restore these settings without
+relaxing policy or leaving a maintenance image unattended.

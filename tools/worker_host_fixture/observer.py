@@ -17,9 +17,13 @@ import time
 def observe(listener, identity):
     from isolation import drop_capabilities, require
     drop_capabilities()
-    sys.path.insert(0, '/fixture-root/usr/local/lib/python3.12/site-packages')
+    # Entry deliberately uses -I/-S; add only this image's public locked deps.
+    sys.path.insert(0, '/usr/local/lib/python3.12/site-packages')
     import psutil
-    out = Path('/fixture-root/evidence')
+    from confinement import install
+    require(install(observer=True).get('kind') == 'landlock-seccomp',
+            'Observer confinement refused')
+    out = Path('/evidence')
     group = Path('/sys/fs/cgroup')
     producer = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     started, sampled, sequence = time.monotonic(), 0.0, 0

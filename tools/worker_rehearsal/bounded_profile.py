@@ -9,6 +9,15 @@ def inert_environment(values, *, controller=False):
         raise ValueError('Explicit controller mode required')
     if type(values) is not dict or not all(type(k) is str and type(v) is str for k, v in values.items()):
         raise ValueError('String fixture environment required')
+    if any(k in values for k in ('B29_SANDBOX', 'LD_PRELOAD', 'NSS_WRAPPER_HOSTS')):
+        allowed = {'/usr/lib/x86_64-linux-gnu/libnss_wrapper.so',
+                   '/usr/lib/aarch64-linux-gnu/libnss_wrapper.so'}
+        if (values.get('B29_SANDBOX') != 'landlock-seccomp-v1'
+                or values.get('LD_PRELOAD') not in allowed
+                or values.get('NSS_WRAPPER_HOSTS') != '/etc/b29-hosts'):
+            raise ValueError('Exact mountless fixture resolver required')
+        values = {k:v for k,v in values.items()
+                  if k not in ('B29_SANDBOX', 'LD_PRELOAD', 'NSS_WRAPPER_HOSTS')}
     fixed = dict(META_CONNECTIONS_ENABLED='true', META_APP_CONFIGURATION_VALIDATED='true',
         META_APP_ID='123', META_APP_SECRET='inert-rehearsal-app', META_ACCESS_MODE='owned_standard',
         META_REDIRECT_URIS='["https://admin.example.test/admin/social/accounts/callback"]',
