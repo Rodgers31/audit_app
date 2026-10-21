@@ -5,12 +5,14 @@ supervisor when the operator restores the accepted deployment. Failures abort
 only this deliberately selected maintenance fixture and produce no PASS.
 """
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import time
+import urllib.request
 from run import Rehearsal, THRESHOLDS, require
 from bounded_profile import inert_environment
 from custody import export
@@ -107,6 +109,23 @@ class HostRehearsal(Rehearsal):
         require(raw.strip() and len(raw) <= 4 * 1024 ** 2, 'Bounded nonempty SQL result required')
         return json.loads(raw)
 
+    def api(self, route='/health/live', *, timings=False):
+        # The observer counts all fixture overhead. Keep the identical real
+        # HTTP workload resident rather than spawning another Python per sample.
+        require(type(route) is str and route in ('/health/live', '/health/ready', '/api/v1/counties')
+                and type(timings) is bool, 'Fixed private API probe required')
+        wall_start, start = time.time(), time.monotonic()
+        try:
+            with urllib.request.urlopen('http://b15-worker-api:33501' + route, timeout=3) as response:
+                content = response.read(2 * 1024 ** 2 + 1)
+                require(type(response.status) is int and response.status == 200
+                        and 0 < len(content) <= 2 * 1024 ** 2, 'Bounded nonempty 200 required')
+        except (OSError, http.client.HTTPException) as error:
+            raise RuntimeError('Private API request failed') from error
+        end = time.monotonic()
+        value = dict(started=start, completed=end, wall_started=wall_start, latency=end-start)
+        return value if timings else value['latency']
+
     def capacity(self, database):
         require(database == 'b15_worker_capacity', 'Owned capacity database required')
         before = self.snapshot('capacity', 'baseline', database)
@@ -147,7 +166,13 @@ class HostRehearsal(Rehearsal):
             samples=samples, api_latencies=latencies, census=last, wire_before=wire_before,
             wire_after=wire_after, requests=requests, eligibility_plan=self.plan,
             database_schedule=scheduled, verdict='UNASSESSED'))
-        assessed = assess(samples, latencies, last, wire_before, wire_after, requests, duration, THRESHOLDS)
+        try:
+            assessed = assess(samples, latencies, last, wire_before, wire_after, requests, duration, THRESHOLDS)
+        except Exception:
+            # Preserve measured failure evidence before this disposable instance
+            # disappears. UNASSESSED is never a qualified capacity/READY artifact.
+            export('capacity_failed', (self.out / 'capacity-observations.json').read_bytes())
+            raise
         return dict(seconds=duration, samples=samples, api_latencies=latencies, wire_before=wire_before,
             wire_after=wire_after, requests=requests, eligibility_plan=self.plan,
             database_schedule=scheduled, **assessed)

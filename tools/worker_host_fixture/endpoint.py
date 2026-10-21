@@ -1,11 +1,10 @@
-"""Lean synthetic TLS endpoint; protocol class matches the qualified B27 helper.
+"""Lean synthetic TLS endpoint preserving the qualified B27 wire behavior.
 
 Image/certificate generation runs beforehand in a short-lived preparation process.
-The resident helper serves exactly those retained bytes using only the stdlib.
+The resident helper serves exactly those prepared bytes using only the stdlib.
 """
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from functools import lru_cache
 import json
 import os
 from pathlib import Path
@@ -18,12 +17,47 @@ R2 = 'a' * 32 + '.r2.cloudflarestorage.com'
 ROOT = Path('/evidence')
 
 
-@lru_cache(maxsize=1)
 def image():
     data = (ROOT / 'endpoint-image.jpg').read_bytes()
     if not 1024 * 1024 <= len(data) <= 11 * 1024 * 1024:
         raise RuntimeError('Actual prepared JPEG size outside fixture bounds')
     return data
+
+
+def serve_image(handler, *, head):
+    if type(head) is not bool:
+        raise ValueError('Explicit image response mode required')
+    # Keep only small blocks beside the actual native download/inspection.
+    # Hash the same opened file, rewind, and verify the bytes really written.
+    with (ROOT / 'endpoint-image.jpg').open('rb') as stream:
+        size, md5, sha = 0, hashlib.md5(), hashlib.sha256()
+        while block := stream.read(16384):
+            size += len(block)
+            if size > 11 * 1024 ** 2:
+                raise RuntimeError('Prepared JPEG exceeds fixture bound')
+            md5.update(block); sha.update(block)
+        if not 1024 ** 2 <= size <= 11 * 1024 ** 2:
+            raise RuntimeError('Prepared JPEG outside fixture bound')
+        handler.send_response(200)
+        handler.send_header('Content-Length', str(size))
+        handler.send_header('Content-Type', 'image/jpeg')
+        handler.send_header('ETag', '"' + md5.hexdigest() + '"')
+        handler.send_header('x-amz-meta-sha256', sha.hexdigest())
+        handler.end_headers()
+        if head:
+            return 0
+        stream.seek(0)
+        sent, delivered = 0, hashlib.sha256()
+        while block := stream.read(16384):
+            if sent + len(block) > size:
+                raise RuntimeError('Prepared JPEG changed during response')
+            written = handler.wfile.write(block)
+            if type(written) is not int or written != len(block):
+                raise RuntimeError('Incomplete image response write')
+            sent += len(block); delivered.update(block)
+        if sent != size or delivered.digest() != sha.digest():
+            raise RuntimeError('Prepared JPEG changed during response')
+        return sent
 
 
 class Endpoint(BaseHTTPRequestHandler):
@@ -37,10 +71,23 @@ class Endpoint(BaseHTTPRequestHandler):
 
     def respond(self, head=False):
         length = int(self.headers.get('Content-Length', '0'))
-        if length > 11 * 1024 * 1024:
+        if not 0 <= length <= 11 * 1024 * 1024:
             self.send_error(413)
             return
-        body = self.rfile.read(length)
+        if 'multipart' in self.headers.get('Content-Type', ''):
+            # This synthetic Graph endpoint ignores multipart contents, as the
+            # original helper did. Consume the identical actual SDK/TLS bytes
+            # without keeping another whole image beside the real inspector.
+            remaining = length
+            while remaining:
+                limit = min(65536, remaining)
+                chunk = self.rfile.read(limit)
+                if type(chunk) is not bytes or not 0 < len(chunk) <= limit:
+                    raise RuntimeError('Incomplete bounded multipart input')
+                remaining -= len(chunk)
+            body = b''
+        else:
+            body = self.rfile.read(length)
         path = urlsplit(self.path).path
         request_id = uuid4().hex
         binding = dict(run_id=os.environ['B15_ENDPOINT_RUN_ID'], case=(ROOT / 'endpoint-case').read_text())
@@ -53,16 +100,7 @@ class Endpoint(BaseHTTPRequestHandler):
                     time.sleep(0.02)
             time.sleep(delay)
         if self.headers['Host'] == R2:
-            data = image()
-            self.send_response(200)
-            self.send_header('Content-Length', str(len(data)))
-            self.send_header('Content-Type', 'image/jpeg')
-            self.send_header('ETag', '"' + hashlib.md5(data).hexdigest() + '"')
-            self.send_header('x-amz-meta-sha256', hashlib.sha256(data).hexdigest())
-            self.end_headers()
-            if not head:
-                self.wfile.write(data)
-            output = len(data) if not head else 0
+            output = serve_image(self, head=head)
         else:
             form = parse_qs(body.decode()) if 'multipart' not in self.headers.get('Content-Type', '') else {}
             if self.headers['Host'] == 'auth.fixture.test' and path == '/rest/v1/profiles':

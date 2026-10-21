@@ -399,6 +399,67 @@ class HostFixtureTests(unittest.TestCase):
         finally:
             del sys.path[:2]
 
+    def test_failed_assessment_exports_unassessed_raw_data_and_still_refuses(self):
+        from uuid import UUID
+        sys.path[:0] = [str(HERE), str(HERE.parent / 'worker_rehearsal')]
+        try:
+            driver = module('driver')
+            instance = driver.HostRehearsal.__new__(driver.HostRehearsal)
+            instance.plan = [dict(target_id=str(UUID(int=i+1)), delay=delay)
+                for i, delay in enumerate((0,0,0,25,50,75,100,125,150))]
+            instance.provenance = dict(run_id='a'*12)
+            instance.duration = 0
+            instance.endpoint = 'endpoint'
+            baseline = dict(social_post_targets=[dict(id=p['target_id'],state='queued')
+                for p in instance.plan], statements=[])
+            instance.snapshot = lambda *a, **kw: baseline
+            instance.wire = lambda: {}
+            instance.api = lambda *a, **kw: dict(latency=.01, started=100., wall_started=time.time())
+            instance.metrics = lambda: dict(memory=1)
+            instance.sql = lambda _: {}
+            instance.logs = lambda _: ''
+            with tempfile.TemporaryDirectory() as folder:
+                instance.out = Path(folder)
+                with patch.object(driver,'validate_scheduled'), patch.object(driver,'export') as export:
+                    with self.assertRaisesRegex(ValueError,'Insufficient cgroup samples'):
+                        instance.capacity('b15_worker_capacity')
+                    raw = (instance.out / 'capacity-observations.json').read_bytes()
+                    self.assertEqual(json.loads(raw)['verdict'], 'UNASSESSED')
+                    export.assert_called_once_with('capacity_failed', raw)
+                    self.assertFalse((instance.out / 'host-capacity.json').exists())
+        finally:
+            del sys.path[:2]
+
+    def test_resident_api_probe_keeps_real_http_bounds_without_child_process(self):
+        import io
+        import http.client
+        sys.path[:0] = [str(HERE), str(HERE.parent / 'worker_rehearsal')]
+        try:
+            driver = module('driver')
+            instance = driver.HostRehearsal.__new__(driver.HostRehearsal)
+            instance.cmd = lambda *a, **kw: self.fail('Per-request process must not run')
+            instance.network, instance.image = 'private-loopback', 'inert-fixed'
+            class Response(io.BytesIO):
+                status = 200
+            with patch('urllib.request.urlopen', return_value=Response(b'actual-body')) as request:
+                value = instance.api('/api/v1/counties', timings=True)
+                request.assert_called_once_with('http://b15-worker-api:33501/api/v1/counties', timeout=3)
+                self.assertGreater(value['wall_started'], 0)
+                self.assertEqual(value['latency'], value['completed']-value['started'])
+            for content, status in ((b'',200),(b'x',503),(b'x'*(2*1024**2+1),200)):
+                response = Response(content); response.status = status
+                with patch('urllib.request.urlopen',return_value=response), self.assertRaises(RuntimeError):
+                    instance.api('/health/ready')
+            for route in ('https://foreign.invalid','/unknown','//foreign.invalid',None,True):
+                with self.assertRaises(RuntimeError):
+                    instance.api(route)
+            for error in (TimeoutError(), http.client.BadStatusLine('malformed inert status')):
+                with patch('urllib.request.urlopen', side_effect=error), self.assertRaises(RuntimeError) as raised:
+                    instance.api('/health/live')
+                self.assertIs(raised.exception.__cause__, error)
+        finally:
+            del sys.path[:2]
+
     def test_prepared_plan_and_actual_schedule_readback_must_match(self):
         from datetime import datetime, timezone, timedelta
         from uuid import UUID
@@ -448,24 +509,109 @@ class HostFixtureTests(unittest.TestCase):
         finally:
             del sys.path[:2]
 
-    def test_lean_endpoint_preserves_protocol_and_requires_prepared_image(self):
-        import ast
-        source = HERE.parent / 'worker_rehearsal' / 'endpoints.py'
-        original = ast.parse(source.read_text())
-        current = ast.parse((HERE / 'endpoint.py').read_text())
-        endpoint_class = lambda tree: next(node for node in tree.body
-            if isinstance(node, ast.ClassDef) and node.name == 'Endpoint')
-        self.assertEqual(ast.dump(endpoint_class(original)), ast.dump(endpoint_class(current)))
+    def test_endpoint_image_buffer_is_not_retained_between_requests(self):
+        import gc
+        import tracemalloc
+        endpoint = module('endpoint')
+        with patch.object(Path, 'read_bytes', side_effect=lambda:b'x'*(2*1024**2)):
+            tracemalloc.start()
+            try:
+                value = endpoint.image()
+                self.assertEqual(len(value), 2*1024**2)
+                del value
+                gc.collect()
+                self.assertLess(tracemalloc.get_traced_memory()[0], 512*1024)
+            finally:
+                tracemalloc.stop()
+
+    def test_endpoint_drains_ignored_multipart_with_bounded_reads_and_refuses_eof(self):
+        import contextlib
+        import io
+        endpoint = module('endpoint')
+        class Input:
+            def __init__(self, size): self.remaining=size
+            def read(self, size):
+                self_check.assertLessEqual(size, 65536)
+                count=min(size,self.remaining)
+                self.remaining-=count
+                return b'x'*count
+        self_check=self
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            (root/'endpoint-case').write_text('capacity')
+            (root/'endpoint-delay').write_text('0')
+            for available in (1024**2,1024**2-1):
+                handler=endpoint.Endpoint.__new__(endpoint.Endpoint)
+                handler.command,handler.path='POST','/v26.0/901/photos'
+                handler.headers={'Content-Length':str(1024**2),'Content-Type':'multipart/form-data','Host':'graph.facebook.com'}
+                handler.rfile,handler.wfile=Input(available),io.BytesIO()
+                statuses=[]
+                handler.send_response=statuses.append
+                handler.send_header=lambda *a:None
+                handler.end_headers=lambda:None
+                output=io.StringIO()
+                with patch.object(endpoint,'ROOT',root), patch.dict(os.environ,{'B15_ENDPOINT_RUN_ID':'a'*12}),contextlib.redirect_stdout(output):
+                    if available==1024**2:
+                        handler.respond()
+                        self.assertEqual(statuses,[200])
+                        self.assertEqual(json.loads(handler.wfile.getvalue()),{'id':'401'})
+                        events=[json.loads(line) for line in output.getvalue().splitlines()]
+                        self.assertEqual(events[0]['input_bytes'],1024**2)
+                        self.assertEqual(events[0]['request_id'],events[1]['request_id'])
+                    else:
+                        with self.assertRaises(RuntimeError): handler.respond()
+                        self.assertEqual(statuses,[])
+                        self.assertEqual(output.getvalue(),'')
+                    self.assertEqual(handler.rfile.remaining,0)
+
+    def test_endpoint_requires_bounded_prepared_image(self):
         endpoint = module('endpoint')
         for data in (b'', b'x' * (1024 * 1024 - 1), b'x' * (11 * 1024 * 1024 + 1)):
-            endpoint.image.cache_clear()
             with patch.object(Path, 'read_bytes', return_value=data), self.assertRaises(RuntimeError):
                 endpoint.image()
-        endpoint.image.cache_clear()
         with patch.object(Path, 'read_bytes', return_value=b'x' * (1024 * 1024)) as read:
             self.assertEqual(len(endpoint.image()), 1024 * 1024)
             endpoint.image()
-            read.assert_called_once()
+            self.assertEqual(read.call_count, 2)
+
+    def test_storage_response_streams_exact_prepared_bytes_without_whole_image_buffer(self):
+        import contextlib
+        import io
+        endpoint = module('endpoint')
+        content=b'x'*(2*1024**2)
+        class Sink(io.BytesIO):
+            def write(self, data):
+                self_check.assertLessEqual(len(data),16384)
+                return super().write(data)
+        self_check=self
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            (root/'endpoint-image.jpg').write_bytes(content)
+            (root/'endpoint-case').write_text('capacity')
+            (root/'endpoint-delay').write_text('0')
+            for head in (False,True):
+                handler=endpoint.Endpoint.__new__(endpoint.Endpoint)
+                handler.command,handler.path=('HEAD' if head else 'GET'),'/media/fixture.jpg'
+                handler.headers={'Content-Length':'0','Host':endpoint.R2}
+                handler.rfile,handler.wfile=io.BytesIO(),Sink()
+                statuses=[];headers={}
+                handler.send_response=statuses.append
+                handler.send_header=lambda k,v:headers.update({k:v})
+                handler.end_headers=lambda:None
+                output=io.StringIO()
+                with patch.object(endpoint,'ROOT',root),patch.dict(os.environ,{'B15_ENDPOINT_RUN_ID':'a'*12}), \
+                        patch.object(Path,'read_bytes',side_effect=AssertionError('Whole image buffer')),contextlib.redirect_stdout(output):
+                    handler.respond(head=head)
+                self.assertEqual(statuses,[200])
+                self.assertEqual(headers['Content-Length'],str(len(content)))
+                self.assertEqual(headers['ETag'],'"'+hashlib.md5(content).hexdigest()+'"')
+                self.assertEqual(headers['x-amz-meta-sha256'],hashlib.sha256(content).hexdigest())
+                self.assertEqual(handler.wfile.getvalue(),b'' if head else content)
+                events=[json.loads(line) for line in output.getvalue().splitlines()]
+                self.assertEqual(events[-1]['output_bytes'],0 if head else len(content))
+            with patch.object(endpoint,'ROOT',root):
+                for invalid in (1,0,None,'yes',[],{}):
+                    with self.assertRaises(ValueError): endpoint.serve_image(handler,head=invalid)
 
     def test_endpoint_preparation_refuses_noncanonical_bind(self):
         from unittest.mock import mock_open

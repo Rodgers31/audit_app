@@ -24,6 +24,23 @@ All capabilities and bounding/ambient sets are removed; no-new-privileges is set
 RLIMIT_NOFILE512/NPROC128/core0 and the actual512MiB/no-swap/half-CPU cgroup remain
 required. The resource assessor and thresholds remain unchanged.
 
+The synthetic PostgreSQL cluster uses1MiB WAL segments instead of the default16MiB.
+PostgreSQL consequently initializes min/max WAL sizes to5/64MiB rather than80/1024MiB;
+this fixture checkpoint/retention profile is recorded and is not production database
+parity. fsync, synchronous_commit and full_page_writes remainON; no no-sync option
+is used. API probes make the same bounded real HTTP requests from the resident
+driver, avoiding an extra Python process per request. Native/API processes, nine
+targets, SDK/TLS calls, resource observation and all acceptance thresholds remain.
+Failed capacity assessments export their raw UNASSESSED observations under
+capacity_failed before re-raising. They never emit qualified capacity or READY.
+The inert endpoint also drains ignored multipart uploads in64KiB reads and streams
+the prepared JPEG in16KiB blocks instead of buffering/caching another whole copy.
+It hashes the same opened file, preserves exact headers and checks delivered
+length/digest before a completed request event; short writes or changed bytes fail.
+The JPEG dimensions/content, wire lengths, hashes, TLS and real native inspection
+stay unchanged. These helper reductions require fresh full-workload qualification;
+they are not subtracted from observed memory or treated as proved headroom.
+
 Before any workload exec or thread, Landlock ABI3+ handles all filesystem rights
 through REFER/TRUNCATE. Only public `/usr`, source/helper trees and fixed public
 configuration leaves are readable. `/state`, `/evidence`, `/tmp` and `/dev/shm`

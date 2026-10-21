@@ -40,7 +40,7 @@ def main():
     require(not Path('/state/pg').exists(), 'Fresh private PostgreSQL required')
     os.umask(0o077)
     call([PG + 'initdb', '-D', '/state/pg', '-U', 'postgres', '--auth=trust',
-          '--no-locale', '--encoding=UTF8'])
+          '--no-locale', '--encoding=UTF8', '--wal-segsize=1'])
     with Path('/state/pg/postgresql.conf').open('a') as stream:
         stream.write("\nlisten_addresses='127.0.0.2'\nunix_socket_directories=''\n"
             "shared_buffers='8MB'\nwork_mem='1MB'\nmaintenance_work_mem='8MB'\n"
