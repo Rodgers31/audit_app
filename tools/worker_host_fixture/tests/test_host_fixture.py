@@ -24,6 +24,56 @@ def module(name):
 
 
 class HostFixtureTests(unittest.TestCase):
+    def test_boot_writes_bounded_synthetic_database_profile_before_start(self):
+        import io
+        sys.path[:0] = [str(HERE), str(HERE.parent / 'worker_rehearsal')]
+        try:
+            boot = module('boot')
+            contents, commands = [], []
+            class Config(io.StringIO):
+                def close(self):
+                    contents.append(self.getvalue())
+                    super().close()
+            class StopBeforeDatabaseStart(Exception):
+                pass
+            with tempfile.TemporaryFile() as public:
+                public.write(b'public source'); public.seek(0)
+                manifest = dict(files={'app/public.py':hashlib.sha256(b'public source').hexdigest()})
+                def opened(path, *args, **kwargs):
+                    if str(path) == '/manifest.json':
+                        return io.BytesIO(json.dumps(manifest).encode())
+                    if str(path) == '/state/pg/postgresql.conf':
+                        self.assertEqual(args, ('a',))
+                        return Config()
+                    self.assertEqual(str(path), '/app/public.py')
+                    return public
+                def called(argv, **kwargs):
+                    commands.append(argv)
+                    if argv[0].endswith('/pg_ctl'):
+                        raise StopBeforeDatabaseStart()
+                with patch.object(boot.os,'getpid',return_value=1), \
+                        patch.object(boot,'post_exec',return_value={}), \
+                        patch.object(boot,'inert_environment'), \
+                        patch.object(boot.os,'chdir'), patch.object(boot.os,'umask'), \
+                        patch.object(boot.os,'posix_fadvise',create=True), \
+                        patch.object(boot.os,'POSIX_FADV_DONTNEED',4,create=True), \
+                        patch.object(Path,'read_text',return_value=json.dumps(manifest)), \
+                        patch.object(Path,'exists',return_value=False), \
+                        patch.object(Path,'open',opened), \
+                        patch.dict(sys.modules,{'custody':SimpleNamespace(export=lambda *args:None)}), \
+                        patch.object(boot,'call',side_effect=called), \
+                        self.assertRaises(StopBeforeDatabaseStart):
+                    boot.main()
+            self.assertEqual(len(contents),1)
+            self.assertIn("shared_buffers='2MB'\n",contents[0])
+            self.assertIn("work_mem='1MB'\n",contents[0])
+            self.assertIn('max_connections=12\n',contents[0])
+            self.assertIn('--wal-segsize=1',commands[0])
+            self.assertNotIn('--no-sync',commands[0])
+            self.assertEqual(commands[-1][-2:],['-w','start'])
+        finally:
+            del sys.path[:2]
+
     def test_resolver_guard_loads_fixed_config_before_helper_search_path(self):
         isolation = module('isolation')
         config = module('host_config')

@@ -28,7 +28,12 @@ The synthetic PostgreSQL cluster uses1MiB WAL segments instead of the default16M
 PostgreSQL consequently initializes min/max WAL sizes to5/64MiB rather than80/1024MiB;
 this fixture checkpoint/retention profile is recorded and is not production database
 parity. fsync, synchronous_commit and full_page_writes remainON; no no-sync option
-is used. API probes make the same bounded real HTTP requests from the resident
+is used. The synthetic cluster also uses2MiB shared_buffers. PostgreSQL17.11
+readback changes automatic wal_buffers from256 to64KiB and total configured shared
+memory from15 to8MiB, with smaller buffer descriptors and related structures.
+This changes fixture cache/I/O behavior; it does not prove a net cgroup saving.
+The full workload, actual kernel peak, SQL, latency, CPU and closure checks remain
+required at their existing limits. API probes make the same bounded real HTTP requests from the resident
 driver, avoiding an extra Python process per request. Native/API processes, nine
 targets, SDK/TLS calls, resource observation and all acceptance thresholds remain.
 Failed capacity assessments export their raw UNASSESSED observations under
