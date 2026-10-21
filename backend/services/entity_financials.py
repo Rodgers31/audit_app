@@ -2,9 +2,9 @@
 from collections import defaultdict
 import math
 from decimal import Decimal, InvalidOperation
+from types import SimpleNamespace
 
-from models import BudgetLine
-from sqlalchemy.orm import joinedload
+from models import BudgetLine, FiscalPeriod, SourceDocument
 
 from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
 from services.publication_gate import _has_page_locator, pending_period_compatible
@@ -188,15 +188,47 @@ def financial_summary(lines, period=None):
 
 
 def entity_financial_series(db, entity_ids):
-    """Batch-load source and period once for the entire entity page."""
+    """One-snapshot summary inputs, without unrelated metadata or row notes.
+
+    Only three source metadata members participate in the negative evidence
+    filter. Keep their JSON types intact, including malformed values, so this
+    projection cannot turn withheld figures into reported actuals.
+    """
     if not entity_ids:
         return {}
-    lines = (
-        db.query(BudgetLine)
-        .options(joinedload(BudgetLine.period), joinedload(BudgetLine.source_document))
+    rows = (
+        db.query(
+            BudgetLine.entity_id, BudgetLine.period_id, BudgetLine.category,
+            BudgetLine.subcategory, BudgetLine.source_document_id,
+            BudgetLine.currency, BudgetLine.page_ref, BudgetLine.allocated_amount,
+            BudgetLine.actual_spent, BudgetLine.quarantine_reason, BudgetLine.basis,
+            BudgetLine.provenance,
+            FiscalPeriod.id.label("fiscal_id"), FiscalPeriod.label,
+            FiscalPeriod.start_date, FiscalPeriod.end_date,
+            SourceDocument.id.label("document_id"), SourceDocument.title,
+            SourceDocument.publisher, SourceDocument.url,
+            SourceDocument.meta["data_quality"].label("source_quality"),
+            SourceDocument.meta["dataset_id"].label("source_dataset"),
+            SourceDocument.meta["source"].label("source_origin"),
+        )
+        .outerjoin(FiscalPeriod, BudgetLine.period_id == FiscalPeriod.id)
+        .outerjoin(SourceDocument, BudgetLine.source_document_id == SourceDocument.id)
         .filter(BudgetLine.entity_id.in_(entity_ids))
         .all()
     )
+    lines = []
+    for row in rows:
+        fields = dict(row._mapping)
+        fields["period"] = SimpleNamespace(
+            id=row.fiscal_id, label=row.label,
+            start_date=row.start_date, end_date=row.end_date,
+        ) if row.fiscal_id is not None else None
+        fields["source_document"] = SimpleNamespace(
+            title=row.title, publisher=row.publisher, url=row.url,
+            meta={"data_quality": row.source_quality,
+                  "dataset_id": row.source_dataset, "source": row.source_origin},
+        ) if row.document_id is not None else None
+        lines.append(SimpleNamespace(**fields))
     grouped = defaultdict(lambda: defaultdict(list))
     for line in lines:
         grouped[line.entity_id][line.period_id].append(line)
