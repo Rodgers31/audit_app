@@ -1,5 +1,77 @@
 # Isolated native worker qualification
 
+For a whole-fixture resource measurement, use the aggregate runner below.
+The original multi-container runner described afterward measures the application
+container only; its PostgreSQL, endpoints, proxy and controllers have separate
+budgets. Those results cannot admit a concurrent full fixture on Render.
+
+## Aggregate fixture
+
+`bounded.py` reuses all eight actual worker cases while placing PostgreSQL17,
+the TLS image/Graph/auth endpoint, protocol proxy, real PID1 supervisor,
+Gunicorn API, native worker and every probe/controller payload in **one**
+512MiB/no-swap,0.5CPU,128-PID cgroup. The host recorder and Docker daemon remain
+outside that budget. Docker-exec payloads are inside it. FD limits are512;
+`/tmp` and `/dev/shm` are16MiB each. Resolved daemon settings and kernel cgroup
+limits are checked before starting PostgreSQL or the application.
+
+Prepare an existing local application image with the locked backend dependencies,
+pytest, psutil and ffprobe. Inspect and record its exact local ID. For example,
+the coordinator's `b22-ffprobe:verified` image is suitable for local ARM64
+functionality, but it is not AMD64 Render performance evidence. Build the opt-in
+fixture using only the small harness directory as build context:
+
+```sh
+docker image inspect b22-ffprobe:verified
+docker build --pull=false --build-arg BASE_IMAGE=b22-ffprobe:verified \
+  -f tools/worker_rehearsal/Dockerfile.bounded \
+  -t worker-bounded:local tools/worker_rehearsal
+docker image inspect worker-bounded:local
+python3 tools/worker_rehearsal/bounded.py \
+  --image sha256:THE_INSPECTED_FIXTURE_IMAGE_ID \
+  --out /absolute/fresh/path/outside/all/checkouts
+```
+
+The image ID is mandatory; qualification refuses tags or an implicit pull.
+Retain the build log and resolved package/image identities. The opt-in build
+installs official Debian PostgreSQL17 packages; it is not part of production's
+Dockerfile or startup. No hosted service, resource, plan or workflow is created.
+`--optimized --cases idle` adds a real optimized interpreter release/rollback
+cohort; a partial case selection never establishes all eight cases.
+
+There is no published port or external interface/route. Fixed loopback aliases
+route real SDK calls to the inert fixtures. All Linux capabilities are dropped;
+the root filesystem and copied application/harness are read-only. Only a fresh
+inert evidence directory, a named PostgreSQL volume and bounded tmpfs mounts are
+writable. The named volume has no filesystem quota: the fixed finite database
+workload and positive volume cleanup are the declared local disk boundary, not a
+claim of a hard disk quota. No production data, host home, Docker socket or
+production environment is mounted or forwarded. Credential values and DSNs,
+including controller overrides, must match the public inert contract.
+
+Only tracked public backend source/assets are copied, with a32MiB admission
+limit and hash checks. The harness is snapshotted before launch. Receipts bind
+the complete measured source inventory and refuse source drift or missing
+positive container/volume cleanup. Fixture migration identity is read back from
+PostgreSQL and compared with Alembic's actual head.
+
+The bootstrap runs PostgreSQL and inert endpoint/proxy helpers, then execs the
+real supervisor as PID1. Helpers share its cgroup and die with that container.
+After a stop/kill, an auxiliary container restarts only the owned fixture
+database for census/release/rollback checks. It never overlaps a running worker
+container. This tests recovery from real helper termination as well as custody.
+
+This runner is **local acceptance tooling**, not a command to run inside Render.
+Actual host architecture, source/runtime, isolation, maintenance admission,
+whole-service stop, real provider/storage and representative operating costs
+remain separate gates. A local aggregate peak cannot safely be added to an
+already-running production API unless the combined budget independently fits.
+Do not enable production operational gates, suspend the live API or add a plan
+to make a rehearsal fit. Publishing and uploads remain off in production;
+simulated fixture mutations never leave the isolated network.
+
+## Original application-container fixture
+
 This opt-in local tool runs the real `python -m social_worker_supervisor`, its
 fixed Gunicorn `main:app` command and fixed native CLI in Linux. It does not call
 Render, Supabase, Meta or R2. No production gate is enabled by this tool. The

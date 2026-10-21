@@ -36,6 +36,7 @@ def initialize(database):
     owned_database(database)
     from alembic.config import Config
     from alembic import command
+    from alembic.script import ScriptDirectory
     from social.worker.role_contract import install_worker_role, verify_worker_role
     admin = create_engine('postgresql+psycopg2://postgres@b15-worker-db:5432/postgres',
                           isolation_level='AUTOCOMMIT')
@@ -59,8 +60,12 @@ def initialize(database):
     actual = engine(database, worker=True)
     verify_worker_role(actual, 'b15_worker', 'public')
     actual.dispose()
+    with owner.connect() as conn:
+        applied = conn.execute(text('SELECT version_num FROM alembic_version')).scalar_one()
+    if applied != ScriptDirectory.from_config(Config('/app/alembic.ini')).get_current_head():
+        raise RuntimeError('Fixture migration head readback differs')
     owner.dispose()
-    return dict(initialized=True, migration='a545b14a0001')
+    return dict(initialized=True, migration=applied)
 
 
 def seed(database, image=False):
