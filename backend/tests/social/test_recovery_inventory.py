@@ -517,3 +517,78 @@ def test_utf16_snapshot_cannot_bypass_utf8_contract(inventory):
             inventory.candidate_envelopes, inventory.candidate_digests]
     with pytest.raises(InventoryRecoveryError):
         verify_inventory_continuity(*args)
+
+
+@pytest.fixture
+def historical_account_inventory(inventory):
+    """Reconnect changes the current pointer, never the frozen prior binding."""
+    tables = inventory.source['tables']
+    keys = json.loads(inventory.envelopes)['keys']
+    _, ciphertext = CredentialCipher('current', keys).encrypt(
+        UUID(uid(11)), 'facebook_page', {'inert': 'reconnected-page'})
+    tables['credentials'].append(dict(
+        id=uid(11), credential_kind='facebook_page', parent_credential_id=uid(1),
+        version=1, key_version='current',
+        encrypted_bundle=base64.b64encode(ciphertext).decode()))
+    owner = tables['ownership'][0]
+    owner.update(credential_id=uid(2), credential_version=2,
+                 account_id=uid(10), page_id='300',
+                 reference_key='credential:' + uid(2) + ':2:' + uid(10))
+    tables['accounts'] = [dict(id=uid(10), credential_id=uid(11))]
+    tables['receipts'][0]['affected'] = [
+        {k: owner[k] for k in ('flow_id', 'credential_id', 'credential_version',
+                              'account_id', 'page_id')} | {'ownership_id': owner['id']}]
+    recatalog(inventory)
+    return inventory
+
+
+@pytest.mark.parametrize('current_credential', [None, uid(2), uid(11)])
+def test_historical_account_binding_survives_reconnect_or_detachment(
+        historical_account_inventory, current_credential):
+    inventory = historical_account_inventory
+    inventory.source['tables']['accounts'][0]['credential_id'] = current_credential
+    recatalog(inventory)
+    result = inventory.verify()
+    assert result['status'] == 'VERIFIED_BY_EXECUTION'
+    assert result['records_verified'] == 11
+    assert result['envelopes_verified'] == 6
+    assert result['subject_records_verified'] == 2
+    for flag in ('database_coverage_verified', 'backup_custody_verified',
+                 'production_authorized', 'retirement_authorized',
+                 'deletion_authorized', 'deletion_completed'):
+        assert result[flag] is False
+
+
+@pytest.mark.parametrize('damage', [
+    'missing_historical_account', 'missing_historical_credential',
+    'missing_current_credential', 'future_historical_version',
+    'changed_frozen_affected_binding', 'wrong_historical_subject',
+    'changed_historical_reference', 'restored_current_pointer_drift',
+])
+def test_historical_account_recovery_still_refuses_inconsistent_history(
+        historical_account_inventory, damage):
+    inventory = historical_account_inventory
+    tables = inventory.source['tables']
+    owner = tables['ownership'][0]
+    if damage == 'missing_historical_account':
+        tables['accounts'].clear()
+    elif damage == 'missing_historical_credential':
+        tables['credentials'] = [r for r in tables['credentials'] if r['id'] != uid(2)]
+    elif damage == 'missing_current_credential':
+        tables['credentials'] = [r for r in tables['credentials'] if r['id'] != uid(11)]
+    elif damage == 'future_historical_version':
+        owner.update(credential_version=3,
+                     reference_key='credential:' + uid(2) + ':3:' + uid(10))
+        tables['receipts'][0]['affected'][0]['credential_version'] = 3
+    elif damage == 'changed_frozen_affected_binding':
+        tables['receipts'][0]['affected'][0].update(
+            credential_id=uid(11), credential_version=1)
+    elif damage == 'wrong_historical_subject':
+        inventory.subjects['records'][0]['subject'] = '999'
+    elif damage == 'changed_historical_reference':
+        owner['reference_key'] = 'credential:' + uid(11) + ':1:' + uid(10)
+    recatalog(inventory)
+    if damage == 'restored_current_pointer_drift':
+        inventory.restored['tables']['accounts'][0]['credential_id'] = uid(2)
+    with pytest.raises(InventoryRecoveryError):
+        inventory.verify()

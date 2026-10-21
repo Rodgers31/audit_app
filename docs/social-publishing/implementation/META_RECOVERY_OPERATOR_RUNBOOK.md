@@ -199,6 +199,12 @@ calendar instants written as `YYYY-MM-DDTHH:MM:SS[.ffffff]Z`. `affected` is the
 frozen list of exact `ownership_id`, `flow_id`, `credential_id`,
 `credential_version`, `account_id`, `page_id` objects from the receipt. Historical
 ownership generations may precede the current credential version. The verifier
+preserves historical account bindings when a reconnect changes the account's
+current credential, or that pointer is cleared. The historical credential,
+account and flow must still exist; its version, canonical reference and frozen
+callback affected set must reconcile with the manifest. A non-null current
+account credential must independently reference a retained credential. The
+verifier does not rewrite history to use the current grant. The verifier
 checks references and subject identity across digest versions, and decrypts
 `privacy_confirmation` with the receipt UUID, checking the resulting code against
 its stored confirmation hash. Receipt variants and their canonical fingerprints

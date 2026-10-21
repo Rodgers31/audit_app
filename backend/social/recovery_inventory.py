@@ -209,7 +209,10 @@ def _inventory(tables):
             # Immutable historical generations can precede the current grant.
             _require(row['credential_version'] <= credentials[row['credential_id']]['version'])
         if row['account_id'] is not None:
-            _require(row['account_id'] in tables['accounts'] and tables['accounts'][row['account_id']]['credential_id'] == row['credential_id'])
+            # Reconnection changes the account's current credential pointer;
+            # immutable ownership and callback history retain the prior grant.
+            # Validate that frozen binding below, not equality to today's grant.
+            _require(row['account_id'] in tables['accounts'])
         expected = ('flow:' + row['flow_id'] if row['credential_id'] is None else
                     'credential:' + row['credential_id'] + ':' + str(row['credential_version'])
                     + (':' + row['account_id'] if row['account_id'] else ''))
