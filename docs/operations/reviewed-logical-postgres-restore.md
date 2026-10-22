@@ -271,10 +271,14 @@ clone; a matching PASS file alone is insufficient. That may repeat only the
 explicitly approved, rolled-back CHECK witness DDL and is disclosed in the
 result. It then reads the complete inventory, durable configuration and
 per-role permission matrix in one read-only snapshot, verifies safe catalog
-resolution and checks the state again. The current supported resolution is
-exactly `pg_catalog, public`; another effective schema path refuses rather than
-assuming equivalent routine-argument deparse behavior. No original proof,
-unfiltered matrix or failure is rewritten. New readbacks remain private; a final
+resolution and checks the state again. The supported resolutions are
+exactly `pg_catalog, public` and `pg_catalog, public, extensions`, matching the
+retained Supabase capture. The catalog must remain first; missing, reordered,
+temporary or additional namespaces refuse. The parent logical receipt still
+binds the verbatim `search_path`, and the complete captured catalog, durable
+configuration and permission matrix must match. No session path is rewritten
+to force a match or to assume equivalent routine-argument deparse behavior.
+No original proof, unfiltered matrix or failure is rewritten. New readbacks remain private; a final
 PASS is published only after input and producer checks and exclusive readback.
 Immediately before publication, a second complete read-only snapshot must match
 the original permission matrix, execution context, inventory and durable

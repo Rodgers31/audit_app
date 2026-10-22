@@ -219,3 +219,64 @@ class PersistentProfileTests(unittest.TestCase):
     def test_profile_snapshot_does_not_collect_inventory_twice(self):
         with patch.object(logical,'collect_local',side_effect=AssertionError('redundant full scan')):
             self.assertEqual(permissions.query_profile(self.name)[2],self.matrix)
+
+
+class ExtensionsPersistentProfileTests(PersistentProfileTests):
+    """Run the complete real-target contract under Supabase's captured path."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        try:
+            cls.sql('ALTER EVENT TRIGGER reject_witness_ddl DISABLE; '
+                    'CREATE SCHEMA extensions; '
+                    'ALTER ROLE postgres SET search_path="$user",public,extensions; '
+                    'ALTER EVENT TRIGGER reject_witness_ddl ENABLE;')
+            cls.archive = logical.backup.run(['docker', 'exec', cls.name, 'pg_dump',
+                '-U', 'postgres', '-d', 'postgres', '-Fc'])
+        except BaseException:
+            cls.tearDownClass()
+            raise
+
+    def test_real_extensions_path_roundtrip_and_context_drift(self):
+        context = permissions.query_profile(self.name)[3]
+        self.assertEqual(context['resolved_schemas'], ['pg_catalog', 'public', 'extensions'])
+        self.assertEqual(context['search_path'], '"$user", public, extensions')
+        result = self.verify()
+        self.assertTrue(result['persistent_privileges_verified'])
+        self.assertEqual(logical.collect_local(self.name)[0], self.before)
+        self.output = self.root / 'changed_path.json'
+        try:
+            # Same resolution, different raw setting: parent context still binds.
+            self.sql('ALTER ROLE postgres SET search_path=pg_catalog,public,extensions;')
+            with self.assertRaisesRegex(logical.Refusal, 'recovery_configuration_restore_mismatch'):
+                self.verify()
+            self.assertFalse(self.output.exists())
+        finally:
+            self.sql('ALTER ROLE postgres SET search_path="$user",public,extensions;')
+        # Independently exercise the supplement's exact parent-context guard.
+        actual = permissions.query_profile
+        def changed_context(target):
+            inventory, properties, matrix, context = actual(target)
+            return inventory, properties, matrix, dict(context, search_path='pg_catalog,public,extensions')
+        with patch.object(permissions, 'query_profile', side_effect=changed_context), \
+                self.assertRaisesRegex(logical.Refusal, 'permission_target_search_path'):
+            self.verify()
+        self.assertFalse(self.output.exists())
+
+
+class ProfileContextShapeTests(unittest.TestCase):
+    def test_only_reviewed_catalog_first_resolutions_are_supported(self):
+        context = dict(kind='persistent_profile_context', executor='postgres',
+            server_version='17.6', local_socket=True, readonly='on', database='postgres',
+            search_path='pg_catalog, public', resolved_schemas=['pg_catalog', 'public'])
+        for value in (None, [], {}, True, 'pg_catalog,public', ['pg_catalog'],
+                      ['public','pg_catalog'], ['pg_catalog','extensions','public'],
+                      ['pg_catalog','public','unreviewed'], ['pg_catalog','public','extensions','unreviewed'],
+                      ['pg_temp_7','pg_catalog','public'], ['pg_catalog','public','public'],
+                      ['pg_catalog','public',None]):
+            with self.subTest(value=value), patch.object(logical,'inspect_local_target'), \
+                    patch.object(logical.backup,'run',return_value=(
+                        '\n'.join(json.dumps(row) for row in [dict(context,resolved_schemas=value),{},{},{}])+'\n').encode()), \
+                    self.assertRaisesRegex(logical.Refusal,'permission_target_context'):
+                permissions.query_profile('synthetic_target')
