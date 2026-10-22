@@ -151,7 +151,12 @@ SELECT json_build_object('kind','persistent_profile_context','executor',current_
             'readonly','database','search_path','resolved_schemas'} and context['kind'] == 'persistent_profile_context'
             and context['executor'] == 'postgres' and context['server_version'] == '17.6'
             and context['local_socket'] is True and context['readonly'] == 'on'
-            and context['database'] == 'postgres' and context['resolved_schemas'] == ['pg_catalog','public']
+            and context['database'] == 'postgres'
+            # Keep catalog builtins first; permit only the captured Supabase
+            # extension namespace after public. Full catalog/config comparison
+            # and the parent's verbatim search_path still bind this resolution.
+            and context['resolved_schemas'] in (['pg_catalog','public'],
+                                                ['pg_catalog','public','extensions'])
             and len(rows) >= 4, 'permission_target_context')
     return rows[1:-2], rows[-2], rows[-1], context
 
