@@ -172,3 +172,106 @@ References: [PostgreSQL 17 attribute catalog](https://www.postgresql.org/docs/17
 The actual source `pg_init_privs` was not captured. Provider initial-ACL
 suppression is an inference, not a proven explanation for omitted GraphQL ACL
 archive entries.
+
+### Persistent permission supplement
+
+The ordinary catalog inventory excludes `pg_` schemas. Its ACL/configuration
+checks alone do not establish the separately required effective permission
+profile. For original recovery acceptance, also run
+`tools/verify_persistent_pg_privileges.py`; require both successful receipts.
+This portable path replaces the B42 operation-specific profile comparator. It
+uses the same pinned profile contract and exact SQL, retaining persistent system
+schema rows while excluding only `pg_temp_[0-9]+` and
+`pg_toast_temp_[0-9]+` **schema rows**. Other object/profile scope is unchanged;
+this is not a blanket exclusion of temporary tables or arbitrary `pg_` objects.
+
+Keep the original unfiltered permission matrix, capture-bound source proof and
+exact source producer bytes beside the private acquisition artifacts. The
+source producer must have been independently reviewed and actually executed
+through the separately authorized read-only source transport. The proof binds
+its producer, SQL, contract, original catalog, durable prerequisites, original
+unfiltered profile and all captured roles. The verifier does **not** execute that
+producer or connect to production. An approved request hash is an operator
+checkpoint, not a cryptographic signature or independent proof that arbitrary
+producer bytes ran; never approve a fabricated source packet.
+
+The supported source packet is the reviewed B42 profile contract, with a valid
+40-character captured commit and the original execution fields: PostgreSQL17.6,
+read-only/TLS verified, publishing disabled,12off switches, zero mutations,
+disposed connection and removed temporary material. Retained capture evidence
+can be used later for its bound archive; its timestamp stays in the result and
+is never represented as a fresh production observation. Current-source or
+external-provider acceptance requires its own observation.
+
+Prepare a new owner-only request file with this exact shape (all digests are
+SHA-256; `version` must be integer1):
+
+```json
+{
+  "version": 1,
+  "local_target": "round20_s1_actual_restore_<12 lowercase hex>",
+  "verifier_sha256": "<verify_persistent_pg_privileges.py>",
+  "source_hashes": {
+    "verifier": "<same verifier digest>",
+    "logical": "<verify_logical_pg_restore.py>",
+    "acquisition": "<reviewed_pg_acquisition.py>",
+    "inventory": "<bounded_pg_backup.py>",
+    "contract": "<persistent_privilege_contract.py>",
+    "check_helper": "<logical_restore_check_proof.py>",
+    "check_grammar": "<logical_restore_check_grammar.py>",
+    "sql": "<persistent_pg_privileges.sql>"
+  },
+  "input_hashes": {
+    "logical_receipt": "<prior logical PASS receipt>",
+    "source_proof": "<retained source metadata proof>",
+    "source_generator": "<actually executed reviewed source producer>",
+    "original_privileges": "<original unfiltered source matrix>",
+    "bundle/receipt.json": "<acquisition receipt>",
+    "bundle/database.dump": "<archive>",
+    "bundle/roles.sql": "<roles artifact>",
+    "bundle/inventory.json": "<source inventory>",
+    "bundle/recovery_prerequisites.json": "<source durable configuration>",
+    "reviewed_request": "<logical receipt's reviewed request>",
+    "original_failed_receipt": "<logical receipt's original failure>",
+    "restored_inventory": "<logical receipt's restored inventory>",
+    "restored_prerequisites": "<logical receipt's restored prerequisites>"
+  }
+}
+```
+
+For an approved CHECK reparse, add `input_hashes.check_plan` and pass that exact
+plan with `--check-reparse-plan`. Otherwise omit both. No missing proof or failed
+logical receipt is silently downgraded to a weaker acceptance mode.
+
+```sh
+python3 tools/verify_persistent_pg_privileges.py \
+  --bundle /private/recovery/acquired \
+  --target round20_s1_actual_restore_<reviewed-id> \
+  --logical-receipt /private/recovery/logical.json \
+  --source-proof /private/recovery/source-permission-proof.json \
+  --source-generator /private/recovery/reviewed-source-producer.py \
+  --original-privileges /private/recovery/original-privileges.json \
+  --request /private/recovery/permission-request.json \
+  --approved-request-sha256 <reviewed-request-sha256> \
+  --out /private/recovery/persistent-permissions.json
+```
+
+The tool re-executes the approved logical verification on the live isolated
+clone; a matching PASS file alone is insufficient. That may repeat only the
+explicitly approved, rolled-back CHECK witness DDL and is disclosed in the
+result. It then reads the complete inventory, durable configuration and
+per-role permission matrix in one read-only snapshot, verifies safe catalog
+resolution and checks the state again. The current supported resolution is
+exactly `pg_catalog, public`; another effective schema path refuses rather than
+assuming equivalent routine-argument deparse behavior. No original proof,
+unfiltered matrix or failure is rewritten. New readbacks remain private; a final
+PASS is published only after input and producer checks and exclusive readback.
+
+Regression evidence includes an actual local `pg_toast` schema permission
+change: ordinary logical-only verification passes, whereas this supplement
+refuses. The fixture also verifies that exact runtime temp-schema creation
+leaves the persistent profile unchanged and persistent `pg_catalog` /
+`information_schema` permission changes remain visible. No production grant is
+made by these tests or by this tool. Storage objects, provider credentials,
+privacy/deletion history, host configuration and broader operational acceptance
+remain separate recovery inputs.
