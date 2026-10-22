@@ -53,7 +53,7 @@ def test_start_idempotency_and_complete_idempotency_without_code_replay(db,confi
 
 @pytest.mark.parametrize('hostility',['wrong_actor','wrong_session','invalid_state','redirect','expired'])
 def test_hostile_state_never_reaches_provider(db,config,graph,hostility):
-    configured=replace(config,redirect_uris=(REDIRECT,'https://second.example.test/admin/social/accounts/callback'))
+    configured=replace(config,redirect_uris=(REDIRECT,'https://second.example.test/admin/social/accounts/callback'),verified_callback_ingress_uris=(REDIRECT,'https://second.example.test/admin/social/accounts/callback'))
     service=svc(db,configured,graph)
     started,state=start(service)
     actor,binding,redirect=ACTOR,BINDING,REDIRECT

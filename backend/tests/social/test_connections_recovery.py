@@ -153,7 +153,7 @@ def test_recovery_service_rotation_reconstructed_after_commit_or_failure(tmp_pat
     engine = create_engine('sqlite:///' + str(tmp_path / 'owned-recovery.db'))
     Base.metadata.create_all(engine, tables=SOCIAL_TABLES)
     config = MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fixture',
-        redirect_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': KEY1})
+        redirect_uris=(REDIRECT,), verified_callback_ingress_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': KEY1})
     graph = FakeGraph()
     try:
         with Session(engine) as db:

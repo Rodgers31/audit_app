@@ -52,3 +52,5 @@ Read the blueprint, low-cost profile and current egress evidence before implemen
 Check the batch ledger and Git/PR state before recreating the shared domain or worker. The reviewed batch supplies egress reduction, inspected media and Meta connection code with executed regression receipts. Next coding priorities are queue/schedule completion (#484), safe media maintenance (#490) and native Meta publishing adapters (#491); live egress/hosting and account/storage gates remain separate. Do not begin with all five real integrations, automated copy generation or video rendering. Use the blueprint's phase definitions and acceptance tests.
 
 When this design changes, update the authoritative blueprint and decision log, date the change, and preserve the reason. Keep historical reports clearly labelled. Documentation being present in the working tree is not proof it has been committed, pushed or merged; check Git before handing work to a different checkout.
+
+Callback ingress acceptance: [enforced OAuth privacy hold and qualification](implementation/CALLBACK_INGRESS_ACCEPTANCE.md). Issue #767 remains open pending a proven upstream boundary.

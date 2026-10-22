@@ -4,6 +4,7 @@ from urllib.parse import urlsplit, urlunsplit
 import re
 
 from ..connections.config import valid_redirect
+from ..connections.callback_ingress import BLOCKER, ingress_qualified, require_ingress
 from ..connections.crypto import CredentialCipher
 from ..service import SocialError
 
@@ -29,6 +30,7 @@ class ConnectionConfig:
     tiktok_oauth: object | None = field(default=None, repr=False)
     tiktok_requested_scopes: tuple[str, ...] = ()
     threads_insights_enabled: bool = False
+    verified_callback_ingress_uris: tuple[str, ...] = ()
 
     @property
     def scopes(self):
@@ -82,6 +84,12 @@ class ConnectionConfig:
             result.append('ENCRYPTION_CONFIGURATION_INVALID')
         return result
 
+    def oauth_blockers(self):
+        errors = self.blockers()
+        if not ingress_qualified(self.redirect_uris, self.verified_callback_ingress_uris, self.valid_redirect):
+            errors.append(BLOCKER)
+        return errors
+
     def require_ready(self):
         if self.blockers():
             raise SocialError('CONNECTIONS_UNAVAILABLE', 'Connection access, configuration and any required budget must be explicitly verified.', 503)
@@ -89,3 +97,4 @@ class ConnectionConfig:
     def require_redirect(self, value):
         if not self.valid_redirect(value) or value not in self.redirect_uris:
             raise SocialError('REDIRECT_MISMATCH', 'Use the exact registered callback URL.', 422)
+        require_ingress(self.redirect_uris, self.verified_callback_ingress_uris, self.valid_redirect)

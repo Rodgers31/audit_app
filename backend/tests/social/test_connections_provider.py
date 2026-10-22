@@ -90,7 +90,7 @@ class MemoryTransport(Transport):
         event=envelope.get_transaction_event()
         if event is not None:sent.append(event)
 sentry_sdk.init(dsn="https://fake@example.test/1",transport=MemoryTransport(),integrations=[HttpxIntegration()],default_integrations=False,auto_enabling_integrations=False,traces_sample_rate=1.0)
-config=MetaConfig(enabled=True,app_configuration_validated=True,app_id="123",app_secret="fake-sensitive-app-secret",redirect_uris=("https://admin.example.test/admin/social/accounts/callback",),access_mode="owned_standard",active_key_version="v1",encryption_keys={"v1":Fernet.generate_key().decode()})
+config=MetaConfig(enabled=True,app_configuration_validated=True,app_id="123",app_secret="fake-sensitive-app-secret",redirect_uris=("https://admin.example.test/admin/social/accounts/callback",),verified_callback_ingress_uris=("https://admin.example.test/admin/social/accounts/callback",),access_mode="owned_standard",active_key_version="v1",encryption_keys={"v1":Fernet.generate_key().decode()})
 def fake(request):
     assert request.url.params["input_token"]=="fake-sensitive-debug-token"
     return httpx.Response(200,json={"data":{"app_id":"123","type":"USER","user_id":"701","is_valid":True,"scopes":["pages_show_list"],"expires_at":0}})

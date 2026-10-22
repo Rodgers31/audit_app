@@ -95,6 +95,9 @@ class PlatformConnectionService:
                     self._connection_budget(0)
                 except SocialError as error:
                     blockers.append(error.code)
+        from ..connections.callback_ingress import BLOCKER
+        if BLOCKER in self.config.oauth_blockers():
+            blockers.append(BLOCKER)
         return {'provider': self.config.platform, 'available': not blockers, 'blockers': blockers, 'scopes': self.config.scopes, 'provider_api_version': {'threads':'v1.0', 'x':'v2', 'tiktok':'v1.3'}[self.config.platform], 'publishing_enabled': False}
 
     def start(self, actor, binding, route, key, body, request_id):

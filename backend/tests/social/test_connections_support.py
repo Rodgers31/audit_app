@@ -22,7 +22,7 @@ USER, PAGE, PAGE2 = 'fake-user-grant-not-a-real-token', 'fake-page-grant-not-a-r
 
 @pytest.fixture
 def config():
-    return MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fake-app-secret', redirect_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()})
+    return MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fake-app-secret', redirect_uris=(REDIRECT,), verified_callback_ingress_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()})
 
 @pytest.fixture
 def db():

@@ -65,8 +65,8 @@ class OAuthProvider:
                 raise SocialError('X_BUDGET_UNAVAILABLE', 'The durable X read reservation was not confirmed.', 503)
 
     def authorize_url(self, state, redirect_uri, verifier):
-        self._admit()
         self.config.require_redirect(redirect_uri)
+        self._admit()
         params = dict(client_id=self.config.client_id, redirect_uri=redirect_uri, state=state, response_type='code', scope=(',' if self.config.platform == 'threads' else ' ').join(self.config.scopes))
         if self.config.platform == 'x':
             params.update(code_challenge=challenge(verifier), code_challenge_method='S256')
@@ -164,8 +164,8 @@ class OAuthProvider:
         return bundle | {'username': username, 'display_name': name}
 
     def exchange(self, code, redirect_uri, verifier):
-        self._admit()
         self.config.require_redirect(redirect_uri)
+        self._admit()
         if self.config.platform == 'threads':
             short = self._request('POST', '/oauth/access_token', data={'client_id': self.config.client_id, 'client_secret': self.config.client_secret, 'grant_type': 'authorization_code', 'redirect_uri': redirect_uri, 'code': code})
             user = identity(str(short.get('user_id', '')))

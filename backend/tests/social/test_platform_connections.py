@@ -50,7 +50,7 @@ def db():
 
 
 def config(platform='threads'):
-    return ConnectionConfig(platform=platform, enabled=True, access_verified=True, client_id='123', client_secret='fake-client-secret', redirect_uris=(REDIRECT,), active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()}, connection_budget_microusd=100000)
+    return ConnectionConfig(platform=platform, enabled=True, access_verified=True, client_id='123', client_secret='fake-client-secret', redirect_uris=(REDIRECT,), verified_callback_ingress_uris=(REDIRECT,), active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()}, connection_budget_microusd=100000)
 
 
 class ProviderFixture:
@@ -158,7 +158,7 @@ def test_full_durable_flow_no_secret_receipts_restart_and_pkce(db, platform):
 @pytest.mark.parametrize('platform', ['threads', 'x'])
 @pytest.mark.parametrize('hostility', ['actor', 'session', 'expired', 'redirect', 'missing_permissions', 'identity', 'timeout'])
 def test_reject_hostility_and_consume_before_http(db, platform, hostility):
-    cfg = replace(config(platform), redirect_uris=(REDIRECT, 'https://other.example.test/admin/social/accounts/callback'))
+    cfg = replace(config(platform), redirect_uris=(REDIRECT, 'https://other.example.test/admin/social/accounts/callback'), verified_callback_ingress_uris=(REDIRECT, 'https://other.example.test/admin/social/accounts/callback'))
     svc, graph = build(db, platform, cfg)
     flow, state = start(svc)
     kwargs = {}
@@ -287,7 +287,7 @@ def build_tiktok(db, *, mutate_on_settings=None):
     from social.platform_connections.tiktok_provider import TikTokConnectionProvider
     redirect = REDIRECT + '/'
     oauth = TikTokOAuthConfig(client_id='123', client_secret='fake-client-secret', redirect_uri=redirect, authorization_url='https://www.tiktok.com/v2/auth/authorize?client_key=123&redirect_uri=https%3A%2F%2Fadmin.example.test%2Fadmin%2Fsocial%2Faccounts%2Fcallback%2F&scope=video.publish%2Cvideo.upload', product_access_verified=True)
-    cfg = replace(config('tiktok'), redirect_uris=(redirect,), tiktok_oauth=oauth, tiktok_requested_scopes=('video.publish', 'video.upload'))
+    cfg = replace(config('tiktok'), redirect_uris=(redirect,), verified_callback_ingress_uris=(redirect,), tiktok_oauth=oauth, tiktok_requested_scopes=('video.publish', 'video.upload'))
     calls = []
     async def fixture(request):
         assert not db.in_transaction()
@@ -456,6 +456,6 @@ def test_local_key_rotation_versioned_idempotent_and_preserves_ownership(db, pla
 
 
 def test_platform_callback_configuration_accepts_the_real_ui_callback():
-    cfg = replace(config(), redirect_uris=('https://admin.example.test/admin/social/accounts/platform-callback',))
+    cfg = replace(config(), redirect_uris=('https://admin.example.test/admin/social/accounts/platform-callback',), verified_callback_ingress_uris=('https://admin.example.test/admin/social/accounts/platform-callback',))
     assert cfg.blockers() == []
     cfg.require_redirect('https://admin.example.test/admin/social/accounts/platform-callback')

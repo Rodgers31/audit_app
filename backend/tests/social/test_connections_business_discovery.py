@@ -19,6 +19,7 @@ def configured(monkeypatch, config, flag='true'):
         'META_APP_ID': config.app_id,
         'META_APP_SECRET': config.app_secret,
         'META_REDIRECT_URIS': json.dumps(config.redirect_uris),
+        'META_VERIFIED_CALLBACK_INGRESS_URIS': json.dumps(config.verified_callback_ingress_uris),
         'META_ACCESS_MODE': config.access_mode,
         'SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION': config.active_key_version,
         'SOCIAL_CREDENTIAL_KEYS': json.dumps(config.encryption_keys),

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from ..service import SocialError
+from .callback_ingress import BLOCKER, ingress_qualified, require_ingress, verified_callbacks
 
 SCOPES = ('pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'instagram_basic', 'instagram_content_publish')
 PAGE_SCOPES = frozenset(SCOPES[:3])
@@ -24,6 +25,7 @@ class MetaConfig:
     active_key_version: str = ''
     encryption_keys: dict[str, str] = field(default_factory=dict, repr=False)
     business_discovery_enabled: bool = False
+    verified_callback_ingress_uris: tuple[str, ...] = ()
 
     @property
     def requested_scopes(self):
@@ -54,6 +56,12 @@ class MetaConfig:
             errors.append('ENCRYPTION_CONFIGURATION_INVALID')
         return errors
 
+    def oauth_blockers(self):
+        errors = self.blockers()
+        if not ingress_qualified(self.redirect_uris, self.verified_callback_ingress_uris, valid_redirect):
+            errors.append(BLOCKER)
+        return errors
+
     def require_ready(self):
         if self.blockers():
             raise SocialError('CONNECTIONS_UNAVAILABLE', 'Meta connections are unavailable until server configuration and registered app access are validated.', 503)
@@ -61,6 +69,7 @@ class MetaConfig:
     def require_redirect(self, value):
         if not valid_redirect(value) or value not in self.redirect_uris:
             raise SocialError('REDIRECT_MISMATCH', 'Use the exact registered connection callback URL.', 422)
+        require_ingress(self.redirect_uris, self.verified_callback_ingress_uris, valid_redirect)
 
 
 def valid_redirect(value):
@@ -89,4 +98,4 @@ def load_config(environ=None):
             redirects = []
     except (ValueError, TypeError):
         keys, redirects = {}, []
-    return MetaConfig(enabled=values.get('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=values.get('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=values.get('META_APP_ID', ''), app_secret=values.get('META_APP_SECRET', ''), graph_version=values.get('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=values.get('META_ACCESS_MODE', 'unverified'), active_key_version=values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=values.get('META_BUSINESS_DISCOVERY_ENABLED') == 'true')
+    return MetaConfig(enabled=values.get('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=values.get('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=values.get('META_APP_ID', ''), app_secret=values.get('META_APP_SECRET', ''), graph_version=values.get('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=values.get('META_ACCESS_MODE', 'unverified'), active_key_version=values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=values.get('META_BUSINESS_DISCOVERY_ENABLED') == 'true', verified_callback_ingress_uris=verified_callbacks(values.get('META_VERIFIED_CALLBACK_INGRESS_URIS', '[]')))
