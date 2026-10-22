@@ -228,3 +228,14 @@ test('a late accepted selection preserves the same actors newer flow',async()=>{
   await act(async()=>{pending.resolve({flow_id:id,accounts:[]});});
   expect(readConnectionRecovery('actor').flow).toBe(newerFlow);
 });
+
+test('callback privacy hold disables new connections while existing account details remain available',()=>{
+  useMetaConnectionStatus.mockReturnValue({data:{...status,blockers:['CALLBACK_INGRESS_UNVERIFIED']},refetch:jest.fn(),isPending:false});
+  useSocialAccounts.mockReturnValue({data:[account],refetch:jest.fn(),isPending:false});
+  render(<MetaAccounts />);
+  expect(screen.getByText(/New connections are paused until callback privacy is verified/)).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Connect owned Meta accounts'})).toBeDisabled();
+  expect(screen.getByRole('button',{name:'Reconnect identity'})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'Connection details'}));
+  expect(screen.getByRole('button',{name:'Disable local connection'})).toBeEnabled();
+});

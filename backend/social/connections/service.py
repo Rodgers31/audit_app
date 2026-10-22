@@ -53,7 +53,7 @@ class ConnectionService:
 
     def status(self):
         self.db.execute(select(SocialOAuthFlow.id).limit(1))  # Missing schema is unavailable, never a success.
-        errors = self.config.blockers()
+        errors = self.config.oauth_blockers()
         return {'provider': 'meta', 'available': not errors, 'blockers': errors, 'access_mode': self.config.access_mode if self.config.access_mode in {'owned_standard','advanced'} else 'unverified', 'scopes': list(self.config.requested_scopes), 'publishing_adapter_available': False}
 
     def _body(self, body, binding):

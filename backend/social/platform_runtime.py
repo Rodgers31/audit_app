@@ -8,6 +8,7 @@ from .contracts import StrictModel
 from .adapters import ThreadsAdapterConfig, XAdapterConfig, TikTokAdapterConfig
 from .adapters.tiktok_oauth import TikTokOAuthConfig
 from .connections.crypto import CredentialCipher
+from .connections.callback_ingress import verified_callbacks
 from .platform_connections.config import ConnectionConfig
 from .platform_events import EventConfig
 from .service import SocialError
@@ -77,6 +78,7 @@ def load_platform_settings(values):
         origins=()
         for name,policy in policies.items():
             prefix=name.upper()
+            ingress=verified_callbacks(values.get(prefix+'_VERIFIED_CALLBACK_INGRESS_URIS','[]'))
             redirects=_configuration_json(values.get(prefix+'_REDIRECT_URIS','[]'))
             if not isinstance(redirects,list) or any(not isinstance(v,str) for v in redirects):
                 raise ValueError()
@@ -94,7 +96,7 @@ def load_platform_settings(values):
                     raise ValueError()
             config=ConnectionConfig(platform=name,enabled=policy.connections_enabled,access_verified=policy.access_verified,
                 client_id=client_id,client_secret=secret,redirect_uris=tuple(redirects),active_key_version=active,encryption_keys=keys,
-                connection_budget_microusd=policy.connection_budget_microusd,tiktok_oauth=tiktok,tiktok_requested_scopes=policy.scopes,threads_insights_enabled=policy.threads_insights_enabled)
+                connection_budget_microusd=policy.connection_budget_microusd,tiktok_oauth=tiktok,tiktok_requested_scopes=policy.scopes,threads_insights_enabled=policy.threads_insights_enabled,verified_callback_ingress_uris=ingress)
             if policy.connections_enabled:
                 config.require_ready()
             connections[name]=config

@@ -67,7 +67,7 @@ def test_connection_commands_execute_on_actual_migration_and_history_blocks_down
     from cryptography.fernet import Fernet
     from uuid import UUID
     upgrade(pg_engine, current=True)
-    config = MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fake', redirect_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()})
+    config = MetaConfig(enabled=True, app_configuration_validated=True, app_id='123', app_secret='fake', redirect_uris=(REDIRECT,), verified_callback_ingress_uris=(REDIRECT,), access_mode='owned_standard', active_key_version='v1', encryption_keys={'v1': Fernet.generate_key().decode()})
     with Session(pg_engine, expire_on_commit=False) as db:
         service = svc(db, config, FakeGraph())
         flow, state = start(service)
