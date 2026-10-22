@@ -55,7 +55,33 @@ def load_plan(path,digest,before,after):
  require(identities==SCOPES)
  return plan
 
-def source_archive_column_proof(archive_sql,work,save):
+def sql_tokens(sql):
+ """Ignore formatting only; preserve quoted values and every SQL token."""
+ tokens=re.findall(r"'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|[A-Za-z_][A-Za-z_0-9]*|[0-9]+|::|[^\s]",sql)
+ require(not any(t in ("'",'"',';','$','\\') for t in tokens))
+ folding=str.maketrans('ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')
+ return [t if t.startswith(("'",'"')) else t.translate(folding) for t in tokens]
+
+def table_entries(body):
+ """Split pg_dump table entries without splitting quoted or nested commas."""
+ entries=[];stack=[];quote=None;start=0;i=0
+ while i<len(body):
+  c=body[i]
+  if quote:
+   if c==quote:
+    if i+1<len(body) and body[i+1]==quote:i+=2;continue
+    quote=None
+  elif c in ("'",'"'):quote=c
+  elif c in '([':stack.append(c)
+  elif c in ')]':require(bool(stack) and stack.pop()=={')':'(',']':'['}[c])
+  elif c==',' and not stack:entries.append(body[start:i].strip());start=i+1
+  i+=1
+ require(quote is None and not stack)
+ entries.append(body[start:].strip())
+ require(all(entries))
+ return entries
+
+def source_archive_column_proof(archive_sql,work,save,before,after,plan):
  """The callback extracts pre-data for exactly the two source archive tables."""
  raw=archive_sql();require(type(raw)is bytes and 0<len(raw)<1024*1024)
  output=Path(work)/'source_check_tables_predata.sql'
@@ -65,11 +91,47 @@ def source_archive_column_proof(archive_sql,work,save):
  # Conservative rejection over the entire selected archive, including any
  # suffix a quoted multiline default might hide from the structural matcher.
  require(re.search(r'\bCOLLATE\b',sql,re.I)is None)
- for schema,table,_ in SCOPES:
+ bindings=[]
+ source_constraints={tuple(r[:3]):r for r in before[0]['constraints']or[]}
+ target_constraints={tuple(r[:3]):r for r in after[0]['constraints']or[]}
+ planned={tuple(p[k]for k in('schema','table','name')):p for p in plan['constraints']}
+ require(len(re.findall(r'^CREATE TABLE ',sql,re.M))==2)
+ for schema,table,_ in sorted(SCOPES):
   pattern=r'^CREATE TABLE '+re.escape(schema+'.'+table)+r' \(\n(.*?)\n\);$'
   matches=re.findall(pattern,sql,re.M|re.S)
   require(len(matches)==1 and re.search(r'\bCOLLATE\b',matches[0],re.I)is None)
- proof={'status':'SOURCE_ARCHIVE_SELECTED_TABLES_DEFAULT_COLLATION','sha256':sha(output),'bytes':len(raw),'table_count':2}
+  columns=[r for r in before[0]['columns'] if r[:2]==[schema,table]]
+  expected_checks={key:r for key,r in source_constraints.items() if key[:2]==(schema,table) and r[4].startswith('CHECK (')}
+  observed_columns=[];observed_checks={}
+  for entry in table_entries(matches[0]):
+   match=re.fullmatch(r'CONSTRAINT\s+("(?:""|[^"])+"|[a-z_][a-z_0-9]*)\s+(CHECK\s+.*)',entry,re.S)
+   if match:
+    name=match[1][1:-1].replace('""','"') if match[1].startswith('"') else match[1]
+    key=(schema,table,name);require(key in expected_checks and key not in observed_checks)
+    definition=match[2];source=expected_checks[key][4]
+    path='exact_retained_source'
+    if sql_tokens(definition)!=sql_tokens(source):
+     require(key in planned and sql_tokens(definition)==sql_tokens(target_constraints[key][4]))
+     # This is not a new SQL equivalence: final PASS still requires the
+     # fresh source->exact-target witness bound by the already loaded plan.
+     path='exact_planned_target_pending_source_reparse'
+    observed_checks[key]={'name':name,'binding':path,'archive_definition_sha256':text_sha(definition),
+      'source_definition_sha256':text_sha(source),'target_definition_sha256':text_sha(target_constraints[key][4])}
+   else:
+    tokens=sql_tokens(entry);require(bool(tokens))
+    name=tokens[0][1:-1].replace('""','"') if tokens[0].startswith('"') else tokens[0]
+    require(len(observed_columns)<len(columns))
+    column=columns[len(observed_columns)]
+    require(name==column[2] and column[6:8]==['',''])
+    expected=column[4]
+    if column[8] is not None:expected+=' DEFAULT '+column[8]
+    if column[5]:expected+=' NOT NULL'
+    require(tokens[1:]==sql_tokens(expected))
+    observed_columns.append(name)
+  require(observed_columns==[r[2]for r in columns] and set(observed_checks)==set(expected_checks))
+  bindings.append({'schema':schema,'table':table,'column_context_sha256':text_sha(canonical(column_context(before,schema,table))),
+                   'checks':[observed_checks[k]for k in sorted(observed_checks)]})
+ proof={'status':'SOURCE_ARCHIVE_SELECTED_TABLES_BOUND_PENDING_CHECK_WITNESS','sha256':sha(output),'bytes':len(raw),'table_count':2,'bindings':bindings}
  save(Path(work)/'source_archive_column_proof.json',proof)
  return proof
 
@@ -128,7 +190,7 @@ def prove(before,after,props,plan_path,plan_sha,work,query,collect,archive_sql,s
  # Establish that the proposed exact two substitutions are the ENTIRE remaining
  # difference before running any DDL. Existing three equivalences remain fixed.
  logical.compare_logical_inventory(derived,after,default_readback)
- archive_proof=source_archive_column_proof(archive_sql,work,save)
+ archive_proof=source_archive_column_proof(archive_sql,work,save,before,after,plan)
  context=one(query(CONTEXT_SQL,'postgres'))
  require(set(context)=={'kind','executor','server_version','local_socket','database','search_path','schemas','builtin_length','length_immutable'} and context['kind']=='witness_context' and context['executor']=='postgres' and context['server_version']=='17.6' and context['local_socket']is True and context['database']=='postgres' and type(context['search_path'])is str and bool(context['search_path']) and '\x00'not in context['search_path'] and type(context['schemas'])is list and bool(context['schemas']) and context['schemas'][0]=='pg_catalog' and context['builtin_length']is True and context['length_immutable']is True)
  hooks_before=one(query(HOOK_SQL,'postgres'))

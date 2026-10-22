@@ -130,7 +130,17 @@ There is no automatic retry or silent fallback to this mode. These hash
 checkpoints record operator review; they are not digital signatures.
 
 The proof extracts only selected pre-data from the hash-bound archive, rejecting
-COLLATE anywhere in that output. It checks fresh column/name resolution and
+COLLATE anywhere in that output. It binds every ordered column's name, type,
+default and nullness to the retained source catalog, and requires the complete
+set of pre-data CHECK identities. Identity/generated columns and unfamiliar
+table-entry syntax are refused in these two selected tables. CHECK definitions
+must equal the source tokens exactly (formatting whitespace excepted). Only the
+two plan-bound CHECKs may instead equal their exact approved target tokens;
+that path stays pending until the mandatory fresh source-to-target witness
+succeeds. The archive receipt records the observed/source/target hashes and
+binding path; presence of table names alone is insufficient. The helper executes
+from the exact reviewed sibling source bytes, ignoring cached modules/bytecode.
+It checks fresh column/name resolution and
 builtin dependencies on the already inspected target. It then disables local
 DDL hooks inside a transaction, assumes the captured `postgres` role/search
 path, and adds fresh **NOT VALID** witness constraints. A current operation
@@ -266,6 +276,11 @@ exactly `pg_catalog, public`; another effective schema path refuses rather than
 assuming equivalent routine-argument deparse behavior. No original proof,
 unfiltered matrix or failure is rewritten. New readbacks remain private; a final
 PASS is published only after input and producer checks and exclusive readback.
+Immediately before publication, a second complete read-only snapshot must match
+the original permission matrix, execution context, inventory and durable
+configuration. Each snapshot performs one inventory scan after a separate
+Docker isolation/image inspection; inspection does not duplicate the scan.
+This detects changes between the snapshots, not changes after the final read.
 
 Regression evidence includes an actual local `pg_toast` schema permission
 change: ordinary logical-only verification passes, whereas this supplement

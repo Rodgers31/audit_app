@@ -129,7 +129,7 @@ def validate_source(proof, before, props, original, producer_sha, contract, *, n
 def query_profile(target):
     """Fresh owned-target context, inventory/config and matrix in one snapshot."""
     # The same audited target/image/isolation inspection as the logical verifier.
-    logical.collect_local(target)
+    logical.inspect_local_target(target)
     path = Path(__file__).with_name('persistent_pg_privileges.sql')
     require(logical.sha(path) == SQL_SHA, 'permission_sql_changed')
     fixed = path.read_text()
@@ -233,9 +233,6 @@ def verify(bundle, target, logical_receipt, source_proof, source_generator, orig
     require(contract.digest(matrix) == proof['persistent_privileges_sha256'], 'permission_persistent_profile_changed')
     # Recheck the complete live state after the profile read and bind all files
     # immediately before publishing. No success survives input/producer drift.
-    final_inventory, final_props, _, _ = logical.collect_local(target)
-    require(final_inventory == inventory, 'permission_target_changed_after_profile')
-    logical.acquisition.compare_recovery_prerequisites(properties,final_props)
     require(all(logical.sha(path) == initial[name] for name,path in paths.items())
             and sources_unchanged(sources,source_hashes),
             'permission_input_or_producer_changed')
@@ -258,6 +255,11 @@ def verify(bundle, target, logical_receipt, source_proof, source_generator, orig
         backup.write_new(staged,result)
         require(json.loads(staged.read_text()) == result and json.loads(matrix_path.read_text()) == matrix,
                 'permission_publication_readback')
+        final_inventory, final_props, final_matrix, final_context = query_profile(target)
+        contract.validate_matrix(final_matrix, roles)
+        require(final_inventory == inventory and final_matrix == matrix and final_context == context,
+                'permission_profile_changed_before_publication')
+        logical.acquisition.compare_recovery_prerequisites(properties,final_props)
         require(all(logical.sha(path) == initial[name] for name,path in paths.items())
                 and sources_unchanged(sources,source_hashes),
                 'permission_input_or_producer_changed_before_publication')

@@ -14,6 +14,7 @@ import argparse
 import copy
 import datetime
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -232,7 +233,7 @@ def compare_logical_inventory(before, after, default_readback=None):
             'reviewed_default_acl_equivalence_used': default_used}
 
 
-def collect_local(target):
+def inspect_local_target(target):
     if not isinstance(target, str) or re.fullmatch(TARGET_PATTERN, target) is None:
         raise Refusal('logical_unowned_target')
     inspected = json.loads(backup.run(['docker', 'inspect', target]))
@@ -254,6 +255,10 @@ def collect_local(target):
             or re.fullmatch(r'sha256:[0-9a-f]{64}', images[0]['Id']) is None
             or state['Image'] != images[0]['Id']):
         raise Refusal('logical_target_not_isolated_pinned_image')
+
+
+def collect_local(target):
+    inspect_local_target(target)
     query = """BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO, YMD'; SET LOCAL extra_float_digits=3;
 SELECT json_build_object('kind','local_execution_context','executor',current_user,
@@ -346,7 +351,14 @@ def verify_bundle(bundle, target, original_failure, output, request, approved_re
     if check_plan is None:
         verdict = compare_logical_inventory(before, after, default)
     else:
-        import logical_restore_check_proof as reparse
+        # Execute exactly the reviewed sibling bytes, independent of a
+        # launcher's sys.path/sys.modules or a timestamp-valid bytecode cache.
+        raw_helper = check_helper.read_bytes()
+        if hashlib.sha256(raw_helper).hexdigest() != expected_disposition['isolated_check_reparse']['proof_generator_sha256']:
+            raise Refusal('logical_check_helper_changed_before_load')
+        spec = importlib.util.spec_from_file_location('_approved_check_reparse', check_helper)
+        reparse = importlib.util.module_from_spec(spec)
+        exec(compile(raw_helper, str(check_helper), 'exec'), reparse.__dict__)
         # collect_local above has already verified target ownership, network
         # isolation, exact publisher image and local PostgreSQL execution.
         work = output.with_name(output.stem + '.check_proof')

@@ -198,3 +198,24 @@ class PersistentProfileTests(unittest.TestCase):
             with patch.object(permissions,'query_profile',side_effect=changed),self.assertRaises(logical.Refusal):self.verify()
             self.assertFalse(self.output.exists())
         finally:logical.backup.__file__=original
+
+    def test_privilege_drift_after_first_profile_refuses_publication(self):
+        actual=permissions.query_profile
+        calls=[]
+        def grant_after_snapshot(target):
+            result=actual(target)
+            calls.append(result)
+            if len(calls)==1:
+                self.sql('ALTER EVENT TRIGGER reject_witness_ddl DISABLE; GRANT USAGE ON SCHEMA pg_toast TO PUBLIC; ALTER EVENT TRIGGER reject_witness_ddl ENABLE;')
+            return result
+        try:
+            with patch.object(permissions,'query_profile',side_effect=grant_after_snapshot), self.assertRaisesRegex(logical.Refusal,'permission_profile_changed_before_publication'):
+                self.verify()
+            self.assertFalse(self.output.exists())
+            self.assertEqual(len(calls),2)
+        finally:
+            self.sql('ALTER EVENT TRIGGER reject_witness_ddl DISABLE; REVOKE USAGE ON SCHEMA pg_toast FROM PUBLIC; ALTER EVENT TRIGGER reject_witness_ddl ENABLE;')
+
+    def test_profile_snapshot_does_not_collect_inventory_twice(self):
+        with patch.object(logical,'collect_local',side_effect=AssertionError('redundant full scan')):
+            self.assertEqual(permissions.query_profile(self.name)[2],self.matrix)

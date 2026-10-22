@@ -14,6 +14,7 @@ import tempfile
 import time
 import unittest
 import uuid
+import types
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'tools'))
@@ -26,6 +27,10 @@ SUBJECT = "CHECK (((((length((app_id)::text) >= 1) AND (length((app_id)::text) <
 
 
 class GrammarTests(unittest.TestCase):
+    def test_archive_token_folding_preserves_non_ascii_identifiers(self):
+        self.assertNotEqual(proof.sql_tokens('Γ integer'), proof.sql_tokens('γ integer'))
+        self.assertEqual(proof.sql_tokens('foo INTEGER'), proof.sql_tokens('foo integer'))
+
     def test_exact_source_predicates_and_hostile_variants(self):
         for identity, source in [(('public', 'etl_dispatch_domains', 'ck_etl_dispatch_domain'), DOMAIN),
                                  (('public', 'social_privacy_ownership', 'ck_social_privacy_subject'), SUBJECT)]:
@@ -177,6 +182,11 @@ class RealCheckProofTests(unittest.TestCase):
         # The plan is coherent but the source and target predicates differ in
         # meaning. A spelling/hash match alone must never certify this target.
         changed = DOMAIN.replace("'opendata'::character varying", "'other'::character varying")
+        original = next(r[4] for r in self.after[0]['constraints'] if r[2]=='ck_etl_dispatch_domain')
+        # Model an older source extraction explicitly. A current pg_dump emits
+        # the canonical target spelling; the legacy source tree is synthetic.
+        legacy_extraction = self.archive_sql().replace(original.encode(), DOMAIN.encode())
+        self.assertIn(DOMAIN.encode(),legacy_extraction)
         def replace_domain(definition):
             self.sql('ALTER EVENT TRIGGER reject_witness_ddl DISABLE;')
             self.sql('ALTER TABLE public.etl_dispatch_domains DROP CONSTRAINT ck_etl_dispatch_domain;'
@@ -193,7 +203,7 @@ class RealCheckProofTests(unittest.TestCase):
                 row = next(r for r in self.after[0]['constraints'] if tuple(r[:3]) == tuple(item[k] for k in ('schema', 'table', 'name')))
                 item['target_definition_sha256'] = proof.text_sha(row[4])
             self.write(self.plan_path, self.plan)
-            with self.assertRaises(logical.Refusal):
+            with patch.object(self,'archive_sql',return_value=legacy_extraction), self.assertRaises(logical.Refusal):
                 self.prove()
             receipt = json.loads((self.root / 'proof/check_reparse_receipt.json').read_text())
             self.assertEqual(receipt['status'], 'REFUSED_EXACT_CHECK_REPARSE')
@@ -207,7 +217,21 @@ class RealCheckProofTests(unittest.TestCase):
         work.mkdir(mode=0o700)
         raw = self.archive_sql() + b"\n-- COLLATE unreviewed\n"
         with self.assertRaises(logical.Refusal):
-            proof.source_archive_column_proof(lambda: raw, work, logical.backup.write_new)
+            proof.source_archive_column_proof(lambda: raw, work, logical.backup.write_new,
+                self.before,self.after,self.plan)
+
+    def test_archive_definitions_must_match_the_bound_catalog(self):
+        original = self.archive_sql()
+        variants = [
+            original.replace(b'domain character varying NOT NULL', b'domain integer NOT NULL'),
+            original.replace(b"'cra'::", b"'other'::"),
+            original.replace(b'CONSTRAINT ck_etl_dispatch_domain CHECK', b'CONSTRAINT another_name CHECK'),
+        ]
+        for i, raw in enumerate(variants):
+            self.assertNotEqual(raw, original)
+            with self.subTest(i=i), patch.object(self, 'archive_sql', return_value=raw), self.assertRaises(logical.Refusal):
+                self.prove(directory='archive-mismatch-' + str(i))
+        self.assertEqual(self.collect()[0], self.after)
 
     def test_replayed_witness_packets_cannot_certify_a_new_run(self):
         actual = self.sql
@@ -263,6 +287,17 @@ class RealCheckProofTests(unittest.TestCase):
         self.assertFalse(result['persistent_mutations'])
         self.assertTrue(result['isolated_check_reparse']['full_post_rollback_state_unchanged'])
         self.assertEqual(self.collect()[0], self.after)
+
+        # A launcher may already have imported a same-named module elsewhere.
+        # Only the approved sibling source may perform this proof.
+        fake = types.ModuleType('logical_restore_check_proof')
+        def wrong_helper(*args, **kwargs):
+            raise AssertionError('unapproved cached helper executed')
+        fake.prove = wrong_helper
+        with patch.dict(sys.modules, {'logical_restore_check_proof': fake}):
+            result = logical.verify_bundle(bundle, self.name, failed, self.root / 'explicit-helper.json',
+                request, logical.sha(request), self.plan_path, logical.sha(self.plan_path))
+        self.assertTrue(result['backup_verified'])
 
 
 if __name__ == '__main__':
