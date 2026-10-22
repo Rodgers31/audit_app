@@ -11,7 +11,7 @@ The standalone `tools/verify_logical_pg_restore.py` is an explicit alternative
 to the physical inventory comparator. It does not change the original
 comparator or acquisition callers. It connects only to an already restored
 owned local target using the pinned PostgreSQL 17.6 image, with network `none`
-and no published ports. It performs read-only collection as `postgres`, with
+and no published ports. By default it performs read-only collection as `postgres`, with
 captured durable role/database settings and the inventory's UTC/date/float GUCs.
 It neither restores a dump nor repairs grants.
 
@@ -70,6 +70,90 @@ failed receipt hash and the physical comparator result. A logical database pass
 does not certify external storage bytes, provider credentials or application
 deployment. Old receipts remain immutable; a new logical pass explains the
 measurement change rather than replacing the failed physical verdict.
+
+## Explicit proof for two legacy CHECK spellings
+
+PostgreSQL can reparse an older stored CHECK tree into a different canonical
+spelling during logical restore. A text mismatch still refuses by default.
+The optional `tools/logical_restore_check_proof.py` supports only these two
+existing predicates:
+
+- `public.etl_dispatch_domains.ck_etl_dispatch_domain`: the six supported
+  domain literals, including the array/per-element text coercion roundtrip.
+- `public.social_privacy_ownership.ck_social_privacy_subject`: the existing
+  text-length bounds, including nested/flattened AND roundtrips.
+
+This is not a general expression normalizer. Every other catalog field, grant,
+table hash and sequence state must still match through the existing comparator.
+The source predicates must first pass a narrow grammar with explicit builtin
+text coercions. Unknown predicates, functions, operators, types, collations,
+inheritance, partitions and changed validation flags refuse.
+
+The operator separately reviews a private plan (0600, current owner), with
+exactly the two distinct identities. Each entry binds the UTF-8 SHA-256 of the
+source and target definitions and the source column context. The context is
+the compact JSON array of active columns in order, selecting name, formatted
+type, not-null, identity and generated fields; use
+`logical_restore_check_proof.column_context()` and `canonical()` to reproduce
+its hash. The plan has this shape:
+
+```json
+{
+  "version": 1,
+  "constraints": [
+    {
+      "schema": "public",
+      "table": "etl_dispatch_domains",
+      "name": "ck_etl_dispatch_domain",
+      "source_definition_sha256": "<source UTF-8 digest>",
+      "target_definition_sha256": "<target UTF-8 digest>",
+      "column_context_sha256": "<column context digest>"
+    },
+    { "schema": "public", "table": "social_privacy_ownership", "name": "ck_social_privacy_subject", "source_definition_sha256": "<digest>", "target_definition_sha256": "<digest>", "column_context_sha256": "<digest>" }
+  ]
+}
+```
+
+The ordinary approved request must also include this exact additional member:
+
+```json
+"isolated_check_reparse": {
+  "plan_sha256": "<reviewed plan digest>",
+  "proof_generator_sha256": "<current logical_restore_check_proof.py digest>",
+  "grammar_sha256": "<current logical_restore_check_grammar.py digest>"
+}
+```
+
+Pass `--check-reparse-plan /private/plan.json` and
+`--approved-check-reparse-plan-sha256 <digest>` along with the ordinary arguments.
+There is no automatic retry or silent fallback to this mode. These hash
+checkpoints record operator review; they are not digital signatures.
+
+The proof extracts only selected pre-data from the hash-bound archive, rejecting
+COLLATE anywhere in that output. It checks fresh column/name resolution and
+builtin dependencies on the already inspected target. It then disables local
+DDL hooks inside a transaction, assumes the captured `postgres` role/search
+path, and adds fresh **NOT VALID** witness constraints. A current operation
+nonce binds every returned witness. PostgreSQL must produce the exact target
+definition, expression, column keys and dependencies. No rows are scanned or
+original constraints altered. The transaction rolls back, and full inventory,
+durable prerequisites and hooks are recollected and must be unchanged, even
+when witness execution fails. The local `supabase_admin` executor must have the
+required authority; do not grant production privileges for this proof.
+
+All proof artifacts live in a new private `<output stem>.check_proof` directory.
+The final receipt records temporary `mutations: true`,
+`persistent_mutations: false`, the raw physical mismatch and the separate proof.
+Input, producer and helper hashes are rechecked before success publication.
+Archive extraction is limited to 128 MiB input and 1 MiB selected SQL output.
+The capture/earlier failures are never overwritten. This proves the supported
+logical CHECK roundtrip, not provider recovery or a separate global effective
+permission profile. Runtime temporary namespaces are not broadly filtered from
+the captured catalog or ACL checks.
+
+The collector uses LF JSON framing throughout. U+0085/U+2028/U+2029 inside
+valid JSON strings are preserved; malformed UTF-8, blank interior records and
+truncated JSON still refuse.
 
 Focused verification includes an actual owned PostgreSQL 17.6 dump/restore
 fixture with a middle dropped column, reordered ACL entries and the reviewed
