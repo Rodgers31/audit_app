@@ -425,6 +425,20 @@ class ReceiptBoundaryTests(unittest.TestCase):
             with self.assertRaises(logical.Refusal):self.verify()
         self.assertFalse(self.output.exists())
 
+    def test_source_producer_changes_during_collection_cannot_publish_success(self):
+        for label, module in [('inventory', logical.backup), ('acquisition', logical.acquisition)]:
+            source_copy = self.directory / (label + '_producer.py')
+            source_copy.write_bytes(Path(module.__file__).read_bytes())
+            self.output = self.directory / (label + '_result.json')
+            def drift(_target):
+                source_copy.write_bytes(source_copy.read_bytes() + b'\n# producer changed during verification\n')
+                return self.records, self.props, None, {'executor': 'postgres'}
+            with self.subTest(producer=label):
+                with patch.object(module, '__file__', str(source_copy)), \
+                        patch.object(logical, 'collect_local', side_effect=drift), self.assertRaises(logical.Refusal):
+                    self.verify()
+                self.assertFalse(self.output.exists())
+
     def test_unowned_or_remote_target_refuses_before_docker(self):
         for name in ('production','localhost','round20_s1_actual_restore_bad',None):
             with self.subTest(name=name), patch.object(logical.backup,'run')as run:
@@ -442,6 +456,38 @@ class ReceiptBoundaryTests(unittest.TestCase):
         with patch.object(logical.backup, "run", side_effect=[json.dumps([state]).encode(), json.dumps([image]).encode(), payload]) as run:
             self.assertEqual(logical.collect_local(self.target)[0], self.records)
             self.assertEqual(run.call_args_list[1].args[0], ["docker", "image", "inspect", logical.backup.SUPABASE_IMAGE])
+
+    def collect_payload(self, payload):
+        image_id = 'sha256:' + 'a' * 64
+        state = {'Name': '/' + self.target, 'HostConfig': {'NetworkMode': 'none', 'PortBindings': {}},
+                 'State': {'Running': True}, 'Image': image_id}
+        image = {'Id': image_id, 'RepoDigests': [logical.backup.SUPABASE_IMAGE]}
+        with patch.object(logical.backup, 'run', side_effect=[json.dumps([state]).encode(),
+                         json.dumps([image]).encode(), payload]):
+            return logical.collect_local(self.target)
+
+    def collector_payload(self, records=None):
+        context = {'kind': 'local_execution_context', 'executor': 'postgres', 'server_version': '17.6',
+                   'local_socket': True, 'search_path': 'pg_catalog, public', 'database': 'postgres'}
+        return ('\n'.join(json.dumps(r, ensure_ascii=False) for r in
+                          [context, *(self.records if records is None else records), self.props]) + '\n').encode()
+
+    def test_collector_preserves_unicode_separators_inside_json_strings(self):
+        for separator in ('\u0085', '\u2028', '\u2029'):
+            records = copy.deepcopy(self.records)
+            records[0]['columns'][1][8] = "'before" + separator + "after'::text"
+            with self.subTest(separator=hex(ord(separator))):
+                restored = self.collect_payload(self.collector_payload(records))[0]
+                self.assertEqual(restored, records)
+                self.assertEqual(logical.compare_logical_inventory(records, restored)['tables'], 1)
+
+    def test_collector_refuses_bad_utf8_interior_blank_and_truncated_records(self):
+        healthy = self.collector_payload()
+        self.assertEqual(self.collect_payload(healthy)[0], self.records)
+        for payload in (b'', b'\xff\n', healthy.replace(b'\n', b'\n\n', 1), healthy[:-3],
+                        healthy + b'not-json\n'):
+            with self.subTest(payload_bytes=len(payload)), self.assertRaises((logical.Refusal, ValueError)):
+                self.collect_payload(payload)
 
     def test_image_identity_refusals_stop_before_database_execution(self):
         digest = logical.backup.SUPABASE_IMAGE.split('@')[1]
