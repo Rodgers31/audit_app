@@ -4,7 +4,7 @@ import PageShell from '@/components/layout/PageShell';
 import { Shield } from 'lucide-react';
 import Link from 'next/link';
 
-const LAST_UPDATED = 'March 1, 2026';
+const LAST_UPDATED = 'October 22, 2026';
 
 /* Reusable section component */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -69,6 +69,18 @@ export default function PrivacyPolicyPage() {
             </p>
           </div>
           <div>
+            <h3 className='font-semibold text-sm text-neutral-text mb-1'>
+              Connected Social Accounts (Administrators)
+            </h3>
+            <p>
+              When an authorised administrator connects a Facebook Page or Instagram account, we
+              store the selected account identifiers, profile metadata, granted permissions,
+              connection status, and encrypted authorisation credentials. We use these records to
+              manage the connection and support separately approved publishing. Connecting an
+              account does not itself publish content.
+            </p>
+          </div>
+          <div>
             <h3 className='font-semibold text-sm text-neutral-text mb-1'>Usage Analytics</h3>
             <p>
               We use <strong>Vercel Analytics</strong> and <strong>Vercel Speed Insights</strong> to
@@ -117,6 +129,12 @@ export default function PrivacyPolicyPage() {
           Database access is restricted via Row Level Security (RLS) policies. No one — including
           our team — can access your account data without proper authentication.
         </p>
+        <p>
+          Private database recovery copies can include account and connected-account records.
+          Disconnecting an account does not erase those copies. Recovery and retention must be
+          handled separately from the live account records; a successful database restore is not
+          evidence that every retained copy or deletion request has been resolved.
+        </p>
       </Section>
 
       {/* ── Sharing ── */}
@@ -128,6 +146,12 @@ export default function PrivacyPolicyPage() {
           We may share anonymised, aggregate statistics (e.g., &quot;10,000 people visited the
           Nairobi County page this month&quot;) in public reports about platform usage. These
           statistics never identify individuals.
+        </p>
+        <p>
+          We use hosting, database, and private media-storage providers to operate the platform.
+          Connected Facebook and Instagram accounts also involve processing by Meta under its own
+          policies. Provider-held records and copies must be considered separately from records
+          in our application; removing a local connection does not confirm their deletion.
         </p>
       </Section>
 
@@ -145,7 +169,8 @@ export default function PrivacyPolicyPage() {
               .
             </li>
             <li>
-              <strong>Delete your account</strong> and all associated data by contacting us at{' '}
+              <strong>Request deletion of your account and associated data</strong> by contacting us
+              at{' '}
               <a href='mailto:auditgava@gmail.com' className='text-gov-sage hover:underline'>
                 auditgava@gmail.com
               </a>
@@ -158,6 +183,15 @@ export default function PrivacyPolicyPage() {
               <strong>Correct</strong> any inaccurate information.
             </li>
           </ul>
+          <p className='mt-3 text-[13px]'>
+            For connected Facebook or Instagram data, you can use the same contact address to
+            request removal. Disconnecting an account blocks its local connection. Requests to
+            deauthorise an app or delete data are tracked separately; neither a disconnection nor
+            an acknowledgement confirms that credential history, media, audit records, backups,
+            or provider-held copies have all been erased. These categories require a separate
+            review. We do not treat a pending request or a completed partial erasure as
+            confirmation that the whole request is complete.
+          </p>
           <p className='mt-3 text-[13px]'>We will respond to any data request within 14 days.</p>
         </div>
       </Section>
