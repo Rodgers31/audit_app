@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Verify an acquired logical dump on an already restored, isolated local target.
 
-No restore, DDL, production connection, app import, or catalog write is performed.
+No restore, production connection, or app import is performed. By default this
+is read-only. An explicitly hash-approved CHECK plan permits rolled-back witness
+DDL on the same isolated target; it never changes the original constraints.
 The original physical catalog comparison and its failed receipt remain intact.
 Only active-column physical numbers and ACL array order have logical equivalents;
 one explicitly reviewed default ACL requires a fresh target acldefault readback.
@@ -12,10 +14,12 @@ import argparse
 import copy
 import datetime
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 
 import reviewed_pg_acquisition as acquisition
 
@@ -229,7 +233,7 @@ def compare_logical_inventory(before, after, default_readback=None):
             'reviewed_default_acl_equivalence_used': default_used}
 
 
-def collect_local(target):
+def inspect_local_target(target):
     if not isinstance(target, str) or re.fullmatch(TARGET_PATTERN, target) is None:
         raise Refusal('logical_unowned_target')
     inspected = json.loads(backup.run(['docker', 'inspect', target]))
@@ -251,6 +255,10 @@ def collect_local(target):
             or re.fullmatch(r'sha256:[0-9a-f]{64}', images[0]['Id']) is None
             or state['Image'] != images[0]['Id']):
         raise Refusal('logical_target_not_isolated_pinned_image')
+
+
+def collect_local(target):
+    inspect_local_target(target)
     query = """BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO, YMD'; SET LOCAL extra_float_digits=3;
 SELECT json_build_object('kind','local_execution_context','executor',current_user,
@@ -260,7 +268,9 @@ SELECT json_build_object('kind','local_execution_context','executor',current_use
     output = backup.run(['docker', 'exec', '-i', target, 'psql', '-XqAt', '-v',
                          'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'postgres'],
                         input=query.encode(), timeout=120)
-    rows = [json.loads(line) for line in output.decode().splitlines()]
+    # PostgreSQL emits LF-delimited JSON. Unicode separators are legal inside
+    # JSON strings and must not become record boundaries via str.splitlines().
+    rows = backup.inventory_json_lines(output)
     if (not rows or not isinstance(rows[0], dict)
             or set(rows[0]) != {'kind','executor','server_version','local_socket','search_path','database'}
             or rows[0].get('kind') != 'local_execution_context'
@@ -276,7 +286,8 @@ SELECT json_build_object('kind','local_execution_context','executor',current_use
     return rows[:-1], rows[-1], default, context
 
 
-def verify_bundle(bundle, target, original_failure, output, request, approved_request_sha256):
+def verify_bundle(bundle, target, original_failure, output, request, approved_request_sha256,
+                  check_plan=None, approved_check_plan_sha256=None):
     """Hash-bind all acquired artifacts and preserve the earlier failed attempt."""
     bundle, original_failure, output, request = map(Path, (bundle, original_failure, output, request))
     request = backup.private_file(request)
@@ -287,11 +298,14 @@ def verify_bundle(bundle, target, original_failure, output, request, approved_re
     disposition = json.loads(request.read_text())
     receipt = backup.private_file(bundle / 'receipt.json')
     captured = json.loads(receipt.read_text())
+    source_files = {'acquisition': Path(acquisition.__file__).resolve(),
+                    'inventory': Path(backup.__file__).resolve()}
+    admitted_source_hashes = {name: sha(path) for name, path in source_files.items()}
     expected = {'database.dump', 'roles.sql', 'inventory.json', 'recovery_prerequisites.json'}
     if (captured.get('status') != 'acquired_inputs_restore_and_completeness_pending'
             or set(captured.get('artifacts', {})) != expected
-            or captured.get('inventory_generator_sha256') != sha(Path(backup.__file__))
-            or captured.get('generator_sha256') != sha(Path(acquisition.__file__))):
+            or captured.get('inventory_generator_sha256') != admitted_source_hashes['inventory']
+            or captured.get('generator_sha256') != admitted_source_hashes['acquisition']):
         raise Refusal('logical_bundle_binding')
     for name in expected:
         path = backup.private_file(bundle / name)
@@ -310,15 +324,72 @@ def verify_bundle(bundle, target, original_failure, output, request, approved_re
                             'archive_sha256': sha(bundle / 'database.dump'),
                             'original_failed_receipt_sha256': sha(original_failure),
                             'allowed_equivalences': EQUIVALENCES}
+    check_helper = Path(__file__).with_name('logical_restore_check_proof.py')
+    check_grammar = Path(__file__).with_name('logical_restore_check_grammar.py')
+    if check_plan is not None:
+        check_plan = backup.private_file(check_plan)
+        if (type(approved_check_plan_sha256) is not str
+                or re.fullmatch('[0-9a-f]{64}', approved_check_plan_sha256) is None
+                or sha(check_plan) != approved_check_plan_sha256):
+            raise Refusal('logical_check_plan_binding')
+        expected_disposition['isolated_check_reparse'] = {
+            'plan_sha256': approved_check_plan_sha256,
+            'proof_generator_sha256': sha(check_helper), 'grammar_sha256': sha(check_grammar)}
+    elif approved_check_plan_sha256 is not None:
+        raise Refusal('logical_check_plan_required')
     if disposition != expected_disposition:
         raise Refusal('logical_reviewed_disposition_mismatch')
+    if output.exists():
+        raise FileExistsError(output)
     before = json.loads((bundle / 'inventory.json').read_text())
     before_props = json.loads((bundle / 'recovery_prerequisites.json').read_text())
     after, after_props, default, context = collect_local(target)
     # The collector uses the original executor and captured role GUCs. No
     # schema qualification/deparser text is normalized by this verifier.
     acquisition.compare_recovery_prerequisites(before_props, after_props)
-    verdict = compare_logical_inventory(before, after, default)
+    check_proof = None
+    if check_plan is None:
+        verdict = compare_logical_inventory(before, after, default)
+    else:
+        # Execute exactly the reviewed sibling bytes, independent of a
+        # launcher's sys.path/sys.modules or a timestamp-valid bytecode cache.
+        raw_helper = check_helper.read_bytes()
+        if hashlib.sha256(raw_helper).hexdigest() != expected_disposition['isolated_check_reparse']['proof_generator_sha256']:
+            raise Refusal('logical_check_helper_changed_before_load')
+        spec = importlib.util.spec_from_file_location('_approved_check_reparse', check_helper)
+        reparse = importlib.util.module_from_spec(spec)
+        exec(compile(raw_helper, str(check_helper), 'exec'), reparse.__dict__)
+        # collect_local above has already verified target ownership, network
+        # isolation, exact publisher image and local PostgreSQL execution.
+        work = output.with_name(output.stem + '.check_proof')
+        work.mkdir(mode=0o700)
+
+        def query(sql, role):
+            if role not in ('postgres', 'supabase_admin'):
+                raise Refusal('logical_check_executor')
+            return backup.run(['docker', 'exec', '-i', target, 'psql', '-XqAt', '-v',
+                               'ON_ERROR_STOP=1', '-U', role, '-d', 'postgres'],
+                              input=sql.encode(), timeout=120)
+
+        def collect():
+            inventory, properties, _, _ = collect_local(target)
+            return inventory, properties
+
+        def archive_sql():
+            if (bundle / 'database.dump').stat().st_size > 128 * 1024 * 1024:
+                raise Refusal('logical_check_archive_bound')
+            # pg_restore extracts SQL only; no source SQL or data is executed.
+            # stdin avoids mounting or persistently copying the private archive.
+            return backup.run(['docker', 'exec', '-i', target, 'pg_restore', '--schema-only',
+                               '--section=pre-data', '--schema=public', '--table=etl_dispatch_domains',
+                               '--table=social_privacy_ownership', '--file=-'],
+                              input=(bundle / 'database.dump').read_bytes(), timeout=30)
+
+        derived, check_proof = reparse.prove(before, after, after_props, check_plan,
+                                            approved_check_plan_sha256, work, query, collect,
+                                            archive_sql, backup.write_new,
+                                            sys.modules[__name__], default)
+        verdict = compare_logical_inventory(derived, after, default)
     strict_equal = True
     try:
         backup.compare_inventory(before, after)
@@ -332,11 +403,12 @@ def verify_bundle(bundle, target, original_failure, output, request, approved_re
             or json.loads(restored_prerequisites.read_text()) != after_props):
         raise Refusal('logical_restored_artifact_readback')
     result = dict(verdict, status='PASS_ACTUAL_LOGICAL_DATABASE_RESTORE', backup_verified=True,
-                  production_recovery_verified=False, production_connections=0, mutations=False,
+                  production_recovery_verified=False, production_connections=0,
+                  mutations=check_proof is not None, persistent_mutations=False,
                   generated_by=str(Path(__file__).resolve()), generator_sha256=sha(Path(__file__)),
                   generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                   target_commit=backup.run(['git', '-C', str(Path(__file__).resolve().parents[1]), 'rev-parse', 'HEAD']).decode().strip(),
-                  source_hashes={'acquisition': sha(Path(acquisition.__file__)), 'inventory': sha(Path(backup.__file__))},
+                  source_hashes=admitted_source_hashes,
                   comparison_mode=COMPARISON_MODE, reviewed_request=str(request),
                   reviewed_request_sha256=sha(request), allowed_equivalences=EQUIVALENCES,
                   original_failed_receipt=str(original_failure), original_failed_receipt_sha256=sha(original_failure),
@@ -346,6 +418,26 @@ def verify_bundle(bundle, target, original_failure, output, request, approved_re
                   restored_inventory=str(restored_inventory), restored_inventory_sha256=sha(restored_inventory),
                   restored_prerequisites=str(restored_prerequisites), restored_prerequisites_sha256=sha(restored_prerequisites),
                   scope='Acquired logical database state; external provider credentials and storage bytes are separate recovery inputs.')
+    if check_proof is not None:
+        result['isolated_check_reparse'] = check_proof
+        result['check_reparse_plan_sha256'] = approved_check_plan_sha256
+        result['check_reparse_helper_sha256'] = sha(check_helper)
+        result['check_reparse_grammar_sha256'] = sha(check_grammar)
+    # Refuse publication if an approved input or producer changed during the
+    # live target read/proof. Preserve the original failed receipt verbatim.
+    if (sha(request) != approved_request_sha256
+            or sha(receipt) != expected_disposition['bundle_receipt_sha256']
+            or sha(original_failure) != expected_disposition['original_failed_receipt_sha256']
+            or sha(__file__) != expected_disposition['verifier_sha256']
+            or Path(acquisition.__file__).resolve() != source_files['acquisition']
+            or Path(backup.__file__).resolve() != source_files['inventory']
+            or any(sha(source_files[name]) != digest for name, digest in admitted_source_hashes.items())
+            or any(sha(bundle / name) != captured['artifacts'][name]['sha256'] for name in expected)):
+        raise Refusal('logical_inputs_changed_during_verification')
+    if check_plan is not None and expected_disposition['isolated_check_reparse'] != {
+            'plan_sha256': sha(check_plan), 'proof_generator_sha256': sha(check_helper),
+            'grammar_sha256': sha(check_grammar)}:
+        raise Refusal('logical_check_inputs_changed_during_verification')
     backup.write_new(output, result)
     readback = json.loads(output.read_text())
     if readback != result or readback['generator_sha256'] != sha(Path(__file__)):
@@ -361,10 +453,13 @@ def main():
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--request', type=Path, required=True)
     parser.add_argument('--approved-request-sha256', required=True)
+    parser.add_argument('--check-reparse-plan', type=Path)
+    parser.add_argument('--approved-check-reparse-plan-sha256')
     args = parser.parse_args()
     try:
         result = verify_bundle(args.bundle, args.target, args.original_failure, args.out,
-                               args.request, args.approved_request_sha256)
+                               args.request, args.approved_request_sha256,
+                               args.check_reparse_plan, args.approved_check_reparse_plan_sha256)
     except (Refusal, OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired):
         print(json.dumps({'status': 'REFUSED_LOGICAL_DATABASE_RESTORE', 'backup_verified': False}))
         return 1
