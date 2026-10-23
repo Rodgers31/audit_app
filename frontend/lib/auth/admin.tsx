@@ -62,14 +62,10 @@ export function AdminGuard({
     }
   }, [mounted, isLoading, isAdmin, router]);
 
-  // During SSR and initial hydration, render children to avoid mismatch.
-  // The middleware already handles server-side admin route protection.
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
-  // Still loading auth state
-  if (isLoading) {
+  // Keep SSR and initial hydration on the same placeholder. Rendering the
+  // page first would remove its hero/controls during auth restoration and
+  // mount the whole subtree a second time once the profile is verified.
+  if (!mounted || isLoading) {
     return (
       fallback ?? (
         <div className='min-h-screen flex items-center justify-center bg-gov-cream'>

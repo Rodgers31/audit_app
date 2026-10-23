@@ -28,6 +28,9 @@ export default function PageShell({
 }: PageShellProps) {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
+  // Admin pages already wait for verified access. Do not then hide their
+  // heading and working content behind another CSS entrance animation.
+  const enter = pathname === '/admin' || pathname.startsWith('/admin/') ? '' : 'ledger-enter';
 
   return (
     <div className='relative min-h-screen bg-gov-sand dark:bg-[#0d1711]'>
@@ -47,7 +50,7 @@ export default function PageShell({
             initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-            className='ledger-enter min-w-0'>
+            className={`${enter} min-w-0`}>
             {back && (
               <SmartBackLink
                 href={back.href}
@@ -102,7 +105,7 @@ export default function PageShell({
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
-          className={`ledger-enter ledger-enter-delayed page-shell-content space-y-6 ${className}`}>
+          className={`${enter ? 'ledger-enter ledger-enter-delayed ' : ''}page-shell-content space-y-6 ${className}`}>
           {children}
         </motion.div>
       </div>
