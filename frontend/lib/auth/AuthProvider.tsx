@@ -112,6 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initialGeneration = ++generation.current;
     const timers = new Set<ReturnType<typeof setTimeout>>();
     let pendingRestoration: { ticket: number; id: string } | null = null;
+    const trackInitialObservation = (next: User, ticket: number) => {
+      const pending = { ticket, id: next.id };
+      pendingRestoration = pending;
+      return () => {
+        if (pendingRestoration === pending) pendingRestoration = null;
+      };
+    };
 
     // GoTrue awaits subscribers while holding its auth lock. Profile requests
     // obtain a token through getSession(), so start them after this callback
@@ -121,21 +128,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted.current) return;
       const next = session?.user ?? null;
-      // getSession() can begin restoring this profile before the SDK emits
-      // INITIAL_SESSION. Share only that still-pending observation; later
-      // auth events and settled reads must obtain fresh privilege evidence.
+      // getSession() or the SDK's first recovery SIGNED_IN can start this
+      // observation before INITIAL_SESSION. Only that current, pending first
+      // observation is shared; later events still revalidate privileges.
       if (event === 'INITIAL_SESSION' && next && pendingRestoration &&
           pendingRestoration.id === next.id &&
           isCurrent(pendingRestoration.ticket, next.id)) {
         pendingRestoration = null;
         return;
       }
+      const startsRecovery = event === 'SIGNED_IN' && generation.current === initialGeneration;
       pendingRestoration = null;
       const ticket = changeSession(next);
       if (next) {
+        const onObserved = startsRecovery ? trackInitialObservation(next, ticket) : undefined;
         const timer = setTimeout(() => {
           timers.delete(timer);
-          if (isCurrent(ticket, next.id)) void loadSessionProfile(next, ticket);
+          if (isCurrent(ticket, next.id)) void loadSessionProfile(next, ticket, onObserved);
         }, 0);
         timers.add(timer);
       }
@@ -147,11 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const next = error ? null : data.session?.user ?? null;
       const ticket = changeSession(next);
       if (next) {
-        const pending = { ticket, id: next.id };
-        pendingRestoration = pending;
-        void loadSessionProfile(next, ticket, () => {
-          if (pendingRestoration === pending) pendingRestoration = null;
-        });
+        void loadSessionProfile(next, ticket, trackInitialObservation(next, ticket));
       }
     }).catch(() => {
       if (mounted.current && generation.current === initialGeneration) changeSession(null);
