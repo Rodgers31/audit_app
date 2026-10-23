@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const path of ['/admin', '/admin/etl', '/admin/social/new', '/admin/social/example']) {
+for (const path of ['/admin', '/admin/etl', '/admin/social/new', '/admin/social/example', '/status']) {
   test(`critical content is fully visible at its first animation frame on ${path}`, async ({ page }) => {
     await page.goto(path);
     for (const locator of [page.getByRole('heading', { name: 'Critical admin heading' }), page.getByText('Critical working content', { exact: true })]) {
@@ -13,7 +13,7 @@ for (const path of ['/admin', '/admin/etl', '/admin/social/new', '/admin/social/
     }
   });
 }
-for (const path of ['/counties', '/administrator']) {
+for (const path of ['/counties', '/administrator', '/status-extra']) {
   test(`the public entrance animation is retained on ${path}`, async ({ page }) => {
     await page.goto(path);
     const opacity = await page.getByRole('heading', { name: 'Critical admin heading' }).evaluate(element => {

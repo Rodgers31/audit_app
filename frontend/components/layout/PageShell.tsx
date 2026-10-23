@@ -30,7 +30,10 @@ export default function PageShell({
   const reduceMotion = useReducedMotion();
   // Admin pages already wait for verified access. Do not then hide their
   // heading and working content behind another CSS entrance animation.
-  const enter = pathname === '/admin' || pathname.startsWith('/admin/') ? '' : 'ledger-enter';
+  const enter =
+    pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/status'
+      ? ''
+      : 'ledger-enter';
 
   return (
     <div className='relative min-h-screen bg-gov-sand dark:bg-[#0d1711]'>

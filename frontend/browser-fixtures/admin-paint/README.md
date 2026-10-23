@@ -18,10 +18,11 @@ NEXT_TELEMETRY_DISABLED=1 node node_modules/next/dist/bin/next dev /absolute/fre
 
 In Chrome, open `http://127.0.0.1:33610/admin/etl`. The heading and working content
 must have combined ancestor opacity 1, even with the animation timeline held.
-The predecessor renders them at opacity 0.01. `/counties` and `/administrator`
-must still have opacity between 0 and 0.1. Repeat `/admin`, `/admin/social/new`
-and `/admin/social/example`. Do not use an authenticated production URL for this
-fixture. Reset any temporary viewport and stop the owned server afterward.
+With the entrance class present, they render at opacity 0.01. `/counties`,
+`/administrator` and `/status-extra` must still have opacity between 0 and 0.1.
+Repeat `/admin`, `/admin/social/new` and `/admin/social/example`, plus the
+administrator-only `/status` page. Do not use an authenticated production URL
+for this fixture. Reset any temporary viewport and stop the owned server afterward.
 
 The same cases are available in the separate browser runner:
 
