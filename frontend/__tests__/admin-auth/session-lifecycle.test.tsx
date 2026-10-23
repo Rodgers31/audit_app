@@ -125,6 +125,54 @@ test('overlapping bootstrap and INITIAL_SESSION share the pending profile observ
   expect(screen.getByTestId('loading')).toHaveTextContent('false');
 });
 
+test('SDK recovery SIGNED_IN and INITIAL_SESSION share the pending first observation', async () => {
+  const initial = deferred<any>();
+  const pending = deferred<any>();
+  mockGetSession.mockReturnValue(initial.promise);
+  mockProfile.mockReturnValue(pending.promise);
+  mount();
+  // GoTrue recovery notifies SIGNED_IN before its INITIAL_SESSION callback.
+  // A browser auth-lock turn can let the first profile read start between them.
+  await emit(actorA, 'SIGNED_IN');
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(1));
+  await act(async () => {
+    mockSubscriber('INITIAL_SESSION', session(actorA));
+    initial.resolve({ data: { session: session(actorA) }, error: null });
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+  expect(mockProfile).toHaveBeenCalledTimes(1);
+  expect(current.user).toBeNull();
+  await act(async () => { pending.resolve({ data: profile(actorA), error: null }); });
+  expect(current.user?.roles).toEqual(['admin']);
+});
+
+test('a second SIGNED_IN before INITIAL_SESSION still requires fresh privilege evidence', async () => {
+  const initial = deferred<any>();
+  const pending = deferred<any>();
+  mockGetSession.mockReturnValue(initial.promise);
+  mockProfile.mockReturnValueOnce(pending.promise).mockResolvedValue({
+    data: { ...profile(actorA), roles: ['citizen'] }, error: null,
+  });
+  mount();
+  await emit(actorA, 'SIGNED_IN');
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(1));
+  await emit(actorA, 'SIGNED_IN');
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(2));
+  await act(async () => { pending.resolve({ data: profile(actorA), error: null }); });
+  expect(current.user?.roles).toEqual(['citizen']);
+});
+
+test('INITIAL_SESSION after the recovery observation settles reads fresh privileges', async () => {
+  mockGetSession.mockReturnValue(deferred<any>().promise);
+  mount();
+  await emit(actorA, 'SIGNED_IN');
+  await waitFor(() => expect(current.user?.roles).toEqual(['admin']));
+  mockProfile.mockResolvedValue({ data: { ...profile(actorA), roles: ['citizen'] }, error: null });
+  await emit(actorA, 'INITIAL_SESSION');
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(current.user?.roles).toEqual(['citizen']));
+});
+
 test('INITIAL_SESSION after the bootstrap read settles obtains fresh profile evidence', async () => {
   mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
   mount();
