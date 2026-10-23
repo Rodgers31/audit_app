@@ -107,6 +107,77 @@ test('auth notification releases its SDK lock before querying the profile', asyn
   expect(screen.getByTestId('loading')).toHaveTextContent('false');
 });
 
+test('overlapping bootstrap and INITIAL_SESSION share the pending profile observation', async () => {
+  const pending = deferred<any>();
+  mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
+  mockProfile.mockReturnValue(pending.promise);
+  mount();
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(1));
+  await act(async () => {
+    mockSubscriber('INITIAL_SESSION', session(actorA));
+    // Flush the subscriber's deferred work before counting actual transports.
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+  expect(mockProfile).toHaveBeenCalledTimes(1);
+  expect(screen.getByTestId('profile')).toHaveTextContent('no-profile');
+  await act(async () => { pending.resolve({ data: profile(actorA), error: null }); });
+  expect(screen.getByTestId('profile')).toHaveTextContent(actorA);
+  expect(screen.getByTestId('loading')).toHaveTextContent('false');
+});
+
+test('INITIAL_SESSION after the bootstrap read settles obtains fresh profile evidence', async () => {
+  mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
+  mount();
+  await waitFor(() => expect(screen.getByTestId('profile')).toHaveTextContent(actorA));
+  mockProfile.mockResolvedValue({ data: { ...profile(actorA), roles: ['citizen'] }, error: null });
+  await emit(actorA, 'INITIAL_SESSION');
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(current.user?.roles).toEqual(['citizen']));
+});
+
+test('INITIAL_SESSION at profile settlement obtains fresh privilege evidence', async () => {
+  const pending = deferred<any>();
+  const emitted = deferred<void>();
+  mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
+  mockProfile.mockReturnValueOnce(pending.promise).mockResolvedValue({
+    data: { ...profile(actorA), roles: ['citizen'] }, error: null,
+  });
+  mount();
+  await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(1));
+  // Queue the notification between publication of the first observation and
+  // any reaction to the loadSessionProfile promise settling.
+  pending.promise.then(() => queueMicrotask(() => {
+    mockSubscriber('INITIAL_SESSION', session(actorA));
+    emitted.resolve();
+  }));
+  await act(async () => {
+    pending.resolve({ data: profile(actorA), error: null });
+    await emitted.promise;
+    await new Promise(resolve => setTimeout(resolve, 0));
+  });
+  expect(mockProfile).toHaveBeenCalledTimes(2);
+  expect(current.user?.roles).toEqual(['citizen']);
+});
+
+test.each(['SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED'])(
+  'an overlapping %s event still invalidates the bootstrap profile and reads again', async event => {
+    const pending = deferred<any>();
+    const fresh = deferred<any>();
+    mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
+    mockProfile.mockReturnValueOnce(pending.promise).mockReturnValueOnce(fresh.promise);
+    mount();
+    await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(1));
+    await emit(actorA, event);
+    await waitFor(() => expect(mockProfile).toHaveBeenCalledTimes(2));
+    await act(async () => { pending.resolve({ data: profile(actorA), error: null }); });
+    expect(current.user).toBeNull();
+    expect(current.isLoading).toBe(true);
+    await act(async () => { fresh.resolve({ data: { ...profile(actorA), roles: ['citizen'] }, error: null }); });
+    expect(current.user?.roles).toEqual(['citizen']);
+    expect(current.isLoading).toBe(false);
+  }
+);
+
 test('changing identity revokes the previous profile while the next profile is loading', async () => {
   mockGetSession.mockResolvedValue({ data: { session: session(actorA) }, error: null });
   mount();

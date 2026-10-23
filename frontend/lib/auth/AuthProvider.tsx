@@ -88,13 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return ticket;
   }, []);
 
-  const loadSessionProfile = useCallback(async (next: User, ticket: number) => {
+  const loadSessionProfile = useCallback(async (next: User, ticket: number, onObserved?: () => void) => {
     let profile: UserProfile | null = null;
     try {
       profile = await fetchProfile(next.id);
     } catch {
       // Failed profile evidence never retains a previous privileged profile.
     }
+    // End bootstrap sharing before publishing this observation. A later
+    // promise reaction leaves a window in which settled evidence is reused.
+    onObserved?.();
     if (isCurrent(ticket, next.id)) {
       setUser(profile);
       setIsLoading(false);
@@ -108,15 +111,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     const initialGeneration = ++generation.current;
     const timers = new Set<ReturnType<typeof setTimeout>>();
+    let pendingRestoration: { ticket: number; id: string } | null = null;
 
     // GoTrue awaits subscribers while holding its auth lock. Profile requests
     // obtain a token through getSession(), so start them after this callback
     // returns and the SDK releases that lock.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted.current) return;
       const next = session?.user ?? null;
+      // getSession() can begin restoring this profile before the SDK emits
+      // INITIAL_SESSION. Share only that still-pending observation; later
+      // auth events and settled reads must obtain fresh privilege evidence.
+      if (event === 'INITIAL_SESSION' && next && pendingRestoration &&
+          pendingRestoration.id === next.id &&
+          isCurrent(pendingRestoration.ticket, next.id)) {
+        pendingRestoration = null;
+        return;
+      }
+      pendingRestoration = null;
       const ticket = changeSession(next);
       if (next) {
         const timer = setTimeout(() => {
@@ -132,7 +146,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted.current || generation.current !== initialGeneration) return;
       const next = error ? null : data.session?.user ?? null;
       const ticket = changeSession(next);
-      if (next) void loadSessionProfile(next, ticket);
+      if (next) {
+        const pending = { ticket, id: next.id };
+        pendingRestoration = pending;
+        void loadSessionProfile(next, ticket, () => {
+          if (pendingRestoration === pending) pendingRestoration = null;
+        });
+      }
     }).catch(() => {
       if (mounted.current && generation.current === initialGeneration) changeSession(null);
     });
@@ -141,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted.current = false;
       ++generation.current;
       ++identityLifetime.current;
+      pendingRestoration = null;
       timers.forEach(timer => clearTimeout(timer));
       subscription.unsubscribe();
     };
