@@ -166,3 +166,75 @@ preview, actual one-source ingest/idempotency, UI/cache/provenance/receipt and
 representative operating acceptance remain separately scoped work. The observed
 .org/.com hostname difference is for coordinator verification, with no DNS/OAuth
 or session transfer performed here.
+
+## B67 review repair addendum — 24 October 2026
+
+The preceding B66 counts, generator digest, shared implementation/policy pin and
+Linux-runtime limitation describe the historical a261c20 author delivery. This
+addendum supersedes those implementation/runtime statements for the B67 repair;
+original receipts remain retained as historical evidence.
+
+All five claims in Copilot review5637033591 were valid, including its four
+body-only findings. Executed regressions reproduced ambient PATH Python usage,
+the shared implementation/policy ref, missing refusal bindings, an actual
+idle-session guard omission, and successful actual-PG inspection after late
+rollback/close. The repair selects Python3.12.15 x64 through SHA-pinned
+setup-python and invokes its explicit interpreter for admission, installation
+and inspection. Independently committed disabled policy0a36a3a485dc1c25e7405a681b08757e7a5088b3
+has raw SHA256 f04d2960f0d069a5d5798af5a953d6f0efafe41b75ada5043546e51d7fa29407.
+Policy still has accepted:false and absent target/receipt authority. The final
+packaging pins the reviewed implementation separately; no admission was created.
+
+The API/CLI bind attempted source and canonical config before admission, and
+CLI also records the exact consumed policy-byte digest. Unknown bindings remain
+explicit. The invoked transaction sets and reads idle_session_timeout=5s.
+Database inspection runs in a fresh isolated interpreter, with bounded private
+pipes and no credential argument/file/inherited environment. Up to1second is
+reserved inside the unchanged30second run budget for termination/reaping.
+Late output, blocked connect/rollback/close, forced termination or unconfirmed
+cleanup cannot retain an observation.
+
+Independent Spec and Standards then reproduced a surviving-descendant defect;
+Standards also reproduced malformed private IPC success. Both were fixed:
+waitid(WNOWAIT) retains the leader identity while a bounded PID/PGID-only census
+checks its exact owned group. Survivors are killed and refused. Reaping and group
+absence are required before acceptance. This is process-group containment, not a
+sandbox for arbitrary untrusted native code. The supervisor checks the complete
+report shape, exact primitive types, fixed refusal codes, all authorization gates,
+fresh timestamp, runtime, generator/config/source/budget bindings and complete
+nonempty SQL/count/check observations. Corrupt reports are refused and redacted.
+
+The author cohort now includes206 cases, with twenty-three added red-before-fix
+controls for those two independent gaps. Fresh final source-bound normal and
+optimized-supervisor runs and independent review addenda are retained under
+BATCH_67_REVIEW/783. The production worker deliberately launches without -O;
+parent -O alone does not claim optimized-child execution. An independent inert
+child-optimization replay is identified separately if executed.
+
+The cached Linuxx86_64 Python3.12.15 runtime also installed and imported the
+unchanged hash-pinned psycopg2-binary2.9.12 CP312 wheel offline. Raw output and
+wheel SHA256 are retained. This verifies that local runtime/wheel pair; it does
+not certify hosted setup-python retrieval, TLS, current provider capacity or a
+production connection. The historical first fork-worker experiment failed on
+macOS/libpq; the final fresh interpreter does not use fork. Setup failures and
+red regressions are preserved separately from passing evidence.
+
+Final review dispositions, immutable implementation/package heads, actual PR
+reply/thread readback and exact owned-resource cleanup are recorded in the B67
+external handoff manifest. No Actions, bot review, publishing/upload/native or
+supervision switch was enabled. No merge/deploy/provider/credential/plan/retention
+change or acceptance of ingestion, custody, live receipt storage or Free readiness
+is part of this repair.
+
+Final independent implementation review: Spec33controls passed in each mode,
+including actual CLI output readback and physical worker absence. Standards
+58IPC controls and14PG controls passed in each of normal, parent-optimized and
+explicit parent-plus-child-optimized modes; original28supervisor and13lifecycle/
+census controls passed in normal and optimized modes. Counts are separate
+cohorts, not unique-test totals. Source before/after inventories were unchanged.
+Final inspector SHA256:
+`8c43f3758570c607cb5601b435fbc6f93eddcc9b626c50a380a0684a0c5d7ea9`.
+Final worker SHA256:
+`c2fc45a464020e78ccc2633a6ba5d9f07539326873aef56728867b9b19d785d2`.
+A cached Linux Python3.12.15 inert supervisor replay also confirmed ordinary
+exit/group absence and forced timeout/reaping, without driver/DB/network import.

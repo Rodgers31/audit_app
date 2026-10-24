@@ -15,6 +15,24 @@ sys.path.insert(0, str(ROOT / "scripts/verification"))
 import ingestion_preflight as tool
 
 
+def instrument_worker(monkeypatch, code):
+    """Test-only fresh-interpreter instrumentation; no product hook or environment flag."""
+    original = tool.worker.Popen
+    bootstrap = (
+        "import sys,time\nfrom pathlib import Path\n"
+        f"sys.path.insert(0,{str(ROOT/'scripts/verification')!r})\n"
+        "import ingestion_preflight as tool\nimport ingestion_preflight_worker as worker\nimport psycopg2\n"
+        + code
+        + "\nraise SystemExit(worker._child_main())\n"
+    )
+
+    def launch(command, **kwargs):
+        assert Path(command[-1]) == Path(tool.worker.__file__).absolute()
+        return original([command[0], "-I", "-B", "-c", bootstrap], **kwargs)
+
+    monkeypatch.setattr(tool.worker, "Popen", launch)
+
+
 @pytest.fixture(scope="session")
 def pg():
     if os.environ.get("B66_PREFLIGHT_OWNED_PG") != "56972":

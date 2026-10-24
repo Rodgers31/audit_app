@@ -44,24 +44,36 @@ jobs:
         with:
           # Policy is an independently pinned later commit referring to app's
           # already-known immutable HEAD. Never checkout dispatch input/ref.
-          ref: 739216efba9d5ed97ee3de8f39c277110ac1c3fa
+          ref: 0a36a3a485dc1c25e7405a681b08757e7a5088b3
           persist-credentials: false
           path: admission
+      - name: Select supported immutable Python runtime
+        id: python_runtime
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.15'
+          architecture: x64
+          check-latest: false
       - name: Refuse missing accepted expectations before dependency or secret access
+        env:
+          PREFLIGHT_PYTHON: ${{ steps.python_runtime.outputs.python-path }}
         run: |
-          python -B app/scripts/verification/ingestion_preflight.py --admit-only \
+          "$PREFLIGHT_PYTHON" -B app/scripts/verification/ingestion_preflight.py --admit-only \
             --reviewed-admission "$GITHUB_WORKSPACE/admission/docs/admin/batch66/preflight-admission.json" \
-            --expected-admission-sha256 e291df96f321f9e8b9615daa56549aa80c322e0dd6accee29342fd602d761924
+            --expected-admission-sha256 f04d2960f0d069a5d5798af5a953d6f0efafe41b75ada5043546e51d7fa29407
       - name: Install pinned inspection driver without database credentials
+        env:
+          PREFLIGHT_PYTHON: ${{ steps.python_runtime.outputs.python-path }}
         run: |
-          python -I -m pip --isolated install --disable-pip-version-check --no-deps --require-hashes --only-binary=:all: -r app/docs/admin/batch66/preflight-driver-requirements.txt
+          "$PREFLIGHT_PYTHON" -I -m pip --isolated install --disable-pip-version-check --no-deps --require-hashes --only-binary=:all: -r app/docs/admin/batch66/preflight-driver-requirements.txt
       - name: Inspect only the admitted pinned database
         timeout-minutes: 1
         env:
+          PREFLIGHT_PYTHON: ${{ steps.python_runtime.outputs.python-path }}
           INGESTION_PREFLIGHT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python -B app/scripts/verification/ingestion_preflight.py --execute-read-only \
+          "$PREFLIGHT_PYTHON" -B app/scripts/verification/ingestion_preflight.py --execute-read-only \
             --reviewed-admission "$GITHUB_WORKSPACE/admission/docs/admin/batch66/preflight-admission.json" \
-            --expected-admission-sha256 e291df96f321f9e8b9615daa56549aa80c322e0dd6accee29342fd602d761924 \
+            --expected-admission-sha256 f04d2960f0d069a5d5798af5a953d6f0efafe41b75ada5043546e51d7fa29407 \
             --out "$RUNNER_TEMP/ingestion-preflight.json"
       # No artifact upload. Only fixed diagnostics and a bounded sanitized report.

@@ -76,19 +76,36 @@ writers and changes after the snapshot are not certified. Every-writer custody
 always remains UNMET. Receipt authority must be an accepted independent expected
 identity, but no storage request is made: its live gate remains NOT_OBSERVED.
 
-One connection, no pool/retry; workflow concurrency1; process concurrency1.
+One connection, no pool/retry; workflow concurrency1; one parent and one owned
+fresh interpreter, with at most one database worker. No libpq connection is
+opened in the parent or inherited via fork. The fixed supported workflow runtime
+is Python3.12.15 x64, installed by SHA-pinned setup-python; all Python and pip
+steps explicitly invoke that action's selected interpreter.
 Whole invocation30s, connect3s, statement2s, lock500ms, idle-transaction3s,
 idle-session5s, workflow5min, inspection step1min. At most24 SQL commands plus
-one cleanup rollback, with19 commands/11 SELECTs on the current path. At most256
+one cleanup rollback, with20 commands/11 SELECTs on the current path. At most256
 total rows and65536 decoded result bytes. Schema query LIMIT257 is an overflow
 sentinel. Fixed metadata scalar sizes bound network results; decoded bytes are
 not wire/provider billing measurements. The workflow downloads no source files
 from government hosts and makes no provider/storage HTTP requests. It performs
 no migration/bootstrap/seed/revalidation/upload/account mutation.
 
-The Python deadline includes source admission/connection/inspection, and restores
-the previous signal handler. Database timeouts also bound blocked driver calls;
-cleanup rolls back and closes, and cleanup failure invalidates any observation.
+The Python deadline includes source admission, inspection, cleanup and publication,
+and restores the previous signal handler. Connection work runs in a fresh
+interpreter with bounded private stdin/stdout pipes, a minimal environment and no
+credential arguments/files. The parent reserves up to1second INSIDE its30second
+budget for forced termination and reaping. It accepts a report only after that
+exact worker has exited and been reaped; blocked rollback/close, forced cleanup,
+late output or unconfirmed cleanup always refuse. Cleanup errors are retained.
+The unreaped leader reserves its identity while a bounded PID/PGID-only census
+checks that exact owned group. Any descendant forces termination and refusal;
+acceptance requires reaping and group absence. The short local census helper
+has bounded output and shares the original deadline. The process-concurrency
+budget denotes one inspection run/database worker; its parent and census helper
+are supervision overhead. This does not sandbox arbitrary untrusted native code.
+Database timeouts remain enforced inside the actual invoked transaction;
+idle_session_timeout is also set locally and read back as5s. The private worker
+entry refuses without the supervising parent context and is not a public API.
 The hosted step/job deadlines are the final process boundary. Resource caps do
 not certify current provider capacity or prevent other clients consuming it.
 
@@ -102,8 +119,14 @@ failure exits2. Missing/malformed/unsupported/unknown observations cannot pass.
 Errors use fixed codes, without underlying exception strings or traceback text.
 
 Reports bind generator bytes, selected source bytes/HEAD, canonical config hash,
+and actual policy raw-byte hash on CLI attempts, including refusals. Unsupported
+config/source observations retain explicit binding-unavailable markers. Reports bind
 Python and driver runtime, time, counts, limits and observation scope. These are
 content bindings, not signatures: imported reports are UNVERIFIED_WHEN_IMPORTED.
+Private worker reports must also satisfy the complete exact shape/type/binding
+contract: success requires empty errors and complete seven-check observation,
+supported runtime, fresh timestamp and bounded nonzero counts. Unknown failures
+or malformed/contradictory reports refuse without propagating arbitrary text.
 Do not import an edited JSON status as authority. Optional outputs must be fresh
 external regular files with bounded exclusive creation, no symlink components or
 overwrite, and byte-for-byte readback. No hosted artifact upload is configured.

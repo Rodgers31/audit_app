@@ -11,7 +11,7 @@ import time
 import psycopg2
 import pytest
 
-from conftest import ROOT, tool
+from conftest import ROOT, tool, instrument_worker
 
 
 def capture(config, credential):
@@ -88,7 +88,7 @@ def test_actual_entrypoint_valid_readonly_and_no_database_mutation(
         and result["receipt_backend_gate"] == "NOT_OBSERVED"
     )
     assert result["observation"]["read_requests"] == 11
-    assert result["observation"]["sql_commands"] == 19
+    assert result["observation"]["sql_commands"] == 20
     assert all(x is False for x in result["observation"]["checks"].values())
     assert (
         result["generator_sha256"]
@@ -245,10 +245,9 @@ def test_real_query_lock_timeout_and_cleanup(config, credential, pg):
 
 
 def test_real_statement_timeout(config, credential, monkeypatch):
-    original = tool.CHECKS["retained_claim"]
-    # Test-only mutation of an allowlisted constant, never a public SQL parameter.
-    monkeypatch.setitem(
-        tool.CHECKS, "retained_claim", "SELECT pg_catalog.pg_sleep(3) IS NULL"
+    instrument_worker(
+        monkeypatch,
+        "tool.CHECKS['retained_claim']='SELECT pg_catalog.pg_sleep(3) IS NULL'",
     )
     start = time.monotonic()
     result = capture(config, credential)
@@ -295,25 +294,15 @@ def test_real_readonly_blocks_write_independent_of_acl(
 
 
 def test_incomplete_observation_never_passes(config, credential, monkeypatch):
-    original = tool.Reads.one
-    monkeypatch.setattr(
-        tool.Reads,
-        "one",
-        lambda self, sql, params=None: ()
-        if sql == tool.GUARDS_SQL
-        else original(self, sql, params),
+    instrument_worker(
+        monkeypatch,
+        "original=tool.Reads.one\ntool.Reads.one=lambda self,sql,params=None: () if sql==tool.GUARDS_SQL else original(self,sql,params)",
     )
     assert capture(config, credential)["errors"] == ["OBSERVATION_INCOMPLETE"]
 
 
 def test_toy_secret_in_driver_error_is_suppressed(config, credential, monkeypatch):
-    def bad_connect(**_):
-        raise RuntimeError(
-            "postgresql://user:TOY-SECRET@private.invalid PRIVATE-RECORD"
-        )
-
-    monkeypatch.setattr(psycopg2, "connect", bad_connect)
-    result = capture(config, credential)
+    result = capture(config, credential.replace("owned-reader-only", "TOY-SECRET"))
     assert result["errors"] == ["INSPECTION_FAILED"]
     assert "TOY-SECRET" not in json.dumps(
         result
