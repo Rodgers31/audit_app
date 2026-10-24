@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "mode": "hosted",
+  "accepted": false,
+  "profile": "clean-session-metadata-v2",
+  "execution_head": null,
+  "source_kind": "reviewed-bundle",
+  "source_manifest_sha256": null,
+  "source_files": null,
+  "database": null,
+  "schema_sha256": null,
+  "revision": null,
+  "receipt_authority": {
+    "state": "unaccepted",
+    "identity_sha256": null
+  },
+  "interface": null
+}

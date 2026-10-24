@@ -67,7 +67,43 @@ def _exited(pid):
     return os.waitid(os.P_PID, pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
 
 
-def bounded(packet, *, seconds, maximum=65_536):
+def _proc_members(pgid, end):
+    """Explicit Linux backend: bounded kernel PID/PGID metadata, never argv/env."""
+    if sys.platform != "linux" or type(pgid) is not int or pgid <= 0:
+        raise ValueError("process census context")
+    members = set()
+    count = 0
+    with os.scandir("/proc") as entries:
+        for entry in entries:
+            count += 1
+            if count > 16384 or time.monotonic() >= end:
+                raise TimeoutError("process census bound")
+            if not entry.name.isascii() or not entry.name.isdecimal():
+                continue
+            pid = int(entry.name)
+            if pid <= 0:
+                raise ValueError("process census identity")
+            try:
+                fd = os.open(f"/proc/{pid}/stat", os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            except FileNotFoundError:
+                continue  # A process that exited during the scan is absent.
+            try:
+                raw = os.read(fd, 4097)
+            finally:
+                os.close(fd)
+            if not raw or len(raw) > 4096 or not raw.startswith(f"{pid} (".encode()):
+                raise ValueError("process census shape")
+            # comm can contain spaces, newlines and ')'; the final ')' closes it.
+            _, close, tail = raw.rpartition(b")")
+            fields = tail.split()
+            if not close or len(fields) < 3 or not fields[2].isdigit():
+                raise ValueError("process census fields")
+            if int(fields[2]) == pgid:
+                members.add(pid)
+    return members
+
+
+def bounded(packet, *, seconds, maximum=65_536, census="ps"):
     """Reserve cleanup INSIDE the unchanged whole-run budget; never return late success."""
     cleanup = {
         "started": False,
@@ -93,9 +129,13 @@ def bounded(packet, *, seconds, maximum=65_536):
         )
         or threading.current_thread() is not threading.main_thread()
         or signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL
+        or type(census) is not str
+        or census not in ("ps", "linux-proc")
+        or (census == "linux-proc" and sys.platform != "linux")
     ):
         return outcome
     end = time.monotonic() + seconds
+    census_members = _proc_members if census == "linux-proc" else _members
     work_end = end - min(1.0, seconds / 4)
     process = None
     raw = bytearray()
@@ -163,7 +203,7 @@ def bounded(packet, *, seconds, maximum=65_536):
         selector.close()
         if process is not None:
             try:
-                members = _members(process.pid, end)
+                members = census_members(process.pid, end)
                 exited = _exited(process.pid)
                 if process.pid not in members:
                     raise ValueError("held leader missing from census")
@@ -172,7 +212,7 @@ def bounded(packet, *, seconds, maximum=65_536):
                     # Leader PID remains owned/unreaped even after exit.
                     os.killpg(process.pid, signal.SIGKILL)
                     while time.monotonic() < end:
-                        members = _members(process.pid, end)
+                        members = census_members(process.pid, end)
                         if process.pid not in members:
                             raise ValueError("held leader missing from census")
                         if not (members - {process.pid}):
@@ -234,10 +274,13 @@ def _child_main():
         )
         tool.require(
             type(packet["version"]) is int
-            and packet["version"] == 1
+            and packet["version"] in (1, 2)
             and packet["execute"] is True,
             "WORKER_INPUT_REFUSED",
         )
+        if packet["version"] == 2:
+            # Fixed separate protocol; never import a caller-supplied module.
+            import ingestion_metadata_preflight as tool
         root = Path(packet["root"])
         tool.require(root == tool.ROOT, "WORKER_ROOT_REFUSED")
         tool.check_config(packet["config"])

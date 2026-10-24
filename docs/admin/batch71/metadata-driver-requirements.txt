@@ -1,0 +1,2 @@
+# Protocol 2 uses the existing Render application driver; v1 keeps its own pin.
+psycopg2-binary==2.9.13
