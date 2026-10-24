@@ -16,7 +16,7 @@ Accepted URL and content are unchanged: `https://www.knbs.or.ke/reports/2026-eco
 
 ## Relevant legacy default registry
 
-All fifteen remain selected Monday–Saturday02UTC and Sunday03UTC by the explicit workflow selection plan. Their underlying publication frequencies below are descriptive; the UI calendar is not consulted by `seed --all` or this plan. Registry presence does not prove fresh publisher data. Each native CLI run records an IngestionJob and uses existing shared exclusion; a dedicated UI mapping exists only where named. See `backend/seeding/domains/<domain>/__init__.py`, local fetcher/writer, `registries.py`, `admin_etl_dispatch.py`.
+All fifteen remain selected Monday–Saturday02UTC and Sunday03UTC by the explicit workflow selection plan. Sunday/manual default plans admit enabled CRA/OpenData checks first, then the unchanged legacy order, under the same1320-second native budget; budget drops still fail explicitly. Their underlying publication frequencies below are descriptive; the UI calendar is not consulted by `seed --all` or this plan. Registry presence does not prove fresh publisher data. Each native CLI run records an IngestionJob and uses existing shared exclusion; a dedicated UI mapping exists only where named. See `backend/seeding/domains/<domain>/__init__.py`, local fetcher/writer, `registries.py`, `admin_etl_dispatch.py`.
 
 | Domain | Publisher/feed / handler inputs | Persistence/readback family | Native admin mapping / freshness qualification |
 |---|---|---|---|

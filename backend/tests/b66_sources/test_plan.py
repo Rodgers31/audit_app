@@ -47,11 +47,13 @@ def test_untrusted_dispatch_is_not_executable_shell(tmp_path):
     script = step['run'].replace('${{ github.event.inputs.domain }}', f'population; touch {marker}; #')
     script = script.replace("${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}", '')
     script = script.replace('cd backend', f'cd {tmp_path}')
-    shim = tmp_path / 'python'
-    shim.write_text('#!/bin/sh\nexit 0\n'); shim.chmod(0o700)
-    env = {'PATH': str(tmp_path) + ':/usr/bin:/bin', 'SEED_PLAN_EVENT': 'workflow_dispatch',
-           'SEED_PLAN_DOMAIN': f'population; touch {marker}; #'}
-    subprocess.run(['/bin/bash', '-e', '-c', script], env=env, check=False, capture_output=True)
+    env = {'PATH': str(Path(sys.executable).parent) + ':/opt/homebrew/bin:/usr/bin:/bin',
+           'PYTHONPATH': str(ROOT / 'backend'), 'PYTHON_DOTENV_DISABLED': '1', 'PYTHONDONTWRITEBYTECODE': '1',
+           'SEED_PLAN_EVENT': 'workflow_dispatch', 'SEED_PLAN_DOMAIN': f'population; touch {marker}; #',
+           'SEED_CRA_INGESTION_ENABLED':'false', 'SEED_OPENDATA_INGESTION_ENABLED':'false',
+           'SEED_KNBS_RELEASE_DISCOVERY_ENABLED':'false'}
+    result = subprocess.run(['/bin/bash', '-e', '-c', script], env=env, capture_output=True, text=True)
+    assert result.returncode == 2 and 'Source plan refused: Unknown source plan domain' in result.stderr, result
     assert not marker.exists(), 'Dispatch input executed shell code'
 
 
