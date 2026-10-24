@@ -2,6 +2,8 @@
 
 import asyncio
 import inspect
+import hashlib
+import json
 import threading
 from collections import Counter
 from types import SimpleNamespace
@@ -96,6 +98,7 @@ def health_runtime(monkeypatch):
     cache.client = None
     cache.namespace = "pipeline-worker-tests"
     cache._memory_cache = {}
+    cache._memory_cache_max_size = 1024
     cache._memory_lock = threading.RLock()
     cache._metrics = Counter()
     monkeypatch.setattr(redis_cache, "cache", cache)
@@ -244,34 +247,79 @@ async def test_cancelled_loader_retains_slot_until_session_closed(
         await until(probe.finished.is_set)
 
 
+def health_cache_stripe(identity):
+    # Explicitly arrange the response cache's 64-stripe topology. Different
+    # generation keys need not use different stripes; neither path is a fault.
+    payload = json.dumps(
+        {"arguments": {}, "generation": identity},
+        sort_keys=True, separators=(",", ":"),
+    )
+    return int(hashlib.sha256(payload.encode()).hexdigest()[:8], 16) % 64
+
+
 @pytest.mark.asyncio
+@pytest.mark.parametrize("same_stripe", [False, True], ids=["distinct_stripes", "same_stripe"])
 async def test_new_generation_is_bounded_and_late_fill_is_unreachable(
-    health_runtime, monkeypatch, tmp_path
+    health_runtime, monkeypatch, tmp_path, same_stripe
 ):
-    from cache.invalidation import bump_generation
+    from cache import invalidation
     from fastapi import HTTPException
 
-    monkeypatch.setenv("CACHE_GENERATION_FILE", str(tmp_path / "generation"))
+    marker = tmp_path / "generation"
+    monkeypatch.setenv("CACHE_GENERATION_FILE", str(marker))
+    # Keep the real marker publication/readback, but give the observed file
+    # identities deterministic logical keys rather than random inode hashes.
+    old_identity = (1, 2, 3)
+    new_identity = (1, 2, 32) if same_stripe else (1, 2, 4)
+    assert (health_cache_stripe(old_identity) == health_cache_stripe(new_identity)) == same_stripe
+    assert invalidation._stat_token() is None
+    identities = {None: old_identity}
+    monkeypatch.setattr(
+        invalidation, "generation_identity", lambda: identities[invalidation._stat_token()]
+    )
     old = GatedSession()
+    fresh = SessionProbe(empty=True)
     monkeypatch.setattr(database, "SessionLocal", old.factory)
     task = asyncio.create_task(call_health(old))
+    pending = None
     try:
         await until(old.started.is_set)
-        bump_generation()
-        with pytest.raises(HTTPException) as error:
-            await call_health(old)
-        assert error.value.status_code == 503
+        token = invalidation.bump_generation()
+        published_identity = invalidation._stat_token()
+        assert published_identity is not None
+        assert marker.read_text() == token
+        identities[published_identity] = new_identity
+        if same_stripe:
+            monkeypatch.setattr(database, "SessionLocal", fresh.factory)
+            pending = asyncio.create_task(call_health(fresh))
+            # Wait for actual cache contention, not an arbitrary scheduling nap.
+            await until(lambda: health_runtime[0]._metrics["lock_contention"] == 1)
+            assert not pending.done()
+            assert fresh.owner is None
+            assert old.closes == 0
+            assert main._pipeline_health_worker_slot._value == 0
+        else:
+            with pytest.raises(HTTPException) as error:
+                await call_health(old)
+            assert error.value.status_code == 503
+            assert error.value.headers == {"Retry-After": "1"}
+            assert old.closes == 0
         old.release.set()
         stale = await task
-        fresh = SessionProbe(empty=True)
-        monkeypatch.setattr(database, "SessionLocal", fresh.factory)
-        current = await call_health(fresh)
+        if same_stripe:
+            current = await pending
+        else:
+            monkeypatch.setattr(database, "SessionLocal", fresh.factory)
+            current = await call_health(fresh)
         assert stale["database"]["entities"]["total"] == 47
         assert current["database"]["entities"]["total"] == 0
+        assert await call_health(fresh) == current
         assert fresh.closes == old.closes == 1
+        assert main._pipeline_health_worker_slot._value == 1
+        assert invalidation.generation_identity() == new_identity
     finally:
         old.release.set()
-        await asyncio.gather(task, return_exceptions=True)
+        await asyncio.gather(task, *([pending] if pending else []), return_exceptions=True)
 
 
 @pytest.mark.asyncio
