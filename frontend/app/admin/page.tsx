@@ -133,7 +133,7 @@ export default function AdminOverviewPage() {
         {alerts.length > 0 && (
           <motion.section
             variants={fadeUp}
-            initial='hidden'
+            initial={false}
             animate='show'
             custom={0}
             role='alert'
@@ -300,7 +300,7 @@ export default function AdminOverviewPage() {
         {!failedJobs.error && failedJobs.data && failedJobs.data.jobs.length > 0 && (
           <motion.section
             variants={fadeUp}
-            initial='hidden'
+            initial={false}
             animate='show'
             custom={3}
             className='bg-white dark:bg-surface-base rounded-2xl p-5 sm:p-6 border-2 border-gov-copper/30 dark:border-red-500/30 shadow-surface'>
@@ -367,7 +367,7 @@ export default function AdminOverviewPage() {
         {!ingestion.error && ingestion.data && (
           <motion.section
             variants={fadeUp}
-            initial='hidden'
+            initial={false}
             animate='show'
             custom={4}
             className='bg-white dark:bg-surface-base rounded-2xl p-5 sm:p-6 border border-neutral-border shadow-surface'>
@@ -421,7 +421,7 @@ export default function AdminOverviewPage() {
           {!recentActions.error && recentActions.data && (
             <motion.section
               variants={fadeUp}
-              initial='hidden'
+              initial={false}
               animate='show'
               custom={5}
               className='bg-white dark:bg-surface-base rounded-2xl p-5 sm:p-6 border border-neutral-border shadow-surface'>
@@ -464,7 +464,7 @@ export default function AdminOverviewPage() {
           {!schedule.error && schedule.data && (
             <motion.section
               variants={fadeUp}
-              initial='hidden'
+              initial={false}
               animate='show'
               custom={6}
               className='bg-white dark:bg-surface-base rounded-2xl p-5 sm:p-6 border border-neutral-border shadow-surface'>
@@ -525,7 +525,7 @@ function StatCard<T>({
   return (
     <motion.div
       variants={fadeUp}
-      initial='hidden'
+      initial={false}
       animate='show'
       custom={order}>
       <Link

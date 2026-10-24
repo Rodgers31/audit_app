@@ -2,21 +2,40 @@ name: Database Seeding & Data Refresh
 
 on:
   # ── Scheduled runs ─────────────────────────────────────────────────
-  # Nightly full refresh at 2 AM UTC (5 AM EAT)
+  # Monday–Saturday full refresh at 02 UTC; Sunday runs once at 03 UTC
   # Weekly deep refresh (bootstrap + all domains) on Sundays at 3 AM UTC
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 2 * * 1-6'
     - cron: '0 3 * * 0'
 
   # Allow manual triggering
   workflow_dispatch:
     inputs:
       domain:
-        description: 'Domain to seed (leave empty for all domains)'
+        description: 'One supported native domain (empty keeps the legacy all-domain scope plus explicit opt-ins)'
         required: false
-        type: string
+        type: choice
+        options:
+          - ''
+          - audits
+          - counties_budget
+          - economic_indicators
+          - population
+          - county_officials
+          - national_debt
+          - national_budget
+          - pending_bills
+          - debt_timeline
+          - fiscal_summary
+          - revenue_by_source
+          - learning_hub
+          - stalled_projects
+          - national_gdp
+          - imf_weo
+          - cra
+          - opendata
       dry_run:
-        description: 'Dry run (no database commits)'
+        description: 'Native preview (workflow still migrates; operational jobs/receipts may write)'
         required: false
         type: boolean
         default: false
@@ -89,9 +108,38 @@ env:
   # of the pipeline re-reading a hardcoded path forever.
   SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL: ${{ vars.SEED_CBK_STATISTICAL_BULLETIN_PAGE_URL || 'https://www.centralbank.go.ke/releases/statistical-bulletin/' }}
   SEED_TREASURY_BROP_PAGE_URL: ${{ vars.SEED_TREASURY_BROP_PAGE_URL || 'https://www.treasury.go.ke/budget-review-and-outlook-paper/' }}
+  # Default-off source rollout. No variable is enabled by this workflow change.
+  SEED_CRA_INGESTION_ENABLED: ${{ vars.SEED_CRA_INGESTION_ENABLED || 'false' }}
+  SEED_OPENDATA_INGESTION_ENABLED: ${{ vars.SEED_OPENDATA_INGESTION_ENABLED || 'false' }}
+  SEED_KNBS_RELEASE_DISCOVERY_ENABLED: ${{ vars.SEED_KNBS_RELEASE_DISCOVERY_ENABLED || 'false' }}
+  SEED_PLAN_EVENT: ${{ github.event_name }}
+  SEED_PLAN_SCHEDULE: ${{ github.event.schedule }}
+  SEED_PLAN_DOMAIN: ${{ github.event.inputs.domain }}
+  SEED_PLAN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+  SEED_PLAN_BOOTSTRAP: ${{ github.event.inputs.run_bootstrap || 'false' }}
   SEED_LOG_LEVEL: INFO
 
 jobs:
+  source_plan:
+    name: Validate source selection before any writer
+    outputs:
+      domains: ${{ steps.plan.outputs.domains }}
+      bootstrap: ${{ steps.plan.outputs.bootstrap }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      - run: pip install -r backend/requirements.txt
+      - name: Validate whitelisted plan
+        id: plan
+        run: |
+          cd backend
+          python -m seeding.source_plan --check
+
   # ══════════════════════════════════════════════════════════════════
   # Step 0: Health-check all government data source URLs
   # Catches broken/migrated URLs BEFORE seeding starts so failures
@@ -387,6 +435,7 @@ jobs:
   # Step 1: Run database migrations
   # ══════════════════════════════════════════════════════════════════
   migrate:
+    needs: [source_plan]
     name: Run Migrations
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -543,24 +592,11 @@ jobs:
             seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-
             seed-pdf-cache-
 
-      - name: Seed all domains
-        if: github.event.inputs.domain == '' || github.event.inputs.domain == null
-        # Step-level cap below the job's 30-min timeout so the
-        # 'Check ingestion job results' step downstream (which runs on
-        # `if: always()`) still has room to persist partial-run data
-        # before the runner is torn down. Combined with the per-domain
-        # timeout in seeding/cli.py, a single stuck domain no longer
-        # swallows the whole nightly window.
+      - name: Seed planned domains
         timeout-minutes: 25
         run: |
           cd backend
-          python -m seeding.cli seed --all ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
-
-      - name: Seed specific domain
-        if: github.event.inputs.domain != '' && github.event.inputs.domain != null
-        run: |
-          cd backend
-          python -m seeding.cli seed --domain ${{ github.event.inputs.domain }} ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }}
+          python -m seeding.source_plan --execute
 
       - name: Check ingestion job results
         if: always()
@@ -1068,22 +1104,35 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary
-    needs: [healthcheck, seed, validate, revalidate]
+    needs: [source_plan, healthcheck, seed, bootstrap, validate, revalidate]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Create summary
+        env:
+          SEED_PLAN_RESULT: ${{ needs.source_plan.result }}
+          SEED_PLANNED_DOMAINS: ${{ needs.source_plan.outputs.domains }}
+          SEED_PLANNED_BOOTSTRAP: ${{ needs.source_plan.outputs.bootstrap }}
         run: |
+          # Selection is separate from execution. Missing/refused plans have
+          # no admitted domains even when the requested domain was left blank.
+          if [ "$SEED_PLAN_RESULT" != "success" ]; then
+            SEED_PLANNED_DOMAINS="unverified (plan refused or unavailable)"
+            SEED_PLANNED_BOOTSTRAP="unverified"
+          fi
           echo "## Database Seeding Report" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| **Run Time** | $(date -u '+%Y-%m-%d %H:%M UTC') |" >> $GITHUB_STEP_SUMMARY
           echo "| **Triggered By** | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Domain** | ${{ github.event.inputs.domain || 'all' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Domain** | ${SEED_PLAN_DOMAIN:-all (default plan)} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Dry Run** | ${{ github.event.inputs.dry_run || 'false' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Bootstrap** | ${{ github.event.inputs.run_bootstrap || 'false' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Planned Domains** | $SEED_PLANNED_DOMAINS |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Plan Status** | $SEED_PLAN_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bootstrap Planned** | $SEED_PLANNED_BOOTSTRAP |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Bootstrap Status** | ${{ needs.bootstrap.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Health Check** | ${{ needs.healthcheck.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Seed Status** | ${{ needs.seed.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Validation** | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY

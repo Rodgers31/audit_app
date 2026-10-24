@@ -13,7 +13,7 @@ Government Publishing Patterns (Kenya):
 - COB: Budget Implementation Reviews 45 days after quarter-end
 - OAG: Annual audits Nov-Jan, quarterly special audits
 - KNBS: Economic Survey in May, Statistical Abstract in December
-- Open Data: Continuous updates, check weekly
+- Open Data: Calendar hint only; pinned KNBS extraction, optional bounded discovery, unknown editions quarantined
 - CRA: Revenue allocation in February, quarterly monitoring
 """
 
@@ -109,7 +109,7 @@ class SmartScheduler:
                 "default": {
                     "frequency": "weekly",
                     "day": "friday",
-                    "reason": "Continuous dataset updates via API",
+                    "reason": "Calendar plan only: pinned KNBS workbook extraction; separate default-off discovery opt-in; unknown editions quarantined, publication unqualified",
                 }
             },
             "cra": {

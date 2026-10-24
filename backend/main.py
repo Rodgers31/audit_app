@@ -2389,6 +2389,51 @@ _pipeline_health_executor = concurrent.futures.ThreadPoolExecutor(
 )
 
 
+def _pipeline_health_database_stats(db: Session) -> dict:
+    """One statement/snapshot, with no ORM rows or deferred relationship reads."""
+    from sqlalchemy import func, select
+
+    def count_rows(model):
+        return select(func.count()).select_from(model).scalar_subquery()
+
+    # Do not replace ordered LIMIT with MAX: PostgreSQL DESC puts NULL first.
+    # Likewise COUNT(DISTINCT category) would lose the distinct NULL category.
+    categories = select(DBLoan.debt_category).distinct().subquery()
+    row = db.execute(
+        select(
+            count_rows(DBEntity).label("entity_count"),
+            select(func.count()).select_from(DBEntity)
+            .where(DBEntity.type == EntityType.COUNTY).scalar_subquery()
+            .label("county_count"),
+            select(DBEntity.id).where(DBEntity.type == EntityType.NATIONAL)
+            .exists().label("has_national"),
+            count_rows(DBPopulationData).label("pop_count"),
+            select(DBPopulationData.year).order_by(DBPopulationData.year.desc())
+            .limit(1).scalar_subquery().label("latest_pop_year"),
+            count_rows(DBEconomicIndicator).label("econ_count"),
+            select(DBEconomicIndicator.indicator_date)
+            .order_by(DBEconomicIndicator.indicator_date.desc())
+            .limit(1).scalar_subquery().label("latest_econ_date"),
+            select(func.count()).select_from(categories).scalar_subquery()
+            .label("debt_categories"),
+            count_rows(DBLoan).label("loan_count"),
+            count_rows(DBSourceDocument).label("doc_count"),
+        )
+    ).one()
+    return {
+        "entities": {"total": row.entity_count, "counties": row.county_count,
+                     "has_national": row.has_national},
+        "population": {"records": row.pop_count, "latest_year": row.latest_pop_year},
+        "economic_indicators": {
+            "records": row.econ_count,
+            "latest_year": row.latest_econ_date.year if row.latest_econ_date else None,
+        },
+        "debt_categories": {"records": row.debt_categories},
+        "loans": {"records": row.loan_count},
+        "source_documents": {"records": row.doc_count},
+    }
+
+
 def _pipeline_health_snapshot() -> dict:
     """Read plain snapshot values with a session owned entirely by this thread."""
     import copy
@@ -2441,57 +2486,11 @@ def _pipeline_health_snapshot() -> dict:
         from database import SessionLocal
 
         with SessionLocal() as db:
-            entity_count = db.query(DBEntity).count()
-            county_count = (
-                db.query(DBEntity).filter(DBEntity.type == EntityType.COUNTY).count()
-            )
-            national_entity = (
-                db.query(DBEntity).filter(DBEntity.type == EntityType.NATIONAL).first()
-            )
-
-            db_stats["entities"] = {
-                "total": entity_count,
-                "counties": county_count,
-                "has_national": national_entity is not None,
-            }
-
-            # Population data
-            pop_count = db.query(DBPopulationData).count()
-            latest_pop = (
-                db.query(DBPopulationData).order_by(DBPopulationData.year.desc()).first()
-            )
-            db_stats["population"] = {
-                "records": pop_count,
-                "latest_year": latest_pop.year if latest_pop else None,
-            }
-
-            # Economic indicators
-            econ_count = db.query(DBEconomicIndicator).count()
-            latest_econ = (
-                db.query(DBEconomicIndicator)
-                .order_by(DBEconomicIndicator.indicator_date.desc())
-                .first()
-            )
-            db_stats["economic_indicators"] = {
-                "records": econ_count,
-                "latest_year": (
-                    latest_econ.indicator_date.year
-                    if latest_econ and latest_econ.indicator_date
-                    else None
-                ),
-            }
-
-            # Debt categories (use Loan table — DebtCategory is an enum, not a table)
-            debt_categories = db.query(DBLoan.debt_category).distinct().count()
-            db_stats["debt_categories"] = {"records": debt_categories}
-
-            # Loans
-            loan_count = db.query(DBLoan).count()
-            db_stats["loans"] = {"records": loan_count}
-
-            # Source documents
-            doc_count = db.query(DBSourceDocument).count()
-            db_stats["source_documents"] = {"records": doc_count}
+            db_stats = _pipeline_health_database_stats(db)
+            county_count = db_stats["entities"]["counties"]
+            pop_count = db_stats["population"]["records"]
+            econ_count = db_stats["economic_indicators"]["records"]
+            loan_count = db_stats["loans"]["records"]
 
             # Data quality checks
             if county_count < 47:
