@@ -479,3 +479,95 @@ def test_reviewed_bundle_refuses_drift(source_bundle, mutation):
         config["source_manifest_sha256"] = hashlib.sha256(raw).hexdigest()
     with pytest.raises((tool.budget.EvidenceError, FileNotFoundError)):
         tool.source_identity(config, root)
+
+
+def test_recreated_relation_cannot_hide_retained_claim(owner, config, credential):
+    with owner.cursor() as c:
+        c.execute("INSERT INTO public.seeding_domain_claims VALUES(NULL)")
+        c.execute(
+            "ALTER TABLE public.seeding_domain_claims RENAME TO b72_original_claims"
+        )
+        c.execute("CREATE TABLE public.seeding_domain_claims(released_at timestamptz)")
+        c.execute("ALTER TABLE public.seeding_domain_claims ENABLE ROW LEVEL SECURITY")
+        c.execute(
+            "CREATE POLICY hidden ON public.seeding_domain_claims FOR SELECT USING(false)"
+        )
+    try:
+        result = tool.run(config, execute=True, credential=credential)
+        assert result["status"] == "REFUSED" and result["errors"] == [
+            "SCHEMA_MISMATCH"
+        ], result
+    finally:
+        with owner.cursor() as c:
+            c.execute("DROP TABLE public.seeding_domain_claims")
+            c.execute(
+                "ALTER TABLE public.b72_original_claims RENAME TO seeding_domain_claims"
+            )
+            c.execute("DELETE FROM public.seeding_domain_claims")
+
+
+def test_api_worker_launches_from_reviewed_bundle(
+    source_bundle, credential, monkeypatch
+):
+    root, config = source_bundle
+    original = tool.v1.worker.Popen
+    launched = []
+
+    def launch(command, **kwargs):
+        launched.append(command[-1])
+        return original(command, **kwargs)
+
+    monkeypatch.setattr(tool.v1.worker, "Popen", launch)
+    result = tool.run(config, root=root, execute=True, credential=credential)
+    assert result["status"] == "OBSERVED_READ_CHECKS_ONLY", result
+    assert launched == [
+        str(root / "scripts/verification/ingestion_preflight_worker.py")
+    ]
+    assert result["worker_cleanup"]["group_absent"] is True
+
+
+@pytest.mark.parametrize("column", [10, 11])
+@pytest.mark.parametrize("bad", [None, True, 0, -1, 2**32, "123", float("nan")])
+def test_schema_object_identity_must_be_typed_oid(config, records, column, bad):
+    # Even an independently supplied hash cannot admit malformed object IDs.
+    records[2][0][column] = bad
+    config["schema_sha256"] = "0" * 64
+    with pytest.raises(tool.budget.EvidenceError, match="SCHEMA_INCOMPLETE"):
+        tool.verify_records(config, records, False)
+
+
+@pytest.mark.parametrize("phase", [2, 7])
+@pytest.mark.parametrize("column", [10, 11])
+def test_schema_identity_drift_refuses_either_snapshot(config, records, phase, column):
+    records[phase][0][column] += 1
+    with pytest.raises(tool.budget.EvidenceError, match="SCHEMA_MISMATCH"):
+        tool.verify_records(config, records, False)
+
+
+def test_api_rejects_unpinned_caller_before_worker(
+    source_bundle, credential, monkeypatch
+):
+    root, config = source_bundle
+    name = "scripts/verification/ingestion_metadata_preflight.py"
+    (root / name).write_bytes((root / name).read_bytes() + b"\n# changed consumer\n")
+    config["source_files"][name] = hashlib.sha256(
+        (root / name).read_bytes()
+    ).hexdigest()
+    manifest = dict(
+        version=1,
+        execution_head=config["execution_head"],
+        source_files=config["source_files"],
+    )
+    raw = tool.budget.canonical(manifest)
+    (root / tool.MANIFEST).write_bytes(raw)
+    config["source_manifest_sha256"] = hashlib.sha256(raw).hexdigest()
+    monkeypatch.setattr(
+        tool.v1.worker,
+        "bounded",
+        lambda *a, **k: pytest.fail("unpinned caller must not launch"),
+    )
+    result = tool.run(config, root=root, execute=True, credential=credential)
+    assert result["status"] == "REFUSED" and result["errors"] == [
+        "SOURCE_BYTES_MISMATCH"
+    ]
+    assert result["worker_cleanup"] is None

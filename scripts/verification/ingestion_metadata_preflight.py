@@ -44,6 +44,11 @@ SOURCE_FILES = (
 # CREATE remains refused. TEMP is separately observed and explicitly admitted
 # for this workload only; v1's credential guarantee is deliberately unchanged.
 IDENTITY_SQL = v1.IDENTITY_SQL.replace("'CREATE,TEMP'", "'CREATE'")
+# Pin object identity as well as definition. A replacement relation with the
+# same name/columns must not inherit the independently admitted schema hash.
+SCHEMA_SQL = v1.SCHEMA_SQL.replace(
+    "c.relowner::bigint", "c.relowner::bigint, n.oid::bigint, c.oid::bigint"
+)
 GUARDS_SQL = """SELECT
  current_setting('default_transaction_read_only'),current_setting('transaction_read_only'),
  current_setting('transaction_isolation'),current_setting('statement_timeout'),
@@ -62,7 +67,7 @@ SESSION_COMMANDS = (
 SQL_READS = (
     IDENTITY_SQL,
     GUARDS_SQL,
-    v1.SCHEMA_SQL,
+    SCHEMA_SQL,
     contract.INTERFACE_SQL,
     contract.OBSERVE_SQL,
 )
@@ -388,8 +393,14 @@ def verify_metadata(config, records, client_tls):
         schema = records[offset + 2]
         require(
             type(schema) is list
-            and {r[0] for r in schema} == set(v1.TABLES)
-            and all(v1._schema_row_valid(tuple(r)) for r in schema),
+            and all(
+                type(r) is list
+                and len(r) == 12
+                and v1._schema_row_valid(tuple(r[:10]))
+                and all(type(x) is int and 0 < x <= 2**32 - 1 for x in r[10:])
+                for r in schema
+            )
+            and {r[0] for r in schema} == set(v1.TABLES),
             "SCHEMA_INCOMPLETE",
         )
         require(
@@ -480,7 +491,7 @@ def inspect(connection, config):
                 reads.command(sql)
             reads.read(IDENTITY_SQL)
             reads.read(GUARDS_SQL)
-            reads.read(v1.SCHEMA_SQL, (list(v1.TABLES),))
+            reads.read(SCHEMA_SQL, (list(v1.TABLES),))
             reads.read(contract.INTERFACE_SQL, (config["database"]["role_oid"],) * 5)
             # Validate metadata BEFORE invoking a privileged routine. Second
             # transaction observes persistent definition/schema/session drift.
@@ -685,6 +696,16 @@ def run(config, *, execute=False, credential=None, root=ROOT):
             )
             require(sys.version_info[:2] in ((3, 12), (3, 13)), "RUNTIME_UNSUPPORTED")
             source_identity(config, root)
+            # The parent replays child evidence, so its own consumers must also
+            # be the admitted bytes when an API caller supplies another root.
+            require(
+                all(
+                    hashlib.sha256(v1.raw_file(ROOT / n, 2_000_000)).hexdigest()
+                    == config["source_files"][n]
+                    for n in SOURCE_FILES
+                ),
+                "SOURCE_BYTES_MISMATCH",
+            )
             connection_parameters(config, credential)
             v1._check_deadline()
             packet = budget.canonical(
@@ -700,6 +721,7 @@ def run(config, *, execute=False, credential=None, root=ROOT):
                 packet,
                 seconds=signal.getitimer(signal.ITIMER_REAL)[0],
                 census=result["budgets"]["process_census"],
+                source_root=root,
             )
             result["worker_cleanup"] = observed["cleanup"]
             require(observed["error"] is None, observed["error"] or "WORKER_FAILED")

@@ -58,7 +58,8 @@ requires a separately reviewed access-removal action; this tool performs none.
 An operator must prepare the admission independently of the inspector: exact
 accepted source HEAD and all thirteen file hashes, provider endpoint/qualified
 login/database/role OIDs, independently provisioned CA path and bytes, six-table
-schema hash/revision, fixed function namespace/function/owner OIDs and body
+schema hash/revision (including the public namespace and each relation OID),
+fixed function namespace/function/owner OIDs and body
 hash, and separately accepted receipt/custody identity. The inspector does not
 learn expectations from its target. Receipt identity is bound, **not verified**;
 the report always leaves custody UNMET and receipt backend NOT_OBSERVED.
@@ -67,7 +68,10 @@ Source kind is explicit: `git-checkout` requires real Git HEAD; `reviewed-bundle
 requires an independently hash-pinned `PREFLIGHT_SOURCE.json` with exactly version
 1, the reviewed execution HEAD and the thirteen source hashes. Every actual file
 must match both manifest and admission. There is no automatic fallback between
-these kinds. A bundle records reviewed source provenance, not a Git checkout on
+these kinds. The API launches the fixed worker path inside the admitted root;
+the parent also verifies its own thirteen source files against admission before
+launch, since it independently replays the child's records. A bundle records
+reviewed source provenance, not a Git checkout on
 the host. The operator must extract those exact paths from the accepted Git
 commit, independently verify the archive/manifest, copy only that reviewed tool
 bundle to a private temporary directory, and remove it after qualification. No

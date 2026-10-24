@@ -70,7 +70,7 @@ def config(owner):
         oid = c.fetchone()[0]
         c.execute("SELECT oid FROM pg_roles WHERE rolname='b71_preflight_reader'")
         role = c.fetchone()[0]
-        c.execute(tool.v1.SCHEMA_SQL, (list(tool.v1.TABLES),))
+        c.execute(tool.SCHEMA_SQL, (list(tool.v1.TABLES),))
         schema = c.fetchall()
         c.execute(tool.contract.INTERFACE_SQL, (role,) * 5)
         interface = c.fetchone()

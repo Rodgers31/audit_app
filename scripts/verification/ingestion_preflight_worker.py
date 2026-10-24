@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import selectors
 import signal
+import stat
 import subprocess
 from subprocess import Popen, PIPE, DEVNULL
 import sys
@@ -84,7 +85,9 @@ def _proc_members(pgid, end):
             if pid <= 0:
                 raise ValueError("process census identity")
             try:
-                fd = os.open(f"/proc/{pid}/stat", os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+                fd = os.open(
+                    f"/proc/{pid}/stat", os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+                )
             except FileNotFoundError:
                 continue  # A process that exited during the scan is absent.
             try:
@@ -103,7 +106,7 @@ def _proc_members(pgid, end):
     return members
 
 
-def bounded(packet, *, seconds, maximum=65_536, census="ps"):
+def bounded(packet, *, seconds, maximum=65_536, census="ps", source_root=None):
     """Reserve cleanup INSIDE the unchanged whole-run budget; never return late success."""
     cleanup = {
         "started": False,
@@ -143,8 +146,29 @@ def bounded(packet, *, seconds, maximum=65_536, census="ps"):
     sent = 0
     eof = False
     try:
+        entry = Path(__file__).absolute()
+        if source_root is not None:
+            # Only protocol 2 can select a source root, never an arbitrary
+            # executable/module. The child still pins its full bundle before
+            # opening a connection and requires packet root == its own ROOT.
+            if not isinstance(source_root, Path) or not source_root.is_absolute():
+                raise ValueError("worker source root")
+            request = json.loads(packet)
+            if (
+                type(request) is not dict
+                or type(request.get("version")) is not int
+                or request["version"] != 2
+                or request.get("root") != str(source_root)
+            ):
+                raise ValueError("worker source protocol")
+            entry = source_root / "scripts/verification/ingestion_preflight_worker.py"
+            if entry.resolve(strict=True) != entry:
+                raise ValueError("worker source link")
+            info = entry.stat()
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                raise ValueError("worker source file")
         process = Popen(
-            [sys.executable, "-I", "-B", str(Path(__file__).absolute())],
+            [sys.executable, "-I", "-B", str(entry)],
             stdin=PIPE,
             stdout=PIPE,
             stderr=DEVNULL,
