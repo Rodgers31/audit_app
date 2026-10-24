@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "mode": "hosted",
+  "accepted": false,
+  "execution_head": null,
+  "source_files": null,
+  "database": null,
+  "schema_sha256": null,
+  "revision": null,
+  "receipt_authority": {
+    "state": "unaccepted",
+    "identity_sha256": null
+  }
+}
