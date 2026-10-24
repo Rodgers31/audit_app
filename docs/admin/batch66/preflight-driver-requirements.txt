@@ -1,0 +1,5 @@
+# CPython 3.12/3.13 manylinux x86_64 wheels only, from PyPI release 2.9.12.
+# No source distributions, dependency resolution or credentials at install time.
+psycopg2-binary==2.9.12 \
+    --hash=sha256:9fe06d93e72f1c048e731a2e3e7854a5bfaa58fc736068df90b352cefe66f03f \
+    --hash=sha256:c41321a14dd74aceb6a9a643b9253a334521babfa763fa873e33d89cfa122fb5
