@@ -30,8 +30,10 @@ def pipeline_health_database(tmp_path, monkeypatch):
     from sqlalchemy.orm import sessionmaker
 
     import database
+    import main
     from models import Base
 
+    monkeypatch.setattr(main, "_source_reachability", main.SourceReachability())
     db_path = tmp_path / "pipeline-health.sqlite"
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)
