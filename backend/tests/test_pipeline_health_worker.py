@@ -103,6 +103,7 @@ def health_runtime(monkeypatch):
     cache._metrics = Counter()
     monkeypatch.setattr(redis_cache, "cache", cache)
     calls = []
+    monkeypatch.setattr(main, "_source_reachability", main.SourceReachability())
     real_import = main.importlib.import_module
 
     def import_available(name, *a, **k):

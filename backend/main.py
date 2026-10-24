@@ -2434,7 +2434,7 @@ def _pipeline_health_database_stats(db: Session) -> dict:
     }
 
 
-def _pipeline_health_snapshot() -> dict:
+def _pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
     """Read plain snapshot values with a session owned entirely by this thread."""
     import copy
 
@@ -2446,7 +2446,7 @@ def _pipeline_health_snapshot() -> dict:
     # Their absence from the backend image must not imply a cached fallback.
     module_checks = {
         "etl.kenya_pipeline": "ETL Pipeline (OAG/COB/Treasury scraping)",
-    }
+    } if include_legacy_module else {}
     module_status = {}
     for mod_name, description in module_checks.items():
         try:
@@ -2565,11 +2565,7 @@ def _observe_pipeline_health_waiter(future: asyncio.Future) -> None:
         future.exception()
 
 
-@app.get("/api/v1/system/pipeline-health")
-@response_cached(ttl=30, key_prefix="pipeline_health")
-async def get_pipeline_health() -> dict:
-    """Report database, web ETL and source health without blocking the event loop."""
-    now = datetime.datetime.now(datetime.timezone.utc)
+async def _read_pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
     if not _pipeline_health_worker_slot.acquire(blocking=False):
         raise HTTPException(
             status_code=503,
@@ -2577,62 +2573,62 @@ async def get_pipeline_health() -> dict:
             headers={"Retry-After": "1"},
         )
     try:
-        future = _pipeline_health_executor.submit(_pipeline_health_snapshot)
+        future = (_pipeline_health_executor.submit(_pipeline_health_snapshot)
+                  if include_legacy_module else
+                  _pipeline_health_executor.submit(_pipeline_health_snapshot, include_legacy_module=False))
     except BaseException:
         _pipeline_health_worker_slot.release()
         raise
     future.add_done_callback(_pipeline_health_snapshot_done)
     waiter = asyncio.wrap_future(future)
     waiter.add_done_callback(_observe_pipeline_health_waiter)
-    snapshot = await asyncio.shield(waiter)
+    return await asyncio.shield(waiter)
+
+
+from services.source_reachability import (
+    PipelineHealthV2, SourceReachability, assemble_health,
+)
+from supabase_auth import require_admin as _status_require_admin
+
+_source_reachability = SourceReachability()
+
+
+@response_cached(ttl=30, key_prefix="pipeline_health_local_v2")
+async def _local_health_v2() -> dict:
+    snapshot = await _read_pipeline_health_snapshot(include_legacy_module=False)
+    return {**snapshot, "checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat()}
+
+
+@app.get("/api/v1/system/pipeline-health/v2", response_model=PipelineHealthV2,
+         dependencies=[Depends(_status_require_admin)])
+async def get_pipeline_health_v2(response: Response = None) -> dict:
+    # Cache only DB/web observations. Source completion/freshness is read anew;
+    # the first response never awaits an external government host.
+    if response is not None:
+        response.headers["Cache-Control"] = "private, no-store"
+    snapshot = await _local_health_v2()
+    sources, running = _source_reachability.observe()
+    return assemble_health(snapshot, sources, running)
+
+
+@app.get("/api/v1/system/pipeline-health")
+@response_cached(ttl=30, key_prefix="pipeline_health")
+async def get_pipeline_health() -> dict:
+    """Report database, web ETL and source health without blocking the event loop."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    snapshot = await _read_pipeline_health_snapshot()
     alerts = snapshot["alerts"]
     db_stats = snapshot["database"]
     module_status = snapshot["modules"]
     seeder_info = snapshot["auto_seeder"]
     sources: dict = {}
 
-    # ── 4. Data source reachability (non-blocking quick check) ──
-    source_urls = {
-        "knbs": {
-            "url": "https://www.knbs.or.ke",
-            "name": "Kenya National Bureau of Statistics",
-        },
-        "cob": {"url": "https://www.cob.go.ke", "name": "Controller of Budget"},
-        "treasury": {"url": "https://www.treasury.go.ke", "name": "National Treasury"},
-        "cbk": {
-            "url": "https://www.centralbank.go.ke",
-            "name": "Central Bank of Kenya",
-        },
-        "oag": {
-            "url": "https://www.oagkenya.go.ke",
-            "name": "Office of the Auditor General",
-        },
-    }
-
-    async def _check_source(key: str, info: dict) -> dict:
-        try:
-            async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                resp = await client.head(info["url"])
-                return {
-                    "key": key,
-                    "name": info["name"],
-                    "url": info["url"],
-                    "reachable": resp.status_code < 500,
-                    "status_code": resp.status_code,
-                }
-        except Exception as exc:
-            return {
-                "key": key,
-                "name": info["name"],
-                "url": info["url"],
-                "reachable": False,
-                "error": str(exc),
-            }
-
-    source_results = await asyncio.gather(
-        *[_check_source(k, v) for k, v in source_urls.items()],
-        return_exceptions=True,
-    )
+    # Preserve the legacy boolean DTO while sharing the bounded on-demand
+    # observations with v2. Unknown sources cannot be represented as false.
+    try:
+        source_results = list((await _source_reachability.legacy()).values())
+    except RuntimeError as exc:
+        raise HTTPException(503, "Source observations are not yet available", headers={"Retry-After": "1"}) from exc
     for r in source_results:
         if isinstance(r, Exception):
             continue
