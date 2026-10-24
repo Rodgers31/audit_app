@@ -3,6 +3,7 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -42,6 +43,7 @@ class Driver:
         self.closed = self.rolled_back = False
         self.identity = (NOW, 'postgres', 5, 'egress_reader', 'egress_reader', 'on', '5s', '1s', '5s', 170000, False, False, False, False)
         self.extension = ('public', '1.11', True, True)
+        self.access = (True,)
         self.info = (NOW+timedelta(seconds=1), PAST, 0)
         self.query = (NOW+timedelta(seconds=2), 10, 20, PAST)
         self.end = (NOW+timedelta(seconds=3),)
@@ -56,6 +58,7 @@ class Driver:
         if sql == collect.BEGIN: self.rows = []
         elif sql == collect.IDENTITY_SQL: self.rows = [self.identity]
         elif sql == collect.EXTENSION_SQL: self.rows = [self.extension]
+        elif sql == getattr(collect,'ACCESS_SQL',{}).get('public'): self.rows = [self.access]
         elif sql == collect.INFO_SQL['public']: self.rows = [self.info]
         elif sql == collect.CLOCK_SQL: self.rows = [self.end]
         elif sql in [collect.STATS_SQL['public'].format(history=h) for h in ['stats_since','NULL::timestamptz']]:
@@ -99,6 +102,31 @@ def test_default_is_inert_even_with_absent_credentials(config, monkeypatch):
     monkeypatch.setattr(collect, '_read_private', lambda *a: pytest.fail('credential read'))
     report = collect.collect(config, credential_file=None, connect=lambda **k: pytest.fail('network'))
     assert report['status'] == 'PLAN_ONLY'
+
+
+def test_counter_collection_survives_large_historical_query_text(config, private_file):
+    class LimitedHistoryDriver(Driver):
+        def execute(self, sql, params=None):
+            source=re.search(r'FROM public\.pg_stat_statements(?:\((true|false)\))? WHERE',sql)
+            if source and source.group(1)!='false':
+                raise RuntimeError('historical SQL text exceeds observer resource budget')
+            super().execute(sql,params)
+
+    report,_,_=run(config,private_file,LimitedHistoryDriver())
+    assert report['status']=='OBSERVED_COUNTERS_ONLY'
+
+
+@pytest.mark.parametrize('access', [(False,), (None,), (1,), (), (True,False)])
+def test_view_permission_denial_prevents_function_and_history_reads(config, private_file, access):
+    driver=Driver()
+    driver.access=access
+    report,_,driver=run(config,private_file,driver)
+    assert report['status']=='BLOCKED'
+    assert report['unknowns']==['STATISTICS_VIEW_ACCESS_REQUIRED']
+    forbidden={collect.INFO_SQL['public'],collect.CLOCK_SQL}
+    forbidden.update(collect.STATS_SQL['public'].format(history=history)
+                     for history in ('stats_since','NULL::timestamptz'))
+    assert not any(sql in forbidden for sql,_ in driver.executed)
 
 
 @pytest.mark.parametrize('bad', [None,[],{},True,1,'garbage',float('nan')])

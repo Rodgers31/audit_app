@@ -81,6 +81,17 @@ read on 2026-10-08. Unsupported source metadata stays blocked. The separate
 allowlisted collector retains actual snapshot ends and reset/history metadata;
 it supplies no statistics reset, billed-byte estimate or authenticated import.
 
+Counter collection uses `pg_stat_statements(false)` after checking the reader's
+SELECT privilege on the corresponding statistics view. PostgreSQL's view loads
+historical query text even when the projection only selects counters; the
+text-free function avoids that extra work while preserving the same exact
+database/user/query/top-level allowlist. Function EXECUTE denial blocks collection;
+there is no grant or fallback to the text-loading view. The function still
+materializes statistics entries, so it is not a zero-cost observation. See the
+[PostgreSQL 17 function documentation](https://www.postgresql.org/docs/17/pgstatstatements.html#PGSTATSTATEMENTS-FUNCS),
+read on 2026-10-23. This reduces observer overhead, not the provider's memory-risk
+thresholds or the outstanding workload, headroom and billed-egress requirements.
+
 Allowed receipt kinds are `provider_dashboard`, `runtime_logs`,
 `social_provider_meter`, `social_protocol_measurement`, `hosting_readback`,
 `future_measurement` and `query_stats_snapshots`, matched to their sections.

@@ -97,6 +97,62 @@ def test_actual_missing_allowlisted_query_remains_partial(owned_database,tmp_pat
     assert result['unknowns']==['ALLOWLISTED_QUERY_MISSING']
 
 
+def test_counter_read_does_not_materialize_historical_query_text(owned_database):
+    admin,database,oid,shape=owned_database
+    predicates=' WHERE dbid=%s AND userid=%s AND queryid=%s AND toplevel=%s LIMIT 2'
+    projection='SELECT clock_timestamp(),calls,rows,stats_since FROM public.'
+    params=(oid,*shape)
+    with admin.cursor() as cursor:
+        cursor.execute("SET work_mem='64kB'")
+        try:
+            for index in range(8):
+                cursor.execute('SELECT ARRAY['+','.join(str(value) for value in range(4096+128*index))+
+                               '] AS history_materialization_'+str(index))
+                cursor.fetchall()
+
+            def temp_blocks(sql):
+                cursor.execute('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) '+sql,params)
+                return cursor.fetchone()[0][0]['Plan'].get('Temp Written Blocks',0)
+
+            without_text=temp_blocks(projection+'pg_stat_statements(false)'+predicates)
+            with_text=temp_blocks(projection+'pg_stat_statements'+predicates)
+            actual=temp_blocks(collector.STATS_SQL['public'].format(history='stats_since'))
+            assert with_text>without_text+8, 'fixture did not reproduce query-text spill'
+            assert actual<=without_text+2, {
+                'collector_temp_blocks':actual,'without_text':without_text,'with_text':with_text}
+        finally:
+            cursor.execute('RESET work_mem')
+
+
+def test_actual_function_access_cannot_bypass_revoked_statistics_view(owned_database,tmp_path):
+    admin=owned_database[0]
+    with admin.cursor() as cursor:
+        cursor.execute("SELECT has_function_privilege('egress_reader',"
+                       "'public.pg_stat_statements(boolean)','EXECUTE')")
+        assert cursor.fetchone()[0] is True
+        cursor.execute('REVOKE SELECT ON public.pg_stat_statements FROM PUBLIC,egress_reader')
+    try:
+        result=capture(owned_database,tmp_path)
+        assert result['status']=='BLOCKED'
+        assert result['unknowns']==['STATISTICS_VIEW_ACCESS_REQUIRED']
+    finally:
+        with admin.cursor() as cursor:
+            cursor.execute('GRANT SELECT ON public.pg_stat_statements TO PUBLIC')
+
+
+def test_actual_function_execute_denial_has_no_text_view_fallback(owned_database,tmp_path):
+    admin=owned_database[0]
+    with admin.cursor() as cursor:
+        cursor.execute('REVOKE EXECUTE ON FUNCTION public.pg_stat_statements(boolean) FROM PUBLIC,egress_reader')
+    try:
+        result=capture(owned_database,tmp_path)
+        assert result['status']=='BLOCKED'
+        assert result['unknowns']==['COLLECTION_FAILED']
+    finally:
+        with admin.cursor() as cursor:
+            cursor.execute('GRANT EXECUTE ON FUNCTION public.pg_stat_statements(boolean) TO PUBLIC')
+
+
 @pytest.mark.parametrize('grant,revoke',[
     ('GRANT INSERT ON private_fixture TO egress_reader','REVOKE INSERT ON private_fixture FROM egress_reader'),
     ('GRANT CREATE ON SCHEMA public TO egress_reader','REVOKE CREATE ON SCHEMA public FROM egress_reader'),
