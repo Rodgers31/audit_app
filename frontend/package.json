@@ -22,7 +22,7 @@
     "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
+    "test:dependency-boundaries": "node --test scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
     "postinstall": "node scripts/apply-tooling-repairs.cjs",
     "pretest": "node scripts/apply-tooling-repairs.cjs --check",
     "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check"
@@ -45,7 +45,7 @@
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.575.0",
     "minisearch": "^7.2.0",
-    "next": "15.5.27",
+    "next": "15.5.28",
     "numeral": "^2.0.6",
     "postcss": "8.5.23",
     "react": "^19.2.4",
@@ -68,7 +68,7 @@
     "@types/jest": "^30.0.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.0.0",
-    "eslint-config-next": "15.5.27",
+    "eslint-config-next": "15.5.28",
     "eslint-plugin-local": "file:./eslint-rules",
     "jest": "30.5.2",
     "jest-environment-jsdom": "^30.3.0",
@@ -80,6 +80,7 @@
     "node": "^20.9.0 || ^22.0.0 || >=24.0.0"
   },
   "overrides": {
+    "follow-redirects": "1.16.1",
     "d3-color": "^3.1.0",
     "fast-uri": "^3.1.8",
     "path-to-regexp": "^8.0.0",
