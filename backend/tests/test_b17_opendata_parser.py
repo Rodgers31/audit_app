@@ -86,7 +86,7 @@ def test_bounded_official_transport(monkeypatch, mode):
     stream = MagicMock(); stream.__enter__.return_value = response
     client = MagicMock(); client.stream.return_value = stream
     constructor = MagicMock(); constructor.return_value.__enter__.return_value = client
-    monkeypatch.setattr(source.httpx, 'Client', constructor)
+    monkeypatch.setattr(source.tls_chain, 'verified_client', constructor)
     times = iter([0, source.MAX_SECONDS + 1, source.MAX_SECONDS + 1]) if mode == 'late' else iter([0, 0, 0])
     monkeypatch.setattr(source.time, 'monotonic', lambda: next(times))
     if mode in ('redirect', 'status', 'type', 'oversize', 'late'):
@@ -97,5 +97,6 @@ def test_bounded_official_transport(monkeypatch, mode):
         if mode == 'normal': assert parser.parse_publication(raw)['numeric_cells'] == 2125
         else:
             with pytest.raises(source.OpenDataSourceRefused): parser.parse_publication(raw)
-    assert constructor.call_args.kwargs == {'trust_env': False, 'follow_redirects': False, 'timeout': 10}
+    assert constructor.call_args.args == (source.URL,)
+    assert constructor.call_args.kwargs == {'follow_redirects': False, 'timeout': 10}
     if client.stream.called: assert client.stream.call_args.args[:2] == ('GET', source.URL)

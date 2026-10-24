@@ -20,39 +20,36 @@ That is the publisher's misconfiguration, not a stale trust store: certifi
 also not rare among the publishers this project reads, so the fix lives here
 rather than in one domain.
 
-WHY THIS IS SAFE
-----------------
-The AIA fetch is plain HTTP and therefore attacker-controllable, and Python's
-only way to supply an extra certificate — ``load_verify_locations(cadata=…)``
-— makes it a trust ANCHOR. Adding whatever that URL returns would hand an
-attacker a way to have their own certificates accepted.
+TRANSPORT AND TRUST
+-------------------
+Unverified AIA identifiers can select only two reviewed Let's Encrypt files,
+retrieved over verified HTTPS with no redirects. Public DNS answers are checked
+and pinned to the connection; DNS, reads and chain traversal share one deadline.
+Both wire bytes and streamed certificate bytes are bounded before parsing.
 
-So nothing is trusted before it is checked. A fetched certificate is used only
-if ALL of these hold:
-
-1. It is a CA certificate (basicConstraints CA:TRUE).
-2. It is currently within its validity window.
-3. Its issuer is the subject of a root ALREADY in the trust store.
-4. That root's public key actually verifies its signature.
-
-After (3) and (4) the intermediate is one the trust store already vouches
-for — it grants no authority that was not already there, which is the whole
-point. Anything else is refused and the connection is left to fail.
+Fetched certificates still require CA status, current validity, issuer identity
+and signatures through to an existing certifi root. The eventual publisher
+request uses ordinary OpenSSL chain and hostname verification. No incomplete
+path is added to the context. This workaround remains limited to declared KNBS
+hosts and fails closed when a publisher changes issuer distribution.
 """
 
 from __future__ import annotations
 
 import logging
 import ssl
+import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
 import certifi
 from cryptography import x509
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+
+from . import issuer_transport
 
 logger = logging.getLogger("seeding.tls_chain")
 
@@ -62,8 +59,7 @@ logger = logging.getLogger("seeding.tls_chain")
 INCOMPLETE_CHAIN_HOSTS = frozenset({"knbs.or.ke", "www.knbs.or.ke"})
 
 #: The AIA fetch is a small DER file from a CA's own distribution point.
-_MAX_CERT_BYTES = 16 * 1024
-_FETCH_TIMEOUT = 20.0
+_MAX_CERT_BYTES = issuer_transport.MAX_CERT_BYTES
 
 
 def _load_roots() -> Dict[bytes, x509.Certificate]:
@@ -130,7 +126,8 @@ MAX_AIA_DEPTH = 5
 
 
 def build_chain_to_a_trusted_root(
-    leaf: x509.Certificate, roots: Optional[Dict[bytes, x509.Certificate]] = None
+    leaf: x509.Certificate, roots: Optional[Dict[bytes, x509.Certificate]] = None,
+    *, deadline: Optional[float] = None,
 ) -> Optional[List[x509.Certificate]]:
     """The intermediates that connect ``leaf`` to a root already trusted.
 
@@ -147,11 +144,17 @@ def build_chain_to_a_trusted_root(
     and ISRG Root X2 is in certifi, so nothing new is being trusted; the
     certificates in between are simply the ones the server should have sent.
     """
+    deadline = time.monotonic() + issuer_transport.MAX_SECONDS if deadline is None else deadline
     roots = _load_roots() if roots is None else roots
     chain: List[x509.Certificate] = []
     current = leaf
+    visited: set[str] = set()
 
     for _ in range(MAX_AIA_DEPTH):
+        try:
+            issuer_transport.remaining(deadline)
+        except issuer_transport.IssuerRefused:
+            return None
         root = roots.get(current.issuer.public_bytes())
         if root is not None:
             if not _signature_is_valid(current, root):
@@ -161,6 +164,10 @@ def build_chain_to_a_trusted_root(
                     current.subject.rfc4514_string(),
                     root.subject.rfc4514_string(),
                 )
+                return None
+            try:
+                issuer_transport.remaining(deadline)
+            except issuer_transport.IssuerRefused:
                 return None
             return chain  # every certificate below is verified
 
@@ -173,9 +180,16 @@ def build_chain_to_a_trusted_root(
             )
             return None
 
-        issuer = next(
-            (c for c in (_fetch_der(u) for u in urls) if c is not None), None
-        )
+        issuer = None
+        for url in urls:
+            if url in visited:
+                continue
+            if len(visited) >= issuer_transport.MAX_FETCHES:
+                return None
+            visited.add(url)
+            issuer = _fetch_der(url, deadline=deadline)
+            if issuer is not None:
+                break
         if issuer is None:
             return None
         if issuer.subject.public_bytes() != current.issuer.public_bytes():
@@ -218,74 +232,82 @@ def aia_urls(cert: x509.Certificate) -> List[str]:
     ]
 
 
-def _fetch_der(url: str) -> Optional[x509.Certificate]:
-    import httpx
-
+def _fetch_der(url: str, *, deadline: Optional[float] = None) -> Optional[x509.Certificate]:
+    deadline = time.monotonic() + issuer_transport.MAX_SECONDS if deadline is None else deadline
     try:
-        response = httpx.get(url, timeout=_FETCH_TIMEOUT, follow_redirects=True)
-        response.raise_for_status()
-    except Exception as exc:  # noqa: BLE001 - any failure means no completion
-        logger.warning("could not fetch issuer from %s: %s", url, exc)
-        return None
-    raw = response.content[:_MAX_CERT_BYTES]
-    for loader in (x509.load_der_x509_certificate, x509.load_pem_x509_certificate):
-        try:
-            return loader(raw)
-        except Exception:  # noqa: BLE001 - try the other encoding
-            continue
-    logger.warning("%s did not return a certificate", url)
+        raw = issuer_transport.fetch_issuer_bytes(url, deadline)
+        for loader in (x509.load_der_x509_certificate, x509.load_pem_x509_certificate):
+            try:
+                return loader(raw)
+            except ValueError:
+                continue
+    except Exception as exc:  # Any transport failure means no completion.
+        # Untrusted URLs and transport exception strings can contain secrets.
+        logger.warning("issuer retrieval refused (%s)", type(exc).__name__)
     return None
 
 
-def leaf_certificate(host: str, port: int = 443) -> Optional[x509.Certificate]:
-    """The leaf the host presents, fetched WITHOUT verifying it.
-
-    Deliberately unverified: the certificate is not being trusted here, only
-    read for the AIA pointer it carries. What comes back is checked by
-    :func:`vouched_for_by_a_trusted_root` before it can affect anything.
-    """
-    context = ssl._create_unverified_context()  # noqa: SLF001
-    try:
-        import socket
-
-        with socket.create_connection((host, port), timeout=_FETCH_TIMEOUT) as sock:
-            with context.wrap_socket(sock, server_hostname=host) as tls:
-                der = tls.getpeercert(binary_form=True)
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("could not read %s's certificate: %s", host, exc)
+def leaf_certificate(host: str, port: int = 443, *, deadline: Optional[float] = None) -> Optional[x509.Certificate]:
+    """Read only a declared publisher's leaf; it remains untrusted input."""
+    if host not in INCOMPLETE_CHAIN_HOSTS or type(port) is not int or port != 443:
         return None
-    return x509.load_der_x509_certificate(der) if der else None
+    deadline = time.monotonic() + issuer_transport.MAX_SECONDS if deadline is None else deadline
+    context = ssl._create_unverified_context()  # Only inspect; never download content with it.
+    try:
+        with issuer_transport.connect_public(host, deadline) as sock:
+            sock.settimeout(min(2.0, issuer_transport.remaining(deadline)))
+            with context.wrap_socket(sock, server_hostname=host) as tls:
+                issuer_transport.remaining(deadline)
+                der = tls.getpeercert(binary_form=True)
+        if der and len(der) <= _MAX_CERT_BYTES:
+            return x509.load_der_x509_certificate(der)
+    except Exception as exc:
+        logger.warning("publisher leaf retrieval refused (%s)", type(exc).__name__)
+    return None
 
 
 def completed_ssl_context(host: str) -> Optional[ssl.SSLContext]:
-    """A verifying context that can also chain ``host``'s incomplete reply.
-
-    Returns None when nothing safe could be added, in which case the caller
-    should use its normal context and let verification fail — a failed
-    download is a recoverable, visible outcome; a weakened one is not.
-    """
-    leaf = leaf_certificate(host)
+    """A normal verifying context, augmented only with a completed trusted path."""
+    if host not in INCOMPLETE_CHAIN_HOSTS:
+        return None
+    deadline = time.monotonic() + issuer_transport.MAX_SECONDS
+    leaf = leaf_certificate(host, deadline=deadline)
     if leaf is None:
         return None
-
-    chain = build_chain_to_a_trusted_root(leaf)
+    chain = build_chain_to_a_trusted_root(leaf, deadline=deadline)
     if not chain:
         return None
-
-    context = ssl.create_default_context(cafile=certifi.where())
-    context.load_verify_locations(
-        cadata="".join(
+    try:
+        issuer_transport.remaining(deadline)
+        context = ssl.create_default_context(cafile=certifi.where())
+        # Python 3.13 enables partial chains by default. Added intermediates
+        # supply missing links; ancestor constraints must still reach a root.
+        context.verify_flags &= ~ssl.VERIFY_X509_PARTIAL_CHAIN
+        context.load_verify_locations(cadata="".join(
             c.public_bytes(serialization.Encoding.PEM).decode() for c in chain
-        )
-    )
-    logger.info(
-        "completed %s's chain with %s (each link verified up to a trusted root)",
-        host, ", ".join(c.subject.rfc4514_string() for c in chain),
-    )
-    return context
+        ))
+        issuer_transport.remaining(deadline)
+        return context
+    except Exception as exc:
+        logger.warning("chain completion refused (%s)", type(exc).__name__)
+        return None
 
 
 def needs_completion(url: str) -> bool:
-    """Is this a host known to send an incomplete chain?"""
-    host = (urlparse(url).hostname or "").lower()
-    return host in INCOMPLETE_CHAIN_HOSTS
+    """Only canonical HTTPS publisher authorities use the workaround."""
+    try:
+        parsed = urlsplit(url)
+        return (parsed.scheme == 'https' and parsed.netloc.lower() in INCOMPLETE_CHAIN_HOSTS
+                and not any(ord(c) <= 32 or ord(c) == 127 for c in url))
+    except (ValueError, TypeError):
+        return False
+
+
+def verified_client(url: str, *, timeout, headers=None, follow_redirects=False):
+    """Shared seeding/OpenData entry: failed completion keeps TLS verification."""
+    import httpx
+
+    context = completed_ssl_context(urlsplit(url).hostname) if needs_completion(url) else None
+    return httpx.Client(verify=context if context is not None else True,
+                        trust_env=False, timeout=timeout, headers=headers,
+                        follow_redirects=follow_redirects)
