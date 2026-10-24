@@ -15,6 +15,18 @@ from .utils import parse_rate_limit
 class SeedingSettings(BaseSettings):
     """Configuration options controlling seeding behaviour."""
 
+    knbs_release_discovery_enabled: bool = Field(
+        default=False,
+        description="Bounded official KNBS discovery; unreviewed editions remain quarantined in native job receipts.",
+    )
+
+    @field_validator("knbs_release_discovery_enabled", mode="before")
+    @classmethod
+    def explicit_knbs_discovery_opt_in(cls, value):
+        if type(value) is not bool and (type(value) is not str or value not in ("true", "false")):
+            raise ValueError("KNBS discovery opt-in requires true or false")
+        return value
+
     opendata_ingestion_enabled: bool = Field(
         default=False,
         description="Explicit opt-in to the pinned KNBS 2026 Table 5.13 workbook; publication remains separately gated.",

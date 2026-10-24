@@ -23,10 +23,10 @@ SOURCE_SCOPE = {
     "cob": "CoB county budgets; excludes national budgets and pending bills.",
     "knbs": "Population: KNBS county census and World Bank national series.",
     "cra": "CRA FY2026/27 Table 5.2 recommended allocations only; excludes enacted budgets and actual revenue.",
-    "opendata": "KNBS 2026 workbook Table 5.13 county revenue cells only; published discrepancies, missing values and provisional labels retained; publication unqualified.",
+    "opendata": "Pinned KNBS 2026 Table 5.13 extraction only; optional bounded release discovery requires a separate default-off opt-in; unknown editions/revisions quarantined; labels, missing values and discrepancies retained; publication unqualified.",
 }
 SOURCE_GAPS = {
-    "opendata": "OpenData requires explicit SEED_OPENDATA_INGESTION_ENABLED=true and the pinned official KNBS workbook handler (#621).",
+    "opendata": "OpenData requires SEED_OPENDATA_INGESTION_ENABLED=true and its reviewed pinned KNBS handler; optional bounded discovery additionally requires SEED_KNBS_RELEASE_DISCOVERY_ENABLED=true; unknown editions quarantined, publication unqualified.",
     "cra": "CRA requires explicit SEED_CRA_INGESTION_ENABLED=true and the reviewed native recommendation handler.",
 }
 Source = Literal["treasury", "cob", "oag", "knbs", "opendata", "cra"]
