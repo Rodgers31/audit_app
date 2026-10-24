@@ -218,10 +218,18 @@ class TestItRefuses:
         self, pki, monkeypatch
     ):
         """Failure means the caller keeps its normal, verifying client."""
-        monkeypatch.setattr(tls_chain, "leaf_certificate", lambda host, port=443, **kwargs: pki["leaf"])
-        serve(None, monkeypatch)
+        calls = []
+        def leaf(host, port=443, **kwargs):
+            calls.append(("leaf", host))
+            return pki["leaf"]
+        def failed_issuer(url, **kwargs):
+            calls.append(("issuer", url))
+            return None
+        monkeypatch.setattr(tls_chain, "leaf_certificate", leaf)
+        monkeypatch.setattr(tls_chain, "_fetch_der", failed_issuer)
 
-        assert tls_chain.completed_ssl_context("example.test") is None
+        assert tls_chain.completed_ssl_context("www.knbs.or.ke") is None
+        assert calls == [("leaf", "www.knbs.or.ke"), ("issuer", "http://aia.test/inter.der")]
 
 
 class TestScope:
