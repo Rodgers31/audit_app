@@ -37,13 +37,13 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           # Reviewed implementation snapshot; activation remains blocked.
-          ref: 739216efba9d5ed97ee3de8f39c277110ac1c3fa
+          ref: d3a5fb90bb7959c19c84daaf91586c1f74be8324
           persist-credentials: false
           path: app
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          # Policy is an independently pinned later commit referring to app's
-          # already-known immutable HEAD. Never checkout dispatch input/ref.
+          # Independently reviewed default-off policy release. A future accepted
+          # policy must follow its reviewed app identity; never use dispatch input.
           ref: 0a36a3a485dc1c25e7405a681b08757e7a5088b3
           persist-credentials: false
           path: admission
