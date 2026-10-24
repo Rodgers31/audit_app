@@ -1,0 +1,59 @@
+# B66 performance author handoff — #774
+
+## Implementation and preserved boundaries
+
+Frozen base: `924f1a4f27e1952f97d2291d8878d88603132237`. Branch: `codex/b66-admin-page-performance`. Worktree: `/Users/roger/.codex/worktrees/b66-performance/audit_app`. Parent acceptance #774/#699 remains open.
+
+Nine `initial='hidden'` attributes in `frontend/app/admin/page.tsx` and `frontend/app/admin/etl/page.tsx` become `initial={false}`. This makes existing overview stat cards, alerts/failure/volume/audit/schedule sections and ETL summary/source rows appear at their first render after the unchanged guard permits them. Final variant values, layout classes, semantics, links, inputs, query keys, freshness/cancellation, privilege checks, actor lifetimes and command handlers are unchanged. Existing AuthProvider bootstrap-sharing and PageShell paint repairs remain intact. No backend contract is changed or consumed.
+
+The protected invariant is immediate visibility of working content after authorization, including sections mounted by later data. Searches found all six overview motion entrance sites and all three ETL sites; all nine are covered. Unrelated public animations and guarded-route shell behavior remain covered by existing tests.
+
+New normal-suite files: `frontend/__tests__/admin-auth/working-content-paint.test.tsx`, `b66-spec-review.test.tsx`, `b66-standards-review.test.tsx`. New `frontend/browser-fixtures/admin-working-paint/` imports actual route/layout/guard/motion code with inert auth, API and Supabase replacements. It supports a frozen two-module predecessor without modifying the current checkout, and refuses incomplete/unsupported observation inventories and all writes. See its README for preparation and bounded comparison commands.
+
+## Diagnosis and differential receipts
+
+Evidence root: `/Users/roger/.codex/visualizations/2026/10/13/01a13546-5f5a-7973-925e-a8a2c3aedb7c/BATCH_66_LAUNCH/performance/`.
+
+On unchanged production source, `node node_modules/jest/bin/jest.js __tests__/admin-auth/working-content-paint.test.tsx --runInBand` failed both real-route/real-motion initial-frame cases at opacity 0 (`red-first-frame.txt`); the candidate passed (`green-first-frame.txt`). Independent Spec replay directly imported two externally exported frozen route modules: both paint cases failed while the other 14 authorization/error/isolation cases passed (`spec-baseline.log`). Its first attempted alias-based predecessor mapping stayed green because Next's alias transform bypassed that mapping: that invalid control is retained and explicitly excluded in `spec-review.md`.
+
+Corrected actual-Chrome production-build fixture comparison: same origin `http://127.0.0.1:34970`, routes, ordinary cache/no override, viewport 1728×906, no CPU/network emulation, all 12 observations document-visible. Builds completed before final sampling; three observations per route per arm. Required heading inventories were complete. Source/producer hashes and build IDs are in `final-before/fixture-source.json`, `final-after/fixture-source.json` and `final-browser-observations.json`.
+
+| Route | Predecessor full observed opacity after first working frame (ms) | Candidate |
+|---|---|---|
+| `/admin` | 914.4, 912.8, 930.6 | All required cards fully opaque in first observed frame (0.1, 0.1, 0.0 ms bookkeeping intervals) |
+| `/admin/etl` | 718.2, 722.2, 723.9 | All required cards fully opaque in first observed frame (0.1, 0.0, 0.1 ms bookkeeping intervals) |
+
+These are **local opacity observations**, not data-ready/navigation latency or a field FCP/LCP gain. The timer starts at the first observed working-content frame, which can follow React commit. Fixture banner is FCP. Available snapshots include an application H1 candidate in some runs; candidate snapshots taken earlier can precede that candidate. They are not complete-lifetime LCP traces or comparable LCP distributions. All captured candidates are retained; no telemetry filter or extension suppression was added. Initial-producer observations remain separately marked superseded after the review finding below. Local SPA overview→ETL→Back reset the measurement route; a failed-read case rendered unavailable evidence.
+
+## Independent executable reviews
+
+Spec reviewer executed 16 independent actual-route/layout/StrictMode cases: denied/restoring/expired/citizen/identity-mismatch/malformed roles, pending and late populated sections, failed reads + refresh, actor transition, abort ignored by late transport, unmount/remount and unavailable worker controls. Final 16/16 passed; frozen predecessor 14 passed/2 paint failures. `spec-review.md` and `spec-final-candidate.log` bind final test/source hashes.
+
+Standards/adversarial reviewer reproduced one real fixture false-positive: an unrelated list item could satisfy the visibility predicate without required ETL cards. Root verified and fixed it using an explicit supported-route/required-label inventory and SPA reset. Original red receipt is retained. Final independent 13 cases plus two author cases passed (15/15): absent/incomplete inventory, unsupported route, navigation reset, refusing reads/writes, abort, never-restored/unprivileged auth, slow/failed/cancelled data and actual ETL rows/disabled commands. `standards-review.md` records executable producer refusal/hash controls and final compatibility rerun. No remaining actionable finding within this local scope.
+
+## Final checks and setup failures
+
+All commands below ran in the owned worktree's `frontend` directory on Node v22.19.0 / Next 15.5.27, without production configuration or credentials:
+
+- `node node_modules/jest/bin/jest.js __tests__/admin-auth __tests__/admin/overview-audit __tests__/admin/operations __tests__/batch7_etl_ui.test.tsx __tests__/batch7_etl_ui_adversarial.test.tsx __tests__/batch7_etl_ui_parsers.test.ts --runInBand`: **21 suites / 430 tests passed**, no skips; `final-affected-tests.txt`. The earlier 19-suite/401 run is overlapping evidence, not additive.
+- `NEXT_PUBLIC_API_URL=http://127.0.0.1:34974 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:34974 NEXT_PUBLIC_SUPABASE_ANON_KEY=inert-fixture-public-key NEXT_TELEMETRY_DISABLED=1 npm run build`: required prebuild repairs/input checks, production compile, lint/type validity and route generation passed; `final-application-build.txt`. The public key value is a noncredential sentinel, with only loopback URLs.
+- `node node_modules/typescript/bin/tsc --noEmit`: passed after reviewer-test compatibility corrections; `types-final-2.txt`.
+- `NEXT_PUBLIC_API_URL=http://127.0.0.1:34974 NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:34974 NEXT_PUBLIC_SUPABASE_ANON_KEY=inert-fixture-public-key NEXT_TELEMETRY_DISABLED=1 npm run lint`: passed; `lint.txt` (final readback also retained).
+- Both corrected before/after fixture production builds passed; `final-before-build.txt` / `final-after-build.txt`.
+- Full owned diff inspected, `git diff --check` and staged credential-pattern scan passed before explicit commit. No backend/config/dependency/lock/migration/workflow file changed.
+
+Failures remain evidence: first fixture build did not replace source-resolved auth imports and refused for missing Supabase config (`failed-baseline-build-1.txt`); exact source-module replacement fixed the harness and both production fixture builds then passed without credentials. Initial application prebuild refused a shared dependency symlink (`application-build.txt`); an owned APFS clone of cached packages allowed the unchanged prebuild check to execute. No installation or cache mutation was performed. ES5 typechecking found NodeList spreads and two unsupported Testing Library options in new fixture/reviewer tests; compatible Array.from calls and default exact string matching fixed those without weakening assertions. First failed type/build outputs remain retained. An initial relative-path edit attempt changed no source and reran the red tests (`red-path-error-attempt.txt`).
+
+## Production, controls and remaining acceptance
+
+Bounded actual Chrome readback: `.org/status` redirected to `.org/?authRequired=1`; `.com/status` restored its existing admin session and rendered health. No session was transferred. Vercel current Ready/Latest/Production deployment `4sj1pdQ1nvuuNWzG9dpbeKcxE7NE` identifies frozen source `924f1a4` and `.com` on its detail page, while Environments labels `.org` primary +6. This is recorded, not changed. Native foreground belonged to unrelated Taash work, so no native DevTools/foreground trace was taken; a DOM-sandbox performance read was unavailable and is not a timing result. Local DOM-visible fixture observations supply the repeatable scoped causal proof.
+
+`PRE_PUSH_CONTROLS.json` holds fresh API/Chrome controls: Actions globally OFF; all five static workflows disabled; active ruleset has no automatic code-review rule; personal automatic/new-push/draft review unchecked; Preview Branch Tracking Disabled. Main remains frozen. No hosted Actions/bot review requested, PR marked ready, merge, deploy, migration, configuration/plan/budget/domain/OAuth/access/credential/storage/retention change, production financial write, media upload, social command or support message occurred. Publishing/uploads/native/supervision/automatic generation/publishing remain OFF by unchanged contract, not a new backend 12-flag attestation. Existing Vercel $1 PauseOn policy and Roger's export custody/deadline are unchanged.
+
+`DEPENDENCIES.md` records the backend remote-health freshness/unknown contract for queries/coordinator. The boolean-only frozen status UI must not label stale/unknown remote observations live healthy; no new contract is silently consumed here. Backend waits, hydration/bundle/auth restoration, status first/largest paint, representative field/per-route/SPA/visibility/CLS coverage, extension LCP attribution and the historical 873 s event remain open acceptance. This PR does not close #774 or #699, establish Free viability, or claim whole-admin completion. No new layout/geometry redesign was made; representative responsive/layout acceptance remains pending.
+
+## Cleanup, rollout and rollback
+
+External STATUS/resource manifests record final browser/process cleanup and PR identity. Owned loopback servers and generated build/cache/ephemeral predecessor files are removed after receipts are retained. No container/database was created. The owned managed author worktree and source/handoff remain available for coordinator consolidation; do not archive while the draft PR is open. Dependencies were reused from cached trusted packages; no primary/coordinator checkout files were mutated.
+
+Draft-only author delivery. Coordinator should review both frontend and queries handoffs, choose merge order, and execute combined-tree checks. No deployment is authorized. A separately approved rollout can revert this scoped commit to restore the prior entrances; no schema/data/config rollback is involved. Keep all activation switches default-OFF throughout integration.
