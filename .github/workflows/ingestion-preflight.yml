@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           # Reviewed implementation snapshot; activation remains blocked.
-          ref: d3a5fb90bb7959c19c84daaf91586c1f74be8324
+          ref: cf986ed03c9d39c62dc4db70f50c0509809f5530
           persist-credentials: false
           path: app
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
