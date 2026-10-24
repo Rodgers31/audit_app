@@ -22,7 +22,8 @@ CHECK_NAMES = (
 OUTPUT_NAMES = ("protocol", "revision", *CHECK_NAMES, "complete_activity")
 # Default admission remains an empty reader graph. The explicit existing-audit
 # profile pins the two owner-only administration edges and one read-group edge.
-ROLE_GRAPH_SQL = """(CASE
+ROLE_GRAPH_SQL = """(EXISTS(SELECT 1 FROM pg_catalog.pg_roles
+ WHERE oid={owner} AND rolname='postgres') AND (CASE
  WHEN {audit_log} IS NULL AND {grantor} IS NULL THEN
   NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
     WHERE roleid={reader} OR member={reader})
@@ -45,7 +46,7 @@ ROLE_GRAPH_SQL = """(CASE
   AND EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
     WHERE roleid={audit_log} AND member={reader} AND grantor={owner}
       AND NOT admin_option AND inherit_option AND set_option)
- ELSE false END)"""
+ ELSE false END))"""
 
 
 def profile_oids(profile):
@@ -103,14 +104,24 @@ BODY_SHA256 = hashlib.sha256(BODY.encode()).hexdigest()
 OBSERVE_SQL = "SELECT * FROM audit_preflight_v2.observe()"
 
 
-def installation_sql(reader: str, *, role_profile=None) -> str:
+def installation_sql(reader: str, *, reader_oid, owner_oid, role_profile=None) -> str:
     """Only the existing production login or an explicit owned-test login."""
     if type(reader) is not str or reader not in READERS:
         raise ValueError("READER_REFUSED")
+    if (
+        any(
+            type(x) is not int or not 0 < x <= 2**32 - 1
+            for x in (reader_oid, owner_oid)
+        )
+        or reader_oid == owner_oid
+    ):
+        raise ValueError("ROLE_IDENTITY_REFUSED")
     log_oid, grantor_oid = profile_oids(role_profile)
+    if log_oid is not None and len({reader_oid, owner_oid, log_oid, grantor_oid}) != 4:
+        raise ValueError("ROLE_PROFILE_REFUSED")
     graph = ROLE_GRAPH_SQL.format(
-        reader=f"(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='{reader}')",
-        owner="(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='postgres')",
+        reader=f"{reader_oid}::oid",
+        owner=f"{owner_oid}::oid",
         audit_log="NULL::oid" if log_oid is None else f"{log_oid}::oid",
         grantor="NULL::oid" if grantor_oid is None else f"{grantor_oid}::oid",
     )
@@ -123,6 +134,11 @@ BEGIN
     OR NOT pg_catalog.pg_has_role(current_user,'pg_read_all_stats','USAGE')
     OR current_setting('server_version_num')::integer NOT BETWEEN 170000 AND 179999
  THEN RAISE EXCEPTION 'PREFLIGHT_OWNER_REFUSED'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles
+      WHERE oid={reader_oid}::oid AND rolname='{reader}')
+ OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles
+      WHERE oid={owner_oid}::oid AND rolname='postgres')
+ THEN RAISE EXCEPTION 'PREFLIGHT_ROLE_IDENTITY_REFUSED'; END IF;
  IF pg_catalog.to_regnamespace('{SCHEMA}') IS NOT NULL
  THEN RAISE EXCEPTION 'PREFLIGHT_NAMESPACE_EXISTS'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='{reader}'

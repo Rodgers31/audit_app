@@ -1,7 +1,7 @@
 """Explicit existing audit-reader graph; never alter production memberships."""
 import pytest
 
-from conftest import tool
+from conftest import tool, installation
 
 
 @pytest.fixture
@@ -41,14 +41,12 @@ def role_profile(owner, config):
                 c.execute("REVOKE audit_log_reader,b71_preflight_reader FROM postgres")
                 c.execute("REVOKE SELECT ON private_sentinel FROM audit_log_reader")
                 c.execute("DROP ROLE audit_log_reader")
-                c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+                c.execute(installation(owner))
 
 
 def install_profile(owner, config, profile):
     with owner.cursor() as c:
-        c.execute(
-            tool.contract.installation_sql("b71_preflight_reader", role_profile=profile)
-        )
+        c.execute(installation(owner, profile))
         c.execute(
             tool.contract.INTERFACE_SQL,
             tool.contract.interface_parameters(config["database"]["role_oid"], profile),
@@ -97,7 +95,7 @@ def test_pinned_existing_graph_installs_and_runs(
 def test_default_empty_profile_still_refuses_membership(owner, role_profile):
     with owner.cursor() as c:
         with pytest.raises(Exception, match="PREFLIGHT_.*REFUSED"):
-            c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+            c.execute(installation(owner))
         c.execute("ROLLBACK")
         c.execute("SELECT to_regnamespace('audit_preflight_v2')")
         assert c.fetchone() == (None,)
@@ -108,7 +106,9 @@ def test_default_empty_profile_still_refuses_membership(owner, role_profile):
 )
 def test_profile_builder_rejects_malformed(bad):
     with pytest.raises(ValueError):
-        tool.contract.installation_sql("b71_preflight_reader", role_profile=bad)
+        tool.contract.installation_sql(
+            "b71_preflight_reader", reader_oid=1, owner_oid=2, role_profile=bad
+        )
 
 
 @pytest.mark.parametrize("key", ["audit_log_role_oid", "admin_grantor_oid"])
@@ -238,14 +238,216 @@ def test_installer_refuses_profile_drift_atomically(owner, role_profile, sql, un
             with pytest.raises(
                 Exception, match="PREFLIGHT_(ROLE_GRAPH|READER_ACCESS)_REFUSED"
             ):
-                c.execute(
-                    tool.contract.installation_sql(
-                        "b71_preflight_reader", role_profile=role_profile
-                    )
-                )
+                c.execute(installation(owner, role_profile))
             c.execute("ROLLBACK")
             c.execute("SELECT to_regnamespace('audit_preflight_v2')")
             assert c.fetchone() == (None,)
         finally:
             c.execute("ROLLBACK")
             c.execute(undo)
+
+
+@pytest.mark.parametrize("profiled", [False, True])
+def test_runtime_refuses_owner_rename(owner, config, credential, request, profiled):
+    """OID continuity does not admit an altered fixed owner name."""
+    import psycopg2
+
+    if profiled:
+        profile = request.getfixturevalue("role_profile")
+        install_profile(owner, config, profile)
+    admin = psycopg2.connect(
+        host="127.0.0.1",
+        port=56972,
+        dbname="b66_preflight_metadata",
+        user="supabase_admin",
+        password="b66-owned-only",
+        connect_timeout=2,
+    )
+    admin.autocommit = True
+    try:
+        with admin.cursor() as c:
+            c.execute("ALTER ROLE postgres RENAME TO b74_renamed_owner")
+        try:
+            result = tool.run(config, execute=True, credential=credential)
+            assert (
+                result["status"] == "REFUSED" and result["observation"] is None
+            ), result
+        finally:
+            with admin.cursor() as c:
+                c.execute("ALTER ROLE b74_renamed_owner RENAME TO postgres")
+    finally:
+        admin.close()
+
+
+def test_provider_bootstrap_grantor_is_recorded(owner, config, role_profile):
+    """PG17 attributes these superuser grants to the bootstrap role."""
+    with owner.cursor() as c:
+        c.execute(
+            "SELECT pg_get_userbyid(grantor),admin_option,inherit_option,set_option "
+            "FROM pg_auth_members WHERE roleid=ANY(%s::oid[]) AND member=%s ORDER BY roleid",
+            (
+                [config["database"]["role_oid"], role_profile["audit_log_role_oid"]],
+                config["interface"]["owner_oid"],
+            ),
+        )
+        assert c.fetchall() == [("supabase_admin", True, False, False)] * 2
+
+
+@pytest.mark.parametrize("missing", ["audit_log_reader", "b71_preflight_reader"])
+def test_repeated_grant_cannot_hide_missing_owner_edge(owner, role_profile, missing):
+    other = (
+        "b71_preflight_reader" if missing == "audit_log_reader" else "audit_log_reader"
+    )
+    with owner.cursor() as c:
+        c.execute(
+            "REVOKE audit_log_reader FROM b71_preflight_reader GRANTED BY postgres"
+        )
+        c.execute(f"REVOKE {missing} FROM postgres")
+        try:
+            c.execute(
+                f"GRANT {other} TO postgres WITH ADMIN TRUE, INHERIT FALSE, SET FALSE"
+            )
+            c.execute(
+                f"GRANT {other} TO postgres WITH ADMIN TRUE, INHERIT FALSE, SET FALSE"
+            )
+            c.execute(
+                "SELECT count(*),count(DISTINCT roleid) FROM pg_auth_members "
+                "WHERE roleid IN ('b71_preflight_reader'::regrole,'audit_log_reader'::regrole) "
+                "AND member='postgres'::regrole AND grantor='supabase_admin'::regrole"
+            )
+            assert c.fetchone() == (1, 1)
+            c.execute(
+                "SELECT pg_get_indexdef(indexrelid) FROM pg_index WHERE indrelid='pg_auth_members'::regclass AND indisunique"
+            )
+            definitions = c.fetchall()
+            assert any("(roleid, member, grantor)" in row[0] for row in definitions)
+            with pytest.raises(Exception, match="PREFLIGHT_ROLE_GRAPH_REFUSED"):
+                c.execute(installation(owner, role_profile))
+            c.execute("ROLLBACK")
+            c.execute("SELECT to_regnamespace('audit_preflight_v2')")
+            assert c.fetchone() == (None,)
+        finally:
+            c.execute("ROLLBACK")
+            c.execute(
+                f"GRANT {missing} TO postgres WITH ADMIN TRUE, INHERIT FALSE, SET FALSE"
+            )
+            c.execute(
+                "GRANT audit_log_reader TO b71_preflight_reader WITH ADMIN FALSE, INHERIT TRUE, SET TRUE GRANTED BY postgres"
+            )
+
+
+@pytest.mark.parametrize("key", ["reader_oid", "owner_oid"])
+def test_installer_refuses_wrong_identity_before_grants(owner, config, key):
+    pins = dict(
+        reader_oid=config["database"]["role_oid"],
+        owner_oid=config["interface"]["owner_oid"],
+    )
+    pins[key] += 100000
+    sql = tool.contract.installation_sql("b71_preflight_reader", **pins)
+    with owner.cursor() as c:
+        c.execute("DROP SCHEMA audit_preflight_v2 CASCADE")
+        try:
+            with pytest.raises(Exception, match="PREFLIGHT_ROLE_IDENTITY_REFUSED"):
+                c.execute(sql)
+            c.execute("ROLLBACK")
+            c.execute("SELECT to_regnamespace('audit_preflight_v2')")
+            assert c.fetchone() == (None,)
+        finally:
+            c.execute("ROLLBACK")
+            pins = dict(
+                reader_oid=config["database"]["role_oid"],
+                owner_oid=config["interface"]["owner_oid"],
+            )
+            c.execute(tool.contract.installation_sql("b71_preflight_reader", **pins))
+
+
+@pytest.mark.parametrize("key", ["reader_oid", "owner_oid"])
+@pytest.mark.parametrize(
+    "bad", [True, None, 0, -1, 2**32, 1.0, "123", float("nan"), float("inf")]
+)
+def test_installer_identity_types_refuse(key, bad):
+    pins = dict(reader_oid=123, owner_oid=124)
+    pins[key] = bad
+    with pytest.raises(ValueError, match="ROLE_IDENTITY_REFUSED"):
+        tool.contract.installation_sql("b71_preflight_reader", **pins)
+
+
+@pytest.mark.parametrize("missing", ["reader_oid", "owner_oid"])
+def test_installer_requires_both_pins(missing):
+    pins = dict(reader_oid=123, owner_oid=124)
+    del pins[missing]
+    with pytest.raises(TypeError):
+        tool.contract.installation_sql("b71_preflight_reader", **pins)
+
+
+def test_installer_identity_alias_refuses():
+    with pytest.raises(ValueError, match="ROLE_IDENTITY_REFUSED"):
+        tool.contract.installation_sql(
+            "b71_preflight_reader", reader_oid=123, owner_oid=123
+        )
+
+
+@pytest.mark.parametrize("replace", ["reader", "owner"])
+def test_prepared_installer_refuses_same_name_replacement(owner, config, replace):
+    """Prepare against an existing object; refuse a new object with its name."""
+    import psycopg2
+
+    sql = tool.contract.installation_sql(
+        "b71_preflight_reader",
+        reader_oid=config["database"]["role_oid"],
+        owner_oid=config["interface"]["owner_oid"],
+    )
+    admin = replacement = None
+    with owner.cursor() as c:
+        c.execute("DROP SCHEMA audit_preflight_v2 CASCADE")
+    try:
+        if replace == "reader":
+            with owner.cursor() as c:
+                c.execute("DROP ROLE b71_preflight_reader")
+                c.execute(
+                    "CREATE ROLE b71_preflight_reader LOGIN PASSWORD 'owned-reader-only'"
+                )
+            runner = owner
+        else:
+            admin = psycopg2.connect(
+                host="127.0.0.1",
+                port=56972,
+                dbname="b66_preflight_metadata",
+                user="supabase_admin",
+                password="b66-owned-only",
+                connect_timeout=2,
+            )
+            admin.autocommit = True
+            with admin.cursor() as c:
+                c.execute("ALTER ROLE postgres RENAME TO b74_former_owner")
+                c.execute(
+                    "CREATE ROLE postgres SUPERUSER LOGIN PASSWORD 'b66-owned-only'"
+                )
+            replacement = psycopg2.connect(
+                host="127.0.0.1",
+                port=56972,
+                dbname="b66_preflight_metadata",
+                user="postgres",
+                password="b66-owned-only",
+                connect_timeout=2,
+            )
+            replacement.autocommit = True
+            runner = replacement
+        with runner.cursor() as c:
+            with pytest.raises(Exception, match="PREFLIGHT_ROLE_IDENTITY_REFUSED"):
+                c.execute(sql)
+            c.execute("ROLLBACK")
+            c.execute("SELECT to_regnamespace('audit_preflight_v2')")
+            assert c.fetchone() == (None,)
+    finally:
+        if replacement:
+            replacement.close()
+        if admin:
+            with admin.cursor() as c:
+                c.execute("DROP SCHEMA IF EXISTS audit_preflight_v2 CASCADE")
+                c.execute("DROP ROLE postgres")
+                c.execute("ALTER ROLE b74_former_owner RENAME TO postgres")
+            admin.close()
+        with owner.cursor() as c:
+            c.execute("ROLLBACK")
+            c.execute(installation(owner))

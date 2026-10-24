@@ -48,7 +48,11 @@ the caller remains unable to SELECT the underlying data or full statistics.
 Installation refuses an existing namespace, direct privileged role flags,
 unexpected role membership, and effective database
 CREATE, application writes/ownership, sequence usage/update or schema CREATE.
-All creation/revocation/grants occur in one transaction with 2s statement and
+The builder requires independently observed `reader_oid` and `owner_oid` keyword
+arguments for every profile, including `null`. It validates positive, distinct
+integer identities before rendering SQL and compares their fixed names/OIDs
+inside the transaction before CREATE/GRANT. All creation/revocation/grants occur
+in one transaction with 2s statement and
 500ms lock bounds. Failure rolls the transaction back. Never use CREATE OR
 REPLACE to absorb unknown existing state. Rollback of an accepted installation
 requires a separately reviewed access-removal action; this tool performs none.
@@ -61,16 +65,18 @@ no roles. The named provider grantor `supabase_admin` must remain a superuser.
 Exactly three incident edges are admitted: provider-granted ADMIN-only owner
 membership in each of reader/group (INHERIT and SET false), plus the owner's
 non-admin, inheritable/settable group grant to the reader. Missing/extra edges,
-changed identities/names/options/grantors, or role authority drift refuse during
+changed identities/names/options/grantors (including an owner rename), or role
+authority drift refuse during
 installation and both runtime snapshots. This preserves the accepted admin audit
 reader's sole group membership; removing that membership would break
 `backend/services/admin_audit_storage.py:capability`. No role membership is
 created, revoked or altered by installation. The default remains strict, and
 profile OIDs must come from an independent operator review, never self-admission.
-The prepared production transaction must also guard the independently observed
-reader and owner names/OIDs before CREATE or GRANT; the builder's fixed names
-alone do not prove role-object continuity. Keep this guard in the same bounded
-transaction, without a nested BEGIN or an early COMMIT.
+The prepared production transaction uses this mandatory builder guard; callers
+must never derive new expectations from the target at execution time. Runtime
+also requires the pinned function-owner OID to remain named `postgres`, for both
+the strict-null and explicit-profile graphs. Do not add a nested BEGIN or an
+early COMMIT.
 
 ## Binding and execution
 

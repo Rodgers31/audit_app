@@ -12,6 +12,21 @@ sys.path.insert(0, str(ROOT / "scripts/verification"))
 import ingestion_metadata_preflight as tool
 
 
+def installation(owner, role_profile=None):
+    """Owned setup only; capture this SQL before any identity-drift mutation."""
+    with owner.cursor() as c:
+        c.execute("SELECT oid FROM pg_roles WHERE rolname='b71_preflight_reader'")
+        reader_oid = c.fetchone()[0]
+        c.execute("SELECT oid FROM pg_roles WHERE rolname='postgres'")
+        owner_oid = c.fetchone()[0]
+    return tool.contract.installation_sql(
+        "b71_preflight_reader",
+        reader_oid=reader_oid,
+        owner_oid=owner_oid,
+        role_profile=role_profile,
+    )
+
+
 @pytest.fixture(scope="session")
 def owner():
     if os.environ.get("B71_PREFLIGHT_OWNED_PG") != "56972":
@@ -52,7 +67,7 @@ def owner():
             c.execute(
                 "CREATE POLICY hidden ON public." + name + " FOR SELECT USING(false)"
             )
-        c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+        c.execute(installation(db))
     try:
         yield db
     finally:
