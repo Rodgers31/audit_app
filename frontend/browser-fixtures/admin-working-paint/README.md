@@ -16,6 +16,13 @@ NEXT_PUBLIC_API_URL=http://127.0.0.1:34974 NEXT_TELEMETRY_DISABLED=1 node node_m
 NEXT_PUBLIC_API_URL=http://127.0.0.1:34974 NEXT_TELEMETRY_DISABLED=1 node node_modules/next/dist/bin/next build /absolute/fresh/after
 ```
 
+The producer declares DOM, DOM iterable and ESNext type libraries explicitly
+while preserving its ES2017 emission target. This covers the fixture's modern
+Object APIs before Next normalizes the rest of its TypeScript configuration;
+it does not add runtime polyfills. The supported Node 22 runtime supplies those
+APIs. A production build and successful static route generation are separate
+readiness checks; generating a source receipt alone does not establish them.
+
 `frozen` reads only the two route modules from
 `924f1a4f27e1952f97d2291d8878d88603132237`. Both variants share unchanged
 dependencies from the current source. Inspect `fixture-source.json` and the
@@ -56,4 +63,8 @@ retain source receipts and sanitized observations separately.
 
 Executable normal-suite coverage is in
 `__tests__/admin-auth/working-content-paint.test.tsx`,
-`b66-spec-review.test.tsx`, and `b66-standards-review.test.tsx`.
+`working-paint-producer.test.ts`, `b66-spec-review.test.tsx`, and
+`b66-standards-review.test.tsx`. The producer test invokes both fresh variants
+and typechecks the generated API module without ambient type packages or a
+Next rewrite; an ES2017-only negative control must diagnose both modern Object
+APIs. It also verifies source/runtime receipts and existing-directory refusal.

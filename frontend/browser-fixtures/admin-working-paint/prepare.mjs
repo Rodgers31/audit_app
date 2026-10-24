@@ -16,7 +16,7 @@ for (const name of ['Harness.tsx', 'auth.tsx', 'api.ts']) await copyFile(resolve
 await writeFile(resolve(output, 'fixture/supabase.ts'), 'export const createClient=()=>({auth:{onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})}});');
 await writeFile(resolve(output, 'package.json'), '{"private":true}');
 await writeFile(resolve(output, 'tsconfig.json'), JSON.stringify({ compilerOptions: {
-  jsx: 'preserve', target: 'es2017', module: 'esnext', moduleResolution: 'bundler', esModuleInterop: true,
+  jsx: 'preserve', target: 'es2017', lib: ['dom', 'dom.iterable', 'esnext'], module: 'esnext', moduleResolution: 'bundler', esModuleInterop: true,
   baseUrl: source, paths: { '@/*': ['./*'] },
 } }));
 const replacements = [
