@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from conftest import tool, ROOT
+from conftest import tool, ROOT, installation
 
 
 def test_real_private_worker(config, credential):
@@ -232,13 +232,15 @@ def test_installer_refuses_effective_access(owner, grant, revoke):
         c.execute("DROP SCHEMA audit_preflight_v2 CASCADE")
         c.execute(grant)
         try:
-            with pytest.raises(Exception, match="PREFLIGHT_READER_ACCESS_REFUSED"):
-                c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+            with pytest.raises(
+                Exception, match="PREFLIGHT_(READER_ACCESS|ROLE_GRAPH)_REFUSED"
+            ):
+                c.execute(installation(owner))
         finally:
             c.execute("ROLLBACK")
             c.execute(revoke)
             c.execute("DROP SCHEMA IF EXISTS audit_preflight_v2 CASCADE")
-            c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+            c.execute(installation(owner))
 
 
 @pytest.mark.parametrize(
@@ -374,7 +376,7 @@ def test_installer_rolls_back_unexpected_default_function_access(owner):
         c.execute("ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO b71_extra")
         try:
             with pytest.raises(Exception, match="PREFLIGHT_DEFAULT_ACCESS_REFUSED"):
-                c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+                c.execute(installation(owner))
             c.execute("ROLLBACK")
             c.execute("SELECT to_regnamespace('audit_preflight_v2')")
             assert c.fetchone() == (None,)
@@ -385,7 +387,7 @@ def test_installer_rolls_back_unexpected_default_function_access(owner):
             )
             c.execute("DROP SCHEMA IF EXISTS audit_preflight_v2 CASCADE")
             c.execute("DROP ROLE b71_extra")
-            c.execute(tool.contract.installation_sql("b71_preflight_reader"))
+            c.execute(installation(owner))
 
 
 def test_unexpected_reader_membership_refuses(owner, config, credential):
