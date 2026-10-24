@@ -5,6 +5,7 @@ import Etl from '@/app/admin/etl/page';
 import api from '@/lib/api/axios';
 import type { EtlCommand } from '@/lib/admin/etlDispatch';
 import { CommandDetail } from '@/app/admin/etl/commands/[commandId]/CommandDetail';
+import { rememberSubmittedIntent } from '@/app/admin/etl/submittedIntent';
 
 let mockQuery = '';
 let mockAllowed = true;
@@ -69,6 +70,49 @@ test('dry run states no publication and a lost response can only recover manuall
   expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(first[2].headers['Idempotency-Key']);
   expect(post).toHaveBeenCalledTimes(2);
 });
+test('qualification offers only OpenData Dry Run and rejects real-run interaction',async()=>{
+  const fresh=batch7Capability();
+  capability={...fresh,execution_mode:'qualification',sources:Object.fromEntries(names.map(source=>[source,{available:source==='opendata',reason:'One bounded OpenData Dry Run.'}]))};
+  batch7Mount();
+  await readyButton('Dry Run · opendata');
+  for(const source of names) expect(screen.getByRole('button',{name:'Run Now · '+source})).toBeDisabled();
+  for(const source of names.filter(name=>name!=='opendata')) expect(screen.getByRole('button',{name:'Dry Run · '+source})).toBeDisabled();
+  fireEvent.click(screen.getByRole('button',{name:'Run Now · opendata'}));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(post).not.toHaveBeenCalled();
+  post.mockResolvedValue({status:202,data:{ok:true,accepted:true,replayed:false,audit_recorded:true,command:{...batch7Command,source:'opendata',dry_run:true}}});
+  fireEvent.click(screen.getByRole('button',{name:'Dry Run · opendata'}));
+  await screen.findByText('Command accepted. Queued acceptance is not completed work.');
+  expect(post).toHaveBeenCalledTimes(1);
+  expect(post.mock.calls[0][0]).toBe('/admin/etl/trigger/opendata');
+  expect(post.mock.calls[0][1].dry_run).toBe(true);
+});
+test('qualification cannot recover a retained Run Now intent through POST',async()=>{
+  const fresh=batch7Capability();
+  capability={...fresh,execution_mode:'qualification',sources:Object.fromEntries(names.map(source=>[source,{available:source==='opendata',reason:'One bounded OpenData Dry Run.'}]))};
+  rememberSubmittedIntent(mockActor.id,{source:'oag',dry_run:false,key:'12345678-1234-4234-8234-123456789abc',generation:fresh.generation});
+  batch7Mount();
+  await readyButton('Dry Run · opendata');
+  const recover=screen.getByRole('button',{name:'Recover same intent'});
+  expect(recover).toBeDisabled();
+  fireEvent.click(recover);
+  expect(post).not.toHaveBeenCalled();
+});
+test('qualification can recover its own Dry Run after capability becomes unavailable',async()=>{
+  const fresh=batch7Capability();
+  capability={...fresh,execution_mode:'qualification',available:false,generation:null,
+    worker:{status:'unavailable',last_seen_at:null,expires_at:null},
+    sources:Object.fromEntries(names.map(source=>[source,{available:false,reason:'Qualification closed.'}]))};
+  rememberSubmittedIntent(mockActor.id,{source:'opendata',dry_run:true,key:'12345678-1234-4234-8234-123456789abc',generation:fresh.generation});
+  post.mockResolvedValue({status:202,data:{ok:true,accepted:true,replayed:true,audit_recorded:true,command:{...batch7Command,source:'opendata',dry_run:true}}});
+  batch7Mount();
+  const recover=await screen.findByRole('button',{name:'Recover same intent'});
+  await waitFor(()=>expect(recover).toBeEnabled());
+  fireEvent.click(recover);
+  await screen.findByText('Original receipt recovered. No second command was accepted.');
+  expect(post).toHaveBeenCalledTimes(1);
+  expect(post.mock.calls[0][1].dry_run).toBe(true);
+});
 test('a changed intent rotates the key and keeps real-run confirmation explicit',async()=>{
   post.mockRejectedValueOnce(new Error('Lost response'));
   batch7Mount();fireEvent.click(await readyButton('Dry Run · oag'));
@@ -112,6 +156,7 @@ test('visibility interruption retains the submitted intent for explicit same-key
   const key=post.mock.calls[0][2].headers['Idempotency-Key'];
   hidden();hidden(false);
   const recover=await screen.findByRole('button',{name:'Recover same intent'});
+  await waitFor(()=>expect(recover).toBeEnabled());
   post.mockResolvedValueOnce({status:202,data:{ok:true,accepted:true,replayed:true,audit_recorded:true,command:{...batch7Command,dry_run:true}}});
   fireEvent.click(recover);
   await screen.findByText('Original receipt recovered. No second command was accepted.');
