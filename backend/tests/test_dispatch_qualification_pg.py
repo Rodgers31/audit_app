@@ -128,6 +128,65 @@ def test_stale_worker_ready_flag_cannot_be_adopted(opendata_pg, policy_environme
     with pytest.raises(QualificationRefused): register_worker(factory)
 
 
+@pytest.mark.parametrize('status,same_generation,refused', [
+    ('queued', False, True), ('running', False, True), ('interrupted', False, True),
+    ('failed', False, False), ('completed', False, False),
+    ('failed', True, True), ('completed', True, True),
+])
+def test_command_admission_uses_nonterminal_or_generation_history(
+        opendata_pg, policy_environment, monkeypatch, status, same_generation, refused):
+    """Isolate both OR branches: no other readiness/claim/job guard can refuse."""
+    client, factory, engine, _ = opendata_pg
+    _, value = policy_environment
+    admitted = UUID(value['generation'])
+    monkeypatch.delenv(POLICY_ENV)
+    previous = register_worker(factory)
+    result = trigger(client, previous)
+    assert result.status_code == 202
+    command_id = UUID(result.json()['command']['id'])
+    close_readiness(factory, previous)
+    with factory.begin() as db:
+        now = datetime.now(timezone.utc)
+        worker = db.get(EtlDispatchWorker, 1)
+        worker.last_seen_at = now - timedelta(seconds=60)
+        worker.expires_at = now - timedelta(seconds=30)
+        command = db.get(EtlDispatchCommand, command_id)
+        command.status = status
+        command.generation = admitted if same_generation else previous
+        command.updated_at = now
+        if status in ('running', 'interrupted', 'completed'):
+            command.started_at = now
+            command.claim_token = uuid4()
+        if status in ('interrupted', 'failed', 'completed'):
+            command.finished_at = now
+            command.outcome = {'interrupted':'execution_unverified','failed':'failed','completed':'completed'}[status]
+        if status == 'completed':
+            job = IngestionJob(domain='opendata', status='COMPLETED', dry_run=True,
+                started_at=now, finished_at=now, items_processed=0, items_created=0, items_updated=0)
+            db.add(job)
+            db.flush([job])
+            command.job_id = job.id
+    with factory() as db:
+        assert db.get(EtlDispatchWorker, 1).generation == previous != admitted
+        assert db.get(EtlDispatchWorker, 1).ready is False
+        assert all(d.ready is False and d.command_id is None and d.claim_token is None
+                   for d in db.scalars(select(EtlDispatchDomain)))
+        assert db.scalar(select(func.count()).select_from(SeedingDomainClaim)) == 0
+        assert all(j.status.name == 'COMPLETED' for j in db.scalars(select(IngestionJob)))
+    import json
+    monkeypatch.setenv(POLICY_ENV, json.dumps(value))
+    if refused:
+        with pytest.raises(QualificationRefused): register_worker(factory)
+    else:
+        assert register_worker(factory) == admitted
+    with factory() as db:
+        assert db.get(EtlDispatchWorker, 1).generation == (previous if refused else admitted)
+        assert db.get(EtlDispatchCommand, command_id).status == status
+        assert db.scalar(select(func.count()).select_from(EtlDispatchCommand)) == 1
+        assert db.scalar(select(func.count()).select_from(AdminAuditLog)) == 1
+    print(f'admission status={status} same_generation={same_generation} refused={refused}')
+
+
 @pytest.mark.parametrize('retained', ['domain_ready', 'token', 'command', 'job', 'claim'])
 def test_retained_ownership_blocks_qualification_and_reconciliation(opendata_pg, policy_environment, monkeypatch, retained):
     client, factory, _, _ = opendata_pg
