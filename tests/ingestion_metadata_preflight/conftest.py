@@ -72,7 +72,9 @@ def config(owner):
         role = c.fetchone()[0]
         c.execute(tool.SCHEMA_SQL, (list(tool.v1.TABLES),))
         schema = c.fetchall()
-        c.execute(tool.contract.INTERFACE_SQL, (role,) * 5)
+        c.execute(
+            tool.contract.INTERFACE_SQL, tool.contract.interface_parameters(role, None)
+        )
         interface = c.fetchone()
     return dict(
         version=2,
@@ -109,6 +111,7 @@ def config(owner):
             function_oid=interface[1],
             owner_oid=interface[2],
             body_sha256=tool.contract.BODY_SHA256,
+            role_profile=None,
         ),
     )
 

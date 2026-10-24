@@ -232,7 +232,9 @@ def test_installer_refuses_effective_access(owner, grant, revoke):
         c.execute("DROP SCHEMA audit_preflight_v2 CASCADE")
         c.execute(grant)
         try:
-            with pytest.raises(Exception, match="PREFLIGHT_READER_ACCESS_REFUSED"):
+            with pytest.raises(
+                Exception, match="PREFLIGHT_(READER_ACCESS|ROLE_GRAPH)_REFUSED"
+            ):
                 c.execute(tool.contract.installation_sql("b71_preflight_reader"))
         finally:
             c.execute("ROLLBACK")

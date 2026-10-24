@@ -175,7 +175,7 @@ def check_config(config):
         budget.digest(d["rootcert_sha256"])
     i = budget.shape(
         config["interface"],
-        {"namespace_oid", "function_oid", "owner_oid", "body_sha256"},
+        {"namespace_oid", "function_oid", "owner_oid", "body_sha256", "role_profile"},
     )
     for key in ("namespace_oid", "function_oid", "owner_oid"):
         require(0 < budget.integer(i[key], 2**32 - 1), "INTERFACE_IDENTITY_REQUIRED")
@@ -183,6 +183,15 @@ def check_config(config):
         i["owner_oid"] != d["role_oid"] and i["body_sha256"] == contract.BODY_SHA256,
         "INTERFACE_CONTRACT_REFUSED",
     )
+    try:
+        log_oid, grantor_oid = contract.profile_oids(i["role_profile"])
+    except ValueError:
+        require(False, "ROLE_PROFILE_REFUSED")
+    if i["role_profile"] is not None:
+        require(
+            len({log_oid, grantor_oid, i["owner_oid"], d["role_oid"]}) == 4,
+            "ROLE_PROFILE_REFUSED",
+        )
     a = budget.shape(config["receipt_authority"], {"state", "identity_sha256"})
     require(a["state"] == "accepted", "RECEIPT_AUTHORITY_UNACCEPTED")
     budget.digest(a["identity_sha256"])
@@ -492,7 +501,12 @@ def inspect(connection, config):
             reads.read(IDENTITY_SQL)
             reads.read(GUARDS_SQL)
             reads.read(SCHEMA_SQL, (list(v1.TABLES),))
-            reads.read(contract.INTERFACE_SQL, (config["database"]["role_oid"],) * 5)
+            reads.read(
+                contract.INTERFACE_SQL,
+                contract.interface_parameters(
+                    config["database"]["role_oid"], config["interface"]["role_profile"]
+                ),
+            )
             # Validate metadata BEFORE invoking a privileged routine. Second
             # transaction observes persistent definition/schema/session drift.
             if phase == 0:
@@ -617,6 +631,7 @@ REFUSALS = v1.WORKER_REFUSALS | frozenset(
         "SOURCE_KIND_REFUSED",
         "SOURCE_MANIFEST_REFUSED",
         "ADMISSION_BYTES_MISMATCH",
+        "ROLE_PROFILE_REFUSED",
     }
 )
 

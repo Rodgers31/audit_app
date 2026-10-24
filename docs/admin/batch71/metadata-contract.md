@@ -46,12 +46,31 @@ The existing owner supplies RLS/statistics visibility inside the fixed function;
 the caller remains unable to SELECT the underlying data or full statistics.
 
 Installation refuses an existing namespace, direct privileged role flags,
-delegated reader access, memberships held by the reader, and effective database
+unexpected role membership, and effective database
 CREATE, application writes/ownership, sequence usage/update or schema CREATE.
 All creation/revocation/grants occur in one transaction with 2s statement and
 500ms lock bounds. Failure rolls the transaction back. Never use CREATE OR
 REPLACE to absorb unknown existing state. Rollback of an accepted installation
 requires a separately reviewed access-removal action; this tool performs none.
+
+The interface admission requires an explicit `role_profile`: `null` retains the
+strict empty-reader graph. An explicitly reviewed existing-audit profile pins
+`audit_log_role_oid` and `admin_grantor_oid`, distinct from the reader and function
+owner. The named `audit_log_reader` must remain NOLOGIN, nonprivileged and inherit
+no roles. The named provider grantor `supabase_admin` must remain a superuser.
+Exactly three incident edges are admitted: provider-granted ADMIN-only owner
+membership in each of reader/group (INHERIT and SET false), plus the owner's
+non-admin, inheritable/settable group grant to the reader. Missing/extra edges,
+changed identities/names/options/grantors, or role authority drift refuse during
+installation and both runtime snapshots. This preserves the accepted admin audit
+reader's sole group membership; removing that membership would break
+`backend/services/admin_audit_storage.py:capability`. No role membership is
+created, revoked or altered by installation. The default remains strict, and
+profile OIDs must come from an independent operator review, never self-admission.
+The prepared production transaction must also guard the independently observed
+reader and owner names/OIDs before CREATE or GRANT; the builder's fixed names
+alone do not prove role-object continuity. Keep this guard in the same bounded
+transaction, without a nested BEGIN or an early COMMIT.
 
 ## Binding and execution
 
@@ -59,6 +78,7 @@ An operator must prepare the admission independently of the inspector: exact
 accepted source HEAD and all thirteen file hashes, provider endpoint/qualified
 login/database/role OIDs, independently provisioned CA path and bytes, six-table
 schema hash/revision (including the public namespace and each relation OID),
+the explicit role profile and independently pinned role OIDs,
 fixed function namespace/function/owner OIDs and body
 hash, and separately accepted receipt/custody identity. The inspector does not
 learn expectations from its target. Receipt identity is bound, **not verified**;
@@ -129,7 +149,9 @@ the existing service secret in memory; the trusted CA comes from admission.
 
 ## Owned qualification
 
-Tests require an explicit cached PG17 fixture on 127.0.0.1:56972. The version 2
+Tests require an explicit cached PG17 fixture on 127.0.0.1:56972 with the
+provider-style `supabase_admin` bootstrap superuser and a separately provisioned
+`postgres` owner login. The version 2
 database is `b66_preflight_metadata`, with a distinct local-only role and default
 PUBLIC TEMP retained. Six RLS-hidden tables and a private sentinel are created
 only there. No production data or credential is needed. The integration fixture

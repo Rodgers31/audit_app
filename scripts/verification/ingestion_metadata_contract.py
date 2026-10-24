@@ -20,6 +20,58 @@ CHECK_NAMES = (
     "prepared_transaction",
 )
 OUTPUT_NAMES = ("protocol", "revision", *CHECK_NAMES, "complete_activity")
+# Default admission remains an empty reader graph. The explicit existing-audit
+# profile pins the two owner-only administration edges and one read-group edge.
+ROLE_GRAPH_SQL = """(CASE
+ WHEN {audit_log} IS NULL AND {grantor} IS NULL THEN
+  NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
+    WHERE roleid={reader} OR member={reader})
+ WHEN {audit_log} IS NOT NULL AND {grantor} IS NOT NULL THEN
+  {reader}<>{owner} AND {audit_log} NOT IN({reader},{owner})
+  AND {grantor} NOT IN({reader},{owner},{audit_log})
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
+    WHERE r.oid={audit_log} AND r.rolname='audit_log_reader'
+      AND NOT r.rolcanlogin AND NOT r.rolsuper AND NOT r.rolbypassrls
+      AND NOT r.rolcreatedb AND NOT r.rolcreaterole AND NOT r.rolreplication
+      AND r.rolinherit)
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_roles r
+    WHERE r.oid={grantor} AND r.rolname='supabase_admin' AND r.rolsuper)
+  AND (SELECT count(*) FROM pg_catalog.pg_auth_members
+    WHERE roleid IN({reader},{audit_log}) OR member IN({reader},{audit_log}))=3
+  AND (SELECT count(*) FROM pg_catalog.pg_auth_members
+    WHERE roleid IN({reader},{audit_log}) AND member={owner}
+      AND grantor={grantor} AND admin_option
+      AND NOT inherit_option AND NOT set_option)=2
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
+    WHERE roleid={audit_log} AND member={reader} AND grantor={owner}
+      AND NOT admin_option AND inherit_option AND set_option)
+ ELSE false END)"""
+
+
+def profile_oids(profile):
+    """No implicit profile selection, coercion or caller-selected role names."""
+    if profile is None:
+        return None, None
+    if type(profile) is not dict or set(profile) != {
+        "audit_log_role_oid",
+        "admin_grantor_oid",
+    }:
+        raise ValueError("ROLE_PROFILE_REFUSED")
+    values = tuple(profile[k] for k in ("audit_log_role_oid", "admin_grantor_oid"))
+    if (
+        any(type(x) is not int or not 0 < x <= 2**32 - 1 for x in values)
+        or values[0] == values[1]
+    ):
+        raise ValueError("ROLE_PROFILE_REFUSED")
+    return values
+
+
+def interface_parameters(reader_oid, profile):
+    if type(reader_oid) is not int or not 0 < reader_oid <= 2**32 - 1:
+        raise ValueError("READER_REFUSED")
+    return reader_oid, *profile_oids(profile)
+
+
 BODY = """SELECT 2::integer,
  (SELECT CASE WHEN count(*)=1 THEN min(v.revision) ELSE NULL END
   FROM (SELECT pg_catalog.left(version_num::text,33) AS revision
@@ -51,10 +103,17 @@ BODY_SHA256 = hashlib.sha256(BODY.encode()).hexdigest()
 OBSERVE_SQL = "SELECT * FROM audit_preflight_v2.observe()"
 
 
-def installation_sql(reader: str) -> str:
+def installation_sql(reader: str, *, role_profile=None) -> str:
     """Only the existing production login or an explicit owned-test login."""
     if type(reader) is not str or reader not in READERS:
         raise ValueError("READER_REFUSED")
+    log_oid, grantor_oid = profile_oids(role_profile)
+    graph = ROLE_GRAPH_SQL.format(
+        reader=f"(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='{reader}')",
+        owner="(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='postgres')",
+        audit_log="NULL::oid" if log_oid is None else f"{log_oid}::oid",
+        grantor="NULL::oid" if grantor_oid is None else f"{grantor_oid}::oid",
+    )
     return f"""BEGIN;
 SET LOCAL statement_timeout='2s';
 SET LOCAL lock_timeout='500ms';
@@ -70,11 +129,9 @@ BEGIN
      AND rolcanlogin AND NOT rolsuper AND NOT rolbypassrls AND NOT rolcreatedb
      AND NOT rolcreaterole AND NOT rolreplication)
  THEN RAISE EXCEPTION 'PREFLIGHT_READER_REFUSED'; END IF;
- IF EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
-     WHERE roleid=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='{reader}'))
- THEN RAISE EXCEPTION 'PREFLIGHT_DELEGATED_READER_REFUSED'; END IF;
- IF EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
-     WHERE member=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname='{reader}'))
+ IF NOT {graph}
+ THEN RAISE EXCEPTION 'PREFLIGHT_ROLE_GRAPH_REFUSED'; END IF;
+ IF pg_catalog.pg_has_role('{reader}','pg_read_all_stats','MEMBER')
  OR pg_catalog.has_database_privilege('{reader}',current_database(),'CREATE')
  OR EXISTS(SELECT 1 FROM pg_catalog.pg_namespace n
      WHERE pg_catalog.left(n.nspname,3)<>'pg_' AND n.nspname<>'information_schema'
@@ -127,7 +184,10 @@ COMMIT;
 
 # Only this bounded definition text is read. It is a reviewed routine body, not
 # application query text. Unknown overloads/default PUBLIC EXECUTE refuse.
-INTERFACE_SQL = """SELECT n.oid::bigint,p.oid::bigint,p.proowner::bigint,
+INTERFACE_SQL = """WITH admitted AS (
+ SELECT %s::oid AS reader_oid,%s::oid AS audit_log_oid,%s::oid AS admin_grantor_oid
+)
+SELECT n.oid::bigint,p.oid::bigint,p.proowner::bigint,
  l.lanname,p.prosecdef,p.provolatile,p.prokind,p.pronargs,p.proretset,
  (p.prorettype=2249 AND p.pronargdefaults=0 AND p.prosupport=0 AND p.provariadic=0
   AND p.proallargtypes=ARRAY[23,25,16,16,16,16,16,16,16,16]::oid[]
@@ -139,24 +199,31 @@ INTERFACE_SQL = """SELECT n.oid::bigint,p.oid::bigint,p.proowner::bigint,
  p.proparallel,p.proleakproof,p.proisstrict,n.nspowner::bigint,
  (NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
        COALESCE(p.proacl,pg_catalog.acldefault('f',p.proowner))) a
-    WHERE a.grantee NOT IN(p.proowner,%s) OR a.grantee=0
+    WHERE a.grantee NOT IN(p.proowner,admitted.reader_oid) OR a.grantee=0
        OR a.grantor<>p.proowner OR a.privilege_type<>'EXECUTE'
        OR (a.grantee<>p.proowner AND a.is_grantable))
   AND EXISTS(SELECT 1 FROM pg_catalog.aclexplode(p.proacl) a
-       WHERE a.grantee=%s AND a.privilege_type='EXECUTE' AND NOT a.is_grantable)),
+       WHERE a.grantee=admitted.reader_oid AND a.privilege_type='EXECUTE' AND NOT a.is_grantable)),
  (NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(
        COALESCE(n.nspacl,pg_catalog.acldefault('n',n.nspowner))) a
-    WHERE a.grantee NOT IN(n.nspowner,%s) OR a.grantee=0 OR a.grantor<>n.nspowner
+    WHERE a.grantee NOT IN(n.nspowner,admitted.reader_oid) OR a.grantee=0 OR a.grantor<>n.nspowner
        OR (a.grantee<>n.nspowner AND (a.privilege_type<>'USAGE' OR a.is_grantable)))
   AND EXISTS(SELECT 1 FROM pg_catalog.aclexplode(n.nspacl) a
-       WHERE a.grantee=%s AND a.privilege_type='USAGE' AND NOT a.is_grantable)),
+       WHERE a.grantee=admitted.reader_oid AND a.privilege_type='USAGE' AND NOT a.is_grantable)),
  pg_catalog.pg_has_role(p.proowner,'pg_read_all_stats','USAGE'),
  CASE WHEN pg_catalog.octet_length(p.prosrc)<=16384 THEN p.prosrc ELSE NULL END,
- NOT EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members
-    WHERE roleid=%s OR member=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname=current_user))
+ {role_graph}
 FROM pg_catalog.pg_proc p
 JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 JOIN pg_catalog.pg_language l ON l.oid=p.prolang
+CROSS JOIN admitted
 WHERE n.nspname='audit_preflight_v2' AND p.proname='observe'
 ORDER BY p.oid LIMIT 2
-"""
+""".format(
+    role_graph=ROLE_GRAPH_SQL.format(
+        reader="admitted.reader_oid",
+        owner="p.proowner",
+        audit_log="admitted.audit_log_oid",
+        grantor="admitted.admin_grantor_oid",
+    )
+)
