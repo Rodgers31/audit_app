@@ -21,7 +21,7 @@ except ImportError:
     pdfplumber = None
 
 try:
-    from PyPDF2 import PdfReader
+    from pypdf import PdfReader
 except ImportError:
     PdfReader = None
 
@@ -487,7 +487,7 @@ class KNBSParser:
             return None
 
     def _extract_text_from_pdf(self, pdf_content: bytes) -> str:
-        """Extract text from PDF using pdfplumber or PyPDF2."""
+        """Extract text from PDF using pdfplumber or pypdf."""
         text = ""
 
         # Try pdfplumber first (better text extraction)
@@ -503,16 +503,16 @@ class KNBSParser:
             except Exception as e:
                 logger.warning(f"[WARN] pdfplumber failed: {str(e)}")
 
-        # Fallback to PyPDF2
+        # Fallback to pypdf
         if PdfReader:
             try:
                 pdf = PdfReader(io.BytesIO(pdf_content))
                 for page in pdf.pages[:20]:  # First 20 pages
                     text += page.extract_text() + "\n\n"
-                logger.info(f"📄 Extracted {len(text)} characters using PyPDF2")
+                logger.info(f"📄 Extracted {len(text)} characters using pypdf")
                 return text
             except Exception as e:
-                logger.warning(f"[WARN] PyPDF2 failed: {str(e)}")
+                logger.warning(f"[WARN] pypdf failed: {str(e)}")
 
         return text
 

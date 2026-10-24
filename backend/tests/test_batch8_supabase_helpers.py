@@ -260,7 +260,7 @@ def test_signed_auth_consumer_refuses_admin_when_actual_profile_read_fails(memor
     from datetime import datetime, timedelta, timezone
     from fastapi import HTTPException
     from fastapi.security import HTTPAuthorizationCredentials
-    from jose import jwt
+    import jwt
     import supabase_auth
 
     secret = "inert-batch8-jwt-secret"

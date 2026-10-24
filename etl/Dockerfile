@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install Python deps (use project-root paths)
 COPY etl/requirements.txt /app/etl/requirements.txt
-RUN pip install --no-cache-dir -r /app/etl/requirements.txt \
+RUN python -m pip install --no-cache-dir --upgrade "pip==26.2.2" \
+    && python -m pip install --no-cache-dir -r /app/etl/requirements.txt \
     && python -m playwright install chromium firefox --with-deps
 
 # Copy full project (so package path `etl.*` exists)

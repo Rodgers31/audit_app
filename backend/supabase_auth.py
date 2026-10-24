@@ -45,9 +45,10 @@ from typing import List, Optional
 from uuid import UUID
 
 import httpx
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jwt import PyJWTError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -115,11 +116,26 @@ class AdminUser:
     session_id: Optional[str] = None
 
 
+def _find_signing_key(jwks: dict, kid: str) -> Optional[dict]:
+    if not isinstance(jwks, dict) or not isinstance(jwks.get("keys"), list):
+        raise PyJWTError("Invalid JWKS key set")
+    return next(
+        (
+            key
+            for key in jwks["keys"]
+            if isinstance(key, dict) and key.get("kid") == kid
+        ),
+        None,
+    )
+
+
 def _decode_supabase_jwt(token: str) -> dict:
     """Verify the Supabase JWT and return its claims, or raise 401."""
     try:
+        if not isinstance(token, str):
+            raise PyJWTError("Token must be a string")
         unverified_header = jwt.get_unverified_header(token)
-    except JWTError as e:
+    except (PyJWTError, ValueError, TypeError, OverflowError, RecursionError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token header: {e}",
@@ -128,6 +144,12 @@ def _decode_supabase_jwt(token: str) -> dict:
 
     alg = unverified_header.get("alg")
     kid = unverified_header.get("kid")
+    if not isinstance(alg, str) or alg not in ("HS256", "ES256", "RS256"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unsupported token algorithm",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Legacy HS256 path: pre-asymmetric-keys projects, or projects
     # mid-migration that still issue HS256 tokens. Only taken when
@@ -151,7 +173,7 @@ def _decode_supabase_jwt(token: str) -> dict:
                 algorithms=["HS256"],
                 audience="authenticated",
             )
-        except JWTError as e:
+        except (PyJWTError, ValueError, TypeError, OverflowError, RecursionError) as e:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=f"Invalid or expired token: {e}",
@@ -162,32 +184,49 @@ def _decode_supabase_jwt(token: str) -> dict:
     # ``kid`` in the JWKS, with a one-shot refresh if the cache
     # doesn't know about it yet — covers the case of a key rotation
     # happening during the cache lifetime.
-    jwks = _fetch_jwks()
-    key = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
-    if key is None:
-        jwks = _fetch_jwks(force_refresh=True)
-        key = next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
-    if key is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"No matching JWK for kid={kid}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     try:
+        if not isinstance(kid, str) or not kid:
+            raise PyJWTError("Asymmetric tokens require a signing key ID")
+        key = _find_signing_key(_fetch_jwks(), kid)
+        if key is None:
+            key = _find_signing_key(_fetch_jwks(force_refresh=True), kid)
+        if key is None:
+            raise PyJWTError("No matching signing key")
+
+        # Select the verification algorithm from the trusted key's type, never
+        # widen the policy from the token header or allow an oct key via JWKS.
+        if key.get("kty") == "RSA":
+            key_algorithm = "RS256"
+        elif key.get("kty") == "EC" and key.get("crv") == "P-256":
+            key_algorithm = "ES256"
+        else:
+            raise PyJWTError("Unsupported signing key type")
+        if alg != key_algorithm or key.get("alg") not in (None, key_algorithm):
+            raise PyJWTError("Token and signing key algorithms differ")
+        if key.get("use") not in (None, "sig"):
+            raise PyJWTError("Key is not intended for signatures")
+        operations = key.get("key_ops")
+        if operations is not None and (
+            not isinstance(operations, list)
+            or not all(isinstance(operation, str) for operation in operations)
+            or "verify" not in operations
+        ):
+            raise PyJWTError("Key does not permit verification")
+        # JWKS publishes verification keys only. Reject private parameters before
+        # conversion so neither key type can enter a signing-only API path.
+        if any(field in key for field in ("d", "p", "q", "dp", "dq", "qi", "oth")):
+            raise PyJWTError("Signing key must contain public material only")
+        public_key = jwt.PyJWK.from_dict(key, algorithm=key_algorithm).key
         return jwt.decode(
             token,
-            key,
-            # Honour the JWK's declared alg if present, otherwise fall
-            # back to the token header. Defending against a token
-            # specifying a weaker alg than the key was minted for.
-            algorithms=[key.get("alg") or alg],
+            public_key,
+            algorithms=[key_algorithm],
             # Supabase issues tokens with ``aud=authenticated``;
             # verifying the audience guards against a token from a
             # different Supabase project being accepted.
             audience="authenticated",
         )
-    except JWTError as e:
+    except (PyJWTError, ValueError, TypeError, OverflowError, RecursionError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid or expired token: {e}",
@@ -244,15 +283,23 @@ def get_current_user(
 
     email, roles = _fetch_roles(user_id)
     session_id = claims.get("session_id")
-    return AdminUser(id=user_id, email=email or claims.get("email"), roles=roles,
-                     session_id=session_id if isinstance(session_id, str) else None)
+    return AdminUser(
+        id=user_id,
+        email=email or claims.get("email"),
+        roles=roles,
+        session_id=session_id if isinstance(session_id, str) else None,
+    )
 
 
 def require_admin(current_user: AdminUser = Depends(get_current_user)) -> AdminUser:
     """FastAPI dependency that 403s anyone without ``admin`` in roles."""
-    if (not isinstance(current_user.roles, list)
-        or any(not isinstance(role, str) or not role.strip() for role in current_user.roles)
-        or "admin" not in current_user.roles):
+    if (
+        not isinstance(current_user.roles, list)
+        or any(
+            not isinstance(role, str) or not role.strip() for role in current_user.roles
+        )
+        or "admin" not in current_user.roles
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required",

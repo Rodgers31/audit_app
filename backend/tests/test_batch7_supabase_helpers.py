@@ -182,7 +182,7 @@ def test_transport_failure_is_safe_without_role_success(memory, failure):
 
 def test_signed_authentication_still_looks_up_roles_through_actual_transport(memory, monkeypatch):
     from fastapi.security import HTTPAuthorizationCredentials
-    from jose import jwt
+    import jwt
     import supabase_auth
 
     monkeypatch.setenv("SUPABASE_JWT_SECRET", "inert-batch7-jwt-secret")

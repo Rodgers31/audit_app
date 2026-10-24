@@ -19,7 +19,7 @@ import socket
 
 import httpx
 from fastapi.security import HTTPAuthorizationCredentials
-from jose import jwt
+import jwt
 
 def refuse_socket(*args, **kwargs):
     raise AssertionError("No socket transport is permitted")
