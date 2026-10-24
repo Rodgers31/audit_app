@@ -81,3 +81,18 @@ test('URL bounds exclude paths, duplicates, unknown filters and overflow',()=>{
   expect(commandFilters(new URLSearchParams('page=NaN&page_size=51&source=../../oag&status=healthy')).canonical.toString()).toBe('');
   expect(commandFilters(new URLSearchParams('source=oag&status=interrupted&page=10000&page_size=50&unknown=secret')).canonical.toString()).toBe('source=oag&status=interrupted&page_size=50&page=10000');
 });
+
+test('qualification exposes only the one OpenData dry-run action',()=>{
+  const raw=clone(examples.capability_ready) as any;
+  raw.execution_mode='qualification';
+  for(const name of Object.keys(raw.sources)) raw.sources[name].available=name==='opendata';
+  const value=parseDispatchCapability(raw,now);
+  const {dispatchPermits}=require('@/lib/admin/etlDispatch');
+  expect(dispatchPermits(value,'opendata',true,now)).toBe(true);
+  expect(dispatchPermits(value,'opendata',false,now)).toBe(false);
+  expect(dispatchPermits(value,'oag',true,now)).toBe(false);
+  raw.sources.oag.available=true;
+  expect(()=>parseDispatchCapability(raw,now)).toThrow();
+  raw.sources.oag.available=false;raw.execution_mode='unknown';
+  expect(()=>parseDispatchCapability(raw,now)).toThrow();
+});

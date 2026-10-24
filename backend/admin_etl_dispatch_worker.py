@@ -5,12 +5,13 @@ Only a fresh fenced terminal receipt releases it. There is no automatic recovery
 of uncertain effects or administrative unblock endpoint.
 """
 from pathlib import Path
+import os
 import signal
 import subprocess
 import sys
 import threading
 from datetime import timedelta
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
@@ -18,6 +19,7 @@ from sqlalchemy.dialects.postgresql import insert
 from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh, mapped
 from seeding.exclusion import reserve, unclaimed_running
 from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, IngestionStatus, SeedingDomainClaim
+from admin_etl_qualification import qualification, QualificationRefused
 
 LEASE_SECONDS = 30
 HEARTBEAT_SECONDS = 5
@@ -36,6 +38,25 @@ def register_worker(factory):
         now = db_clock(db)
         if fresh(worker, now):
             raise RuntimeError("Dedicated consumer already owns the lease")
+        policy = qualification(now)
+        if policy is not None:
+            generation = policy.generation
+            if (worker.ready is not False or worker.generation == generation
+                    or db.scalar(select(EtlDispatchCommand.id).where(
+                        or_(EtlDispatchCommand.status.is_(None),
+                            EtlDispatchCommand.status.not_in(("completed", "failed")),
+                            EtlDispatchCommand.generation == generation)).limit(1)) is not None
+                    or db.scalar(select(SeedingDomainClaim.id).where(
+                        SeedingDomainClaim.released_at.is_(None)).limit(1)) is not None
+                    or db.scalar(select(IngestionJob.id).where(or_(IngestionJob.status.is_(None), IngestionJob.status.not_in((
+                        IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS,
+                        IngestionStatus.FAILED)))).limit(1)) is not None
+                    or db.scalar(select(EtlDispatchDomain.domain).where(or_(
+                        EtlDispatchDomain.command_id.is_not(None),
+                        EtlDispatchDomain.claim_token.is_not(None),
+                        EtlDispatchDomain.ready.is_distinct_from(False))).limit(1)) is not None):
+                raise QualificationRefused("Qualification requires reconciled inactive state")
+            ready &= {"opendata"}
         # Restart/death before or after effects are equally uncertain. Fence every
         # old running command and keep each protected domain occupied.
         running = db.scalars(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "running").with_for_update()).all()
@@ -52,6 +73,8 @@ def register_worker(factory):
 
 
 def heartbeat(factory, generation):
+    if not enabled():
+        return False
     from admin_etl_dispatch_adapter import ready_domains
     ready = ready_domains()
     with factory.begin() as db:
@@ -59,6 +82,11 @@ def heartbeat(factory, generation):
         now = db_clock(db)
         if not fresh(worker, now) or worker.generation != generation:
             return False
+        policy = qualification(now)
+        if policy is not None and generation != policy.generation:
+            return False
+        if policy is not None:
+            ready &= {"opendata"}
         worker.last_seen_at = now
         worker.expires_at = now + timedelta(seconds=LEASE_SECONDS)
         for row in db.scalars(select(EtlDispatchDomain).with_for_update()):
@@ -74,10 +102,18 @@ def interrupt(command, now):
 
 
 def claim(factory, generation):
+    if not enabled():
+        return None
     with factory.begin() as db:
         worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
         now = db_clock(db)
         if not fresh(worker, now) or worker.generation != generation:
+            return None
+        policy = qualification(now)
+        if policy is not None and generation != policy.generation:
+            return None
+        if policy is not None and len(db.scalars(select(EtlDispatchCommand.id).where(
+                EtlDispatchCommand.generation == generation).limit(2)).all()) != 1:
             return None
         domains = {row.domain: row for row in db.scalars(select(EtlDispatchDomain).order_by(EtlDispatchDomain.domain).with_for_update())}
         candidates = []
@@ -85,6 +121,10 @@ def claim(factory, generation):
             if domain.ready is not True or domain.command_id is not None or unclaimed_running(db, name):
                 continue
             candidate = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "queued", EtlDispatchCommand.domain == name).order_by(EtlDispatchCommand.created_at, EtlDispatchCommand.id).limit(1).with_for_update(skip_locked=True))
+            if policy is not None and (candidate is None or not policy.permits(
+                    candidate.source, candidate.dry_run, candidate.generation, now)
+                    or not policy.issued_at <= candidate.created_at < policy.expires_at):
+                continue
             if candidate is not None and mapped(candidate.source, name):
                 candidates.append(candidate)
         command = None
@@ -195,10 +235,58 @@ def stop_child(child):
         child.wait()
 
 
+def close_readiness(factory, generation):
+    """Fence readiness by generation; retained execution ownership is untouched."""
+    with factory.begin() as db:
+        worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
+        if worker is None or worker.generation != generation:
+            return False
+        worker.ready = False
+        for domain in db.scalars(select(EtlDispatchDomain).order_by(EtlDispatchDomain.domain).with_for_update()):
+            domain.ready = False
+        for command in db.scalars(select(EtlDispatchCommand).where(
+                EtlDispatchCommand.status == "running", EtlDispatchCommand.generation == generation).with_for_update()):
+            interrupt(command, db_clock(db))
+        return True
+
+
+def retire_inactive_readiness(factory, generation):
+    """Explicit operator reconciliation, only with dispatch off and no ownership."""
+    if (os.environ.get("ADMIN_ETL_DISPATCH_ENABLED") != "false"
+            or not isinstance(generation, UUID) or generation.version != 4):
+        raise QualificationRefused("Dispatch must be off for readiness reconciliation")
+    with factory.begin() as db:
+        worker = db.get(EtlDispatchWorker, 1, with_for_update=True)
+        now = db_clock(db)
+        if (worker is None or worker.generation != generation or fresh(worker, now)
+                or db.scalar(select(EtlDispatchCommand.id).where(or_(
+                    EtlDispatchCommand.status.is_(None),
+                    EtlDispatchCommand.status.not_in(("completed", "failed")))).limit(1)) is not None
+                or db.scalar(select(SeedingDomainClaim.id).where(
+                    SeedingDomainClaim.released_at.is_(None)).limit(1)) is not None
+                or db.scalar(select(EtlDispatchDomain.domain).where(or_(
+                    EtlDispatchDomain.command_id.is_not(None),
+                    EtlDispatchDomain.claim_token.is_not(None))).limit(1)) is not None
+                or db.scalar(select(IngestionJob.id).where(or_(IngestionJob.status.is_(None), IngestionJob.status.not_in((
+                    IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS,
+                    IngestionStatus.FAILED)))).limit(1)) is not None):
+            raise QualificationRefused("Readiness reconciliation is not safe")
+        worker.ready = False
+        for domain in db.scalars(select(EtlDispatchDomain).order_by(EtlDispatchDomain.domain).with_for_update()):
+            domain.ready = False
+    with factory() as db:
+        worker = db.get(EtlDispatchWorker, 1)
+        if (worker is None or worker.generation != generation or worker.ready is not False
+                or any(row.ready is not False for row in db.scalars(select(EtlDispatchDomain)))):
+            raise QualificationRefused("Readiness reconciliation readback differs")
+
+
 def serve(factory, stop_requested=lambda: False):
     from admin_etl_dispatch_adapter import supported_registry
     if not enabled() or not supported_registry():
         raise RuntimeError("Dedicated dispatch is disabled or its mapping is unavailable")
+    if qualification() is not None:
+        raise QualificationRefused("Qualification requires the bounded worker entry point")
     generation = register_worker(factory)
     stopped = threading.Event()
 
@@ -239,12 +327,7 @@ def serve(factory, stop_requested=lambda: False):
         if child is not None and child.poll() is None:
             stop_child(child)
         keeper.join(timeout=6)
-        with factory.begin() as db:
-            worker = db.scalar(select(EtlDispatchWorker).where(EtlDispatchWorker.id == 1).with_for_update())
-            if worker.generation == generation:
-                worker.ready = False
-                for command in db.scalars(select(EtlDispatchCommand).where(EtlDispatchCommand.status == "running", EtlDispatchCommand.generation == generation).with_for_update()):
-                    interrupt(command, db_clock(db))
+        close_readiness(factory, generation)
 
 
 def main():
