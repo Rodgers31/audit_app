@@ -1,0 +1,920 @@
+{
+  "checked_on": "2026-10-24",
+  "accepted_base": "dd776546a4b7b0962c69d5b3543a72046bdcae8b",
+  "frontend_locked": {
+    "next": "15.5.27",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "axios": "1.20.0",
+    "sharp": "0.35.5",
+    "follow-redirects": "1.16.0"
+  },
+  "php_source_count": 0,
+  "composer_manifest_count": 0,
+  "runtime_evidence": "tools/worker_host_fixture/requirements.lock captures Render e26d142 on 2026-10-20; not current live verification",
+  "runtime_lock_sha256": "5b1256e257f9f3eb24acf424d77384da74edea895695620368bc5a88487f353f",
+  "advisory_queries": {
+    "osv-render-oct20": {
+      "queries": [
+        {
+          "package": {
+            "name": "APScheduler",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.11.3"
+        },
+        {
+          "package": {
+            "name": "Deprecated",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.0.0"
+        },
+        {
+          "package": {
+            "name": "Mako",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.4.3"
+        },
+        {
+          "package": {
+            "name": "MarkupSafe",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.0.4"
+        },
+        {
+          "package": {
+            "name": "SQLAlchemy",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.0.54"
+        },
+        {
+          "package": {
+            "name": "alembic",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.20.0"
+        },
+        {
+          "package": {
+            "name": "amqp",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.4.1"
+        },
+        {
+          "package": {
+            "name": "annotated-doc",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.0.5"
+        },
+        {
+          "package": {
+            "name": "annotated-types",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.8.0"
+        },
+        {
+          "package": {
+            "name": "anyio",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.15.1"
+        },
+        {
+          "package": {
+            "name": "beautifulsoup4",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.15.0"
+        },
+        {
+          "package": {
+            "name": "billiard",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.3.1"
+        },
+        {
+          "package": {
+            "name": "boto3",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.43.109"
+        },
+        {
+          "package": {
+            "name": "botocore",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.43.115"
+        },
+        {
+          "package": {
+            "name": "celery",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.6.3"
+        },
+        {
+          "package": {
+            "name": "certifi",
+            "ecosystem": "PyPI"
+          },
+          "version": "2026.10.18"
+        },
+        {
+          "package": {
+            "name": "cffi",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.1.1"
+        },
+        {
+          "package": {
+            "name": "charset-normalizer",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.5.2"
+        },
+        {
+          "package": {
+            "name": "click",
+            "ecosystem": "PyPI"
+          },
+          "version": "8.5.0"
+        },
+        {
+          "package": {
+            "name": "click-didyoumean",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.3.1"
+        },
+        {
+          "package": {
+            "name": "click-plugins",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.1.1.2"
+        },
+        {
+          "package": {
+            "name": "click-repl",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.4.1"
+        },
+        {
+          "package": {
+            "name": "cryptography",
+            "ecosystem": "PyPI"
+          },
+          "version": "50.0.2"
+        },
+        {
+          "package": {
+            "name": "distro",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.9.0"
+        },
+        {
+          "package": {
+            "name": "dnspython",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.9.0"
+        },
+        {
+          "package": {
+            "name": "ecdsa",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.19.2"
+        },
+        {
+          "package": {
+            "name": "email-validator",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.3.0"
+        },
+        {
+          "package": {
+            "name": "fastapi",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.142.4"
+        },
+        {
+          "package": {
+            "name": "fuzzywuzzy",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.18.0"
+        },
+        {
+          "package": {
+            "name": "greenlet",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.5.6"
+        },
+        {
+          "package": {
+            "name": "gunicorn",
+            "ecosystem": "PyPI"
+          },
+          "version": "26.2.0"
+        },
+        {
+          "package": {
+            "name": "h11",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.16.0"
+        },
+        {
+          "package": {
+            "name": "httpcore",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.0.9"
+        },
+        {
+          "package": {
+            "name": "httpx",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.28.1"
+        },
+        {
+          "package": {
+            "name": "idna",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.20"
+        },
+        {
+          "package": {
+            "name": "jmespath",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.1.0"
+        },
+        {
+          "package": {
+            "name": "kombu",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.6.2"
+        },
+        {
+          "package": {
+            "name": "limits",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.8.0"
+        },
+        {
+          "package": {
+            "name": "numpy",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.5.4"
+        },
+        {
+          "package": {
+            "name": "opentelemetry-api",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.45.1"
+        },
+        {
+          "package": {
+            "name": "packaging",
+            "ecosystem": "PyPI"
+          },
+          "version": "26.3"
+        },
+        {
+          "package": {
+            "name": "pandas",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.0.6"
+        },
+        {
+          "package": {
+            "name": "passlib",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.7.4"
+        },
+        {
+          "package": {
+            "name": "pdf2image",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.17.0"
+        },
+        {
+          "package": {
+            "name": "pdfminer.six",
+            "ecosystem": "PyPI"
+          },
+          "version": "20260107"
+        },
+        {
+          "package": {
+            "name": "pdfplumber",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.11.10"
+        },
+        {
+          "package": {
+            "name": "pillow",
+            "ecosystem": "PyPI"
+          },
+          "version": "12.3.0"
+        },
+        {
+          "package": {
+            "name": "pip",
+            "ecosystem": "PyPI"
+          },
+          "version": "25.0.1"
+        },
+        {
+          "package": {
+            "name": "prometheus-fastapi-instrumentator",
+            "ecosystem": "PyPI"
+          },
+          "version": "8.1.0"
+        },
+        {
+          "package": {
+            "name": "prometheus_client",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.26.0"
+        },
+        {
+          "package": {
+            "name": "prompt_toolkit",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.0.53"
+        },
+        {
+          "package": {
+            "name": "psycopg2-binary",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.9.13"
+        },
+        {
+          "package": {
+            "name": "pyasn1",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.6.4"
+        },
+        {
+          "package": {
+            "name": "pycparser",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.11"
+        },
+        {
+          "package": {
+            "name": "pydantic",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.13.5"
+        },
+        {
+          "package": {
+            "name": "pydantic-settings",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.15.0"
+        },
+        {
+          "package": {
+            "name": "pydantic_core",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.46.5"
+        },
+        {
+          "package": {
+            "name": "pypdfium2",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.14.0"
+        },
+        {
+          "package": {
+            "name": "pytesseract",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.3.13"
+        },
+        {
+          "package": {
+            "name": "python-dateutil",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.9.0.post0"
+        },
+        {
+          "package": {
+            "name": "python-dotenv",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.2.4"
+        },
+        {
+          "package": {
+            "name": "python-jose",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.5.0"
+        },
+        {
+          "package": {
+            "name": "python-json-logger",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.2.0"
+        },
+        {
+          "package": {
+            "name": "python-multipart",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.0.32"
+        },
+        {
+          "package": {
+            "name": "redis",
+            "ecosystem": "PyPI"
+          },
+          "version": "8.1.0"
+        },
+        {
+          "package": {
+            "name": "requests",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.34.2"
+        },
+        {
+          "package": {
+            "name": "rsa",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.9.1"
+        },
+        {
+          "package": {
+            "name": "s3transfer",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.19.3"
+        },
+        {
+          "package": {
+            "name": "sentry-sdk",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.71.0"
+        },
+        {
+          "package": {
+            "name": "six",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.17.0"
+        },
+        {
+          "package": {
+            "name": "slowapi",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.1.10"
+        },
+        {
+          "package": {
+            "name": "soupsieve",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.0.3"
+        },
+        {
+          "package": {
+            "name": "starlette",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.9.0"
+        },
+        {
+          "package": {
+            "name": "tabula-py",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.10.0"
+        },
+        {
+          "package": {
+            "name": "tenacity",
+            "ecosystem": "PyPI"
+          },
+          "version": "9.2.1"
+        },
+        {
+          "package": {
+            "name": "typing-inspection",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.4.4"
+        },
+        {
+          "package": {
+            "name": "typing_extensions",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.16.0"
+        },
+        {
+          "package": {
+            "name": "tzdata",
+            "ecosystem": "PyPI"
+          },
+          "version": "2026.5"
+        },
+        {
+          "package": {
+            "name": "tzlocal",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.4.4"
+        },
+        {
+          "package": {
+            "name": "urllib3",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.8.0"
+        },
+        {
+          "package": {
+            "name": "uvicorn",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.54.0"
+        },
+        {
+          "package": {
+            "name": "vine",
+            "ecosystem": "PyPI"
+          },
+          "version": "5.1.0"
+        },
+        {
+          "package": {
+            "name": "wcwidth",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.9.2"
+        },
+        {
+          "package": {
+            "name": "wrapt",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.5.1"
+        },
+        {
+          "package": {
+            "name": "pytest",
+            "ecosystem": "PyPI"
+          },
+          "version": "9.1.1"
+        },
+        {
+          "package": {
+            "name": "pytest-asyncio",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.4.0"
+        },
+        {
+          "package": {
+            "name": "psutil",
+            "ecosystem": "PyPI"
+          },
+          "version": "7.2.2"
+        },
+        {
+          "package": {
+            "name": "Pygments",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.21.0"
+        },
+        {
+          "package": {
+            "name": "iniconfig",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.3.1"
+        },
+        {
+          "package": {
+            "name": "pluggy",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.7.0"
+        }
+      ],
+      "matches": [
+        {
+          "package": {
+            "name": "certifi",
+            "ecosystem": "PyPI"
+          },
+          "version": "2026.10.18",
+          "advisories": [
+            "GHSA-6q48-6c7w-9gw2",
+            "PYSEC-2026-4320"
+          ]
+        },
+        {
+          "package": {
+            "name": "ecdsa",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.19.2",
+          "advisories": [
+            "GHSA-wj6h-64fc-37mp",
+            "PYSEC-2026-1325"
+          ]
+        },
+        {
+          "package": {
+            "name": "pillow",
+            "ecosystem": "PyPI"
+          },
+          "version": "12.3.0",
+          "advisories": [
+            "GHSA-22hg-r758-rrw9",
+            "GHSA-24rc-8hj2-v98c",
+            "GHSA-254f-3936-288h",
+            "GHSA-27h8-gf7j-v5hc",
+            "GHSA-332p-7hrc-92wf",
+            "GHSA-3j72-p6qg-6xp7",
+            "GHSA-4558-3h8r-v8xp",
+            "GHSA-462x-pgg6-55fp",
+            "GHSA-4rm8-3hmm-39fg",
+            "GHSA-4rr5-89j8-mwwm",
+            "GHSA-58r4-6rv3-gfh8",
+            "GHSA-5x8w-8jj5-q52h",
+            "GHSA-5xm2-6676-qcp9",
+            "GHSA-654x-cwwv-5j9c",
+            "GHSA-65qm-jvmh-6pqg",
+            "GHSA-74r2-7ff9-mjj2",
+            "GHSA-78g4-xqwv-q3g8",
+            "GHSA-7mwm-ghpf-9vrm",
+            "GHSA-8g5g-8vmr-9782",
+            "GHSA-9v9v-9qvf-h2hj",
+            "GHSA-c6hw-5grf-ff96",
+            "GHSA-cp9v-662q-vvx9",
+            "GHSA-f2g6-542v-9j58",
+            "GHSA-fc9g-5qg7-mf45",
+            "GHSA-g4qv-2jxx-769h",
+            "GHSA-g7cr-3p24-7wf7",
+            "GHSA-g842-9rc4-69pw",
+            "GHSA-gg2r-wvfm-q9rx",
+            "GHSA-j4m9-6w36-pw47",
+            "GHSA-jg86-v3jv-hrpm",
+            "GHSA-mrfp-p49p-3hf2",
+            "GHSA-p4wg-p73j-c528",
+            "GHSA-p8hx-v2p6-rp84",
+            "GHSA-pchr-8j38-3x4p",
+            "GHSA-q45j-58j2-45rg",
+            "GHSA-rfgq-q3w2-pmv2",
+            "GHSA-v9pv-5gc8-w2m6",
+            "GHSA-vx6w-vv9f-6gvg",
+            "GHSA-w889-685w-c8fh",
+            "GHSA-xgh8-jp6q-p5x8",
+            "GHSA-xvh5-g6gv-559v"
+          ]
+        },
+        {
+          "package": {
+            "name": "pip",
+            "ecosystem": "PyPI"
+          },
+          "version": "25.0.1",
+          "advisories": [
+            "GHSA-4xh5-x5gv-qwph",
+            "GHSA-58qw-9mgm-455v",
+            "GHSA-6vgw-5pg2-w6jp",
+            "GHSA-jp4c-xjxw-mgf9",
+            "GHSA-qwm4-qh6w-59xr",
+            "GHSA-wf93-45jw-7689",
+            "PYSEC-2026-1795",
+            "PYSEC-2026-1796",
+            "PYSEC-2026-196",
+            "PYSEC-2026-2875",
+            "PYSEC-2026-2876",
+            "PYSEC-2026-3721"
+          ]
+        },
+        {
+          "package": {
+            "name": "python-jose",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.5.0",
+          "advisories": [
+            "GHSA-3qf3-8w2g-rqmx",
+            "PYSEC-2026-4298"
+          ]
+        }
+      ]
+    },
+    "osv-etl-pins": {
+      "queries": [
+        {
+          "package": {
+            "name": "pandas",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.1.4"
+        },
+        {
+          "package": {
+            "name": "pdfplumber",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.10.3"
+        },
+        {
+          "package": {
+            "name": "camelot-py",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.10.1"
+        },
+        {
+          "package": {
+            "name": "tabula-py",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.8.2"
+        },
+        {
+          "package": {
+            "name": "requests",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.31.0"
+        },
+        {
+          "package": {
+            "name": "beautifulsoup4",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.12.2"
+        },
+        {
+          "package": {
+            "name": "lxml",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.9.3"
+        },
+        {
+          "package": {
+            "name": "openpyxl",
+            "ecosystem": "PyPI"
+          },
+          "version": "3.1.2"
+        },
+        {
+          "package": {
+            "name": "sqlalchemy",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.0.23"
+        },
+        {
+          "package": {
+            "name": "psycopg2-binary",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.9.9"
+        },
+        {
+          "package": {
+            "name": "python-dotenv",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.0.0"
+        },
+        {
+          "package": {
+            "name": "schedule",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.2.0"
+        },
+        {
+          "package": {
+            "name": "PyYAML",
+            "ecosystem": "PyPI"
+          },
+          "version": "6.0.1"
+        },
+        {
+          "package": {
+            "name": "fuzzywuzzy",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.18.0"
+        },
+        {
+          "package": {
+            "name": "python-Levenshtein",
+            "ecosystem": "PyPI"
+          },
+          "version": "0.23.0"
+        },
+        {
+          "package": {
+            "name": "boto3",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.34.0"
+        },
+        {
+          "package": {
+            "name": "playwright",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.46.0"
+        }
+      ],
+      "matches": [
+        {
+          "package": {
+            "name": "requests",
+            "ecosystem": "PyPI"
+          },
+          "version": "2.31.0",
+          "advisories": [
+            "GHSA-9hjg-9r4m-mvj7",
+            "GHSA-9wx4-h78v-vm56",
+            "GHSA-gc5v-m9x4-r6x2",
+            "PYSEC-2026-1872",
+            "PYSEC-2026-1873",
+            "PYSEC-2026-2275"
+          ]
+        },
+        {
+          "package": {
+            "name": "lxml",
+            "ecosystem": "PyPI"
+          },
+          "version": "4.9.3",
+          "advisories": [
+            "GHSA-vfmq-68hx-4jfw",
+            "PYSEC-2026-87"
+          ]
+        },
+        {
+          "package": {
+            "name": "python-dotenv",
+            "ecosystem": "PyPI"
+          },
+          "version": "1.0.0",
+          "advisories": [
+            "GHSA-mf9w-mj56-hr94",
+            "PYSEC-2026-2270"
+          ]
+        }
+      ]
+    }
+  }
+}

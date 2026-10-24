@@ -104,6 +104,15 @@ SIGNED_WRITE_ROUTES = {
     ),
 }
 
+# Provider signatures are independent of the worker cache-invalidation secret.
+# The mounted HTTP rejection controls below keep this exemption behavioral.
+PROVIDER_SIGNED_WRITE_ROUTES = {
+    ("POST", "/api/v1/social/platform-events/{provider}"): (
+        "Threads/TikTok require an enabled exact-provider composition and a "
+        "signature over bounded raw bytes before parsing or persistence."
+    ),
+}
+
 # Write routes that another open PR removes. Tolerated while present, not
 # required, so this test stays green whichever PR merges first. Delete the
 # entry once the route is gone from main. Empty since #253 and this change
@@ -177,6 +186,7 @@ def test_every_write_route_verifies_the_caller():
         and (method, path) not in KNOWN_UNGATED_WRITE_ROUTES
         and (method, path) not in REMOVED_BY_OPEN_PR
         and (method, path) not in SIGNED_WRITE_ROUTES
+        and (method, path) not in PROVIDER_SIGNED_WRITE_ROUTES
         and not AUTH_DEPENDENCIES.intersection(_dependency_calls(dependant))
     )
     assert open_routes == [], (
@@ -259,10 +269,38 @@ def test_write_allowlists_have_no_stale_entries():
     keys = {(m, p) for m, p, _, _ in _mounted_write_routes()}
     stale = sorted(
         f"{m} {p}"
-        for m, p in [*PUBLIC_WRITE_ROUTES, *KNOWN_UNGATED_WRITE_ROUTES]
+        for m, p in [*PUBLIC_WRITE_ROUTES, *KNOWN_UNGATED_WRITE_ROUTES,
+                     *PROVIDER_SIGNED_WRITE_ROUTES]
         if (m, p) not in keys
     )
     assert stale == [], f"allowlists name routes that no longer exist: {stale}"
+
+
+@pytest.mark.parametrize('provider', ['threads', 'tiktok'])
+def test_provider_signed_route_refuses_before_persistence(client, monkeypatch, provider):
+    from social import platform_events
+
+    config = platform_events.EventConfig(
+        provider, enabled=True, subscription_verified=True, product_access_verified=True,
+        app_id='fixture-app', app_secret='inert-fixture-signing-key',
+        verify_token='inert-fixture-verify', subscriptions=(('fixture-sub', 'fixture-account'),),
+        account_ids=('fixture-account',),
+    )
+    monkeypatch.setattr(client.app.state, 'social_platform_events_config',
+                        {provider: config}, raising=False)
+    ran = []
+    monkeypatch.setattr(platform_events, 'accept_event', lambda *a, **k: ran.append(1))
+    path = f'/api/v1/social/platform-events/{provider}'
+    header = 'x-hub-signature-256' if provider == 'threads' else 'tiktok-signature'
+    for headers in ({}, {header: 'invalid'}):
+        response = client.post(path, content=b'{"fixture":true}',
+                               headers={'content-type': 'application/json', **headers})
+        assert response.status_code == 403, response.text
+        assert response.json()['detail']['code'] == 'PROVIDER_SIGNATURE_INVALID'
+    monkeypatch.setattr(client.app.state, 'social_platform_events_config', {})
+    response = client.post(path, content=b'{"fixture":true}')
+    assert response.status_code == 503, response.text
+    assert ran == []
 
 
 def _fake_pipeline_modules():

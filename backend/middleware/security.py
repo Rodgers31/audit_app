@@ -3,7 +3,7 @@
 import logging
 import os
 import time
-from collections import defaultdict
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Optional
 
@@ -23,6 +23,31 @@ _AUDIT_LOG_LEVEL = (
 )
 
 
+def _memory_allows(clients, client_ip, calls, period, capacity):
+    """Bound accepted timestamps and client identities without evicting live budgets."""
+    now = time.monotonic()
+    cutoff = now - period
+    # Entries are ordered by their last accepted request. Expired clients
+    # leave once, so a saturated map does not require a full scan per request.
+    while clients:
+        oldest = next(iter(clients))
+        if clients[oldest][-1] > cutoff:
+            break
+        clients.popitem(last=False)
+    timestamps = clients.get(client_ip)
+    if timestamps is None:
+        if len(clients) >= capacity:
+            return False
+        timestamps = []
+    timestamps = [stamp for stamp in timestamps if stamp > cutoff]
+    if len(timestamps) >= calls:
+        return False
+    timestamps.append(now)
+    clients[client_ip] = timestamps
+    clients.move_to_end(client_ip)
+    return True
+
+
 class RedisRateLimitMiddleware(BaseHTTPMiddleware):
     """Redis-backed rate limiting middleware for production use.
 
@@ -34,12 +59,8 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
         self.calls = calls
         self.period = period
         self.redis_client: Optional[aioredis.Redis] = None
-        self.memory_fallback: Dict[str, list] = defaultdict(list)
+        self.memory_fallback: Dict[str, list] = OrderedDict()
         self.use_redis = False
-        # Tracks the last time the bulk sweep ran so it can be throttled
-        # to at most once per `period` seconds even if traffic keeps the
-        # dict above the sweep threshold continuously.
-        self._last_sweep_ts: float = 0.0
 
     async def init_redis(self):
         """Initialize Redis connection."""
@@ -124,56 +145,12 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
             self.use_redis = False
             return await self._check_memory_rate_limit(client_ip)
 
-    # Bulk sweep fires once the dict crosses this many distinct IPs.
-    # Without it the dict grows unbounded — every unique IP that ever
-    # hit the server stays in memory for the worker's lifetime, because
-    # the per-IP cleanup below only prunes timestamps inside the list,
-    # never the IP key itself.
-    _MEMORY_FALLBACK_SWEEP_THRESHOLD = 10_000
+    _MAX_MEMORY_CLIENTS = 10_000
 
     async def _check_memory_rate_limit(self, client_ip: str) -> bool:
         """Check rate limit using in-memory storage (fallback)."""
-        now = time.time()
-
-        # Lazy bulk sweep: when the dict gets large, drop any IP whose
-        # most recent timestamp is older than `period`. Throttled so
-        # the O(N) scan can't run on every request once the dict stays
-        # above threshold — at most once per `self.period` seconds.
-        if (
-            len(self.memory_fallback) > self._MEMORY_FALLBACK_SWEEP_THRESHOLD
-            and now - self._last_sweep_ts >= self.period
-        ):
-            self._last_sweep_ts = now
-            cutoff = now - self.period
-            stale = [
-                ip for ip, ts in self.memory_fallback.items()
-                if not ts or max(ts) < cutoff
-            ]
-            for ip in stale:
-                del self.memory_fallback[ip]
-            # Only log when we actually evicted something — otherwise
-            # this would spam INFO every `period` seconds whenever the
-            # dict sits at threshold with no stale entries.
-            if stale:
-                logger.info(
-                    f"Rate-limiter memory sweep: dropped {len(stale)} stale IPs "
-                    f"({len(self.memory_fallback)} remaining)"
-                )
-
-        # Clean old entries for this IP
-        self.memory_fallback[client_ip] = [
-            timestamp
-            for timestamp in self.memory_fallback[client_ip]
-            if now - timestamp < self.period
-        ]
-
-        # Check limit
-        if len(self.memory_fallback[client_ip]) >= self.calls:
-            return False
-
-        # Add current request
-        self.memory_fallback[client_ip].append(now)
-        return True
+        return _memory_allows(self.memory_fallback, client_ip, self.calls,
+                              self.period, self._MAX_MEMORY_CLIENTS)
 
     async def shutdown(self):
         """Close Redis connection."""
@@ -188,11 +165,13 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     For production, use RedisRateLimitMiddleware instead.
     """
 
+    _MAX_MEMORY_CLIENTS = 10_000
+
     def __init__(self, app, calls: int = 100, period: int = 60):
         super().__init__(app)
         self.calls = calls
         self.period = period
-        self.clients: Dict[str, list] = defaultdict(list)
+        self.clients: Dict[str, list] = OrderedDict()
 
     async def dispatch(self, request: Request, call_next: Callable):
         # Skip OPTIONS (CORS preflight) — let CORSMiddleware handle it
@@ -210,16 +189,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/", "/health", "/metrics"]:
             return await call_next(request)
 
-        # Clean old entries
-        now = time.time()
-        self.clients[client_ip] = [
-            timestamp
-            for timestamp in self.clients[client_ip]
-            if now - timestamp < self.period
-        ]
-
-        # Check rate limit
-        if len(self.clients[client_ip]) >= self.calls:
+        if not _memory_allows(self.clients, client_ip, self.calls,
+                              self.period, self._MAX_MEMORY_CLIENTS):
             logger.warning(f"Rate limit exceeded for IP: {client_ip}")
             # NB: return, don't raise. BaseHTTPMiddleware.dispatch runs outside
             # Starlette's ExceptionMiddleware, so a raised HTTPException never
@@ -232,9 +203,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 },
                 headers={"Retry-After": str(self.period)},
             )
-
-        # Add current request
-        self.clients[client_ip].append(now)
 
         return await call_next(request)
 
