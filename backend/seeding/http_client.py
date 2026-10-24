@@ -114,16 +114,10 @@ class SeedingHttpClient(AbstractContextManager["SeedingHttpClient"]):
         if chain_clients is None:
             return self._client
         if host not in chain_clients:
-            context = tls_chain.completed_ssl_context(host)
-            chain_clients[host] = (
-                httpx.Client(
-                    timeout=self._settings.timeout_seconds,
-                    headers=self._settings.default_headers,
-                    follow_redirects=self._settings.http_follow_redirects,
-                    verify=context,
-                )
-                if context is not None
-                else self._client
+            chain_clients[host] = tls_chain.verified_client(
+                url, timeout=self._settings.timeout_seconds,
+                headers=self._settings.default_headers,
+                follow_redirects=self._settings.http_follow_redirects,
             )
         return chain_clients[host]
 

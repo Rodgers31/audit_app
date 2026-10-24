@@ -85,7 +85,7 @@ def pki():
 
 def serve(cert, monkeypatch):
     """Make the CA-Issuers URL return ``cert`` (or nothing)."""
-    monkeypatch.setattr(tls_chain, "_fetch_der", lambda url: cert)
+    monkeypatch.setattr(tls_chain, "_fetch_der", lambda url, **kwargs: cert)
 
 
 class TestItCompletesARealChain:
@@ -104,7 +104,7 @@ class TestItCompletesARealChain:
         )
         monkeypatch.setattr(
             tls_chain, "_fetch_der",
-            lambda url: pytest.fail("should not have fetched anything"),
+            lambda url, **kwargs: pytest.fail("should not have fetched anything"),
         )
 
         assert tls_chain.build_chain_to_a_trusted_root(direct, pki["roots"]) == []
@@ -203,7 +203,7 @@ class TestItRefuses:
         )
         calls = []
 
-        def _fetch(url):
+        def _fetch(url, **kwargs):
             calls.append(url)
             return loop
 
@@ -218,7 +218,7 @@ class TestItRefuses:
         self, pki, monkeypatch
     ):
         """Failure means the caller keeps its normal, verifying client."""
-        monkeypatch.setattr(tls_chain, "leaf_certificate", lambda host, port=443: pki["leaf"])
+        monkeypatch.setattr(tls_chain, "leaf_certificate", lambda host, port=443, **kwargs: pki["leaf"])
         serve(None, monkeypatch)
 
         assert tls_chain.completed_ssl_context("example.test") is None

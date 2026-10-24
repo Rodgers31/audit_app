@@ -1,7 +1,7 @@
 """One pinned, public KNBS edition. No discovery, redirects or substitute source."""
 from datetime import datetime, timezone
 import time
-import httpx
+from seeding import tls_chain
 
 URL = 'https://www.knbs.or.ke/wp-content/uploads/2026/10/Chapter-5-Public-Finance.xlsx'
 REPORT_URL = 'https://www.knbs.or.ke/reports/2026-economic-survey/'
@@ -18,7 +18,7 @@ class OpenDataSourceRefused(ValueError):
 
 def fetch_publication():
     started = time.monotonic()
-    with httpx.Client(trust_env=False, follow_redirects=False, timeout=10) as client:
+    with tls_chain.verified_client(URL, follow_redirects=False, timeout=10) as client:
         with client.stream('GET', URL, headers={'User-Agent': 'KenyaAuditAppSeeder/1.0'}) as response:
             if response.status_code != 200 or response.headers.get('content-type', '').split(';', 1)[0].strip().lower() not in (CONTENT_TYPE, 'application/octet-stream'):
                 raise OpenDataSourceRefused('OpenData expected a 200 official KNBS workbook response')
