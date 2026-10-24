@@ -376,3 +376,93 @@ def test_report_count_bounds_couple_all_fixed_reads(rows, decoded):
     }
     with pytest.raises(tool.budget.EvidenceError, match="WORKER_REPORT_INVALID"):
         tool._validate_worker_report(child, parent, config)
+
+
+def _inert_cli_config():
+    """Accepted loopback/source inputs; no database is opened by these controls."""
+    return {
+        "version": 1,
+        "mode": "owned-local",
+        "accepted": True,
+        "execution_head": subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True
+        ).strip(),
+        "source_files": {
+            name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+            for name in tool.SOURCE_FILES
+        },
+        "database": {
+            "host": "127.0.0.1",
+            "port": 56972,
+            "name": "b66_preflight_owned",
+            "oid": 1,
+            "role": "b66_preflight_reader",
+            "role_oid": 2,
+            "tls": "disable",
+        },
+        "schema_sha256": "a" * 64,
+        "revision": "b66fixture01",
+        "receipt_authority": {"state": "accepted", "identity_sha256": "1" * 64},
+    }
+
+
+@pytest.mark.parametrize("consumed", [False, True])
+@pytest.mark.parametrize("with_output", [False, True])
+def test_cli_nested_timeout_emits_one_report_and_never_publishes_late(
+    monkeypatch, tmp_path, capsys, credential, consumed, with_output
+):
+    policy = tmp_path / "inert.json"
+    policy.write_text(json.dumps(_inert_cli_config()))
+    output = tmp_path / "late-report.json"
+    original = tool.connection_parameters
+    calls = []
+
+    def delayed_connection(*args, **kwargs):
+        calls.append(True)
+        if consumed:
+            try:
+                time.sleep(0.4)
+            except BaseException:
+                pass
+        else:
+            time.sleep(0.4)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(tool, "connection_parameters", delayed_connection)
+    monkeypatch.setattr(tool, "RUN_SECONDS", 0.2)
+    monkeypatch.setenv("INGESTION_PREFLIGHT_DATABASE_URL", credential)
+    argv = ["--execute-read-only", "--owned-local-config", str(policy)]
+    if with_output:
+        argv += ["--out", str(output)]
+    code = tool.main(argv)
+    raw = capsys.readouterr().out
+    result = json.loads(raw)  # Must decode the entire stdout, never just its last line.
+    assert calls and code == 2
+    assert result["status"] == "REFUSED"
+    assert all(
+        result[k] is False
+        for k in ("safe_to_write", "production_authorized", "free_ready")
+    )
+    assert not output.exists(), "receipt was created after the deadline expired"
+    assert signal.getitimer(signal.ITIMER_REAL) == (0.0, 0.0)
+
+
+def test_cli_single_report_after_early_argument_refusal(capsys):
+    assert tool.main(["--unknown-option"]) == 2
+    result = json.loads(capsys.readouterr().out)
+    assert result["status"] == "REFUSED" and result["safe_to_write"] is False
+
+
+def test_cli_single_successful_admission_report(tmp_path, monkeypatch, capsys):
+    policy = tmp_path / "inert.json"
+    policy.write_text(json.dumps(_inert_cli_config()))
+
+    def forbidden_worker(*args, **kwargs):
+        pytest.fail("admission-only CLI opened a worker")
+
+    monkeypatch.setattr(tool.worker, "bounded", forbidden_worker)
+    assert tool.main(["--admit-only", "--owned-local-config", str(policy)]) == 0
+    assert json.loads(capsys.readouterr().out) == {
+        "admitted_for_read_checks_only": True,
+        "safe_to_write": False,
+    }

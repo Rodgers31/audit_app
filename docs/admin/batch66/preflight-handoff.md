@@ -283,3 +283,32 @@ its signal and prior lifecycle controls also pass. Both preserved the exact
 red generators and reran them on the correction. The author211-case actual-PG
 candidate run passed with unchanged before/after source. Final exact-package
 normal/optimized receipts and pin addenda are separate from that candidate run.
+
+## B67 single-object CLI correction
+
+Coordinator review5637292602 found an operational output regression atc10bed9:
+an ordinary nested timeout returned a refusal, then CLI printed it before the
+outer deadline postcondition selected a second refusal. The command exited2
+safely, but whole-stdout JSON parsing failed. Its211-case passes and previous
+clearances remain historical; this finding did not reopen the repaired admission
+or coupled-accounting invariants.
+
+The minimal correction returns the intended exit/payload from private _main,
+serializes within the protected boundary, and emits once only after the outer
+deadline decision. An expiry checkpoint immediately precedes optional receipt
+publication so a timed-out nested run cannot write after expiry. Initial
+report I/O stays protected, timeout fallback performs no filesystem I/O, and
+caps, public CLI flags/credentials, false gates and worker cleanup are unchanged.
+
+Four red controls exercised ordinary and explicitly consumed cancellation, each
+with and without --out; two early-argument/admission-success controls already
+passed. All six now pass, with whole-stdout json.loads and no late file. A50-case
+non-PG cohort passes normally and optimized, including prior signal/accounting
+and actual workflow/readiness controls; one PG-only case is explicitly excluded
+from that cohort. Full collection is217cases. Coordinator owns independent review
+and exact final pushed-head PG replays; this author correction uses no Docker/PG.
+Final implementation/package pins and current outcomes are recorded in the
+external cli-output-correction manifest and live PR body rather than inferred
+from any earlier211-case receipt.
+
+Single-object CLI correction inspector SHA256: `5f7fe71659f991a67fc3b1c87bbe5174ab0203f5edd0d3efe8ae813ca6af8ab5`.

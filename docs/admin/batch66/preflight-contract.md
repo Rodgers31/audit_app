@@ -132,6 +132,10 @@ Private worker reports must also satisfy the complete exact shape/type/binding
 contract: success requires empty errors and complete seven-check observation,
 supported runtime, fresh timestamp and bounded nonzero counts. Unknown failures
 or malformed/contradictory reports refuse without propagating arbitrary text.
+The CLI emits one final JSON object after the outer deadline decision. Intended
+payload serialization remains protected; optional file publication checks expiry
+before writing. A nested timeout cannot emit an earlier refusal or publish late
+before the outer context chooses the final sanitized result.
 Rows and bytes must also agree with all eleven fixed reads: ten known single-row
 results and the remaining schema rows. Canonical size bounds include admitted
 identity/guards/revision/check values, bounded timestamp, each required table,

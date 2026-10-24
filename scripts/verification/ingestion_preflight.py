@@ -994,8 +994,7 @@ def _main(argv=None):
             )
             source_identity(config, ROOT)
             _check_deadline()
-            print('{"admitted_for_read_checks_only":true,"safe_to_write":false}')
-            return 0
+            return 0, {"admitted_for_read_checks_only": True, "safe_to_write": False}
         raw_sha = result["policy_raw_sha256"]
         result = run(
             config,
@@ -1004,30 +1003,31 @@ def _main(argv=None):
         )
         result["policy_raw_sha256"] = raw_sha
         if args.out:
+            _check_deadline()
             publish(result, args.out)
-        print(budget.canonical(result).decode())
-        return 0 if result["status"] == "OBSERVED_READ_CHECKS_ONLY" else 1
+        return (0 if result["status"] == "OBSERVED_READ_CHECKS_ONLY" else 1), result
     except budget.EvidenceError as error:
         result.update(status="REFUSED", observation=None, errors=[str(error)])
-        print(budget.canonical(result).decode())
-        return 2
+        return 2, result
     except Exception:
         result["status"] = "REFUSED"
         result["observation"] = None
         result["errors"] = ["ADMISSION_OR_OUTPUT_REFUSED"]
-        print(budget.canonical(result).decode())
-        return 2
+        return 2, result
 
 
 def main(argv=None):
     try:
         with deadline():
-            return _main(argv)
+            code, result = _main(argv)
+            raw = budget.canonical(result).decode()
     except Exception:
         result = report(bind_generator=False)
         result["errors"] = ["CLI_DEADLINE_OR_CONTEXT_REFUSED"]
-        print(budget.canonical(result).decode())
-        return 2
+        code, raw = 2, budget.canonical(result).decode()
+    # Decide after the outer deadline postcondition, then emit exactly once.
+    print(raw)
+    return code
 
 
 if __name__ == "__main__":
