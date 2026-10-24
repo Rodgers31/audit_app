@@ -15,7 +15,7 @@ those comments. No parent acceptance issue is closed by this delivery.
 The shipped `preflight-admission.json` is disabled with absent expectations.
 The workflow also refuses without the independently owner-provisioned nonsecret
 `INGESTION_PREFLIGHT_APPROVED_WORKFLOW_SHA` variable; it is absent in author work.
-The policy hash placeholder remains `NOT_ADMITTED`. Repository
+The hash-bound shipped policy remains disabled. Repository
 Actions must stay globally OFF; no hosted run is part of this author work.
 An invalid dispatch fails explicitly, rather than skipping a job green.
 

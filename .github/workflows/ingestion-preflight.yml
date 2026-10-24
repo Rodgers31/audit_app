@@ -36,22 +36,22 @@ jobs:
           test "$DISPATCH_SHA" = "$APPROVED_DISPATCH_SHA"
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          # Replaced with immutable reviewed implementation in this draft.
-          ref: 924f1a4f27e1952f97d2291d8878d88603132237
+          # Reviewed implementation snapshot; activation remains blocked.
+          ref: 739216efba9d5ed97ee3de8f39c277110ac1c3fa
           persist-credentials: false
           path: app
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           # Policy is an independently pinned later commit referring to app's
           # already-known immutable HEAD. Never checkout dispatch input/ref.
-          ref: 924f1a4f27e1952f97d2291d8878d88603132237
+          ref: 739216efba9d5ed97ee3de8f39c277110ac1c3fa
           persist-credentials: false
           path: admission
       - name: Refuse missing accepted expectations before dependency or secret access
         run: |
           python -B app/scripts/verification/ingestion_preflight.py --admit-only \
             --reviewed-admission "$GITHUB_WORKSPACE/admission/docs/admin/batch66/preflight-admission.json" \
-            --expected-admission-sha256 NOT_ADMITTED
+            --expected-admission-sha256 e291df96f321f9e8b9615daa56549aa80c322e0dd6accee29342fd602d761924
       - name: Install pinned inspection driver without database credentials
         run: |
           python -I -m pip --isolated install --disable-pip-version-check --no-deps --require-hashes --only-binary=:all: -r app/docs/admin/batch66/preflight-driver-requirements.txt
@@ -62,6 +62,6 @@ jobs:
         run: |
           python -B app/scripts/verification/ingestion_preflight.py --execute-read-only \
             --reviewed-admission "$GITHUB_WORKSPACE/admission/docs/admin/batch66/preflight-admission.json" \
-            --expected-admission-sha256 NOT_ADMITTED \
+            --expected-admission-sha256 e291df96f321f9e8b9615daa56549aa80c322e0dd6accee29342fd602d761924 \
             --out "$RUNNER_TEMP/ingestion-preflight.json"
       # No artifact upload. Only fixed diagnostics and a bounded sanitized report.

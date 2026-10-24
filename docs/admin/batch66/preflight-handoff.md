@@ -31,6 +31,14 @@ dependency/credential scope. The existing DATABASE_URL secret is referenced only
 by the final read step; its value was never read/copied here. Installation has no
 credential scope and uses isolated, hash-pinned binary driver requirements.
 
+Immutable implementation/disabled-policy pin in the packaged workflow:
+`739216efba9d5ed97ee3de8f39c277110ac1c3fa` (the first reviewed author commit).
+Disabled policy SHA256:
+`e291df96f321f9e8b9615daa56549aa80c322e0dd6accee29342fd602d761924`.
+The following packaging commit changes those literal refs/hash bindings only;
+the inspector bytes above remain unchanged. This pin is not a claim of merged
+source or hosted identity acceptance.
+
 The invoked API/CLI enforce read-only connection defaults and an explicit bounded
 read-only transaction, exact identity/role/TLS/schema/source expectations,
 allowlisted fixed SQL, strict primitive types, RLS visibility refusal and no
