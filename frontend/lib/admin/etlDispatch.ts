@@ -8,6 +8,7 @@ export type CommandStatus = typeof COMMAND_STATUSES[number];
 export interface DispatchCapability {
   timestamp: string; evidence: 'worker_dispatch'; available: boolean; reason: string;
   generation: string | null;
+  execution_mode?: 'standard' | 'qualification';
   worker: { status: 'ready' | 'unavailable'; last_seen_at: string | null; expires_at: string | null };
   sources: Record<DispatchSource, { available: boolean; reason: string }>;
 }
@@ -52,7 +53,10 @@ function status(value: unknown): CommandStatus {
   return value as CommandStatus;
 }
 export function parseDispatchCapability(raw: unknown, now = Date.now()): DispatchCapability {
-  const v = exact(raw, ['timestamp', 'evidence', 'available', 'reason', 'generation', 'worker', 'sources']);
+  const modePresent = Object.hasOwn(record(raw), 'execution_mode');
+  const v = exact(raw, ['timestamp', 'evidence', 'available', 'reason', 'generation', 'worker', 'sources', ...(modePresent ? ['execution_mode'] : [])]);
+  const execution_mode = modePresent ? v.execution_mode : 'standard';
+  if (execution_mode !== 'standard' && execution_mode !== 'qualification') invalid();
   const seen = timestamp(v.timestamp), available = boolean(v.available);
   const worker = exact(v.worker, ['status', 'last_seen_at', 'expires_at']);
   const last_seen_at = optionalTimestamp(worker.last_seen_at), expires_at = optionalTimestamp(worker.expires_at);
@@ -69,11 +73,15 @@ export function parseDispatchCapability(raw: unknown, now = Date.now()): Dispatc
   for (const name of DISPATCH_SOURCES) {
     const entry = exact(rawSources[name], ['available', 'reason']);
     const supported = boolean(entry.available);
-    if (supported && !available) invalid();
+    if (supported && (!available || execution_mode === 'qualification' && name !== 'opendata')) invalid();
     sources[name] = { available: supported, reason: reason(entry.reason) };
   }
-  return {timestamp:seen, evidence:'worker_dispatch', available, reason:reason(v.reason), generation,
+  return {timestamp:seen, evidence:'worker_dispatch', available, reason:reason(v.reason), generation, execution_mode,
     worker:{status:available ? 'ready' : 'unavailable',last_seen_at,expires_at},sources};
+}
+export function dispatchPermits(capability: DispatchCapability | undefined, selected: DispatchSource, dryRun: boolean, now = Date.now()) {
+  return dispatchCurrent(capability, now) && !!capability?.sources[selected].available &&
+    (capability?.execution_mode !== 'qualification' || selected === 'opendata' && dryRun === true);
 }
 export function dispatchCurrent(capability: DispatchCapability | undefined, now = Date.now()) {
   return !!capability?.available && Number.isFinite(now) && !!capability.worker.expires_at &&

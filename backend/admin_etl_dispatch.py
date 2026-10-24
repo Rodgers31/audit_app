@@ -14,6 +14,7 @@ from sqlalchemy import func, select, text, update
 from models import AdminAuditLog, EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker
 from routers.admin_operations import DISPATCH_ERROR, PRIVATE_HEADERS, bounded_integer
 from utils.audit_policy import safe_audit_payload
+from admin_etl_qualification import qualification, QualificationRefused
 
 SOURCES = ("treasury", "cob", "oag", "knbs", "opendata", "cra")
 SOURCE_DOMAINS = {"oag": "audits", "treasury": "fiscal_summary", "cob": "counties_budget", "knbs": "population", "cra": "cra", "opendata": "opendata"}
@@ -45,7 +46,13 @@ UtcDatetime = Annotated[datetime, AfterValidator(utc_datetime)]
 
 
 def enabled():
-    return os.environ.get("ADMIN_ETL_DISPATCH_ENABLED") == "true"
+    if os.environ.get("ADMIN_ETL_DISPATCH_ENABLED") != "true":
+        return False
+    try:
+        qualification()
+        return True
+    except QualificationRefused:
+        return False
 
 
 def selected_sources():
@@ -138,6 +145,7 @@ class DispatchCapability(BaseModel):
     generation: UUID | None
     worker: WorkerCapability
     sources: dict[Source, SourceCapability]
+    execution_mode: Literal["standard", "qualification"] = "standard"
 
 
 class Accepted(BaseModel):
@@ -193,14 +201,23 @@ def capability(db):
     available = False
     generation = last_seen_at = expires_at = None
     ready_domains = set()
+    policy = None
     if enabled():
         try:
             db_clock(db)
             worker, now = retire_expired(db)
+            policy = qualification(now)
             available = fresh(worker, now)
+            if policy is not None:
+                available = available and worker.generation == policy.generation
+                if db.scalar(select(EtlDispatchCommand.id).where(
+                        EtlDispatchCommand.generation == policy.generation).limit(1)) is not None:
+                    available = False
             if worker is not None:
                 generation, last_seen_at, expires_at = worker.generation, worker.last_seen_at, worker.expires_at
             ready_domains = set(db.scalars(select(EtlDispatchDomain.domain).where(EtlDispatchDomain.ready.is_(True))))
+            if policy is not None:
+                ready_domains &= {"opendata"}
             available = available and bool(ready_domains)
             db.commit()
         except Exception:
@@ -209,7 +226,8 @@ def capability(db):
             available = False
             generation = last_seen_at = expires_at = None
             ready_domains = set()
-    reason = "Dedicated worker is ready for supported sources." if available else UNAVAILABLE
+    reason = ("One OpenData Dry Run is available; Run Now is disabled." if policy is not None else
+              "Dedicated worker is ready for supported sources.") if available else UNAVAILABLE
     return DispatchCapability(timestamp=now, evidence="worker_dispatch", available=available, reason=reason,
         generation=generation if available else None,
         worker=WorkerCapability(status="ready" if available else "unavailable",
@@ -217,7 +235,7 @@ def capability(db):
         sources={s: SourceCapability(available=available and SOURCE_DOMAINS.get(s) in ready_domains,
             reason=(SOURCE_SCOPE[s] if SOURCE_DOMAINS.get(s) in ready_domains else
                 SOURCE_GAPS.get(s, "Mapping is disabled or its native handler is unavailable.")) if available else UNAVAILABLE)
-            for s in SOURCES})
+            for s in SOURCES}, execution_mode="qualification" if policy is not None else "standard")
 
 
 def accept(db, actor, source, body, key):
@@ -244,9 +262,13 @@ def accept(db, actor, source, body, key):
         db_clock(db)
         db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:actor), hashtext(:key))"), {"actor": actor.id, "key": str(intent_key)})
         worker, now = retire_expired(db)
+        policy = qualification(now)
+        if policy is not None and not policy.permits(source, body.dry_run, body.dispatch_generation, now):
+            raise HTTPException(409, "Qualification permits only its one OpenData Dry Run")
         original = db.scalar(select(EtlDispatchCommand).where(EtlDispatchCommand.actor_id == actor.id, EtlDispatchCommand.idempotency_key == intent_key))
         if original is not None:
-            if original.source != source or original.dry_run != body.dry_run:
+            if (original.source != source or original.dry_run != body.dry_run
+                    or policy is not None and original.generation != policy.generation):
                 raise HTTPException(409, "Idempotency key intent conflicts")
             receipt = Accepted(replayed=True, command=Command.model_validate(original))
             db.commit()
@@ -260,6 +282,9 @@ def accept(db, actor, source, body, key):
             unavailable()
         if worker.generation != body.dispatch_generation:
             raise HTTPException(409, "Dispatch generation is stale")
+        if policy is not None and db.scalar(select(EtlDispatchCommand.id).where(
+                EtlDispatchCommand.generation == policy.generation).limit(1)) is not None:
+            raise HTTPException(409, "Qualification intent already accepted")
         if source not in SOURCE_DOMAINS:
             unavailable()
         domain = db.get(EtlDispatchDomain, SOURCE_DOMAINS[source])

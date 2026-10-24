@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from admin_etl_dispatch import SOURCE_DOMAINS, db_clock, enabled, fresh, mapped, selected_sources
 from models import EtlDispatchCommand, EtlDispatchDomain, EtlDispatchWorker, IngestionJob, SeedingDomainClaim
 from seeding.exclusion import DomainExecution, dispatch_scope
+from admin_etl_qualification import qualification, HANDLER_SECONDS
 
 
 def ready_domains():
@@ -67,6 +68,9 @@ def execute(factory, engine, command_id, token, generation):
         command = db.get(EtlDispatchCommand, command_id)
         if command is None or not mapped(command.source, command.domain) or command.domain not in ready_domains():
             return 1
+        policy = qualification(db_clock(db))
+        if policy is not None and not policy.permits(command.source, command.dry_run, generation, db_clock(db)):
+            return 1
         native_domain = command.domain
     execution = DomainExecution(factory, native_domain, token, command_id, generation)
     try:
@@ -80,6 +84,9 @@ def execute(factory, engine, command_id, token, generation):
             if not fresh(worker, now) or worker.generation != generation or command is None or not mapped(command.source, native_domain) or command.domain != native_domain or command.status != "running" or command.execution_started or command.claim_token != token or command.generation != generation or domain is None or domain.ready is not True or domain.command_id != command_id or domain.claim_token != token or ownership is None or ownership.domain != native_domain or ownership.kind != "dispatch" or ownership.command_id != command_id or ownership.returned_at is not None or ownership.released_at is not None:
                 return 1
             source, dry_run = command.source, command.dry_run
+            policy = qualification(now)
+            if policy is not None and not policy.permits(source, dry_run, generation, now):
+                return 1
             # Persist the one-use execution decision before entering the CLI.
             # A lost commit acknowledgment is uncertainty, never permission to retry.
             command.execution_started = True
@@ -111,7 +118,11 @@ def execute(factory, engine, command_id, token, generation):
             # durable rows and consumes it once before any handler. CLI flags/env
             # cannot supply it, and a scope that never entered cannot acknowledge.
             with dispatch_scope(execution):
-                return cli.run_seed_command(args, SeedingSettings(log_path=None))
+                settings = SeedingSettings(log_path=None, **(dict(
+                    domain_timeout_seconds=HANDLER_SECONDS, total_timeout_seconds=HANDLER_SECONDS,
+                    knbs_release_discovery_enabled=False, opendata_ingestion_enabled=True,
+                    max_retries=0) if policy is not None else {}))
+                return cli.run_seed_command(args, settings)
         finally:
             cli.SessionLocal, cli.load_builtin_domains = previous
     except Exception:

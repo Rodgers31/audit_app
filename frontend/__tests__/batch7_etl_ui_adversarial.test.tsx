@@ -142,6 +142,7 @@ test('adversarial lost response has no automatic POST retry, retains same key ac
   await act(async () => {}); expect(post).toHaveBeenCalledTimes(1);
   act(() => { for (const fn of Array.from(mockSubscribers)) fn(); });
   const recover = await screen.findByRole('button', { name: 'Recover same intent' });
+  await waitFor(()=>expect(recover).toBeEnabled());
   fireEvent.click(recover); await screen.findByText('Command accepted. Queued acceptance is not completed work.');
   expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(original);
   post.mockResolvedValueOnce({ status: 202, data: { ...acceptance(), command: { ...receipt(), dry_run: false } } });
@@ -218,6 +219,7 @@ test.each(['network', '500', '503', 'malformed-202'])('review control %s preserv
   mockProfile = {id:mockAuthUser.id,roles:['admin']}; mockLoading = false; view.refresh();
   const recover = await screen.findByRole('button',{name:'Recover same intent'});
   expect(post).toHaveBeenCalledTimes(1);
+  await waitFor(()=>expect(recover).toBeEnabled());
   fireEvent.click(recover);
   await screen.findByText('Command accepted. Queued acceptance is not completed work.');
   expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(original);
@@ -234,6 +236,7 @@ test('adversarial actual AdminGuard revalidation unmount retains an uncertain sa
   mockProfile = {id:mockAuthUser.id,roles:['admin']}; mockLoading = false; view.refresh();
   const recover = await screen.findByRole('button',{name:'Recover same intent'});
   expect(post).toHaveBeenCalledTimes(1);
+  await waitFor(()=>expect(recover).toBeEnabled());
   fireEvent.click(recover); await screen.findByText('Command accepted. Queued acceptance is not completed work.');
   expect(post).toHaveBeenCalledTimes(2); expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(key);
 });
@@ -249,7 +252,9 @@ test('adversarial unresolved guarded intent is hidden from a new actor and recov
   expect(post).toHaveBeenCalledTimes(1);
   mockProfile = null; mockLoading = true; view.refresh();
   mockAuthUser = {id:originalActor}; mockProfile = {id:originalActor,roles:['admin']}; mockLoading = false; view.refresh();
-  fireEvent.click(await screen.findByRole('button',{name:'Recover same intent'}));
+  const recover = await screen.findByRole('button',{name:'Recover same intent'});
+  await waitFor(()=>expect(recover).toBeEnabled());
+  fireEvent.click(recover);
   await screen.findByText('Command accepted. Queued acceptance is not completed work.');
   expect(post).toHaveBeenCalledTimes(2); expect(post.mock.calls[1][2].headers['Idempotency-Key']).toBe(key);
 });

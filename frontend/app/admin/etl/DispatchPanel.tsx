@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api/axios';
-import { DISPATCH_SOURCES, dispatchCurrent, dispatchHttpStatus, parseCommandAcceptance, parseDispatchCapability, type CommandAcceptance, type DispatchSource } from '@/lib/admin/etlDispatch';
+import { DISPATCH_SOURCES, dispatchCurrent, dispatchPermits, dispatchHttpStatus, parseCommandAcceptance, parseDispatchCapability, type CommandAcceptance, type DispatchSource } from '@/lib/admin/etlDispatch';
 import { useEtlAccess, type EtlAccess } from './useEtlAccess';
 import { CommandReceipt, etlButton } from './CommandReceipt';
 import { CommandHistory } from './CommandHistory';
@@ -51,8 +51,10 @@ export default function DispatchPanel() {
     return ()=> { if(element?.open) element.close(); };
   },[confirmation,validIntent,access.enabled,ready]);
   const cancel=() => {setConfirmation(false);opener.current?.focus();};
+  const recoveryPermitted=(selected:Intent) => data !== undefined &&
+    (data.execution_mode !== 'qualification' || selected.source === 'opendata' && selected.dry_run === true);
   const execute=async (selected:Intent, recovery=false) => {
-    if (!access.current(selected.lifetime) || lock.current || (!recovery && (!dispatchCurrent(data) || !data?.sources[selected.source].available))) return;
+    if (!access.current(selected.lifetime) || lock.current || !recoveryPermitted(selected) || (!recovery && !dispatchPermits(data,selected.source,selected.dry_run))) return;
     lock.current=true;setBusy(true);setResult(null);setError(null);setConfirmation(false);
     rememberSubmittedIntent(access.authActorId!,selected);
     const controller=access.controller();
@@ -84,7 +86,7 @@ export default function DispatchPanel() {
     }
   };
   const begin=(source:DispatchSource,dry_run:boolean,button:HTMLButtonElement) => {
-    if(!access.current() || lock.current || !dispatchCurrent(data) || !data?.sources[source].available) return;
+    if(!access.current() || lock.current || !data?.generation || !dispatchPermits(data,source,dry_run)) return;
     opener.current=button;
     const same=validIntent?.ambiguous && validIntent.source===source && validIntent.dry_run===dry_run;
     const selected:Intent=same ? validIntent : {source,dry_run,key:crypto.randomUUID(),lifetime:access.lifetime,generation:data.generation!,ambiguous:false};
@@ -100,7 +102,7 @@ export default function DispatchPanel() {
         <h2 id='dispatch-heading' className='font-display text-lg text-neutral-text'>Dedicated worker dispatch</h2>
         <button className={etlButton} disabled={!access.enabled || capability.isFetching || busy} onClick={()=>{if(access.current()) void capability.refetch();}}>Refresh worker evidence</button>
       </div>
-      <p className='mt-2 text-sm text-neutral-muted'>Run Now permits publication under the dedicated runner. Dry Run performs checks with no publication. Calendar and health never enable execution.</p>
+      <p className='mt-2 text-sm text-neutral-muted'>{data?.execution_mode === 'qualification' ? 'One OpenData Dry Run is permitted. Run Now and the other sources remain disabled.' : 'Run Now permits publication under the dedicated runner. Dry Run performs checks with no publication. Calendar and health never enable execution.'}</p>
       <p role='status' className='my-3 text-sm text-neutral-text'>
         {access.denied ? 'Administrator access expired. Renew your session to verify access.' :
           !access.visible ? 'Worker checks paused while this page is hidden.' :
@@ -113,8 +115,8 @@ export default function DispatchPanel() {
         {DISPATCH_SOURCES.map(source=><li key={source} className='flex flex-wrap items-center gap-3 py-3'>
           <div className='min-w-0 flex-1 basis-48'><p className='font-mono text-sm font-semibold text-neutral-text'>{source}</p><p className='text-sm text-neutral-muted'>{data?.sources[source].reason ?? 'Validated worker capability required.'}</p></div>
           <div className='flex flex-wrap gap-2'>
-            <button className={etlButton} aria-label={'Dry Run · '+source} disabled={!ready || !data?.sources[source].available || busy} onClick={event=>begin(source,true,event.currentTarget)}>Dry Run</button>
-            <button className={etlButton+' bg-gov-forest !text-white'} aria-label={'Run Now · '+source} disabled={!ready || !data?.sources[source].available || busy} onClick={event=>begin(source,false,event.currentTarget)}>Run Now</button>
+            <button className={etlButton} aria-label={'Dry Run · '+source} disabled={!dispatchPermits(data,source,true,clock) || busy} onClick={event=>begin(source,true,event.currentTarget)}>Dry Run</button>
+            <button className={etlButton+' bg-gov-forest !text-white'} aria-label={'Run Now · '+source} disabled={!dispatchPermits(data,source,false,clock) || busy} onClick={event=>begin(source,false,event.currentTarget)}>Run Now</button>
           </div>
         </li>)}
       </ul>
@@ -127,12 +129,12 @@ export default function DispatchPanel() {
       }} className='m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-neutral-border bg-white p-6 text-neutral-text backdrop:bg-black/50 dark:bg-surface-base'>
         <h3 id='run-confirm-title' className='font-display text-xl'>Confirm Run Now</h3>
         <p className='my-4 text-sm'>Run {validIntent?.source} now? This permits publication under the dedicated runner. Acceptance queues work; it does not confirm completion.</p>
-        <div className='flex flex-wrap gap-3'><button autoFocus className={etlButton} onClick={cancel}>Cancel</button><button className={etlButton+' bg-gov-forest !text-white'} disabled={!ready || !access.enabled || busy} onClick={()=>{if(validIntent) void execute(validIntent,validIntent.ambiguous);}}>Confirm Run Now</button></div>
+        <div className='flex flex-wrap gap-3'><button autoFocus className={etlButton} onClick={cancel}>Cancel</button><button className={etlButton+' bg-gov-forest !text-white'} disabled={!validIntent || !dispatchPermits(data,validIntent.source,false,clock) || !access.enabled || busy} onClick={()=>{if(validIntent) void execute(validIntent,validIntent.ambiguous);}}>Confirm Run Now</button></div>
       </dialog>
       {busy && access.enabled && <p role='status' className='mt-4 text-sm'>Requesting durable acceptance…</p>}
       {failure && <div role='alert' className='mt-4 space-y-2 text-sm text-neutral-text'>
         <p>{failure.ambiguous ? 'Acceptance is uncertain. Recover the same intent to look up its original receipt. This is not an execution retry.' : 'Command was not acknowledged. Refresh worker evidence before a new intent.'}</p>
-        {failure.ambiguous && validIntent && <button className={etlButton} disabled={!access.enabled || busy} onClick={()=>void execute(validIntent,true)}>Recover same intent</button>}
+        {failure.ambiguous && validIntent && <button className={etlButton} disabled={!access.enabled || busy || !recoveryPermitted(validIntent)} onClick={()=>void execute(validIntent,true)}>Recover same intent</button>}
       </div>}
       {receipt && <div role='status' className='mt-4 space-y-3 border-t border-neutral-border pt-4'>
         <p>Command accepted. Queued acceptance is not completed work.</p>
