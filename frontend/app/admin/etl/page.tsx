@@ -117,7 +117,7 @@ export default function AdminEtlPage() {
         {/* ── Per-source list ── */}
         <motion.section
           variants={fadeUp}
-          initial='hidden'
+          initial={false}
           animate='show'
           custom={3}
           className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl overflow-hidden shadow-surface'>
@@ -173,7 +173,7 @@ function SummaryCard({
   return (
     <motion.div
       variants={fadeUp}
-      initial='hidden'
+      initial={false}
       animate='show'
       custom={order}
       className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl p-5 shadow-surface'>
@@ -210,7 +210,7 @@ function SourceRow({
   return (
     <motion.li
       variants={fadeUp}
-      initial='hidden'
+      initial={false}
       animate='show'
       custom={index}
       className='px-5 py-4 flex flex-wrap items-center gap-4 hover:bg-gov-cream/40 dark:hover:bg-surface-elevated transition-colors'>

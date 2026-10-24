@@ -318,8 +318,19 @@ class MediaService:
             if query: conditions.append(SocialMediaAsset.original_filename.ilike('%' + query.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%', escape='\\'))
             if kind: conditions.append(SocialMediaAsset.mime_type.like(kind + '/%'))
             total = self.db.scalar(select(func.count()).select_from(SocialMediaAsset).where(*conditions))
-            rows = self.db.execute(select(SocialMediaAsset, SocialMediaUpload).outerjoin(SocialMediaUpload, SocialMediaUpload.asset_id == SocialMediaAsset.id).where(*conditions).order_by(SocialMediaAsset.created_at.desc(), SocialMediaAsset.id).offset((page - 1) * page_size).limit(page_size)).all()
-            return MediaLibrary(assets=tuple(self._dto(a, u) for a, u in rows), total=total, page=page, page_size=page_size, has_more=page * page_size < total)
+            # Plain rows satisfy _dto's asset attributes without hydrating ORM
+            # objects. Upload identity distinguishes absence from invalid version
+            # values; COALESCE/version truthiness would silently repair history.
+            rows = self.db.execute(select(
+                SocialMediaAsset.id, SocialMediaAsset.original_filename,
+                SocialMediaAsset.state, SocialMediaAsset.mime_type,
+                SocialMediaAsset.byte_size, SocialMediaAsset.sha256,
+                SocialMediaAsset.width, SocialMediaAsset.height,
+                SocialMediaAsset.duration_ms, SocialMediaAsset.default_alt_text,
+                SocialMediaAsset.inspection_error, SocialMediaAsset.created_at,
+                SocialMediaUpload.asset_id.label('upload_id'), SocialMediaUpload.version,
+            ).outerjoin(SocialMediaUpload, SocialMediaUpload.asset_id == SocialMediaAsset.id).where(*conditions).order_by(SocialMediaAsset.created_at.desc(), SocialMediaAsset.id).offset((page - 1) * page_size).limit(page_size)).all()
+            return MediaLibrary(assets=tuple(self._dto(row, row if row.upload_id is not None else None) for row in rows), total=total, page=page, page_size=page_size, has_more=page * page_size < total)
 
     def preview(self, asset_id):
         storage = self._storage()
