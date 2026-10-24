@@ -14,6 +14,7 @@ import stat
 import subprocess
 import sys
 import threading
+import time
 from urllib.parse import unquote, urlsplit
 
 # A read-only tool must not change the inspected source on ordinary imports.
@@ -96,6 +97,7 @@ CHECKS = {
 }
 _RUN_LOCK = threading.Lock()
 _OWNED_DEADLINE = False
+_DEADLINE_END = None
 SESSION_COMMANDS = (
     "BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY",
     "SET LOCAL statement_timeout='2s'",
@@ -300,13 +302,27 @@ def connection_parameters(config, credential):
     )
 
 
+class _DeadlineExpired(BaseException):
+    """Cancellation must bypass ordinary library ValueError/Exception handlers."""
+
+
 def _expired(_signum, _frame):
-    raise budget.EvidenceError("WHOLE_RUN_TIMEOUT")
+    raise _DeadlineExpired()
+
+
+def _check_deadline():
+    require(_DEADLINE_END is not None, "DEADLINE_LOST")
+    require(time.monotonic() < _DEADLINE_END, "WHOLE_RUN_TIMEOUT")
+    require(
+        signal.getitimer(signal.ITIMER_REAL)[0] > 0
+        and signal.getsignal(signal.SIGALRM) is _expired,
+        "DEADLINE_LOST",
+    )
 
 
 @contextmanager
 def deadline():
-    global _OWNED_DEADLINE
+    global _OWNED_DEADLINE, _DEADLINE_END
     require(
         threading.current_thread() is threading.main_thread(), "MAIN_THREAD_REQUIRED"
     )
@@ -314,22 +330,28 @@ def deadline():
     if _OWNED_DEADLINE:
         # CLI owns the earlier deadline. A nested supported API neither resets
         # nor extends it; an expired/lost outer deadline cannot admit a new run.
-        require(
-            timer[0] > 0 and signal.getsignal(signal.SIGALRM) is _expired,
-            "DEADLINE_LOST",
-        )
-        yield
+        try:
+            _check_deadline()
+            yield
+            _check_deadline()
+        except _DeadlineExpired:
+            require(False, "WHOLE_RUN_TIMEOUT")
         return
     require(timer == (0.0, 0.0), "EXISTING_TIMER_REFUSED")
     previous = signal.getsignal(signal.SIGALRM)
     signal.signal(signal.SIGALRM, _expired)
-    signal.setitimer(signal.ITIMER_REAL, RUN_SECONDS)
     _OWNED_DEADLINE = True
+    _DEADLINE_END = time.monotonic() + RUN_SECONDS
     try:
+        signal.setitimer(signal.ITIMER_REAL, RUN_SECONDS)
         yield
+        _check_deadline()
+    except _DeadlineExpired:
+        require(False, "WHOLE_RUN_TIMEOUT")
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0)
         _OWNED_DEADLINE = False
+        _DEADLINE_END = None
         signal.signal(signal.SIGALRM, previous)
 
 
@@ -399,6 +421,10 @@ def inspect(connection, config):
             reader.command(command)
         identity = reader.one(IDENTITY_SQL)
         require(len(identity) == 14, "OBSERVATION_INCOMPLETE")
+        require(
+            type(identity[0]) is datetime and identity[0].utcoffset() is not None,
+            "OBSERVATION_INCOMPLETE",
+        )
         (
             _,
             database,
@@ -449,7 +475,7 @@ def inspect(connection, config):
         schema = reader.read(SCHEMA_SQL, (list(TABLES),))
         require(
             {row[0] for row in schema} == set(TABLES)
-            and all(row[1] == "r" for row in schema),
+            and all(_schema_row_valid(row) for row in schema),
             "SCHEMA_INCOMPLETE",
         )
         require(
@@ -474,7 +500,25 @@ def inspect(connection, config):
         }
 
 
-def report():
+def _schema_row_valid(row):
+    """Scalar limits used by the private receipt's coupled byte accounting."""
+    return (
+        type(row) is tuple
+        and len(row) == 10
+        and row[0] in TABLES
+        and row[1] == "r"
+        and all(type(row[i]) is bool for i in (2, 3, 8))
+        and type(row[4]) is int
+        and 1 <= row[4] <= 32767
+        and type(row[5]) is str
+        and 1 <= len(row[5].encode("utf-8")) <= 63
+        and all(type(row[i]) is int and 1 <= row[i] <= 4294967295 for i in (6, 9))
+        and type(row[7]) is int
+        and -(2**31) <= row[7] <= 2**31 - 1
+    )
+
+
+def report(*, bind_generator=True):
     return {
         "version": 1,
         "status": "REFUSED",
@@ -488,7 +532,9 @@ def report():
         "generated_by": "scripts/verification/ingestion_preflight.py",
         "generator_sha256": hashlib.sha256(
             raw_file(Path(__file__).absolute(), 2_000_000)
-        ).hexdigest(),
+        ).hexdigest()
+        if bind_generator
+        else None,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "runtime": {"python": ".".join(map(str, sys.version_info[:3])), "driver": None},
         "budgets": {
@@ -508,7 +554,8 @@ def report():
         "config_sha256": None,
         "source": None,
         "policy_raw_sha256": None,
-        "binding_errors": ["CONFIG_NOT_OBSERVED", "SOURCE_NOT_OBSERVED"],
+        "binding_errors": ([] if bind_generator else ["GENERATOR_NOT_OBSERVED"])
+        + ["CONFIG_NOT_OBSERVED", "SOURCE_NOT_OBSERVED"],
         "worker_cleanup": None,
         "artifact_authentication": "UNVERIFIED_WHEN_IMPORTED",
     }
@@ -720,17 +767,111 @@ def _validate_worker_report(child, parent, config):
         and observation["tls"] == config["database"]["tls"],
         code,
     )
+    minimum, maximum = _result_byte_bounds(config, observation)
+    require(minimum <= observation["decoded_result_bytes"] <= maximum, code)
+
+
+def _result_byte_bounds(config, observation):
+    """Couple row/byte counts to all eleven fixed reads and PG scalar limits."""
+    d = config["database"]
+    schema_rows = observation["rows"] - (3 + len(CHECKS))
+    require(schema_rows >= len(TABLES), "WORKER_REPORT_INVALID")
+
+    def size(rows):
+        return len(budget.canonical(rows))
+
+    def identity(clock):
+        return [
+            [
+                clock,
+                d["name"],
+                d["oid"],
+                d["role"],
+                d["role"],
+                "on",
+                "2s",
+                "500ms",
+                "3s",
+                observation["server_version_num"],
+                False,
+                False,
+                False,
+                False,
+            ]
+        ]
+
+    fixed = size(
+        [
+            [
+                "on",
+                "on",
+                "repeatable read",
+                "2s",
+                "500ms",
+                "3s",
+                "off",
+                "pg_catalog",
+                True,
+                d["tls"] == "verify-full",
+                d["role_oid"],
+                "0",
+                "64kB",
+                "5s",
+            ]
+        ]
+    ) + size([[config["revision"]]])
+    fixed += len(CHECKS) * size([[False]])
+    # At least one row per required table. Additional rows use conservative
+    # shortest/longest permitted names. Column identifiers are <=63 UTF-8 bytes;
+    # JSON escaping expands each byte by at most six ASCII characters.
+    minima = [size([name, "r", True, True, 1, "a", 1, 0, True, 1]) for name in TABLES]
+    maxima = [
+        size(
+            [
+                name,
+                "r",
+                False,
+                False,
+                32767,
+                "\x01" * 63,
+                4294967295,
+                -2147483648,
+                False,
+                4294967295,
+            ]
+        )
+        for name in TABLES
+    ]
+    punctuation = 2 + schema_rows - 1
+    extra = schema_rows - len(TABLES)
+    minimum = (
+        fixed
+        + size(identity("0001-01-01T00:00:00+00:00"))
+        + punctuation
+        + sum(minima)
+        + extra * min(minima)
+    )
+    maximum = (
+        fixed
+        + size(identity("X" * 64))
+        + punctuation
+        + sum(maxima)
+        + extra * max(maxima)
+    )
+    return minimum, min(MAX_BYTES, maximum)
 
 
 def run(config, *, execute=False, credential=None, root=ROOT):
     """Supported API: same admission, bounded worker and cleanup as the CLI."""
-    result = report()
+    result = report(bind_generator=False)
     held = False
     try:
         held = _RUN_LOCK.acquire(blocking=False)
         require(held, "CONCURRENT_RUN_REFUSED")
         with deadline():
+            result = report()
             _bind(result, config, root)
+            _check_deadline()
             check_config(config)
             config = json.loads(budget.canonical(config))
             check_config(config)
@@ -741,6 +882,7 @@ def run(config, *, execute=False, credential=None, root=ROOT):
             require(sys.version_info[:2] in ((3, 12), (3, 13)), "RUNTIME_UNSUPPORTED")
             source_identity(config, root)
             connection_parameters(config, credential)
+            _check_deadline()
             seconds = signal.getitimer(signal.ITIMER_REAL)[0]
             packet = budget.canonical(
                 {
@@ -851,6 +993,7 @@ def _main(argv=None):
                 "ADMISSION_ARGUMENTS_REFUSED",
             )
             source_identity(config, ROOT)
+            _check_deadline()
             print('{"admitted_for_read_checks_only":true,"safe_to_write":false}')
             return 0
         raw_sha = result["policy_raw_sha256"]
@@ -881,7 +1024,7 @@ def main(argv=None):
         with deadline():
             return _main(argv)
     except Exception:
-        result = report()
+        result = report(bind_generator=False)
         result["errors"] = ["CLI_DEADLINE_OR_CONTEXT_REFUSED"]
         print(budget.canonical(result).decode())
         return 2

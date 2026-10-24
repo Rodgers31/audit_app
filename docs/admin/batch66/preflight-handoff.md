@@ -238,3 +238,48 @@ Final worker SHA256:
 `c2fc45a464020e78ccc2633a6ba5d9f07539326873aef56728867b9b19d785d2`.
 A cached Linux Python3.12.15 inert supervisor replay also confirmed ordinary
 exit/group absence and forced timeout/reaping, without driver/DB/network import.
+
+## B67 combined-replay correction
+
+The8d3a69a package's206-case local passes and previous independent clearances are
+historical bounded executions. The coordinator's combined replay then reproduced
+two additional defects, formally reviewed in5637232576. They withdraw acceptance
+of8d3a69a; original logs/reviews remain retained.
+
+The timer raised EvidenceError, a ValueError subclass. An alarm delivered during
+Path.is_symlink/lstat was swallowed by the standard library's ValueError handler,
+consuming the one-shot alarm. Independent actual admission-only CLI controls then
+returned success after the unchanged deadline. The repair uses a private
+BaseException cancellation sentinel converted to a fixed diagnostic only at the
+deadline boundary, plus monotonic expiry/remaining-timer checkpoints at boundary
+return, source admission and worker launch. The direct API also arms its deadline
+before initial generator-file reads; an incomplete initial report uses a no-I/O
+refusal with explicit unavailable generator/source/config markers.
+
+The old independent byte minimum covered only seven false checks. A real worker
+report mutated to256rows/63bytes still passed. The repair couples aggregate rows
+and decoded bytes to all eleven fixed reads: exact admitted identity/guards/
+revision/check sizes, bounded aware timestamp, and a schema-row total of rows-10.
+Conservative per-row bounds account for every required table, ten schema fields,
+UTF-8 identifier/JSON-escape sizes, booleans, signedint32/OIDuint32 limits and
+list punctuation. Invoked inspection validates the scalar assumptions. Counts
+outside that feasible range refuse; no new database query/data disclosure or
+increased budget is introduced.
+
+Five new red-before-fix controls cover swallowed alarms, initial report I/O,
+consumed-alarm boundary return and both directions of impossible count coupling.
+The complete local cohort is now211cases. Final source/command receipts,
+independent follow-up reviews, immutable implementation/package identities and
+actual two-thread replies/readbacks are retained in the external B67 manifest.
+The now-idle coordinator-owned56972 fixture is used only for tests and cleaned
+at the schema/role/session level; its container lifecycle remains coordinator-owned.
+
+Reviewed correction inspector SHA256:
+`9071ed5f154a99428ddfa874b11496674af18ea983d5b6596292b0418700222b`.
+Worker SHA256 remains c2fc45a464020e78ccc2633a6ba5d9f07539326873aef56728867b9b19d785d2.
+Spec38 focused controls passed normally and optimized. Standards75 independent
+count/transport controls passed in normal, parent-O and explicit child-O modes;
+its signal and prior lifecycle controls also pass. Both preserved the exact
+red generators and reran them on the correction. The author211-case actual-PG
+candidate run passed with unchanged before/after source. Final exact-package
+normal/optimized receipts and pin addenda are separate from that candidate run.

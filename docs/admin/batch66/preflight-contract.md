@@ -108,6 +108,11 @@ idle_session_timeout is also set locally and read back as5s. The private worker
 entry refuses without the supervising parent context and is not a public API.
 The hosted step/job deadlines are the final process boundary. Resource caps do
 not certify current provider capacity or prevent other clients consuming it.
+Cancellation uses a private BaseException sentinel so ordinary library
+ValueError/Exception handlers cannot consume it. Monotonic expiry and remaining
+timer checks protect admission, worker launch and context return. The supported
+API arms this boundary before initial generator-file I/O; an incomplete report
+uses a no-I/O refusal with explicit unavailable bindings after timeout.
 
 ## Verdicts and publication
 
@@ -127,6 +132,11 @@ Private worker reports must also satisfy the complete exact shape/type/binding
 contract: success requires empty errors and complete seven-check observation,
 supported runtime, fresh timestamp and bounded nonzero counts. Unknown failures
 or malformed/contradictory reports refuse without propagating arbitrary text.
+Rows and bytes must also agree with all eleven fixed reads: ten known single-row
+results and the remaining schema rows. Canonical size bounds include admitted
+identity/guards/revision/check values, bounded timestamp, each required table,
+schema scalar limits and JSON punctuation/escaping. Independent bounds on the
+two counters alone do not establish a feasible observation.
 Do not import an edited JSON status as authority. Optional outputs must be fresh
 external regular files with bounded exclusive creation, no symlink components or
 overwrite, and byte-for-byte readback. No hosted artifact upload is configured.

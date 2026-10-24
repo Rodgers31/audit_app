@@ -280,3 +280,99 @@ def test_impossibly_empty_worker_census_refuses(config, credential, monkeypatch)
     result = tool.run(config, execute=True, credential=credential)
     assert result["status"] == "REFUSED" and result["observation"] is None
     assert result["worker_cleanup"]["reaped"] is True
+
+
+def test_source_binding_cannot_absorb_real_alarm(monkeypatch):
+    original = Path.lstat
+    delayed = []
+    admitted = []
+
+    def delayed_lstat(path, *args, **kwargs):
+        if tool._OWNED_DEADLINE and not delayed:
+            delayed.append(True)
+            time.sleep(0.1)
+        return original(path, *args, **kwargs)
+
+    def late_admission(_):
+        admitted.append(True)
+        time.sleep(0.1)
+        tool.require(False, "ADMISSION_ESCAPED_DEADLINE")
+
+    monkeypatch.setattr(Path, "lstat", delayed_lstat)
+    monkeypatch.setattr(tool, "check_config", late_admission)
+    monkeypatch.setattr(tool, "RUN_SECONDS", 0.01)
+    start = time.monotonic()
+    result = tool.run({}, execute=True, credential="TOY")
+    assert delayed and not admitted
+    assert result["errors"] == ["WHOLE_RUN_TIMEOUT"]
+    assert time.monotonic() - start < 0.08
+
+
+def test_initial_generator_binding_is_inside_api_deadline(monkeypatch):
+    original = Path.lstat
+    delayed = []
+
+    def delayed_lstat(path, *args, **kwargs):
+        if not delayed:
+            delayed.append(tool._OWNED_DEADLINE)
+            time.sleep(0.1)
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "lstat", delayed_lstat)
+    monkeypatch.setattr(tool, "RUN_SECONDS", 0.01)
+    start = time.monotonic()
+    result = tool.run({}, execute=True, credential="TOY")
+    assert delayed == [True]
+    assert result["errors"] == ["WHOLE_RUN_TIMEOUT"]
+    assert time.monotonic() - start < 0.08
+    assert result["generator_sha256"] is None
+    assert "GENERATOR_NOT_OBSERVED" in result["binding_errors"]
+
+
+def test_deadline_exit_refuses_a_consumed_alarm(monkeypatch):
+    monkeypatch.setattr(tool, "RUN_SECONDS", 0.01)
+    with pytest.raises(tool.budget.EvidenceError, match="WHOLE_RUN_TIMEOUT"):
+        with tool.deadline():
+            try:
+                time.sleep(0.1)
+            except BaseException:
+                pass
+    assert signal.getitimer(signal.ITIMER_REAL) == (0.0, 0.0)
+
+
+@pytest.mark.parametrize("rows,decoded", [(256, 63), (16, 65536)])
+def test_report_count_bounds_couple_all_fixed_reads(rows, decoded):
+    from copy import deepcopy
+
+    parent = tool.report()
+    parent.update(
+        config_sha256="a" * 64,
+        source={"head": "b" * 40, "files_sha256": "c" * 64},
+        binding_errors=[],
+    )
+    child = deepcopy(parent)
+    child["status"] = "OBSERVED_READ_CHECKS_ONLY"
+    child["runtime"].update(driver="2.9.12", libpq=170006)
+    child["observation"] = {
+        "checks": dict.fromkeys(tool.CHECKS, False),
+        "sql_commands": 20,
+        "read_requests": 11,
+        "rows": rows,
+        "decoded_result_bytes": decoded,
+        "schema_sha256": "a" * 64,
+        "tls": "disable",
+        "server_version_num": 170001,
+    }
+    config = {
+        "database": {
+            "name": "b66_preflight",
+            "oid": 1,
+            "role": "reader",
+            "role_oid": 2,
+            "tls": "disable",
+        },
+        "revision": "b66fixture01",
+        "schema_sha256": "a" * 64,
+    }
+    with pytest.raises(tool.budget.EvidenceError, match="WORKER_REPORT_INVALID"):
+        tool._validate_worker_report(child, parent, config)
