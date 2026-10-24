@@ -45,6 +45,20 @@ class SessionProbe:
                 raise RuntimeError("synthetic database failure")
         return self
 
+    def execute(self, *args):
+        # Keep ownership/cancellation probes at the actual single SQL boundary.
+        return self.query(*args)
+
+    def one(self):
+        count = 0 if self.empty else 47
+        return SimpleNamespace(
+            entity_count=count, county_count=count, has_national=not self.empty,
+            pop_count=count, latest_pop_year=None if self.empty else 2025,
+            econ_count=count,
+            latest_econ_date=None if self.empty else SimpleNamespace(year=2025),
+            debt_categories=count, loan_count=count, doc_count=count,
+        )
+
     def filter(self, *args):
         return self
 
@@ -277,14 +291,10 @@ async def test_database_absence_and_failures_are_truthful(
 
     monkeypatch.setattr(database, "SessionLocal", factory)
     if mode == "partial_failure":
-        original_query = probe.query
+        def materialize():
+            raise RuntimeError("synthetic result materialization failure")
 
-        def query(*args):
-            if probe.queries == 4:
-                raise RuntimeError("synthetic partial read failure")
-            return original_query(*args)
-
-        monkeypatch.setattr(probe, "query", query)
+        monkeypatch.setattr(probe, "one", materialize)
     if mode == "close_failure":
         original_close = probe.close
 
@@ -397,7 +407,7 @@ async def test_real_sql_session_closes_before_async_heads(
         "records": 1,
         "latest_year": 2025,
     }
-    assert len(threads) == 10
+    assert len(threads) == 1
     assert len(set(threads)) == 1
     assert len(health_runtime[1]) == 5
 
