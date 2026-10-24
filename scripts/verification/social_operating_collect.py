@@ -55,10 +55,15 @@ FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid=e.extname
 WHERE e.extname='pg_stat_statements' LIMIT 2
 """
 CLOCK_SQL = 'SELECT clock_timestamp()'
+ACCESS_SQL = {
+    schema: "SELECT has_table_privilege(current_user, '" + schema +
+            ".pg_stat_statements', 'SELECT')"
+    for schema in ('extensions', 'public')
+}
 # No query text, parameters, application rows, global ordering or query discovery.
 STATS_SQL = {
     schema: "SELECT clock_timestamp(), calls, rows, {history} FROM " + schema +
-    ".pg_stat_statements WHERE dbid=%s AND userid=%s AND queryid=%s AND toplevel=%s LIMIT 2"
+    ".pg_stat_statements(false) WHERE dbid=%s AND userid=%s AND queryid=%s AND toplevel=%s LIMIT 2"
     for schema in ('extensions', 'public')
 }
 INFO_SQL = {schema: 'SELECT clock_timestamp(), stats_reset, dealloc FROM ' + schema +
@@ -157,6 +162,8 @@ def _snapshot(connection, config, reader_user):
         schema, extension_version, history, dealloc_supported = extension
         budget.require(type(extension_version) is str and re.fullmatch(r'\d{1,2}\.\d{1,2}', extension_version), 'INVALID_EXTENSION_VERSION')
         budget.require(type(history) is bool and type(dealloc_supported) is bool, 'INVALID_HISTORY_SUPPORT')
+        access = _one(cursor, ACCESS_SQL[schema])
+        budget.require(len(access) == 1 and access[0] is True, 'STATISTICS_VIEW_ACCESS_REQUIRED')
         source = {'project_endpoint': 'db.' + config['project_id'] + '.supabase.co',
                   'database_name_sha256': budget.content_hash(database), 'database_oid': oid,
                   'reader_sha256': budget.content_hash(user), 'server_version_num': version,
