@@ -66,7 +66,7 @@ def cluster(tmp_path_factory):
             c.execute("INSERT INTO newsletter_subscribers(email) VALUES ('private@example.invalid')")
         yield connect
     finally:
-        subprocess.run([docker, 'rm', '--force', container],
+        subprocess.run([docker, 'rm', '--force', '--volumes', container],
                         check=True, capture_output=True, timeout=10)
 
 
