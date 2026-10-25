@@ -23,7 +23,8 @@ def guard(workflow, job, env):
     {'APPROVED_SHA':'b'*40}, {'REPOSITORY':'other/repo'}, {'DISPATCH_REF':'refs/heads/other'}])
 def test_actual_seed_admission_guard(change):
     env = {'APPROVED_SHA':SHA, 'DISPATCH_SHA':SHA,
-           'REPOSITORY':'Rodgers31/audit_app', 'DISPATCH_REF':'refs/heads/main'}
+           'REPOSITORY':'Rodgers31/audit_app', 'DISPATCH_REF':'refs/heads/main',
+           'DISPATCH_EVENT':'workflow_dispatch', 'NIGHTLY_ENABLED':''}
     result = guard(SEED, 'migrate', {**env, **change})
     assert (result.returncode == 0) == (change == {})
 
@@ -72,3 +73,13 @@ def test_repository_admission_variable_uses_a_github_supported_name():
     name = re.fullmatch(r'\$\{\{ vars\.([A-Z0-9_]+) \}\}', expression).group(1)
     # GitHub's repository-variable API rejects these reserved namespaces.
     assert not name.startswith(('GITHUB_', 'RUNNER_'))
+
+
+@pytest.mark.parametrize('event,nightly,accepted', [
+    ('workflow_dispatch','',True), ('workflow_dispatch','false',True),
+    ('schedule','',False), ('schedule','false',False), ('schedule','0',False),
+    ('schedule','TRUE',False), ('schedule','true',True), ('pull_request','true',False)])
+def test_manual_canary_does_not_arm_scheduled_writes(event, nightly, accepted):
+    env = {'APPROVED_SHA':SHA,'DISPATCH_SHA':SHA,'REPOSITORY':'Rodgers31/audit_app',
+           'DISPATCH_REF':'refs/heads/main','DISPATCH_EVENT':event,'NIGHTLY_ENABLED':nightly}
+    assert (guard(SEED,'migrate',env).returncode == 0) is accepted

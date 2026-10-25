@@ -123,6 +123,7 @@ env:
 jobs:
   source_plan:
     name: Validate source selection before any writer
+    if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
     outputs:
       domains: ${{ steps.plan.outputs.domains }}
       bootstrap: ${{ steps.plan.outputs.bootstrap }}
@@ -148,6 +149,7 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   healthcheck:
     name: Data Source Health Check
+    if: github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -449,6 +451,8 @@ jobs:
           DISPATCH_SHA: ${{ github.sha }}
           REPOSITORY: ${{ github.repository }}
           DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_EVENT: ${{ github.event_name }}
+          NIGHTLY_ENABLED: ${{ vars.INGESTION_NIGHTLY_ENABLED }}
         run: |
           set -eu
           test "$REPOSITORY" = Rodgers31/audit_app
@@ -456,6 +460,11 @@ jobs:
           test "${#APPROVED_SHA}" -eq 40
           case "$APPROVED_SHA" in *[!0-9a-f]*) exit 1 ;; esac
           test "$DISPATCH_SHA" = "$APPROVED_SHA"
+          case "$DISPATCH_EVENT" in
+            workflow_dispatch) ;;
+            schedule) test "$NIGHTLY_ENABLED" = true ;;
+            *) exit 1 ;;
+          esac
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
@@ -1176,7 +1185,7 @@ jobs:
   notify:
     name: Post-Run Summary
     needs: [source_plan, healthcheck, seed, bootstrap, validate, revalidate]
-    if: always()
+    if: always() && (github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

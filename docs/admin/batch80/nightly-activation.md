@@ -47,7 +47,12 @@ cache upload. Database size is an observation, not billed-egress/Free acceptance
    routine workflow now prepares the same credential-free public CA policy in each database job, forces explicit verify-full/root DBAPI arguments in both real engine constructors (overriding URI sslmode=require), qualifies that job's stored connection before database effects,
    requires exactly the already accepted Alembic head and does not run DDL.
    A new main SHA or schema head is refused until reviewed/admitted again.
-5. After private receipt-store access/capacity/recovery readback, enable only the
+5. Keep INGESTION_NIGHTLY_ENABLED absent/false while enabling the workflow for
+   the manual canary. Its source-plan/health/notification jobs skip scheduled
+   events, and the writer admission independently refuses schedule events unless
+   that flag is exactly true. This prevents a timer firing during qualification
+   from starting an unattended writer. After applicable private source-store
+   access/capacity/recovery readback, enable only the
    reviewed seed workflow. Run one explicit OpenData domain (its opt-in is needed),
    dry_run=false, run_bootstrap=false, run_validation=false. Broad county validation is deliberately excluded from this bounded source run. Perform bounded source-specific readback instead; do not label global validation passed. Observe exact native
    job/claim/source/extraction IDs, source hash, counters, durable closure and
@@ -55,7 +60,8 @@ cache upload. Database size is an observation, not billed-egress/Free acceptance
    preserve the existing object/receipt caps and source deadlines. Unknown
    effects, retained claims, schema/target drift, budget refusal or failed
    validation stop the next write; no automatic retry or force release.
-6. Only after that passes leave the accepted schedule enabled. Standard public
+6. Only after that passes set INGESTION_NIGHTLY_ENABLED=true and leave the
+   accepted schedule enabled. Standard public
    ubuntu-latest minutes are free; use existing storage/services and included
    limits. Inspect run summaries, source freshness/fallbacks, API revalidation,
    R2/storage and Supabase usage. Do not claim a Free-plan fit from one run.
@@ -64,7 +70,8 @@ cache upload. Database size is an observation, not billed-egress/Free acceptance
 
 ## Stop and rollback
 
-Disable workflow236444319 and remove INGESTION_WRITE_APPROVED_SHA before another
+Set INGESTION_NIGHTLY_ENABLED=false, disable workflow236444319 and remove
+INGESTION_WRITE_APPROVED_SHA before another
 writer is admitted. Cancel a not-yet-running manual dispatch; for an active seed,
 use its bounded native stop/recovery procedure and retain uncertain claims rather
 than clearing them. Do not roll back data by blindly deleting rows or restoring a
