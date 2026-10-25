@@ -14,21 +14,25 @@ type AvailableAging = PendingBillsAgingObservation & {
 
 /** A source year band cannot become a day band, another scope or a missing zero. */
 export function readScopedAging(raw: unknown, scope: PendingBillsAgingScope): AvailableAging | null {
-  if (!raw || typeof raw !== 'object' || scope !== 'county_executive') return null;
+  if (!raw || typeof raw !== 'object' || (scope !== 'county_executive' && scope !== 'county_assembly')) return null;
   const data = raw as PendingBillsAgingObservation;
-  if (data.version !== 1 || data.scope !== scope || data.status !== 'qualified' || data.absent_reason != null ||
+  const assembly = scope === 'county_assembly';
+  if (data.version !== (assembly ? 2 : 1) || data.scope !== scope || data.status !== 'qualified' || data.absent_reason != null ||
       data.unit !== 'KES' || data.currency !== 'KES' || data.complete_total !== null ||
-      typeof data.as_at !== 'string' || !/^\d{4}-06-30$/.test(data.as_at) ||
+      data.as_at !== '2026-06-30' ||
       typeof data.artifact_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(data.artifact_sha256) ||
       !Number.isInteger(data.extraction_id) || data.extraction_id! <= 0 ||
       typeof data.source_url !== 'string' || !data.source_url.startsWith('https://cob.go.ke/') ||
-      typeof data.publisher !== 'string' || !data.publisher.trim() || data.table !== 'Table 2.11' ||
-      !Number.isInteger(data.page) || data.page! <= 0) return null;
+      typeof data.publisher !== 'string' || !data.publisher.trim() || data.table !== (assembly ? 'Table 2.12' : 'Table 2.11') ||
+      !Number.isInteger(data.page) || !(assembly ? [54, 55] : [53, 54]).includes(data.page!)) return null;
   const coverage = data.coverage;
   if (!coverage || coverage.expected_counties !== 47 || coverage.complete !== false ||
       !Number.isInteger(coverage.reported_counties) || coverage.reported_counties < 0 || coverage.reported_counties > 47 ||
       !names(coverage.missing_counties) || !names(coverage.qualified_counties) ||
       coverage.missing_counties.length + coverage.reported_counties !== 47) return null;
+  if ((assembly || coverage.counties_with_all_bands !== undefined || coverage.missing_band_counties !== undefined) &&
+      (!Number.isInteger(coverage.counties_with_all_bands) || coverage.counties_with_all_bands! < 0 || coverage.counties_with_all_bands! > 47 ||
+       !names(coverage.missing_band_counties) || coverage.missing_band_counties.length + coverage.counties_with_all_bands! !== 47)) return null;
   if (!Array.isArray(data.buckets) || data.buckets.length !== 4 || data.buckets.some((band, i) =>
     !band || band.bucket !== bands[i] || (band.amount !== null && !amount(band.amount)) ||
     (band.amount === null && band.absent_reason !== 'source_cell_not_reported'))) return null;

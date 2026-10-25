@@ -37,6 +37,7 @@ def _write_pending_bills(
     publisher: str | None = None,
     county_table: dict | None = None,
     aging: dict | None = None,
+    assembly_aging: dict | None = None,
 ) -> tuple[int, int]:
     """
     Write pending bills records to the loans table.
@@ -66,12 +67,16 @@ def _write_pending_bills(
 
     if not isinstance(records, list):
         raise ValueError("Pending bills records must be a list")
-    if aging is not None:
+    cohorts = [("county_executive", aging), ("county_assembly", assembly_aging)]
+    cohorts = [(scope, cohort) for scope, cohort in cohorts if cohort is not None]
+    for scope, cohort in cohorts:
         from .aging import require_intact_aging
 
-        require_intact_aging(aging)
+        require_intact_aging(cohort)
+        if cohort["scope"] != scope:
+            raise ValueError("Aging payload supplied for a different population")
         if not records:
-            raise ValueError("Executive aging requires the associated county stock rows")
+            raise ValueError("Aging requires the associated county stock rows")
     if not records:
         logger.info("No pending bills records to write")
         return created, updated
@@ -95,8 +100,8 @@ def _write_pending_bills(
     elif publication == COUNTY_PENDING_BILLS_PUBLICATION:
         writes_county = True
     else:
-        if aging is not None:
-            raise ValueError("Executive aging requires a county pending-bills publication")
+        if cohorts:
+            raise ValueError("Aging requires a county pending-bills publication")
         logger.warning(
             "pending bills: not writing %d record(s) from a %s payload — "
             "national pending bills are read from the Treasury BROP and county "
@@ -105,8 +110,8 @@ def _write_pending_bills(
             publication or "fixture",
         )
         return created, updated
-    if aging is not None and not writes_county:
-        raise ValueError("Executive aging cannot be supplied for national pending bills")
+    if cohorts and not writes_county:
+        raise ValueError("Aging cannot be supplied for national pending bills")
     if any(not isinstance(r, PendingBillRecord) for r in records):
         raise ValueError("Pending bills records must be PendingBillRecord objects")
     if any(
@@ -125,15 +130,16 @@ def _write_pending_bills(
         )
     records = [r for r in records if _is_county_record(r) == writes_county]
     if not records:
-        if aging is not None:
-            raise ValueError("Executive aging requires the associated county stock rows")
+        if cohorts:
+            raise ValueError("Aging requires the associated county stock rows")
         return created, updated
 
     records = _validated_records(records, source_url, source_title, publisher)
-    if aging is not None:
+    if cohorts:
         from .aging import require_stock_binding
 
-        require_stock_binding(aging, records)
+        for _, cohort in cohorts:
+            require_stock_binding(cohort, records)
 
     if writes_county:
         _require_forward_county_edition(session, records, county_table)
@@ -182,6 +188,7 @@ def _write_pending_bills(
             "county_payables": dict(county_table) if county_table else None,
             "pending_bills_publication_batch": publication_batch,
             "pending_bills_aging_v1": None,
+            "pending_bills_assembly_aging_v2": None,
         }
 
     for index, record in enumerate(records):
@@ -277,14 +284,16 @@ def _write_pending_bills(
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
 
-    if aging is not None:
-        from .aging import require_intact_aging, persist_aging
+    if cohorts:
+        from .aging import require_intact_aging, persist_aging, scope_contract
 
-        require_intact_aging(aging)
-        if not dry_run:
-            ref = persist_aging(session, source_doc, aging,
-                publication_batch=publication_batch, records=records)
-            source_doc.meta = {**source_doc.meta, "pending_bills_aging_v1": ref}
+        for scope, cohort in cohorts:
+            require_intact_aging(cohort)
+            if not dry_run:
+                ref = persist_aging(session, source_doc, cohort,
+                    publication_batch=publication_batch, records=records)
+                key = scope_contract(scope)["metadata_key"]
+                source_doc.meta = {**source_doc.meta, key: ref}
 
     if not dry_run and writes_county:
         editions = {r.fiscal_year for r in records}

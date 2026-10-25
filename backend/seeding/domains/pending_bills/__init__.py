@@ -164,6 +164,7 @@ def _seed_counties(
             publisher=payload.get("publisher"),
             county_table=payload.get("county_table"),
             aging=payload.get("aging"),
+            assembly_aging=payload.get("assembly_aging"),
             dry_run=context.dry_run,
         )
     except Exception as exc:
