@@ -1,4 +1,5 @@
 import api from './axios';
+import { generationReasons } from '@/lib/socialGenerationReasons';
 import { DocumentTarget, decodeDocument, SocialApiError } from './social';
 
 export const sourceTypes = ['treasury', 'cob', 'oag', 'knbs', 'cra'] as const;
@@ -34,6 +35,8 @@ function decodeReport(v: unknown): EvidenceReport {
 export function decodeEvidence(v: unknown): PostEvidence { const o = obj(v), evidence = obj(o.evidence), source = evidence.source === undefined ? undefined : obj(evidence.source); if (source?.report != null && list(source.facts).length) fail(); return { post_id: text(o.post_id), revision_id: text(o.revision_id), source_event_id: o.source_event_id === null ? null : text(o.source_event_id), generator_metadata: o.generator_metadata === null ? null : { template_version: text(obj(o.generator_metadata).template_version) }, evidence: { ...(evidence.evidence_version === undefined ? {} : { evidence_version: number(evidence.evidence_version) }), ...(source ? { source: { source_type: text(source.source_type), source_key: text(source.source_key), ingestion_id: text(source.ingestion_id), ...(source.report == null ? {} : { report: decodeReport(source.report) }), facts: list(source.facts).map(raw => { const f = obj(raw); const fields = ['fact_id', 'entity', 'metric', 'period', 'comparison_basis', 'value', 'unit', 'scale', 'classification', 'document_url', 'locator', 'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at'] as const; const fact = {} as EvidenceFact; for (const field of fields) fact[field] = text(f[field]); return fact; }) } } : {}) } }; }
 const base = '/admin/social';
 export const generationApi = {
+  capabilities: async (signal?: AbortSignal) => decodeCapabilities((await api.get(`${base}/generation/capabilities`, { signal })).data),
+  preview: async (body: { domain: string; record_ids: number[]; ingestion_id: number; reports: boolean; backfill: boolean }) => { const result = decodePreview((await api.post(`${base}/generation/preview`, body)).data); if (result.results.length !== body.record_ids.length || result.results.some((r, i) => r.record_id !== body.record_ids[i])) fail(); return result; },
   controls: async (signal?: AbortSignal) => decodeDraftControls((await api.get(`${base}/generation/controls`, { signal })).data),
   rules: async (p = 1, signal?: AbortSignal) => page((await api.get(`${base}/automation/rules`, { params: { page: p }, signal })).data, 'rules', decodeRule),
   decisions: async (p = 1, post_id?: string, signal?: AbortSignal) => page((await api.get(`${base}/automation/decisions`, { params: { page: p, post_id }, signal })).data, 'decisions', decodeDecision),
@@ -63,3 +66,27 @@ const decisionReasons: Record<string, string> = {
   ALL_SHADOW_GATES_PASSED_HUMAN_APPROVAL_REQUIRED: 'All shadow gates passed. Human approval is still required.',
 };
 export function describeShadowReason(code: string): string { return decisionReasons[code] ?? `Unrecognized decision reason: ${code}`; }
+
+
+export interface GenerationCapability { domain: string; financial: boolean; reports: boolean; reason: string }
+export interface GenerationPreviewResult { record_id: number; status: string; reason: string; source_document_id: number | null }
+export interface GenerationPreview { drafts_enabled: boolean; results: GenerationPreviewResult[] }
+function reasonCode(value: unknown) { const code = text(value); if (!Object.hasOwn(generationReasons, code)) fail(); return code; }
+export function decodeCapabilities(raw: unknown): GenerationCapability[] {
+  const values = list(raw);
+  if (values.length > 25) fail();
+  const result = values.map(raw => { const v = obj(raw), domain = text(v.domain); if (!/^[a-z_]{1,100}$/.test(domain)) fail(); return { domain, financial: boolean(v.financial), reports: boolean(v.reports), reason: reasonCode(v.reason) }; });
+  if (new Set(result.map(v => v.domain)).size !== result.length) fail();
+  return result;
+}
+export function decodePreview(raw: unknown): GenerationPreview {
+  const v = obj(raw), values = list(v.results);
+  if (values.length < 1 || values.length > 25) fail();
+  const results = values.map(raw => {
+    const r = obj(raw), status = text(r.status), id = number(r.record_id), source = r.source_document_id === null ? null : number(r.source_document_id);
+    if (!['baseline','unchanged','eligible_change','refused','unsupported_source'].includes(status) || id < 1 || id > 2147483647 || source !== null && (source < 1 || source > 2147483647)) fail();
+    return { record_id: id, status, reason: reasonCode(r.reason), source_document_id: source };
+  });
+  if (new Set(results.map(r => r.record_id)).size !== results.length) fail();
+  return { drafts_enabled: boolean(v.drafts_enabled), results };
+}

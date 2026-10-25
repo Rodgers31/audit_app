@@ -63,6 +63,13 @@ def stored(pg, tmp_path):
                    "observations": [{"identity": parsed["identity"], "raw_value": parsed["value"], "raw_unit": "KES", "locator": locator}]}
         extraction = Extraction(source_document_id=doc.id, extractor="pdf-receipt-v1", extracted_json={"response_receipt": receipt})
         db.add(extraction); db.flush()
+        date_proof = {'publication_date':'2026-07-31','digest':digest,'request_url':doc.url,
+                      'locator':{'page':1,'text_span':'Publication date: 2026-07-31'}}
+        dated = Extraction(source_document_id=doc.id, extractor='cob-publication-date-v1',
+            extracted_json={'response_receipt':{'digest':digest,'request_url':doc.url,
+                'observations':[date_proof],'byte_check':{'status':'matched'}}})
+        db.add(dated); db.flush()
+        doc.meta = {**doc.meta,'publication_date_evidence':{**date_proof,'extraction_id':dated.id}}
         evidence = {"version": 1, "source_kind": "pdf", "identity": identity,
                     "receipt": {"extraction_id": extraction.id, "digest": digest}, "raw_value": "0", "raw_unit": "KES",
                     "value": "0", "unit": "KES", "locator": locator, "transformation": {"operation": "identity"},

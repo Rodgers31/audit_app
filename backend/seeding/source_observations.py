@@ -17,7 +17,29 @@ from services.figure_qualification import qualify_rows
 
 
 class SourceObservationUnavailable(ValueError):
-    """Fixed diagnostic safe to surface in an authenticated operator response."""
+    """Fixed diagnostic; only its allowlisted code enters operator responses."""
+
+    CODES = {
+        'Publisher publication date unavailable': 'publisher_date_unavailable',
+        'Retained publisher date authority required': 'publisher_date_receipt_unavailable',
+        'Exact publisher date artifact evidence required': 'publisher_date_receipt_unavailable',
+        'Stored publisher date receipt required': 'publisher_date_receipt_unavailable',
+        'Verified measure-specific PDF evidence required': 'verified_pdf_evidence_required',
+        'Exact record ingestion lineage unavailable': 'record_lineage_unavailable',
+        'Qualified evidence ingestion lineage unavailable': 'record_lineage_unavailable',
+        'Publishable actual CoB record required': 'record_not_publishable',
+        'Official available CoB document required': 'source_document_unavailable',
+        'Stored evidence chronology invalid': 'source_chronology_invalid',
+        'Stored ingestion chronology invalid': 'source_chronology_invalid',
+        'One bounded unambiguous county report and period required': 'report_scope_unavailable',
+        'Exact report period and publication locator required': 'report_scope_unavailable',
+        'County report entity required': 'report_scope_unavailable',
+        'Current report authority unavailable': 'source_review_required',
+    }
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.code = self.CODES.get(message, 'source_evidence_ineligible')
 
 
 def _positive_id(value):
@@ -166,8 +188,8 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
             published = date.fromisoformat(meta["publication_date"])
         except (ValueError, TypeError, KeyError):
             raise SourceObservationUnavailable("Publisher publication date unavailable") from None
-        if report and "publication_date_evidence" not in meta:
-            raise SourceObservationUnavailable("Neutral reports require retained publisher date authority")
+        if "publication_date_evidence" not in meta:
+            raise SourceObservationUnavailable("Retained publisher date authority required")
         if "publication_date_evidence" in meta:
             proof = meta["publication_date_evidence"]
             if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
