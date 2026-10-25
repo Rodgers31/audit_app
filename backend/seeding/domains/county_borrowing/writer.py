@@ -12,6 +12,7 @@ from services.receipt_store import configured_receipt_store
 from .ownership import require_ownership, TOLERANCE
 from seeding.county_borrowing_contract import canonical, parse_publication, EXTRACTOR, DATASET, document_fields, document_metadata, document_matches
 from seeding.county_borrowing_contract import CountyBorrowingRefused, edition, county_scope_key
+from seeding.county_borrowing_mapping_evidence import validate_mapping_source_evidence
 
 
 def require_enabled(settings):
@@ -69,6 +70,7 @@ def persist(session, settings, context, key, payload, parsed, fetched_at):
         args = dict(record)
         slug = args.pop('county_slug')
         args.pop('obligation_kind')
+        args.pop('source_evidence', None)
         args['issue_date'] = datetime.fromisoformat(args['issue_date'])
         args['as_at'] = date.fromisoformat(args['as_at'])
         args['basis'] = FigureBasis(args['basis'])
@@ -76,6 +78,7 @@ def persist(session, settings, context, key, payload, parsed, fetched_at):
         args = normalize_county_debt_observation(**args)
         args['entity_id'] = by_slug[slug].id
         intents.append(args)
+    validate_mapping_source_evidence(expected['instruments'], payload)
     if context.dry_run:
         return {'created': 0, 'unchanged': int(bool(existing)), 'instruments': 0}
     store = configured_receipt_store(settings)
@@ -105,7 +108,7 @@ def persist(session, settings, context, key, payload, parsed, fetched_at):
             session.flush()
         require_county_debt_keys(extraction.id)
         # This is the sole producer bridge. Only reviewed actual contract
-        # mappings enter the existing writer; current live editions have none.
+        # mappings with source-field evidence enter the existing writer.
         expected_stocks = []
         for args in intents:
             args['source_document_id'] = doc.id

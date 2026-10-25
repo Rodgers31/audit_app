@@ -1,0 +1,201 @@
+{
+  "checked_on": "2026-10-25",
+  "issue": 801,
+  "purpose": "Dated checked-source limitations; not producer mappings or complete county liability coverage",
+  "qualified_instruments": 0,
+  "sources": [
+    {
+      "id": "treasury_2025",
+      "url": "https://newsite.treasury.go.ke/sites/default/files/Annual-Public-Debt-Report-2024-2025.pdf",
+      "sha256": "871bf6b38ed579e9abc8e6f4fe0cd21ad979116118bde109329dcb35b88e8d48",
+      "size_bytes": 1611766,
+      "page_count": 89,
+      "pdf_pages_checked": [
+        53
+      ],
+      "locator": "Table 16",
+      "reporting_period_end": "2025-06-30",
+      "scope": "guaranteed_stock_register",
+      "conclusion": "No county borrower appears in this guaranteed-stock table. It cannot establish absence of other county borrowing.",
+      "missing_instrument_requirements": [
+        "county_contract_identity",
+        "county_stock_account"
+      ],
+      "qualified_instrument": false,
+      "admitted_to_producer": true
+    },
+    {
+      "id": "oag_kisii_2024",
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+      "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+      "size_bytes": 34055119,
+      "page_count": 555,
+      "pdf_pages_checked": [
+        499,
+        500
+      ],
+      "locator": "Kisii finding 980",
+      "reporting_period_end": "2024-06-30",
+      "scope": "obtained_borrowing_flow",
+      "conclusion": "The salary borrowing narrative is not a dated outstanding stock account. Existing withheld edition remains unchanged.",
+      "missing_instrument_requirements": [
+        "issuer_contract_reference",
+        "identity_namespace",
+        "lender",
+        "exact_issue_date",
+        "dated_outstanding_stock"
+      ],
+      "qualified_instrument": false,
+      "admitted_to_producer": true
+    },
+    {
+      "id": "cob_2026",
+      "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+      "sha256": "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20",
+      "size_bytes": 53561130,
+      "page_count": 935,
+      "pdf_pages_checked": [
+        185,
+        524,
+        568,
+        603,
+        697,
+        698
+      ],
+      "locator": "Sections 3.8.4,3.26.4,3.28.4,3.30.4,3.35.4",
+      "reporting_period_end": "2026-06-30",
+      "scope": "facility_arm_accounts",
+      "conclusion": "Facility/arm accounts have dates and measures, but no explicit issuer contract references. They are a proposed separate aggregate contract, never instrument mappings.",
+      "missing_instrument_requirements": [
+        "issuer_contract_reference",
+        "identity_namespace",
+        "exact_issue_date"
+      ],
+      "qualified_instrument": false,
+      "admitted_to_producer": false,
+      "pdf_pages_visually_checked": [
+        185,
+        524,
+        568
+      ]
+    },
+    {
+      "id": "oag_2025",
+      "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+      "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+      "size_bytes": 13839205,
+      "page_count": 688,
+      "pdf_pages_checked": [
+        140,
+        141,
+        639
+      ],
+      "locator": "Meru finding 296; Nairobi finding 1312.2",
+      "reporting_period_end": "2025-06-30",
+      "scope": "receivables_and_salary_overdraft_costs",
+      "conclusion": "Meru describes a corporation owing money to the county; Nairobi describes salary-overdraft costs. Neither supplies county instrument outstanding stock identity.",
+      "missing_instrument_requirements": [
+        "county_contract_identity",
+        "exact_issue_date",
+        "dated_outstanding_stock"
+      ],
+      "qualified_instrument": false,
+      "admitted_to_producer": false,
+      "pdf_pages_visually_checked": [
+        140,
+        639
+      ]
+    },
+    {
+      "id": "laikipia_2026",
+      "url": "https://laikipia.go.ke/wp-content/uploads/2026/06/DMSP-2026.pdf",
+      "sha256": "19c51468a7c19f618b84e5b3283d90d1e120cb608a76807ba90fe1021f0fb831",
+      "size_bytes": 5654869,
+      "page_count": 36,
+      "pdf_pages_checked": [
+        3,
+        5,
+        6
+      ],
+      "locator": "Foreword/abbreviations/executive summary",
+      "reporting_period_end": null,
+      "scope": "strategy_research_candidate",
+      "conclusion": "Image-only source. Pages checked discuss strategy and future financing. No positive stock is qualified; no claim about the uninspected full report is made.",
+      "missing_instrument_requirements": [
+        "reviewed_contract_stock_extraction"
+      ],
+      "qualified_instrument": false,
+      "admitted_to_producer": false,
+      "pdf_pages_visually_checked": [
+        3,
+        5,
+        6
+      ]
+    }
+  ],
+  "facility_candidates": [
+    {
+      "county": "Homa Bay",
+      "arm": "executive",
+      "pdf_page": 185,
+      "printed_page": 151,
+      "lender": "Kenya Commercial Bank",
+      "measure": "payroll_overdraft_outstanding",
+      "as_at": "2026-06-30",
+      "raw_value": "167",
+      "currency": "KES",
+      "unit": "millions",
+      "basis": "reported_actual",
+      "instrument_reference": null,
+      "issue_date": null
+    },
+    {
+      "county": "Homa Bay",
+      "arm": "executive",
+      "pdf_page": 185,
+      "printed_page": 151,
+      "lender": "County Pension Fund",
+      "measure": "repayment_arrears_not_stock",
+      "as_at": "2026-06-30",
+      "raw_value": "32.5",
+      "currency": "KES",
+      "unit": "millions",
+      "agreement_date": "2024-05-06",
+      "instrument_reference": null
+    },
+    {
+      "county": "Meru",
+      "arm": "executive",
+      "pdf_page": 524,
+      "printed_page": 490,
+      "table": "3.396",
+      "lender": "KCB",
+      "measure": "rolling_facility_closing_balance",
+      "as_at": "2026-06-30",
+      "raw_value": "564,058,590",
+      "currency": "KES",
+      "unit": "units",
+      "basis": "reported_actual",
+      "instrument_reference": null,
+      "issue_date": null,
+      "issue_year_only": 2016
+    },
+    {
+      "county": "Mombasa",
+      "arm": "executive",
+      "pdf_page": 568,
+      "printed_page": 534,
+      "table": "3.428",
+      "lender": "KCB",
+      "measure": "salary_facility_closing_balance",
+      "as_at": "2026-06-30",
+      "raw_value": "620,521,882.25",
+      "currency": "KES",
+      "unit": "units",
+      "basis": "reported_actual",
+      "instrument_reference": null,
+      "issue_date": null,
+      "issue_month_only": "2026-06"
+    }
+  ]
+}

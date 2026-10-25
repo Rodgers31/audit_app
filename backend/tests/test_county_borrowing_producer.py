@@ -24,9 +24,12 @@ from county_borrowing_fixture import borrowing_pg, owned, pdf_bytes  # noqa: F40
 
 @pytest.fixture
 def specimen(monkeypatch, tmp_path):
-    body=pdf_bytes(['OWNED SYNTHETIC county contract SYNTH-1 - not live evidence',
-        'Kisii county direct borrowing; lender Synthetic Bank; issued 2020-01-01.',
-        'Stock at 2025-06-30; currency KES; actual outstanding 20.00; principal 100.00.'])
+    lines = ['County: Kisii county; Identity namespace: owned-synthetic-register;',
+        'Contract reference: SYNTH-1; Lender: Synthetic Bank; Issue date: 2020-01-01;',
+        'As at: 2025-06-30; Currency: KES; Unit: units; Basis: actual;',
+        'Obligation: direct_county_borrowing; Principal: 100.00; Outstanding: 20.00;',
+        'Interest rate: not reported;']
+    body=pdf_bytes(['OWNED SYNTHETIC - not live evidence', *lines])
     with pdfplumber.open(BytesIO(body)) as pdf:
         text_page=' '.join(pdf.pages[0].extract_text().split())
     spec={'id':'owned_synthetic', 'url':'https://example.invalid/owned-county.pdf',
@@ -40,7 +43,13 @@ def specimen(monkeypatch, tmp_path):
             'identity_namespace':'owned-synthetic-register', 'instrument_reference':'SYNTH-1',
             'lender':'Synthetic Bank','issue_date':'2020-01-01T00:00:00', 'currency':'KES',
             'as_at':'2025-06-30','page_ref':'p.1','basis':'actual',
-            'principal':'100.00','outstanding':'20.00','debt_category':'county_guaranteed'}]}
+            'principal':'100.00','outstanding':'20.00','debt_category':'county_guaranteed',
+            'source_evidence': {
+                'format':'labelled_contract_stock_v1', 'statement':' '.join(lines),
+                'currency_text':'KES', 'unit':'units', 'unit_text':'units', 'stock_label':'Outstanding',
+                'fields':{'county_name':'Kisii county', 'identity_namespace':'owned-synthetic-register', 'instrument_reference':'SYNTH-1',
+                    'lender':'Synthetic Bank', 'issue_date':'2020-01-01', 'as_at':'2025-06-30',
+                    'principal':'100.00', 'outstanding':'20.00', 'interest_rate':None}}}]}
     monkeypatch.setattr(contract, 'EDITIONS', {spec['id']:spec})
     settings=SeedingSettings(_env_file=None,county_borrowing_ingestion_enabled=True,storage_path=tmp_path)
     return spec, body, settings
