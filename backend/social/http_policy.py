@@ -8,6 +8,7 @@ from .telemetry import log_event
 
 def private_social_path(path):
     return (path == '/api/v1/admin/social' or path.startswith('/api/v1/admin/social/')
+            or path == '/api/v1/social/oauth/meta' or path.startswith('/api/v1/social/oauth/meta/')
             or path == '/api/v1/social/privacy/meta' or path.startswith('/api/v1/social/privacy/meta/'))
 
 
@@ -17,7 +18,8 @@ def social_log_path(path):
     if path in {'/api/v1/social/privacy/meta/data-deletion',
                 '/api/v1/social/privacy/meta/data-deletion/status'}:
         return path
-    namespace = '/api/v1/admin/social' if path.startswith('/api/v1/admin/social') else '/api/v1/social/privacy/meta'
+    namespace = ('/api/v1/admin/social' if path.startswith('/api/v1/admin/social') else
+                 '/api/v1/social/oauth/meta' if path.startswith('/api/v1/social/oauth/meta') else '/api/v1/social/privacy/meta')
     return namespace + '/[redacted]'
 
 
@@ -35,13 +37,30 @@ class SocialNoStoreMiddleware:
             return
 
         response_started = False
+        replaced_callback_error = False
 
         async def send_private(message):
-            nonlocal response_started
+            nonlocal response_started, replaced_callback_error
+            if replaced_callback_error:
+                return
             if message["type"] == "http.response.start":
                 response_started = True
+                if path == '/api/v1/social/oauth/meta/callback' and scope.get('method') == 'GET' and message['status'] >= 400:
+                    from .connections.direct_api import callback_html
+                    fallback = callback_html(None, None)
+                    fallback.status_code = message['status']
+                    replaced_callback_error = True
+                    await fallback(scope, receive, send)
+                    return
                 headers = MutableHeaders(scope=message)
                 headers["Cache-Control"] = "private, no-store"
+                if path.startswith('/api/v1/admin/social/connections/meta/direct/'):
+                    headers['Referrer-Policy'] = 'no-referrer'
+                if path == '/api/v1/social/oauth/meta' or path.startswith('/api/v1/social/oauth/meta/'):
+                    from .connections.direct_api import HEADERS
+                    for key, value in HEADERS.items():
+                        headers[key] = (scope.get('state', {}).get('social_direct_callback_csp', value)
+                                        if key == 'Content-Security-Policy' else value)
                 if path == '/api/v1/social/privacy/meta' or path.startswith('/api/v1/social/privacy/meta/'):
                     from .privacy.api import HEADERS
                     # Apply after the global security middleware, including its

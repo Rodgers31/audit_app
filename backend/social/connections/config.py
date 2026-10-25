@@ -2,6 +2,7 @@
 import json
 import os
 import re
+from ipaddress import IPv4Address
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
@@ -26,6 +27,8 @@ class MetaConfig:
     encryption_keys: dict[str, str] = field(default_factory=dict, repr=False)
     business_discovery_enabled: bool = False
     verified_callback_ingress_uris: tuple[str, ...] = ()
+    direct_callback_enabled: bool = False
+    admin_origin: str = ''
 
     @property
     def requested_scopes(self):
@@ -58,6 +61,8 @@ class MetaConfig:
 
     def oauth_blockers(self):
         errors = self.blockers()
+        if (self.direct_callback_enabled is not False or any(type(u) is str and u.endswith(DIRECT_CALLBACK_PATH) for u in self.redirect_uris)) and not self.direct_transport_valid():
+            errors.append('DIRECT_CALLBACK_CONFIGURATION_INVALID')
         if not ingress_qualified(self.redirect_uris, self.verified_callback_ingress_uris, valid_redirect):
             errors.append(BLOCKER)
         return errors
@@ -67,9 +72,56 @@ class MetaConfig:
             raise SocialError('CONNECTIONS_UNAVAILABLE', 'Meta connections are unavailable until server configuration and registered app access are validated.', 503)
 
     def require_redirect(self, value):
+        if self.direct_callback_enabled is not False and not self.direct_transport_valid():
+            raise SocialError('CALLBACK_INGRESS_UNVERIFIED', 'Direct callback transport is unavailable.', 503)
         if not valid_redirect(value) or value not in self.redirect_uris:
             raise SocialError('REDIRECT_MISMATCH', 'Use the exact registered connection callback URL.', 422)
         require_ingress(self.redirect_uris, self.verified_callback_ingress_uris, valid_redirect)
+        if urlsplit(value).path == DIRECT_CALLBACK_PATH and not self.direct_transport_valid():
+            raise SocialError('CALLBACK_INGRESS_UNVERIFIED', 'Direct callback transport is unavailable.', 503)
+
+    def direct_transport_valid(self):
+        return (self.direct_callback_enabled is True and valid_origin(self.admin_origin)
+                and type(self.redirect_uris) is tuple and len(self.redirect_uris) == 1
+                and valid_redirect(self.redirect_uris[0])
+                and valid_origin(origin(self.redirect_uris[0]))
+                and urlsplit(self.redirect_uris[0]).path == DIRECT_CALLBACK_PATH
+                and origin(self.redirect_uris[0]) != self.admin_origin)
+
+    def require_direct(self):
+        # Check before DB/receipts, even when an earlier attempt was qualified.
+        if not self.direct_transport_valid():
+            raise SocialError('CALLBACK_INGRESS_UNVERIFIED', 'Direct callback transport is unavailable.', 503)
+        self.require_ready()
+        self.require_redirect(self.redirect_uris[0])
+        return self.redirect_uris[0]
+
+
+DIRECT_CALLBACK_PATH = '/api/v1/social/oauth/meta/callback'
+DIRECT_LAUNCH_PATH = '/api/v1/social/oauth/meta/launch'
+
+
+def origin(value):
+    u = urlsplit(value)
+    return u.scheme + '://' + u.netloc
+
+
+def valid_origin(value):
+    if type(value) is not str or len(value) > 512 or not re.fullmatch(r'https://[a-z0-9.-]+(?::[0-9]{1,5})?', value):
+        return False
+    try:
+        u = urlsplit(value)
+        # Browsers normalize shortened/octal/hex IPv4 hosts before Origin and
+        # URL serialization. Accept only canonical dotted-decimal IP spelling.
+        last_label = u.hostname.rsplit('.', 1)[-1]
+        if last_label.isdigit() or re.fullmatch(r'0x[0-9a-f]+', last_label):
+            if str(IPv4Address(u.hostname)) != u.hostname:
+                return False
+        return (bool(u.hostname) and all(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label) for label in u.hostname.split('.'))
+                and (u.port is None or (1 <= u.port <= 65535 and u.port != 443
+                     and u.netloc.endswith(':' + str(u.port)))))
+    except ValueError:
+        return False
 
 
 def valid_redirect(value):
@@ -83,7 +135,7 @@ def valid_redirect(value):
             return False
     except ValueError:
         return False
-    return u.scheme == 'https' and bool(u.hostname) and not (u.username or u.password or u.query or u.fragment) and u.path == '/admin/social/accounts/callback'
+    return u.scheme == 'https' and bool(u.hostname) and not (u.username or u.password or u.query or u.fragment) and '?' not in value and '#' not in value and u.path in {'/admin/social/accounts/callback', DIRECT_CALLBACK_PATH}
 
 
 def load_config(environ=None):
@@ -98,4 +150,4 @@ def load_config(environ=None):
             redirects = []
     except (ValueError, TypeError):
         keys, redirects = {}, []
-    return MetaConfig(enabled=values.get('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=values.get('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=values.get('META_APP_ID', ''), app_secret=values.get('META_APP_SECRET', ''), graph_version=values.get('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=values.get('META_ACCESS_MODE', 'unverified'), active_key_version=values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=values.get('META_BUSINESS_DISCOVERY_ENABLED') == 'true', verified_callback_ingress_uris=verified_callbacks(values.get('META_VERIFIED_CALLBACK_INGRESS_URIS', '[]')))
+    return MetaConfig(enabled=values.get('META_CONNECTIONS_ENABLED') == 'true', app_configuration_validated=values.get('META_APP_CONFIGURATION_VALIDATED') == 'true', app_id=values.get('META_APP_ID', ''), app_secret=values.get('META_APP_SECRET', ''), graph_version=values.get('META_GRAPH_VERSION', 'v26.0'), redirect_uris=tuple(redirects), access_mode=values.get('META_ACCESS_MODE', 'unverified'), active_key_version=values.get('SOCIAL_CREDENTIAL_ACTIVE_KEY_VERSION', ''), encryption_keys=keys, business_discovery_enabled=values.get('META_BUSINESS_DISCOVERY_ENABLED') == 'true', verified_callback_ingress_uris=verified_callbacks(values.get('META_VERIFIED_CALLBACK_INGRESS_URIS', '[]')), direct_callback_enabled=values.get('META_DIRECT_CALLBACK_ENABLED', 'false') == 'true' if values.get('META_DIRECT_CALLBACK_ENABLED', 'false') in {'true', 'false'} else None, admin_origin=values.get('META_ADMIN_ORIGIN', ''))
