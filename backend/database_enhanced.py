@@ -11,8 +11,10 @@ from sqlalchemy.pool import QueuePool
 
 if __package__:
     from .db_url import with_explicit_driver
+    from .github_database_tls import connection_args as github_connection_args
 else:
     from db_url import with_explicit_driver
+    from github_database_tls import connection_args as github_connection_args
 
 load_dotenv()
 
@@ -53,6 +55,7 @@ engine = create_engine(
     connect_args={
         "connect_timeout": 10,
         "options": "-c timezone=utc",
+        **github_connection_args(),
     },
 )
 

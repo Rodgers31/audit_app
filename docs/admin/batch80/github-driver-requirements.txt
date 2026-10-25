@@ -1,0 +1,4 @@
+# Official PyPI CPython3.12/3.13 manylinux x86_64 wheels; no dependency resolution.
+psycopg2-binary==2.9.13 \
+    --hash=sha256:e3861eba31f8ea8663fd876166b032fd89179e42aa63764d6feb281f13f9eb60 \
+    --hash=sha256:f04ada42bcd537adbaf8b7f3140237a204e452a88d0c1831cfce69f7d2e59f4e

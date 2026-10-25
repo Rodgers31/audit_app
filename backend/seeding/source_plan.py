@@ -1,7 +1,7 @@
 """Whitelisted workflow selection; execution still uses the native CLI owner.
 
 This plan is independent of the UI publication calendar. It does not certify
-source freshness and it is not a no-write preflight (seed.yml migrates).
+source freshness and it is not a no-write preflight (operational receipts write).
 """
 from dataclasses import dataclass
 import json

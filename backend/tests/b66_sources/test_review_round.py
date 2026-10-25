@@ -207,6 +207,7 @@ def test_actual_workflow_launcher_to_native_job_and_result_gate(opendata_pg,tmp_
         'PATH':str(Path(sys.executable).parent)+':/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin',
         'B66_SOURCE_CHILD':'true','SEED_OPENDATA_INGESTION_ENABLED':'true','SEED_KNBS_RELEASE_DISCOVERY_ENABLED':'true',
         'SEED_PLAN_EVENT':'workflow_dispatch','SEED_PLAN_DOMAIN':'opendata','SEED_PLAN_DRY_RUN':'false',
+        'SEED_JOB_FLOOR':'0',
         'SEED_STORAGE_PATH':str(tmp_path/'storage'),'SEED_CACHE_PATH':str(tmp_path/'cache')})
     data,_=workflow()
     script=next(s['run'] for s in data['jobs']['seed']['steps'] if s.get('name')=='Seed planned domains')

@@ -1,15 +1,64 @@
-# Author delivery is deliberately inadmissible. No production identity is learned.
-# Future activation must review/merge and pin BOTH dispatch workflow and tool source.
+# Writer-target inspection is default-off behind an independently admitted SHA.
+# The archived reader-contract job retains its separate, disabled admission.
 name: Manual ingestion read-only preflight
 on:
   workflow_dispatch:
+    inputs:
+      purpose:
+        description: 'Existing writer-target qualification or archived reader-contract inspection'
+        type: choice
+        default: github-writer-target
+        options: [github-writer-target, legacy-reader-inspection]
 permissions:
   contents: read
 concurrency:
   group: ingestion-read-only-preflight
   cancel-in-progress: false
 jobs:
+  qualify_github_writer:
+    if: inputs.purpose == 'github-writer-target'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHON_DOTENV_DISABLED: '1'
+    steps:
+      - name: Admit only the reviewed immutable qualification source
+        env:
+          REPOSITORY: ${{ github.repository }}
+          DISPATCH_REF: ${{ github.ref }}
+          DISPATCH_SHA: ${{ github.sha }}
+          DEFINITION_REF: ${{ github.workflow_ref }}
+          APPROVED_SHA: ${{ vars.INGESTION_DATABASE_QUALIFICATION_SHA }}
+        run: |
+          set -eu
+          test "$REPOSITORY" = Rodgers31/audit_app
+          case "$DISPATCH_REF" in refs/heads/main|refs/heads/codex/github-database-qualification) ;; *) exit 1 ;; esac
+          test "$DEFINITION_REF" = "Rodgers31/audit_app/.github/workflows/ingestion-preflight.yml@$DISPATCH_REF"
+          test "${#APPROVED_SHA}" -eq 40
+          case "$APPROVED_SHA" in *[!0-9a-f]*) exit 1 ;; esac
+          test "$DISPATCH_SHA" = "$APPROVED_SHA"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.15'
+          architecture: x64
+          check-latest: false
+      - name: Install only the pinned inspection driver before secret access
+        run: |
+          python -I -m pip --isolated install --no-cache-dir --disable-pip-version-check --no-deps --require-hashes --only-binary=:all: -r docs/admin/batch80/github-driver-requirements.txt
+      - name: Qualify the two existing GitHub connections without writes
+        timeout-minutes: 1
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_POOLER_URL: ${{ secrets.DATABASE_POOLER_URL }}
+        run: python -I scripts/verification/github_database_qualify.py --all
+      # Fixed sanitized log only. No artifact/cache upload or app execution.
   inspect:
+    if: inputs.purpose == 'legacy-reader-inspection'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
