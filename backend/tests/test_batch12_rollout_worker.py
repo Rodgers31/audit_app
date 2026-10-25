@@ -10,7 +10,7 @@ import time
 from uuid import uuid4
 
 import httpx
-from jose import jwt
+import jwt
 import pytest
 from sqlalchemy import text
 

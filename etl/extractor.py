@@ -113,7 +113,11 @@ class DocumentExtractor:
 
         try:
             # Extract tables from all pages
-            tables = camelot.read_pdf(file_path, pages="all")
+            # Preserve the existing raster lattice policy across Camelot 2's
+            # default switch to combined raster/vector detection.
+            tables = camelot.read_pdf(
+                file_path, pages="all", flavor="lattice", engine="raster"
+            )
 
             for table_idx, table in enumerate(tables):
                 table_data = {

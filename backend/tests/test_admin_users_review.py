@@ -10,7 +10,7 @@ import threading
 
 import httpx
 import pytest
-from jose import jwt
+import jwt
 from fastapi import FastAPI
 
 import supabase_auth
