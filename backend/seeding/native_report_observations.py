@@ -15,7 +15,9 @@ def _job(db, ingestion_id, domain, *, scope_key=None):
         func.timezone(func.current_setting('TimeZone'), IngestionJob.started_at),
         func.timezone(func.current_setting('TimeZone'), IngestionJob.finished_at))
         .where(IngestionJob.id == ingestion_id)).one_or_none()
-    now = db.scalar(select(func.current_timestamp()))
+    # Validation follows any authority-lock wait. Transaction-start time can
+    # predate a valid completion that became visible after acquiring the lock.
+    now = db.scalar(select(func.statement_timestamp()))
     if row is None:
         raise SourceObservationUnavailable('Exact record ingestion lineage unavailable')
     job, started, finished = row

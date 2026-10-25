@@ -177,13 +177,18 @@ def capture_pdf_report(path: Path, receipt, *, domain):
             raise ValueError('PDF input differs from retained bytes')
         import io
         import pdfplumber
+        from pdfminer.pdfexceptions import PDFException
+        from pdfplumber.utils.exceptions import PdfminerException
         pages = []
-        with pdfplumber.open(io.BytesIO(body), pages=[1,2,3]) as pdf:
-            for page in pdf.pages:
-                page_text = page.extract_text() or ''
-                if len(page_text) > 100000:
-                    raise ValueError('Bounded cover text required')
-                pages.append((page.page_number, page_text))
+        try:
+            with pdfplumber.open(io.BytesIO(body), pages=[1,2,3]) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text() or ''
+                    if len(page_text) > 100000:
+                        raise ValueError('Bounded cover text required')
+                    pages.append((page.page_number, page_text))
+        except (PDFException, PdfminerException):
+            raise ValueError('Malformed retained PDF') from None
         candidates = [(page, line.strip(), _DATE_LABEL.fullmatch(line.strip()))
             for page, content in pages for line in content.splitlines() if _DATE_LABEL.fullmatch(line.strip())]
         if len(candidates) != 1:

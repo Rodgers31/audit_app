@@ -1,5 +1,5 @@
 'use client';
-/** Inert auth transport; real source API backed by owned current-schema PG. */
+/** Launch with ./serve.mjs for inert auth and the owned local API transport. */
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SocialAutomation from '@/components/admin/social/SocialAutomation';

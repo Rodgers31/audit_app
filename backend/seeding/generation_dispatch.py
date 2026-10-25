@@ -158,7 +158,7 @@ def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_r
 
 def record_generation_timeout(factory, *, domain, ingestion_id, financial_outcome=None, reports_started=None):
     if not (capability(domain).financial or capability(domain).reports) or type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
-        raise ValueError("Bounded CoB ingestion identity required")
+        raise ValueError("Bounded ingestion identity required")
     outcome = _unverified("generation_timeout_execution_unverified")
     if financial_outcome is not None:
         try:
