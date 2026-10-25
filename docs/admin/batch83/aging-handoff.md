@@ -1,8 +1,10 @@
 # B83 pending-bills aging handoff
 
 Base: `7c7b309158480e61206a453e7d844fcf5075b3b9`. Branch: `codex/b83-aging`.
-This author change is draft-only. No production configuration, financial rows,
-workflow, migration, admission SHA, publication or provider setting was changed.
+This change remains draft-only. Static workflow wiring forwards the repository
+aging variable with a literal `false` default; no live variable or activation was
+changed. No production configuration, financial rows, migration, admission SHA,
+publication or provider setting was changed.
 
 ## Supported source and limits
 
@@ -59,12 +61,20 @@ before deduplication. Fresh parse and full-envelope attestation reject serialize
 or altered observations, including removed qualifications. Same-date corrections
 update the active cohort atomically; older stock dates, changed artifacts, mixed
 populations and incomplete continuations are refused. History is not deleted.
-A subsequent ordinary stock write clears the active aging pointer, so an old
-aging cohort cannot survive an unqualified replacement edition.
+An ordinary stock write clears the selected document's pointer. Retained pointers
+on older titles remain historical: the reader additionally requires every
+currently published county stock row at that date to match the cohort source
+and publication batch. Mixed batches, another active title, and no current stock
+all withhold aging. API callers pass an immutable binding of the stock they
+already read, so a concurrently committed replacement cannot attach a different
+source cohort to an earlier stock response. Persisted documents, extractions and
+receipts are refreshed rather than trusted from an ORM identity cache.
 
 `SEED_PENDING_BILLS_AGING_ENABLED` must be exactly `true` to enable acquisition in
-the existing county pending-bills fetch path. It defaults off and is not added to
-workflow, registry, source plan or production configuration. The existing bounded
+the existing county pending-bills fetch path. The nightly workflow forwards
+`${{ vars.SEED_PENDING_BILLS_AGING_ENABLED || 'false' }}`. Unset, `false` and
+`TRUE` keep the existing path; only literal `true` opts in. No registry, source
+plan or production configuration is activated. The existing bounded
 shared download and receipt-store policies are unchanged. With the opt-in on,
 both payables and aging are freshly parsed from that same download; a cached
 positive payables comparison cannot acquire authority through fresh aging. The
@@ -86,7 +96,10 @@ The debt page's population selector presents executive source bands, availabilit
 qualifications, source discrepancy, numeric table and conditional chart. National,
 assembly and combined selections show app-observation absence. Missing bands do
 not become zero bars, malformed money is refused, and the numeric table remains
-accessible without the chart. The older county-panel absence copy now describes
+accessible without the chart. The panel shows request loading and failure
+separately from observation absence, and uses the selected English, Swahili or
+plain language for its copy, source bands, qualifiers and dates. The older
+county-panel absence copy now describes
 missing app observations instead of asserting publisher-wide absence.
 
 Rollback/disable: keep the producer opt-in off; an ordinary later county stock
@@ -135,3 +148,33 @@ original failures remain in external receipts. CUA synthetic key probes did not
 visibly operate the native popup, so full keyboard/screen-reader/narrow-viewport
 conformance is not certified by this pass. The labelled native control, table
 headers and polite status region are present.
+
+
+## B84 review corrections
+
+The two inline findings and four review-body concerns were reproduced and
+corrected. Million-denominated headers now require an explicit KES/Ksh/Kshs
+currency on every continuation. The pinned cohort and associated county stock
+must both declare FY2025/26, including dry previews and direct persistence.
+Supplying aging to an unsupported publication or to rows that all disappear
+during county filtering raises before any financial/source write. Current
+source/batch authority and API read-context binding replace reliance on a
+retained source pointer alone. Earlier acquisition/receipt and source-discrepancy
+contracts are retained; no new artifact is admitted.
+
+New correction receipts are outside Git at `BATCH_84_REVIEW/798` under the same
+evidence root. They include failing-before unit/publication/UI controls, actual
+PostgreSQL replacement/rollback/concurrent-publication controls and Chrome
+ready/loading/error/Swahili/assembly checks. Browser values came from the actual
+API handlers over an isolated PostgreSQL schema using genuine source cells and
+synthetic acquisition evidence. This is not live ingestion or production
+acceptance. The source's arithmetic discrepancies remain explicit. Assembly
+Table 2.12 remains separate follow-up #800; this adapter is executive-only.
+
+The coordinator owns the final two independent review axes, fresh GitHub comment
+census, push/replies and any integration. No merge, deployment, live refresh,
+publishing, uploads, paid resource or workflow run was performed for these
+corrections. Exact final test counts and resource cleanup are in the correction
+STATUS receipt. The Python fixture runtime includes a test-only namespace shim
+for existing cross-test imports that would otherwise resolve an installed
+third-party `tests` package; this is not a product dependency change.

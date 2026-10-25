@@ -75,10 +75,10 @@ const summary: PendingBillsSummaryResponse = {
   trend: [],
 };
 
-async function mount(bills: PendingBillsResponse | null = pending, ranking: PendingBillsSummaryResponse = summary) {
+async function mount(bills: PendingBillsResponse | null = pending, ranking: PendingBillsSummaryResponse | null = summary, rankingRequest?: () => Promise<unknown>) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   mockGet.mockImplementation((url: string) =>
-    !bills && url === '/pending-bills'
+    url === '/pending-bills/summary' && rankingRequest ? rankingRequest() : !bills && url === '/pending-bills'
       ? Promise.reject(new Error('synthetic unavailable endpoint'))
       : Promise.resolve({ data: url === '/data/freshness' ? { sources: [] } : {} })
   );
@@ -91,7 +91,7 @@ async function mount(bills: PendingBillsResponse | null = pending, ranking: Pend
   client.setQueryData(['debt', 'national-timeline'], { timeline: [] });
   client.setQueryData(['fiscal', 'summary'], { history: [] });
   if (bills) client.setQueryData(['debt', 'pending-bills'], bills);
-  client.setQueryData(['debt', 'pending-bills-summary'], ranking);
+  if (ranking) client.setQueryData(['debt', 'pending-bills-summary'], ranking);
   const view = render(<QueryClientProvider client={client}><NationalDebtPage /></QueryClientProvider>);
   await act(async () => { await Promise.resolve(); });
   return { ...view, client };
@@ -305,4 +305,17 @@ describe('debt page pending-bills disclosure (#321)', () => {
     expect(stalledPayments()).toHaveTextContent(/no pending-bills figure is published/i);
     expect(stalledPayments()).not.toHaveTextContent('KES 0');
   });
+});
+
+
+it('wires the real summary query loading and error states into the aging panel', async () => {
+  let failRequest!: (error: Error) => void;
+  const request = new Promise((_resolve, reject) => { failRequest = reject; });
+  await mount(pending, null, () => request);
+  const panel = screen.getByRole('heading', { name: 'Aging — how long bills have gone unpaid' }).closest('section')!;
+  expect(within(panel).getByRole('status')).toHaveTextContent(/loading/i);
+  expect(panel).not.toHaveTextContent(/no source-bound aging observation/i);
+  await act(async () => { failRequest(new Error('synthetic summary failure')); });
+  await waitFor(() => expect(within(panel).getByRole('alert')).toHaveTextContent(/could not be loaded/i));
+  expect(panel).not.toHaveTextContent(/no source-bound aging observation/i);
 });

@@ -95,6 +95,8 @@ def _write_pending_bills(
     elif publication == COUNTY_PENDING_BILLS_PUBLICATION:
         writes_county = True
     else:
+        if aging is not None:
+            raise ValueError("Executive aging requires a county pending-bills publication")
         logger.warning(
             "pending bills: not writing %d record(s) from a %s payload — "
             "national pending bills are read from the Treasury BROP and county "
@@ -123,9 +125,15 @@ def _write_pending_bills(
         )
     records = [r for r in records if _is_county_record(r) == writes_county]
     if not records:
+        if aging is not None:
+            raise ValueError("Executive aging requires the associated county stock rows")
         return created, updated
 
     records = _validated_records(records, source_url, source_title, publisher)
+    if aging is not None:
+        from .aging import require_stock_binding
+
+        require_stock_binding(aging, records)
 
     if writes_county:
         _require_forward_county_edition(session, records, county_table)

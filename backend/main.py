@@ -11478,7 +11478,17 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     rows, totals = _published_pending_bills(db)
     from services.pending_bills_aging import aging_observations
 
-    aging = aging_observations(db, as_at=totals["county_as_at"])
+    stock_context = {
+        (
+            loan.source_document_id,
+            _pending_bills_provenance(loan).get("publication_batch"),
+        )
+        for loan, _name, entity_type, _amount in rows
+        if entity_type == "county"
+    }
+    aging = aging_observations(
+        db, as_at=totals["county_as_at"], stock_context=stock_context
+    )
     if not rows:
         reason = (
             "no_available_current_county_stock"
@@ -11656,7 +11666,19 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
         total = selection["amount"]
         from services.pending_bills_aging import aging_observations
 
-        aging = aging_observations(db, as_at=reporting_date, county=entity.canonical_name)
+        stock_context = {
+            (
+                loan.source_document_id,
+                _pending_bills_provenance(loan).get("publication_batch"),
+            )
+            for loan in pending_loans
+        }
+        aging = aging_observations(
+            db,
+            as_at=reporting_date,
+            county=entity.canonical_name,
+            stock_context=stock_context or None,
+        )
         # The same two assertions the national fallback used to make, on
         # the page that never carried the debt page's disclaimer: 100% of
         # this county's arrears declared over 180 days old, and 100%

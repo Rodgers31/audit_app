@@ -93,6 +93,8 @@ env:
   # Variable SEED_AUDITS_OCR_ENABLED=false.
   SEED_AUDITS_OCR_ENABLED: ${{ vars.SEED_AUDITS_OCR_ENABLED || 'true' }}
   SEED_AUDITS_OCR_MAX_PAGES: ${{ vars.SEED_AUDITS_OCR_MAX_PAGES || '30' }}
+  # Source-qualified executive aging remains opt-in until bounded rollout.
+  SEED_PENDING_BILLS_AGING_ENABLED: ${{ vars.SEED_PENDING_BILLS_AGING_ENABLED || 'false' }}
   SEED_POPULATION_DATASET_URL: ${{ secrets.SEED_POPULATION_DATASET_URL }}
   SEED_ECONOMIC_INDICATORS_DATASET_URL: ${{ secrets.SEED_ECONOMIC_INDICATORS_DATASET_URL }}
   # KRA FY-revenue page/PDF. The revenue_by_source domain overlays the live

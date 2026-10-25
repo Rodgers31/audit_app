@@ -136,3 +136,76 @@ def test_concurrent_county_writers_serialize_one_active_aging_cohort(
             aging_observations(db, as_at="2026-06-30")["county_executive"]["status"]
             == "qualified"
         )
+
+
+def test_postgres_only_current_stock_source_and_batch_authorize_aging(
+    pg_engine, tmp_path, monkeypatch
+):
+    records, cohort = source_input(tmp_path, monkeypatch)
+    with Session(pg_engine) as db:
+        populate_counties(db, db.query(Country).one().id)
+        write(db, records, cohort)
+        db.commit()
+    with Session(pg_engine) as db:
+        row = db.query(Loan).first()
+        row.provenance = {**row.provenance, "publication_batch": "b" * 64}
+        db.flush()
+        assert (
+            aging_observations(db, as_at="2026-06-30")["county_executive"]["status"]
+            == "unavailable"
+        )
+        db.rollback()
+        assert (
+            aging_observations(db, as_at="2026-06-30")["county_executive"]["status"]
+            == "qualified"
+        )
+        replacement = tmp_path / "replacement"
+        replacement.mkdir()
+        new_records, _ = source_input(replacement, monkeypatch)
+        write(db, new_records, None, source_title="B84 new unaged report title")
+        db.commit()
+    with Session(pg_engine) as db:
+        assert db.query(SourceDocument).count() == 2
+        assert (
+            db.query(Extraction).filter(Extraction.extractor == EXTRACTOR).count() == 1
+        )
+        assert (
+            aging_observations(db, as_at="2026-06-30")["county_executive"]["status"]
+            == "unavailable"
+        )
+
+
+def test_postgres_committed_replacement_cannot_change_an_earlier_stock_snapshot(
+    pg_engine, tmp_path, monkeypatch
+):
+    records, cohort = source_input(tmp_path, monkeypatch)
+    with Session(pg_engine) as db:
+        populate_counties(db, db.query(Country).one().id)
+        write(db, records, cohort)
+        db.commit()
+    replacement = tmp_path / "replacement"
+    replacement.mkdir()
+    new_records, new_cohort = source_input(replacement, monkeypatch)
+    with Session(pg_engine) as reader:
+        context = {
+            (row.source_document_id, row.provenance["publication_batch"])
+            for row in reader.query(Loan).all()
+        }
+        with Session(pg_engine) as writer:
+            write(
+                writer,
+                new_records,
+                new_cohort,
+                source_title="B84 concurrent replacement",
+            )
+            writer.commit()
+        assert (
+            aging_observations(reader, as_at="2026-06-30", stock_context=context)[
+                "county_executive"
+            ]["status"]
+            == "unavailable"
+        )
+        assert (
+            aging_observations(reader, as_at="2026-06-30")["county_executive"]["status"]
+            == "qualified"
+        )

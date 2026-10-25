@@ -273,7 +273,11 @@ export default function NationalDebtPage() {
   } = useDebtTimeline({ enabled: backendReady });
   const { data: fiscalResp } = useFiscalSummary({ enabled: backendReady });
   const { data: pendingBillsData, isError: pendingBillsError } = usePendingBills({ enabled: backendReady });
-  const { data: rawPendingBillsSummary } = usePendingBillsSummary({ enabled: backendReady });
+  const {
+    data: rawPendingBillsSummary,
+    isLoading: pendingBillsSummaryLoading,
+    isError: pendingBillsSummaryError,
+  } = usePendingBillsSummary({ enabled: backendReady });
 
   /* ── Normalize pending bills summary (API returns dicts) ── */
   const pendingBillsSummary = useMemo(() => {
@@ -1206,7 +1210,8 @@ export default function NationalDebtPage() {
               </div>
             </div>
 
-            <PendingBillsAgingPanel observations={pendingBillsSummary?.aging_observations} />
+            <PendingBillsAgingPanel observations={pendingBillsSummary?.aging_observations}
+              isLoading={!backendReady || pendingBillsSummaryLoading} isError={pendingBillsSummaryError} />
 
             {pbView === 'counties' && pendingBillsSummary?.top_counties_by_amount?.length > 0 && (
               <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>

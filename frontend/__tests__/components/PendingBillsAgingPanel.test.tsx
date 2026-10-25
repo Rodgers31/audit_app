@@ -60,3 +60,26 @@ test.each(['NaN', 'Infinity', '-Infinity', '-1', true, false, {}, []])('refuses 
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
   expect(screen.queryByText(/KES NaN|KES ∞/)).not.toBeInTheDocument();
 });
+
+
+test('loading and request errors never claim source observations are absent', () => {
+  const { rerender } = render(<PendingBillsAgingPanel isLoading />);
+  expect(screen.getByRole('status')).toHaveTextContent(/Loading/);
+  expect(screen.queryByText(/No source-bound aging observation/)).not.toBeInTheDocument();
+  rerender(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} isError />);
+  expect(screen.getByRole('alert')).toHaveTextContent(/could not be loaded/);
+  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  expect(screen.queryByText(/No source-bound aging observation/)).not.toBeInTheDocument();
+});
+
+
+test('uses the active language for aging copy and the source date', () => {
+  localStorage.setItem('auditgava-lang', 'sw');
+  const { LangProvider } = require('@/lib/i18n/LangProvider');
+  const { unmount } = render(<LangProvider><PendingBillsAgingPanel observations={{ county_executive: measured } as any} /></LangProvider>);
+  expect(screen.getByRole('heading')).toHaveTextContent('Muda ambao bili hazijalipwa');
+  expect(screen.getByLabelText('Kundi la bili')).toBeInTheDocument();
+  expect(screen.getByText(/30 Juni 2026/)).toBeInTheDocument();
+  unmount();
+  localStorage.removeItem('auditgava-lang');
+});

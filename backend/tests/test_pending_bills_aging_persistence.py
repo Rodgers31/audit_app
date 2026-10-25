@@ -459,10 +459,11 @@ def test_missing_publication_batch_cannot_match_missing_metadata(
     )
 
 
-@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("flag", [None, "false", "true", "TRUE"])
 def test_fetcher_default_and_opt_in_share_download_but_attest_fresh_payables(
-    tmp_path, monkeypatch, enabled
+    tmp_path, monkeypatch, flag
 ):
+    enabled = flag == "true"
     from types import SimpleNamespace
     from seeding import cob_cbirr, pdf_evidence, pdf_parsers, parse_cache
     from seeding.config import SeedingSettings
@@ -527,10 +528,10 @@ def test_fetcher_default_and_opt_in_share_download_but_attest_fresh_payables(
     monkeypatch.setattr(
         fetcher, "county_payables_payload", lambda *a, **kw: {"existing_contract": True}
     )
-    if enabled:
-        monkeypatch.setenv("SEED_PENDING_BILLS_AGING_ENABLED", "true")
-    else:
+    if flag is None:
         monkeypatch.delenv("SEED_PENDING_BILLS_AGING_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("SEED_PENDING_BILLS_AGING_ENABLED", flag)
     client = SimpleNamespace(get=lambda *a, **kw: SimpleNamespace(text="inert listing"))
     settings = SeedingSettings(
         _env_file=None,

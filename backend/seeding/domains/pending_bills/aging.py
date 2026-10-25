@@ -9,6 +9,7 @@ from copy import deepcopy
 from decimal import Decimal
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from models import Extraction
@@ -17,6 +18,7 @@ from .parser import require_pending_amount
 
 ARTIFACT_SHA256 = "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20"
 AS_AT = "2026-06-30"
+FISCAL_YEAR = "FY2025/26"
 TABLE = "Table 2.11"
 BANDS = ("Under one year", "1-2 years", "2-3 years", "Over 3 years")
 SCOPE = "county_executive"
@@ -75,7 +77,8 @@ def parse_aging_tables(tables, payables_entries):
         header = " ".join(str(c or "") for c in table[0]).lower()
         if "executive" not in header or "ageing" not in header:
             continue
-        if "million" not in header:
+        units = re.findall(r"\b([a-z]+)\.?\s*millions?\b", header)
+        if not units or any(unit not in {"kes", "ksh", "kshs"} for unit in units):
             raise ValueError("Aging unit is not million KES")
         if [str(c or "").strip() for c in table[1]][1:5] != list(BANDS):
             raise ValueError("Unsupported aging bands")
@@ -191,7 +194,7 @@ def parse_aging_tables(tables, payables_entries):
         version=1,
         scope=SCOPE,
         as_at=AS_AT,
-        fiscal_year="FY2025/26",
+        fiscal_year=FISCAL_YEAR,
         table=TABLE,
         unit="KES",
         raw_unit="KES million",
@@ -312,14 +315,15 @@ def cohort_fingerprint(cohort):
     return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()
 
 
-def persist_aging(session, source, cohort, *, publication_batch, records):
-    from seeding.pdf_evidence import bind_pdf_evidence
-
+def require_stock_binding(cohort, records):
+    """Validate the same edition for writes, direct persistence and dry previews."""
     require_intact_aging(cohort)
     if {r.as_at for r in records} != {AS_AT} or any(
         r.entity_type != "county" for r in records
     ):
         raise ValueError("Aging and pending-bills populations/dates differ")
+    if any(re.fullmatch(r"FY\s*2025/26", r.fiscal_year) is None for r in records):
+        raise ValueError("Aging and pending-bills fiscal years differ")
     digests = {
         e.get("_response_receipt", {}).get("digest")
         for r in records
@@ -327,6 +331,12 @@ def persist_aging(session, source, cohort, *, publication_batch, records):
     }
     if digests != {ARTIFACT_SHA256} or any(not r.source_evidence for r in records):
         raise ValueError("Aging and payables must bind the same PDF artifact")
+
+
+def persist_aging(session, source, cohort, *, publication_batch, records):
+    from seeding.pdf_evidence import bind_pdf_evidence
+
+    require_stock_binding(cohort, records)
     bound = deepcopy(dict(cohort))
     for row in [*bound["rows"], bound["summary"]]:
         identity = _identity(row, "Total")
@@ -397,6 +407,7 @@ def validate_cohort(cohort):
         for k, v in dict(
             scope=SCOPE,
             as_at=AS_AT,
+            fiscal_year=FISCAL_YEAR,
             table=TABLE,
             unit="KES",
             raw_unit="KES million",
@@ -460,6 +471,7 @@ def public_observation(db, source, extraction, ref, *, county=None):
         receipts = {
             e.id: e.extracted_json.get("response_receipt")
             for e in db.query(Extraction)
+            .populate_existing()
             .filter(
                 Extraction.id.in_(list(ids)), Extraction.source_document_id == source.id
             )
