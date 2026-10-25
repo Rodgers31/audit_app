@@ -1,5 +1,7 @@
 """Exercise the maintained PDF readers against an owned, local ruled table."""
 
+import logging
+
 import pytest
 
 from etl import knbs_parser
@@ -62,8 +64,14 @@ def test_camelot_raster_path_preserves_original_table_values(table_pdf):
     ]
 
 
-def test_knbs_maintained_reader_fallback_extracts_text(monkeypatch, table_pdf):
+def test_knbs_maintained_reader_fallback_extracts_text(monkeypatch, table_pdf, caplog):
     monkeypatch.setattr(knbs_parser, "pdfplumber", None)
     assert knbs_parser.PdfReader is not None
-    text = knbs_parser.KNBSParser()._extract_text_from_pdf(table_pdf.read_bytes())
+    parser = knbs_parser.KNBSParser()
+    with caplog.at_level(logging.INFO, logger=knbs_parser.__name__):
+        text = parser._extract_text_from_pdf(table_pdf.read_bytes())
+        assert parser._extract_text_from_pdf(b"not a PDF") == ""
     assert all(value in text for value in ("Samburu", "2019", "310327"))
+    assert "using pypdf" in caplog.text
+    assert "pypdf failed" in caplog.text
+    assert "PyPDF2" not in caplog.text

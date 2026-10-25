@@ -96,12 +96,13 @@ def _fetch_jwks(force_refresh: bool = False) -> dict:
             timeout=5.0,
         )
         resp.raise_for_status()
-    except httpx.HTTPError as e:
+        document = _validated_jwks(resp.json())
+    except (httpx.HTTPError, ValueError, TypeError, RecursionError):
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to fetch Supabase JWKS: {e}",
-        )
-    _jwks_cache = resp.json()
+            status_code=503,
+            detail="Authentication keys temporarily unavailable",
+        ) from None
+    _jwks_cache = document
     _jwks_cache_ts = now
     return _jwks_cache
 
@@ -116,9 +117,18 @@ class AdminUser:
     session_id: Optional[str] = None
 
 
+def _validated_jwks(document: object) -> dict:
+    if (
+        not isinstance(document, dict)
+        or not isinstance(document.get("keys"), list)
+        or any(not isinstance(key, dict) for key in document["keys"])
+    ):
+        raise ValueError("Invalid JWKS key set")
+    return document
+
+
 def _find_signing_key(jwks: dict, kid: str) -> Optional[dict]:
-    if not isinstance(jwks, dict) or not isinstance(jwks.get("keys"), list):
-        raise PyJWTError("Invalid JWKS key set")
+    jwks = _validated_jwks(jwks)
     return next(
         (
             key
