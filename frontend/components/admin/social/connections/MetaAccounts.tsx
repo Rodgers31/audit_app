@@ -81,7 +81,12 @@ export default function MetaAccounts() {
       pending.current = null; openedPopup.current = null; flow.popup.close(); setBusy(true);
       if (payload && (payload.denied || !payload.code)) { setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id)); setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
       try { const result = direct ? await connectionApi.completeDirect(flow.id, flow.key) : await connectionApi.complete(payload!.code!, flow.state, flow.redirect, flow.key); if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); }
-      catch (e) { if (current()) { setError(e); setRecoverFlow(flow.id); } }
+      catch (e) { if (current()) {
+        setError(e);
+        if (e instanceof ConnectionError && e.code === 'OAUTH_DENIED') {
+          setRecoverFlow(undefined); setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id));
+        } else setRecoverFlow(flow.id);
+      } }
       finally { if (current()) setBusy(false); }
     };
     window.addEventListener('message', handler);
@@ -143,7 +148,12 @@ export default function MetaAccounts() {
       } else result = await connectionApi.choices(recoverFlow);
       if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); setRecoverFlow(undefined);
     }
-    catch (e) { if (current()) setError(e); }
+    catch (e) { if (current()) {
+      setError(e);
+      if (e instanceof ConnectionError && e.code === 'OAUTH_DENIED') {
+        setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, recoverFlow)); setRecoverFlow(undefined);
+      }
+    } }
     finally { if (current()) setBusy(false); }
   }
   async function confirm() {

@@ -29,9 +29,9 @@ export function decodeConnectionStatus(v: unknown): MetaConnectionStatus {
   if (o.provider !== 'meta' || o.publishing_adapter_available !== false || !['unverified','owned_standard','advanced'].includes(text(o.access_mode))) invalid();
   const available = bool(o.available), blockers = list(o.blockers);
   if (available !== (blockers.length === 0) || available && o.access_mode === 'unverified') invalid();
-  const direct = o.direct_callback == null ? null : text(o.direct_callback);
-  if (direct) directCallback(direct);
-  return { provider: 'meta', available, blockers, access_mode: o.access_mode as MetaConnectionStatus['access_mode'], scopes: list(o.scopes), publishing_adapter_available: false, ...(direct ? { direct_callback: direct } : {}) };
+  const direct = !('direct_callback' in o) || o.direct_callback === null ? null : text(o.direct_callback);
+  if (direct !== null) directCallback(direct);
+  return { provider: 'meta', available, blockers, access_mode: o.access_mode as MetaConnectionStatus['access_mode'], scopes: list(o.scopes), publishing_adapter_available: false, ...(direct !== null ? { direct_callback: direct } : {}) };
 }
 function directCallback(value: string): URL {
   const u = new URL(value);

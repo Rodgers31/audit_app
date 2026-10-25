@@ -202,6 +202,35 @@ def test_safe_headers_cover_missing_routes_and_outer_failures(db,config,graph):
         assert 'INERT-secret' not in r.text
 
 
+@pytest.mark.parametrize('suffix', ['/', '//'])
+@pytest.mark.parametrize('method', ['GET', 'POST', 'HEAD'])
+def test_callback_slash_redirects_never_relay_query(db, config, graph, suffix, method):
+    c = client(db, direct_config(config), graph)
+    response = c.request(method, CALLBACK + suffix, params={'state': 'a' * 43, 'code': 'INERT-slash-code'}, follow_redirects=False)
+    assert 'INERT-slash-code' not in response.headers.get('location', '')
+    assert response.status_code == 409
+    assert 'location' not in response.headers
+    if method != 'HEAD':
+        assert 'history.replaceState' in response.text and 'auditgava-meta-ready' not in response.text
+    assert 'INERT' not in response.text
+    assert response.headers['cache-control'] == 'private, no-store'
+    assert response.headers['referrer-policy'] == 'no-referrer'
+    assert graph.calls == []
+
+
+@pytest.mark.parametrize('status', [201, 204, 302, 307, 308, 429])
+def test_callback_outer_non_success_never_relays_query(status):
+    async def early_response(scope, receive, send):
+        await send({'type': 'http.response.start', 'status': status, 'headers': [(b'location', b'/callback?code=INERT-early-code&state=INERT-early-state')]})
+        await send({'type': 'http.response.body', 'body': b'INERT-early-body'})
+    c = TestClient(SocialNoStoreMiddleware(early_response), base_url=API)
+    response = c.get(CALLBACK + '?code=INERT-early-code&state=INERT-early-state', follow_redirects=False)
+    assert response.status_code == (status if status >= 400 else 409)
+    assert 'location' not in response.headers
+    assert 'history.replaceState' in response.text and 'auditgava-meta-ready' not in response.text
+    assert 'INERT' not in response.text
+
+
 def test_environment_defaults_do_not_admit_direct_transport():
     cfg=load_config({}); assert cfg.direct_callback_enabled is False
     with pytest.raises(SocialError): cfg.require_direct()

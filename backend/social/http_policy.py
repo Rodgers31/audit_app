@@ -45,10 +45,13 @@ class SocialNoStoreMiddleware:
                 return
             if message["type"] == "http.response.start":
                 response_started = True
-                if path == '/api/v1/social/oauth/meta/callback' and scope.get('method') == 'GET' and message['status'] >= 400:
+                if path.rstrip('/') == '/api/v1/social/oauth/meta/callback' and message['status'] != 200:
                     from .connections.direct_api import callback_html
                     fallback = callback_html(None, None)
-                    fallback.status_code = message['status']
+                    # Slash normalization and outer middleware may otherwise
+                    # redirect the original query before exact_target runs.
+                    # A non-error status must still render the scrub document.
+                    fallback.status_code = message['status'] if message['status'] >= 400 else 409
                     replaced_callback_error = True
                     await fallback(scope, receive, send)
                     return

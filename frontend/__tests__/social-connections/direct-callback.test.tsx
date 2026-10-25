@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { decodeDirectStartedFlow, decodeConnectionStatus, connectionApi, ConnectionError } from '@/lib/api/socialConnections';
 import { receiveDirectMetaCallback, launchDirectMeta } from '@/components/admin/social/connections/callbackSecurity';
 import MetaAccounts from '@/components/admin/social/connections/MetaAccounts';
-import { saveConnectionRecovery } from '@/components/admin/social/connections/connectionRecovery';
+import { saveConnectionRecovery, readConnectionRecovery } from '@/components/admin/social/connections/connectionRecovery';
 jest.mock('@/lib/api/axios', () => ({ __esModule:true, default:{get:jest.fn(),post:jest.fn()} }));
 jest.mock('@/lib/hooks/useSocial', () => ({useSocialAccounts:jest.fn()}));
 jest.mock('@/lib/hooks/useSocialConnections', () => ({useMetaAccountHealth:jest.fn(),useMetaConnectionStatus:jest.fn()}));
@@ -16,6 +16,14 @@ beforeEach(()=>{jest.restoreAllMocks();window.sessionStorage.clear();social.useS
 test('direct response permits no code/state or credential and exact API launch only',()=>{
   expect(decodeConnectionStatus(status).direct_callback).toBe(callback); expect(decodeDirectStartedFlow(flow,callback)).toEqual(flow);
   for(const invalid of [{...flow,code:'INERT'}, {...flow,state:'INERT'}, {...flow,launch_url:flow.launch_url+'?launch_token=INERT'}, {...flow,launch_url:flow.launch_url.replace('api.example.test','evil.example')}, {...flow,launch_token:true}]) expect(()=>decodeDirectStartedFlow(invalid,callback)).toThrow();
+});
+test('legacy absent and explicit null callback statuses retain their contract',()=>{
+  const {direct_callback: omitted, ...legacy}=status;
+  expect(decodeConnectionStatus(legacy).direct_callback).toBeUndefined();
+  expect(decodeConnectionStatus({...status,direct_callback:null}).direct_callback).toBeUndefined();
+});
+test.each(['',undefined,false,0,[],{},' https://api.example.test/api/v1/social/oauth/meta/callback'])('present malformed direct callback is rejected: %p',value=>{
+  expect(()=>decodeConnectionStatus({...status,direct_callback:value})).toThrow();
 });
 test('reference message rejects wrong origin/window/attempt/extra data',()=>{
   const popup={} as Window, event={origin:'https://api.example.test',source:popup,data:{type:'auditgava-meta-ready',flow_id:id}};
@@ -46,4 +54,38 @@ test('explicit recovery recovers already exchanged choices without code replay',
   const choices=jest.spyOn(connectionApi,'choices').mockResolvedValue(discovery);
   render(<MetaAccounts/>);fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
   await screen.findByRole('heading',{name:'Confirm account identities'});expect(finish).toHaveBeenCalledTimes(1);expect(choices).toHaveBeenCalledWith(id);
+});
+test('direct denial clears the reference and offers a new connection',async()=>{
+  const popup={close:jest.fn()} as unknown as Window; jest.spyOn(window,'open').mockReturnValue(popup);
+  jest.spyOn(HTMLFormElement.prototype,'submit').mockImplementation(()=>{});
+  jest.spyOn(connectionApi,'startDirect').mockResolvedValue(flow);
+  const finish=jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new ConnectionError('OAUTH_DENIED','Declined; start a new connection.'));
+  const choices=jest.spyOn(connectionApi,'choices');
+  const view=render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(readConnectionRecovery('actor').flow).toBe(id));
+  await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin:'https://api.example.test',source:popup,data:{type:'auditgava-meta-ready',flow_id:id}}));});
+  await screen.findByRole('alert');expect(finish).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
+  expect(readConnectionRecovery('actor').flow).toBeUndefined();expect(choices).not.toHaveBeenCalled();
+  expect(screen.getByRole('button',{name:'Connect owned Meta accounts'})).toBeEnabled();
+  view.unmount();render(<MetaAccounts/>);expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
+});
+test('denial during explicit completion recovery is also terminal',async()=>{
+  saveConnectionRecovery('actor',id,flow.expires_at);
+  jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new ConnectionError('OAUTH_DENIED','Declined; start a new connection.'));
+  render(<MetaAccounts/>);fireEvent.click(await screen.findByRole('button',{name:'Recover account choices'}));
+  await screen.findByRole('alert');
+  expect(screen.queryByRole('button',{name:'Recover account choices'})).toBeNull();
+  expect(readConnectionRecovery('actor').flow).toBeUndefined();
+});
+test('unknown completion effect retains explicit recovery',async()=>{
+  const popup={close:jest.fn()} as unknown as Window; jest.spyOn(window,'open').mockReturnValue(popup);
+  jest.spyOn(HTMLFormElement.prototype,'submit').mockImplementation(()=>{});
+  jest.spyOn(connectionApi,'startDirect').mockResolvedValue(flow);
+  jest.spyOn(connectionApi,'completeDirect').mockRejectedValue(new Error('Inert lost completion response'));
+  render(<MetaAccounts/>);fireEvent.click(screen.getByRole('button',{name:'Connect owned Meta accounts'}));
+  await waitFor(()=>expect(readConnectionRecovery('actor').flow).toBe(id));
+  await act(async()=>{window.dispatchEvent(new MessageEvent('message',{origin:'https://api.example.test',source:popup,data:{type:'auditgava-meta-ready',flow_id:id}}));});
+  expect(await screen.findByRole('button',{name:'Recover account choices'})).toBeEnabled();
+  expect(readConnectionRecovery('actor').flow).toBe(id);
 });
