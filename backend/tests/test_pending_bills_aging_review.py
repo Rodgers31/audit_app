@@ -167,6 +167,10 @@ def test_nightly_workflow_forwards_aging_opt_in_with_a_false_default():
         workflow["env"].get("SEED_PENDING_BILLS_AGING_ENABLED")
         == "${{ vars.SEED_PENDING_BILLS_AGING_ENABLED || 'false' }}"
     )
+    assert (
+        workflow["env"].get("SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED")
+        == "${{ vars.SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED || 'false' }}"
+    )
 
 
 def test_summary_refuses_aging_from_a_publication_replaced_after_stock_read(
