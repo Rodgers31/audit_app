@@ -254,19 +254,27 @@ def _county_source_coverage(coverage, rows, total, dates, bases):
         if type(coverage) is not dict:
             raise ValueError('County borrowing coverage must be a metadata object')
         status, sources = coverage.get('status'), coverage.get('sources')
-        valid = type(sources) is list and len(sources) <= 8 and all(
+        valid = (status in ('not_integrated', 'not_reported_in_checked_source',
+                            'withheld_or_conflicting', 'selected_instrument_stock',
+                            'dated_explicit_zero')
+                 and coverage.get('complete_liability_coverage') is False
+                 and type(sources) is list and len(sources) <= 8 and all(
             type(s) is dict and safe_source_url(s.get('url'))
             and all(type(s.get(k)) is int and s[k] > 0 for k in ('source_document_id', 'extraction_id'))
             and type(s.get('scope')) is str and 0 < len(s['scope']) <= 200
             and type(s.get('pdf_pages')) is list and 1 <= len(s['pdf_pages']) <= 4
             and all(type(p) is int and 0 < p <= 5000 for p in s['pdf_pages'])
-            for s in sources)
+            for s in sources))
+        if status == 'not_reported_in_checked_source' and not sources:
+            valid = False
         if not valid:
             status, sources = 'withheld_or_conflicting', []
-    if total is not None:
+    # A valid independently selected balance cannot erase conflicting or
+    # malformed source-coverage evidence. The amount and coverage are separate.
+    if total is not None and status != 'withheld_or_conflicting':
         status = ('dated_explicit_zero' if total == 0 and len(dates) == 1 and None not in dates
                   and bases == {'actual'} else 'selected_instrument_stock')
-    elif rows or status not in ('not_integrated', 'not_reported_in_checked_source', 'withheld_or_conflicting'):
+    elif total is None and (rows or status not in ('not_integrated', 'not_reported_in_checked_source', 'withheld_or_conflicting')):
         status = 'withheld_or_conflicting'
     elif status == 'not_reported_in_checked_source' and not sources:
         status = 'withheld_or_conflicting'

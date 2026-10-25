@@ -11,7 +11,7 @@ from services.county_debt import record_county_debt_observation, _county_instrum
 from services.receipt_store import configured_receipt_store
 from .ownership import require_ownership, TOLERANCE
 from seeding.county_borrowing_contract import canonical, parse_publication, EXTRACTOR, DATASET, document_fields, document_metadata, document_matches
-from seeding.county_borrowing_contract import CountyBorrowingRefused, edition
+from seeding.county_borrowing_contract import CountyBorrowingRefused, edition, county_scope_key
 
 
 def require_enabled(settings):
@@ -36,11 +36,11 @@ def persist(session, settings, context, key, payload, parsed, fetched_at):
     # must not silently succeed on a destination unable to retain instruments.
     if not _county_instrument_schema_available(session):
         raise CountyBorrowingRefused('County borrowing instrument schema is not adopted')
-    entities = session.execute(select(Entity.id, Entity.slug).where(Entity.country_id == country.id,
+    entities = session.execute(select(Entity.id, Entity.canonical_name).where(Entity.country_id == country.id,
                               Entity.type == EntityType.COUNTY).limit(48)).all()
     require_county_debt_keys(country.id, *(e.id for e in entities))
-    by_slug = {e.slug: e for e in entities}
-    if len(entities) != len(by_slug) or len(entities) > 47:
+    by_slug = {county_scope_key(e.canonical_name): e for e in entities}
+    if None in by_slug or len(entities) != len(by_slug) or len(entities) > 47:
         raise CountyBorrowingRefused('County borrowing county identities are ambiguous')
     if any(slug not in by_slug for slug in spec['county_slugs']):
         raise CountyBorrowingRefused('County borrowing requires the declared county identity')

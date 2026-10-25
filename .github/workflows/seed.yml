@@ -34,6 +34,7 @@ on:
           - imf_weo
           - cra
           - opendata
+          - county_borrowing
       dry_run:
         description: 'Native preview (operational jobs/receipts may write; no schema migration)'
         required: false
@@ -113,6 +114,7 @@ env:
   SEED_CRA_INGESTION_ENABLED: ${{ vars.SEED_CRA_INGESTION_ENABLED || 'false' }}
   SEED_OPENDATA_INGESTION_ENABLED: ${{ vars.SEED_OPENDATA_INGESTION_ENABLED || 'false' }}
   SEED_KNBS_RELEASE_DISCOVERY_ENABLED: ${{ vars.SEED_KNBS_RELEASE_DISCOVERY_ENABLED || 'false' }}
+  SEED_COUNTY_BORROWING_INGESTION_ENABLED: ${{ vars.SEED_COUNTY_BORROWING_INGESTION_ENABLED || 'false' }}
   SEED_PLAN_EVENT: ${{ github.event_name }}
   SEED_PLAN_SCHEDULE: ${{ github.event.schedule }}
   SEED_PLAN_DOMAIN: ${{ github.event.inputs.domain }}

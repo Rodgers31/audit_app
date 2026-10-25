@@ -113,3 +113,22 @@ def test_encoded_response_refuses_before_any_decompression(specimen,monkeypatch)
                               stream=httpx.ByteStream(gzip.compress(body)))
     monkeypatch.setattr(source.httpx,'Client',lambda **kwargs:client_type(**kwargs,transport=httpx.MockTransport(respond)))
     with pytest.raises(source.CountyBorrowingRefused):source.fetch_publication(spec['id'])
+
+
+def test_deadline_is_rechecked_when_the_stream_finishes_without_another_fragment(specimen,monkeypatch):
+    """An EOF/close wait can exceed the budget after the last body fragment."""
+    spec,body,_=specimen
+    clock={'elapsed':0,'closed':False}
+    class LateEnd(httpx.SyncByteStream):
+        def __iter__(self):
+            yield body
+            clock['elapsed']=source.MAX_SECONDS+1
+        def close(self):clock['closed']=True
+    client_type=httpx.Client
+    def respond(request):
+        return httpx.Response(200,headers={'content-type':'application/pdf'},stream=LateEnd())
+    monkeypatch.setattr(source.httpx,'Client',lambda **kwargs:client_type(**kwargs,transport=httpx.MockTransport(respond)))
+    monkeypatch.setattr(source.time,'monotonic',lambda:clock['elapsed'])
+    with pytest.raises(source.CountyBorrowingRefused,match='time bound'):
+        source.fetch_publication(spec['id'])
+    assert clock['closed'] is True

@@ -16,10 +16,13 @@ def county_borrowing_coverage(db, entity_ids):
     if (not 1 <= len(ids) <= MAX_COUNTIES or len(set(ids)) != len(ids)
             or any(type(i) is not int or i <= 0 for i in ids)):
         raise ValueError('County borrowing coverage requires 1..47 distinct county IDs')
-    entities = db.execute(select(Entity.id, Entity.slug, Entity.country_id).join(Country).where(
+    entities = db.execute(select(Entity.id, Entity.canonical_name, Entity.country_id).join(Country).where(
         Entity.id.in_(ids), Entity.type == EntityType.COUNTY, Country.iso_code == 'KEN')).all()
     if len(entities) != len(ids):
         raise ValueError('County borrowing coverage requires existing Kenyan counties')
+    scopes = {row.id: source.county_scope_key(row.canonical_name) for row in entities}
+    if None in scopes.values() or len(set(scopes.values())) != len(ids):
+        raise ValueError('County borrowing coverage requires distinct official county identities')
     # One source/extraction cohort for all counties; never one query per county.
     rows = db.execute(select(SourceDocument, Extraction).join(Extraction).where(
         SourceDocument.meta['dataset'].astext == parser.DATASET,
@@ -40,8 +43,8 @@ def county_borrowing_coverage(db, entity_ids):
                 or parser.canonical(extraction.extracted_json) != parser.canonical(parser.expected_extraction(key))):
             raise RuntimeError('County borrowing coverage provenance differs; withhold the projection')
         seen.add(key)
-        for i, slug, _ in entities:
-            if spec['county_slugs'] and slug not in spec['county_slugs']:
+        for i, _, _ in entities:
+            if spec['county_slugs'] and scopes[i] not in spec['county_slugs']:
                 continue
             account = {'status': spec['status'], 'scope': spec['scope'], 'reason': spec['reason'],
                 'reporting_period_end': spec['reporting_period_end'], 'source_document_id': doc.id,

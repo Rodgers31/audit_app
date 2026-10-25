@@ -21,6 +21,15 @@ def edition(key):
     return EDITIONS[key]
 
 
+def county_scope_key(canonical_name):
+    """Reviewed scope identity is independent of historical stored route slugs."""
+    from services.county_identity import OFFICIAL_COUNTY_CODES, official_county_code
+    code = official_county_code(canonical_name)
+    if code is None:
+        return None
+    return OFFICIAL_COUNTY_CODES[code].casefold().replace("'", "").replace(' ', '-') + '-county'
+
+
 def fetch_publication(key):
     spec = edition(key)
     started = time.monotonic()
@@ -35,6 +44,9 @@ def fetch_publication(key):
                 if time.monotonic() - started > MAX_SECONDS or len(body) + len(chunk) > min(MAX_BYTES, spec['size_bytes']):
                     raise CountyBorrowingRefused('County borrowing transport exceeded its byte or time bound')
                 body.extend(chunk)
+    # A final read/close may consume time without yielding another fragment.
+    if time.monotonic() - started > MAX_SECONDS:
+        raise CountyBorrowingRefused('County borrowing transport exceeded its byte or time bound')
     return bytes(body), datetime.now(timezone.utc)
 
 from copy import deepcopy
