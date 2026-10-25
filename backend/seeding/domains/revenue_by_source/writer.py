@@ -146,6 +146,12 @@ def persist_revenue_records(
             source = _ensure_source_document(session, country_id, settings, record,
                                              sources_by_url=sources_by_url)
 
+            from ...native_report_authority import persist_native_report
+            authority = record.metadata.pop("_native_report_authority", None)
+            persist_native_report(session, source, authority, context=context, domain="revenue_by_source")
+            if context.job_id is not None:
+                record.metadata["ingestion_job_id"] = context.job_id
+
             stmt = select(RevenueBySource).where(
                 and_(
                     RevenueBySource.fiscal_year == record.fiscal_year,

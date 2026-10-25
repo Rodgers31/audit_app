@@ -125,4 +125,4 @@ def test_capability_matrix_covers_native_domains_without_importing_them():
     from seeding.registries import _BUILTIN_DOMAIN_PACKAGES
     from seeding.generation_capabilities import CAPABILITIES
     assert set(CAPABILITIES)=={p.rsplit('.',1)[1] for p in _BUILTIN_DOMAIN_PACKAGES}|{'cra','opendata','county_borrowing'}
-    assert {c.domain for c in CAPABILITIES.values() if c.financial or c.reports}=={'counties_budget'}
+    assert {c.domain for c in CAPABILITIES.values() if c.financial or c.reports}=={'counties_budget','national_budget','revenue_by_source','audits'}

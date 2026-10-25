@@ -8,7 +8,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from models import Extraction
+if __package__.startswith("backend."):
+    from backend.models import Extraction
+else:
+    from models import Extraction
 from .receipt_store import ReceiptStore
 
 logger = logging.getLogger(__name__)

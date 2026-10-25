@@ -409,6 +409,9 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                         if receipt["deferred"] or receipt["refused"]:
                             status = 1
 
+                    if domain in {"national_budget", "revenue_by_source", "audits"}:
+                        from .native_report_authority import lock_native_domain
+                        lock_native_domain(session, domain)
                     # Update job with results
                     job.finished_at = datetime.now(timezone.utc)
                     job.items_processed = result.items_processed if result else 0
@@ -602,7 +605,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
             # Facts and the native observation are committed and their session
             # closed before the optional generated-draft transaction can begin.
-            if (not dry_run and domain == "counties_budget" and job_id is not None
+            if (not dry_run and domain in {"counties_budget", "national_budget", "revenue_by_source", "audits"} and job_id is not None
                     and result is not None and not result.errors
                     and freshness.get(domain).get("mode") == freshness.LIVE
                     and os.environ.get("SOCIAL_GENERATION_HOOK_ENABLED", "false") != "false"):

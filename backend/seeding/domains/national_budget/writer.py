@@ -333,7 +333,7 @@ def persist_national_budget_records(
         if context.job_id is not None:
             provenance_entry["ingestion_job_id"] = context.job_id
         # Declared measure (and its evidence) travels with the row.
-        provenance_entry.update(record.provenance_extra)
+        provenance_entry.update({k:v for k,v in record.provenance_extra.items() if k != "_native_report_authority"})
         if record.provenance_extra.get("source_evidence"):
             from ...pdf_evidence import bind_pdf_evidence
             provenance_entry["source_evidence"] = bind_pdf_evidence(
@@ -347,6 +347,9 @@ def persist_national_budget_records(
             _initialize_pdf_acquisition(session, source,
                 record.provenance_extra["source_evidence"], provenance_entry["source_evidence"],
                 initialized_acquisitions)
+        from ...native_report_authority import persist_native_report
+        persist_native_report(session, source, record.provenance_extra.get("_native_report_authority"),
+            context=context, domain="national_budget")
         declares_measure = "measure" in record.provenance_extra
         if record.provenance_extra.get("measure") == EXPENDITURE_MEASURE:
             expenditure_periods.add((entity.id, period.id))

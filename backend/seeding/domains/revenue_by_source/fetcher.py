@@ -286,6 +286,9 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
     if resp is None:
         return None
     html = resp.text if "pdf" not in (resp.headers.get("content-type") or "").lower() else ""
+    from ...native_report_authority import capture_kra_release
+    authority, authority_reason = capture_kra_release(response_receipt(
+        resp, getattr(client, "receipt_store", None), source_kind="web"))
     frame = iframe_src(html)
     if frame:
         frame_url = urljoin(url, frame)
@@ -321,6 +324,8 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
                     seal_receipt(receipt)
                     release.response_receipt = receipt
                     release.content_sha256 = receipt["digest"]
+                    release.native_report_authority = authority if authority and authority.value["period"] == release.fiscal_year else None
+                    release.native_report_authority_reason = authority_reason
                     return release
         logger.warning("KRA page %s embeds %s but no release data was read", url, frame)
         return None
@@ -330,12 +335,15 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
     fy = extract_kra_fiscal_year(text) or hinted_fy
     if not heads or not fy:
         return None
-    return KraRelease(
+    release = KraRelease(
         fiscal_year=fy,
         url=url,
         shape="press_release",
         heads={k: HeadFigure(amount_bn=v) for k, v in heads.items()},
     )
+    release.native_report_authority = authority if authority and authority.value["period"] == fy else None
+    release.native_report_authority_reason = authority_reason
+    return release
 
 
 def discover_kra_releases(
@@ -421,6 +429,11 @@ def _apply_kra_live(
         if not status.startswith("promoted"):
             reasons.append(f"{release.fiscal_year} {release.shape}: {status}")
             continue
+        for row in out:
+            if (row.get("_revenue_source") == "kra_live" and row.get("source_url") == release.url
+                    and row.get("fiscal_year") == release.fiscal_year):
+                row["_native_report_authority"] = getattr(release, "native_report_authority", None)
+                row["native_report_authority_reason"] = getattr(release, "native_report_authority_reason", "native_report_date_or_scope_unavailable")
         if newest_fy and release.fiscal_year != newest_fy:
             # An OLDER edition promoted while KRA's newest failed. The first
             # live run of this code did exactly that — the FY 2025/26 bundle
@@ -539,6 +552,8 @@ def _overlay_kra_release(
                     "bytes": receipt["byte_check"]["status"] == "matched", "locator": True},
                 "reconciliation": {"status": "matched", "reason": "dashboard token matches amount; independent annual PDF not reconciled"},
             }]
+        row["_native_report_authority"] = getattr(release, "native_report_authority", None)
+        row["native_report_authority_reason"] = getattr(release, "native_report_authority_reason", "native_report_date_or_scope_unavailable")
         # KRA's own statements for this head, or nothing — never the fixture's.
         row["target_billion_kes"] = _q(fig.target_bn) if fig.target_bn is not None else None
         row["performance_pct"] = _q(fig.performance_pct, "0.1") if fig.performance_pct is not None else None

@@ -282,3 +282,25 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
                 "category": "budget_update", "title": f"{entity.canonical_name} expenditure data",
                 "committed": True, "fixture": False, "quarantined": False,
                 "publishable": True, "correction_pending": False, "facts": [fact]}
+
+
+# Scoped lazy wrappers preserve both supported launch modes and the existing
+# SourceObservationUnavailable exception identity.
+def read_native_report_record_ids(factory, *, ingestion_id, domain):
+    from .native_report_observations import read_native_report_record_ids as read
+    return read(factory, ingestion_id=ingestion_id, domain=domain)
+
+
+def read_national_report_observation(factory, *, record_id, ingestion_id):
+    from .native_report_observations import read_native_report_observation
+    return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='national_budget')
+
+
+def read_revenue_report_observation(factory, *, record_id, ingestion_id):
+    from .native_report_observations import read_native_report_observation
+    return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='revenue_by_source')
+
+
+def read_audit_report_observation(factory, *, record_id, ingestion_id):
+    from .native_report_observations import read_native_report_observation
+    return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='audits')

@@ -30,6 +30,19 @@ def verify_report_authority(db, source):
     report = source.get('report') if isinstance(source, dict) else None
     if report is None:
         return
+    if isinstance(report, dict) and report.get('native_domain') is not None:
+        from importlib import import_module
+        module = import_module('backend.seeding.native_report_observations' if __package__.startswith('backend.') else 'seeding.native_report_observations')
+        try:
+            current = module.current_native_report(db, report.get('source_record_id'),
+                int(source['ingestion_id']), domain=report['native_domain'], lock=True)
+            # Bind all current fields, not only a self-reported hash.
+            from .contracts import SourceObservation
+            if SourceObservation.model_validate(current).model_dump(mode="json") != source:
+                raise ValueError('Native source changed')
+        except (ValueError, TypeError, KeyError):
+            raise SocialError('SOURCE_REVIEW_REQUIRED', 'Current report source authority changed. Review its evidence again.', 422) from None
+        return
     record = report.get('source_record_id') if isinstance(report, dict) else None
     ingestion = source.get('ingestion_id')
     expected = report.get('authority_fingerprint') if isinstance(report, dict) else None

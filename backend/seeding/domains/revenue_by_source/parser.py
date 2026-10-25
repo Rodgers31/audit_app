@@ -76,7 +76,7 @@ def _metadata(item: Dict[str, Any]) -> Dict[str, Any]:
     basis = _basis(item.get("basis"))
     if basis:
         meta["basis"] = basis
-    for key in ("source", "measure", "absent_reason", "source_evidence"):
+    for key in ("source", "measure", "absent_reason", "source_evidence", "_native_report_authority", "native_report_authority_reason"):
         if item.get(key) is not None:
             meta[key] = item[key]
     return meta

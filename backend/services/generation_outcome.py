@@ -4,6 +4,7 @@ COUNTERS = ("processed", "drafts_created", "baselines", "unchanged", "refused")
 # exception strings, record text, URLs, credentials or a syntactically safe but
 # unknown reason supplied by an installed hook.
 REASONS = frozenset({
+    "financial_adapter_unavailable",
     'duplicate_source_series',
     'source_not_eligible',
     'unresolved_template',

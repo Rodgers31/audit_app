@@ -825,6 +825,17 @@ def run(
                         "updated": load_stats.updated,
                         "skipped": load_stats.skipped,
                     }
+                # Availability is a separate retained report scope, never an audit finding.
+                from pathlib import Path
+                from ...native_report_authority import capture_pdf_report, persist_native_report
+                from ...pdf_evidence import receipt_for_pdf
+                authority, authority_reason = None, "native_report_date_or_scope_unavailable"
+                if doc.status == DocumentStatus.AVAILABLE and doc.file_path:
+                    report_receipt = receipt_for_pdf(client, settings, Path(doc.file_path), doc.url, "native-report-input-v1")
+                    authority, authority_reason = capture_pdf_report(Path(doc.file_path), report_receipt, domain="audits")
+                doc_stat["native_report_authority_reason"] = authority_reason
+                doc_stat["native_report_record_id"] = persist_native_report(
+                    session, doc, authority, context=context, domain="audits")
                 metadata["documents"].append(doc_stat)
                 ext = doc_stat.get("extractions") or {}
                 if is_volume:

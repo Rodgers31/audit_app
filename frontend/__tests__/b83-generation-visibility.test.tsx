@@ -57,3 +57,17 @@ test('confirmed refusal reasons survive an uncertain later record without claimi
   expect(()=>parseGenerationOutcome({...raw,refusal_reasons:{publisher_date_receipt_unavailable:2}})).toThrow();
   expect(()=>parseGenerationOutcome({...raw,refusal_reasons:{environment_disabled:1}})).toThrow();
 });
+
+test('native report preview uses extraction IDs and preserves source selection',async()=>{
+  (generationApi.capabilities as jest.Mock).mockResolvedValue([{domain:'revenue_by_source',financial:false,reports:true,reason:'financial_adapter_unavailable'}]);
+  (generationApi.preview as jest.Mock).mockResolvedValue({drafts_enabled:false,results:[{record_id:12,status:'baseline',reason:'first_observation',source_document_id:3}]});
+  render(<QueryClientProvider client={new QueryClient()}><GenerationPreview /></QueryClientProvider>);
+  await screen.findByRole('option',{name:'revenue_by_source'});
+  fireEvent.change(screen.getByLabelText('Source domain'),{target:{value:'revenue_by_source'}});
+  expect(screen.getByText(/Use native report Extraction IDs/)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText(/Preview record IDs/),{target:{value:'12'}});
+  fireEvent.change(screen.getByLabelText('Preview ingestion job ID'),{target:{value:'42'}});
+  fireEvent.click(screen.getByRole('button',{name:'Preview without saving'}));
+  expect(await screen.findByRole('heading',{name:'Record 12 · baseline'})).toBeInTheDocument();
+  expect(generationApi.preview).toHaveBeenCalledWith({domain:'revenue_by_source',record_ids:[12],ingestion_id:42,reports:true,backfill:false},expect.anything());
+});

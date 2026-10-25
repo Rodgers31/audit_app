@@ -158,7 +158,11 @@ def _detect(request, body, svc, admin, key, *, reports):
         if error.name not in {'seeding.source_observations', 'backend.seeding.source_observations'}:
             raise
         raise SocialError('SOURCE_ADAPTER_UNAVAILABLE', 'The reviewed committed-evidence adapter is not installed.', 503) from None
-    reader = getattr(adapter, 'read_county_report_observation' if reports else 'read_county_budget_observation', None)
+    capability_module = import_module('backend.seeding.generation_capabilities' if __package__.startswith('backend.') else 'seeding.generation_capabilities')
+    selected = capability_module.capability(body.domain)
+    if not (selected.reports if reports else selected.financial):
+        raise SocialError('SOURCE_NOT_ELIGIBLE', 'The selected native source has no eligible adapter.', 422)
+    reader = getattr(adapter, selected.report_reader if reports else selected.financial_reader, None)
     if not callable(reader):
         raise SocialError('SOURCE_ADAPTER_UNAVAILABLE', 'The reviewed committed-evidence adapter is not installed.', 503)
     factory = sessionmaker(bind=svc.db.get_bind(), expire_on_commit=False)

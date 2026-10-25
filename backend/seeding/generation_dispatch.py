@@ -38,12 +38,12 @@ def _invoke(factory, record_ids, ingestion_id):
     return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
 
 
-def _invoke_reports(factory, record_ids, ingestion_id):
+def _invoke_reports(factory, record_ids, ingestion_id, domain="counties_budget"):
     if __package__.startswith('backend.'):
         from backend.social.generation.integration import maybe_generate_reports_committed
     else:
         from social.generation.integration import maybe_generate_reports_committed
-    return maybe_generate_reports_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
+    return maybe_generate_reports_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, **({} if domain == "counties_budget" else {"domain":domain}))
 
 
 def _validate_result(value, expected):
@@ -122,7 +122,7 @@ def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run, inc
 
 def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_run):
     """Independent telemetry; never combine report and financial record counters."""
-    if domain != 'counties_budget' or dry_run is not False or os.environ.get('SOCIAL_GENERATION_HOOK_ENABLED','false') != 'true':
+    if not capability(domain).reports or dry_run is not False or os.environ.get('SOCIAL_GENERATION_HOOK_ENABLED','false') != 'true':
         return None
     if type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
         raise ValueError('Positive bounded ingestion ID required')
@@ -134,10 +134,14 @@ def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_r
         return outcome
     invoked = False
     try:
-        records = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+        if domain == "counties_budget":
+            records = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+        else:
+            from .source_observations import read_native_report_record_ids
+            records = read_native_report_record_ids(factory, ingestion_id=ingestion_id, domain=domain)
         if records:
             invoked = True
-            outcome = _validate_result(_invoke_reports(factory, records, ingestion_id), len(records))
+            outcome = _validate_result(_invoke_reports(factory, records, ingestion_id, **({} if domain == "counties_budget" else {"domain":domain})), len(records))
         else:
             outcome = _result('completed', 'no_new_record_lineage')
     except SourceObservationUnavailable as error:
@@ -153,7 +157,7 @@ def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_r
 
 
 def record_generation_timeout(factory, *, domain, ingestion_id, financial_outcome=None, reports_started=None):
-    if domain != "counties_budget" or type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
+    if not (capability(domain).financial or capability(domain).reports) or type(ingestion_id) is not int or not 0 < ingestion_id <= 2147483647:
         raise ValueError("Bounded CoB ingestion identity required")
     outcome = _unverified("generation_timeout_execution_unverified")
     if financial_outcome is not None:

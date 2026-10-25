@@ -55,10 +55,15 @@ def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchan
     return dict(**details, state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
 
 
-def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, *, reports=False):
+def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, *, reports=False, domain="counties_budget"):
     from importlib import import_module
     adapter = import_module('backend.seeding.source_observations' if __package__.startswith('backend.') else 'seeding.source_observations')
-    read = getattr(adapter, 'read_county_report_observation' if reports else 'read_county_budget_observation')
+    if __package__.startswith('backend.'):
+        from backend.seeding.generation_capabilities import capability
+    else:
+        from seeding.generation_capabilities import capability
+    selected = capability(domain)
+    read = getattr(adapter, selected.report_reader if reports else selected.financial_reader)
     # Reads occur before each separate mutation transaction, so one pooled
     # connection is sufficient. ETL's completed transaction is never borrowed.
     for offset in range(0, len(record_ids), 25):
@@ -121,16 +126,16 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
     return _result('completed', 'COMMITTED_EVIDENCE_CONSUMED', **counts)
 
 
-def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_registration=None):
-    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=False)
+def maybe_generate_committed(factory, *, record_ids, ingestion_id, native_registration=None, domain="counties_budget"):
+    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=False, domain=domain)
 
 
-def maybe_generate_reports_committed(factory, *, record_ids, ingestion_id, native_registration=None):
+def maybe_generate_reports_committed(factory, *, record_ids, ingestion_id, native_registration=None, domain="counties_budget"):
     """Separate default-off neutral report path; financial observations stay intact."""
-    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=True)
+    return _generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, native_registration=native_registration, reports=True, domain=domain)
 
 
-def _generate_committed(factory, *, record_ids, ingestion_id, native_registration, reports):
+def _generate_committed(factory, *, record_ids, ingestion_id, native_registration, reports, domain):
     """Only call after a successful live non-dry county-budget fact commit.
 
     The source adapter independently rechecks that prerequisite. Environment and
@@ -153,6 +158,14 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
             return _result('unavailable', 'INVALID_REPORT_HOOK_FLAG')
         if report_flag != 'true':
             return _result('disabled', 'REPORT_ENVIRONMENT_DISABLED')
+    if __package__.startswith('backend.'):
+        from backend.seeding.generation_capabilities import capability
+    else:
+        from seeding.generation_capabilities import capability
+    selected = capability(domain)
+    if not (selected.reports if reports else selected.financial):
+        return _result('unavailable', 'UNSUPPORTED_SOURCE')
+    source_type = {'national_budget':'cob','revenue_by_source':'kra','audits':'oag','counties_budget':'cob'}[domain]
     counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0, refusal_reasons={})
     deadline = time.monotonic() + 30
     progress = {'uncertain': False}
@@ -171,7 +184,7 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
             _transaction_limits(reader, deadline)
             cfg = reader.get(GenerationControls, 1)
             _remaining_ms(deadline)
-            if cfg is None or cfg.drafts_enabled is not True or 'cob' not in cfg.source_allowlist:
+            if cfg is None or cfg.drafts_enabled is not True or source_type not in cfg.source_allowlist:
                 return _result('disabled', 'RUNTIME_SOURCE_DISABLED')
             engine = reader.get_bind()
             policy_requested = False
@@ -181,8 +194,8 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
                 policy_requested = policy is not None and policy.auto_approve_enabled is True
         def consume(adapters):
             if reports:
-                return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, reports=True)
-            return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress)
+                return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, reports=True, domain=domain)
+            return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, domain=domain)
         if not policy_requested:
             return consume({})  # Draft-only never loads native rules/material.
         from ..adapters.validation_registry import load_native_validation_registry, registry_adapters

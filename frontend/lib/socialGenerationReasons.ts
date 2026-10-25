@@ -4,6 +4,7 @@ export const generationReasons: Record<string, string> = {
   unresolved_template: 'The deterministic template contains unresolved placeholders; human correction is required.',
   source_not_eligible: 'Only committed, publishable evidence with valid chronology is eligible.',
   qualified_cob_adapter: 'Qualified CoB county budget evidence adapter. Individual records still require verification.',
+  financial_adapter_unavailable: 'Neutral report availability is supported when retained publisher date, scope and exact job evidence qualify. Financial drafts remain unavailable.',
   unsupported_source: 'This source has no reviewed draft adapter.',
   report_contract_unavailable: 'A verified public report scope and date contract is unavailable.',
   report_date_authority_unavailable: 'Retained full publisher date and report authority are unavailable.',

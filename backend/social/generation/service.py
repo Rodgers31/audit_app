@@ -131,6 +131,9 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     # source version cannot slip between source verification and authorization.
     _insert(svc.db, SocialControls, dict(id=1, version=1, publishing_enabled=False, generation_enabled=False, auto_approve_enabled=False, auto_schedule_enabled=False, auto_publish_enabled=False, platform_controls={}, budget_controls={}), ['id'])
     svc.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update().execution_options(populate_existing=True))
+    if observation.report is not None and getattr(observation.report, 'native_domain', None) is not None:
+        from .authority import verify_report_authority
+        verify_report_authority(svc.db, observation.model_dump(mode='json'))
     fingerprint = semantic_fingerprint(observation)
     release = report_release_state(observation)
     identity = dict(source_type=observation.source_type, source_key=observation.source_key, detector_version=DETECTOR_VERSION)
