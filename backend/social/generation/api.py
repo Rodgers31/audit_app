@@ -13,7 +13,7 @@ from ..http_boundary import IdempotencyKey, SocialRoute, social_admin
 from fastapi import Depends
 from ..service import SocialError
 from ..models import SocialCommandReceipt
-from .contracts import GenerationControlsCommand, RuleCommand, EvaluateCommand, SourceObservation, DetectCommand
+from .contracts import GenerationControlsCommand, RuleCommand, EvaluateCommand, SourceObservation, DetectCommand, PreviewCommand
 from .models import GenerationControls, AutomationRuleVersion, ShadowDecision, SourceEvent
 from .service import GenerationService, controls_dto, rule_dto, decision_dto, consume_observation
 
@@ -174,3 +174,37 @@ def _detect(request, body, svc, admin, key, *, reports):
         svc.audit('generation.reports_detected' if reports else 'generation.detected', reason=body.reason, details={'record_ids': list(body.record_ids), 'ingestion_id': body.ingestion_id, 'backfill': body.backfill})
         return {'results': results}
     return command(request, svc, admin, key, body, action)
+
+
+class CapabilityDTO(StrictModel):
+    domain: str
+    financial: bool
+    reports: bool
+    reason: str
+
+
+class PreviewResult(StrictModel):
+    record_id: int
+    status: Literal['baseline', 'unchanged', 'eligible_change', 'refused', 'unsupported_source']
+    reason: str
+    source_document_id: int | None
+
+
+class PreviewDTO(StrictModel):
+    drafts_enabled: bool
+    results: list[PreviewResult]
+
+
+@router.get('/generation/capabilities', response_model=list[CapabilityDTO])
+def generation_capabilities():
+    from .preview import capabilities_dto
+    return capabilities_dto()
+
+
+@router.post('/generation/preview', response_model=PreviewDTO)
+def preview_generation(body: PreviewCommand, svc: Service):
+    from sqlalchemy.orm import sessionmaker
+    from .preview import preview
+    if svc.db.in_transaction():
+        raise SocialError('REQUEST_SESSION_UNAVAILABLE', 'A fresh request session is required.', 503)
+    return preview(sessionmaker(bind=svc.db.get_bind(), expire_on_commit=False), body)

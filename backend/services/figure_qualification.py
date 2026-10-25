@@ -111,7 +111,10 @@ def evaluate_qualification(
     refusal: str | None = None,
 ) -> FigureQualification:
     """Pure evaluation over stored evidence; IDs, links and hashes aren't checks."""
-    from services.audit_citations import safe_source_url
+    if __package__.startswith('backend.'):
+        from backend.services.audit_citations import safe_source_url
+    else:
+        from services.audit_citations import safe_source_url
 
     stored_url = getattr(source, "url", None)
     url = stored_url if safe_source_url(stored_url) else None
@@ -614,7 +617,10 @@ def qualify_rows(db, table, rows):
     loaded lazily. Source metadata and the complete response receipt remain
     intact; other tables retain their full publication-check context.
     """
-    from models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
+    if __package__.startswith('backend.'):
+        from backend.models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
+    else:
+        from models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
 
     rows = list(rows)
     budget = table == "budget_lines"

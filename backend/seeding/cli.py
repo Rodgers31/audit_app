@@ -453,6 +453,13 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     else:
                         job.status = IngestionStatus.COMPLETED
 
+                    # Fixed-size skip/pending receipts reuse the existing job write.
+                    # Disabled hooks import no social schema and open no reader.
+                    from .generation_capabilities import skipped_generation
+                    job.meta = {**(job.meta or {}), **skipped_generation(
+                        domain, dry_run=dry_run, source_mode=provenance.get('mode'),
+                        completed=job.status == IngestionStatus.COMPLETED)}
+
                     if dry_run:
                         finished_at_dry = datetime.now(timezone.utc)
                         # Keep the source/result receipts before rollback expires

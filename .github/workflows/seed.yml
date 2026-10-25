@@ -119,6 +119,8 @@ env:
   SEED_PLAN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
   SEED_PLAN_BOOTSTRAP: ${{ github.event.inputs.run_bootstrap || 'false' }}
   SEED_LOG_LEVEL: INFO
+  SOCIAL_GENERATION_HOOK_ENABLED: ${{ vars.SOCIAL_GENERATION_HOOK_ENABLED || 'false' }}
+  SOCIAL_REPORT_GENERATION_ENABLED: ${{ vars.SOCIAL_REPORT_GENERATION_ENABLED || 'false' }}
 
 jobs:
   source_plan:

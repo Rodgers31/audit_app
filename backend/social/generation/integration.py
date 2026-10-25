@@ -7,12 +7,18 @@ import logging
 import os
 import time
 
+from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from ..service import SocialError, SocialService
 from .models import GenerationControls
 from .service import consume_observation
+
+if __package__.startswith('backend.'):
+    from backend.services.generation_outcome import COUNTERS, REFUSAL_REASONS
+else:
+    from services.generation_outcome import COUNTERS, REFUSAL_REASONS
 
 logger = logging.getLogger(__name__)
 
@@ -44,11 +50,12 @@ def _transaction_limits(db, deadline):
             raise RuntimeError('Generation transaction bounds unavailable')
 
 
-def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0):
-    return dict(state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
+def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0, refusal_reasons=None):
+    details = {"refusal_reasons": dict(refusal_reasons)} if refusal_reasons else {}
+    return dict(**details, state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
 
 
-def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, *, reports=False):
+def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, *, reports=False):
     from importlib import import_module
     adapter = import_module('backend.seeding.source_observations' if __package__.startswith('backend.') else 'seeding.source_observations')
     read = getattr(adapter, 'read_county_report_observation' if reports else 'read_county_budget_observation')
@@ -59,7 +66,12 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
             _remaining_ms(deadline)
             try:
                 observation = read(factory, record_id=record_id, ingestion_id=ingestion_id)
-            except adapter.SourceObservationUnavailable:
+            except adapter.SourceObservationUnavailable as error:
+                code = getattr(error, 'code', 'source_evidence_ineligible')
+                if getattr(error, 'operational', False):
+                    return _result('failed', code.upper(), **counts)
+                code = code if code in REFUSAL_REASONS else 'source_evidence_ineligible'
+                counts['refusal_reasons'][code] = counts['refusal_reasons'].get(code, 0) + 1
                 counts['processed'] += 1
                 counts['refused'] += 1
                 _remaining_ms(deadline)
@@ -68,14 +80,38 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
             db = factory()
             if db.in_transaction() or db.new or db.dirty or db.deleted or db.identity_map:
                 return _result('unavailable', 'FRESH_SESSION_REQUIRED', **counts)
-            with db:
-                svc = SocialService(db, available_adapters=adapters)
-                svc.actor_kind = 'pipeline'
-                svc.request_id = f'etl-{"report" if reports else "generation"}:{ingestion_id}:{record_id}'
-                with db.begin():
-                    _transaction_limits(db, deadline)
-                    result = consume_observation(svc, observation)
-                    _remaining_ms(deadline)
+            progress['uncertain'] = True
+            phase = 'body'
+            try:
+                with db:
+                    svc = SocialService(db, available_adapters=adapters)
+                    svc.actor_kind = 'pipeline'
+                    svc.request_id = f'etl-{"report" if reports else "generation"}:{ingestion_id}:{record_id}'
+                    with db.begin():
+                        _transaction_limits(db, deadline)
+                        result = consume_observation(svc, observation)
+                        _remaining_ms(deadline)
+                        phase = 'commit'
+            except GenerationDeadlineExceeded:
+                if phase == 'body':
+                    progress['uncertain'] = False
+                raise
+            except (SocialError, ValidationError) as error:
+                if phase != 'body':
+                    raise
+                code = error.code.lower() if isinstance(error, SocialError) else 'source_evidence_ineligible'
+                if code not in REFUSAL_REASONS:
+                    raise
+                # The context has rolled this record's cursor/event/draft back.
+                # A known evidence refusal is processed; later records may still
+                # be eligible. Database/unknown failures retain the outer path.
+                progress['uncertain'] = False
+                counts['processed'] += 1
+                counts['refused'] += 1
+                counts['refusal_reasons'][code] = counts['refusal_reasons'].get(code, 0) + 1
+                _remaining_ms(deadline)
+                continue
+            progress['uncertain'] = False
             counts['processed'] += 1
             counts[{'draft_created': 'drafts_created', 'baseline': 'baselines', 'unchanged': 'unchanged'}[result['status']]] += 1
             _remaining_ms(deadline)
@@ -117,8 +153,15 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
             return _result('unavailable', 'INVALID_REPORT_HOOK_FLAG')
         if report_flag != 'true':
             return _result('disabled', 'REPORT_ENVIRONMENT_DISABLED')
-    counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0)
+    counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0, refusal_reasons={})
     deadline = time.monotonic() + 30
+    progress = {'uncertain': False}
+    def failure(reason):
+        if not progress['uncertain']:
+            return _result('failed', reason, **counts)
+        details = {'refusal_reasons': dict(counts['refusal_reasons'])} if counts['refusal_reasons'] else {}
+        return dict(**details, state='failed', reason=reason, execution_unverified=True,
+            **dict.fromkeys(COUNTERS, None), confirmed={k:counts[k] for k in COUNTERS})
     try:
         _remaining_ms(deadline)
         reader = factory()
@@ -138,8 +181,8 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
                 policy_requested = policy is not None and policy.auto_approve_enabled is True
         def consume(adapters):
             if reports:
-                return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, reports=True)
-            return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters)
+                return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, reports=True)
+            return _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress)
         if not policy_requested:
             return consume({})  # Draft-only never loads native rules/material.
         from ..adapters.validation_registry import load_native_validation_registry, registry_adapters
@@ -168,8 +211,10 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
         return result
     except GenerationDeadlineExceeded:
         logger.error('generation_hook_deadline_exceeded', extra={'processed_count': counts['processed']})
-        return _result('failed', 'GENERATION_DEADLINE_EXCEEDED', **counts)
+        return failure('GENERATION_DEADLINE_EXCEEDED')
     except SocialError as error:
+        if progress['uncertain']:
+            return failure(error.code)
         if error.code == 'GENERATION_DISABLED':
             return _result('disabled', 'RUNTIME_SOURCE_DISABLED', **counts)
         logger.error('generation_hook_refused', extra={'error_code': error.code, 'processed_count': counts['processed']})
@@ -177,10 +222,12 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
     except ModuleNotFoundError as error:
         expected = error.name in {'seeding.source_observations', 'backend.seeding.source_observations'}
         logger.error('generation_hook_dependency_unavailable', extra={'expected_adapter': expected})
+        if progress['uncertain']:
+            return failure('GENERATION_DEPENDENCY_FAILED')
         return _result('unavailable' if expected else 'failed', 'SOURCE_ADAPTER_UNAVAILABLE' if expected else 'GENERATION_DEPENDENCY_FAILED', **counts)
     except DBAPIError:
         logger.error('generation_hook_database_unavailable', extra={'processed_count': counts['processed']})
-        return _result('failed', 'GENERATION_DATABASE_UNAVAILABLE', **counts)
+        return failure('GENERATION_DATABASE_UNAVAILABLE')
     except Exception as error:
         logger.error('generation_hook_failed', extra={'error_type': type(error).__name__, 'processed_count': counts['processed']})
-        return _result('failed', 'GENERATION_FAILED', **counts)
+        return failure('GENERATION_FAILED')

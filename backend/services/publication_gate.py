@@ -80,14 +80,24 @@ logger = logging.getLogger(__name__)
 # reads and let callers build a query against ``None``, turning a missing model
 # into an AttributeError deep inside a request instead of a clear failure at
 # import. The gate must fail closed, and loudly.
-from models import Audit, SourceDocument
-from services.audit_citations import (
-    NAMED_LOCATOR_PATTERN,
-    NUMERIC_LOCATOR_PATTERN,
-    SOURCE_URL_PATTERN,
-    citation_page,
-    safe_source_url,
-)
+if __package__.startswith('backend.'):
+    from backend.models import Audit, SourceDocument
+    from backend.services.audit_citations import (
+        NAMED_LOCATOR_PATTERN,
+        NUMERIC_LOCATOR_PATTERN,
+        SOURCE_URL_PATTERN,
+        citation_page,
+        safe_source_url,
+    )
+else:
+    from models import Audit, SourceDocument
+    from services.audit_citations import (
+        NAMED_LOCATOR_PATTERN,
+        NUMERIC_LOCATOR_PATTERN,
+        SOURCE_URL_PATTERN,
+        citation_page,
+        safe_source_url,
+    )
 
 
 # --------------------------------------------------------------------------

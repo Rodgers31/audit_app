@@ -1,3 +1,5 @@
+import { generationReasons, generationRefusalReasons } from '@/lib/socialGenerationReasons';
+
 /** Runtime contracts for operational observations, including untrusted URLs. */
 export const INGESTION_STATUSES = ['pending', 'running', 'completed', 'completed_with_errors', 'failed'] as const;
 export interface IngestionJob {
@@ -55,6 +57,21 @@ export function parseGenerationOutcome(raw: unknown): Record<string, unknown> {
     } else result[key] = integer(v[key], 0, 1000);
   }
   if (!uncertain && (Number(v.drafts_created) + Number(v.baselines) + Number(v.unchanged) + Number(v.refused) !== v.processed || state === 'completed' && v.refused !== 0)) throw new Error('Incoherent generation outcome');
+  if (v.confirmed !== undefined) {
+    const confirmed = record(v.confirmed);
+    if (!uncertain || Object.keys(confirmed).length !== keys.length || keys.some(key => !Object.hasOwn(confirmed,key))) throw new Error('Invalid confirmed progress');
+    const counts = Object.fromEntries(keys.map(key => [key, integer(confirmed[key],0,1000)]));
+    if (counts.drafts_created + counts.baselines + counts.unchanged + counts.refused !== counts.processed) throw new Error('Invalid confirmed progress');
+    result.confirmed = counts;
+  }
+  if (typeof v.reason === 'string'  && Object.hasOwn(generationReasons, v.reason)) result.reason = v.reason;
+  if (v.refusal_reasons !== undefined) {
+    const reasons = record(v.refusal_reasons);
+    const refused = uncertain ? (result.confirmed as Record<string, number> | undefined)?.refused : v.refused;
+    if (refused === undefined || Object.keys(reasons).length > generationRefusalReasons.size || Object.keys(reasons).some(key => !generationRefusalReasons.has(key)) ||
+        Object.values(reasons).reduce<number>((sum, count) => sum + integer(count, 1, 1000), 0) !== refused) throw new Error('Invalid refusal counts');
+    result.refusal_reasons = Object.fromEntries(Object.entries(reasons).map(([key, count]) => [key, integer(count, 1, 1000)]));
+  }
   return result;
 }
 export function parseIngestionJob(raw: unknown): IngestionJob {

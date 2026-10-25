@@ -11,13 +11,45 @@ from urllib.parse import urlsplit
 
 from sqlalchemy import func, select, text
 
-from models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
-from services.entity_financials import budget_line_is_unreported
-from services.figure_qualification import qualify_rows
+if __package__.startswith('backend.'):
+    from backend.models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
+    from backend.services.entity_financials import budget_line_is_unreported
+    from backend.services.figure_qualification import qualify_rows
+else:
+    from models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
+    from services.entity_financials import budget_line_is_unreported
+    from services.figure_qualification import qualify_rows
 
 
 class SourceObservationUnavailable(ValueError):
-    """Fixed diagnostic safe to surface in an authenticated operator response."""
+    """Fixed diagnostic; only its allowlisted code enters operator responses."""
+
+    OPERATIONAL = {
+        'Fresh committed-reader session required': 'fresh_session_required',
+        'PostgreSQL committed snapshot required': 'source_adapter_unavailable',
+    }
+    CODES = {
+        'Publisher publication date unavailable': 'publisher_date_unavailable',
+        'Retained publisher date authority required': 'publisher_date_receipt_unavailable',
+        'Exact publisher date artifact evidence required': 'publisher_date_receipt_unavailable',
+        'Stored publisher date receipt required': 'publisher_date_receipt_unavailable',
+        'Verified measure-specific PDF evidence required': 'verified_pdf_evidence_required',
+        'Exact record ingestion lineage unavailable': 'record_lineage_unavailable',
+        'Qualified evidence ingestion lineage unavailable': 'record_lineage_unavailable',
+        'Publishable actual CoB record required': 'record_not_publishable',
+        'Official available CoB document required': 'source_document_unavailable',
+        'Stored evidence chronology invalid': 'source_chronology_invalid',
+        'Stored ingestion chronology invalid': 'source_chronology_invalid',
+        'One bounded unambiguous county report and period required': 'report_scope_unavailable',
+        'Exact report period and publication locator required': 'report_scope_unavailable',
+        'County report entity required': 'report_scope_unavailable',
+        'Current report authority unavailable': 'source_review_required',
+    }
+
+    def __init__(self, message):
+        super().__init__(message)
+        self.operational = message in self.OPERATIONAL
+        self.code = self.OPERATIONAL.get(message, self.CODES.get(message, 'source_evidence_ineligible'))
 
 
 def _positive_id(value):
@@ -166,8 +198,8 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
             published = date.fromisoformat(meta["publication_date"])
         except (ValueError, TypeError, KeyError):
             raise SourceObservationUnavailable("Publisher publication date unavailable") from None
-        if report and "publication_date_evidence" not in meta:
-            raise SourceObservationUnavailable("Neutral reports require retained publisher date authority")
+        if "publication_date_evidence" not in meta:
+            raise SourceObservationUnavailable("Retained publisher date authority required")
         if "publication_date_evidence" in meta:
             proof = meta["publication_date_evidence"]
             if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
@@ -229,7 +261,10 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
                 raise SourceObservationUnavailable("Exact report period and publication locator required")
             neutral = {key: fact[key] for key in ('entity', 'period', 'source_document_id', 'document_url',
                 'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at', 'canonical_url')}
-            from social.generation.authority import current_report_authority
+            if __package__.startswith('backend.'):
+                from backend.social.generation.authority import current_report_authority
+            else:
+                from social.generation.authority import current_report_authority
             authority = current_report_authority(db, record_id, ingestion_id, lock=False)
             if authority is None:
                 raise SourceObservationUnavailable("Current report authority unavailable")

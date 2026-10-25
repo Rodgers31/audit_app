@@ -5,6 +5,7 @@
  */
 'use client';
 
+import GenerationOutcomes from '@/components/admin/social/GenerationOutcomes';
 import PageShell from '@/components/layout/PageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
@@ -179,6 +180,8 @@ export default function IngestionJobDetailPage({
             </ul>
           </motion.section>
         )}
+
+        <GenerationOutcomes metadata={data.metadata} />
 
         {/* ── Metadata ── */}
         {Object.keys(data.metadata).length > 0 && (

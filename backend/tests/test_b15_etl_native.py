@@ -161,7 +161,11 @@ def test_native_cob_commit_precedes_generation_and_preserves_outcomes(pg, monkey
             job = db.get(IngestionJob, final["job_id"])
             assert job.status == IngestionStatus.COMPLETED
             if mode in ("disabled", "dry_run"):
-                assert not calls and "post_commit_generation" not in job.meta
+                assert not calls
+                skipped = job.meta['post_commit_generation']
+                assert skipped['state'] == ('disabled' if mode == 'disabled' else 'unavailable')
+                assert skipped['reason'] == ('environment_disabled' if mode == 'disabled' else 'ingestion_not_eligible')
+                assert skipped['processed'] == 0
             else:
                 receipt = job.meta["post_commit_generation"]
                 uncertain = mode in ("failed", "timed_out", "bad_result", "source_exception")
@@ -178,4 +182,4 @@ def test_native_cob_commit_precedes_generation_and_preserves_outcomes(pg, monkey
         if mode not in ("disabled", "dry_run"):
             public = detail.json()["metadata"]["post_commit_generation"]
             assert public["state"] == ("failed" if mode in ("failed", "timed_out", "bad_result", "source_exception") else "unavailable")
-            assert "reason" not in public
+            assert public["reason"] == receipt["reason"].lower()

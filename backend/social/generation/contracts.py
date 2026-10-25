@@ -145,9 +145,23 @@ class GenerationControlsCommand(StrictModel):
         return self
 
 
+class PreviewCommand(StrictModel):
+    domain: Annotated[str, StringConstraints(strict=True, pattern=r'^[a-z_]{1,100}$')]
+    record_ids: Annotated[tuple[Annotated[int, Field(strict=True, gt=0, le=2147483647)], ...], Field(min_length=1, max_length=25)]
+    ingestion_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
+    reports: StrictBool = True
+    backfill: StrictBool = False
+
+    @model_validator(mode='after')
+    def unique(self):
+        if len(set(self.record_ids)) != len(self.record_ids):
+            raise ValueError('Unique record IDs required')
+        return self
+
+
 class DetectCommand(StrictModel):
-    record_ids: Annotated[tuple[Annotated[int, Field(strict=True, gt=0)], ...], Field(min_length=1, max_length=25)]
-    ingestion_id: Annotated[int, Field(strict=True, gt=0)]
+    record_ids: Annotated[tuple[Annotated[int, Field(strict=True, gt=0, le=2147483647)], ...], Field(min_length=1, max_length=25)]
+    ingestion_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
     backfill: StrictBool = False
     reason: Reason
 

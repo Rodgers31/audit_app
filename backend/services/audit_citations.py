@@ -57,7 +57,10 @@ def extraction_json_type(column, dialect):
 
 def string_extraction_payloads(db, rows):
     """Read full JSON only for historical rows stored as serialized strings."""
-    from models import Extraction
+    if __package__.startswith('backend.'):
+        from backend.models import Extraction
+    else:
+        from models import Extraction
 
     ids = {
         row.extraction_id

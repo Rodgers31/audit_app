@@ -11,15 +11,15 @@ from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
-from database import SessionLocal
-from models import (
-    Country,
-    Entity,
-    EntityType,
-)
+if __package__.startswith('backend.'):
+    from backend.database import SessionLocal
+    from backend.models import Country, Entity, EntityType
+else:
+    from database import SessionLocal
+    from models import Country, Entity, EntityType
 
 # Import the live data fetcher
-from services.live_data_fetcher import LiveDataAggregator
+from .live_data_fetcher import LiveDataAggregator
 
 logger = logging.getLogger("auto_seeder")
 
