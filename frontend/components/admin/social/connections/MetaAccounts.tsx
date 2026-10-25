@@ -6,7 +6,7 @@ import { useMetaAccountHealth, useMetaConnectionStatus } from '@/lib/hooks/useSo
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { receiveMetaCallback } from './callbackSecurity';
+import { receiveMetaCallback, receiveDirectMetaCallback, launchDirectMeta } from './callbackSecurity';
 import { forgetConnectionRecovery, readConnectionRecovery, saveConnectionRecovery } from './connectionRecovery';
 import styles from '../social.module.css';
 
@@ -65,7 +65,7 @@ export default function MetaAccounts() {
   const [confirmed, setConfirmed] = useState(false), [expired, setExpired] = useState(false);
   const [recoverFlow, setRecoverFlow] = useState<string>();
   const [recoveryUnavailable, setRecoveryUnavailable] = useState(false);
-  const pending = useRef<{ popup: Window; state: string; redirect: string; key: string; id: string } | null>(null);
+  const pending = useRef<{ popup: Window; state: string; redirect: string; key: string; id: string; directOrigin?: string } | null>(null);
   const openedPopup = useRef<Window | null>(null);
   const selectionKey = useRef<{ signature: string; key: string } | null>(null);
   const captureEpoch = useActorEpoch(user?.id);
@@ -74,13 +74,19 @@ export default function MetaAccounts() {
   useEffect(() => {
     const handler = async (event: MessageEvent) => {
       const flow = pending.current;
-      const payload = receiveMetaCallback(event, window.location.origin, flow?.popup ?? null, flow?.state ?? null);
-      if (!flow || !payload) return;
+      const direct = !!flow?.directOrigin && receiveDirectMetaCallback(event, flow.directOrigin, flow.popup, flow.id);
+      const payload = flow?.directOrigin ? null : receiveMetaCallback(event, window.location.origin, flow?.popup ?? null, flow?.state ?? null);
+      if (!flow || (!direct && !payload)) return;
       const current = captureEpoch();
       pending.current = null; openedPopup.current = null; flow.popup.close(); setBusy(true);
-      if (payload.denied || !payload.code) { setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id)); setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
-      try { const result = await connectionApi.complete(payload.code, flow.state, flow.redirect, flow.key); if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); }
-      catch (e) { if (current()) { setError(e); setRecoverFlow(flow.id); } }
+      if (payload && (payload.denied || !payload.code)) { setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id)); setError(new ConnectionError('OAUTH_DENIED', 'Meta authorization was declined. Start a new connection when ready.')); setBusy(false); return; }
+      try { const result = direct ? await connectionApi.completeDirect(flow.id, flow.key) : await connectionApi.complete(payload!.code!, flow.state, flow.redirect, flow.key); if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); }
+      catch (e) { if (current()) {
+        setError(e);
+        if (e instanceof ConnectionError && e.code === 'OAUTH_DENIED') {
+          setRecoverFlow(undefined); setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, flow.id));
+        } else setRecoverFlow(flow.id);
+      } }
       finally { if (current()) setBusy(false); }
     };
     window.addEventListener('message', handler);
@@ -102,12 +108,24 @@ export default function MetaAccounts() {
     if (busy || !connectAvailable || !user?.id) return;
     const current = captureEpoch();
     openedPopup.current?.close(); openedPopup.current = null; pending.current = null;
-    const popup = window.open('about:blank', 'AuditGavaMetaConnection', 'popup,width=700,height=760');
+    const popupName = 'AuditGavaMeta' + crypto.randomUUID().replaceAll('-', '');
+    const popup = window.open('about:blank', popupName, 'popup,width=700,height=760');
     if (!popup) { setError(new ConnectionError('POPUP_BLOCKED', 'Allow the connection popup and try again.')); return; }
     openedPopup.current = popup;
     setBusy(true); setError(undefined); setDiscovery(undefined); setConfirmed(false); setRecoverFlow(undefined);
     const redirect = window.location.origin + '/admin/social/accounts/callback';
     try {
+      if (status.data?.direct_callback) {
+        const callback = new URL(status.data.direct_callback);
+        if (callback.origin === window.location.origin) throw new ConnectionError('INVALID_RESPONSE', 'Direct connection requires the approved API origin.');
+        const flow = await connectionApi.startDirect(window.location.origin, status.data.direct_callback, reconnect);
+        if (!current()) { popup.close(); return; }
+        if (Date.parse(flow.expires_at) <= Date.now()) throw new ConnectionError('INVALID_RESPONSE', 'This connection expired. Start a new connection.');
+        setRecoveryUnavailable(!saveConnectionRecovery(user.id, flow.flow_id, flow.expires_at));
+        pending.current = { popup, state: '', redirect: status.data.direct_callback, directOrigin: callback.origin, key: crypto.randomUUID(), id: flow.flow_id };
+        launchDirectMeta(popupName, flow);
+        return;
+      }
       const flow = await connectionApi.start(redirect, reconnect);
       if (!current()) { popup.close(); return; }
       const url = new URL(flow.authorize_url);
@@ -122,8 +140,20 @@ export default function MetaAccounts() {
     if (!recoverFlow || busy) return;
     const current = captureEpoch();
     setBusy(true); setError(undefined);
-    try { const result = await connectionApi.choices(recoverFlow); if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); setRecoverFlow(undefined); }
-    catch (e) { if (current()) setError(e); }
+    try {
+      let result: MetaDiscoveredFlow;
+      if (status.data?.direct_callback) {
+        try { result = await connectionApi.completeDirect(recoverFlow, crypto.randomUUID()); }
+        catch (e) { if (!(e instanceof ConnectionError) || e.code !== 'OAUTH_STATE_USED') throw e; result = await connectionApi.choices(recoverFlow); }
+      } else result = await connectionApi.choices(recoverFlow);
+      if (!current()) return; setDiscovery(result); setPage(''); setIncludeInstagram(false); setRecoverFlow(undefined);
+    }
+    catch (e) { if (current()) {
+      setError(e);
+      if (e instanceof ConnectionError && e.code === 'OAUTH_DENIED') {
+        setRecoveryUnavailable(!forgetConnectionRecovery(user!.id, recoverFlow)); setRecoverFlow(undefined);
+      }
+    } }
     finally { if (current()) setBusy(false); }
   }
   async function confirm() {

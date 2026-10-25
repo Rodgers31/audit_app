@@ -22,7 +22,7 @@ else:
 from ..http_boundary import IdempotencyKey, NO_STORE, SocialRoute, social_admin
 from ..service import SocialError
 from .config import load_config
-from .contracts import AccountCommand, AccountHealth, CompleteCommand, ConnectionStatus, DiscoveredFlow, SelectCommand, SelectedAccounts, StartCommand, StartedFlow
+from .contracts import AccountCommand, AccountHealth, CompleteCommand, ConnectionStatus, DiscoveredFlow, SelectCommand, SelectedAccounts, StartCommand, StartedFlow, DirectStartCommand, DirectStartedFlow, DirectCompleteCommand
 from .service import ConnectionService, session_binding
 
 
@@ -76,6 +76,24 @@ def start(request: Request, body: StartCommand, svc: Service, identity: Identity
 @router.post('/connections/meta/complete', response_model=DiscoveredFlow)
 def complete(request: Request, body: CompleteCommand, svc: Service, identity: Identity, key: IdempotencyKey):
     return command_response(request, svc.complete(*args(request, identity, key, body)))
+
+
+@router.post('/connections/meta/direct/start', response_model=DirectStartedFlow)
+def direct_start(request: Request, body: DirectStartCommand, svc: Service, identity: Identity, key: IdempotencyKey):
+    from .direct_callback import DirectCallback, refused
+    svc.config.require_direct()
+    if request.headers.get('origin') != svc.config.admin_origin:
+        raise refused('OAUTH_ORIGIN_INVALID', 422)
+    return command_response(request, DirectCallback(svc).start(*args(request, identity, key, body)))
+
+
+@router.post('/connections/meta/direct/complete', response_model=DiscoveredFlow)
+def direct_complete(request: Request, body: DirectCompleteCommand, svc: Service, identity: Identity, key: IdempotencyKey):
+    from .direct_callback import DirectCallback, refused
+    svc.config.require_direct()
+    if request.headers.get('origin') != svc.config.admin_origin:
+        raise refused('OAUTH_ORIGIN_INVALID', 422)
+    return command_response(request, DirectCallback(svc).complete(*args(request, identity, key, body)))
 
 
 @router.get('/connections/meta/flows/{flow_id}', response_model=DiscoveredFlow)

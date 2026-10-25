@@ -54,7 +54,7 @@ class ConnectionService:
     def status(self):
         self.db.execute(select(SocialOAuthFlow.id).limit(1))  # Missing schema is unavailable, never a success.
         errors = self.config.oauth_blockers()
-        return {'provider': 'meta', 'available': not errors, 'blockers': errors, 'access_mode': self.config.access_mode if self.config.access_mode in {'owned_standard','advanced'} else 'unverified', 'scopes': list(self.config.requested_scopes), 'publishing_adapter_available': False}
+        return {'direct_callback': self.config.redirect_uris[0] if self.config.direct_transport_valid() else None, 'provider': 'meta', 'available': not errors, 'blockers': errors, 'access_mode': self.config.access_mode if self.config.access_mode in {'owned_standard','advanced'} else 'unverified', 'scopes': list(self.config.requested_scopes), 'publishing_adapter_available': False}
 
     def _body(self, body, binding):
         # Only a digest is persisted by SocialService.command. No code/state body is logged.
@@ -82,6 +82,8 @@ class ConnectionService:
     def start(self, actor, binding, route, key, body, request_id):
         self.config.require_ready()
         self.config.require_redirect(body.redirect_uri)
+        if body.redirect_uri.endswith('/api/v1/social/oauth/meta/callback'):
+            raise SocialError('DIRECT_CALLBACK_REQUIRED', 'Use the direct callback transport.', 422)
         def action():
             if body.reconnect_account_id:
                 row = self.db.get(SocialAccount, body.reconnect_account_id)
@@ -115,6 +117,8 @@ class ConnectionService:
     def complete(self, actor, binding, route, key, body, request_id):
         self.config.require_ready()
         self.config.require_redirect(body.redirect_uri)
+        if body.redirect_uri.endswith('/api/v1/social/oauth/meta/callback'):
+            raise SocialError('DIRECT_CALLBACK_REQUIRED', 'Use the direct callback transport.', 422)
         command_body = self._body(body, binding)
         with self.db.begin():
             receipt = self._receipt(actor, route, key, command_body)
@@ -132,14 +136,28 @@ class ConnectionService:
             flow.status, flow.consumed_at, flow.encrypted_verifier = 'exchanging', self.base.now(), None
             flow.updated_at = self.base.now()
             self._audit(actor, request_id, 'connection.state_consumed', details={'flow_id': str(flow.id)})
+        self._claimed_exchange = (flow_id, actor, binding, digest(body.code), body.redirect_uri)
+        return self.exchange_claimed(flow_id, actor, binding, route, key, command_body, body.code, body.redirect_uri, request_id)
+
+    def exchange_claimed(self, flow_id, actor, binding, route, key, command_body, code, redirect_uri, request_id):
+        # Both transports durably consume state before entering this shared path.
+        self.config.require_ready()
+        self.config.require_redirect(redirect_uri)
+        claim = self.__dict__.pop('_claimed_exchange', None)
+        if type(code) is not str or claim != (flow_id, actor, binding, digest(code), redirect_uri):
+            raise SocialError('OAUTH_STATE_INVALID', 'An authenticated one-use exchange claim is required.', 409)
+        with self.db.begin():
+            claimed = self._flow(flow_id, actor, binding)
+            if claimed.status != 'exchanging' or claimed.consumed_at is None or claimed.encrypted_verifier is not None or claimed.redirect_uri != redirect_uri:
+                raise SocialError('OAUTH_STATE_INVALID', 'This exchange claim is unavailable.', 409)
         try:
             provider = self.provider_factory(self.config)
             try:
                 if self.ownership_recorder is None:
-                    grant = provider.discover(body.code, body.redirect_uri)
+                    grant = provider.discover(code, redirect_uri)
                     inspected = None
                 else:
-                    inspected = provider.discover_with_ownership(body.code, body.redirect_uri)
+                    inspected = provider.discover_with_ownership(code, redirect_uri)
                     if type(inspected) is not InspectedDiscovery:
                         raise SocialError('PRIVACY_OWNERSHIP_UNRESOLVED', 'Inspected ownership is unavailable or conflicts with retained history.', 409)
                     grant = inspected.grant

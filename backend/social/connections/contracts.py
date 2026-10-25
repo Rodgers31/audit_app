@@ -40,6 +40,7 @@ class AccountCommand(StrictModel):
     reason: Reason
 
 class ConnectionStatus(StrictModel):
+    direct_callback: StrictStr | None = None
     provider: Literal['meta'] = 'meta'
     available: StrictBool
     blockers: tuple[StrictStr, ...]
@@ -97,3 +98,20 @@ class AccountHealth(StrictModel):
     publishing_enabled: StrictBool
     renewal_strategy: Literal['facebook_login_reconnect'] = 'facebook_login_reconnect'
     provider_revocation_confirmed: Literal[False] = False
+
+
+class DirectStartCommand(StrictModel):
+    admin_origin: URL
+    reconnect_account_id: UUID | None = None
+    reason: Reason
+
+
+class DirectStartedFlow(StrictModel):
+    flow_id: UUID
+    launch_url: URL
+    launch_token: Annotated[str, StringConstraints(strict=True, pattern=r'^[A-Za-z0-9_-]{43}$')]
+    expires_at: datetime
+
+
+class DirectCompleteCommand(StrictModel):
+    flow_id: UUID

@@ -1959,6 +1959,8 @@ from social.http_policy import SocialNoStoreMiddleware
 
 app.add_middleware(SocialNoStoreMiddleware)
 app.include_router(social_admin_router)
+from social.connections.direct_api import router as social_direct_callback_router
+app.include_router(social_direct_callback_router)
 from social.studio.api import router as social_studio_router
 app.include_router(social_studio_router)
 from social.studio.runtime import configure_studio

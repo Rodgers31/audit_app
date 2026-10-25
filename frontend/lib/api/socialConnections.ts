@@ -3,7 +3,8 @@ import api from '@/lib/api/axios';
 import axios from 'axios';
 import type { SocialAccount } from './social';
 
-export interface MetaConnectionStatus { provider: 'meta'; available: boolean; blockers: string[]; access_mode: 'unverified' | 'owned_standard' | 'advanced'; scopes: string[]; publishing_adapter_available: false }
+export interface MetaConnectionStatus { provider: 'meta'; available: boolean; blockers: string[]; access_mode: 'unverified' | 'owned_standard' | 'advanced'; scopes: string[]; publishing_adapter_available: false; direct_callback?: string | null }
+export interface MetaDirectStartedFlow { flow_id: string; launch_url: string; launch_token: string; expires_at: string }
 export interface MetaStartedFlow { flow_id: string; authorize_url: string; expires_at: string }
 export interface MetaAssetChoice { page_id: string; display_name: string; tasks: string[]; instagram_id: string | null; instagram_name: string | null; instagram_handle: string | null; page_eligible: boolean; instagram_eligible: boolean; missing_page_scopes: string[]; missing_instagram_scopes: string[] }
 export interface MetaDiscoveredFlow { flow_id: string; expires_at: string; granted_scopes: string[]; choices: MetaAssetChoice[] }
@@ -24,11 +25,24 @@ function date(v: unknown) { const s = text(v); if (!Number.isFinite(Date.parse(s
 function nullableDate(v: unknown) { return v === null ? null : date(v); }
 function external(v: unknown) { const s = text(v); if (!/^[0-9]{1,64}$/.test(s)) invalid(); return s; }
 export function decodeConnectionStatus(v: unknown): MetaConnectionStatus {
-  const o = exact(v, ['provider','available','blockers','access_mode','scopes','publishing_adapter_available']);
+  const o = exact(v, ['provider','available','blockers','access_mode','scopes','publishing_adapter_available', ...('direct_callback' in object(v) ? ['direct_callback'] : [])]);
   if (o.provider !== 'meta' || o.publishing_adapter_available !== false || !['unverified','owned_standard','advanced'].includes(text(o.access_mode))) invalid();
   const available = bool(o.available), blockers = list(o.blockers);
   if (available !== (blockers.length === 0) || available && o.access_mode === 'unverified') invalid();
-  return { provider: 'meta', available, blockers, access_mode: o.access_mode as MetaConnectionStatus['access_mode'], scopes: list(o.scopes), publishing_adapter_available: false };
+  const direct = !('direct_callback' in o) || o.direct_callback === null ? null : text(o.direct_callback);
+  if (direct !== null) directCallback(direct);
+  return { provider: 'meta', available, blockers, access_mode: o.access_mode as MetaConnectionStatus['access_mode'], scopes: list(o.scopes), publishing_adapter_available: false, ...(direct !== null ? { direct_callback: direct } : {}) };
+}
+function directCallback(value: string): URL {
+  const u = new URL(value);
+  if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash || u.pathname !== '/api/v1/social/oauth/meta/callback' || u.href !== value) invalid();
+  return u;
+}
+export function decodeDirectStartedFlow(v: unknown, callback: string): MetaDirectStartedFlow {
+  const o = exact(v, ['flow_id','launch_url','launch_token','expires_at']);
+  const expected = directCallback(callback), u = new URL(text(o.launch_url));
+  if (u.href !== expected.origin + '/api/v1/social/oauth/meta/launch' || !/^[A-Za-z0-9_-]{43}$/.test(text(o.launch_token))) invalid();
+  return { flow_id: id(o.flow_id), launch_url: u.href, launch_token: text(o.launch_token), expires_at: date(o.expires_at) };
 }
 export function decodeStartedFlow(v: unknown): MetaStartedFlow {
   const o = exact(v, ['flow_id','authorize_url','expires_at']);
@@ -90,6 +104,8 @@ export function decodeSelectedAccounts(v: unknown): { flow_id: string; accounts:
   return { flow_id: id(o.flow_id), accounts };
 }
 export const connectionApi = {
+  startDirect: (admin_origin: string, callback: string, reconnect_account_id?: string) => request('/connections/meta/direct/start', value => decodeDirectStartedFlow(value, callback), { admin_origin, reconnect_account_id: reconnect_account_id ?? null, reason: reconnect_account_id ? 'Administrator requested account reconnection' : 'Administrator requested owned account connection' }),
+  completeDirect: (flow_id: string, key: string) => request('/connections/meta/direct/complete', value => { const result = decodeDiscoveredFlow(value); if (result.flow_id !== flow_id) invalid(); return result; }, { flow_id: id(flow_id) }, key),
   status: (signal?: AbortSignal) => request('/connections/meta/status', decodeConnectionStatus, undefined, undefined, signal),
   start: (redirect_uri: string, reconnect_account_id?: string) => request('/connections/meta/start', decodeStartedFlow, { redirect_uri, reconnect_account_id: reconnect_account_id ?? null, reason: reconnect_account_id ? 'Administrator requested account reconnection' : 'Administrator requested owned account connection' }),
   complete: (code: string, state: string, redirect_uri: string, key: string) => request('/connections/meta/complete', decodeDiscoveredFlow, { code, state, redirect_uri }, key),
