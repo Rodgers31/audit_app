@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime, time, timezone
 from decimal import Decimal
@@ -14,10 +15,11 @@ from models import (
     DocumentType,
     Entity,
     EntityType,
+    Extraction,
     FiscalPeriod,
     SourceDocument,
 )
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, load_only
 
 from ...config import SeedingSettings
@@ -138,6 +140,91 @@ def _ensure_period(
     return period
 
 
+def _initialize_pdf_acquisition(session, source, originals, bound, initialized):
+    """Initialize an unfetched registration from a real bound PDF acquisition.
+
+    Existing acquisition history and operator archives belong to the document
+    fetch/maintenance path. A fixture, exported JSON or local cached body has
+    no authority here. A first acquisition reads retained bytes once, not once
+    per financial cell; no publisher request or publication authority is added.
+    """
+    from urllib.parse import urlsplit
+    from ...pdf_evidence import PdfCellEvidence
+    from ...pdf_artifact import ARTIFACT_KEY
+    from services.response_receipts import receipt_is_sealed
+
+    for original, observation in zip(originals, bound):
+        if not isinstance(original, PdfCellEvidence) or not isinstance(observation, dict):
+            continue
+        receipt = original.get("_response_receipt")
+        reference = observation.get("receipt", {})
+        if not isinstance(reference, dict):
+            continue
+        identity = reference.get("extraction_id")
+        if (not receipt_is_sealed(receipt) or type(identity) is not int
+                or identity in initialized):
+            continue
+        initialized.add(identity)
+        if (source.status == DocumentStatus.ARCHIVED
+                or any(getattr(source, field) is not None for field in
+                       ("md5", "file_path", "content_type", "http_status", "last_verified_at"))):
+            continue
+        extraction = session.get(Extraction, identity)
+        metadata = extraction.extracted_json if extraction is not None else None
+        stored = metadata.get("response_receipt") if isinstance(metadata, dict) else None
+        if (extraction is None or extraction.source_document_id != source.id
+                or not isinstance(stored, dict) or stored != dict(receipt)
+                or receipt._bound_source != [(source.id, source.country_id, source.publisher, source.url)]
+                or reference.get("source_document_id") != source.id
+                or reference.get("digest") != receipt.get("digest")
+                or stored.get("digest") != receipt.get("digest")
+                or type(stored.get("status")) is not int or stored["status"] != 200
+                or stored.get("source_kind") != "pdf"
+                or str(stored.get("content_type") or "").split(";")[0].strip().lower() != "application/pdf"
+                or stored.get("request", {}).get("method") != "GET"
+                or stored.get("request_url") != source.url
+                or stored.get("byte_check", {}).get("status") != "matched"
+                or stored.get("byte_check", {}).get("sha256") != stored.get("digest")):
+            continue
+        if session.get_bind().dialect.name == "postgresql":
+            marker = SourceDocument.meta.has_key(ARTIFACT_KEY)
+        elif session.get_bind().dialect.name == "sqlite":
+            marker = func.json_type(SourceDocument.meta, "$."+ARTIFACT_KEY).isnot(None)
+        else:
+            continue
+        if session.scalar(select(marker).where(SourceDocument.id == source.id)):
+            # Project only marker presence, never the possibly large metadata.
+            # An existing PDF binding belongs to the document maintainer.
+            continue
+        try:
+            request = urlsplit(stored["request_url"])
+            response = urlsplit(stored.get("response_url") or "")
+            if (request.scheme != "https" or response.scheme != "https"
+                    or request.username is not None or request.password is not None
+                    or response.username is not None or response.password is not None
+                    or (request.hostname or "").removeprefix("www.") !=
+                       (response.hostname or "").removeprefix("www.")):
+                continue
+            acquired = datetime.fromisoformat(stored["acquired_at"])
+            if acquired.utcoffset() is None:
+                continue
+            body = receipt._store.read(receipt["storage_key"])
+            if (type(body) is not bytes or not 0 < len(body) <= 64*1024*1024
+                    or len(body) != stored.get("byte_size")
+                    or hashlib.sha256(body).hexdigest() != stored["digest"]
+                    or not body.startswith(b"%PDF-") or not body[-2048:].rstrip().endswith(b"%%EOF")):
+                continue
+        except Exception:
+            # Match receipt persistence's qualified-retention failure path.
+            # Provider errors must not fabricate source acquisition fields.
+            continue
+        source.status = DocumentStatus.AVAILABLE
+        source.http_status = 200
+        source.content_type = "application/pdf"
+        source.md5 = hashlib.md5(body, usedforsecurity=False).hexdigest()
+        source.fetch_date = source.last_verified_at = source.last_seen_at = acquired
+
+
 def _record_hash(record: NationalBudgetRecord, currency: str) -> str:
     return compute_hash(
         {
@@ -209,6 +296,7 @@ def persist_national_budget_records(
     # Invocation-local ORM identities never escape the caller's transaction.
     # A rollback or later run must resolve its sources from PostgreSQL again.
     sources_by_url: dict[str, SourceDocument] = {}
+    initialized_acquisitions: set[int] = set()
     # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
     expenditure_periods: set[tuple[int, int]] = set()
 
@@ -256,6 +344,9 @@ def persist_national_budget_records(
                               "line_type": existing.line_type if existing else None}},
                 values={"allocated_amount": record.allocated_amount, "actual_spent": record.actual_spent,
                         "committed_amount": record.committed_amount})
+            _initialize_pdf_acquisition(session, source,
+                record.provenance_extra["source_evidence"], provenance_entry["source_evidence"],
+                initialized_acquisitions)
         declares_measure = "measure" in record.provenance_extra
         if record.provenance_extra.get("measure") == EXPENDITURE_MEASURE:
             expenditure_periods.add((entity.id, period.id))
