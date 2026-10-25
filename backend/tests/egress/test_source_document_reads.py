@@ -59,7 +59,8 @@ def test_source_reads_are_bounded_by_distinct_urls_and_exclude_unused_payload(pg
             assert all(s.publisher=='Declared publisher' for s in sources)
             assert db.query(RevenueBySource).count()==len(records)
         else:
-            assert all(s.status==DocumentStatus.AVAILABLE for s in sources)
+            # Neither a new registration nor fixture replay fetches bytes.
+            assert all(s.status==DocumentStatus.FAILED for s in sources)
             assert db.query(BudgetLine).count()==len(records)
 
 
