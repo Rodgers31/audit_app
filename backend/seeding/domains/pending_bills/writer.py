@@ -36,6 +36,7 @@ def _write_pending_bills(
     publication: str | None = None,
     publisher: str | None = None,
     county_table: dict | None = None,
+    aging: dict | None = None,
 ) -> tuple[int, int]:
     """
     Write pending bills records to the loans table.
@@ -65,6 +66,12 @@ def _write_pending_bills(
 
     if not isinstance(records, list):
         raise ValueError("Pending bills records must be a list")
+    if aging is not None:
+        from .aging import require_intact_aging
+
+        require_intact_aging(aging)
+        if not records:
+            raise ValueError("Executive aging requires the associated county stock rows")
     if not records:
         logger.info("No pending bills records to write")
         return created, updated
@@ -88,6 +95,8 @@ def _write_pending_bills(
     elif publication == COUNTY_PENDING_BILLS_PUBLICATION:
         writes_county = True
     else:
+        if aging is not None:
+            raise ValueError("Executive aging requires a county pending-bills publication")
         logger.warning(
             "pending bills: not writing %d record(s) from a %s payload — "
             "national pending bills are read from the Treasury BROP and county "
@@ -96,6 +105,8 @@ def _write_pending_bills(
             publication or "fixture",
         )
         return created, updated
+    if aging is not None and not writes_county:
+        raise ValueError("Executive aging cannot be supplied for national pending bills")
     if any(not isinstance(r, PendingBillRecord) for r in records):
         raise ValueError("Pending bills records must be PendingBillRecord objects")
     if any(
@@ -114,9 +125,15 @@ def _write_pending_bills(
         )
     records = [r for r in records if _is_county_record(r) == writes_county]
     if not records:
+        if aging is not None:
+            raise ValueError("Executive aging requires the associated county stock rows")
         return created, updated
 
     records = _validated_records(records, source_url, source_title, publisher)
+    if aging is not None:
+        from .aging import require_stock_binding
+
+        require_stock_binding(aging, records)
 
     if writes_county:
         _require_forward_county_edition(session, records, county_table)
@@ -163,6 +180,8 @@ def _write_pending_bills(
         source_doc.meta = {
             **(source_doc.meta if isinstance(source_doc.meta, dict) else {}),
             "county_payables": dict(county_table) if county_table else None,
+            "pending_bills_publication_batch": publication_batch,
+            "pending_bills_aging_v1": None,
         }
 
     for index, record in enumerate(records):
@@ -257,6 +276,15 @@ def _write_pending_bills(
                 session.add(loan)
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
+
+    if aging is not None:
+        from .aging import require_intact_aging, persist_aging
+
+        require_intact_aging(aging)
+        if not dry_run:
+            ref = persist_aging(session, source_doc, aging,
+                publication_batch=publication_batch, records=records)
+            source_doc.meta = {**source_doc.meta, "pending_bills_aging_v1": ref}
 
     if not dry_run and writes_county:
         editions = {r.fiscal_year for r in records}

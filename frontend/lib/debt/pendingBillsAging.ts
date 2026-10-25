@@ -191,9 +191,9 @@ export function agingUnsupportedNote(reason: AgingUnsupportedReason, hasPublishe
     : 'No combined total is published above.';
   switch (reason) {
     case 'no-data':
-      return 'No aging breakdown has been published for these bills.';
+      return 'No source-bound aging observation is available in this app for these bills.';
     case 'not-measured':
-      return `How long these bills have gone unpaid is not recorded in the source they come from, so no age breakdown is shown. ${totalNote}`;
+      return `No source-bound aging observation is available in this app for this population, so no age breakdown is shown. ${totalNote}`;
     case 'single-bucket':
       return `The source reports every shilling in a single age band, which cannot be told apart from an unmeasured figure, so no age breakdown is shown. ${totalNote}`;
   }
