@@ -310,7 +310,32 @@ export const getPendingBills = async (signal?: AbortSignal): Promise<PendingBill
 };
 
 // Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
+export type PendingBillsAgingScope = 'county_executive' | 'county_assembly' | 'national' | 'combined';
+export interface PendingBillsAgingObservation {
+  version: 1;
+  scope: PendingBillsAgingScope;
+  status: 'qualified' | 'unavailable';
+  absent_reason: string | null;
+  buckets: { bucket: string; amount: number | null; raw_value: string | null; absent_reason: string | null }[] | null;
+  as_at?: string;
+  unit?: 'KES';
+  currency?: 'KES';
+  source_url?: string;
+  publisher?: string;
+  table?: string;
+  page?: number;
+  artifact_sha256?: string;
+  extraction_id?: number;
+  reported_total?: number | null;
+  complete_total: null;
+  chart_supported?: boolean;
+  coverage?: { reported_counties: number; expected_counties: number; missing_counties: string[]; qualified_counties: string[]; complete: false };
+  reader_notes?: { code: string; comparison_table?: string; comparison_amount?: string; aging_reported_total?: string }[];
+}
+export type PendingBillsAgingObservations = Record<PendingBillsAgingScope, PendingBillsAgingObservation>;
+
 export interface PendingBillsSummaryResponse {
+  aging_observations?: PendingBillsAgingObservations;
   total_pending_amount: number | null;
   total_absent_reason?: string | null;
   reported_county_sum?: number | null;
@@ -349,6 +374,7 @@ export const getPendingBillsSummary = async (signal?: AbortSignal): Promise<Pend
 
 // County-level pending bills breakdown
 export interface CountyPendingBillsResponse {
+  aging_observations?: PendingBillsAgingObservations;
   county_id: string;
   county_name: string;
   total_pending: number;

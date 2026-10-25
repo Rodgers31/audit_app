@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import tempfile
 from dataclasses import dataclass, field
@@ -711,6 +712,7 @@ def fetch_county_payables_payload(
         )
 
     pdf_url = links[0]
+    aging_enabled = os.environ.get("SEED_PENDING_BILLS_AGING_ENABLED") == "true"
     logger.info("county payables: reading %s", pdf_url)
     try:
         pdf_path = download_cbirr(client, pdf_url, settings).path
@@ -720,7 +722,7 @@ def fetch_county_payables_payload(
             cache_dir=Path(settings.cache_path) / "pdfs",
             kind="cob_cbirr_year_end_payables",
             parse_fn=parser.parse,
-            enabled=settings.parse_cache_enabled,
+            enabled=settings.parse_cache_enabled and not aging_enabled,
             key_extra=_pdf_stack_versions(),
         )
     except Exception as exc:
@@ -731,7 +733,26 @@ def fetch_county_payables_payload(
 
     receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1")
     receipt = bind_parse_receipt(receipt, entries)
-    return county_payables_payload(entries, pdf_url, receipt=receipt)
+    payload = county_payables_payload(entries, pdf_url, receipt=receipt)
+    # Separate rollout: --all and the admitted nightly keep their existing
+    # contract until this producer is explicitly enabled and reviewed.
+    if aging_enabled:
+        from .aging import ExecutiveAgingParser, prepare_aging
+
+        aging = parse_with_cache(
+            pdf_path,
+            cache_dir=Path(settings.cache_path) / "pdfs",
+            kind="cob_executive_aging_v1",
+            parse_fn=ExecutiveAgingParser(pdf_path, entries).parse,
+            enabled=False,
+        )
+        aging_receipt = receipt_for_pdf(
+            client, settings, pdf_path, pdf_url, "cob-executive-aging-v1"
+        )
+        payload["aging"] = prepare_aging(
+            aging, bind_parse_receipt(aging_receipt, aging)
+        )
+    return payload
 
 
 def check_county_payables_entries(entries: List[Dict[str, Any]], pdf_url: str) -> None:

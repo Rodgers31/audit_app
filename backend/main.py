@@ -11476,6 +11476,9 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
     same rows, and the same total, ``/pending-bills`` serves.
     """
     rows, totals = _published_pending_bills(db)
+    from services.pending_bills_aging import aging_observations
+
+    aging = aging_observations(db, as_at=totals["county_as_at"])
     if not rows:
         reason = (
             "no_available_current_county_stock"
@@ -11498,6 +11501,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
             "breakdown_by_type_absent_reason": reason,
             "top_counties_by_amount": [],
             "aging_buckets": None,
+            "aging_observations": aging,
             "aging_buckets_absent_reason": reason,
             "trend": [],
             "trend_unattributed_amount": 0,
@@ -11604,6 +11608,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
         # bill 20 days old and one 400 days old is the difference between
         # routine and default, and this asserted the second for all of it.
         "aging_buckets": None,
+        "aging_observations": aging,
         "aging_buckets_absent_reason": "loans_table_carries_no_aging_data",
         "trend": trend,
         "trend_absent_reason": trend_absent_reason,
@@ -11649,6 +11654,9 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
         pending_observations = pending_loans
         pending_loans = selection["rows"]
         total = selection["amount"]
+        from services.pending_bills_aging import aging_observations
+
+        aging = aging_observations(db, as_at=reporting_date, county=entity.canonical_name)
         # The same two assertions the national fallback used to make, on
         # the page that never carried the debt page's disclaimer: 100% of
         # this county's arrears declared over 180 days old, and 100%
@@ -11674,6 +11682,7 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
                 else None
             ),
             "aging_buckets": None,
+            "aging_observations": aging,
             "aging_buckets_absent_reason": (
                 "loans_table_carries_no_aging_data"
                 if pending_loans

@@ -1,4 +1,5 @@
 'use client';
+import PendingBillsAgingPanel from './PendingBillsAgingPanel';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import { readDsaRating, dsaIsAlarm, dsaSourceLabel, dsaVintageLabel, dsaHref, dsaCitation } from '@/lib/debt/dsaRating';
 
@@ -54,11 +55,6 @@ import {
 } from '@/lib/debt/lenderTreemapAdapter';
 import { formatAsAt } from '@/lib/counties/pendingBillsNotes';
 import { displayLenderName } from '@/lib/debt/lenderName';
-import {
-  agingDistributionSupport,
-  agingUnsupportedNote,
-  normalizeAgingBuckets,
-} from '@/lib/debt/pendingBillsAging';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Area,
@@ -294,11 +290,6 @@ export default function NationalDebtPage() {
       }));
     }
 
-    // Shared with the county Budget tab so both surfaces hand the same shape
-    // to the same guard — a component that normalised on its own could
-    // otherwise bypass it.
-    const agingBuckets = normalizeAgingBuckets(raw.aging_buckets, totalPending);
-
     const rawTopCounties = raw.top_counties_by_amount || [];
     const topCounties = rawTopCounties.filter((c: any) => pendingAmount(c.amount) != null).map((c: any) => ({
       ...c,
@@ -309,7 +300,6 @@ export default function NationalDebtPage() {
     return {
       ...raw,
       breakdown_by_type: breakdownByType || [],
-      aging_buckets: agingBuckets,
       top_counties_by_amount: topCounties,
       invalid_ranking_amounts: rawTopCounties.length - topCounties.length,
     };
@@ -1040,14 +1030,6 @@ export default function NationalDebtPage() {
         // No split without a total: the API withholds it unless national and
         // county are both published and stated at one date, and a half over
         // nothing is not a share.
-        const buckets = pendingBillsSummary?.aging_buckets || [];
-        // Whether an aging distribution may be DRAWN at all. This used to draw
-        // the chart unconditionally and append a caveat under it — a solid bar
-        // reading "180d+ · KES 1.11T" with a note beneath saying the backend
-        // made it up. A reader takes the chart; the note is the small print.
-        // The same guard now runs on /counties/[id], so one rule governs both
-        // surfaces. See lib/debt/pendingBillsAging.
-        const agingSupport = agingDistributionSupport(buckets, pendingBillsSummary);
         const nationalSource = pb.sources.find((source) => source.side === 'national');
         const countySource = pb.sources.find((source) => source.side === 'county');
         const qualifiedCount = pb.coverage?.qualified_counties.length ?? 0;
@@ -1224,87 +1206,7 @@ export default function NationalDebtPage() {
               </div>
             </div>
 
-            {agingSupport.supported && (
-              <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
-                <div className='flex items-start justify-between gap-3 mb-4'>
-                  <div>
-                    <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>
-                      Aging — how long bills have gone unpaid
-                    </h3>
-                    {/* "Bills older than 180 days are referred to the Pending
-                        Bills Verification Committee" was here. The committee's
-                        mandate is national bills accumulated 1 June 2005 –
-                        30 June 2022; there is no 180-day referral rule. */}
-                  </div>
-                </div>
-                <ResponsiveContainer width='100%' height={220}>
-                  <BarChart
-                    data={buckets}
-                    margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
-                    <defs>
-                      <linearGradient id='agingGrad0' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#4A7C5C' stopOpacity={0.95} />
-                        <stop offset='100%' stopColor='#2E5A3E' />
-                      </linearGradient>
-                      <linearGradient id='agingGrad1' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#D9A441' stopOpacity={0.95} />
-                        <stop offset='100%' stopColor='#BA8B33' />
-                      </linearGradient>
-                      <linearGradient id='agingGrad2' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#E07B45' stopOpacity={0.95} />
-                        <stop offset='100%' stopColor='#B05A2F' />
-                      </linearGradient>
-                      <linearGradient id='agingGrad3' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#C94A4A' stopOpacity={0.95} />
-                        <stop offset='100%' stopColor='#8C2E2E' />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#E2DDD5' vertical={false} />
-                    <XAxis dataKey='bucket' tick={{ fill: '#4B5563', fontSize: 12, fontWeight: 500 }} tickLine={false} axisLine={{ stroke: '#E2DDD5' }} />
-                    <YAxis
-                      tickFormatter={(v) => fmtT(v)}
-                      tick={{ fill: '#4B5563', fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={{ stroke: '#E2DDD5' }}
-                      width={60}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: '#ffffff',
-                        border: '1px solid rgba(226,221,213,0.8)',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
-                      }}
-                      formatter={(v: any) => fmtKES(Number(v))}
-                    />
-                    <Bar dataKey='amount' radius={[6, 6, 0, 0]}>
-                      {buckets.map((b: any, i: number) => (
-                        <Cell key={b.bucket} fill={`url(#agingGrad${Math.min(i, 3)})`} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* No distribution to draw. The panel still appears — the absence
-                is itself a fact about the public record, and silently dropping
-                the section would leave a reader assuming nobody had asked. */}
-            {!agingSupport.supported && agingSupport.reason !== 'no-data' && (
-              <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>
-                <h3 className='text-sm font-semibold text-gov-dark dark:text-white'>
-                  Aging — how long bills have gone unpaid
-                </h3>
-                <div className='mt-3 flex items-start gap-2 text-[11px] text-neutral-muted bg-gov-gold/8 border border-gov-gold/25 rounded-lg px-3 py-2'>
-                  <AlertTriangle size={14} className='text-gov-gold flex-shrink-0 mt-0.5' />
-                  <span>
-                    <span className='font-semibold text-gov-dark dark:text-white'>Not published:</span>{' '}
-                    {agingUnsupportedNote(agingSupport.reason, total != null)}
-                  </span>
-                </div>
-              </div>
-            )}
+            <PendingBillsAgingPanel observations={pendingBillsSummary?.aging_observations} />
 
             {pbView === 'counties' && pendingBillsSummary?.top_counties_by_amount?.length > 0 && (
               <div className='rounded-2xl bg-white dark:bg-surface-base border border-neutral-border/40 shadow-surface p-5 sm:p-6'>

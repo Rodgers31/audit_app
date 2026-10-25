@@ -107,7 +107,7 @@ describe('county aging bar — the fabricated distribution', () => {
 
   it('says why there is no breakdown instead of leaving a silent gap', () => {
     render(<BudgetTab data={county()} />);
-    expect(screen.getByText(/not recorded in the source they come from/i)).toBeInTheDocument();
+    expect(screen.getByText(/no source-bound aging observation is available in this app/i)).toBeInTheDocument();
   });
 
   it('keeps the total, which is real, and says the absence does not touch it', () => {
@@ -131,7 +131,7 @@ describe('county aging bar — a measured distribution is still drawn', () => {
     for (const bucket of ['0-30d', '31-90d', '91-180d', '180d+']) {
       expect(screen.getByText(new RegExp(bucket.replace('+', '\\+')))).toBeInTheDocument();
     }
-    expect(screen.queryByText(/not recorded in the source/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no source-bound aging observation/i)).not.toBeInTheDocument();
   });
 
   it('draws the type breakdown when the source records a bill type', () => {
@@ -172,7 +172,7 @@ describe('county aging bar — the payload PR #179 will send', () => {
     // vanish — less disclosure than the fabricated bar carried.
     pendingBills = AFTER_179;
     render(<BudgetTab data={county()} />);
-    expect(screen.getByText(/not recorded in the source they come from/i)).toBeInTheDocument();
+    expect(screen.getByText(/no source-bound aging observation is available in this app/i)).toBeInTheDocument();
     expect(screen.queryByText(/180d\+/)).not.toBeInTheDocument();
   });
 
