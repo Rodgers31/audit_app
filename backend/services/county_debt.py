@@ -97,32 +97,21 @@ def _observation_failure(instrument, observation):
     return None
 
 
-def record_county_debt_observation(
-    db,
-    *,
-    entity_id,
-    identity_namespace,
-    instrument_reference,
-    lender,
-    issue_date,
-    currency,
-    as_at,
-    source_document_id,
-    page_ref,
-    basis,
-    principal=None,
-    outstanding=None,
-    interest_rate=None,
-    debt_category=DebtCategory.COUNTY_GUARANTEED,
-    provenance=None,
-    correct=False,
-):
-    """Idempotent per instrument/date/document; changed same-key facts need correction.
+def require_county_debt_keys(*values):
+    """Positive integer keys for non-writing checks and the final writer."""
+    if any(
+        isinstance(v, bool) or not isinstance(v, int) or v <= 0
+        for v in values
+    ):
+        raise ValueError("Entity and document IDs must be positive integer keys")
 
-    A different source account is retained as a competing observation. It does
-    not silently replace the first account. A later stock date is a new snapshot,
-    never another instrument. Changing immutable terms requires reconciliation.
-    """
+
+def normalize_county_debt_observation(
+    *, identity_namespace, instrument_reference, lender, issue_date, currency,
+    as_at, page_ref, basis, principal=None, outstanding=None, interest_rate=None,
+    debt_category=DebtCategory.COUNTY_GUARANTEED, provenance=None,
+):
+    """Non-writing validation shared by direct writes and producer previews."""
     namespace = _identifier(identity_namespace, "identity_namespace", 120)
     reference = _identifier(instrument_reference, "instrument_reference", 200)
     lender = _identifier(lender, "lender", 200)
@@ -178,11 +167,49 @@ def record_county_debt_observation(
         )
     ):
         raise ValueError("Identity and stock date belong in explicit fields")
-    if any(
-        isinstance(v, bool) or not isinstance(v, int) or v <= 0
-        for v in (entity_id, source_document_id)
-    ):
-        raise ValueError("Entity and document IDs must be positive integer keys")
+    return dict(identity_namespace=namespace, instrument_reference=reference,
+                lender=lender, issue_date=issue_date, currency=currency, as_at=as_at,
+                page_ref=page_ref, basis=basis, principal=principal, outstanding=outstanding,
+                interest_rate=rate, debt_category=debt_category, provenance=provenance)
+
+
+def record_county_debt_observation(
+    db,
+    *,
+    entity_id,
+    identity_namespace,
+    instrument_reference,
+    lender,
+    issue_date,
+    currency,
+    as_at,
+    source_document_id,
+    page_ref,
+    basis,
+    principal=None,
+    outstanding=None,
+    interest_rate=None,
+    debt_category=DebtCategory.COUNTY_GUARANTEED,
+    provenance=None,
+    correct=False,
+):
+    """Idempotent per instrument/date/document; changed same-key facts need correction.
+
+    A different source account is retained as a competing observation. It does
+    not silently replace the first account. A later stock date is a new snapshot,
+    never another instrument. Changing immutable terms requires reconciliation.
+    """
+    normalized = normalize_county_debt_observation(
+        identity_namespace=identity_namespace, instrument_reference=instrument_reference,
+        lender=lender, issue_date=issue_date, currency=currency, as_at=as_at, page_ref=page_ref,
+        basis=basis, principal=principal, outstanding=outstanding, interest_rate=interest_rate,
+        debt_category=debt_category, provenance=provenance,
+    )
+    namespace, reference = normalized['identity_namespace'], normalized['instrument_reference']
+    lender, issue_date = normalized['lender'], normalized['issue_date']
+    principal, outstanding = normalized['principal'], normalized['outstanding']
+    rate, page_ref, provenance = normalized['interest_rate'], normalized['page_ref'], normalized['provenance']
+    require_county_debt_keys(entity_id, source_document_id)
     entity = db.get(Entity, entity_id)
     document = db.get(SourceDocument, source_document_id)
     if entity is None or entity.type != EntityType.COUNTY:

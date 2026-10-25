@@ -1,3 +1,4 @@
+import type { BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
 export interface AuditIssue {
   id: string;
   type: 'financial' | 'compliance' | 'performance' | 'governance';
@@ -206,6 +207,7 @@ export interface CountyComprehensive {
     debt_basis?: 'actual' | null;
     debt_as_at?: string | null;
     debt_coverage?: 'selected_eligible_instruments_only';
+    debt_source_coverage?: BorrowingCoverage;
     /** null when no publication states this county's pending bills — Nandi
      *  reported none to the Controller of Budget at 30 June 2026. */
     pending_bills: number | null;
@@ -399,6 +401,7 @@ export interface County {
   debtBasis?: 'actual' | null;
   debtAsAt?: string | null;
   debtCoverage?: string;
+  debtSourceCoverage?: BorrowingCoverage;
   education?: number; // Education spending
   health?: number; // Health spending
   infrastructure?: number; // Infrastructure spending

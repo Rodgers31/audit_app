@@ -1,5 +1,6 @@
 'use client';
 
+import CountyBorrowingNote from '@/components/county/CountyBorrowingNote';
 import ModelledDataNote from '@/components/ModelledDataNote';
 import { useLang } from '@/lib/i18n/LangProvider';
 import type { TranslationKey } from '@/lib/i18n/messages';
@@ -42,7 +43,7 @@ interface CountyDetailsPanelProps {
 /* ── formatting helpers ── */
 
 function fmtKES(n: number | undefined): string {
-  if (!n) return '—';
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) return '—';
   if (n >= 1_000_000_000) return `KES ${(n / 1_000_000_000).toFixed(1)}B`;
   if (n >= 1_000_000) return `KES ${(n / 1_000_000).toFixed(0)}M`;
   return `KES ${n.toLocaleString()}`;
@@ -270,6 +271,9 @@ export default function CountyDetailsPanel({ county, className = '' }: CountyDet
                   </div>
                 </div>
               )}
+
+              <CountyBorrowingNote balance={county.debt} absentReason={county.totalDebtAbsentReason}
+                coverage={county.debtSourceCoverage} asAt={county.debtAsAt} />
 
               {/* Debt-to-budget + Pending Bills row */}
               <div className='grid grid-cols-2 gap-2'>

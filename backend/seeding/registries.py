@@ -86,6 +86,8 @@ def load_builtin_domains() -> None:
             continue
 
     # New source rollout is explicit: scheduled --all keeps its accepted scope.
+    if SeedingSettings().county_borrowing_ingestion_enabled:
+        importlib.import_module("seeding.domains.county_borrowing")
     if SeedingSettings().cra_ingestion_enabled:
         importlib.import_module("seeding.domains.cra")
     if SeedingSettings().opendata_ingestion_enabled:

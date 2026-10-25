@@ -167,7 +167,7 @@ def eligible_county_debt_rows(loans):
     ]
 
 
-def county_debt_summary(loans):
+def county_debt_summary(loans, *, source_coverage=None):
     """Selected eligible instruments' outstanding balances, excluding arrears.
 
     This is a sum of the selected instrument rows, not proof of complete county
@@ -242,7 +242,35 @@ def county_debt_summary(loans):
         "debt_as_at": next(iter(dates)) if len(dates) == 1 else None,
         "debt_basis": "actual" if bases == {"actual"} else None,
         "debt_coverage": "selected_eligible_instruments_only",
+        "debt_source_coverage": _county_source_coverage(source_coverage, rows, total, dates, bases),
     }
+
+
+def _county_source_coverage(coverage, rows, total, dates, bases):
+    """Source absence cannot create stock or a zero observation."""
+    from services.audit_citations import safe_source_url
+    status, sources = 'not_integrated', []
+    if coverage is not None:
+        if type(coverage) is not dict:
+            raise ValueError('County borrowing coverage must be a metadata object')
+        status, sources = coverage.get('status'), coverage.get('sources')
+        valid = type(sources) is list and len(sources) <= 8 and all(
+            type(s) is dict and safe_source_url(s.get('url'))
+            and all(type(s.get(k)) is int and s[k] > 0 for k in ('source_document_id', 'extraction_id'))
+            and type(s.get('scope')) is str and 0 < len(s['scope']) <= 200
+            and type(s.get('pdf_pages')) is list and 1 <= len(s['pdf_pages']) <= 4
+            and all(type(p) is int and 0 < p <= 5000 for p in s['pdf_pages'])
+            for s in sources)
+        if not valid:
+            status, sources = 'withheld_or_conflicting', []
+    if total is not None:
+        status = ('dated_explicit_zero' if total == 0 and len(dates) == 1 and None not in dates
+                  and bases == {'actual'} else 'selected_instrument_stock')
+    elif rows or status not in ('not_integrated', 'not_reported_in_checked_source', 'withheld_or_conflicting'):
+        status = 'withheld_or_conflicting'
+    elif status == 'not_reported_in_checked_source' and not sources:
+        status = 'withheld_or_conflicting'
+    return {'status': status, 'sources': sources, 'complete_liability_coverage': False}
 
 
 def county_debt_budget_ratio(debt, budget):

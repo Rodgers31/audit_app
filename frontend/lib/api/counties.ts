@@ -1,3 +1,4 @@
+import type { BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
 /**
  * Counties API service
  */
@@ -58,6 +59,7 @@ interface BackendCountyResponse {
   debt_basis?: 'actual' | null;
   debt_as_at?: string | null;
   debt_coverage?: string;
+  debt_source_coverage?: BorrowingCoverage;
   // Economic
   gdp?: number | null;
   // Audit issues
@@ -208,6 +210,7 @@ export const transformCountyData = (value: unknown): County => {
     debtBasis: bc.debt_basis,
     debtAsAt: bc.debt_as_at,
     debtCoverage: bc.debt_coverage,
+    debtSourceCoverage: bc.debt_source_coverage,
     education: sectorVal('Education'),
     health: sectorVal('Health Services') || sectorVal('Health'),
     infrastructure: sectorVal('Roads and Public Works') || sectorVal('Infrastructure'),
