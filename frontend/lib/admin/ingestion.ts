@@ -1,4 +1,4 @@
-import { generationReasons } from '@/lib/socialGenerationReasons';
+import { generationReasons, generationRefusalReasons } from '@/lib/socialGenerationReasons';
 
 /** Runtime contracts for operational observations, including untrusted URLs. */
 export const INGESTION_STATUSES = ['pending', 'running', 'completed', 'completed_with_errors', 'failed'] as const;
@@ -67,8 +67,9 @@ export function parseGenerationOutcome(raw: unknown): Record<string, unknown> {
   if (typeof v.reason === 'string'  && Object.hasOwn(generationReasons, v.reason)) result.reason = v.reason;
   if (v.refusal_reasons !== undefined) {
     const reasons = record(v.refusal_reasons);
-    if (Object.keys(reasons).length > 30 || Object.keys(reasons).some(key => !Object.hasOwn(generationReasons, key)) ||
-        Object.values(reasons).reduce<number>((sum, count) => sum + integer(count, 1, 1000), 0) !== v.refused) throw new Error('Invalid refusal counts');
+    const refused = uncertain ? (result.confirmed as Record<string, number> | undefined)?.refused : v.refused;
+    if (refused === undefined || Object.keys(reasons).length > generationRefusalReasons.size || Object.keys(reasons).some(key => !generationRefusalReasons.has(key)) ||
+        Object.values(reasons).reduce<number>((sum, count) => sum + integer(count, 1, 1000), 0) !== refused) throw new Error('Invalid refusal counts');
     result.refusal_reasons = Object.fromEntries(Object.entries(reasons).map(([key, count]) => [key, integer(count, 1, 1000)]));
   }
   return result;

@@ -4,9 +4,15 @@ import json
 import os
 import re
 
-from models import IngestionJob, IngestionStatus
+if __package__.startswith('backend.'):
+    from backend.models import IngestionJob, IngestionStatus
+else:
+    from models import IngestionJob, IngestionStatus
 from .generation_capabilities import capability
-from services.generation_outcome import refusal_counts, confirmed_counts
+if __package__.startswith('backend.'):
+    from backend.services.generation_outcome import refusal_counts, confirmed_counts
+else:
+    from services.generation_outcome import refusal_counts, confirmed_counts
 from .source_observations import SourceObservationUnavailable, read_county_budget_record_ids
 
 logger = logging.getLogger("seeding.generation")
@@ -25,12 +31,18 @@ def _unverified(reason):
 def _invoke(factory, record_ids, ingestion_id):
     # Import only after the explicit environment ceiling and committed-source
     # guards. An older installation needs no social schema/import to ingest.
-    from social.generation.integration import maybe_generate_committed
+    if __package__.startswith('backend.'):
+        from backend.social.generation.integration import maybe_generate_committed
+    else:
+        from social.generation.integration import maybe_generate_committed
     return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
 
 
 def _invoke_reports(factory, record_ids, ingestion_id):
-    from social.generation.integration import maybe_generate_reports_committed
+    if __package__.startswith('backend.'):
+        from backend.social.generation.integration import maybe_generate_reports_committed
+    else:
+        from social.generation.integration import maybe_generate_reports_committed
     return maybe_generate_reports_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
 
 
@@ -38,12 +50,14 @@ def _validate_result(value, expected):
     if type(expected) is not int or not 0 <= expected <= 1000:
         raise ValueError('Bounded expected cohort required')
     if type(value) is dict and value.get('execution_unverified') is True:
-        if (set(value) != {'state', 'reason', 'execution_unverified', 'confirmed', *COUNTERS}
+        if (set(value) - {'refusal_reasons'} != {'state', 'reason', 'execution_unverified', 'confirmed', *COUNTERS}
                 or value['state'] != 'failed' or type(value['reason']) is not str
                 or not re.fullmatch(r'[A-Za-z_]{1,160}', value['reason'])
                 or any(value[k] is not None for k in COUNTERS)):
             raise ValueError('Invalid uncertain generation outcome')
-        confirmed_counts(value['confirmed'], expected)
+        confirmed = confirmed_counts(value['confirmed'], expected)
+        if 'refusal_reasons' in value:
+            refusal_counts(value['refusal_reasons'], confirmed['refused'])
         return dict(value)
     if (type(value) is not dict or set(value) - {"refusal_reasons"} != {"state", "reason", *COUNTERS}
             or value["state"] not in ("disabled", "completed", "unavailable", "failed")
@@ -88,8 +102,9 @@ def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run, inc
                 outcome = _validate_result(_invoke(factory, record_ids, ingestion_id), len(record_ids))
             else:
                 outcome = _result("completed", "no_new_record_lineage")
-        except SourceObservationUnavailable:
+        except SourceObservationUnavailable as error:
             outcome = (_unverified("generation_execution_unverified") if invoked
+                       else _result('failed', error.code) if error.operational
                        else _result("unavailable", "source_lineage_unavailable"))
         except ModuleNotFoundError:
             # Conservatively retain unknown progress: an installed hook could
@@ -125,8 +140,9 @@ def dispatch_committed_report_generation(factory, *, domain, ingestion_id, dry_r
             outcome = _validate_result(_invoke_reports(factory, records, ingestion_id), len(records))
         else:
             outcome = _result('completed', 'no_new_record_lineage')
-    except SourceObservationUnavailable:
+    except SourceObservationUnavailable as error:
         outcome = (_unverified('report_generation_execution_unverified') if invoked
+                   else _result('failed', error.code) if error.operational
                    else _result('unavailable', 'source_lineage_unavailable'))
     except Exception:
         logger.warning('post_commit_report_generation_failed')

@@ -117,6 +117,11 @@ def safe_generation_outcome(raw):
                 details['confirmed'] = confirmed_counts(raw['confirmed'])
             except ValueError:
                 return unknown
+        if 'refusal_reasons' in raw:
+            try:
+                details['refusal_reasons'] = refusal_counts(raw['refusal_reasons'], details['confirmed']['refused'])
+            except (KeyError, ValueError):
+                return unknown
         return {**unknown, **details, "state": raw["state"]}
     if any(type(raw.get(k)) is not int or not 0 <= raw[k] <= 1000 for k in COUNTERS):
         return unknown

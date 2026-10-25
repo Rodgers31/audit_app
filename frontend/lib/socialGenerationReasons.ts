@@ -61,3 +61,12 @@ export const generationReasons: Record<string, string> = {
 export function describeGenerationReason(code: unknown) {
   return typeof code === 'string' && Object.hasOwn(generationReasons, code) ? generationReasons[code] : 'No recognized reason was recorded. Inspect the job and source evidence.';
 }
+
+/** Known evidence refusals only; operational failures cannot be counted as data. */
+export const generationRefusalReasons = new Set([
+  'unresolved_template', 'source_not_eligible', 'evidence_integrity_failed',
+  'evidence_version_conflict', 'publisher_date_receipt_unavailable', 'publisher_date_unavailable',
+  'record_lineage_unavailable', 'record_not_publishable', 'report_release_regression',
+  'report_scope_unavailable', 'source_chronology_invalid', 'source_document_unavailable',
+  'source_evidence_ineligible', 'source_review_required', 'verified_pdf_evidence_required',
+]);

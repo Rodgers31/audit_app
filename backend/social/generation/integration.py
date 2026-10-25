@@ -15,6 +15,11 @@ from ..service import SocialError, SocialService
 from .models import GenerationControls
 from .service import consume_observation
 
+if __package__.startswith('backend.'):
+    from backend.services.generation_outcome import COUNTERS, REFUSAL_REASONS
+else:
+    from services.generation_outcome import COUNTERS, REFUSAL_REASONS
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,8 +67,9 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
             try:
                 observation = read(factory, record_id=record_id, ingestion_id=ingestion_id)
             except adapter.SourceObservationUnavailable as error:
-                from services.generation_outcome import REFUSAL_REASONS
                 code = getattr(error, 'code', 'source_evidence_ineligible')
+                if getattr(error, 'operational', False):
+                    return _result('failed', code.upper(), **counts)
                 code = code if code in REFUSAL_REASONS else 'source_evidence_ineligible'
                 counts['refusal_reasons'][code] = counts['refusal_reasons'].get(code, 0) + 1
                 counts['processed'] += 1
@@ -93,7 +99,6 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
             except (SocialError, ValidationError) as error:
                 if phase != 'body':
                     raise
-                from services.generation_outcome import REFUSAL_REASONS
                 code = error.code.lower() if isinstance(error, SocialError) else 'source_evidence_ineligible'
                 if code not in REFUSAL_REASONS:
                     raise
@@ -154,8 +159,8 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
     def failure(reason):
         if not progress['uncertain']:
             return _result('failed', reason, **counts)
-        from services.generation_outcome import COUNTERS
-        return dict(state='failed', reason=reason, execution_unverified=True,
+        details = {'refusal_reasons': dict(counts['refusal_reasons'])} if counts['refusal_reasons'] else {}
+        return dict(**details, state='failed', reason=reason, execution_unverified=True,
             **dict.fromkeys(COUNTERS, None), confirmed={k:counts[k] for k in COUNTERS})
     try:
         _remaining_ms(deadline)

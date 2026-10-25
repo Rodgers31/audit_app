@@ -9,8 +9,12 @@ from collections import Counter
 from sqlalchemy import select, text, tuple_
 from pydantic import ValidationError
 
-from seeding.generation_capabilities import capability, CAPABILITIES
-from services.generation_outcome import REFUSAL_REASONS
+if __package__.startswith('backend.'):
+    from backend.seeding.generation_capabilities import capability, CAPABILITIES
+    from backend.services.generation_outcome import REFUSAL_REASONS
+else:
+    from seeding.generation_capabilities import capability, CAPABILITIES
+    from services.generation_outcome import REFUSAL_REASONS
 from .contracts import SourceObservation, PreviewCommand
 from .models import GenerationControls, SourceCursor, SourceEvent
 from ..service import SocialError
@@ -49,7 +53,7 @@ def _decision(observation, cursor, old, *, backfill):
 
 def preview(factory, body):
     body = PreviewCommand.model_validate(body.model_dump(mode='json') if isinstance(body, PreviewCommand) else body)
-    from .integration import _remaining_ms
+    from .integration import _remaining_ms, _transaction_limits
     import time
     deadline = time.monotonic() + 30
     selected = capability(body.domain)
@@ -69,6 +73,8 @@ def preview(factory, body):
             values.append((record_id, value))
         except adapter.SourceObservationUnavailable as error:
             code = getattr(error, 'code', 'source_evidence_ineligible')
+            if getattr(error, 'operational', False):
+                raise SocialError(code.upper(), 'The committed source reader is unavailable.', 503) from None
             results.append(dict(record_id=record_id, status='refused', reason=code if code in REFUSAL_REASONS else 'source_evidence_ineligible', source_document_id=None))
         except (ValidationError, ValueError):
             results.append(dict(record_id=record_id, status='refused', reason='source_evidence_ineligible', source_document_id=None))
@@ -85,18 +91,22 @@ def preview(factory, body):
     if db.in_transaction() or db.new or db.dirty or db.deleted or db.identity_map:
         raise ValueError('Fresh preview session required')
     with db:
+        _remaining_ms(deadline)
         if db.get_bind().dialect.name == 'postgresql':
             db.execute(text('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'))
-            adapter._read_limits(db)
+        _transaction_limits(db, deadline)
         cfg = db.get(GenerationControls, 1)
+        _remaining_ms(deadline)
         enabled = bool(cfg and cfg.drafts_enabled is True and 'cob' in cfg.source_allowlist)
         from ..service import SocialService, utc
         now = SocialService(db).now()
+        _transaction_limits(db, deadline)
         # Two bounded projections replace per-record cursor/event queries.
         identities = {(v.source_type, v.source_key) for _, v in values}
         cursors = list(db.scalars(select(SourceCursor).where(
             tuple_(SourceCursor.source_type, SourceCursor.source_key).in_(identities),
             SourceCursor.detector_version == DETECTOR_VERSION))) if identities else []
+        _transaction_limits(db, deadline)
         by_identity = {(c.source_type, c.source_key): c for c in cursors}
         event_keys = [(c.id, c.sequence) for c in cursors if c.sequence]
         events = list(db.scalars(select(SourceEvent).where(tuple_(SourceEvent.cursor_id,

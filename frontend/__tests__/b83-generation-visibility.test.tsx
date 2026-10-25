@@ -43,3 +43,17 @@ test('capability decoder rejects unknown reasons and duplicate domains',()=>{
   expect(()=>decodeCapabilities([{...capability,reason:'PRIVATE_DIAGNOSTIC'}])).toThrow();
   expect(()=>decodeCapabilities([capability,capability])).toThrow();
 });
+
+
+test('confirmed refusal reasons survive an uncertain later record without claiming totals',()=>{
+  const raw={state:'failed',execution_unverified:true,reason:'generation_database_unavailable',processed:null,drafts_created:null,baselines:null,unchanged:null,refused:null,
+    confirmed:{processed:1,drafts_created:0,baselines:0,unchanged:0,refused:1},refusal_reasons:{publisher_date_receipt_unavailable:1}};
+  expect(parseGenerationOutcome(raw)).toEqual(raw);
+  render(<GenerationOutcomes metadata={{post_commit_generation:parseGenerationOutcome(raw)}} />);
+  expect(screen.getByRole('list',{name:'Confirmed refusals before uncertainty'})).toBeInTheDocument();
+  expect(screen.getByText(/Counters are unknown/)).toBeInTheDocument();
+  expect(screen.queryByText(/Drafts created 0/)).not.toBeInTheDocument();
+  expect(()=>parseGenerationOutcome({...raw,confirmed:undefined})).toThrow();
+  expect(()=>parseGenerationOutcome({...raw,refusal_reasons:{publisher_date_receipt_unavailable:2}})).toThrow();
+  expect(()=>parseGenerationOutcome({...raw,refusal_reasons:{environment_disabled:1}})).toThrow();
+});

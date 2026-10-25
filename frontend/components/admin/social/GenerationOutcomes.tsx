@@ -14,7 +14,7 @@ export default function GenerationOutcomes({ metadata }: { metadata: Record<stri
           {value.execution_unverified ? <p>Execution is unverified. Counters are unknown; inspect existing drafts before retrying.</p> :
             <p>Processed {String(value.processed)} · Drafts created {String(value.drafts_created)} · Baselines {String(value.baselines)} · Unchanged {String(value.unchanged)} · Refused {String(value.refused)}</p>}
           {value.confirmed && typeof value.confirmed === 'object' ? <p>Confirmed before uncertainty: {String((value.confirmed as Record<string, unknown>).processed)} processed · {String((value.confirmed as Record<string, unknown>).drafts_created)} drafts. The current record may also have committed.</p> : null}
-          {value.refusal_reasons && typeof value.refusal_reasons === 'object' ? <ul>{Object.entries(value.refusal_reasons).map(([reason, count]) => <li key={reason}>{describeGenerationReason(reason)} ({String(count)})</li>)}</ul> : null}
+          {value.refusal_reasons && typeof value.refusal_reasons === 'object' ? <ul aria-label={value.execution_unverified ? 'Confirmed refusals before uncertainty' : 'Evidence refusals'}>{Object.entries(value.refusal_reasons).map(([reason, count]) => <li key={reason}>{describeGenerationReason(reason)} ({String(count)})</li>)}</ul> : null}
         </>}
       </article>;
     })}

@@ -4,10 +4,14 @@ import math
 from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 
-from models import BudgetLine, FiscalPeriod, SourceDocument
-
-from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
-from services.publication_gate import _has_page_locator, pending_period_compatible
+if __package__.startswith('backend.'):
+    from backend.models import BudgetLine, FiscalPeriod, SourceDocument
+    from backend.services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
+    from backend.services.publication_gate import _has_page_locator, pending_period_compatible
+else:
+    from models import BudgetLine, FiscalPeriod, SourceDocument
+    from services.county_budget import CLASSIFICATION_CATEGORIES, BUDGET_PROVENANCE_LABELS
+    from services.publication_gate import _has_page_locator, pending_period_compatible
 
 
 def _budget_quality_label(value):

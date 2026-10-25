@@ -6,7 +6,7 @@ This delivery qualifies the existing CoB committed-evidence draft path and adds
 operator visibility. The neutral report producer already existed in accepted
 PR716/issue719; this delivery does not claim to have introduced it. Only
 `counties_budget` has an eligible adapter. Capability/refusal coverage now includes
-all fifteen legacy native domains and the CRA/OpenData opt-ins. Further eligible
+all fifteen legacy native domains and the CRA/OpenData/county-borrowing opt-ins. Further eligible
 source adapters need accepted source contracts; this PR does not fabricate them.
 
 ## Behavior
@@ -19,7 +19,8 @@ source adapters need accepted source contracts; this PR does not fabricate them.
   record and continue the cohort. Database/unknown errors remain errors.
 - An exception during or after commit never certifies zero effects. Totals become
   null with `execution_unverified=true`; `confirmed` is the independently completed
-  prior progress, not an estimate of the current record. No automatic retry follows.
+  prior progress, not an estimate of the current record. Confirmed refusal reasons
+  remain bound to `confirmed.refused`; they never certify unknown totals. No automatic retry follows.
 - Telemetry writes flush, execute deferred constraints, refresh and compare the
   intended complete JSON and preserved job fields. Suppressed/changed receipts
   roll back the telemetry transaction and log receipt unavailability. Previously
@@ -32,8 +33,11 @@ source adapters need accepted source contracts; this PR does not fabricate them.
   exact per-record eligibility, baseline/no-change and refusal reasons. Preview
   writes no source cursor, event, draft, audit or command receipt, and does not enable
   controls. It uses existing committed readers, at most25 unique bounded IDs, a30s
-  monotonic budget and two bounded cursor/event projection queries. Source reader
-  statement/lock limits remain in force. It reads no credentials or network sources.
+  monotonic acceptance budget and two bounded cursor/event projection queries.
+  It rechecks the deadline after session acquisition, and preview transaction
+  statement/lock limits shrink to the remaining budget without relaxing inherited
+  limits. Source readers retain their existing per-statement bounds; this is not
+  a hard cancellation of session acquisition or an in-flight source call. It reads no credentials or network sources.
 - Preview refuses multiple anchors for one report/fact series and tells the operator
   to select one. Template placeholders are refused before claiming eligibility.
   Responses must match the requested record cohort exactly. Detection remains the
@@ -47,7 +51,10 @@ approval/queue/worker admission contracts are retained. Retrieval, ingestion ID,
 artifact digest/layout changes or unchanged facts do not establish a new report.
 No changes were made to generation/policy/publication/upload defaults, worker
 startup, source selection, native ownership/acknowledgement, financial writers,
-workflows, dependency locks or production configuration.
+dependency locks or production configuration. The only workflow addition forwards
+`SOCIAL_GENERATION_HOOK_ENABLED` and `SOCIAL_REPORT_GENERATION_ENABLED` from existing
+repository variables, each defaulting to literal `false`; no variable, source plan,
+schedule, action, dispatch admission or accepted nightly SHA is changed.
 
 ## Supported-source and acceptance matrix
 
@@ -72,6 +79,7 @@ empty. The listed reason is a primary missing contract, not an exhaustive audit.
 | stalled_projects | Unsupported | Unsupported | Retained full publisher date/report authority |
 | national_gdp | Unsupported | Unsupported | Date metadata alone does not establish a bound full-date report contract |
 | imf_weo | Unsupported | Unsupported | Exact report/job lineage |
+| county_borrowing (opt-in) | Unsupported | Unsupported | Retained full publisher date, exact report/job lineage and current report authority are absent; pinned report period alone is insufficient |
 | cra (opt-in) | Unsupported | Unsupported | Recommendation evidence has no retained full publisher date authority |
 | opendata (opt-in) | Refused | Refused | `source_extracted_not_publication_qualified`; workbook publication date is null; retrieval/report month cannot substitute |
 
@@ -79,7 +87,12 @@ The registry is `backend/seeding/generation_capabilities.py`. It does not expand
 scheduled `--all`, promote extractions or add a parser/crawler. Other-domain source
 qualification and root/operator rollout remain dependencies under existing social
 and source acceptance work; KNBS follow-ups744/745 remain relevant. Original
-parents476/545/699 and source/operator gates remain open.
+parents476/545/699 and source/operator gates remain open. Non-CoB draft adapter
+engineering is explicitly tracked by [#802](https://github.com/Rodgers31/audit_app/issues/802).
+The combined source deliveries retain separate missing-evidence boundaries in
+[#800](https://github.com/Rodgers31/audit_app/issues/800) (assembly pending-bill aging)
+and [#801](https://github.com/Rodgers31/audit_app/issues/801) (actual county debt stock).
+This delivery does not claim those source contracts or full nightly acceptance are complete.
 
 ## Verification and limits
 
@@ -121,6 +134,50 @@ no official source or provider request occurred. No fresh official PDF was
 qualified by this session. No numerical public claim, production ingestion,
 provider authorization, storage/capacity/billing or nightly success is certified.
 The coordinator owns the first full nightly acceptance on25October2026.
+
+## B84 review corrections
+
+Evidence: `BATCH_84_REVIEW/797` beside the historical B83 evidence directory above.
+The original B83 receipts are preserved. Four package-mode review findings are
+valid (the refusal finding understated repeated sites); the mutation assertion
+finding is invalid for the frozen lock. React Query5.90.21 / query-core5.90.20
+calls the mutation function with variables and context: the unchanged visibility
+suite passed9 tests before correction. Its second-argument assertion remains.
+
+The corrected readers use their launch mode's model graph, without `sys.path`
+aliases or a second `Base`. The package path traverses inherited service imports,
+including the eagerly imported auto-seeder; those dependency imports are matched
+without starting a task or making network/database requests. Actual current-schema
+financial and report reader/preview controls execute in isolated subprocesses for
+both package and top-level launch modes. Unrelated legacy service branches have
+not been qualified as generally package-compatible.
+
+The body-only operational, deadline and refusal-custody findings were reproduced
+and fixed. Fresh-session/non-PostgreSQL source failures are operational failures;
+known evidence refusals remain per-record refusals. Preview expires before touching
+the database after an over-budget session acquisition. Confirmed refusal counts
+survive later commit uncertainty through dispatch validation, persistence, the safe
+projector and frontend decoding; hostile/mismatched counts are rejected.
+
+Review validation on retained Python3.13:143 selected generation/import/native
+cases and207 inherited financial-reader/ownership cases passed normally and optimized.
+Current Alembic `a756b20a0001` / PostgreSQL17:25 cases passed normally and optimized,
+including the unchanged21-case cohort and four new launch/uncertainty/budget cases.
+The existing41 committed-source tests ran normally and optimized on that owned
+current schema with their fixture transport explicitly rebound. The final24-case
+review cohort also passed normally and optimized, including both operational codes. Frontend49 selected cases and the matching-lock
+TypeScript check passed. Chrome's owned inert fixture confirmed the scoped refusal
+list while totals stay unknown and the explicitly unsupported county-borrowing
+preview. Only one synthetic preview POST occurred; no draft/publish/upload request
+or production connection was made. Browser evidence is a local contract check,
+not a production layout or accessibility certification.
+
+Initial setup mistakes (missing parent fixtures/PYTHONPATH, Alembic working directory,
+and a CursorResult conversion in the new test) are retained separately; they are not
+application failures or passing evidence. The corrected runs above executed their
+assertions. Parent coordination owns independent final reviews, push/replies and
+combined-source validation. Publishing, uploads, native activation and generation
+remain off; no deployment, live refresh, source request or paid resource is included.
 
 ## Rollout, migration and rollback
 

@@ -19,7 +19,7 @@ class DraftCapability:
     report_reader: str | None = None
 
 
-# All 15 legacy native domains, plus the two explicit opt-ins. Only CoB county
+# All 15 legacy native domains, plus the three explicit opt-ins. Only CoB county
 # budgets currently bind exact lineage, qualified scope and retained full dates.
 CAPABILITIES = MappingProxyType({c.domain: c for c in (
     DraftCapability('counties_budget', financial=True, reports=True, reason='qualified_cob_adapter',
@@ -39,6 +39,7 @@ CAPABILITIES = MappingProxyType({c.domain: c for c in (
     DraftCapability('stalled_projects', reason='report_date_authority_unavailable'),
     DraftCapability('national_gdp', reason='report_date_authority_unavailable'),
     DraftCapability('imf_weo', reason='report_lineage_unavailable'),
+    DraftCapability('county_borrowing', reason='report_date_authority_unavailable'),
     DraftCapability('cra', reason='recommendation_date_authority_unavailable'),
     DraftCapability('opendata', reason='source_extracted_not_publication_qualified'),
 )})
@@ -57,7 +58,10 @@ def skipped_generation(domain, *, dry_run, source_mode, completed):
     after the financial commit must not look like zero generated effects.
     """
     import os
-    from services.generation_outcome import COUNTERS
+    if __package__.startswith('backend.'):
+        from backend.services.generation_outcome import COUNTERS
+    else:
+        from services.generation_outcome import COUNTERS
     selected = capability(domain)
     flag = os.environ.get('SOCIAL_GENERATION_HOOK_ENABLED', 'false')
     def phase(reports):

@@ -11,14 +11,23 @@ from urllib.parse import urlsplit
 
 from sqlalchemy import func, select, text
 
-from models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
-from services.entity_financials import budget_line_is_unreported
-from services.figure_qualification import qualify_rows
+if __package__.startswith('backend.'):
+    from backend.models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
+    from backend.services.entity_financials import budget_line_is_unreported
+    from backend.services.figure_qualification import qualify_rows
+else:
+    from models import BudgetLine, DocumentStatus, Entity, EntityType, Extraction, FiscalPeriod, IngestionJob, IngestionStatus, SourceDocument
+    from services.entity_financials import budget_line_is_unreported
+    from services.figure_qualification import qualify_rows
 
 
 class SourceObservationUnavailable(ValueError):
     """Fixed diagnostic; only its allowlisted code enters operator responses."""
 
+    OPERATIONAL = {
+        'Fresh committed-reader session required': 'fresh_session_required',
+        'PostgreSQL committed snapshot required': 'source_adapter_unavailable',
+    }
     CODES = {
         'Publisher publication date unavailable': 'publisher_date_unavailable',
         'Retained publisher date authority required': 'publisher_date_receipt_unavailable',
@@ -39,7 +48,8 @@ class SourceObservationUnavailable(ValueError):
 
     def __init__(self, message):
         super().__init__(message)
-        self.code = self.CODES.get(message, 'source_evidence_ineligible')
+        self.operational = message in self.OPERATIONAL
+        self.code = self.OPERATIONAL.get(message, self.CODES.get(message, 'source_evidence_ineligible'))
 
 
 def _positive_id(value):
@@ -251,7 +261,10 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
                 raise SourceObservationUnavailable("Exact report period and publication locator required")
             neutral = {key: fact[key] for key in ('entity', 'period', 'source_document_id', 'document_url',
                 'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at', 'canonical_url')}
-            from social.generation.authority import current_report_authority
+            if __package__.startswith('backend.'):
+                from backend.social.generation.authority import current_report_authority
+            else:
+                from social.generation.authority import current_report_authority
             authority = current_report_authority(db, record_id, ingestion_id, lock=False)
             if authority is None:
                 raise SourceObservationUnavailable("Current report authority unavailable")
