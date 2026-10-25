@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Iterable, Optional
 
@@ -143,8 +143,18 @@ def persist_revenue_records(
     for record in records:
         stats.processed += 1
         try:
+            # Keep parsed capabilities/receipt envelopes available for exact
+            # replay. Persistence annotations belong to this local copy only.
+            authority = record.metadata.get("_native_report_authority")
+            record = replace(record, metadata={key: value for key, value in record.metadata.items()
+                                               if key != "_native_report_authority"})
             source = _ensure_source_document(session, country_id, settings, record,
                                              sources_by_url=sources_by_url)
+
+            from ...native_report_authority import persist_native_report
+            persist_native_report(session, source, authority, context=context, domain="revenue_by_source")
+            if context.job_id is not None:
+                record.metadata["ingestion_job_id"] = context.job_id
 
             stmt = select(RevenueBySource).where(
                 and_(

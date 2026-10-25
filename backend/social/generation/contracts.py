@@ -102,9 +102,26 @@ class ReportEvidence(StrictModel):
         return self
 
 
+class NativeReportEvidence(ReportEvidence):
+    native_domain: Literal['national_budget', 'revenue_by_source', 'audits']
+    scope_key: Key
+
+    @model_validator(mode='after')
+    def bound(self):
+        from importlib import import_module
+        module = import_module('backend.seeding.native_report_authority' if __package__.startswith('backend.') else 'seeding.native_report_authority')
+        if (not module.official_url(self.document_url, self.native_domain)
+                or self.publisher != module.DOMAINS[self.native_domain][2]
+                or self.canonical_url != 'https://www.auditgava.com'+module.DOMAINS[self.native_domain][3]
+                or self.period_start > self.period_end or self.period_end > self.published_on or self.published_on > self.retrieved_at.date()
+                or self.verified_at < self.retrieved_at):
+            raise ValueError('Exact native report scope and chronology required')
+        return self
+
+
 class SourceObservation(StrictModel):
     schema_version: Annotated[int, Field(strict=True, ge=1, le=1)] = 1
-    source_type: Literal['treasury', 'cob', 'oag', 'knbs', 'cra']
+    source_type: Literal['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra']
     source_key: Key
     evidence_version: PositiveVersion
     ingestion_id: Key
@@ -116,13 +133,19 @@ class SourceObservation(StrictModel):
     publishable: StrictBool
     correction_pending: StrictBool = False
     facts: Annotated[tuple[FactEvidence, ...], Field(max_length=10)] = ()
-    report: ReportEvidence | None = None
+    report: NativeReportEvidence | ReportEvidence | None = None
 
     @model_validator(mode='after')
     def identities(self):
         if self.report is not None:
-            if self.facts or self.category != 'dataset_availability' or self.source_type != 'cob' or self.source_key != f'cob:county:{self.report.entity_id}:reports':
-                raise ValueError('Neutral report evidence requires its distinct county report series and no financial facts')
+            if isinstance(self.report, NativeReportEvidence):
+                sources = {'national_budget':'cob', 'revenue_by_source':'kra', 'audits':'oag'}
+                source = sources[self.report.native_domain]
+                expected = f'{source}:native:{self.report.native_domain}:{self.report.entity_id}:{self.report.scope_key}'
+            else:
+                source, expected = 'cob', f'cob:county:{self.report.entity_id}:reports'
+            if self.facts or self.category != 'dataset_availability' or self.source_type != source or self.source_key != expected:
+                raise ValueError('Neutral report evidence requires its distinct report series and no financial facts')
         elif not self.facts:
             raise ValueError('Financial observations require at least one exact fact')
         if len({f.fact_id for f in self.facts}) != len(self.facts):
@@ -134,7 +157,7 @@ class GenerationControlsCommand(StrictModel):
     expected_version: PositiveVersion
     drafts_enabled: StrictBool
     shadow_enabled: StrictBool
-    source_allowlist: Annotated[tuple[Literal['treasury', 'cob', 'oag', 'knbs', 'cra'], ...], Field(max_length=5)]
+    source_allowlist: Annotated[tuple[Literal['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra'], ...], Field(max_length=6)]
     targets: Annotated[tuple[DocumentTarget, ...], Field(max_length=25)] = ()
     reason: Reason
 
@@ -160,6 +183,7 @@ class PreviewCommand(StrictModel):
 
 
 class DetectCommand(StrictModel):
+    domain: Annotated[str, StringConstraints(strict=True, pattern=r"^[a-z_]{1,100}$")] = "counties_budget"
     record_ids: Annotated[tuple[Annotated[int, Field(strict=True, gt=0, le=2147483647)], ...], Field(min_length=1, max_length=25)]
     ingestion_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
     backfill: StrictBool = False
@@ -171,7 +195,7 @@ class RuleCommand(StrictModel):
     name: Text
     mode: Literal['disabled', 'shadow'] = 'disabled'
     categories: Annotated[tuple[Literal['dataset_availability', 'new_report'], ...], Field(min_length=1, max_length=2)]
-    source_allowlist: Annotated[tuple[Literal['treasury', 'cob', 'oag', 'knbs', 'cra'], ...], Field(min_length=1, max_length=5)]
+    source_allowlist: Annotated[tuple[Literal['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra'], ...], Field(min_length=1, max_length=6)]
     account_allowlist: Annotated[tuple[UUID, ...], Field(min_length=1, max_length=25)]
     max_per_day: Annotated[int, Field(strict=True, ge=1, le=3)] = 3
     min_interval_minutes: Annotated[int, Field(strict=True, ge=60, le=1440)] = 60

@@ -305,6 +305,8 @@ def _fetch_annual_sector_expenditure(
     )
 
     receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1")
+    from ...native_report_authority import capture_pdf_report
+    authority, authority_reason = capture_pdf_report(pdf_path, receipt, domain="national_budget")
     receipt = bind_parse_receipt(receipt, page_rows)
     evidence = []
     for row, sector in zip(records, result.accepted):
@@ -318,6 +320,8 @@ def _fetch_annual_sector_expenditure(
                 "dimensions": {"category": row["category"], "subcategory": row["subcategory"], "line_type": None}},
                 raw_value=raw, value=row[measure], raw_unit="KES billion", factor="1000000000",
                 locator=locator, unit_checked=sector.unit_checked, rounding=0))
+        row["provenance_extra"]["_native_report_authority"] = authority
+        row["provenance_extra"]["native_report_authority_reason"] = authority_reason
         row["provenance_extra"]["source_evidence"] = cells
         evidence.extend(cells)
     seal_pdf_observations(evidence)

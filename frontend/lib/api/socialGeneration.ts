@@ -2,7 +2,7 @@ import api from './axios';
 import { generationReasons } from '@/lib/socialGenerationReasons';
 import { DocumentTarget, decodeDocument, SocialApiError } from './social';
 
-export const sourceTypes = ['treasury', 'cob', 'oag', 'knbs', 'cra'] as const;
+export const sourceTypes = ['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra'] as const;
 export interface DraftControls { version: number; drafts_enabled: boolean; shadow_enabled: boolean; source_allowlist: string[]; targets: DocumentTarget[] }
 export interface ShadowRule { id: string; version: number; definition: { name: string; mode: 'disabled' | 'shadow'; categories: string[]; source_allowlist: string[]; account_allowlist: string[]; max_per_day: number; min_interval_minutes: number; freshness_hours: number; reason: string }; definition_hash: string; created_at: string }
 export interface ShadowDecision { id: string; post_id: string; revision_id: string; content_hash: string; outcome: 'would_allow' | 'human_review'; reasons: string[]; rule_version_id: string; rule_hash: string; created_at: string }
