@@ -15,6 +15,18 @@ from .utils import parse_rate_limit
 class SeedingSettings(BaseSettings):
     """Configuration options controlling seeding behaviour."""
 
+    county_borrowing_ingestion_enabled: bool = Field(
+        default=False,
+        description="Explicit opt-in to reviewed county borrowing evidence; no inferred balances.",
+    )
+
+    @field_validator("county_borrowing_ingestion_enabled", mode="before")
+    @classmethod
+    def explicit_county_borrowing_opt_in(cls, value):
+        if type(value) is not bool and (type(value) is not str or value not in ("true", "false")):
+            raise ValueError("County borrowing opt-in requires true or false")
+        return value
+
     knbs_release_discovery_enabled: bool = Field(
         default=False,
         description="Bounded official KNBS discovery; unreviewed editions remain quarantined in native job receipts.",

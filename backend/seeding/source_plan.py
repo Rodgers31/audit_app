@@ -39,14 +39,15 @@ class SourcePlan:
 
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
-               bootstrap='false'):
-    enabled = {'cra': boolean(cra), 'opendata': boolean(opendata)}
+               bootstrap='false', county_borrowing='false'):
+    enabled = {'cra': boolean(cra), 'opendata': boolean(opendata),
+               'county_borrowing': boolean(county_borrowing)}
     discover = boolean(discovery)
     if discover and not enabled['opendata']:
         raise ValueError('KNBS discovery requires the OpenData opt-in too')
     dry = boolean(dry_run)
     boot = boolean(bootstrap)
-    if type(domain) is not str or domain not in ('', *LEGACY_DOMAINS, 'cra', 'opendata'):
+    if type(domain) is not str or domain not in ('', *LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing'):
         raise ValueError('Unknown source plan domain')
     if event == 'schedule':
         if schedule not in (DAILY, WEEKLY) or domain or dry or boot:
@@ -73,14 +74,15 @@ def environment_plan():
         bootstrap=os.environ.get('SEED_PLAN_BOOTSTRAP') or 'false',
         cra=os.environ.get('SEED_CRA_INGESTION_ENABLED', 'false'),
         opendata=os.environ.get('SEED_OPENDATA_INGESTION_ENABLED', 'false'),
-        discovery=os.environ.get('SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'false'))
+        discovery=os.environ.get('SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'false'),
+        county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'))
 
 
 def validate_plan(plan):
     """Guard both direct invocation and Actions output publication."""
     if (type(plan) is not SourcePlan or type(plan.domains) is not tuple
-            or not 1 <= len(plan.domains) <= len(LEGACY_DOMAINS) + 2
-            or any(type(d) is not str or d not in (*LEGACY_DOMAINS, 'cra', 'opendata') for d in plan.domains)
+            or not 1 <= len(plan.domains) <= len(LEGACY_DOMAINS) + 3
+            or any(type(d) is not str or d not in (*LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing') for d in plan.domains)
             or len(set(plan.domains)) != len(plan.domains)
             or type(plan.bootstrap) is not bool or type(plan.dry_run) is not bool):
         raise ValueError('Invalid source plan output or invocation')

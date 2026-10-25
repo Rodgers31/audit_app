@@ -1,5 +1,6 @@
 'use client';
 
+import CountyBorrowingNote from '@/components/county/CountyBorrowingNote';
 import FigureEvidence from '@/components/evidence/FigureEvidence';
 import styles from '../../CountyExperience.module.css';
 import { severityTone, SignalMark } from '../../CountySignals';
@@ -242,6 +243,8 @@ export default function OverviewTab({ data }: { data: CountyComprehensive }) {
           <div className='text-[11px] uppercase tracking-widest font-semibold text-gray-400 dark:text-neutral-muted/80 mb-2'>
             {t('county.overview.debt_position')}
           </div>
+          <CountyBorrowingNote balance={debt.total_debt} absentReason={debt.total_debt_absent_reason}
+            coverage={debt.debt_source_coverage} asAt={debt.debt_as_at} />
           <div className='space-y-1.5 text-sm'>
             <div className='flex justify-between'>
               <span className='text-gray-500 dark:text-neutral-muted/80'>

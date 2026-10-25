@@ -1,0 +1,43 @@
+[
+  {
+    "id": "treasury_guaranteed_stock_2025",
+    "url": "https://newsite.treasury.go.ke/sites/default/files/Annual-Public-Debt-Report-2024-2025.pdf",
+    "sha256": "871bf6b38ed579e9abc8e6f4fe0cd21ad979116118bde109329dcb35b88e8d48",
+    "size_bytes": 1611766,
+    "page_count": 89,
+    "pages": {
+      "53": "2e0f8e953d46dea8069fa6b4b6b1cc35446a2ae63b511e71bc9184a32a628400"
+    },
+    "publisher": "National Treasury",
+    "title": "Annual Public Debt Management Report FY2024/25",
+    "scope": "national_guaranteed_stock_register",
+    "county_slugs": [],
+    "status": "not_reported_in_checked_source",
+    "reason": "No county borrower is listed in Table 16; this does not cover all county liabilities.",
+    "reporting_period_end": "2025-06-30",
+    "instruments": [],
+    "md5": "48ad959e21dbca8ce7772e42a24219c9"
+  },
+  {
+    "id": "oag_kisii_2024",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+    "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+    "size_bytes": 34055119,
+    "page_count": 555,
+    "pages": {
+      "499": "813cd637d55b98976538d53fb7a7d699dd0809b4490b49aaaee97f6a366e2e2e",
+      "500": "9be6edaf1e7f4a5b57e07f8de2464ab477edff105cbd6ee083140431b815205a"
+    },
+    "publisher": "Office of the Auditor-General",
+    "title": "County Governments Executive Audit Report FY2023/24 \u2014 Kisii finding 980",
+    "scope": "kisii_executive_audit_finding_980",
+    "county_slugs": [
+      "kisii-county"
+    ],
+    "status": "withheld_or_conflicting",
+    "reason": "Borrowing obtained is reported, but lender, explicit contract reference, issue date and dated outstanding balance are absent; regularity was not confirmed.",
+    "reporting_period_end": "2024-06-30",
+    "instruments": [],
+    "md5": "0c0f7b1eb6f63d3b16d0720ed627da40"
+  }
+]

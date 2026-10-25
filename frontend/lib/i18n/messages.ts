@@ -719,9 +719,9 @@ export const MESSAGES = {
     // Not "audited" (#238): the Controller of Budget's table says "Source:
     // County Treasuries" — the counties report the figures and the CoB
     // compiles them. The Treasury's BROP, the previous source, reprints it.
-    en: 'Pending bills are each county\'s trade payables at 30 June, as the county treasuries reported them to the Controller of Budget, from the table in its full-year County Governments Budget Implementation Review Report. County debt is shown only where a source publishes it; most counties have none, and those show a dash rather than a figure. Audit findings are from the Office of the Auditor-General.',
-    sw: 'Bili ambazo hazijalipwa ni madeni ya kila kaunti kwa wasambazaji hadi tarehe 30 Juni, kama hazina za kaunti zilivyoyaripoti kwa Mdhibiti wa Bajeti, kutoka jedwali la Ripoti yake ya mwaka mzima ya Mapitio ya Utekelezaji wa Bajeti za Serikali za Kaunti. Deni la kaunti linaonyeshwa pale tu chanzo kinapolichapisha; kaunti nyingi hazina, na hizo zinaonyesha mstari badala ya takwimu. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
-    plain: 'The unpaid-bill numbers are what each county told the Controller of Budget it still owed suppliers on 30 June. The Auditor-General has not checked them. County debt is shown only when a source publishes it; for most counties nobody does, so you will see a dash instead of a number. The audit findings are real, from the Auditor-General.',
+    en: 'Pending bills are each county\'s trade payables at 30 June, as the county treasuries reported them to the Controller of Budget, from the table in its full-year County Governments Budget Implementation Review Report. County borrowing figures cover only eligible instruments integrated here. A dash means no qualified balance is available here; it does not mean zero debt. Pending bills are separate. Audit findings are from the Office of the Auditor-General.',
+    sw: 'Bili ambazo hazijalipwa ni madeni ya kila kaunti kwa wasambazaji hadi tarehe 30 Juni, kama hazina za kaunti zilivyoyaripoti kwa Mdhibiti wa Bajeti, kutoka jedwali la Ripoti yake ya mwaka mzima ya Mapitio ya Utekelezaji wa Bajeti za Serikali za Kaunti. Takwimu za mikopo ya kaunti zinahusu tu mikataba inayokidhi masharti katika mfumo huu. Mstari unamaanisha salio linalostahili halipatikani hapa; haumaanishi deni ni sifuri. Bili ambazo hazijalipwa ni tofauti. Matokeo ya ukaguzi yanatoka Ofisi ya Mkaguzi Mkuu wa Hesabu.',
+    plain: 'The unpaid-bill numbers are what each county told the Controller of Budget it still owed suppliers on 30 June. The Auditor-General has not checked them. We show county borrowing only for eligible contracts integrated here. A dash means we lack a qualified balance; it does not mean zero debt. Unpaid bills are separate. The audit findings are real, from the Auditor-General.',
   },
   'counties.subtitle': {
     en: 'Compare all 47 Kenyan counties on budget, execution, debt, and audit findings.',
@@ -911,6 +911,32 @@ export const MESSAGES = {
   'county.revenue.own_source': { en: 'Own-source revenue', sw: 'Mapato ya chenyewe', plain: 'Money the county raised' },
   'county.revenue.equitable_share': { en: 'Equitable share', sw: 'Sehemu Sawa', plain: 'From national govt' },
   'county.revenue.conditional_grants': { en: 'Conditional grants', sw: 'Ruzuku za Masharti', plain: 'Special grants' },
+  'county.borrowing.not_integrated': {
+    en: 'No qualified county borrowing balance is integrated here. This does not mean zero debt. Pending bills are shown separately.',
+    sw: 'Hakuna salio la mikopo ya kaunti linalokidhi masharti lililounganishwa hapa. Hii haimaanishi deni ni sifuri. Bili ambazo hazijalipwa zinaonyeshwa kando.',
+    plain: 'We do not have a qualified borrowing balance here. This does not mean zero debt. Unpaid bills are separate.',
+  },
+  'county.borrowing.not_reported': {
+    en: 'No eligible county instrument is reported in the checked source scope. Other borrowing and liabilities may exist. Pending bills are separate.',
+    sw: 'Hakuna mkataba wa mkopo wa kaunti unaokidhi masharti ulioripotiwa katika sehemu ya chanzo iliyochunguzwa. Mikopo na madeni mengine yanaweza kuwepo. Bili ambazo hazijalipwa ni tofauti.',
+    plain: 'The checked part of this source has no eligible county loan. It does not cover everything the county may owe. Unpaid bills are separate.',
+  },
+  'county.borrowing.withheld': {
+    en: 'A borrowing total is withheld because the selected evidence is incomplete, incompatible or conflicting. This does not mean zero debt. Pending bills are separate.',
+    sw: 'Jumla ya mikopo haijaonyeshwa kwa sababu ushahidi uliochaguliwa haujakamilika, haulingani au unakinzana. Hii haimaanishi deni ni sifuri. Bili ambazo hazijalipwa ni tofauti.',
+    plain: 'We cannot give a borrowing total from the selected evidence. It is incomplete or does not agree. This does not mean zero debt. Unpaid bills are separate.',
+  },
+  'county.borrowing.selected': {
+    en: 'Outstanding stock of selected eligible borrowing instruments only; this is not complete county liability coverage. Pending bills are separate.',
+    sw: 'Salio la mikataba ya mikopo iliyochaguliwa inayokidhi masharti pekee; haya si madeni yote ya kaunti. Bili ambazo hazijalipwa ni tofauti.',
+    plain: 'This balance covers only the selected eligible loans. It is not everything the county owes. Unpaid bills are separate.',
+  },
+  'county.borrowing.zero': {
+    en: 'A dated zero balance was reported for the selected eligible instruments. It does not establish zero county liabilities. Pending bills are separate.',
+    sw: 'Salio la sifuri lenye tarehe liliripotiwa kwa mikataba iliyochaguliwa inayokidhi masharti. Halithibitishi kuwa madeni yote ya kaunti ni sifuri. Bili ambazo hazijalipwa ni tofauti.',
+    plain: 'The selected loans have a reported zero balance on the stated date. The county may still owe other money. Unpaid bills are separate.',
+  },
+  'county.borrowing.checked_source': { en: 'Checked source', sw: 'Chanzo kilichochunguzwa', plain: 'Checked source' },
   'county.debt.title': { en: 'Debt & Pending Bills', sw: 'Deni na Ankara Zilizokwama', plain: 'What the County Owes' },
   'county.debt.total': { en: 'Total debt', sw: 'Deni jumla', plain: 'Total owed' },
   'county.debt.pending_bills': { en: 'Pending bills', sw: 'Ankara zilizokwama', plain: 'Unpaid bills' },

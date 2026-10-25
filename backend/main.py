@@ -3233,8 +3233,11 @@ async def get_counties(fiscal_year: Optional[str] = None):
                 # periods with no spend and no audits).
                 period_ids = _latest_county_actuals_period_ids(db)
 
-            # ── BATCH LOAD all related data in 5 queries (not 47×6) ──
+            # Batch related data by cohort, never one coverage query per county.
             entity_ids = [e.id for e in entities]
+            from services.county_borrowing_coverage import county_borrowing_coverage
+
+            borrowing_coverage = county_borrowing_coverage(db, entity_ids)
 
             # 1. Population: latest per entity
             from sqlalchemy import func as _fn
@@ -3438,7 +3441,9 @@ async def get_counties(fiscal_year: Optional[str] = None):
 
                 from services.financial_publication import county_debt_summary
 
-                debt_summary = county_debt_summary(loans)
+                debt_summary = county_debt_summary(
+                    loans, source_coverage=borrowing_coverage[e.id]
+                )
                 total_debt = debt_summary["total_debt"]
 
                 # The CoB year-end per-county figure, through the one reader
@@ -3821,7 +3826,11 @@ async def get_county_details(county_id: str, fiscal_year: Optional[str] = None):
                 )
                 from services.financial_publication import county_debt_summary
 
-                debt_summary = county_debt_summary(loans)
+                from services.county_borrowing_coverage import county_borrowing_coverage
+
+                debt_summary = county_debt_summary(
+                    loans, source_coverage=county_borrowing_coverage(db, [e.id])[e.id]
+                )
                 total_debt = debt_summary["total_debt"]
 
                 # Same reader as the list and /comprehensive.
@@ -4277,7 +4286,11 @@ async def get_county_comprehensive(
                 county_debt_summary, county_debt_instrument_fields, eligible_county_debt_rows,
             )
 
-            debt_summary = county_debt_summary(loans)
+            from services.county_borrowing_coverage import county_borrowing_coverage
+
+            debt_summary = county_debt_summary(
+                loans, source_coverage=county_borrowing_coverage(db, [entity.id])[entity.id]
+            )
             total_debt = debt_summary["total_debt"]
 
             # Same filter as total_debt above: pending bills are an arrears
@@ -5050,7 +5063,11 @@ async def get_county_debt(county_id: str):
 
                 all_loans = county_debt_rows(db, [e.id])
                 loans = eligible_county_debt_rows(all_loans)
-                debt_summary = county_debt_summary(loans)
+                from services.county_borrowing_coverage import county_borrowing_coverage
+
+                debt_summary = county_debt_summary(
+                    loans, source_coverage=county_borrowing_coverage(db, [e.id])[e.id]
+                )
                 total_outstanding = debt_summary["total_debt"]
                 principals = [county_debt_instrument_fields(l)["principal"] for l in loans]
                 total_principal = (
