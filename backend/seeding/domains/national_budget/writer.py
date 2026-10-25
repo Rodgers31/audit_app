@@ -96,13 +96,14 @@ def _ensure_source_document(
             fetch_date=now,
             doc_type=DocumentType.BUDGET,
             md5=None,
+            # Registration/fixture parsing is not source acquisition. Match
+            # bootstrap's unfetched status; only verified fetching can earn
+            # AVAILABLE. Existing source evidence is left untouched below.
+            status=DocumentStatus.FAILED,
             meta={"data_quality": record.data_quality or "official"},
         )
         session.add(source)
         session.flush()
-    else:
-        source.status = DocumentStatus.AVAILABLE
-        source.last_seen_at = now
     if sources_by_url is not None:
         sources_by_url[url] = source
     return source
