@@ -164,10 +164,16 @@ def _write_db(tmp_path: Path, rows, extra=()) -> str:
     return url
 
 
-def _run_step(db_url: str) -> subprocess.CompletedProcess:
+def _run_step(db_url: str, *, domain: str = '', floor: int = 0) -> subprocess.CompletedProcess:
     """Execute the workflow step for real, from the repo root as Actions does."""
     env = dict(os.environ)
     env["DATABASE_URL"] = db_url
+    env.update(SEED_JOB_FLOOR=str(floor), SEED_PLAN_EVENT='workflow_dispatch',
+               SEED_PLAN_DOMAIN=domain, SEED_PLAN_SCHEDULE='',
+               SEED_PLAN_DRY_RUN='false', SEED_PLAN_BOOTSTRAP='false',
+               SEED_CRA_INGESTION_ENABLED='false',
+               SEED_OPENDATA_INGESTION_ENABLED='true' if domain == 'opendata' else 'false',
+               SEED_KNBS_RELEASE_DISCOVERY_ENABLED='false')
     env.pop("DB_USER", None)
     env.pop("DB_HOST", None)
     env["PYTHONPATH"] = str(BACKEND)
@@ -560,3 +566,24 @@ class TestTheRuleItself:
                 f"meta={bad!r} produced no finding; an unreadable provenance "
                 "record is not evidence of a live fetch"
             )
+
+
+def test_single_domain_refresh_ignores_unrelated_recent_startup_fixture(tmp_path):
+    current = [('opendata','completed',2,0,2125,'live',None)]
+    unrelated = [('national_budget','completed',0,0,20,'fixture','fixture_current')]
+    result = _run_step(_write_db(tmp_path,current,extra=unrelated),domain='opendata')
+    assert result.returncode == 0, result.stdout+result.stderr
+    assert '[OK] opendata' in result.stdout and 'national_budget' not in result.stdout
+
+
+def test_single_domain_fixture_is_still_refused(tmp_path):
+    rows = [('opendata','completed',0,0,2125,'fixture','parser_returned_nothing')]
+    result = _run_step(_write_db(tmp_path,rows),domain='opendata')
+    assert result.returncode != 0 and '[STALE] opendata' in result.stdout
+
+
+def test_prior_success_cannot_replace_missing_current_run(tmp_path):
+    rows = [('opendata','completed',2,0,2125,'live',None)]
+    result = _run_step(_write_db(tmp_path,rows),domain='opendata',floor=1000)
+    assert result.returncode != 0, result.stdout+result.stderr
+    assert 'No ingestion job rows' in result.stdout

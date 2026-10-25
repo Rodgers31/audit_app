@@ -35,7 +35,7 @@ on:
           - cra
           - opendata
       dry_run:
-        description: 'Native preview (workflow still migrates; operational jobs/receipts may write)'
+        description: 'Native preview (operational jobs/receipts may write; no schema migration)'
         required: false
         type: boolean
         default: false
@@ -77,6 +77,7 @@ permissions:
   issues: write
 
 env:
+  PYTHON_DOTENV_DISABLED: '1'
   # Shared database and seeding configuration
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
@@ -128,8 +129,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: 'pip'
@@ -432,22 +433,43 @@ jobs:
           exit 0
 
   # ══════════════════════════════════════════════════════════════════
-  # Step 1: Run database migrations
+  # Step 1: Verify the already deployed database; never migrate on a timer.
   # ══════════════════════════════════════════════════════════════════
   migrate:
     needs: [source_plan]
-    name: Run Migrations
+    name: Verify Accepted Database
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      AUDIT_GITHUB_DATABASE_TLS: '1'
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - name: Refuse writes outside the explicitly accepted source revision
+        env:
+          APPROVED_SHA: ${{ vars.INGESTION_WRITE_APPROVED_SHA }}
+          DISPATCH_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          DISPATCH_REF: ${{ github.ref }}
+        run: |
+          set -eu
+          test "$REPOSITORY" = Rodgers31/audit_app
+          test "$DISPATCH_REF" = refs/heads/main
+          test "${#APPROVED_SHA}" -eq 40
+          case "$APPROVED_SHA" in *[!0-9a-f]*) exit 1 ;; esac
+          test "$DISPATCH_SHA" = "$APPROVED_SHA"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
-      - name: Run alembic migrations
-        run: cd backend && alembic upgrade head
+      - name: Prepare verified writer TLS without copying credentials
+        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+      - name: Qualify the stored target and require the accepted schema head
+        timeout-minutes: 1
+        run: |
+          python -I scripts/verification/github_database_qualify.py --seed
+          cd backend
+          test "$(alembic heads)" = 'a756b20a0001 (head)'
 
       # A migration that "succeeded" is not a schema that matches the models.
       # `alembic stamp --purge` ASSERTS equivalence to a baseline, it never
@@ -491,16 +513,22 @@ jobs:
     needs: [migrate, seed]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      AUDIT_GITHUB_DATABASE_TLS: '1'
     if: >-
       github.event.inputs.run_bootstrap == 'true' ||
       (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0')
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - name: Prepare verified writer TLS without copying credentials
+        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+      - name: Qualify this job's actual database connection
+        run: python -I scripts/verification/github_database_qualify.py --seed
       - name: Run bootstrap seeding
         run: |
           cd backend
@@ -523,6 +551,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      AUDIT_GITHUB_DATABASE_TLS: '1'
       # Optional receipt storage. Enable only after owner-approved capacity,
       # private bucket/access, restart/readback and recovery acceptance (#137).
       # Server credential is deliberately restricted to the actual seeder job.
@@ -540,14 +569,19 @@ jobs:
       RECEIPT_R2_SECRET_ACCESS_KEY: ${{ secrets.RECEIPT_R2_SECRET_ACCESS_KEY }}
       RECEIPT_R2_CONTROL_TOKEN: ${{ secrets.RECEIPT_R2_CONTROL_TOKEN }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: 'pip'
       # OCR system deps for scanned OAG audit PDFs (SEED_AUDITS_OCR_ENABLED)
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - name: Prepare verified writer TLS without copying credentials
+        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+      - name: Qualify this job's actual database connection
+        id: database
+        run: python -I scripts/verification/github_database_qualify.py --seed
 
       # Persist downloaded source PDFs across runs. The COB county BIRR PDF is
       # ~48MB and the CDN's throughput swings wildly (measured 50s → 556s for
@@ -582,7 +616,7 @@ jobs:
       # saved in a month.
       - name: Restore downloaded source PDFs
         id: restore_pdfs
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: backend/data/seeding/cache/pdfs
           # Deliberately unmatchable, so the restore always falls through to
@@ -592,6 +626,25 @@ jobs:
             seed-pdf-cache-${{ steps.pdf_cache_period.outputs.period }}-
             seed-pdf-cache-
 
+      - name: Capture the native run's job boundary
+        id: native_boundary
+        run: |
+          cd backend
+          python <<'PY'
+          import os
+          from sqlalchemy import text
+          from database import engine
+          with engine.connect() as connection:
+              connection.execute(text('SET TRANSACTION READ ONLY'))
+              connection.execute(text('SET LOCAL statement_timeout=3000'))
+              floor = connection.scalar(text('SELECT COALESCE(max(id),0) FROM public.ingestion_jobs'))
+              connection.rollback()
+          if type(floor) is not int or not 0 <= floor < 10**18:
+              raise SystemExit('Native job boundary refused')
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
+              output.write('SEED_JOB_FLOOR='+str(floor)+'\n')
+          PY
+
       - name: Seed planned domains
         timeout-minutes: 25
         run: |
@@ -599,7 +652,7 @@ jobs:
           python -m seeding.source_plan --execute
 
       - name: Check ingestion job results
-        if: always()
+        if: always() && steps.database.outcome == 'success' && steps.native_boundary.outcome == 'success'
         run: |
           cd backend
           # Quoted heredoc, NOT `python -c "..."`. With python -c the script
@@ -611,6 +664,8 @@ jobs:
           # the offending line was a routine f-string. <<'PY' quotes nothing.
           python <<'PY'
           import sys
+          import os
+          import re
           from database import SessionLocal
           from models import IngestionJob, IngestionStatus
           from datetime import datetime, timedelta
@@ -619,10 +674,20 @@ jobs:
               NON_PUBLISHER_DOMAINS,
               hollow_run_findings,
           )
+          from seeding.source_plan import environment_plan
+
+          raw_floor = os.environ.get('SEED_JOB_FLOOR', '')
+          if not re.fullmatch('[0-9]{1,18}', raw_floor):
+              raise SystemExit('Native job boundary missing or refused')
+          domains = environment_plan().domains
 
           session = SessionLocal()
           cutoff = datetime.utcnow() - timedelta(minutes=30)
-          jobs = session.query(IngestionJob).filter(IngestionJob.started_at >= cutoff).order_by(IngestionJob.id.desc()).all()
+          jobs = session.query(IngestionJob).filter(
+              IngestionJob.id > int(raw_floor),
+              IngestionJob.domain.in_(domains),
+              IngestionJob.started_at >= cutoff,
+          ).order_by(IngestionJob.id.desc()).all()
 
           failed = 0
           print('\n--- Ingestion Job Results ---')
@@ -776,7 +841,7 @@ jobs:
       # the log, where it reads as a failure rather than as a no-op.
       - name: Save downloaded source PDFs
         if: always() && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: backend/data/seeding/cache/pdfs
           key: ${{ steps.pdf_cache_state.outputs.key }}
@@ -786,9 +851,11 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   validate:
     name: Validate Data Integrity
-    needs: [seed]
+    needs: [migrate, seed]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      AUDIT_GITHUB_DATABASE_TLS: '1'
     # Runs even when seeding failed. The freshness gates report on the state of
     # the DATABASE, which is exactly what an operator needs to see on a bad
     # night — and previously did not: the 2026-09-06 03:19 nightly skipped this
@@ -796,20 +863,24 @@ jobs:
     # published data had gone stale. Keeping it independent is also what lets
     # a truncated seed run report itself as failed (seeding/cli.py) instead of
     # staying green to protect this job.
-    if: ${{ !cancelled() && github.event.inputs.run_validation != 'false' }}
+    if: ${{ !cancelled() && needs.migrate.result == 'success' && github.event.inputs.run_validation != 'false' }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
           python-version: '3.12'
           cache: 'pip'
       - run: pip install --upgrade pip && pip install -r backend/requirements.txt
+      - name: Prepare verified writer TLS without copying credentials
+        run: python -I scripts/verification/github_database_qualify.py --prepare-writer-tls
+      - name: Qualify this job's actual database connection
+        run: python -I scripts/verification/github_database_qualify.py --seed
 
       # Validation runs on a separate runner: the seed job's filesystem is
       # absent here. Restore its official byte cache, then prepare missing
       # reviewed county editions explicitly before read-only FULL gates.
       - name: Restore retained source PDFs for validation
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: backend/data/seeding/cache/pdfs
           key: seed-pdf-validation-${{ github.run_id }}
@@ -1043,7 +1114,7 @@ jobs:
       API_BASE_URL: ${{ vars.API_BASE_URL || 'https://audit-app-4pwa.onrender.com' }}
       REVALIDATE_URL: ${{ vars.REVALIDATE_URL || 'https://www.auditgava.com/api/revalidate' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:
           sparse-checkout: frontend/lib/revalidation/paths.json
           sparse-checkout-cone-mode: false
@@ -1142,7 +1213,7 @@ jobs:
 
       - name: Create issue on URL health-check failure
         if: needs.healthcheck.outputs.has_failures == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // Parse the health-check report to build a readable table
@@ -1239,7 +1310,7 @@ jobs:
         # `unprobed == '0'` as well: a run that ran out of budget before
         # reaching a source has not shown that source to be reachable.
         if: needs.healthcheck.result == 'success' && needs.healthcheck.outputs.critical_reachable == 'true' && needs.healthcheck.outputs.unprobed == '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             // All critical sources were reachable this run — close any
@@ -1275,7 +1346,7 @@ jobs:
 
       - name: Create issue on seeding/validation failure
         if: needs.seed.result == 'failure' || needs.validate.result == 'failure' || needs.revalidate.result == 'failure'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         # Inputs arrive as env, not `${{ }}` spliced into the script, so
         # backend/tests/test_healthcheck_is_bounded.py can run this script.
         env:

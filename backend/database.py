@@ -8,8 +8,10 @@ from sqlalchemy.orm import sessionmaker
 
 if __package__:
     from .db_url import with_explicit_driver
+    from .github_database_tls import connection_args as github_connection_args
 else:
     from db_url import with_explicit_driver
+    from github_database_tls import connection_args as github_connection_args
 
 load_dotenv()
 
@@ -58,6 +60,7 @@ engine = create_engine(
     max_overflow=10,    # keep headroom for migrations, seeding, and other clients
     pool_recycle=300,   # recycle connections every 5 min (Supabase may drop idle ones)
     pool_timeout=30,
+    connect_args=github_connection_args(),
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

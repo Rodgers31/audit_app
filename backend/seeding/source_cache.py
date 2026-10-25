@@ -405,6 +405,7 @@ def main(argv=None):
     from sqlalchemy.orm import Session
     from models import Country, SourceDocument
     from db_url import with_explicit_driver
+    from github_database_tls import connection_args as github_connection_args
 
     engine = None
     try:
@@ -413,7 +414,7 @@ def main(argv=None):
         authority = reviewed_sources(args.profile)
         engine = create_engine(
             with_explicit_driver(os.environ[args.database_url_env]),
-            connect_args={"connect_timeout": 8},
+            connect_args={"connect_timeout": 8, **github_connection_args()},
         )
         if engine.dialect.name != "postgresql":
             raise SourceCacheRefused(

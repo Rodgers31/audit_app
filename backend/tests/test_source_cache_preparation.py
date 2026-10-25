@@ -332,7 +332,7 @@ def test_backend_only_packaging_preserves_authority_and_executable(tmp_path):
             packaged / package,
             ignore=shutil.ignore_patterns("__pycache__"),
         )
-    for module in ("models.py", "database.py", "db_url.py"):
+    for module in ("models.py", "database.py", "db_url.py", "github_database_tls.py"):
         shutil.copy2(backend / module, packaged / module)
     env = {
         "PATH": os.defpath,
