@@ -38,7 +38,9 @@ source of truth is simpler.
 
 from __future__ import annotations
 
+import json
 import os
+import threading
 import time
 from dataclasses import dataclass
 from typing import List, Optional
@@ -68,6 +70,14 @@ _security = HTTPBearer(auto_error=True)
 _jwks_cache: Optional[dict] = None
 _jwks_cache_ts: float = 0.0
 _JWKS_TTL_SECONDS = 3600.0
+_JWKS_REFRESH_COOLDOWN_SECONDS = 30.0
+_JWKS_MAX_RESPONSE_BYTES = 64 * 1024
+_JWKS_READ_BUDGET_SECONDS = 5.0
+_JWKS_MAX_KEYS = 20
+_jwks_last_attempt_ts: Optional[float] = None
+_jwks_refresh_in_flight = False
+_jwks_lock = threading.Lock()
+_jwks_clock = time.monotonic
 
 
 def _supabase_url() -> str:
@@ -80,31 +90,88 @@ def _supabase_url() -> str:
     return url.rstrip("/")
 
 
+def _read_jwks() -> dict:
+    """Read identity-encoded JSON with a byte cap before parsing or publication."""
+    started = _jwks_clock()
+
+    def check_elapsed():
+        if not 0 <= _jwks_clock() - started < _JWKS_READ_BUDGET_SECONDS:
+            raise ValueError("Key response exceeded its elapsed budget")
+
+    with httpx.stream(
+        "GET",
+        f"{_supabase_url()}/auth/v1/.well-known/jwks.json",
+        timeout=5.0,
+        headers={"Accept-Encoding": "identity"},
+        follow_redirects=False,
+    ) as response:
+        response.raise_for_status()
+        check_elapsed()
+        if any(
+            value.strip().lower() != "identity"
+            for value in response.headers.get_list("content-encoding")
+        ):
+            raise ValueError("Encoded key response is unsupported")
+        declared = response.headers.get("content-length")
+        if declared is not None:
+            declared = declared.strip()
+            if (
+                not declared.isascii()
+                or not declared.isdecimal()
+                or len(declared) > 10
+                or int(declared) > _JWKS_MAX_RESPONSE_BYTES
+            ):
+                raise ValueError("Invalid key response length")
+        raw = bytearray()
+        for chunk in response.iter_raw():
+            check_elapsed()
+            if len(raw) + len(chunk) > _JWKS_MAX_RESPONSE_BYTES:
+                raise ValueError("Key response is too large")
+            raw.extend(chunk)
+        check_elapsed()
+        if declared is not None and len(raw) != int(declared):
+            raise ValueError("Key response length differs")
+    return _validated_jwks(json.loads(raw))
+
+
 def _fetch_jwks(force_refresh: bool = False) -> dict:
-    """Return the project's JWKS, fetching + caching as needed."""
-    global _jwks_cache, _jwks_cache_ts
-    now = time.time()
-    if (
-        not force_refresh
-        and _jwks_cache is not None
-        and (now - _jwks_cache_ts) < _JWKS_TTL_SECONDS
-    ):
-        return _jwks_cache
-    try:
-        resp = httpx.get(
-            f"{_supabase_url()}/auth/v1/.well-known/jwks.json",
-            timeout=5.0,
+    """Share one attempt budget without making followers wait for provider I/O.
+
+    A fresh cache remains usable during refresh. Cold/expired followers refuse
+    temporarily; new keys and failed-provider recovery can wait up to 30 seconds.
+    """
+    global _jwks_cache, _jwks_cache_ts, _jwks_last_attempt_ts
+    global _jwks_refresh_in_flight
+    with _jwks_lock:
+        now = _jwks_clock()
+        fresh = (
+            _jwks_cache is not None and 0 <= now - _jwks_cache_ts < _JWKS_TTL_SECONDS
         )
-        resp.raise_for_status()
-        document = _validated_jwks(resp.json())
+        if fresh and not force_refresh:
+            return _jwks_cache
+        cooling_down = (
+            _jwks_last_attempt_ts is not None
+            and 0 <= now - _jwks_last_attempt_ts < _JWKS_REFRESH_COOLDOWN_SECONDS
+        )
+        if _jwks_refresh_in_flight or cooling_down:
+            if fresh:
+                return _jwks_cache
+            raise HTTPException(503, "Authentication keys temporarily unavailable")
+        _jwks_last_attempt_ts = now
+        _jwks_refresh_in_flight = True
+    try:
+        document = _read_jwks()
+        with _jwks_lock:
+            _jwks_cache = document
+            _jwks_cache_ts = _jwks_clock()
+        return document
     except (httpx.HTTPError, ValueError, TypeError, RecursionError):
         raise HTTPException(
-            status_code=503,
-            detail="Authentication keys temporarily unavailable",
+            503, "Authentication keys temporarily unavailable"
         ) from None
-    _jwks_cache = document
-    _jwks_cache_ts = now
-    return _jwks_cache
+    finally:
+        with _jwks_lock:
+            _jwks_refresh_in_flight = False
 
 
 @dataclass
@@ -121,6 +188,7 @@ def _validated_jwks(document: object) -> dict:
     if (
         not isinstance(document, dict)
         or not isinstance(document.get("keys"), list)
+        or len(document["keys"]) > _JWKS_MAX_KEYS
         or any(not isinstance(key, dict) for key in document["keys"])
     ):
         raise ValueError("Invalid JWKS key set")
@@ -141,9 +209,9 @@ def _find_signing_key(jwks: dict, kid: str) -> Optional[dict]:
 
 def _decode_supabase_jwt(token: str) -> dict:
     """Verify the Supabase JWT and return its claims, or raise 401."""
+    if not isinstance(token, str) or len(token) > 16_384:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
     try:
-        if not isinstance(token, str):
-            raise PyJWTError("Token must be a string")
         unverified_header = jwt.get_unverified_header(token)
     except (PyJWTError, ValueError, TypeError, OverflowError, RecursionError) as e:
         raise HTTPException(
@@ -152,6 +220,8 @@ def _decode_supabase_jwt(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not isinstance(unverified_header, dict):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token header")
     alg = unverified_header.get("alg")
     kid = unverified_header.get("kid")
     if not isinstance(alg, str) or alg not in ("HS256", "ES256", "RS256"):
@@ -195,7 +265,7 @@ def _decode_supabase_jwt(token: str) -> dict:
     # doesn't know about it yet — covers the case of a key rotation
     # happening during the cache lifetime.
     try:
-        if not isinstance(kid, str) or not kid:
+        if not isinstance(kid, str) or not kid or len(kid) > 256:
             raise PyJWTError("Asymmetric tokens require a signing key ID")
         key = _find_signing_key(_fetch_jwks(), kid)
         if key is None:

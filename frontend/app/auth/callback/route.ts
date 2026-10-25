@@ -63,20 +63,22 @@ import { createClient } from '@/lib/supabase/server';
 // comment for why this distinction matters.
 const SESSION_COOKIE_TAIL = /-auth-token(\.\d+)?$/;
 
+function callbackRedirect(destination: string) {
+  const response = NextResponse.redirect(destination);
+  response.headers.set('Cache-Control', 'private, no-store');
+  response.headers.set('Referrer-Policy', 'no-referrer');
+  return response;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
 
   const code = searchParams.get('code');
-  const next = searchParams.get('next') ?? '/';
-
-  // Server log so anyone running ``npm run dev`` can verify which
-  // branch this handler took. The "stuck on the old behaviour"
-  // reports we kept getting were almost always "the dev server is
-  // serving stale code"; this log makes that immediately obvious.
-  // eslint-disable-next-line no-console
-  console.log(
-    `[auth/callback] hit — code=${code ? 'present' : 'missing'} next=${next}`
-  );
+  const suppliedNext = searchParams.get('next') ?? '/';
+  // Only root-relative app paths may follow an exchange. Backslashes and
+  // controls can be normalized into authority separators by URL parsers.
+  const next = suppliedNext.startsWith('/') && !suppliedNext.startsWith('//') &&
+    !/[\\\u0000-\u0020\u007f]/.test(suppliedNext) ? suppliedNext : '/';
 
   if (code) {
     // Recovery flow: forward the code without creating a new session,
@@ -89,12 +91,11 @@ export async function GET(request: Request) {
       // ``?code=`` would be auto-exchanged by the browser SDK on
       // page mount (see file-level comment); ``?recovery=`` is
       // invisible to the SDK's PKCE-callback detection.
-      const response = NextResponse.redirect(
+      const response = callbackRedirect(
         `${origin}/reset-password?recovery=${encodeURIComponent(code)}`
       );
 
       const cookieStore = await cookies();
-      const cleared: string[] = [];
       cookieStore.getAll().forEach(({ name }) => {
         if (name.startsWith('sb-') && SESSION_COOKIE_TAIL.test(name)) {
           // Set with empty value + maxAge 0 to delete. Path must
@@ -105,16 +106,9 @@ export async function GET(request: Request) {
             path: '/',
             sameSite: 'lax',
           });
-          cleared.push(name);
         }
       });
 
-      // eslint-disable-next-line no-console
-      console.log(
-        `[auth/callback] recovery flow: forwarding code, cleared ${cleared.length} session cookie(s)${
-          cleared.length ? ' [' + cleared.join(', ') + ']' : ''
-        }`
-      );
       return response;
     }
 
@@ -123,12 +117,12 @@ export async function GET(request: Request) {
 
     if (!error) {
       // Successfully exchanged — redirect to the intended page
-      return NextResponse.redirect(`${origin}${next}`);
+      return callbackRedirect(`${origin}${next}`);
     }
   }
 
   // If code is missing or exchange failed, send user to an error page
-  return NextResponse.redirect(
+  return callbackRedirect(
     `${origin}/reset-password?error=${encodeURIComponent(
       'The reset link is invalid or has expired. Please request a new one.'
     )}`

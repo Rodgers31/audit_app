@@ -1,0 +1,73 @@
+{
+  "source_head": "bc8660acf39fbb78b927b340f83082a3a6c9b5ea",
+  "receipts": [
+    {
+      "scope": "full",
+      "command": [
+        "/tmp/audit-oct24-pr-review-runtime/node-v22.23.4-darwin-arm64/bin/node",
+        "/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js",
+        "audit",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--json",
+        "--cache=/tmp/audit-oct24-pr-review-runtime/npm-cache"
+      ],
+      "observed_at": "2026-10-25T00:45:45.488105+00:00",
+      "exit_code": 1,
+      "lock_sha256": "fda6befb45060e569b869902e165d8cd47f2dd0d0e19048ad968f7f8715e2d37",
+      "raw_sha256": "7af1e8aaa45702327a64a6a3f90130fa23d0f76fa5f9273b819febc352408ea6",
+      "advisory_summary": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 1,
+        "critical": 1,
+        "total": 2
+      },
+      "dependency_metadata": {
+        "prod": 138,
+        "dev": 728,
+        "optional": 77,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 900
+      },
+      "artifact": "npm-audit.json"
+    },
+    {
+      "scope": "production",
+      "command": [
+        "/tmp/audit-oct24-pr-review-runtime/node-v22.23.4-darwin-arm64/bin/node",
+        "/Users/roger/.nvm/versions/node/v22.19.0/lib/node_modules/npm/bin/npm-cli.js",
+        "audit",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--json",
+        "--cache=/tmp/audit-oct24-pr-review-runtime/npm-cache",
+        "--omit=dev"
+      ],
+      "observed_at": "2026-10-25T00:45:45.994083+00:00",
+      "exit_code": 1,
+      "lock_sha256": "fda6befb45060e569b869902e165d8cd47f2dd0d0e19048ad968f7f8715e2d37",
+      "raw_sha256": "7af1e8aaa45702327a64a6a3f90130fa23d0f76fa5f9273b819febc352408ea6",
+      "advisory_summary": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 1,
+        "critical": 1,
+        "total": 2
+      },
+      "dependency_metadata": {
+        "prod": 138,
+        "dev": 728,
+        "optional": 77,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 900
+      },
+      "artifact": "npm-audit-production.json"
+    }
+  ],
+  "scope_note": "Historical pre-#793 lock. npm metadata.dependencies reports the whole lock even for --omit=dev. Identical reports are valid when all matched advisories are production dependencies. Current stacked dependencies are supplied by #793."
+}
