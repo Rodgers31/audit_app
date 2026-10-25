@@ -2,8 +2,9 @@
 
 Base/main at author start: `a459834e31280b1e81b0604d16d687bc9ad7fffe`.
 Branch: `codex/b86-assembly_aging`. This is a draft author delivery for coordinator
-integration. No production ingestion, migration, configuration, grant, source-plan,
-workflow, admission SHA, merge or deployment was performed.
+integration. No production ingestion, migration, configuration, grant, source-plan
+selection, admission SHA, merge or deployment was performed. B87 adds only
+default-off workflow flag forwarding as described below.
 
 ## Implemented source-to-reader chain
 
@@ -96,12 +97,13 @@ Neither August2026 report month nor 30June stock date is a full publication date
 | literal `true` | literal `true` | Both cohorts, one shared download/aging PDF open |
 
 Names are `SEED_PENDING_BILLS_AGING_ENABLED` and the new
-`SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED`. The latter is deliberately not wired
-into root-owned workflows. Current admitted nightly behavior is unchanged;
-repository variables alone do not add this new environment variable to the
-workflow. Any future workflow proposal is in the lane `DEPENDENCIES.md` with a
-literal false fallback. Root must separately review source/runtime/download
-budgets, workflow selection and live rollout; this author enabled nothing.
+`SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED`. B87 coordinator review adds the
+root-owned workflow forwarding with a literal `false` fallback, independently
+of the executive opt-in. The existing workflow contract test reproduced the
+missing forwarding before this change and passes afterward. No repository
+variable, schedule, domain selection, runtime budget or admitted revision was
+changed. Source/runtime/download qualification and live rollout remain separate
+acceptance work; both aging producers stay off in production.
 
 No duplicate publication-date store or social eligibility adapter was added.
 Lane802's proposed native authority interface remains a future separately
