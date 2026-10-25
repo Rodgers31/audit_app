@@ -39,12 +39,12 @@ cache upload. Database size is an observation, not billed-egress/Free acceptance
    report for both existing secrets and a successful run conclusion. On failure
    disable Actions again, remove the admission variable, preserve sanitized logs
    and investigate the exact refusal; do not substitute a different credential.
-3. Review/merge #794 and this workflow change through the usual independent
+3. Review/merge prerequisite PR #795 and this workflow change through the usual independent
    review/comment process. Required-check bypass is a separate explicit owner
    decision after a normal merge refusal. Deploy the accepted backend; verify
    installed writer hash and publishing/upload/dispatch flags remain off.
 4. Admit only the accepted main SHA through INGESTION_WRITE_APPROVED_SHA. The
-   routine workflow now prepares the same credential-free public CA policy in each database job, forces explicit verify-full/root DBAPI arguments in both real engine constructors (overriding URI sslmode=require), qualifies that job's stored connection before database effects,
+   routine workflow now prepares the same credential-free public CA policy in each database job, forces explicit verify-full/root DBAPI arguments in the standard, enhanced and source-cache engine constructors (overriding URI sslmode=require), qualifies that job's stored connection before database effects,
    requires exactly the already accepted Alembic head and does not run DDL.
    A new main SHA or schema head is refused until reviewed/admitted again.
 5. Keep INGESTION_NIGHTLY_ENABLED absent/false while enabling the workflow for

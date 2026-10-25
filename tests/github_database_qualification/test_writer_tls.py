@@ -67,6 +67,9 @@ def test_real_application_engine_overrides_weak_uri_tls(prepared, monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2]/'backend'))
     monkeypatch.setenv('PYTHON_DOTENV_DISABLED','1')
     monkeypatch.setenv('DATABASE_URL',URL+'?sslmode=require')
+    # Backend conftests can already have imported the default-off singleton.
+    # Construct this Engine under the current fixture's admitted policy.
+    monkeypatch.delitem(sys.modules, 'database', raising=False)
     database = importlib.import_module('database')
     from sqlalchemy import event
     class Intercepted(Exception):
