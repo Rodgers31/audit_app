@@ -511,6 +511,73 @@ def validate_cohort(cohort):
         )
         if normalized != row.get("amounts"):
             raise ValueError("Aging raw and normalized cells disagree")
+        _validate_reader_notes(row, cohort["scope"], contract)
+    if any(value is None for value in cohort["summary"]["amounts"]):
+        raise ValueError("Incomplete aging printed summary")
+    # Reconciliation describes these retained cells, not independently supplied
+    # metadata. A correct fingerprint cannot make a contradictory status true.
+    for index, item in enumerate(reconciliation):
+        present = [Decimal(row["amounts"][index]) for row in rows
+                   if row["amounts"][index] is not None]
+        known_sum = sum(present, Decimal(0))
+        printed = Decimal(cohort["summary"]["amounts"][index])
+        status = ("not_reconciled_missing_cells" if len(present) != 47
+                  else "matched_with_rounding" if abs(known_sum - printed) <= Decimal(500000)
+                  else "conflicting")
+        if (require_pending_amount(item["known_cells_sum"], "aging known sum") != known_sum
+            or require_pending_amount(item["printed_amount"], "aging printed sum") != printed
+            or item["reported_count"] != len(present) or item["status"] != status):
+            raise ValueError("Aging reconciliation disagrees with retained cells")
+
+
+def _validate_reader_notes(row, scope, contract):
+    """Only source-supported warnings with usable comparison operands qualify."""
+    population, table = contract["population"], contract["table"]
+    notes = row["reader_notes"]
+    codes = [note["code"] for note in notes]
+    missing = any(value is None for value in row["amounts"])
+    differs = not missing and abs(sum(Decimal(value) for value in row["amounts"][:4])
+                                 - Decimal(row["amounts"][4])) > Decimal(50000)
+    publisher_absence = scope == SCOPE and row["county"] == "Nandi"
+    required = {
+        "missing_source_cells": missing,
+        "bands_differ_from_printed_total": differs,
+        "publisher_says_aging_not_provided": publisher_absence,
+    }
+    if len(codes) != len(set(codes)) or any((code in codes) != needed for code, needed in required.items()):
+        raise ValueError("Missing or contradictory aging reader qualification warning")
+    for note in notes:
+        code = note["code"]
+        fields = {"code", "table"}
+        if code == "publisher_says_aging_not_provided":
+            fields |= {"page", "county"}
+            if note.get("page") != 54 or type(note.get("page")) is not int or note.get("county") != "Nandi":
+                raise ValueError("Invalid publisher aging qualification")
+        elif code in {f"payables_{population}_total_differs", f"known_payables_{population}_sum_differs"}:
+            summary = code.startswith("known_")
+            fields |= {"comparison_table", "comparison_amount"}
+            fields |= {"aging_reported_total"} if summary else {"comparison_page"}
+            if (summary != (row["county"] == "Total") or note.get("comparison_table") != "Table 2.10"
+                or row["amounts"][4] is None or not isinstance(note.get("comparison_amount"), str)
+                or re.fullmatch(r"\d+(?:\.\d+)?", note["comparison_amount"]) is None):
+                raise ValueError("Invalid aging comparison qualification")
+            comparison = require_pending_amount(note["comparison_amount"], "aging comparison")
+            if comparison > Decimal("1e18") * (47 if summary else 1):
+                raise ValueError("Aging comparison exceeds the supported source range")
+            reported = Decimal(row["amounts"][4])
+            if abs(comparison - reported) <= Decimal(500000 if summary else 50000):
+                raise ValueError("Aging comparison warning has no discrepancy")
+            if summary:
+                if (not isinstance(note.get("aging_reported_total"), str)
+                    or re.fullmatch(r"\d+(?:\.\d+)?", note["aging_reported_total"]) is None
+                    or require_pending_amount(note["aging_reported_total"], "aging reported total") != reported):
+                    raise ValueError("Aging comparison total disagrees with retained cells")
+            elif type(note.get("comparison_page")) is not int or note["comparison_page"] not in (51, 52, 53):
+                raise ValueError("Invalid aging comparison page")
+        elif code not in {"missing_source_cells", "bands_differ_from_printed_total", "cob_marked_inconsistent"}:
+            raise ValueError("Unsupported aging reader qualification")
+        if set(note) != fields or note.get("table") != table:
+            raise ValueError("Invalid aging reader qualification fields/scope")
 
 
 def public_observation(db, source, extraction, ref, *, county=None, scope=SCOPE):

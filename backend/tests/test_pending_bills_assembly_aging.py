@@ -107,6 +107,9 @@ def test_both_source_cohorts_replay_api_and_history(client,db_session,seed_count
     assert result['aging_buckets'] is None
     assert result['aging_observations'][SCOPE]['reported_total']==6321350000
     assert result['aging_observations'][SCOPE]['chart_supported'] is False
+    assert result['aging_observations'][SCOPE]['coverage']['reported_counties'] == 47
+    assert result['aging_observations'][SCOPE]['coverage']['counties_with_all_bands'] == 36
+    assert len(result['aging_observations'][SCOPE]['coverage']['missing_band_counties']) == 11
     assert result['aging_observations']['county_executive']['reported_total']==460000000
     assert result['aging_observations']['combined']['buckets'] is None
     county=client.get('/api/v1/pending-bills/counties/narok').json()
@@ -231,3 +234,68 @@ def test_malformed_public_cohort_is_structured_absence(db_session,seed_country,t
     candidate=Extraction(source_document_id=doc.id,extractor=ASSEMBLY_EXTRACTOR,extracted_json=bad)
     result=aging.public_observation(db_session,doc,candidate,ref,scope=SCOPE)
     assert result['status']=='unavailable'
+
+
+@pytest.mark.parametrize('change', [
+    'known_sum', 'printed_amount', 'reported_count', 'reconciliation_status',
+    'missing_band_warning', 'missing_cells_warning', 'unknown_note', 'wrong_note_scope',
+    'wrong_note_table', 'duplicate_note', 'malformed_comparison', 'missing_comparison_table',
+    'wrong_comparison_page', 'wrong_aging_total', 'comparison_on_simple_note',
+])
+def test_semantically_corrupt_public_cohort_is_structured_absence(
+    db_session, seed_country, tmp_path, monkeypatch, change,
+):
+    """A valid shape/fingerprint cannot license false reconciliation or warnings."""
+    from models import Extraction, SourceDocument
+    from services.pending_bills_aging import ASSEMBLY_EXTRACTOR
+    from test_pending_bills_aging_persistence import populate_counties
+    populate_counties(db_session, seed_country.id)
+    records, _, assembly = source_pair(tmp_path, monkeypatch)
+    write_pair(db_session, records, None, assembly)
+    doc = db_session.query(SourceDocument).one()
+    retained = db_session.query(Extraction).filter(Extraction.extractor == ASSEMBLY_EXTRACTOR).one()
+    bad = deepcopy(retained.extracted_json)
+    summary = bad['summary']
+    comparison = next(n for n in summary['reader_notes'] if 'comparison_amount' in n)
+    if change == 'known_sum': bad['reconciliation'][0]['known_cells_sum'] = '0'
+    elif change == 'printed_amount': bad['reconciliation'][0]['printed_amount'] = '0'
+    elif change == 'reported_count': bad['reconciliation'][0]['reported_count'] = 47
+    elif change == 'reconciliation_status': bad['reconciliation'][0]['status'] = 'matched_with_rounding'
+    elif change == 'missing_band_warning':
+        summary['reader_notes'] = [n for n in summary['reader_notes'] if n['code'] != 'bands_differ_from_printed_total']
+    elif change == 'missing_cells_warning':
+        next(r for r in bad['rows'] if r['county'] == 'Narok')['reader_notes'] = []
+    elif change == 'unknown_note': summary['reader_notes'].append({'code': 'no_discrepancy', 'table': 'Table 2.12'})
+    elif change == 'wrong_note_scope': comparison['code'] = 'known_payables_executive_sum_differs'
+    elif change == 'wrong_note_table': comparison['table'] = 'Table 2.11'
+    elif change == 'duplicate_note': summary['reader_notes'].append(deepcopy(comparison))
+    elif change == 'malformed_comparison': comparison['comparison_amount'] = 'NaN'
+    elif change == 'missing_comparison_table': comparison.pop('comparison_table')
+    elif change == 'wrong_comparison_page':
+        next(n for r in bad['rows'] for n in r['reader_notes'] if 'comparison_page' in n)['comparison_page'] = True
+    elif change == 'wrong_aging_total': comparison['aging_reported_total'] = '1'
+    elif change == 'comparison_on_simple_note': summary['reader_notes'][0]['comparison_amount'] = '1'
+    ref = deepcopy(doc.meta['pending_bills_assembly_aging_v2'])
+    ref['fingerprint'] = aging.cohort_fingerprint(bad)
+    candidate = Extraction(source_document_id=doc.id, extractor=ASSEMBLY_EXTRACTOR, extracted_json=bad)
+    assert aging.public_observation(db_session, doc, candidate, ref, scope=SCOPE)['status'] == 'unavailable'
+
+
+def test_executive_publisher_warning_is_required():
+    cohort = aging.parse_aging_tables(synthetic_tables(), payables_entries())
+    next(r for r in cohort['rows'] if r['county'] == 'Nandi')['reader_notes'] = [
+        {'code': 'missing_source_cells', 'table': 'Table 2.11'},
+    ]
+    with pytest.raises(ValueError, match='qualification|warning'):
+        aging.validate_cohort(cohort)
+
+
+@pytest.mark.parametrize('operand', ['1e15', '1e999999999', '6,375,350,000', 'NaN',
+                                    'Infinity', '-1', True, None, {}, []])
+def test_reader_note_operands_refuse_without_arithmetic_or_rendering_failure(operand):
+    cohort = parsed()
+    aging.validate_cohort(cohort)
+    note = next(n for n in cohort['summary']['reader_notes'] if 'comparison_amount' in n)
+    note['comparison_amount'] = operand
+    with pytest.raises(ValueError):
+        aging.validate_cohort(cohort)

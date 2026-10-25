@@ -19,7 +19,7 @@ export function readScopedAging(raw: unknown, scope: PendingBillsAgingScope): Av
   const assembly = scope === 'county_assembly';
   if (data.version !== (assembly ? 2 : 1) || data.scope !== scope || data.status !== 'qualified' || data.absent_reason != null ||
       data.unit !== 'KES' || data.currency !== 'KES' || data.complete_total !== null ||
-      typeof data.as_at !== 'string' || !/^\d{4}-06-30$/.test(data.as_at) ||
+      data.as_at !== '2026-06-30' ||
       typeof data.artifact_sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(data.artifact_sha256) ||
       !Number.isInteger(data.extraction_id) || data.extraction_id! <= 0 ||
       typeof data.source_url !== 'string' || !data.source_url.startsWith('https://cob.go.ke/') ||
@@ -30,7 +30,7 @@ export function readScopedAging(raw: unknown, scope: PendingBillsAgingScope): Av
       !Number.isInteger(coverage.reported_counties) || coverage.reported_counties < 0 || coverage.reported_counties > 47 ||
       !names(coverage.missing_counties) || !names(coverage.qualified_counties) ||
       coverage.missing_counties.length + coverage.reported_counties !== 47) return null;
-  if ((coverage.counties_with_all_bands !== undefined || coverage.missing_band_counties !== undefined) &&
+  if ((assembly || coverage.counties_with_all_bands !== undefined || coverage.missing_band_counties !== undefined) &&
       (!Number.isInteger(coverage.counties_with_all_bands) || coverage.counties_with_all_bands! < 0 || coverage.counties_with_all_bands! > 47 ||
        !names(coverage.missing_band_counties) || coverage.missing_band_counties.length + coverage.counties_with_all_bands! !== 47)) return null;
   if (!Array.isArray(data.buckets) || data.buckets.length !== 4 || data.buckets.some((band, i) =>

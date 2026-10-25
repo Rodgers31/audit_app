@@ -10,7 +10,7 @@ export const assembly: any = {
   artifact_sha256: 'a'.repeat(64), extraction_id: 13,
   source_url: 'https://cob.go.ke/report.pdf', publisher: 'Controller of Budget', table: 'Table 2.12', page: 55,
   reported_total: 6_321_350_000, chart_supported: false,
-  coverage: { reported_counties: 47, expected_counties: 47, missing_counties: [], qualified_counties: ['Narok', 'Uasin Gishu'], complete: false, counties_with_all_bands: 45, missing_band_counties: ['Narok','Uasin Gishu'] },
+  coverage: { reported_counties: 47, expected_counties: 47, missing_counties: [], qualified_counties: ['Narok', 'Uasin Gishu'], complete: false, counties_with_all_bands: 36, missing_band_counties: ['Bungoma', 'Kajiado', 'Kericho', 'Kilifi', 'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Narok', 'Uasin Gishu'] },
   reader_notes: [{ code: 'reported_assembly_population_only' }, { code: 'bands_differ_from_printed_total' }],
   buckets: ['Under one year','1-2 years','2-3 years','Over 3 years'].map((bucket,i)=>({ bucket, amount: [2_481_980_000,1_780_020_000,639_070_000,1_402_370_000][i], raw_value: `${i}`, absent_reason: null })),
 };
@@ -24,7 +24,7 @@ test('renders separately sourced assembly bands with correct scope, summary disc
   expect(screen.getByText(/47 of 47 counties/)).toHaveTextContent('assembly aging total');
   expect(screen.getByText(/These source year bands cover county assemblies only/)).toBeInTheDocument();
   expect(screen.getByText(/bands differ from printed total/)).toBeInTheDocument();
-  expect(screen.getByText(/45 of 47 counties/)).toHaveTextContent('Missing bands: Narok, Uasin Gishu');
+  expect(screen.getByText(/36 of 47 counties/)).toHaveTextContent('Missing bands: Bungoma, Kajiado, Kericho, Kilifi, Kirinyaga, Kisii, Kisumu, Kitui, Kwale, Narok, Uasin Gishu');
   expect(screen.getByRole('link')).toHaveTextContent('Table 2.12, PDF p.55');
   expect(screen.queryByRole('img')).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Aging population'),{target:{value:'combined'}});
@@ -44,4 +44,16 @@ test('active Swahili covers assembly scope, caption, date and qualifications',()
   expect(screen.getByText(/30 Juni 2026/)).toHaveTextContent('Mabunge ya kaunti');
   expect(screen.getByText(/yanahusu mabunge ya kaunti pekee/)).toBeInTheDocument();
   unmount();localStorage.removeItem('auditgava-lang');
+});
+
+
+test.each(['both', 'count', 'names'])('assembly requires band coverage: missing %s', (missing) => {
+  const coverage = { ...assembly.coverage };
+  if (missing !== 'names') delete coverage.counties_with_all_bands;
+  if (missing !== 'count') delete coverage.missing_band_counties;
+  expect(readScopedAging({ ...assembly, coverage }, 'county_assembly')).toBeNull();
+});
+
+test.each(['2025-06-30', '2027-06-30', '0000-06-30'])('assembly refuses an unsupported source date %s', (as_at) => {
+  expect(readScopedAging({ ...assembly, as_at }, 'county_assembly')).toBeNull();
 });

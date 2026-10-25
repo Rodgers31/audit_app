@@ -15,6 +15,10 @@ const measured: any = {
 };
 const copy = () => JSON.parse(JSON.stringify(measured));
 
+test.each(['2025-06-30', '2027-06-30', '0000-06-30'])('executive refuses an unsupported source date %s', (as_at) => {
+  expect(readScopedAging({ ...measured, as_at }, 'county_executive')).toBeNull();
+});
+
 test('preserves source bands and missing coverage; selector cannot lend executive ages to national bills', () => {
   render(<PendingBillsAgingPanel observations={{ county_executive: measured } as any} />);
   expect(screen.getByRole('table')).toHaveTextContent('Under one year');

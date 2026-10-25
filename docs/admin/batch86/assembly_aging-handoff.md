@@ -181,3 +181,44 @@ Final command/count and resource-cleanup receipts are in `STATUS.json` and
 synthetic acquisitions and live accepted ingestion are different: only the first
 two are established here. Live aging enablement/real ingestion/deployed readback
 remain unaccepted coordinator work; #800/#545/#699 stay open.
+
+## B87 review corrections
+
+The Copilot review body on frozen head `e390793f252387ba6bfb5eb6461dae542b7ce99e`
+identifies backend reconciliation/reader-note gaps and optional assembly coverage,
+despite having zero inline threads and saying "No open issues". Classified as
+**valid, understated**: the shared validator serves both populations. Sixteen
+executable backend regressions were observed red before the fix. Ten additional
+hostile comparison operands were accepted by the frozen validator and refused by
+the corrected validator; these overlap the committed regression inventory.
+
+The validator now compares all reconciliation sums, printed amounts, counts and
+statuses against the retained rows. It requires the derivable missing-cell,
+band-discrepancy and executive Nandi warnings, and validates supported note codes,
+population/table/locator fields, duplicate warnings, comparison operands, bounds
+and reported totals. The retained cohort does not contain the original asterisked
+county labels or the complete companion Table 2.10 population; this validation
+does not independently re-extract those source facts or recreate an omitted
+external-comparison warning.
+
+The frontend requires assembly all-band coverage in its runtime decoder and type.
+Its source-shaped fixture now discloses the actual 36 complete band sets and all
+11 missing-band counties alongside 47 printed totals. A related decoder defect
+also admitted unsupported years for the fixed v1/v2 source contracts. Frozen
+executable controls accepted 2025/2027/0000 dates and missing assembly coverage;
+the corrected decoder refuses them while accepting both versions at 2026-06-30.
+
+Focused final checks: **98 backend tests**, **8 actual PostgreSQL controls**,
+**67 overlapping optimized-interpreter controls**, and **32 frontend tests** passed.
+TypeScript and scoped ESLint passed. These are focused review checks, not a new
+full-suite, production-build, browser, live-source transport or deployment claim.
+Source discrepancies, missing cells, separate population authority and null
+complete totals remain intact. No live enablement or #800 acceptance is claimed.
+
+Evidence: `BATCH_87_REVIEW/805` under the external visualization evidence root.
+The owned PostgreSQL container used no external network or host port, left zero
+test schemas and was removed with its anonymous volume. The temporary read-only
+frontend dependency link was removed; the shared runtime image belongs to the
+coordinator. An initial wrong-directory Jest invocation and an inconclusive
+frozen-module mapper attempt are retained as harness diagnostics; the final
+frozen probe transpiles and directly executes the exact frozen decoder bytes.
