@@ -312,7 +312,7 @@ export const getPendingBills = async (signal?: AbortSignal): Promise<PendingBill
 // Enhanced pending bills summary (breakdown by type, aging, top counties, trend)
 export type PendingBillsAgingScope = 'county_executive' | 'county_assembly' | 'national' | 'combined';
 export interface PendingBillsAgingObservation {
-  version: 1;
+  version: 1 | 2;
   scope: PendingBillsAgingScope;
   status: 'qualified' | 'unavailable';
   absent_reason: string | null;
@@ -329,7 +329,7 @@ export interface PendingBillsAgingObservation {
   reported_total?: number | null;
   complete_total: null;
   chart_supported?: boolean;
-  coverage?: { reported_counties: number; expected_counties: number; missing_counties: string[]; qualified_counties: string[]; complete: false };
+  coverage?: { reported_counties: number; expected_counties: number; missing_counties: string[]; qualified_counties: string[]; complete: false; counties_with_all_bands?: number; missing_band_counties?: string[] };
   reader_notes?: { code: string; comparison_table?: string; comparison_amount?: string; aging_reported_total?: string }[];
 }
 export type PendingBillsAgingObservations = Record<PendingBillsAgingScope, PendingBillsAgingObservation>;

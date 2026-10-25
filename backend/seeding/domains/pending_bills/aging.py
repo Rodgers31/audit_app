@@ -1,4 +1,4 @@
-"""Versioned CoB executive aging observations, separate from all-obligation stocks.
+"""Versioned CoB population-specific aging observations, separate from all-obligation stocks.
 
 Only the reviewed edition is supported. Reissues require source review rather
 than silently reusing a URL, page number or fiscal-year-derived age.
@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 from models import Extraction
-from services.pending_bills_aging import EXTRACTOR, absent_observation
+from services.pending_bills_aging import EXTRACTOR, ASSEMBLY_EXTRACTOR, absent_observation
 from .parser import require_pending_amount
 
 ARTIFACT_SHA256 = "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20"
@@ -23,6 +23,17 @@ TABLE = "Table 2.11"
 BANDS = ("Under one year", "1-2 years", "2-3 years", "Over 3 years")
 SCOPE = "county_executive"
 MILLION = Decimal(1000000)
+ASSEMBLY_SCOPE = "county_assembly"
+
+
+def scope_contract(scope):
+    if scope == SCOPE:
+        return dict(version=1, table=TABLE, pages=(53, 54), extractor=EXTRACTOR,
+                    metadata_key="pending_bills_aging_v1", population="executive")
+    if scope == ASSEMBLY_SCOPE:
+        return dict(version=2, table="Table 2.12", pages=(54, 55), extractor=ASSEMBLY_EXTRACTOR,
+                    metadata_key="pending_bills_assembly_aging_v2", population="assembly")
+    raise ValueError("Unsupported aging scope")
 
 
 class AgingIngestion(dict):
@@ -49,14 +60,18 @@ def _amount(raw):
     return str(value * MILLION)
 
 
-def parse_aging_tables(tables, payables_entries):
-    """Read complete six-column executive tables including every continuation.
+def parse_aging_tables(tables, payables_entries, *, scope=SCOPE):
+    """Read one population’s six-column table including every continuation.
 
     Dashes stay missing. Published totals are retained independently of known
     cells; rounding differences and publisher contradictions remain explicit.
     """
     from seeding.pdf_parsers import KENYAN_COUNTIES
 
+    contract = scope_contract(scope)
+    table_name = contract["table"]
+    population = contract["population"]
+    stock_field = f"{population}_millions"
     known = set(KENYAN_COUNTIES)
     if not isinstance(tables, list) or not isinstance(payables_entries, list):
         raise ValueError("Aging requires table pages and payables entries")
@@ -75,8 +90,14 @@ def parse_aging_tables(tables, payables_entries):
         ):
             raise ValueError("Invalid aging table page")
         header = " ".join(str(c or "") for c in table[0]).lower()
-        if "executive" not in header or "ageing" not in header:
+        if scope == SCOPE:
+            if "executive" not in header or "ageing" not in header:
+                continue
+        elif str(table[0][1] or "").strip() != "County Ass )":
             continue
+        if page not in contract["pages"]:
+            raise ValueError("Invalid aging population page")
+        header = header.replace("mil-\nlions", "millions")
         units = re.findall(r"\b([a-z]+)\.?\s*millions?\b", header)
         if not units or any(unit not in {"kes", "ksh", "kshs"} for unit in units):
             raise ValueError("Aging unit is not million KES")
@@ -96,7 +117,7 @@ def parse_aging_tables(tables, payables_entries):
                 raise ValueError(f"Duplicated aging county/total: {name}")
             values = [_amount(c) for c in cells[1:]]
             notes = []
-            if name == "Nandi":
+            if name == "Nandi" and scope == SCOPE:
                 # PDF p.54 explicitly says no aging analysis was supplied.
                 # Preserve the printed zeros as raw evidence, never a measured
                 # zero balance overriding the publisher's qualification.
@@ -104,35 +125,35 @@ def parse_aging_tables(tables, payables_entries):
                 notes.append(
                     {
                         "code": "publisher_says_aging_not_provided",
-                        "table": TABLE,
+                        "table": table_name,
                         "page": 54,
                         "county": "Nandi",
                     }
                 )
             if "*" in label:
-                notes.append({"code": "cob_marked_inconsistent", "table": TABLE})
+                notes.append({"code": "cob_marked_inconsistent", "table": table_name})
             if any(v is None for v in values):
-                notes.append({"code": "missing_source_cells", "table": TABLE})
+                notes.append({"code": "missing_source_cells", "table": table_name})
             elif abs(
                 sum(Decimal(v) for v in values[:4]) - Decimal(values[4])
             ) > Decimal(50000):
                 notes.append(
-                    {"code": "bands_differ_from_printed_total", "table": TABLE}
+                    {"code": "bands_differ_from_printed_total", "table": table_name}
                 )
             if not is_total:
-                executive = _amount(payables[name].get("executive_millions"))
+                stock_amount = _amount(payables[name].get(stock_field))
                 if (
-                    executive is not None
+                    stock_amount is not None
                     and values[4] is not None
-                    and abs(Decimal(executive) - Decimal(values[4])) > Decimal(50000)
+                    and abs(Decimal(stock_amount) - Decimal(values[4])) > Decimal(50000)
                 ):
                     notes.append(
                         {
-                            "code": "payables_executive_total_differs",
-                            "table": TABLE,
+                            "code": f"payables_{population}_total_differs",
+                            "table": table_name,
                             "comparison_table": payables[name]["table"],
                             "comparison_page": payables[name]["page"],
-                            "comparison_amount": executive,
+                            "comparison_amount": stock_amount,
                         }
                     )
             row = dict(
@@ -147,22 +168,22 @@ def parse_aging_tables(tables, payables_entries):
             else:
                 rows[name] = row
     if set(rows) != known or total is None:
-        raise ValueError("Incomplete executive aging table/continuation")
+        raise ValueError(f"Incomplete {population} aging table/continuation")
     if any(v is None for v in total["amounts"]):
-        raise ValueError("Executive aging printed summary is incomplete")
+        raise ValueError(f"{population.capitalize()} aging printed summary is incomplete")
     payables_sum = sum(
         (
-            Decimal(_amount(e["executive_millions"]))
+            Decimal(_amount(e[stock_field]))
             for e in payables_entries
-            if e.get("executive_millions") is not None
+            if e.get(stock_field) is not None
         ),
         Decimal(0),
     )
     if abs(payables_sum - Decimal(total["amounts"][4])) > Decimal(500000):
         total["reader_notes"].append(
             {
-                "code": "known_payables_executive_sum_differs",
-                "table": TABLE,
+                "code": f"known_payables_{population}_sum_differs",
+                "table": table_name,
                 "comparison_table": "Table 2.10",
                 "comparison_amount": str(payables_sum),
                 "aging_reported_total": total["amounts"][4],
@@ -191,11 +212,11 @@ def parse_aging_tables(tables, payables_entries):
             )
         )
     return dict(
-        version=1,
-        scope=SCOPE,
+        version=contract["version"],
+        scope=scope,
         as_at=AS_AT,
         fiscal_year=FISCAL_YEAR,
-        table=TABLE,
+        table=table_name,
         unit="KES",
         raw_unit="KES million",
         bands=list(BANDS),
@@ -207,43 +228,54 @@ def parse_aging_tables(tables, payables_entries):
 
 
 class ExecutiveAgingParser:
+    scope = SCOPE
+
     def __init__(self, path, payables_entries):
         self.path, self.payables_entries = Path(path), payables_entries
 
     def parse(self):
-        import pdfplumber
-
-        with self.path.open("rb") as stream:
-            digest = hashlib.file_digest(stream, "sha256").hexdigest()
-        if digest != ARTIFACT_SHA256:
-            raise ValueError(
-                "Unreviewed aging artifact/reissue; source qualification required"
-            )
-        with pdfplumber.open(self.path) as pdf:
-            tables = []
-            for page_no in (53, 54):
-                page = pdf.pages[page_no - 1]
-                try:
-                    text = page.extract_text() or ""
-                    if page_no == 53 and (
-                        "Table 2.11: Trade Payables Ageing Analysis for County Executives as of 30 June 2026"
-                        not in text
-                    ):
-                        raise ValueError("Aging caption missing from reviewed edition")
-                    if (
-                        page_no == 54
-                        and "Nandi County Government did not provide an ageing analysis of payables as of 30 June 2026"
-                        not in text
-                    ):
-                        raise ValueError("Aging missing-data qualification absent")
-                    tables.extend((page_no, t) for t in page.extract_tables())
-                finally:
-                    page.flush_cache()
-        # The existing parse attestation binds JSON-safe lists to input bytes.
-        return [parse_aging_tables(tables, self.payables_entries)]
+        return _parse_pdf_scopes(self.path, self.payables_entries, [self.scope])
 
 
-def _identity(row, column):
+class AssemblyAgingParser(ExecutiveAgingParser):
+    scope = ASSEMBLY_SCOPE
+
+
+def _parse_pdf_scopes(path, payables_entries, scopes):
+    """Open the retained edition once and inspect only the required pages."""
+    import pdfplumber
+
+    with Path(path).open("rb") as stream:
+        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+    if digest != ARTIFACT_SHA256:
+        raise ValueError("Unreviewed aging artifact/reissue; source qualification required")
+    tables = []
+    pages = sorted({p for scope in scopes for p in scope_contract(scope)["pages"]})
+    with pdfplumber.open(path) as pdf:
+        for page_no in pages:
+            page = pdf.pages[page_no - 1]
+            try:
+                text = page.extract_text() or ""
+                required = []
+                if SCOPE in scopes:
+                    if page_no == 53:
+                        required.append("Table 2.11: Trade Payables Ageing Analysis for County Executives as of 30 June 2026")
+                    if page_no == 54:
+                        required.append("Nandi County Government did not provide an ageing analysis of payables as of 30 June 2026")
+                if ASSEMBLY_SCOPE in scopes:
+                    if page_no == 54:
+                        required.append("Table 2.12: Trade Payables Ageing Analysis for County Assemblies as of 30 June 2026")
+                    if page_no == 55:
+                        required.extend(["ageing analysis in Table 2.12", "Counties with an asterisk.", "Source: County Assemblies"])
+                if any(caption not in text for caption in required):
+                    raise ValueError("Aging caption or publisher qualification missing from reviewed edition")
+                tables.extend((page_no, t) for t in page.extract_tables())
+            finally:
+                page.flush_cache()
+    return [parse_aging_tables(tables, payables_entries, scope=scope) for scope in scopes]
+
+
+def _identity(row, column, scope=SCOPE):
     return dict(
         measure=f"pending_bills_aging_{column}",
         geography=row["county"],
@@ -251,23 +283,32 @@ def _identity(row, column):
         period=AS_AT,
         unit="KES",
         basis="actual",
-        dimensions={"population": SCOPE, "band": column},
+        dimensions={"population": scope, "band": column},
     )
 
 
-def prepare_aging(parsed_records, receipt):
+def prepare_aging(parsed_records, receipt, *, scope=None):
     from seeding.pdf_evidence import cell_evidence, seal_pdf_observations
     from seeding.parse_cache import fresh_parse_matches
 
     if (
         receipt.get("digest") != ARTIFACT_SHA256
         or not fresh_parse_matches(parsed_records, ARTIFACT_SHA256)
-        or len(parsed_records) != 1
+        or not parsed_records
+        or (scope is None and len(parsed_records) != 1)
     ):
         raise ValueError("Aging requires a fresh parse of the reviewed artifact")
-    cohort = parsed_records[0]
-    validate_cohort(cohort)
+    if scope is None:
+        cohort = parsed_records[0]
+    else:
+        matches = [c for c in parsed_records if c.get("scope") == scope]
+        if len(matches) != 1:
+            raise ValueError("Missing/duplicated parsed aging population")
+        cohort = matches[0]
+    for candidate in parsed_records:
+        validate_cohort(candidate)
     result = AgingIngestion(deepcopy(cohort))
+    scope = result["scope"]
     evidence = []
     for row in [*result["rows"], result["summary"]]:
         row["source_evidence"] = []
@@ -276,14 +317,14 @@ def prepare_aging(parsed_records, receipt):
                 continue
             cell = cell_evidence(
                 receipt=receipt,
-                identity=_identity(row, column),
+                identity=_identity(row, column, scope),
                 raw_value=str(row["raw_cells"][i]).replace(",", ""),
                 value=row["amounts"][i],
                 raw_unit="KES million",
                 factor="1000000",
                 locator={
                     "page": row["page"],
-                    "table": TABLE,
+                    "table": result["table"],
                     "cell": f"{row['county']} / {column}",
                 },
             )
@@ -338,8 +379,10 @@ def persist_aging(session, source, cohort, *, publication_batch, records):
 
     require_stock_binding(cohort, records)
     bound = deepcopy(dict(cohort))
+    scope = bound["scope"]
+    contract = scope_contract(scope)
     for row in [*bound["rows"], bound["summary"]]:
-        identity = _identity(row, "Total")
+        identity = _identity(row, "Total", scope)
         identity.pop("measure")
         # Each band has a distinct observation dimension.
         evidence = []
@@ -367,18 +410,18 @@ def persist_aging(session, source, cohort, *, publication_batch, records):
     # observation. A valid older cohort cannot license a corrupted replay.
     candidate = Extraction(
         source_document_id=source.id,
-        extractor=EXTRACTOR,
-        page_number=53,
+        extractor=contract["extractor"],
+        page_number=contract["pages"][0],
         extracted_json=bound,
     )
-    check = public_observation(session, source, candidate, ref)
+    check = public_observation(session, source, candidate, ref, scope=scope)
     if check["status"] == "unavailable":
         raise ValueError(f"Aging source evidence refused: {check['absent_reason']}")
     prior = (
         session.query(Extraction)
         .filter(
             Extraction.source_document_id == source.id,
-            Extraction.extractor == EXTRACTOR,
+            Extraction.extractor == contract["extractor"],
         )
         .all()
     )
@@ -390,25 +433,34 @@ def persist_aging(session, source, cohort, *, publication_batch, records):
         session.add(existing)
         session.flush()
     ref["extraction_id"] = existing.id
+    # A successful flush can still have been transformed by the database.
+    # Read the durable extraction and receipts back before returning success;
+    # a failure propagates to the county writer's savepoint.
+    session.refresh(existing)
+    stored = public_observation(session, source, existing, ref, scope=scope)
+    if stored["status"] == "unavailable":
+        raise ValueError("Aging persisted evidence failed readback qualification")
     return ref
 
 
 def validate_cohort(cohort):
     from seeding.pdf_parsers import KENYAN_COUNTIES
 
+    if not isinstance(cohort, dict):
+        raise ValueError("Unsupported aging schema")
+    contract = scope_contract(cohort.get("scope"))
     if (
-        not isinstance(cohort, dict)
-        or cohort.get("version") != 1
+        cohort.get("version") != contract["version"]
         or type(cohort.get("version")) is not int
     ):
         raise ValueError("Unsupported aging schema")
     if any(
         cohort.get(k) != v
         for k, v in dict(
-            scope=SCOPE,
+            scope=cohort["scope"],
             as_at=AS_AT,
             fiscal_year=FISCAL_YEAR,
-            table=TABLE,
+            table=contract["table"],
             unit="KES",
             raw_unit="KES million",
             bands=list(BANDS),
@@ -420,28 +472,48 @@ def validate_cohort(cohort):
     if (
         not isinstance(rows, list)
         or len(rows) != 47
+        or any(not isinstance(r, dict) for r in rows)
         or {r.get("county") for r in rows} != set(KENYAN_COUNTIES)
     ):
         raise ValueError("Incomplete/duplicated aging cohort")
+    reconciliation = cohort.get("reconciliation")
+    if (not isinstance(reconciliation, list) or len(reconciliation) != 5
+        or any(not isinstance(item, dict) or item.get("column") != column
+               or type(item.get("reported_count")) is not int
+               or not 0 <= item["reported_count"] <= 47
+               or item.get("status") not in {"not_reconciled_missing_cells", "matched_with_rounding", "conflicting"}
+               for item, column in zip(reconciliation, (*BANDS, "Total")))):
+        raise ValueError("Invalid aging reconciliation")
+    for item in reconciliation:
+        require_pending_amount(item.get("known_cells_sum"), "aging known sum")
+        require_pending_amount(item.get("printed_amount"), "aging printed sum")
+    if not isinstance(cohort.get("summary"), dict) or cohort["summary"].get("county") != "Total":
+        raise ValueError("Invalid aging summary identity")
     for row in [*rows, cohort.get("summary")]:
         if (
             not isinstance(row, dict)
             or type(row.get("page")) is not int
-            or row["page"] not in (53, 54, 55)
+            or row["page"] not in contract["pages"]
         ):
             raise ValueError("Invalid aging locator")
+        notes = row.get("reader_notes")
+        if not isinstance(notes, list) or any(
+            not isinstance(note, dict) or not isinstance(note.get("code"), str)
+            or not note["code"].strip() for note in notes
+        ):
+            raise ValueError("Invalid aging reader qualifications")
         if not isinstance(row.get("raw_cells"), list) or len(row["raw_cells"]) != 5:
             raise ValueError("Invalid aging cells")
         normalized = (
             [None] * 5
-            if row["county"] == "Nandi"
+            if row["county"] == "Nandi" and cohort["scope"] == SCOPE
             else [_amount(c) for c in row["raw_cells"]]
         )
         if normalized != row.get("amounts"):
             raise ValueError("Aging raw and normalized cells disagree")
 
 
-def public_observation(db, source, extraction, ref, *, county=None):
+def public_observation(db, source, extraction, ref, *, county=None, scope=SCOPE):
     from services.figure_qualification import (
         ObservationIdentity,
         evaluate_qualification,
@@ -450,6 +522,8 @@ def public_observation(db, source, extraction, ref, *, county=None):
     cohort = extraction.extracted_json
     try:
         validate_cohort(cohort)
+        if cohort["scope"] != scope:
+            raise ValueError("Aging population mismatch")
         if (
             cohort_fingerprint(cohort) != ref.get("fingerprint")
             or ref.get("artifact_sha256") != ARTIFACT_SHA256
@@ -461,7 +535,7 @@ def public_observation(db, source, extraction, ref, *, county=None):
             else cohort["summary"]
         )
         if row is None:
-            return absent_observation(SCOPE, "county_not_in_aging_cohort")
+            return absent_observation(scope, "county_not_in_aging_cohort")
         all_rows = [*cohort["rows"], cohort["summary"]]
         ids = {
             e.get("receipt", {}).get("extraction_id")
@@ -489,13 +563,13 @@ def public_observation(db, source, extraction, ref, *, county=None):
                 matches = [
                     e
                     for e in evidence
-                    if e.get("identity") == _identity(checked_row, column)
+                    if e.get("identity") == _identity(checked_row, column, scope)
                 ]
                 if len(matches) != 1:
                     raise ValueError("Missing/ambiguous aging cell evidence")
                 cell = matches[0]
                 q = evaluate_qualification(
-                    ObservationIdentity(**_identity(checked_row, column)),
+                    ObservationIdentity(**_identity(checked_row, column, scope)),
                     value,
                     source=source,
                     evidence=cell,
@@ -506,12 +580,12 @@ def public_observation(db, source, extraction, ref, *, county=None):
                 if checked_row is row:
                     qualifications.append(q.model_dump())
     except (ValueError, TypeError, KeyError, AttributeError):
-        return absent_observation(SCOPE, "invalid_or_unqualified_aging_evidence")
+        return absent_observation(scope, "invalid_or_unqualified_aging_evidence")
     missing = [r["county"] for r in cohort["rows"] if r["amounts"][4] is None]
     qualified = [r["county"] for r in cohort["rows"] if r["reader_notes"]]
     notes = deepcopy(row["reader_notes"])
     if not county:
-        notes.append({"code": "reported_executive_population_only", "table": TABLE})
+        notes.append({"code": f"reported_{scope.removeprefix('county_')}_population_only", "table": cohort["table"]})
     buckets = [
         dict(
             bucket=band,
@@ -524,8 +598,8 @@ def public_observation(db, source, extraction, ref, *, county=None):
         for i, band in enumerate(BANDS)
     ]
     return dict(
-        version=1,
-        scope=SCOPE,
+        version=cohort["version"],
+        scope=scope,
         status="qualified",
         absent_reason=None,
         as_at=AS_AT,
@@ -538,7 +612,7 @@ def public_observation(db, source, extraction, ref, *, county=None):
         source_url=source.url,
         source_title=source.title,
         publisher=source.publisher,
-        table=TABLE,
+        table=cohort["table"],
         page=row["page"],
         county=county,
         buckets=buckets,
@@ -553,6 +627,8 @@ def public_observation(db, source, extraction, ref, *, county=None):
             missing_counties=missing,
             qualified_counties=qualified,
             complete=False,
+            counties_with_all_bands=sum(all(v is not None for v in r["amounts"][:4]) for r in cohort["rows"]),
+            missing_band_counties=[r["county"] for r in cohort["rows"] if any(v is None for v in r["amounts"][:4])],
         ),
         reader_notes=notes,
         reconciliation=cohort["reconciliation"],

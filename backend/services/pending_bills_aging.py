@@ -1,7 +1,8 @@
 """Read source-bound aging cohorts without substituting populations or editions.
 
-The unscoped legacy buckets remain absent: an executive aging table cannot
-describe national bills or county assemblies. Reads never download source bytes.
+The unscoped legacy buckets remain absent. Executive and assembly evidence
+remain separate; neither establishes national or combined ages. Reads never
+download source bytes.
 """
 from __future__ import annotations
 
@@ -12,6 +13,11 @@ from sqlalchemy import and_, or_, select
 
 SCOPES = ("county_executive", "county_assembly", "national", "combined")
 EXTRACTOR = "pending-bills-aging-v1"
+ASSEMBLY_EXTRACTOR = "pending-bills-assembly-aging-v2"
+COHORTS = {
+    "county_executive": ("pending_bills_aging_v1", EXTRACTOR),
+    "county_assembly": ("pending_bills_assembly_aging_v2", ASSEMBLY_EXTRACTOR),
+}
 
 
 def absent_observation(scope, reason="no_source_bound_aging_observation"):
@@ -42,9 +48,7 @@ def aging_observations(db, *, as_at=None, county=None, stock_context=None):
         Loan.provenance["category"].astext == "county",
         Loan.provenance["as_at"].astext == as_at,
     )
-    active_batch = SourceDocument.meta["pending_bills_aging_v1"][
-        "publication_batch"
-    ].astext
+    active_batch = SourceDocument.meta["pending_bills_publication_batch"].astext
 
     def active_stock_where(binding):
         return (
@@ -77,61 +81,48 @@ def aging_observations(db, *, as_at=None, county=None, stock_context=None):
         .populate_existing()
         .filter(
             SourceDocument.publisher == "Office of the Controller of Budget (OCOB)",
-            SourceDocument.meta["pending_bills_aging_v1"]["as_at"].astext == as_at,
+            or_(*[SourceDocument.meta[key]["as_at"].astext == as_at
+                   for key, _ in COHORTS.values()]),
             same_binding,
             ~other_binding,
         )
         .limit(2)
         .all()
     )
-    if len(docs) > 1:
-        result["county_executive"] = absent_observation(
-            "county_executive", "conflicting_source_editions"
-        )
-        return result
-    candidates = []
-    for doc in docs:
-        meta = doc.meta if isinstance(doc.meta, dict) else {}
-        ref = meta.get("pending_bills_aging_v1")
-        if not isinstance(ref, dict) or ref.get("as_at") != as_at:
-            continue
-        batch = ref.get("publication_batch")
-        if (
-            not isinstance(batch, str)
-            or re.fullmatch(r"[0-9a-f]{64}", batch) is None
-            or batch != meta.get("pending_bills_publication_batch")
-        ):
-            continue
-        # The caller may have read stock before a concurrent publication
-        # committed. Its immutable bindings must agree with this read too.
-        if stock_context is not None and stock_context != {(doc.id, batch)}:
-            continue
-        if ref.get("source_url") != doc.url:
-            continue
-        if type(ref.get("extraction_id")) is not int:
-            continue
-        extraction = (
-            db.query(Extraction)
-            .populate_existing()
-            .filter(
-                Extraction.id == ref["extraction_id"],
-                Extraction.source_document_id == doc.id,
-                Extraction.extractor == EXTRACTOR,
-            )
-            .one_or_none()
-        )
-        if extraction is not None:
-            candidates.append((doc, extraction, ref))
-    if len(candidates) != 1:
-        if candidates:
-            result["county_executive"] = absent_observation(
-                "county_executive", "conflicting_source_editions"
-            )
-        return result
-    doc, extraction, ref = candidates[0]
     from seeding.domains.pending_bills.aging import public_observation
 
-    result["county_executive"] = public_observation(
-        db, doc, extraction, ref, county=county
-    )
+    for scope, (key, extractor) in COHORTS.items():
+        candidates = []
+        for doc in docs:
+            meta = doc.meta if isinstance(doc.meta, dict) else {}
+            ref = meta.get(key)
+            if not isinstance(ref, dict) or ref.get("as_at") != as_at:
+                continue
+            batch = ref.get("publication_batch")
+            if (
+                not isinstance(batch, str)
+                or re.fullmatch(r"[0-9a-f]{64}", batch) is None
+                or batch != meta.get("pending_bills_publication_batch")
+                or (stock_context is not None and stock_context != {(doc.id, batch)})
+                or ref.get("source_url") != doc.url
+                or type(ref.get("extraction_id")) is not int
+            ):
+                continue
+            extraction = (
+                db.query(Extraction)
+                .populate_existing()
+                .filter(
+                    Extraction.id == ref["extraction_id"],
+                    Extraction.source_document_id == doc.id,
+                    Extraction.extractor == extractor,
+                )
+                .one_or_none()
+            )
+            if extraction is not None:
+                candidates.append((doc, extraction, ref))
+        if len(docs) > 1 or len(candidates) > 1:
+            result[scope] = absent_observation(scope, "conflicting_source_editions")
+        elif candidates:
+            doc, extraction, ref = candidates[0]
+            result[scope] = public_observation(db, doc, extraction, ref, county=county, scope=scope)
     return result

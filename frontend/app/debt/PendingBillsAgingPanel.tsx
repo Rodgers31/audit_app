@@ -22,6 +22,9 @@ const noteKeys: Record<string, TranslationKey> = {
   payables_executive_total_differs: 'pending_aging.note_stock_differs',
   known_payables_executive_sum_differs: 'pending_aging.note_known_sum',
   reported_executive_population_only: 'pending_aging.note_scope',
+  reported_assembly_population_only: 'pending_aging.note_assembly_scope',
+  payables_assembly_total_differs: 'pending_aging.note_assembly_stock_differs',
+  known_payables_assembly_sum_differs: 'pending_aging.note_assembly_known_sum',
 };
 
 export default function PendingBillsAgingPanel({ observations, isLoading = false, isError = false }: {
@@ -31,6 +34,7 @@ export default function PendingBillsAgingPanel({ observations, isLoading = false
   const fill = (key: TranslationKey, values: Record<string, string | number>) =>
     t(key).replace(/\{(\w+)\}/g, (whole, name: string) => String(values[name] ?? whole));
   const [scope, setScope] = useState<PendingBillsAgingScope>('county_executive');
+  const assembly = scope === 'county_assembly';
   const observation = readScopedAging(observations?.[scope], scope);
   const chartMaximum = observation?.chart_supported
     ? Math.max(...observation.buckets.map((band) => band.amount!), 1)
@@ -56,12 +60,16 @@ export default function PendingBillsAgingPanel({ observations, isLoading = false
         ) : (
           <>
             <p className='font-medium'>{fill('pending_aging.as_at', { population: t(populations[scope]), date: formatAsAt(observation.as_at, lang)! })}</p>
-            <p className='mt-2 text-neutral-muted'>{t('pending_aging.scope')}</p>
-            <p className='mt-2'>{fill('pending_aging.coverage', { reported: observation.coverage.reported_counties, expected: observation.coverage.expected_counties })}
+            <p className='mt-2 text-neutral-muted'>{t(assembly ? 'pending_aging.scope_assembly' : 'pending_aging.scope')}</p>
+            <p className='mt-2'>{fill(assembly ? 'pending_aging.coverage_assembly' : 'pending_aging.coverage', { reported: observation.coverage.reported_counties, expected: observation.coverage.expected_counties })}
               {observation.coverage.missing_counties.length > 0 ? ` ${fill('pending_aging.missing', { counties: observation.coverage.missing_counties.join(', ') })}` : ''}
               {' '}{t('pending_aging.withheld')}</p>
+            {observation.coverage.counties_with_all_bands !== undefined && <p className='mt-2 text-neutral-muted'>
+              {fill('pending_aging.band_coverage', { reported: observation.coverage.counties_with_all_bands, expected: observation.coverage.expected_counties })}
+              {observation.coverage.missing_band_counties!.length > 0 ? ` ${fill('pending_aging.missing_bands', { counties: observation.coverage.missing_band_counties!.join(', ') })}` : ''}
+            </p>}
             <table className='mt-4 w-full text-sm'>
-              <caption className='text-left font-medium mb-2'>{t('pending_aging.caption')}</caption>
+              <caption className='text-left font-medium mb-2'>{t(assembly ? 'pending_aging.caption_assembly' : 'pending_aging.caption')}</caption>
               <thead><tr><th scope='col' className='text-left'>{t('pending_aging.band_heading')}</th><th scope='col' className='text-right'>{t('pending_aging.amount_heading')}</th></tr></thead>
               <tbody>{observation.buckets.map((band, index) => <tr key={band.bucket}>
                 <th scope='row' className='py-2 text-left font-normal'>{t(bandKeys[index])}</th>
@@ -69,7 +77,7 @@ export default function PendingBillsAgingPanel({ observations, isLoading = false
               </tr>)}</tbody>
             </table>
             {observation.chart_supported && (
-              <div aria-label={t('pending_aging.chart')} role='img' className='mt-4 space-y-2'>
+              <div aria-label={t(assembly ? 'pending_aging.chart_assembly' : 'pending_aging.chart')} role='img' className='mt-4 space-y-2'>
                 {observation.buckets.map((band, index) => <div key={band.bucket} className='flex items-center gap-2' aria-hidden='true'>
                   <span className='w-28 shrink-0 text-xs'>{t(bandKeys[index])}</span>
                   <div className='flex-1 min-w-0'>
@@ -81,7 +89,7 @@ export default function PendingBillsAgingPanel({ observations, isLoading = false
             <p className='mt-3 text-neutral-muted'>{fill('pending_aging.reported_total', { amount: observation.reported_total == null ? t('pending_aging.not_reported') : money(observation.reported_total) })}</p>
             {observation.reader_notes.filter((note) => note.comparison_amount).map((note, i) => (
               <p key={i} className='mt-2 text-neutral-muted'>
-                {fill('pending_aging.comparison', { comparison_table: note.comparison_table!, comparison_amount: money(Number(note.comparison_amount)), table: observation.table, amount: money(observation.reported_total!) })}
+                {fill(assembly ? 'pending_aging.comparison_assembly' : 'pending_aging.comparison', { comparison_table: note.comparison_table!, comparison_amount: money(Number(note.comparison_amount)), table: observation.table, amount: money(observation.reported_total!) })}
               </p>
             ))}
             {observation.reader_notes.length > 0 && <p className='mt-2 text-neutral-muted'>{fill('pending_aging.qualifications', { notes: observation.reader_notes.map((note) => t(noteKeys[note.code] || 'pending_aging.note_other')).join('; ') })}</p>}

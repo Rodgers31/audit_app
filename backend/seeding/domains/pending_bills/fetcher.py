@@ -713,6 +713,7 @@ def fetch_county_payables_payload(
 
     pdf_url = links[0]
     aging_enabled = os.environ.get("SEED_PENDING_BILLS_AGING_ENABLED") == "true"
+    assembly_enabled = os.environ.get("SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED") == "true"
     logger.info("county payables: reading %s", pdf_url)
     try:
         pdf_path = download_cbirr(client, pdf_url, settings).path
@@ -722,7 +723,7 @@ def fetch_county_payables_payload(
             cache_dir=Path(settings.cache_path) / "pdfs",
             kind="cob_cbirr_year_end_payables",
             parse_fn=parser.parse,
-            enabled=settings.parse_cache_enabled and not aging_enabled,
+            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled),
             key_extra=_pdf_stack_versions(),
         )
     except Exception as exc:
@@ -736,22 +737,33 @@ def fetch_county_payables_payload(
     payload = county_payables_payload(entries, pdf_url, receipt=receipt)
     # Separate rollout: --all and the admitted nightly keep their existing
     # contract until this producer is explicitly enabled and reviewed.
-    if aging_enabled:
-        from .aging import ExecutiveAgingParser, prepare_aging
+    if aging_enabled or assembly_enabled:
+        from .aging import ExecutiveAgingParser, prepare_aging, _parse_pdf_scopes
 
-        aging = parse_with_cache(
+        if assembly_enabled:
+            scopes = (["county_executive"] if aging_enabled else []) + ["county_assembly"]
+            parse_fn = lambda: _parse_pdf_scopes(pdf_path, entries, scopes)
+            kind = "cob_scoped_aging_v2"
+        else:
+            parse_fn = ExecutiveAgingParser(pdf_path, entries).parse
+            kind = "cob_executive_aging_v1"
+        cohorts = parse_with_cache(
             pdf_path,
             cache_dir=Path(settings.cache_path) / "pdfs",
-            kind="cob_executive_aging_v1",
-            parse_fn=ExecutiveAgingParser(pdf_path, entries).parse,
+            kind=kind,
+            parse_fn=parse_fn,
             enabled=False,
         )
-        aging_receipt = receipt_for_pdf(
-            client, settings, pdf_path, pdf_url, "cob-executive-aging-v1"
-        )
-        payload["aging"] = prepare_aging(
-            aging, bind_parse_receipt(aging_receipt, aging)
-        )
+        # One transport/acquisition serves all selected tables. Each cohort
+        # still needs its own fresh-parse attestation; never serialize/relabel
+        # the executive envelope as assembly evidence.
+        for cohort in cohorts:
+            scope = cohort["scope"]
+            aging_receipt = receipt_for_pdf(
+                client, settings, pdf_path, pdf_url, f"cob-{scope}-aging-v{cohort['version']}"
+            )
+            key = "aging" if scope == "county_executive" else "assembly_aging"
+            payload[key] = prepare_aging(cohorts, bind_parse_receipt(aging_receipt, cohorts), scope=scope)
     return payload
 
 
