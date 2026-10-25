@@ -29,7 +29,7 @@ jobs:
           DISPATCH_REF: ${{ github.ref }}
           DISPATCH_SHA: ${{ github.sha }}
           DEFINITION_REF: ${{ github.workflow_ref }}
-          APPROVED_SHA: ${{ vars.GITHUB_DATABASE_QUALIFICATION_SHA }}
+          APPROVED_SHA: ${{ vars.INGESTION_DATABASE_QUALIFICATION_SHA }}
         run: |
           set -eu
           test "$REPOSITORY" = Rodgers31/audit_app

@@ -1,5 +1,6 @@
 """Execute the actual admission shell; refuse unreviewed source before writers."""
 import os
+import re
 from pathlib import Path
 import subprocess
 
@@ -64,3 +65,10 @@ def test_manual_inspection_has_no_secrets_before_the_fixed_driver_install():
     assert '--require-hashes --only-binary=:all:' in steps[-2]['run']
     assert steps[-1]['run'] == 'python -I scripts/verification/github_database_qualify.py --all'
     assert not any('upload-artifact' in str(s) or 'actions/cache' in str(s) for s in steps)
+
+
+def test_repository_admission_variable_uses_a_github_supported_name():
+    expression = MANUAL['jobs']['qualify_github_writer']['steps'][0]['env']['APPROVED_SHA']
+    name = re.fullmatch(r'\$\{\{ vars\.([A-Z0-9_]+) \}\}', expression).group(1)
+    # GitHub's repository-variable API rejects these reserved namespaces.
+    assert not name.startswith(('GITHUB_', 'RUNNER_'))

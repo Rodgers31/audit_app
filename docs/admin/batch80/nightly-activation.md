@@ -6,7 +6,7 @@ Publishing/uploads remain off. No new login, grant, service, plan or paid review
 
 `ingestion-preflight.yml` purpose `github-writer-target` reads only the existing
 DATABASE_URL and DATABASE_POOLER_URL secrets, one at a time. The URI must use canonical /postgres and exactly one authority separator, matching the actual application URL parser. A reviewed exact
-commit must first be admitted through GITHUB_DATABASE_QUALIFICATION_SHA. Only
+commit must first be admitted through INGESTION_DATABASE_QUALIFICATION_SHA. Only
 main and the fixed qualification-review branch are accepted. The legacy reader
 inspection job retains its separate disabled admission; target qualification is
 not the reader's broader source/worker/custody qualification.
