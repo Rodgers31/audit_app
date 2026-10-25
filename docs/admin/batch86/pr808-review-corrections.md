@@ -37,3 +37,25 @@ KRA FY2024/25 remains qualified; the current KRA dashboard and CoB annual report
 remain held. Pending bills and borrowing stay unsupported. Issue 802 remains
 open. No model, migration, grant, dependency, production configuration, workflow, source
 activation, automatic retry, publication or upload change is included.
+
+## Independent replay finding
+
+Independent SPEC review subsequently reproduced a valid revenue-writer defect:
+persisting the same parsed records twice in one running job reported no errors
+but the first call consumed `_native_report_authority`, so the second call
+invalidated its admitted binding. Freshly reparsed input was the positive
+control. The suggestion to retain the capability was accepted; the fix uses a
+local dataclass/metadata copy so persistence also preserves the caller's original
+receipt envelopes and keeps private capabilities out of stored row JSON.
+National-budget persistence already uses a filtered provenance copy and `.get`;
+audits use a local capability. Neither has the destructive pop.
+
+The independent replay/control pair was executed red (one failure/one pass) on
+`ca25bca`, then green (two passes). The committed same-record/fresh-reparse
+regression was executed with the old writer (two failures), then passed in the
+expanded **64-case** native/review cohort normally and with optimized Python.
+It checks stable authority and evidence, retained caller inputs, private-field
+exclusion and the completed committed reader. Receipts are retained as
+`BATCH_87_REVIEW/808/replay-*.log`; all runs used an isolated schema clone of the
+owned current PostgreSQL fixture, removed after each run. Initial fixture runs
+with acquisition before job start remain recorded and are not passing evidence.
