@@ -12,7 +12,7 @@ import social_worker_supervisor as supervisor
 
 
 def test_off_execs_exact_web_without_children_or_worker_import(monkeypatch):
-    expected = ['gunicorn','main:app','--worker-class','uvicorn.workers.UvicornWorker','--bind','0.0.0.0:10000',
+    expected = ['gunicorn','main:app','--worker-class','uvicorn.workers.UvicornWorker','--workers','1','--forwarded-allow-ips','','--bind','0.0.0.0:10000',
                 '--access-logfile','-','--error-logfile','-','--log-level','info','--timeout','120','--keep-alive','5',
                 '--max-requests','1000','--max-requests-jitter','100']
     class Exec(BaseException): pass

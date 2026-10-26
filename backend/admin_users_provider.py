@@ -75,11 +75,11 @@ def record_admin_action(db, *, actor, action, target_type=None, target_id=None, 
     """Report audit commit separately from an already accepted provider mutation."""
     if __package__:
         from .utils.audit_policy import safe_audit_payload
-        from .database import SessionLocal
+        from .database import request_session as SessionLocal
         from .models import AdminAuditLog
     else:
         from utils.audit_policy import safe_audit_payload
-        from database import SessionLocal
+        from database import request_session as SessionLocal
         from models import AdminAuditLog
     del db
     session = None

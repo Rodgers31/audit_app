@@ -78,15 +78,11 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 #
 # Two things make this CMD slightly unusual:
 #
-# 1. Worker count is intentionally NOT specified on the command line so
-#    gunicorn falls back to the ``WEB_CONCURRENCY`` env var (its native
-#    default lookup), which in turn defaults to 1 if unset. That makes
-#    the worker count tunable from the host's env-vars panel without a
-#    rebuild — set ``WEB_CONCURRENCY=2`` (or higher) when CPU saturates,
-#    revert to ``1`` to drop memory. Each Uvicorn worker re-imports the
-#    full app (pandas, numpy, pdfplumber, the auto-seeder, APScheduler,
-#    the in-memory cache) — about ~200MB resident per worker — so a
-#    single async worker is the right default for this codebase.
+# 1. One worker is explicit: request admission is a process-local budget
+#    qualified for this allocation. Scaling workers/instances needs a new
+#    admission qualification. Forwarded-address rewriting is disabled so a
+#    caller cannot choose a limiter identity through forwarding headers.
+#    Socket peers share a coarse budget; this is not end-user IP fairness.
 #
 # 2. The bind address uses ``${PORT:-8000}`` so the server listens on
 #    whatever port the host expects. Render in particular sets

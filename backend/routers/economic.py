@@ -286,7 +286,7 @@ async def get_population(
     min_confidence: float = Query(
         0.7, description="Minimum confidence score", ge=0, le=1
     ),
-    limit: int = Query(100, description="Maximum results to return", le=1000),
+    limit: int = Query(100, description="Maximum results to return", ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """
@@ -399,7 +399,7 @@ async def get_gdp(
     min_confidence: float = Query(
         0.7, description="Minimum confidence score", ge=0, le=1
     ),
-    limit: int = Query(100, description="Maximum results to return", le=1000),
+    limit: int = Query(100, description="Maximum results to return", ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """
@@ -674,7 +674,7 @@ async def get_poverty_indices(
     min_confidence: float = Query(
         0.7, description="Minimum confidence score", ge=0, le=1
     ),
-    limit: int = Query(100, description="Maximum results to return", le=1000),
+    limit: int = Query(100, description="Maximum results to return", ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """

@@ -15,6 +15,7 @@ import time
 
 def web_command(environ):
     return ['gunicorn', 'main:app', '--worker-class', 'uvicorn.workers.UvicornWorker',
+            '--workers', '1', '--forwarded-allow-ips', '',
             '--bind', '0.0.0.0:' + (environ.get('PORT') or '8000'),
             '--access-logfile', '-', '--error-logfile', '-', '--log-level', 'info',
             '--timeout', '120', '--keep-alive', '5', '--max-requests', '1000', '--max-requests-jitter', '100']

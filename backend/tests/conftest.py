@@ -37,7 +37,9 @@ def pipeline_health_database(tmp_path, monkeypatch):
     db_path = tmp_path / "pipeline-health.sqlite"
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)
-    monkeypatch.setattr(database, "SessionLocal", sessionmaker(bind=engine))
+    factory = sessionmaker(bind=engine)
+    monkeypatch.setattr(database, "SessionLocal", factory)
+    monkeypatch.setattr(database, "RequestSessionLocal", factory)
     try:
         yield engine
     finally:

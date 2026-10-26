@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 
 from cache.redis_cache import cache
 from config.settings import settings
-from database import engine, get_db
-from fastapi import APIRouter, Depends, status
+from database import request_engine as engine, get_db
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -46,7 +46,7 @@ def _pool_status() -> dict:
 
 
 @router.get("/health/detailed", status_code=status.HTTP_200_OK)
-async def detailed_health_check(db: Session = Depends(get_db)):
+async def detailed_health_check(request: Request = None, db: Session = Depends(get_db)):
     """Component-level health: database, cache, ETL."""
 
     health_status = {
@@ -95,5 +95,11 @@ async def detailed_health_check(db: Session = Depends(get_db)):
     health_status["components"]["etl"] = {
         "status": "not_implemented",
     }
+
+    limits = getattr(request.app.state, 'security_limits', None) if request is not None else None
+    if limits is not None:
+        health_status['components']['request_security'] = dict(limits)
+        if limits.get('rate_limit_mode') in {'degraded_memory', 'redis_pending'}:
+            health_status['status'] = 'degraded'
 
     return health_status
