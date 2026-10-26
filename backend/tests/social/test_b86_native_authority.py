@@ -34,7 +34,7 @@ def test_kra_release_retains_native_report_authority(tmp_path):
 
 
 def test_priority_report_adapters_are_concrete():
-    for domain in ('national_budget','revenue_by_source','audits'):
+    for domain in ('national_budget','revenue_by_source','audits','pending_bills'):
         assert capability(domain).reports, f'{domain} has no committed report adapter'
     assert capability('opendata').reports is False
 
@@ -92,7 +92,7 @@ def test_disabled_native_hooks_open_no_sessions(monkeypatch):
     from seeding.generation_dispatch import dispatch_committed_generation, dispatch_committed_report_generation
     monkeypatch.delenv('SOCIAL_GENERATION_HOOK_ENABLED',raising=False)
     def factory():pytest.fail('Default-off hook opened a session')
-    for domain in ('national_budget','revenue_by_source','audits'):
+    for domain in ('national_budget','revenue_by_source','audits','pending_bills'):
         assert dispatch_committed_generation(factory,domain=domain,ingestion_id=1,dry_run=False) is None
         assert dispatch_committed_report_generation(factory,domain=domain,ingestion_id=1,dry_run=False) is None
 

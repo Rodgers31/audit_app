@@ -733,8 +733,20 @@ def fetch_county_payables_payload(
     from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
 
     receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1")
+    from ...native_report_authority import capture_pdf_report
+    authority, authority_reason = capture_pdf_report(pdf_path, receipt, domain="pending_bills")
+    if authority is None:
+        from ...cob_report_metadata import fetch_publisher_receipt
+        try:
+            authority, authority_reason = capture_pdf_report(pdf_path, receipt,
+                domain="pending_bills", publisher_loader=lambda: fetch_publisher_receipt(client, pdf_url, Path(settings.cache_path) / "pdfs"))
+        except Exception as exc:
+            logger.warning("Native county report publisher metadata unavailable: %s", type(exc).__name__)
+            authority_reason = "native_report_publisher_metadata_unavailable"
     receipt = bind_parse_receipt(receipt, entries)
     payload = county_payables_payload(entries, pdf_url, receipt=receipt)
+    payload["_native_report_authority"] = authority
+    payload["native_report_authority_reason"] = authority_reason
     # Separate rollout: --all and the admitted nightly keep their existing
     # contract until this producer is explicitly enabled and reviewed.
     if aging_enabled or assembly_enabled:

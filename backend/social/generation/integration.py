@@ -165,7 +165,7 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
     selected = capability(domain)
     if not (selected.reports if reports else selected.financial):
         return _result('unavailable', 'UNSUPPORTED_SOURCE')
-    source_type = {'national_budget':'cob','revenue_by_source':'kra','audits':'oag','counties_budget':'cob'}[domain]
+    source_type = {'national_budget':'cob','revenue_by_source':'kra','audits':'oag','pending_bills':'cob','counties_budget':'cob'}[domain]
     counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0, refusal_reasons={})
     deadline = time.monotonic() + 30
     progress = {'uncertain': False}

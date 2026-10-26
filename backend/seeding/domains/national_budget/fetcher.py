@@ -307,6 +307,17 @@ def _fetch_annual_sector_expenditure(
     receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1")
     from ...native_report_authority import capture_pdf_report
     authority, authority_reason = capture_pdf_report(pdf_path, receipt, domain="national_budget")
+    if authority is None:
+        from ...cob_report_metadata import fetch_publisher_receipt
+        try:
+            authority, authority_reason = capture_pdf_report(pdf_path, receipt,
+                domain="national_budget", publisher_loader=lambda: fetch_publisher_receipt(client, report.url, cache_dir))
+        except Exception as exc:
+            # Financial verification is independent; missing report metadata
+            # remains an explicit neutral-announcement refusal.
+            logger.warning("Native national report publisher metadata unavailable: %s", type(exc).__name__)
+            authority_reason = "native_report_publisher_metadata_unavailable"
+
     receipt = bind_parse_receipt(receipt, page_rows)
     evidence = []
     for row, sector in zip(records, result.accepted):

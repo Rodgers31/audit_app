@@ -103,7 +103,7 @@ class ReportEvidence(StrictModel):
 
 
 class NativeReportEvidence(ReportEvidence):
-    native_domain: Literal['national_budget', 'revenue_by_source', 'audits']
+    native_domain: Literal['national_budget', 'revenue_by_source', 'audits', 'pending_bills']
     scope_key: Key
 
     @model_validator(mode='after')
@@ -139,7 +139,7 @@ class SourceObservation(StrictModel):
     def identities(self):
         if self.report is not None:
             if isinstance(self.report, NativeReportEvidence):
-                sources = {'national_budget':'cob', 'revenue_by_source':'kra', 'audits':'oag'}
+                sources = {'national_budget':'cob', 'revenue_by_source':'kra', 'audits':'oag','pending_bills':'cob'}
                 source = sources[self.report.native_domain]
                 expected = f'{source}:native:{self.report.native_domain}:{self.report.entity_id}:{self.report.scope_key}'
             else:

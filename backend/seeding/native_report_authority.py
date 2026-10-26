@@ -23,6 +23,7 @@ DOMAINS = {
     'national_budget': ('cob', ('cob.go.ke', 'www.cob.go.ke'), 'Controller of Budget', '/budget'),
     'revenue_by_source': ('kra', ('kra.go.ke', 'www.kra.go.ke'), 'Kenya Revenue Authority', '/budget'),
     'audits': ('oag', ('oagkenya.go.ke', 'www.oagkenya.go.ke'), 'Office of the Auditor-General', '/audits'),
+    'pending_bills': ('cob', ('cob.go.ke', 'www.cob.go.ke'), 'Office of the Controller of Budget (OCOB)', '/debt'),
 }
 _TOKEN = object()
 _DATE_LABEL = re.compile(r"^(?:Publication date|Published on):[ \t]*(.+?)[ \t]*$", re.I)
@@ -54,14 +55,15 @@ def digest(value):
 
 
 class NativeReportAuthority:
-    def __init__(self, value, receipt, *, token=None):
+    def __init__(self, value, receipt, *, token=None, publisher_receipt=None):
         if token is not _TOKEN:
             raise TypeError('Native publisher parser capability required')
         self.value, self.receipt = deepcopy(value), deepcopy(receipt)
+        self.publisher_receipt = deepcopy(publisher_receipt)
         self._snapshot = digest(value)
 
     def __deepcopy__(self, memo):
-        result = NativeReportAuthority(self.value, self.receipt, token=_TOKEN)
+        result = NativeReportAuthority(self.value, self.receipt, token=_TOKEN, publisher_receipt=self.publisher_receipt)
         result._snapshot = self._snapshot
         memo[id(self)] = result
         return result
@@ -109,7 +111,7 @@ def _fy(raw):
     return f'FY {year}/{str(end)[-2:]}', f'{year}-07-01', f'{end}-06-30'
 
 
-def _capture(receipt, *, domain, entity, scope_key, period, start, end, published, locator):
+def _capture(receipt, *, domain, entity, scope_key, period, start, end, published, locator, publication=None, publisher_receipt=None):
     if date.fromisoformat(start) > date.fromisoformat(end) or date.fromisoformat(end) > published:
         raise ValueError('Completed annual reporting period required')
     acquired = datetime.fromisoformat(receipt['acquired_at'])
@@ -122,9 +124,17 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
     value = dict(domain=domain, entity=entity, scope_key=scope_key, period=period,
         period_start=start, period_end=end, published_on=published.isoformat(), locator=locator,
         document_checksum=receipt['digest'], document_md5=hashlib.md5(body, usedforsecurity=False).hexdigest(), document_url=receipt['request_url'])
+    retained_publisher = None
+    if publication is not None:
+        retained_publisher = copy_receipt(publisher_receipt, parser_version='cob-publisher-post-v1')
+        seal_receipt(retained_publisher, [publication])
+        value['publication_authority'] = {**publication, 'receipt':dict(retained_publisher)}
+    if publication is not None:
+        from .cob_report_metadata import validate_stored_post
+        validate_stored_post(value, receipt)
     captured = copy_receipt(receipt, parser_version=VERSION)
     seal_receipt(captured, [value])
-    return NativeReportAuthority(value, captured, token=_TOKEN)
+    return NativeReportAuthority(value, captured, token=_TOKEN, publisher_receipt=retained_publisher)
 
 
 def capture_kra_release(receipt):
@@ -167,9 +177,9 @@ def capture_kra_release(receipt):
         return None, 'native_report_date_or_scope_unavailable'
 
 
-def capture_pdf_report(path: Path, receipt, *, domain):
+def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, publisher_loader=None):
     """Read the first three actual PDF pages; caller text/cache is never authority."""
-    if domain not in ('national_budget', 'audits'):
+    if domain not in ('national_budget', 'audits', 'pending_bills'):
         return None, 'native_report_domain_unavailable'
     try:
         body = retained_body(receipt, domain, 'application/pdf')
@@ -191,18 +201,22 @@ def capture_pdf_report(path: Path, receipt, *, domain):
             raise ValueError('Malformed retained PDF') from None
         candidates = [(page, line.strip(), _DATE_LABEL.fullmatch(line.strip()))
             for page, content in pages for line in content.splitlines() if _DATE_LABEL.fullmatch(line.strip())]
-        if len(candidates) != 1:
-            raise ValueError('One explicit full publisher publication date required')
-        page, span, match = candidates[0]
-        published = _full_date(match[1])
+        if len(candidates) > 1:
+            raise ValueError('Ambiguous PDF publication dates')
+        published = _full_date(candidates[0][2][1]) if candidates else None
         text = ' '.join(' '.join(content.split()) for _, content in pages)
-        if domain == 'national_budget':
-            scope = re.findall(r'NATIONAL GOVERNMENT BUDGET IMPLEMENTATION REVIEW REPORT(?: FOR THE)?\s+(?:FY|FINANCIAL YEAR)\s*(20\d{2}/(?:20\d{2}|\d{2}))\b', text, re.I)
+        if domain in ('national_budget', 'pending_bills'):
+            heading = ('NATIONAL GOVERNMENT BUDGET IMPLEMENTATION REVIEW REPORT' if domain == 'national_budget'
+                       else 'COUNTY GOVERNMENTS BUDGET IMPLEMENTATION REVIEW REPORT')
+            scope = re.findall(heading+r'(?: FOR THE)?\s+(?:FY|FINANCIAL YEAR)\s*(20\d{2}/(?:20\d{2}|\d{2}))\b', text, re.I)
             # Quarterly scope is deliberately not promoted as an annual report.
-            if len(set(scope)) != 1 or re.search(r'FIRST (?:THREE|SIX|NINE)|QUARTER|HALF.YEAR', text, re.I):
+            scopes = {_fy(raw) for raw in scope}
+            from .cob_report_scope import has_subperiod_scope
+            if len(scopes) != 1 or has_subperiod_scope(text):
                 raise ValueError('Exact annual national report scope required')
-            period, start, end = _fy(scope[0])
-            entity, scope_key = 'National Government of Kenya', 'annual-budget'
+            period, start, end = scopes.pop()
+            entity, scope_key = (('National Government of Kenya', 'annual-budget') if domain == 'national_budget'
+                                 else ('County Governments of Kenya', 'annual-county-payables-report'))
         else:
             scopes = re.findall(r'REPORT OF THE AUDITOR.GENERAL ON (.{3,160}?) FOR THE YEAR ENDED 30 JUNE (20\d{2})\b', text, re.I)
             if len(set(scopes)) != 1:
@@ -213,8 +227,25 @@ def capture_pdf_report(path: Path, receipt, *, domain):
             entity = ' '.join(auditee.split())
             scope_key = hashlib.sha256(entity.casefold().encode()).hexdigest()[:32]
             period, start, end = _fy(f'{int(year)-1}/{year}')
+        publication = None
+        if published is None and publisher_receipt is None and publisher_loader is not None:
+            publisher_receipt = publisher_loader()
+            if publisher_receipt is None:
+                raise ValueError('Retained publisher post unavailable')
+        if publisher_receipt is not None:
+            from .cob_report_metadata import capture_post_metadata
+            publication, post_day = capture_post_metadata(receipt, publisher_receipt, domain=domain, period=period)
+            if published is not None and published != post_day:
+                raise ValueError('PDF and publisher post dates conflict')
+            published = post_day
+            locator = f'Publisher post {publication["post_url"]}; article:published_time corroborated by visible Publish Time; PDF cover scope'
+        elif candidates:
+            locator = f'PDF page {candidates[0][0]}; {candidates[0][1]}'
+        else:
+            raise ValueError('Full publisher publication date required')
         return _capture(receipt, domain=domain, entity=entity, scope_key=scope_key,
-            period=period, start=start, end=end, published=published, locator=f'PDF page {page}; {span}'), None
+            period=period, start=start, end=end, published=published, locator=locator,
+            publication=publication, publisher_receipt=publisher_receipt), None
     except (ValueError, TypeError, KeyError, AttributeError, OSError):
         return None, 'native_report_date_or_scope_unavailable'
 
@@ -271,6 +302,14 @@ def persist_native_report(session, source, authority, *, context, domain):
             or not official_url(source.url, domain) or source.publisher != DOMAINS[domain][2]
             or type(context.job_id) is not int or context.job_id <= 0):
         raise ValueError('Intact native report/job authority required')
+    if (authority.value.get('publication_authority') is None) != (authority.publisher_receipt is None):
+        raise ValueError('Retained publisher metadata capability required')
+    if authority.publisher_receipt is not None:
+        retained_body(authority.publisher_receipt, domain, 'text/html')
+        context_value = authority.value.get('publication_authority')
+        if (not receipt_is_sealed(authority.publisher_receipt) or type(context_value) is not dict
+                or digest(context_value['receipt']) != digest(dict(authority.publisher_receipt))):
+            raise ValueError('Intact retained publisher metadata required')
     country = session.get(Country, source.country_id)
     if country is None or country.iso_code != 'KEN':
         raise ValueError('Kenyan native report country required')

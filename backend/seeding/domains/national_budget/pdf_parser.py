@@ -56,6 +56,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pdfplumber
 
+from ...cob_report_scope import COB_PERIOD_DESCRIPTORS as _PERIOD_DESCRIPTORS
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,18 +79,6 @@ _SECTORS: Tuple[Tuple[str, str], ...] = (
 )
 _SECTOR_CODES = {code.lower() for code, _ in _SECTORS}
 _CODE_TO_NAME = {code.lower(): name for code, name in _SECTORS}
-
-# Period descriptors on the cover page → (subperiod_label, end_month).
-# Order matters: longer phrases first so "FIRST NINE MONTHS" doesn't
-# greedy-match "FIRST".
-_PERIOD_DESCRIPTORS: Tuple[Tuple[str, str, int], ...] = (
-    ("FIRST NINE MONTHS", "9M", 3),    # Jul–Mar
-    ("FIRST SIX MONTHS",  "H1", 12),   # Jul–Dec
-    ("FIRST HALF",        "H1", 12),   # alt phrasing
-    ("FIRST QUARTER",     "Q1", 9),    # Jul–Sep
-    ("HALF YEAR",         "H1", 12),   # alt phrasing
-)
-
 
 @dataclass(frozen=True)
 class PeriodInfo:

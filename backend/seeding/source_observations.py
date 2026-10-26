@@ -304,3 +304,8 @@ def read_revenue_report_observation(factory, *, record_id, ingestion_id):
 def read_audit_report_observation(factory, *, record_id, ingestion_id):
     from .native_report_observations import read_native_report_observation
     return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='audits')
+
+
+def read_pending_bills_report_observation(factory, *, record_id, ingestion_id):
+    from .native_report_observations import read_native_report_observation
+    return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='pending_bills')
