@@ -328,7 +328,9 @@ def representative_rows(db_session, seed_entity, seed_fiscal_period, seed_source
     # Bind a distinct worker session to this isolated SQLite connection so the
     # populated/empty/restored sweep observes the same fixture transaction.
     fixture_connection = db_session.connection()
-    monkeypatch.setattr(database, "SessionLocal", lambda: Session(bind=fixture_connection))
+    factory = lambda: Session(bind=fixture_connection)
+    monkeypatch.setattr(database, "SessionLocal", factory)
+    monkeypatch.setattr(database, "RequestSessionLocal", factory)
     from models import (
         Audit,
         BudgetLine,

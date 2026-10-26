@@ -18,7 +18,9 @@ THE RULE (``test_every_write_route_verifies_the_caller``). Every route mounted
 on ``app`` (``main.py`` and every router in ``backend/routers/``) that accepts
 a method other than GET/HEAD must have one of ``AUTH_DEPENDENCIES`` in the
 dependency tree FastAPI runs for it, or be listed in ``PUBLIC_WRITE_ROUTES``
-with the reason it is safe to leave open. ``HTTPBearer`` alone does not count.
+with the reason it is safe to leave open, or in an exact signature/capability
+exception family whose mounted behavior is tested below. ``HTTPBearer`` alone
+does not count.
 
 Router dependencies are checked as mounted: ``APIRouter(dependencies=...)`` and
 ``include_router(..., dependencies=...)`` both count, because the scan reads
@@ -113,6 +115,16 @@ PROVIDER_SIGNED_WRITE_ROUTES = {
     ),
 }
 
+# A top-level OAuth launch uses an administrator-created one-use capability,
+# not a browser bearer relay. Only this exact mounted route has that contract.
+CAPABILITY_WRITE_ROUTES = {
+    ("POST", "/api/v1/social/oauth/meta/launch"): (
+        "An authenticated administrator creates the flow; launch requires its "
+        "one-use capability, exact origin/target and bounded form input. "
+        "It sets only browser binding; completion still verifies the initiating session."
+    ),
+}
+
 # Write routes that another open PR removes. Tolerated while present, not
 # required, so this test stays green whichever PR merges first. Delete the
 # entry once the route is gone from main. Empty since #253 and this change
@@ -178,6 +190,7 @@ def test_every_write_route_verifies_the_caller():
     assert ("POST", "/api/v1/user/watchlist") in keys  # router, route dep
     assert ("POST", "/api/v1/newsletter/subscribe") in keys  # allowlisted
     assert ("POST", "/api/v1/system/cache/status") in keys  # signed caller
+    assert ("POST", "/api/v1/social/oauth/meta/launch") in keys  # one-use capability
 
     open_routes = sorted(
         f"{method} {path}"
@@ -187,6 +200,7 @@ def test_every_write_route_verifies_the_caller():
         and (method, path) not in REMOVED_BY_OPEN_PR
         and (method, path) not in SIGNED_WRITE_ROUTES
         and (method, path) not in PROVIDER_SIGNED_WRITE_ROUTES
+        and (method, path) not in CAPABILITY_WRITE_ROUTES
         and not AUTH_DEPENDENCIES.intersection(_dependency_calls(dependant))
     )
     assert open_routes == [], (
@@ -270,7 +284,7 @@ def test_write_allowlists_have_no_stale_entries():
     stale = sorted(
         f"{m} {p}"
         for m, p in [*PUBLIC_WRITE_ROUTES, *KNOWN_UNGATED_WRITE_ROUTES,
-                     *PROVIDER_SIGNED_WRITE_ROUTES]
+                     *PROVIDER_SIGNED_WRITE_ROUTES, *CAPABILITY_WRITE_ROUTES]
         if (m, p) not in keys
     )
     assert stale == [], f"allowlists name routes that no longer exist: {stale}"
@@ -418,3 +432,222 @@ def test_signed_write_routes_refuse_an_unsigned_request(
         disabled.json()["detail"]["error"] == "invalidation_not_configured"
     ), disabled.text
     assert ran == [], "an unsigned request reached cache invalidation or observation"
+
+
+_META_ORIGIN = 'https://admin.example.test'
+_META_API = 'https://api.example.test'
+_META_LAUNCH = '/api/v1/social/oauth/meta/launch'
+_META_CALLBACK = _META_API + '/api/v1/social/oauth/meta/callback'
+_META_ADMIN = '/api/v1/admin/social/connections/meta/direct'
+
+
+def _meta_launch_config():
+    from cryptography.fernet import Fernet
+    from social.connections.config import MetaConfig
+
+    return MetaConfig(
+        enabled=True, app_configuration_validated=True,
+        app_id='810', app_secret='inert-mounted-launch-fixture',
+        access_mode='owned_standard', active_key_version='fixture',
+        encryption_keys={'fixture': Fernet.generate_key().decode()},
+        direct_callback_enabled=True, admin_origin=_META_ORIGIN,
+        redirect_uris=(_META_CALLBACK,),
+        verified_callback_ingress_uris=(_META_CALLBACK,),
+    )
+
+
+def _assert_real_meta_launch_is_mounted():
+    from social.connections.direct_api import launch
+
+    matches = [(endpoint, dep) for method, path, endpoint, dep in _mounted_write_routes()
+               if (method, path) == ('POST', _META_LAUNCH)]
+    assert len(matches) == 1 and matches[0][0] is launch
+
+
+@pytest.mark.parametrize('case', [
+    'disabled', 'unqualified', 'empty', 'missing_token', 'invalid_uuid',
+    'duplicate_token', 'extra_field', 'oversized', 'wrong_content_type',
+    'query', 'wrong_target', 'missing_origin', 'wrong_origin',
+    'malformed_token', 'unknown_flow',
+])
+def test_meta_launch_capability_route_refuses_before_mutation_or_provider(
+    client, monkeypatch, case,
+):
+    """The mounted handler checks the capability, not just its presence."""
+    from contextlib import contextmanager
+    from dataclasses import replace
+    from urllib.parse import urlencode
+    from social.connections.api import service
+    from social.connections.service import ConnectionService
+
+    class NoPersistence:
+        def __init__(self):
+            self.reads = 0
+            self.write_attempts = []
+
+        @contextmanager
+        def begin(self):
+            yield
+
+        def scalar(self, statement):
+            self.reads += 1
+            return None  # A well-formed capability still needs a stored flow.
+
+        def __getattr__(self, name):
+            self.write_attempts.append(name)
+            raise AssertionError('Refused launch touched persistence: ' + name)
+
+    _assert_real_meta_launch_is_mounted()
+    db, provider_calls = NoPersistence(), []
+    config = _meta_launch_config()
+    if case == 'disabled':
+        config = replace(config, direct_callback_enabled=False)
+    if case == 'unqualified':
+        config = replace(config, verified_callback_ingress_uris=())
+
+    def provider(*args):
+        provider_calls.append(1)
+        raise AssertionError('Refused launch reached the provider')
+
+    monkeypatch.setitem(client.app.dependency_overrides, service,
+                        lambda: ConnectionService(db, config, provider_factory=provider))
+    fields = {'flow_id': '00000000-0000-4000-8000-000000000810',
+              'launch_token': 'n' * 43}
+    body = urlencode(fields)
+    path = _META_API + _META_LAUNCH
+    headers = {'Origin': _META_ORIGIN,
+               'Content-Type': 'application/x-www-form-urlencoded'}
+    status, code = 409, 'OAUTH_CALLBACK_INVALID'
+    if case in {'disabled', 'unqualified'}:
+        status, code = 503, 'CALLBACK_INGRESS_UNVERIFIED'
+    elif case == 'empty':
+        body = ''
+    elif case == 'missing_token':
+        body = urlencode({'flow_id': fields['flow_id']})
+    elif case == 'invalid_uuid':
+        body = urlencode({**fields, 'flow_id': 'not-a-uuid'})
+    elif case == 'duplicate_token':
+        body += '&%6caunch_token=other'
+    elif case == 'extra_field':
+        body += '&code=INERT'
+    elif case == 'oversized':
+        body = 'x' * 1025
+    elif case == 'wrong_content_type':
+        headers['Content-Type'] = 'application/json'
+    elif case == 'query':
+        path += '?launch_token=INERT'
+    elif case == 'wrong_target':
+        path = path.replace('api.example.test', 'different.example.test')
+        status, code = 422, 'REDIRECT_MISMATCH'
+    elif case in {'missing_origin', 'wrong_origin', 'malformed_token'}:
+        code = 'OAUTH_ORIGIN_INVALID'
+        if case == 'missing_origin':
+            headers.pop('Origin')
+        elif case == 'wrong_origin':
+            headers['Origin'] = 'https://different.example.test'
+        else:
+            body = urlencode({**fields, 'launch_token': 'invalid'})
+
+    response = client.post(path, content=body, headers=headers, follow_redirects=False)
+    assert response.status_code == status, response.text
+    assert response.json()['detail']['code'] == code
+    assert 'location' not in response.headers and 'set-cookie' not in response.headers
+    assert response.headers['cache-control'] == 'private, no-store'
+    assert response.headers['referrer-policy'] == 'no-referrer'
+    assert db.reads == (1 if case == 'unknown_flow' else 0)
+    assert db.write_attempts == [] and provider_calls == []
+
+
+def test_mounted_meta_launch_is_one_use_and_completion_keeps_session_auth(client, monkeypatch):
+    """The exception cannot authorize creation, completion or account mutation."""
+    from urllib.parse import parse_qs, urlsplit
+    from uuid import uuid4
+    from sqlalchemy import create_engine, func, select
+    from sqlalchemy.orm import Session
+    from sqlalchemy.pool import StaticPool
+    from social.connections.api import service
+    from social.connections.models import SocialOAuthFlow
+    from social.connections.service import ConnectionService
+    from social.models import Base, SOCIAL_TABLES, SocialAccount, SocialPublication
+
+    _assert_real_meta_launch_is_mounted()
+    engine = create_engine('sqlite://', poolclass=StaticPool,
+                           connect_args={'check_same_thread': False})
+    Base.metadata.create_all(engine, tables=SOCIAL_TABLES)
+    config, provider_calls = _meta_launch_config(), []
+
+    class InertProvider:
+        def discover(self, code, redirect):
+            provider_calls.append((code, redirect))
+            return {'choices': [], 'metadata': {'scopes': []}}
+
+        def close(self):
+            pass
+
+    def isolated_service():
+        with Session(engine, expire_on_commit=False) as db:
+            yield ConnectionService(db, config, provider_factory=lambda _: InertProvider())
+
+    monkeypatch.setitem(client.app.dependency_overrides, service, isolated_service)
+    actor, session_id = str(uuid4()), str(uuid4())
+    principal = {'value': types.SimpleNamespace(id=actor, roles=['admin'], session_id=session_id)}
+    admin = lambda: principal['value']
+    command_headers = {'Origin': _META_ORIGIN, 'Idempotency-Key': str(uuid4())}
+    start_body = {'admin_origin': _META_ORIGIN, 'reason': 'Inert mounted capability control'}
+    try:
+        denied = client.post(_META_API + _META_ADMIN + '/start', json=start_body,
+                             headers=command_headers)
+        assert denied.status_code in {401, 403}, denied.text
+        monkeypatch.setitem(client.app.dependency_overrides, supabase_auth.require_admin, admin)
+        started = client.post(_META_API + _META_ADMIN + '/start', json=start_body,
+                              headers=command_headers)
+        assert started.status_code == 200, started.text
+        flow = started.json()
+        form = {'flow_id': flow['flow_id'], 'launch_token': flow['launch_token']}
+        wrong = client.post(flow['launch_url'], data={**form, 'launch_token': 'b' * 43},
+                            headers={'Origin': _META_ORIGIN}, follow_redirects=False)
+        assert wrong.status_code == 409 and wrong.json()['detail']['code'] == 'OAUTH_STATE_USED'
+        launched = client.post(flow['launch_url'], data=form,
+                               headers={'Origin': _META_ORIGIN}, follow_redirects=False)
+        assert launched.status_code == 303, launched.text
+        provider_url = urlsplit(launched.headers['location'])
+        assert provider_url.scheme == 'https' and provider_url.netloc == 'www.facebook.com'
+        cookie = launched.headers['set-cookie']
+        assert 'Secure' in cookie and 'HttpOnly' in cookie and 'SameSite=lax' in cookie
+        assert 'Domain=' not in cookie
+        replay = client.post(flow['launch_url'], data=form,
+                             headers={'Origin': _META_ORIGIN}, follow_redirects=False)
+        assert replay.status_code == 409 and replay.json()['detail']['code'] == 'OAUTH_STATE_USED'
+        assert provider_calls == []
+        state = parse_qs(provider_url.query)['state'][0]
+        staged = client.get(_META_CALLBACK, params={'state': state, 'code': 'INERT-mounted-code'})
+        assert staged.status_code == 200, staged.text
+        completion = _META_API + _META_ADMIN + '/complete'
+        complete_body = {'flow_id': flow['flow_id']}
+        for identity in (
+            types.SimpleNamespace(id=actor, roles=['admin'], session_id=str(uuid4())),
+            types.SimpleNamespace(id=str(uuid4()), roles=['admin'], session_id=session_id),
+        ):
+            principal['value'] = identity
+            refused = client.post(completion, json=complete_body,
+                                  headers={**command_headers, 'Idempotency-Key': str(uuid4())})
+            assert refused.status_code == 409, refused.text
+            assert refused.json()['detail']['code'] == 'OAUTH_STATE_INVALID'
+        monkeypatch.delitem(client.app.dependency_overrides, supabase_auth.require_admin)
+        assert client.post(completion, json=complete_body,
+                           headers=command_headers).status_code in {401, 403}
+        assert provider_calls == []
+        principal['value'] = types.SimpleNamespace(id=actor, roles=['admin'], session_id=session_id)
+        monkeypatch.setitem(client.app.dependency_overrides, supabase_auth.require_admin, admin)
+        finished = client.post(completion, json=complete_body, headers=command_headers)
+        assert finished.status_code == 200, finished.text
+        assert provider_calls == [('INERT-mounted-code', _META_CALLBACK)]
+        assert client.post(completion, json=complete_body,
+                           headers=command_headers).json() == finished.json()
+        assert len(provider_calls) == 1
+        with Session(engine) as db:
+            assert db.scalar(select(func.count()).select_from(SocialOAuthFlow)) == 1
+            assert db.scalar(select(func.count()).select_from(SocialAccount)) == 0
+            assert db.scalar(select(func.count()).select_from(SocialPublication)) == 0
+    finally:
+        engine.dispose()

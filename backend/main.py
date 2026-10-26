@@ -1926,32 +1926,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Security middlewares: rate limiting, audit logging, security headers
-try:
-    from middleware.security import (
-        AuditLogMiddleware,
-        RateLimitMiddleware,
-        RedisRateLimitMiddleware,
-        SecurityHeadersMiddleware,
-    )
-
-    # Use Redis-backed rate limiting for production, falls back to in-memory if Redis unavailable
-    if settings.ENVIRONMENT == "production" and settings.REDIS_URL:
-        app.add_middleware(
-            RedisRateLimitMiddleware, calls=120, period=60
-        )  # 120 req/min/IP
-        logger.info("Using Redis-backed rate limiting")
-    else:
-        app.add_middleware(
-            RateLimitMiddleware, calls=120, period=60
-        )  # In-memory fallback
-        logger.info("Using in-memory rate limiting")
-
-    app.add_middleware(AuditLogMiddleware)
-    app.add_middleware(SecurityHeadersMiddleware)
-    logger.info("Security middleware registered (rate limit, audit log, headers)")
-except Exception as e:
-    logger.warning(f"Security middleware not active: {e}")
+# Required serving controls cannot disappear behind a healthy startup.
+from middleware.security import install_security
+install_security(app)
+from request_database import install_database_exception_handlers
+install_database_exception_handlers(app)
 
 # Include routers
 from social.api import router as social_admin_router
@@ -1972,7 +1951,7 @@ logger.info("Social admin router registered at /api/v1/admin/social")
 # Explicit privacy ingress can stay enabled after new Meta connections are
 # disabled. Invalid enabled configuration fails startup, without provider I/O.
 from social.privacy.startup import configure_meta_privacy
-from database import SessionLocal as _SocialSessionLocal
+from database import request_session as _SocialSessionLocal
 
 configure_meta_privacy(app, _SocialSessionLocal)
 from social.privacy.workflow_startup import configure_privacy_workflow
@@ -2142,13 +2121,17 @@ async def log_requests(request: Request, call_next):
 
 
 # Cache decorator helper
-_all_mem_caches: list = []  # registry for test cleanup
+from cache.endpoint_memory import BoundedResponseCache
+
+# One budget for all endpoints, including when bootstrap/RedisCache setup
+# fails entirely. Ordinary Redis connection failure uses RedisCache's own
+# bounded memory backend instead.
+_endpoint_memory_cache = BoundedResponseCache()
 
 
 def clear_all_caches():
     """Clear every in-memory endpoint cache.  Called between tests."""
-    for c in _all_mem_caches:
-        c.clear()
+    _endpoint_memory_cache.clear()
     # 12-hour TTL — one warm-up would otherwise freeze peers for the whole run.
     _peers_cache["ts"] = 0.0
     _peers_cache["data"] = None
@@ -2163,10 +2146,7 @@ def clear_all_caches():
 
 
 def _clear_endpoint_mem_caches() -> int:
-    dropped = sum(len(c) for c in _all_mem_caches)
-    for c in _all_mem_caches:
-        c.clear()
-    return dropped
+    return _endpoint_memory_cache.clear()
 
 
 # The nightly's signed invalidation call (issue #231) clears these in every
@@ -2239,10 +2219,6 @@ def cached(key_prefix: str, ttl: int = 3600):
     """
 
     def decorator(func):
-        # Module-level in-memory fallback cache (per-endpoint)
-        _mem_cache: Dict[str, Dict[str, Any]] = {}
-        _all_mem_caches.append(_mem_cache)
-
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Build cache key from prefix and path params
@@ -2268,21 +2244,11 @@ def cached(key_prefix: str, ttl: int = 3600):
                 redis_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
                 return result
 
-            # --- In-memory fallback path ---
-            rec = _mem_cache.get(cache_key)
-            # Honour the TTL the entry was STORED with, not the decorator's.
-            # A transient failure is kept for seconds; reading it back against
-            # the full TTL would defeat that.
-            if rec and (time.time() - rec["ts"]) < rec.get("ttl", ttl):
-                logger.debug("Memory cache HIT: %s", key_prefix)
-                return rec["value"]
-
+            cached_data = _endpoint_memory_cache.get(cache_key)
+            if cached_data is not None:
+                return cached_data
             result = await func(*args, **kwargs)
-            _mem_cache[cache_key] = {
-                "value": result,
-                "ts": time.time(),
-                "ttl": _effective_ttl(result, ttl),
-            }
+            _endpoint_memory_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
             return result
 
         return wrapper
@@ -2485,7 +2451,7 @@ def _pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
 
     # ── 3. Database record counts + freshness ──
     try:
-        from database import SessionLocal
+        from database import request_session as SessionLocal
 
         with SessionLocal() as db:
             db_stats = _pipeline_health_database_stats(db)
@@ -2568,6 +2534,7 @@ def _observe_pipeline_health_waiter(future: asyncio.Future) -> None:
 
 
 async def _read_pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
+    from contextvars import copy_context
     if not _pipeline_health_worker_slot.acquire(blocking=False):
         raise HTTPException(
             status_code=503,
@@ -2575,9 +2542,10 @@ async def _read_pipeline_health_snapshot(*, include_legacy_module: bool = True) 
             headers={"Retry-After": "1"},
         )
     try:
-        future = (_pipeline_health_executor.submit(_pipeline_health_snapshot)
+        context = copy_context()
+        future = (_pipeline_health_executor.submit(context.run, _pipeline_health_snapshot)
                   if include_legacy_module else
-                  _pipeline_health_executor.submit(_pipeline_health_snapshot, include_legacy_module=False))
+                  _pipeline_health_executor.submit(context.run, _pipeline_health_snapshot, include_legacy_module=False))
     except BaseException:
         _pipeline_health_worker_slot.release()
         raise
@@ -10068,7 +10036,7 @@ def _published_annual_debt_service(db) -> Dict[str, Any]:
 
 @app.get("/api/v1/debt/top-loans")
 @cached(key_prefix="debt:top-loans", ttl=3600)
-async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
+async def get_top_loans(limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_db)):
     """Get top N national government loans by outstanding balance.
 
     Reads from the database (loans table seeded from Treasury data).
@@ -10096,7 +10064,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
         # NULL ``debt_category`` rows still count as debt (matches the
         # ``_is_debt_loan`` predicate); a bare ``!=`` would silently
         # drop them via SQL three-valued logic.
-        loans = (
+        query = (
             db.query(DBLoan)
             .filter(
                 DBLoan.entity_id == national_entity.id,
@@ -10105,9 +10073,9 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
                     DBLoan.debt_category != DebtCategory.PENDING_BILLS,
                 ),
             )
-            .order_by(DBLoan.outstanding.desc())
-            .all()
         )
+        total_available = query.count()
+        loans = query.order_by(DBLoan.outstanding.desc(), DBLoan.id).limit(limit).all()
 
         if not loans:
             return {
@@ -10117,7 +10085,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
                 "source": "No loan records in database — run seeder",
             }
 
-        top = loans[:limit]
+        top = loans
         qualifications = qualify_rows(db, "loans", top)
         result_loans = []
         for loan in top:
@@ -10164,7 +10132,7 @@ async def get_top_loans(limit: int = 10, db: Session = Depends(get_db)):
         return {
             "_meta": _response_meta(unit="kes", entity_scope="national"),
             "loans": result_loans,
-            "total_available": len(loans),
+            "total_available": total_available,
             "limit": limit,
             "source": source_title,
         }
@@ -12791,7 +12759,7 @@ async def get_budget_lines(
     entity_id: int,
     period_id: int,
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, le=1000),
+    limit: int = Query(100, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     """Get paginated budget lines with full provenance."""
@@ -12890,7 +12858,7 @@ async def search(
     q: str = Query(..., min_length=1, description="Search query"),
     filters: Optional[str] = Query(None, description="JSON filters"),
     skip: int = Query(0, ge=0, description="Skip records"),
-    limit: int = Query(50, le=200, description="Limit results"),
+    limit: int = Query(50, ge=1, le=200, description="Limit results"),
     db: Session = Depends(get_db),
 ):
     """Full-text search across budget lines, audits, and documents."""
@@ -13325,7 +13293,7 @@ async def upload_document(
 async def get_top_spenders(
     country: str = Query(...),
     period: str = Query(...),
-    limit: int = Query(10, le=50),
+    limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
 ):
     """Get top spending entities for analytics."""

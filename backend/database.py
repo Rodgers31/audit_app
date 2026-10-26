@@ -64,12 +64,34 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# API pool limits do not alter the existing bootstrap/seeding/worker profile.
+if __package__:
+    from .request_database import create_audit_engine, create_request_engine
+    from .middleware.request_resources import request_deadline
+else:
+    from request_database import create_audit_engine, create_request_engine
+    from middleware.request_resources import request_deadline
+request_engine = create_request_engine(DATABASE_URL, github_connection_args())
+RequestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=request_engine)
+audit_engine = create_audit_engine(DATABASE_URL, github_connection_args())
+AuditSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=audit_engine)
+
 Base = declarative_base()
+
+
+def request_session():
+    """Use the API pool only inside the required ingress request context."""
+    return (RequestSessionLocal if request_deadline.get() is not None else SessionLocal)()
+
+
+def audit_session():
+    """Independent bounded HTTP audit capacity; retain legacy non-HTTP use."""
+    return (AuditSessionLocal if request_deadline.get() is not None else SessionLocal)()
 
 
 def get_db():
     """Database dependency for FastAPI."""
-    db = SessionLocal()
+    db = request_session()
     try:
         yield db
     finally:
