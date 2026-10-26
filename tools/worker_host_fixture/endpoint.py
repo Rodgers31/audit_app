@@ -70,7 +70,19 @@ class Endpoint(BaseHTTPRequestHandler):
         pass  # URLs contain inert signed credentials; inventory below omits them.
 
     def respond(self, head=False):
-        length = int(self.headers.get('Content-Length', '0'))
+        lengths = (self.headers.get_all('Content-Length', [])
+                   if hasattr(self.headers, 'get_all') else
+                   [self.headers['Content-Length']] if 'Content-Length' in self.headers else [])
+        if ('Transfer-Encoding' in self.headers or len(lengths) > 1
+                or (self.command == 'POST' and not lengths)):
+            self.send_error(400)
+            return
+        declared = lengths[0] if lengths else '0'
+        if (not declared or len(declared) > 16
+                or any(character not in '0123456789' for character in declared)):
+            self.send_error(400)
+            return
+        length = int(declared)
         if not 0 <= length <= 11 * 1024 * 1024:
             self.send_error(413)
             return
@@ -87,7 +99,16 @@ class Endpoint(BaseHTTPRequestHandler):
                 remaining -= len(chunk)
             body = b''
         else:
-            body = self.rfile.read(length)
+            chunks = []
+            remaining = length
+            while remaining:
+                limit = min(65536, remaining)
+                chunk = self.rfile.read(limit)
+                if type(chunk) is not bytes or not 0 < len(chunk) <= limit:
+                    raise RuntimeError('Incomplete bounded form input')
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            body = b''.join(chunks)
         path = urlsplit(self.path).path
         request_id = uuid4().hex
         binding = dict(run_id=os.environ['B15_ENDPOINT_RUN_ID'], case=(ROOT / 'endpoint-case').read_text())

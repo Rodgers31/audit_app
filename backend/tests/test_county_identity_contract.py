@@ -1,5 +1,10 @@
 """The official county code is not an Entity PK or a legacy route ID (#306)."""
+import importlib.util
 import json
+import sys
+from types import ModuleType
+
+import pytest
 from pathlib import Path
 
 from models import Entity, EntityType
@@ -99,8 +104,21 @@ def test_migration_proposal_preserves_identity_and_all_other_metadata():
         propose_county_code_changes(entities)
 
 
-def test_bootstrap_does_not_reintroduce_legacy_codes(monkeypatch):
-    from tests.test_stored_county_metrics_are_cleared import seeded_from_scratch
+@pytest.mark.parametrize("foreign_namespace", ["etl", "site-package"])
+def test_bootstrap_does_not_reintroduce_legacy_codes(monkeypatch, foreign_namespace):
+    # Neither an already-imported ETL tests package nor a site package owns this
+    # sibling fixture. Bind its exact file without changing global package order.
+    foreign = ModuleType("tests")
+    foreign.__path__ = [str(Path(__file__).resolve().parents[2] / "etl/tests")
+                        if foreign_namespace == "etl" else "/unrelated/site-packages/tests"]
+    monkeypatch.setitem(sys.modules, "tests", foreign)
+    path = Path(__file__).with_name("test_stored_county_metrics_are_cleared.py")
+    spec = importlib.util.spec_from_file_location("_county_bootstrap_fixture", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("County bootstrap fixture unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    seeded_from_scratch = module.seeded_from_scratch
     from services.county_identity import official_county_code
 
     fixture = seeded_from_scratch.__wrapped__(monkeypatch)
