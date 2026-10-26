@@ -15,6 +15,12 @@ removes TRUNCATE, REFERENCES, TRIGGER and MAINTAIN, including column REFERENCES,
 while preserving the existing RLS-governed row CRUD privileges. It changes no
 records, role memberships, RLS policies, ownership or function bodies.
 
+MAINTAIN requires PostgreSQL 17 or later. The verified auth project reported
+`server_version_num=170006` during the 26 October read-only preflight. Require
+a fresh version check before installation; the PostgreSQL 17 fixture alone
+does not establish a hosted target's version. Earlier versions are outside
+this migration's supported contract.
+
 Browser/PUBLIC execution is removed from the six existing internal trigger and
 audit helpers. Existing owner, service-role and audit-reader grants remain.
 Missing audit helpers on an auth-only project are not created. Unexpected
@@ -41,12 +47,25 @@ do not assert that PostgREST exposes arbitrary SQL operations.
 The server pins one worker and disables forwarded-client rewriting. The
 limiter uses the ASGI socket peer without loopback/missing-peer exemptions or
 client-supplied forwarding-header authority. On Render, users may share a
-proxy peer. The 1,200-per-minute peer and process limits are coarse admission,
-not an end-user fairness or distributed identity guarantee.
+proxy peer. The serving profile admits at most 600 requests per peer and 900
+per process window of 60 seconds. These distinct ceilings can bind before the
+ordinary 1,000-request worker recycle; the earlier equal 1,200 ceilings could
+not. They are coarse admission choices, not measured throughput guarantees or
+end-user fairness. A shared proxy's users still share its peer quota. The
+aggregate gate checks room before allocating peer state and debits only after
+peer admission, so rejected traffic from one peer cannot spend another peer's
+process share. Restarts and recycling reset these counters.
+
+Startup additionally requires `WEB_CONCURRENCY` unset or exactly `1`, even if
+command-line flags would override a stale environment value. This conservative
+configuration check is intentional. The current Render preflight resolved
+`WEB_CONCURRENCY=1`; verify it again before deployment.
 
 The ingress guard caps eight in-flight non-health requests, 32 MiB raw body
 per request and 32 MiB aggregate buffered body, 32 KiB query/header bytes and
-100 headers. It rejects ambiguous framing, compressed bodies and over-budget
+100 headers. Body-bearing requests occupy at most four of the eight slots,
+reserving capacity for ordinary reads. Declared/chunked GET/HEAD/OPTIONS bodies
+also use that share. It rejects ambiguous framing, compressed bodies and over-budget
 input before application decoding, preserves signed bytes, and releases
 capacity on errors/cancellation. The JSON ceiling accommodates the existing
 largest legal social-document contract; object bytes use private storage.
@@ -55,6 +74,11 @@ Before JSON decoding, a quote/escape-aware scan also caps 2,048 containers,
 without a content type. UTF-16/32 JSON is refused; UTF-8 BOM handling cannot
 bypass the same geometry limits. This bounds tiny-container expansion without
 rewriting the signed/request bytes.
+Scans above 64 KiB use one dedicated physical worker with no queued scans;
+smaller scans stay bounded inline. A cancelled/timed-out request retains its
+body and admission accounting until that worker actually finishes. Shutdown
+joins it. This keeps other reads responsive during the scan; the GIL and the
+framework's subsequent JSON decoding remain separate limits.
 Existing lower callback/webhook/media limits remain. Body reads have a
 10-second deadline; downstream work has a cooperative 30-second deadline.
 
@@ -67,9 +91,31 @@ pipeline-health worker. Direct startup, seeding and worker sessions retain
 their existing profile. Top loans now transfers only the admitted page while
 counting available rows separately; negative/oversized page limits refuse.
 
+HTTP audit writes use a separate one-connection pool with a 0.5-second checkout
+wait, two-second statement cap and 0.5-second lock cap. They do not inherit the
+request deadline or compete for its five connections. Existing recorder
+failure policy remains best-effort; this does not promise an audit commit
+when the database itself is unavailable. Request pool exhaustion maps to a
+retryable 503 with no-store and Retry-After, including legacy HTTP exception
+wrappers. Extra non-database requests can still use the remaining HTTP slots.
+
+Stale connections are checked before reuse in an isolated short read-only
+transaction with LOCAL timeouts and rollback, leaving the connection idle
+before the application's reader declaration. No persistent/session GUC is
+used across Supabase transaction-pooler boundaries. Request timeout setup is
+once per transaction, repeated only for settings changes or a tightening final
+deadline; each ordinary statement still checks the elapsed request budget.
+Transaction cleanup can roll back an aborted savepoint even after a deadline
+expires, without a timeout-setup query running ahead of the rollback. The
+next ordinary statement must reinstall/check its remaining bounds.
+
 Required guard import/construction/registration failures stop startup. Optional
 Redis failure has bounded waits and a visible local fallback, without creating
-a new Redis service. Local process counters reset on restart and do not certify
+a new Redis service. Ordinary Redis network failures keep its existing bounded
+fallback. A hard cache-constructor failure uses one shared process TTL store,
+bounded to 1,024 entries/16 MiB serialized payloads/3 MiB per entry, with fresh
+decoded reads and the existing generation/invalidation and transient-failure
+TTL policy. Local process counters reset on restart and do not certify
 multi-instance limits. Header/connection handling before ASGI, non-preemptible
 blocking Python work, external edge policy and distributed denial-of-service
 resistance remain separate boundaries. These changes do not promise immunity

@@ -26,7 +26,7 @@ _AUDIT_LOG_LEVEL = (
 )
 
 
-def _memory_allows(clients, client_ip, calls, period, capacity):
+def _memory_allows(clients, client_ip, calls, period, capacity, *, record=True):
     """Bound accepted timestamps and client identities without evicting live budgets."""
     now = time.monotonic()
     cutoff = now - period
@@ -45,9 +45,10 @@ def _memory_allows(clients, client_ip, calls, period, capacity):
     timestamps = [stamp for stamp in timestamps if stamp > cutoff]
     if len(timestamps) >= calls:
         return False
-    timestamps.append(now)
-    clients[client_ip] = timestamps
-    clients.move_to_end(client_ip)
+    if record:
+        timestamps.append(now)
+        clients[client_ip] = timestamps
+        clients.move_to_end(client_ip)
     return True
 
 
@@ -84,11 +85,15 @@ class _ProcessRateLimitMiddleware(BaseHTTPMiddleware):
         # Uvicorn's separately configured trusted-proxy boundary owns scope
         # identity. Never accept client-supplied forwarding headers here.
         client_ip = request.client.host if request.client else 'unknown'
-        # Debit the shared process budget before allocating per-peer state.
-        # A rotating/refused peer cannot fill thousands of live peer windows.
-        aggregate = _memory_allows(self.aggregate, 'all', self.aggregate_calls, self.period, 1)
-        local = aggregate and await self._check_memory_rate_limit(client_ip)
-        if local and await self._remote_allows(client_ip):
+        # Check shared room before allocating peer state, then debit only
+        # admitted peers. One peer's refusals cannot consume everybody else's
+        # quota; a full process window cannot grow the peer map either.
+        room = _memory_allows(self.aggregate, 'all', self.aggregate_calls,
+                              self.period, 1, record=False)
+        local = room and await self._check_memory_rate_limit(client_ip)
+        aggregate = local and _memory_allows(self.aggregate, 'all',
+                                            self.aggregate_calls, self.period, 1)
+        if aggregate and await self._remote_allows(client_ip):
             return await call_next(request)
         now = time.monotonic()
         if self._last_warning is None or now - self._last_warning >= self.period:
@@ -268,7 +273,10 @@ def install_security(app):
     configured_redis = bool(settings.REDIS_URL) and (
         settings.SECRET_BACKEND != 'env' or bool(os.getenv('REDIS_URL')))
     selected = RedisRateLimitMiddleware if configured_redis else RateLimitMiddleware
-    app.add_middleware(selected, calls=1200, aggregate_calls=1200, period=60, status=state)
+    # Socket peers may be shared Render proxies. Keep a coarse peer ceiling
+    # with separate process headroom; both can bind before the 1000-request
+    # worker recycle. This is not an end-user or cross-restart quota.
+    app.add_middleware(selected, calls=600, aggregate_calls=900, period=60, status=state)
     app.add_middleware(AuditLogMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestResourceMiddleware, status=state)

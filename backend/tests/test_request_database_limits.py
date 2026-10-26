@@ -26,8 +26,10 @@ def test_http_dependency_uses_bounded_pool_without_premature_transaction():
 
 
 def invoke_policy(engine, sql, cursor):
+    transaction = object()
+    connection = SimpleNamespace(info={}, get_transaction=lambda: transaction)
     for callback in engine.dispatch.before_cursor_execute:
-        callback(None, cursor, sql, (), SimpleNamespace(), False)
+        callback(connection, cursor, sql, (), SimpleNamespace(), False)
 
 
 def test_derived_request_connections_clamp_local_work_and_keep_reader_preamble():
@@ -35,7 +37,8 @@ def test_derived_request_connections_clamp_local_work_and_keep_reader_preamble()
     from middleware.request_resources import request_deadline
     engine = create_request_engine('postgresql+psycopg2://fixture:fixture@127.0.0.1:1/fixture', {})
     calls = []
-    cursor = SimpleNamespace(execute=lambda *args:calls.append(args))
+    cursor = SimpleNamespace(execute=lambda *args:calls.append(args),
+        fetchone=lambda: (None, None, *calls[-1][1][2:]))
     try:
         invoke_policy(engine, 'SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY', cursor)
         assert calls == [], 'The committed reader preamble must precede all queries'
@@ -45,9 +48,9 @@ def test_derived_request_connections_clamp_local_work_and_keep_reader_preamble()
         finally:
             request_deadline.reset(token)
         assert len(calls) == 1
-        assert 'true' in calls[0][0]
-        assert 1 <= int(calls[0][1][0]) <= 100
-        assert 1 <= int(calls[0][1][1]) <= 100
+        assert calls[0][1][:2] == (True, True)
+        assert 1 <= int(calls[0][1][2]) <= 100
+        assert 1 <= int(calls[0][1][3]) <= 100
         token = request_deadline.set(monotonic() - 1)
         try:
             with pytest.raises(TimeoutError, match='Request database time budget exceeded'):

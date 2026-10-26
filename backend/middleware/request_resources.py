@@ -2,8 +2,11 @@
 import asyncio
 import codecs
 import json
+import logging
 import math
+from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
+from threading import BoundedSemaphore
 from time import monotonic
 
 from starlette.responses import JSONResponse
@@ -16,6 +19,8 @@ MAX_BUFFERED_BYTES = MAX_BODY_BYTES
 MAX_QUERY_BYTES = 32 * 1024
 MAX_HEADER_BYTES = 32 * 1024
 MAX_INFLIGHT = 8
+MAX_BODY_INFLIGHT = 4
+SYNC_SCAN_BYTES = 65536
 BODY_TIMEOUT = 10.0
 REQUEST_TIMEOUT = 30.0
 MAX_JSON_CONTAINERS = 2048
@@ -23,6 +28,7 @@ MAX_JSON_DEPTH = 64
 MAX_JSON_SEPARATORS = 16384
 HEALTH_PATHS = frozenset({'/health', '/health/live', '/health/ready'})
 request_deadline = ContextVar('api_request_deadline', default=None)
+logger = logging.getLogger(__name__)
 
 
 def cheap_health(scope):
@@ -60,6 +66,25 @@ class RequestRefused(Exception):
         self.status, self.code = status, code
 
 
+def _scan_owned(checker, payload):
+    """Return only a small verdict; completed futures retain no input/traceback."""
+    raw, scope = payload
+    payload.clear()
+    try:
+        checker(raw, scope)
+        return None
+    except RequestRefused as error:
+        verdict = (error.status, error.code)
+        error.__traceback__ = error.__context__ = error.__cause__ = None
+        return verdict
+    except Exception as error:
+        logger.error('request_json_scan_failed', extra={'error_type':type(error).__name__})
+        error.__traceback__ = error.__context__ = error.__cause__ = None
+        return (500, 'JSON_SCAN_FAILED')
+    finally:
+        raw = scope = None
+
+
 class RequestResourceMiddleware:
     """Bound process admission and raw input while preserving signed bytes.
 
@@ -70,11 +95,12 @@ class RequestResourceMiddleware:
     def __init__(self, app, *, max_body=MAX_BODY_BYTES, max_query=MAX_QUERY_BYTES,
                  max_headers=MAX_HEADER_BYTES, max_buffered=MAX_BUFFERED_BYTES,
                  max_inflight=MAX_INFLIGHT, body_timeout=BODY_TIMEOUT,
+                 max_body_inflight=MAX_BODY_INFLIGHT,
                  request_timeout=REQUEST_TIMEOUT, status=None,
                  max_json_containers=MAX_JSON_CONTAINERS, max_json_depth=MAX_JSON_DEPTH,
                  max_json_separators=MAX_JSON_SEPARATORS):
         if any(type(value) is not int or value < 1 for value in
-               (max_body,max_query,max_headers,max_buffered,max_inflight,
+               (max_body,max_query,max_headers,max_buffered,max_inflight,max_body_inflight,
                 max_json_containers,max_json_depth,max_json_separators)):
             raise ValueError('Positive explicit request byte/admission limits required')
         if any(type(value) not in (int,float) or not math.isfinite(value) or value <= 0
@@ -83,16 +109,32 @@ class RequestResourceMiddleware:
         self.app = app
         self.max_body, self.max_query, self.max_headers = max_body, max_query, max_headers
         self.max_buffered, self.max_inflight = max_buffered, max_inflight
+        self.max_body_inflight = min(max_body_inflight, max(1,max_inflight-1))
         self.body_timeout, self.request_timeout = body_timeout, request_timeout
         self.max_json_containers = max_json_containers
         self.max_json_depth = max_json_depth
         self.max_json_separators = max_json_separators
-        self.inflight = self.buffered = 0
+        self.inflight = self.body_inflight = self.buffered = self.scanning = 0
+        self._scan_gate = BoundedSemaphore(1)
+        self._scan_executor = self._active_scan = None
+        self._scanner_closed = False
         self.status = status if status is not None else {}
         self.status.update(resource_guard=True, max_inflight=max_inflight,
+                           max_body_inflight=self.max_body_inflight, max_json_scans=1,
+                           synchronous_scan_bytes=SYNC_SCAN_BYTES,
                            max_body_bytes=max_body, max_buffered_bytes=max_buffered,
                            max_json_containers=max_json_containers, max_json_depth=max_json_depth,
                            max_json_separators=max_json_separators)
+
+    async def aclose(self):
+        """Stop admission to the worker and join it only after actual completion."""
+        self._scanner_closed = True
+        if self._active_scan is not None:
+            await asyncio.shield(asyncio.wrap_future(self._active_scan))
+            await asyncio.sleep(0)
+        if self._scan_executor is not None:
+            self._scan_executor.shutdown(wait=True, cancel_futures=False)
+            self._scan_executor = None
 
     def check_json_budget(self, raw, scope):
         # These signed ingress paths already retain their small 25k/64k raw
@@ -176,11 +218,34 @@ class RequestResourceMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
-            return await self.app(scope, receive, send)
+            if scope['type'] != 'lifespan':
+                return await self.app(scope, receive, send)
+            async def lifecycle_receive():
+                message = await receive()
+                if message['type'] == 'lifespan.startup':
+                    self._scanner_closed = False
+                return message
+            try:
+                return await self.app(scope, lifecycle_receive, send)
+            finally:
+                await self.aclose()
         admitted = False
+        body_admitted = False
         held_bytes = 0
         started = False
         deadline_token = None
+        scan_future = buffered = None
+        released = release_deferred = False
+        def release_budget():
+            nonlocal released
+            if released:
+                return
+            released = True
+            self.buffered -= held_bytes
+            if admitted:
+                self.inflight -= 1
+            if body_admitted:
+                self.body_inflight -= 1
         async def tracked_send(message):
             nonlocal started
             if message['type'] == 'http.response.start':
@@ -202,8 +267,16 @@ class RequestResourceMiddleware:
             if not health:
                 if self.inflight >= self.max_inflight:
                     raise RequestRefused(503, 'REQUEST_CAPACITY_EXCEEDED')
+                body_bearing = (scope['method'] not in {'GET','HEAD','OPTIONS'}
+                    or declared not in (None,0)
+                    or any(k.lower()==b'transfer-encoding' for k,_ in scope.get('headers',[])))
+                if body_bearing and self.body_inflight >= self.max_body_inflight:
+                    raise RequestRefused(503, 'BODY_REQUEST_CAPACITY_EXCEEDED')
                 self.inflight += 1
                 admitted = True
+                if body_bearing:
+                    self.body_inflight += 1
+                    body_admitted = True
             deadline = monotonic() + self.request_timeout
             deadline_token = request_deadline.set(deadline)
             # Read once before the application sees bytes. A false/absent
@@ -218,6 +291,11 @@ class RequestResourceMiddleware:
                         chunk = event.get('body', b'')
                         if health and chunk:
                             raise RequestRefused(400, 'HEALTH_BODY_UNSUPPORTED')
+                        if chunk and not health and not body_admitted:
+                            if self.body_inflight >= self.max_body_inflight:
+                                raise RequestRefused(503, 'BODY_REQUEST_CAPACITY_EXCEEDED')
+                            self.body_inflight += 1
+                            body_admitted = True
                         if len(buffered) + len(chunk) > body_limit:
                             raise RequestRefused(413, 'BODY_TOO_LARGE')
                         if self.buffered + len(chunk) > self.max_buffered:
@@ -231,7 +309,43 @@ class RequestResourceMiddleware:
                 raise RequestRefused(408, 'BODY_READ_TIMEOUT') from None
             if declared is not None and declared != len(buffered):
                 raise RequestRefused(400, 'BODY_LENGTH_MISMATCH')
-            self.check_json_budget(buffered,scope)
+            if len(buffered) <= SYNC_SCAN_BYTES:
+                self.check_json_budget(buffered,scope)
+            else:
+                if self._scanner_closed or not self._scan_gate.acquire(blocking=False):
+                    raise RequestRefused(503, 'JSON_SCAN_CAPACITY_EXCEEDED')
+                self.scanning += 1
+                try:
+                    if self._scan_executor is None:
+                        self._scan_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='request-json')
+                    scan_future = self._scan_executor.submit(_scan_owned, self.check_json_budget, [buffered,scope])
+                    self._active_scan = scan_future
+                except BaseException:
+                    self.scanning -= 1
+                    self._scan_gate.release()
+                    raise
+                loop = asyncio.get_running_loop()
+                def scan_complete(future):
+                    def finish():
+                        self._active_scan = None
+                        self.scanning -= 1
+                        self._scan_gate.release()
+                        if release_deferred:
+                            release_budget()
+                    try:
+                        loop.call_soon_threadsafe(finish)
+                    except RuntimeError:
+                        # The request loop has stopped; the physical worker is
+                        # nevertheless complete and remains responsible for cleanup.
+                        finish()
+                scan_future.add_done_callback(scan_complete)
+                try:
+                    async with asyncio.timeout(max(.001,deadline-monotonic())):
+                        verdict = await asyncio.shield(asyncio.wrap_future(scan_future))
+                except TimeoutError:
+                    raise RequestRefused(504, 'REQUEST_TIME_BUDGET_EXCEEDED') from None
+                if verdict is not None:
+                    raise RequestRefused(*verdict)
             body = bytes(buffered)
             del buffered
             pending = True
@@ -254,8 +368,12 @@ class RequestResourceMiddleware:
             await JSONResponse({'detail':error.code}, status_code=error.status,
                 headers={'Cache-Control':'no-store', **({'Retry-After':'1'} if error.status == 503 else {})})(scope, receive, send)
         finally:
-            self.buffered -= held_bytes
-            if admitted:
-                self.inflight -= 1
+            # Cancellation/timeout abandons the wait, never the ownership of
+            # bytes or slots. The worker clears its inputs before completion.
+            buffered = None
+            if scan_future is not None and not scan_future.done():
+                release_deferred = True
+            else:
+                release_budget()
             if deadline_token is not None:
                 request_deadline.reset(deadline_token)

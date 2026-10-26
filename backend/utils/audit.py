@@ -65,7 +65,7 @@ def record_admin_action(
     """
     # Local import to avoid a circular at module-load time
     # (utils.audit ← models ← database, and we'd hit it from there).
-    from database import request_session as SessionLocal
+    from database import audit_session as SessionLocal
 
     del db  # explicitly unused — see docstring
     audit_db: Optional[Session] = None

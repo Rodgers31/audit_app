@@ -185,12 +185,13 @@ def test_parallel_bodies_share_one_process_byte_budget():
             entered.set()
             await release.wait()
             await consume(scope, receive, send)
-        guard = bounded(endpoint,max_body=16,max_buffered=8,max_inflight=2)
+        guard = bounded(endpoint,max_body=16,max_buffered=8,max_inflight=3)
         first = asyncio.create_task(asgi_call(guard,body=b'123456'))
         await entered.wait()
         try:
             second = await asyncio.wait_for(asgi_call(guard,body=b'789'),.2)
             assert second[0]['status'] == 503
+            assert b'BODY_CAPACITY_EXCEEDED' in second[1]['body']
             assert guard.buffered == 6
         finally:
             release.set()

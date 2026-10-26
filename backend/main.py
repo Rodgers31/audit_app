@@ -1929,6 +1929,8 @@ app.add_middleware(
 # Required serving controls cannot disappear behind a healthy startup.
 from middleware.security import install_security
 install_security(app)
+from request_database import install_database_exception_handlers
+install_database_exception_handlers(app)
 
 # Include routers
 from social.api import router as social_admin_router
@@ -2119,13 +2121,17 @@ async def log_requests(request: Request, call_next):
 
 
 # Cache decorator helper
-_all_mem_caches: list = []  # registry for test cleanup
+from cache.endpoint_memory import BoundedResponseCache
+
+# One budget for all endpoints, including when bootstrap/RedisCache setup
+# fails entirely. Ordinary Redis connection failure uses RedisCache's own
+# bounded memory backend instead.
+_endpoint_memory_cache = BoundedResponseCache()
 
 
 def clear_all_caches():
     """Clear every in-memory endpoint cache.  Called between tests."""
-    for c in _all_mem_caches:
-        c.clear()
+    _endpoint_memory_cache.clear()
     # 12-hour TTL — one warm-up would otherwise freeze peers for the whole run.
     _peers_cache["ts"] = 0.0
     _peers_cache["data"] = None
@@ -2140,10 +2146,7 @@ def clear_all_caches():
 
 
 def _clear_endpoint_mem_caches() -> int:
-    dropped = sum(len(c) for c in _all_mem_caches)
-    for c in _all_mem_caches:
-        c.clear()
-    return dropped
+    return _endpoint_memory_cache.clear()
 
 
 # The nightly's signed invalidation call (issue #231) clears these in every
@@ -2216,10 +2219,6 @@ def cached(key_prefix: str, ttl: int = 3600):
     """
 
     def decorator(func):
-        # Module-level in-memory fallback cache (per-endpoint)
-        _mem_cache: Dict[str, Dict[str, Any]] = {}
-        _all_mem_caches.append(_mem_cache)
-
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Build cache key from prefix and path params
@@ -2245,10 +2244,12 @@ def cached(key_prefix: str, ttl: int = 3600):
                 redis_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
                 return result
 
-            # RedisCache normally supplies its byte-bounded memory backend.
-            # If that helper failed to initialize, keep reads available under
-            # ingress/DB budgets without a second unbounded query-key store.
-            return await func(*args, **kwargs)
+            cached_data = _endpoint_memory_cache.get(cache_key)
+            if cached_data is not None:
+                return cached_data
+            result = await func(*args, **kwargs)
+            _endpoint_memory_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
+            return result
 
         return wrapper
 
