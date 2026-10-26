@@ -242,11 +242,6 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         logger.error("Audit source scope refused: %s", exc)
         return 1
 
-    if not domains:
-        logger.warning("No domains registered - nothing to do")
-        return 0
-
-    since = _parse_since(args.since)
     dry_run = settings.dry_run_default if args.dry_run is None else args.dry_run
     review_id = getattr(args, "audits_reconciliation_review", None)
     if review_id is not None:
@@ -254,6 +249,11 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         if review_id not in REVIEW_IDS or "audits" not in domains or dry_run:
             logger.error("Source-checked review requires a live audits selection")
             return 1
+    if not domains:
+        logger.warning("No domains registered - nothing to do")
+        return 0
+
+    since = _parse_since(args.since)
     if observe_listing and dry_run:
         logger.error("--audits-observe-listing requires --no-dry-run")
         return 1

@@ -183,6 +183,16 @@ class CobSourceUnreachable(RuntimeError):
     """
 
 
+def _is_report_refusal(error: Exception) -> bool:
+    # PDF parsing remains optional for fixture-only installations. A refusal
+    # from an installed parser must nevertheless retain its typed outcome.
+    try:
+        from ...pdf_parsers import CountyTableIncomplete
+    except ImportError:
+        return False
+    return isinstance(error, CountyTableIncomplete)
+
+
 def fetch_budget_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> Any:
@@ -240,6 +250,12 @@ def fetch_budget_payload(
                 detail=str(exc)[:200],
             )
         except Exception as exc:
+            if _is_report_refusal(exc):
+                mark_refused(
+                    "counties_budget", reason="county_report_incomplete",
+                    detail=str(exc)[:200],
+                )
+                raise
             logger.warning(
                 "COB county PDF fetch failed, falling back to fixture: %s", exc
             )
