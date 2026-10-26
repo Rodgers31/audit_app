@@ -24,7 +24,8 @@ from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource, slugify_entity
-from ...freshness import mark_fixture, mark_live
+from ...freshness import mark_fixture, mark_live, mark_refused
+from ...http_client import PdfDownloadIncomplete
 
 logger = logging.getLogger("seeding.counties_budget.fetcher")
 
@@ -182,6 +183,16 @@ class CobSourceUnreachable(RuntimeError):
     """
 
 
+def _is_report_refusal(error: Exception) -> bool:
+    # PDF parsing remains optional for fixture-only installations. A refusal
+    # from an installed parser must nevertheless retain its typed outcome.
+    try:
+        from ...pdf_parsers import CountyTableIncomplete
+    except ImportError:
+        return False
+    return isinstance(error, CountyTableIncomplete)
+
+
 def fetch_budget_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> Any:
@@ -220,6 +231,11 @@ def fetch_budget_payload(
                 mark_fixture(
                     "counties_budget", reason="parser_returned_nothing"
                 )
+        except PdfDownloadIncomplete:
+            # A bounded transfer has saved resumable progress, not produced a
+            # new source. Do not feed fixture rows into a source-backed writer.
+            mark_refused("counties_budget", reason="pdf_download_incomplete")
+            raise
         except CobSourceUnreachable as exc:
             # The publisher was down, not our parser. Naming it separately is
             # the whole point: `parser_returned_nothing` sends the reader to
@@ -234,6 +250,12 @@ def fetch_budget_payload(
                 detail=str(exc)[:200],
             )
         except Exception as exc:
+            if _is_report_refusal(exc):
+                mark_refused(
+                    "counties_budget", reason="county_report_incomplete",
+                    detail=str(exc)[:200],
+                )
+                raise
             logger.warning(
                 "COB county PDF fetch failed, falling back to fixture: %s", exc
             )

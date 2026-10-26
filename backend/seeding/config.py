@@ -207,6 +207,15 @@ class SeedingSettings(BaseSettings):
             "needs."
         ),
     )
+    cob_pdf_download_timeout_seconds: Optional[float] = Field(
+        default=None, ge=1.0, le=420.0,
+        description=(
+            "Optional CoB-only transfer allowance. Also capped at the domain "
+            "budget minus 180 seconds for parsing and persistence. Does not "
+            "increase the domain or whole-run limit. Unset inherits the "
+            "generic PDF transfer allowance."
+        ),
+    )
     pdf_download_max_bytes: int = Field(
         default=120 * 1024 * 1024,
         ge=1,

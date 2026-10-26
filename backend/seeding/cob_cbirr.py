@@ -128,7 +128,12 @@ def download_cbirr(
         url,
         cache_dir=cache_dir,
         ttl_seconds=settings.pdf_cache_ttl_seconds,
-        max_seconds=settings.pdf_download_timeout_seconds,
+        max_seconds=min(
+            settings.cob_pdf_download_timeout_seconds
+            if settings.cob_pdf_download_timeout_seconds is not None
+            else settings.pdf_download_timeout_seconds,
+            max(1.0, settings.domain_timeout_seconds - 180.0),
+        ),
         max_bytes=settings.pdf_download_max_bytes,
         headers=PDF_HEADERS,
         fingerprint=fingerprint,

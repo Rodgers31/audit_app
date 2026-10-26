@@ -242,12 +242,18 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         logger.error("Audit source scope refused: %s", exc)
         return 1
 
+    dry_run = settings.dry_run_default if args.dry_run is None else args.dry_run
+    review_id = getattr(args, "audits_reconciliation_review", None)
+    if review_id is not None:
+        from .extractors.reviewed_proposals import REVIEW_IDS
+        if review_id not in REVIEW_IDS or "audits" not in domains or dry_run:
+            logger.error("Source-checked review requires a live audits selection")
+            return 1
     if not domains:
         logger.warning("No domains registered - nothing to do")
         return 0
 
     since = _parse_since(args.since)
-    dry_run = settings.dry_run_default if args.dry_run is None else args.dry_run
     if observe_listing and dry_run:
         logger.error("--audits-observe-listing requires --no-dry-run")
         return 1
@@ -257,6 +263,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
     # Materialise so we can index / slice / len for "remaining domains"
     # reporting, regardless of what _collect_domains returned.
     domains = list(domains)
+    planned_domains = list(domains)
 
     # Global wall-clock budget for the whole `seed --all` run. The per-domain
     # SIGALRM guard below caps any single stuck domain, but it does nothing
@@ -268,6 +275,33 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
     total_budget = settings.total_timeout_seconds
     loop_start = time.monotonic()
     deadline = loop_start + total_budget if total_budget > 0 else None
+    fair_progress = (getattr(args, "fair_progress", False) is True
+                     and total_budget > 0 and len(domains) > 1 and not dry_run)
+    if fair_progress:
+        from .fair_progress import admission_order
+        try:
+            _ensure_db_sessionlocal()
+            domains = admission_order(SessionLocal, domains)
+        except Exception:
+            logger.error("Bounded admission history unavailable; no domain started")
+            _record_not_run(domains,
+                "not run: bounded admission history unavailable",
+                {"admission_history_refused": True}, dry_run=dry_run,
+                reason="unavailable admission history")
+            return 1
+    if review_id is not None:
+        # These explicit, one-off source repairs must get an opportunity.
+        # Ordinary scheduled rotation and its persisted history stay intact.
+        priority = [d for d in ("audits", "counties_budget") if d in domains]
+        domains = [*priority, *(d for d in domains if d not in priority)]
+    execution_plan = {
+        "strategy": "least_recent_real_admission" if fair_progress else "requested_order",
+        "planned_domains": planned_domains,
+        "execution_order": domains,
+        "total_budget_seconds": total_budget,
+        "audits_reconciliation_review": review_id,
+    }
+    logger.info("Bounded domain admission plan", extra={"execution_plan": execution_plan})
 
     for index, domain in enumerate(domains):
         if deadline is not None and time.monotonic() >= deadline:
@@ -316,6 +350,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             dry_run=dry_run,
             audits_source_manifest=source_manifest,
             audits_observe_listing=observe_listing,
+            audits_reconciliation_review=review_id,
             audits_source_receipt=receipt_for(source_entries)
             if source_entries is not None
             else None,
@@ -429,6 +464,9 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     # the nightly reported [OK] (see seeding/freshness.py).
                     provenance = freshness.get(domain)
                     job.meta = dict(job.meta or {})
+                    # Running observations have an exact ownership shape.
+                    # Add scheduling telemetry only after the handler returns.
+                    job.meta["execution_plan"] = execution_plan
                     job.meta["source_mode"] = provenance.get("mode")
                     if provenance.get("reason"):
                         job.meta["source_fallback_reason"] = provenance["reason"]
@@ -542,6 +580,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                         # reported success.
                                         stopped_job.status = IngestionStatus.FAILED
                                         stopped_job.finished_at = datetime.now(timezone.utc)
+                                        stopped_job.meta = {**(stopped_job.meta or {}), "execution_plan": execution_plan}
                                         if context.audits_source_receipt is not None:
                                             stopped_job.meta = {
                                                 **(stopped_job.meta or {}),
@@ -579,6 +618,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                         failed_job.status = IngestionStatus.FAILED
                                         failed_job.finished_at = datetime.now(timezone.utc)
                                         failed_job.errors = [str(exc)]
+                                        failed_job.meta = {**(failed_job.meta or {}), "execution_plan": execution_plan}
                                         if context.audits_source_receipt is not None:
                                             failed_job.meta = {
                                                 **(failed_job.meta or {}),
@@ -674,6 +714,15 @@ def build_parser() -> argparse.ArgumentParser:
         "--audits-observe-listing",
         action="store_true",
         help="Observe current county year pages and verify adopted unselected volumes; requires bounded manifest",
+    )
+    seed_parser.add_argument(
+        "--audits-reconciliation-review",
+        choices=("oag-2542-20261026",),
+        help="Apply only this source-checked repair receipt; never a nightly default",
+    )
+    seed_parser.add_argument(
+        "--fair-progress", action="store_true",
+        help="Admit least-recently entered live legacy domains first within the same budget",
     )
     seed_parser.add_argument(
         "--config",

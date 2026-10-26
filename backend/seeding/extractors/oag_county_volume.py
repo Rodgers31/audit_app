@@ -499,7 +499,7 @@ def extract_county_volume(session, doc, settings, *, known_counties: Dict[str, s
     from ..pdf_artifact import BINDING_KEY, extraction_artifact
 
     artifact = extraction_artifact(doc)
-    existing = already_extracted(session, doc)
+    existing = already_extracted(session, doc) if review is None else 0
     if existing:
         return {
             "created": 0,

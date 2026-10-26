@@ -539,7 +539,7 @@ def _has_delegate_rows(session, doc) -> bool:
     )
 
 
-def _county_volume_dispatch(session, doc, settings) -> Optional[dict]:
+def _county_volume_dispatch(session, doc, settings, *, review=None) -> Optional[dict]:
     """Route a FY2021/22-onwards combined volume to ``oag_county_volume``.
 
     Returns the stats when it did, None to fall through to the paths below.
@@ -558,7 +558,7 @@ def _county_volume_dispatch(session, doc, settings) -> Optional[dict]:
         read_head,
     )
 
-    done = already_extracted(session, doc)
+    done = already_extracted(session, doc) if review is None else 0
     if done:
         from ..pdf_artifact import extraction_artifact
 
@@ -601,11 +601,11 @@ def _county_volume_dispatch(session, doc, settings) -> Optional[dict]:
         doc.url or doc.id,
     )
     return extract_county_volume(
-        session, doc, settings, known_counties=_known_counties(session)
+        session, doc, settings, known_counties=_known_counties(session), review=review
     )
 
 
-def extract_county_audit(session, doc, settings) -> dict:
+def extract_county_audit(session, doc, settings, *, review=None) -> dict:
     """Extract ``doc`` (a fetched county audit report) into extraction rows.
 
     One row per finding, ``page_number`` = 1-based PDF page. Idempotent: rows
@@ -619,6 +619,13 @@ def extract_county_audit(session, doc, settings) -> dict:
 
     if not doc.file_path or not Path(doc.file_path).exists():
         raise FileNotFoundError(f"county audit file missing: {doc.file_path!r}")
+
+    if review is not None:
+        volume = _county_volume_dispatch(session, doc, settings, review=review)
+        if volume is None:
+            from .reconciliation import IncompleteExtraction
+            raise IncompleteExtraction("source-checked review requires its county volume")
+        return volume
 
     existing = (
         session.query(Extraction)
@@ -660,7 +667,7 @@ def extract_county_audit(session, doc, settings) -> dict:
             "shape": "consolidated",
         }
 
-    volume = _county_volume_dispatch(session, doc, settings)
+    volume = _county_volume_dispatch(session, doc, settings, review=review)
     if volume is not None:
         return volume
 

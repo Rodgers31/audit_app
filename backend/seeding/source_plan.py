@@ -28,6 +28,7 @@ class SourcePlan:
     domains: tuple[str, ...]
     bootstrap: bool
     dry_run: bool
+    audits_review: str = ""
 
     @property
     def argv(self):
@@ -35,11 +36,17 @@ class SourcePlan:
         args = [sys.executable, '-m', 'seeding.cli', 'seed']
         for domain in self.domains:
             args.extend(['--domain', domain])
+        if self.audits_review:
+            args.extend(['--audits-reconciliation-review', self.audits_review])
+        if len(self.domains) > 1 and not self.dry_run:
+            args.append('--fair-progress')
         return [*args, '--dry-run' if self.dry_run else '--no-dry-run']
 
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
-               bootstrap='false', county_borrowing='false'):
+               bootstrap='false', county_borrowing='false', audits_review=''):
+    if audits_review not in ('', 'oag-2542-20261026'):
+        raise ValueError('Unknown source-checked audits review')
     enabled = {'cra': boolean(cra), 'opendata': boolean(opendata),
                'county_borrowing': boolean(county_borrowing)}
     discover = boolean(discovery)
@@ -50,7 +57,7 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
     if type(domain) is not str or domain not in ('', *LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing'):
         raise ValueError('Unknown source plan domain')
     if event == 'schedule':
-        if schedule not in (DAILY, WEEKLY) or domain or dry or boot:
+        if schedule not in (DAILY, WEEKLY) or domain or dry or boot or audits_review:
             raise ValueError('Unsupported scheduled source plan')
         weekly = schedule == WEEKLY
         # Admit explicit opt-ins before legacy work can consume the shared
@@ -63,7 +70,9 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
     if domain in enabled and not enabled[domain]:
         raise ValueError('Selected source requires its explicit opt-in')
     domains = (domain,) if domain else (*(d for d, on in enabled.items() if on), *LEGACY_DOMAINS)
-    return SourcePlan(domains, boot, dry)
+    if audits_review and (dry or 'audits' not in domains):
+        raise ValueError('Source-checked review requires a live audits selection')
+    return SourcePlan(domains, boot, dry, audits_review)
 
 
 def environment_plan():
@@ -75,7 +84,8 @@ def environment_plan():
         cra=os.environ.get('SEED_CRA_INGESTION_ENABLED', 'false'),
         opendata=os.environ.get('SEED_OPENDATA_INGESTION_ENABLED', 'false'),
         discovery=os.environ.get('SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'false'),
-        county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'))
+        county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'),
+        audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''))
 
 
 def validate_plan(plan):
@@ -84,7 +94,10 @@ def validate_plan(plan):
             or not 1 <= len(plan.domains) <= len(LEGACY_DOMAINS) + 3
             or any(type(d) is not str or d not in (*LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing') for d in plan.domains)
             or len(set(plan.domains)) != len(plan.domains)
-            or type(plan.bootstrap) is not bool or type(plan.dry_run) is not bool):
+            or type(plan.bootstrap) is not bool or type(plan.dry_run) is not bool
+            or type(plan.audits_review) is not str
+            or plan.audits_review not in ('', 'oag-2542-20261026')
+            or (plan.audits_review and (plan.dry_run or 'audits' not in plan.domains))):
         raise ValueError('Invalid source plan output or invocation')
 
 
@@ -112,7 +125,8 @@ def main():
         if sys.argv[1] == '--check':
             write_plan_outputs(plan)
         print(json.dumps({'domains': plan.domains, 'bootstrap': plan.bootstrap,
-                          'dry_run': plan.dry_run, 'evidence': 'selection_plan_only'}), flush=True)
+                          'dry_run': plan.dry_run, 'audits_review': plan.audits_review,
+                          'evidence': 'selection_plan_only'}), flush=True)
         if sys.argv[1] == '--execute':
             return subprocess.run(plan.argv, check=False).returncode
         return 0
