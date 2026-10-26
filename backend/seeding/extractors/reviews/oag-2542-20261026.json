@@ -1,0 +1,194 @@
+{
+  "review_id": "oag-2542-20261026",
+  "issue": 812,
+  "source_sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+  "proposal_content_sha256": "f4043a186ab4cdb3858e356ccbb66172571d9d5399b24867b73ed2ddd887f7f9",
+  "candidate_content_sha256": "4161605e45f79c7e0e89b4ed71cb811308fe39db06e816bfa13b165623cc4330",
+  "reason": "Source-checked correction of 23 final county findings: remove detached lists of unresolved 2023/2024 matters from the 2024/2025 finding text. Preserve amounts, county attribution, fiscal year, citations, confidence, all 1,269 identities and all published audit links. No retirements. Verified against the exact 688-page official PDF and complete native-parser replay.",
+  "reviewed_rows": [
+    {
+      "extraction_id": 4362,
+      "county": "Mombasa",
+      "finding_pdf_page": 20,
+      "prior_year_list_pdf_page": 21,
+      "before_sha256": "cf4f29e8e3a337e19a03ddf4a765c720415a762fc1ac1c9e5a165f16c59cc2b6",
+      "after_content_sha256": "22876bcee3dfa469476c9f03811abca38b824d243b18cc0b17b4b5c45c80c91e"
+    },
+    {
+      "extraction_id": 4407,
+      "county": "Kilifi",
+      "finding_pdf_page": 43,
+      "prior_year_list_pdf_page": 45,
+      "before_sha256": "7b872988fbf7865579944eaee956a016cabccbebcc69b2f938bcbc15fe31bc70",
+      "after_content_sha256": "190e6f56b7b75485d8a3a8b63ed413a591d1ad9b2001ffff312843746124a0bb"
+    },
+    {
+      "extraction_id": 4474,
+      "county": "Taita Taveta",
+      "finding_pdf_page": 72,
+      "prior_year_list_pdf_page": 73,
+      "before_sha256": "2c91eb902973cb81e317bb1c1eff063ae5bad44f750141c3a4c52846f20d344e",
+      "after_content_sha256": "f602cb7597e9c7fecd75f21a9821a994245e74406dbab785a5b56a8745e92d2c"
+    },
+    {
+      "extraction_id": 4496,
+      "county": "Garissa",
+      "finding_pdf_page": 82,
+      "prior_year_list_pdf_page": 83,
+      "before_sha256": "7f5dfebdedb443e1b815713a23305e6ad0e546b8e02dfebcab2d1285f71b53fe",
+      "after_content_sha256": "90290247b03b0800d406909b853a5182d5184d8dfd2283a19deb8896b6cce218"
+    },
+    {
+      "extraction_id": 4534,
+      "county": "Wajir",
+      "finding_pdf_page": 96,
+      "prior_year_list_pdf_page": 97,
+      "before_sha256": "735132df28a65c642d415cf8915526276c7a21980adc3fbdb239de8ff7ff751e",
+      "after_content_sha256": "68b037ba2883c4950c991cc72f778bdd8f461c6c75e862fd260457419fc2ad95"
+    },
+    {
+      "extraction_id": 4559,
+      "county": "Mandera",
+      "finding_pdf_page": 106,
+      "prior_year_list_pdf_page": 107,
+      "before_sha256": "5dfcb68f807b32e0327435ede96979d49bd20f01eb8b7c03743cdb88d6a08f5d",
+      "after_content_sha256": "7c47dd930ce850aa0abef399df6d74e4667dfb768c928094e1aa283ceefa9d3d"
+    },
+    {
+      "extraction_id": 4704,
+      "county": "Embu",
+      "finding_pdf_page": 172,
+      "prior_year_list_pdf_page": 173,
+      "before_sha256": "d69ebc263783ac9ae65b320c44109e386aa8427e8e1802bd0e184406a73328e5",
+      "after_content_sha256": "5113d440d6f722c699776d9fb657d286cf0ad9c74abbd8c0ccc5aa308f6f9844"
+    },
+    {
+      "extraction_id": 4768,
+      "county": "Nyandarua",
+      "finding_pdf_page": 199,
+      "prior_year_list_pdf_page": 200,
+      "before_sha256": "7bedabf51a96bb990eac81bb8c415880eec15dac6f98e4a3b6e489a93a55c53f",
+      "after_content_sha256": "a6c03e56de1343f9cde4351e9ed4542810b4c6ffe8d0efd943af302742022929"
+    },
+    {
+      "extraction_id": 4869,
+      "county": "Kiambu",
+      "finding_pdf_page": 274,
+      "prior_year_list_pdf_page": 276,
+      "before_sha256": "b62df2a8b80178c4d7f345e963efeaa533052feaf4f3325047e756395c6e29fd",
+      "after_content_sha256": "89ba4e686f6e5a221061bdf17aa5cd94ee43987ee111b48ed78926efa709da29"
+    },
+    {
+      "extraction_id": 4886,
+      "county": "Turkana",
+      "finding_pdf_page": 285,
+      "prior_year_list_pdf_page": 286,
+      "before_sha256": "b17519e126dffe7ba9228e51115abfd60f5d7338be35596adc5d2d73a3a67b9c",
+      "after_content_sha256": "0c2876e7c11b2b6bb930f3aac52702a3ac244d65b0fa1c3d42dd94a9372a485a"
+    },
+    {
+      "extraction_id": 4978,
+      "county": "Trans Nzoia",
+      "finding_pdf_page": 326,
+      "prior_year_list_pdf_page": 327,
+      "before_sha256": "640013cbf04d5befe453bb149e9aa0be104f06ce71dbe49901ab829ed9c2872f",
+      "after_content_sha256": "2bf8176cf1fa6d7bc6de5d96f8c6dc7741e8806528e2661cf372ad354592e964"
+    },
+    {
+      "extraction_id": 5025,
+      "county": "Uasin Gishu",
+      "finding_pdf_page": 353,
+      "prior_year_list_pdf_page": 354,
+      "before_sha256": "91954a8d2b04a88bffbf3da0838261f7e56f65a77187e032d18d29aa88c823b6",
+      "after_content_sha256": "5a2df173b4d6bb81e6527906e04aba04f59d44f5a753bae520925a32d3b52278"
+    },
+    {
+      "extraction_id": 5089,
+      "county": "Nandi",
+      "finding_pdf_page": 384,
+      "prior_year_list_pdf_page": 385,
+      "before_sha256": "9922072e71a294b0dc7289c6149ad23135930ed525dd391d760cd5a78c2e6e93",
+      "after_content_sha256": "31835b2f55e1095913962f381bc90dbed02f4a087be7b05336f65b77dc6bfd6b"
+    },
+    {
+      "extraction_id": 5114,
+      "county": "Baringo",
+      "finding_pdf_page": 400,
+      "prior_year_list_pdf_page": 402,
+      "before_sha256": "94cfe90c15105902cbe32bbbd92fd3b5f6bfda3fdad91dafc95d2b3865e0fab7",
+      "after_content_sha256": "dcc394559a14d9285f11d9efb53fa48cff2cc5ca81fcaab2f04f6997eab6bf27"
+    },
+    {
+      "extraction_id": 5152,
+      "county": "Nakuru",
+      "finding_pdf_page": 421,
+      "prior_year_list_pdf_page": 422,
+      "before_sha256": "161ac56ab2ea14695706ce584ed3f7e1b31b30a227ea41fb720cfb2926fd1a2b",
+      "after_content_sha256": "a7d4d8bf3e5cebff22b279593c475b39e295ab7df0b650171497b89c02462fdf"
+    },
+    {
+      "extraction_id": 5294,
+      "county": "Bomet",
+      "finding_pdf_page": 480,
+      "prior_year_list_pdf_page": 481,
+      "before_sha256": "88eea9c8029bb77bc77058066dcc5a090dc4248b9914bd0250c38d57e91b5a9e",
+      "after_content_sha256": "8e95aad88f56b549398551a4c28f85df0df2660ba87dec5ff3b9adbdb56d10c7"
+    },
+    {
+      "extraction_id": 5375,
+      "county": "Bungoma",
+      "finding_pdf_page": 521,
+      "prior_year_list_pdf_page": 522,
+      "before_sha256": "3d4ed8a04582c5ac90d4d1055a36e747c3aacb8dc5bbf5e2e6717d877d632c4c",
+      "after_content_sha256": "c1cbe14b100f8748f792e45b106ccb52af5d2ef52aee58f5c9671bd1e478ea1a"
+    },
+    {
+      "extraction_id": 5412,
+      "county": "Busia",
+      "finding_pdf_page": 538,
+      "prior_year_list_pdf_page": 540,
+      "before_sha256": "27137ff95912b5694d909152deeb2351820765b57432da02bc3d4a9fd7d1b2ef",
+      "after_content_sha256": "4fb16ad515b58ced903ada2a06fb98da5b8caae7159d4f0f213e712e8d768751"
+    },
+    {
+      "extraction_id": 5449,
+      "county": "Siaya",
+      "finding_pdf_page": 554,
+      "prior_year_list_pdf_page": 555,
+      "before_sha256": "b7b73102439ae8fb9863491d894c688a43f66449652dc410c8387bf1b4d34df9",
+      "after_content_sha256": "9e1bc6f809c5a276b2a49bf32ad46640eb113a952802373338541025ea1a5869"
+    },
+    {
+      "extraction_id": 5518,
+      "county": "Migori",
+      "finding_pdf_page": 588,
+      "prior_year_list_pdf_page": 589,
+      "before_sha256": "46cdfa1a1c039b5806bc14bc0c2fff613eda0657d8f3760559f59f74f70804fa",
+      "after_content_sha256": "8eb6c67db9c3bb4e51d24e7ee07e8f6fafe26a679f87a6267e3bab65d74951ee"
+    },
+    {
+      "extraction_id": 5544,
+      "county": "Kisii",
+      "finding_pdf_page": 600,
+      "prior_year_list_pdf_page": 602,
+      "before_sha256": "8e259977ca9138a088736bb66b80298c083aaf96ce9a803dc3187ed6e3217097",
+      "after_content_sha256": "d89713ddf6badaa1cf53a787049b048eeb003d55a5402bdff2c735270d751434"
+    },
+    {
+      "extraction_id": 5574,
+      "county": "Nyamira",
+      "finding_pdf_page": 617,
+      "prior_year_list_pdf_page": 618,
+      "before_sha256": "fb5d402393d088524587b90c5dbe62d17c304dfdbe6733cc70bd80fe05d409b3",
+      "after_content_sha256": "0847acedaf77f78138f7f8290658f6d3420ef32adca02aa8bee29890b3c90e63"
+    },
+    {
+      "extraction_id": 5614,
+      "county": "Nairobi",
+      "finding_pdf_page": 682,
+      "prior_year_list_pdf_page": 683,
+      "before_sha256": "220ca7d9a3f1873ba11022a2f15783ebe764aa3e835ec073da2247b4e9e7c901",
+      "after_content_sha256": "171233749594c2f3b1accff7478d73b4c464373890b53988def343ea93c28021"
+    }
+  ]
+}

@@ -26,6 +26,7 @@ class DomainRunContext:
     # The entering runner's live, nonce-bearing object; never serialized into
     # observations. A database reader cannot recreate the entry nonce.
     ownership: Optional["DomainExecution"] = None
+    audits_reconciliation_review: Optional[str] = None
 
 
 class DomainRunResult(BaseModel):

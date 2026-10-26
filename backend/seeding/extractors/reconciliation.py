@@ -225,6 +225,9 @@ def require_review(session, doc, extractor_id, old, rows, matched, vanished, rev
             if r.id in changed
         ],
     }
+    if isinstance(review, str):
+        from .reviewed_proposals import approve
+        review = approve(proposal, rows, review)
     if (
         not isinstance(review, dict)
         or review.get("proposal") != proposal

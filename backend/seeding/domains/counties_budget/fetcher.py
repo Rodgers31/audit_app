@@ -24,7 +24,8 @@ from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource, slugify_entity
-from ...freshness import mark_fixture, mark_live
+from ...freshness import mark_fixture, mark_live, mark_refused
+from ...http_client import PdfDownloadIncomplete
 
 logger = logging.getLogger("seeding.counties_budget.fetcher")
 
@@ -220,6 +221,11 @@ def fetch_budget_payload(
                 mark_fixture(
                     "counties_budget", reason="parser_returned_nothing"
                 )
+        except PdfDownloadIncomplete:
+            # A bounded transfer has saved resumable progress, not produced a
+            # new source. Do not feed fixture rows into a source-backed writer.
+            mark_refused("counties_budget", reason="pdf_download_incomplete")
+            raise
         except CobSourceUnreachable as exc:
             # The publisher was down, not our parser. Naming it separately is
             # the whole point: `parser_returned_nothing` sends the reader to

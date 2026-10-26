@@ -1457,6 +1457,130 @@ def group_revenue_tables_by_county(
     return grouped
 
 
+def indexed_county_table_pages(pdf_path: Path) -> Optional[List[int]]:
+    """Select a complete supported report from its own table index/captions.
+
+    No fixed PDF offsets or invented county pages. Two independent Chapter2
+    captions establish the printed/PDF offset, and every county revenue caption
+    must agree. Unsupported legacy indexes retain the existing full walk; a
+    recognized index with a missing/wrong caption refuses instead of omitting
+    a county. Continuations through the next table's page are included.
+    """
+    entry = re.compile(r"^\s*Table\s+(\d+\.\d+)\s*:\s*(.*?)\s*[.…]{2,}\s*(\d+)\s*$", re.I)
+    clean = lambda value: re.sub(r"[^a-z0-9]", "", value.lower())
+    try:
+        document = pdfplumber.open(pdf_path)
+    except Exception:
+        return None
+    with document as pdf:
+        texts = {}
+        def text_at(number):
+            if not 1 <= number <= len(pdf.pages):
+                raise CountyTableIncomplete('Indexed county table is outside the PDF')
+            if number not in texts:
+                page = pdf.pages[number - 1]
+                try:
+                    texts[number] = page.extract_text() or ''
+                finally:
+                    page.close()
+            return texts[number]
+        entries = {}
+        for number in range(1, min(40, len(pdf.pages)) + 1):
+            for line in text_at(number).splitlines():
+                match = entry.fullmatch(line)
+                if match:
+                    key, title, printed = match.groups()
+                    value = (title, int(printed))
+                    if key in entries and entries[key] != value:
+                        raise CountyTableIncomplete('Conflicting county table index entries')
+                    entries[key] = value
+        summary = {key: value for key, value in entries.items() if key.startswith('2.')}
+        revenues = {}
+        for key, (title, printed) in entries.items():
+            match = re.match(r"(.+?)\s+County,?\s+Revenue\s+Performance\b", title, re.I)
+            if key.startswith('3.') and match:
+                county = canonical_county_label(match.group(1))
+                if county in revenues:
+                    raise CountyTableIncomplete('Duplicate county revenue index entry')
+                revenues[county] = (key, title, printed)
+        if set(revenues) != set(KENYAN_COUNTIES) or len(summary) < 2:
+            return None
+        # A future report may move another relevant aggregate outside these
+        # indexed families. Preserve the full walk rather than silently omit it.
+        if any(not key.startswith(('2.', '3.'))
+               or (not key.startswith('2.') and 'personnel' in clean(title)
+                   and 'emolument' in clean(title))
+               for key, (title, _) in entries.items()):
+            return None
+
+        def caption_matches(number, key, title):
+            lines = text_at(number).splitlines()
+            pattern = re.compile(r"^\s*Table\s+" + re.escape(key) + r"\s*:\s*(.*)", re.I)
+            for index, line in enumerate(lines):
+                match = pattern.match(line)
+                if match and not re.search(r"[.…]{3,}", line):
+                    caption = match.group(1) + ' ' + (lines[index + 1] if index + 1 < len(lines) else '')
+                    if clean(title)[:45] in clean(caption):
+                        return True
+            return False
+
+        anchor = next(((key, title, printed) for key, (title, printed) in summary.items()
+            if 'countybudgetallocation' in clean(title)), None)
+        if anchor is None:
+            return None
+        key, title, printed = anchor
+        offsets = [number - printed for number in range(max(1, printed), min(printed + 65, len(pdf.pages)) + 1)
+                   if caption_matches(number, key, title)]
+        if len(offsets) != 1:
+            raise CountyTableIncomplete('County report printed/PDF offset is ambiguous')
+        offset = offsets[0]
+        confirmations = sum(caption_matches(page + offset, number, name)
+                            for number, (name, page) in summary.items())
+        if confirmations < 2:
+            raise CountyTableIncomplete('County report offset lacks independent captions')
+        first = min(page for title, page in summary.values()) + offset
+        last = max(page for title, page in summary.values()) + offset + 1
+        selected = set(range(first, min(last, len(pdf.pages)) + 1))
+        for county, (key, title, printed) in revenues.items():
+            start = printed + offset
+            if not caption_matches(start, key, title):
+                raise CountyTableIncomplete('Indexed revenue caption missing for ' + county)
+            following = sorted((page, number, name)
+                               for number, (name, page) in entries.items() if page > printed)
+            if not following or not 1 <= following[0][0] - printed <= 8:
+                raise CountyTableIncomplete('County revenue continuation boundary is unavailable')
+            stop_page, stop_key, stop_title = following[0]
+            stop = stop_page + offset
+            if stop > len(pdf.pages):
+                raise CountyTableIncomplete('County revenue continuation exceeds PDF')
+            if not caption_matches(stop, stop_key, stop_title):
+                raise CountyTableIncomplete('County revenue continuation boundary caption missing')
+            selected.update(range(start, stop + 1))
+        if len(selected) > 400:
+            raise CountyTableIncomplete('Indexed county table selection exceeds bound')
+        logger.info('County report index selects %d of %d table pages',len(selected),len(pdf.pages))
+        return sorted(selected)
+
+
+# The fast path is qualified against the complete record output of these exact
+# bytes. A future/reissued report may move an aggregate under an unfamiliar
+# caption; it keeps the full walk rather than silently losing that category.
+# This identifies a scan profile, not HTTP or financial-publication authority.
+INDEXED_COUNTY_REPORT_SHA256 = frozenset({
+    '919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20',
+})
+
+
+def qualified_county_table_pages(pdf_path):
+    import hashlib
+    try:
+        with Path(pdf_path).open('rb') as source:
+            digest = hashlib.file_digest(source, 'sha256').hexdigest()
+    except OSError:
+        return None
+    return indexed_county_table_pages(pdf_path) if digest in INDEXED_COUNTY_REPORT_SHA256 else None
+
+
 class CoBQuarterlyReportParser:
     """Parser for Controller of Budget quarterly budget execution reports."""
 
@@ -1515,7 +1639,9 @@ class CoBQuarterlyReportParser:
             TableNotFoundError: If the aggregate county budget table
                 cannot be located — other categories are optional.
         """
-        self.tables = extract_all_tables(self.pdf_path)
+        selected_pages = qualified_county_table_pages(self.pdf_path)
+        self.tables = (extract_all_tables(self.pdf_path, pages=selected_pages)
+                       if selected_pages is not None else extract_all_tables(self.pdf_path))
         self._row_sources = None
 
         # ── Primary path: invariant-anchored, validator-driven ─────
