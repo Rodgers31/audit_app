@@ -67,11 +67,11 @@ async def detailed_health_check(request: Request = None, db: Session = Depends(g
             "status": "healthy",
             **_pool_status(),
         }
-    except Exception as e:
+    except Exception:
         health_status["status"] = "degraded"
         health_status["components"]["database"] = {
             "status": "unhealthy",
-            "error": str(e),
+            "error": "Database connectivity check failed",
         }
 
     # Check cache. Beyond connectivity this reports `unserialisable_values`

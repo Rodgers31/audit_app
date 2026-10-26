@@ -29,13 +29,14 @@ _LIMITS_SQL = "SELECT set_config('statement_timeout', CASE WHEN s.setting::bigin
 _PING_SQL = 'BEGIN READ ONLY; ' + _LIMITS_SQL + '; SELECT 1; ROLLBACK'
 
 
-def _create_engine(url, connect_args, *, pool_size, pool_timeout, statement_ms, lock_ms, use_deadline):
+def _create_engine(url, connect_args, *, pool_size, pool_timeout, statement_ms, lock_ms, use_deadline, isolation_level=None):
     args = dict(connect_args)
     postgres = make_url(url).get_backend_name() == 'postgresql'
     if postgres:
         args.update(connect_timeout=3, keepalives=1, keepalives_idle=5,
                     keepalives_interval=1, keepalives_count=2, tcp_user_timeout=5000)
-    engine = create_engine(url, pool_size=pool_size, max_overflow=0,
+    isolation = {} if isolation_level is None else {'isolation_level': isolation_level}
+    engine = create_engine(url, **isolation, pool_size=pool_size, max_overflow=0,
         pool_timeout=pool_timeout, pool_recycle=300, pool_pre_ping=True,
         connect_args=args)
     if not postgres:

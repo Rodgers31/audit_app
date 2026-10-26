@@ -89,7 +89,7 @@ def imf_datamapper_live():
             200, json={"values": {"GGXWDG_NGDP": IMF_LIVE}}, request=request
         )
 
-    with patch("main.httpx.get", side_effect=_fetch):
+    with patch("main._peer_json", side_effect=lambda url: _fetch(url).json()):
         yield
 
 
@@ -265,7 +265,7 @@ def test_a_country_missing_the_reference_year_is_absent_not_extrapolated(
             200, json={"values": {"GGXWDG_NGDP": thin}}, request=request
         )
 
-    with patch("main.httpx.get", side_effect=_fetch):
+    with patch("main._peer_json", side_effect=lambda url: _fetch(url).json()):
         body = sustainability(client)
 
     eth = peer(body, "Ethiopia")

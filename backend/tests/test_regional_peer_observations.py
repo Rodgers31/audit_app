@@ -34,7 +34,7 @@ def providers(monkeypatch, imf=None, wb=None, fail=None):
             ]
         return httpx.Response(200, json=body, request=httpx.Request("GET", url))
 
-    monkeypatch.setattr(main.httpx, "get", get)
+    monkeypatch.setattr(main, "_peer_json", lambda url: get(url).json())
     return calls
 
 
@@ -151,7 +151,7 @@ def test_invalid_provider_numbers_are_absent_and_do_not_poison_http(
             200, content=json.dumps(body), request=httpx.Request("GET", url)
         )
 
-    monkeypatch.setattr(main.httpx, "get", transport)
+    monkeypatch.setattr(main, "_peer_json", lambda url: transport(url).json())
     monkeypatch.setattr(
         main, "_latest_imf_debt_to_gdp", lambda db: (0, 2025, "synthetic")
     )
@@ -241,7 +241,7 @@ def test_malformed_imf_response_is_not_cached_as_no_observation(monkeypatch, mal
         body = malformed if "imf.org" in url else [{"pages": 1}, []]
         return httpx.Response(200, json=body, request=httpx.Request("GET", url))
 
-    monkeypatch.setattr(main.httpx, "get", get)
+    monkeypatch.setattr(main, "_peer_json", lambda url: get(url).json())
     first = main._get_regional_peers(reference_year=2025)
     assert first[0]["debt_to_gdp_absent_reason"] == "invalid_provider_response"
     calls = providers(monkeypatch, imf={"KEN": {"2025": 0}})
@@ -262,7 +262,7 @@ def test_unrepresentable_provider_integer_withholds_only_that_cell(monkeypatch, 
             200, content=json.dumps(body), request=httpx.Request("GET", url)
         )
 
-    monkeypatch.setattr(main.httpx, "get", get)
+    monkeypatch.setattr(main, "_peer_json", lambda url: get(url).json())
     monkeypatch.setattr(
         main, "_latest_imf_debt_to_gdp", lambda db: (0, 2025, "synthetic")
     )

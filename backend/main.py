@@ -1685,6 +1685,8 @@ async def _app_lifespan(app_: "FastAPI"):
     immediately, /health/live answers at once, and /health/ready flips
     to 200 once reference data is confirmed.
     """
+    global _peer_worker
+    _peer_worker = SingleWorker()
     _reset_readiness("starting")
     if not DATABASE_AVAILABLE:
         # Config error — fail fast, nothing can work without a DB.
@@ -1700,6 +1702,7 @@ async def _app_lifespan(app_: "FastAPI"):
             yield
         finally:
             _reset_readiness("stopped")
+            await asyncio.to_thread(_peer_worker.close)
             startup_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await startup_task
@@ -2210,6 +2213,39 @@ def _effective_ttl(result: object, ttl: int) -> int:
     return min(ttl, TRANSIENT_FAILURE_TTL) if is_transient_failure(result) else ttl
 
 
+from services.endpoint_resources import BoundedFlights, SingleWorker, capacity_unavailable
+from services.peer_transport import read_json as _peer_json, peer_deadline, TOTAL_SECONDS as _PEER_TOTAL_SECONDS
+
+_endpoint_flights = BoundedFlights()
+_peer_flights = BoundedFlights(max_fills=1)
+_peer_worker = SingleWorker()
+MAX_PUBLIC_REGISTER_ROWS = 2048
+MAX_PUBLIC_REGISTER_BYTES = 2 * 1024 * 1024
+MAX_ENTITY_OFFSET = 10000
+
+
+def _complete_register_response(result):
+    # Refuse explicitly; never make a partial register look financially complete.
+    size = 0
+    for part in json.JSONEncoder(ensure_ascii=True).iterencode(result):
+        size += len(part.encode('utf-8'))
+        if size > MAX_PUBLIC_REGISTER_BYTES:
+            raise capacity_unavailable('Complete register exceeds public response byte budget')
+    return result
+
+
+async def _read_regional_peers(**kwargs):
+    def read():
+        token = peer_deadline.set(time.monotonic() + _PEER_TOTAL_SECONDS)
+        try:
+            return _get_regional_peers(**kwargs)
+        finally:
+            peer_deadline.reset(token)
+    async def work():
+        return await _peer_worker.run(read)
+    return await _peer_flights.run(tuple(sorted(kwargs.items())), work)
+
+
 def cached(key_prefix: str, ttl: int = 3600):
     """Decorator to cache endpoint responses.
 
@@ -2233,23 +2269,22 @@ def cached(key_prefix: str, ttl: int = 3600):
                     cache_key_parts.append(f"{k}:{v}")
             cache_key = ":".join(cache_key_parts)
 
-            # --- Redis path ---
-            if redis_cache:
-                cached_data = redis_cache.get(cache_key)
-                if cached_data is not None:
-                    logger.debug("Redis cache HIT: %s", key_prefix)
-                    return cached_data
-
-                result = await func(*args, **kwargs)
-                redis_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
-                return result
-
-            cached_data = _endpoint_memory_cache.get(cache_key)
+            store = redis_cache if redis_cache is not None else _endpoint_memory_cache
+            cached_data = store.get(cache_key)
             if cached_data is not None:
                 return cached_data
-            result = await func(*args, **kwargs)
-            _endpoint_memory_cache.set(cache_key, result, ttl=_effective_ttl(result, ttl))
-            return result
+
+            async def fill():
+                # Another caller may have completed between the first lookup
+                # and admission, including a non-HTTP caller in another loop.
+                cached_data = store.get(cache_key)
+                if cached_data is not None:
+                    return cached_data
+                result = await func(*args, **kwargs)
+                store.set(cache_key, result, ttl=_effective_ttl(result, ttl))
+                return result
+
+            return await _endpoint_flights.run(cache_key, fill)
 
         return wrapper
 
@@ -10153,6 +10188,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
     """
     from models import DebtCategory
     from services.figure_qualification import qualify_rows
+    from sqlalchemy.orm import load_only
 
     try:
         from models import EntityType as ET
@@ -10182,6 +10218,11 @@ async def get_national_loans(db: Session = Depends(get_db)):
         # drop them via SQL three-valued logic.
         loans = (
             db.query(DBLoan)
+            .options(load_only(
+                DBLoan.id, DBLoan.entity_id, DBLoan.lender, DBLoan.debt_category,
+                DBLoan.principal, DBLoan.outstanding, DBLoan.interest_rate, DBLoan.issue_date,
+                DBLoan.maturity_date, DBLoan.currency, DBLoan.source_document_id,
+                DBLoan.provenance, DBLoan.updated_at, DBLoan.basis, raiseload=True))
             .filter(
                 DBLoan.entity_id == national_entity.id,
                 or_(
@@ -10189,9 +10230,13 @@ async def get_national_loans(db: Session = Depends(get_db)):
                     DBLoan.debt_category != DebtCategory.PENDING_BILLS,
                 ),
             )
-            .order_by(DBLoan.outstanding.desc())
+            .order_by(DBLoan.outstanding.desc(), DBLoan.id)
+            .limit(MAX_PUBLIC_REGISTER_ROWS + 1)
             .all()
         )
+
+        if len(loans) > MAX_PUBLIC_REGISTER_ROWS:
+            raise capacity_unavailable('Complete loan register exceeds public row budget')
 
         if not loans:
             return {
@@ -10267,7 +10312,7 @@ async def get_national_loans(db: Session = Depends(get_db)):
             "debt/loans total_outstanding",
         )
 
-        return {
+        return _complete_register_response({
             "_meta": _response_meta(unit="kes", entity_scope="national"),
             "loans": national_loans,
             "total_loans": len(national_loans),  # legacy key: counts register lines
@@ -10279,8 +10324,10 @@ async def get_national_loans(db: Session = Depends(get_db)):
             "source": source_title,
             "source_url": source_url,
             "last_updated": last_updated,
-        }
+        })
 
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error fetching national loans: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -10400,7 +10447,16 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
         # the disclosure from the SAME function makes the two agree by
         # construction; the column remains the writer's persisted record of the
         # same verdict.
-        stored = db.query(_DI).order_by(_DI.maturity_date.asc()).all()
+        from sqlalchemy.orm import load_only, selectinload
+        stored = (db.query(_DI).options(
+            load_only(_DI.id, _DI.isin, _DI.issue_no, _DI.instrument_type,
+                      _DI.face_value, _DI.unit, _DI.coupon_rate, _DI.tenor_years,
+                      _DI.first_issued, _DI.maturity_date, _DI.tranches,
+                      _DI.publishable, _DI.quarantine_reason, _DI.source_document_id),
+            selectinload(_DI.source_document).load_only(
+                DBSourceDocument.id, DBSourceDocument.url, DBSourceDocument.title, DBSourceDocument.meta))
+            .order_by(_DI.maturity_date.asc(), _DI.id)
+            .limit(MAX_PUBLIC_REGISTER_ROWS + 1).all())
     except SQLAlchemyError as exc:
         db.rollback()
         # ONLY the missing-table case. Catching every SQLAlchemyError turned
@@ -10425,6 +10481,9 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
             "instruments": [],
             "ladder": [],
         }
+
+    if len(stored) > MAX_PUBLIC_REGISTER_ROWS:
+        raise capacity_unavailable('Complete bond register exceeds public row budget')
 
     withheld_by_gate = bond_register_withheld_disclosure(stored)
     rows = publishable_bond_register_rows(stored)
@@ -10491,7 +10550,7 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
         bucket["face_value"] += float(r.face_value)
         bucket["instruments"] += 1
 
-    return {
+    return _complete_register_response({
         "status": "success",
         "_meta": _response_meta(unit="kes", entity_scope="national"),
         "source": {
@@ -10516,7 +10575,7 @@ async def get_debt_instruments(db: Session = Depends(get_db)):
         "instrument_count": len(instruments),
         "instruments": instruments,
         "ladder": [ladder[y] for y in sorted(ladder)],
-    }
+    })
 
 
 @app.get("/api/v1/debt/national")
@@ -11918,8 +11977,7 @@ async def _get_debt_broader_cached(db: Session, vintage: str):
 # ── Debt Sustainability Indicators ─────────────────────────────────────
 
 
-@app.get("/api/v1/debt/sustainability")
-async def get_debt_sustainability(db: Session = Depends(get_db)):
+def _debt_sustainability_snapshot(db: Session):
     """Get debt sustainability indicators, projections, and regional comparison.
 
     Returns debt-to-GDP, debt-service-to-revenue, external share,
@@ -11956,9 +12014,9 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
                 "projections": projections,
                 "projections_source": projections_source,
                 "projections_absent_reason": projections_absent_reason,
-                "regional_peers": _get_regional_peers(),
+                "regional_peers": None,
                 "regional_peers_basis": _peer_column_basis(None),
-            }
+            }, {}
 
         # ── Debt-to-GDP ────────────────────────────────────────────
         #
@@ -12045,10 +12103,10 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
         # year (see :func:`_imf_fetch_debt_to_gdp`). Where no IMF reference
         # year exists, no country is special-cased.
         _peer_reference_year = ratio_year if _imf_headline is not None else None
-        peers = _get_regional_peers(
-            kenya_debt_to_gdp=(ratio if _imf_headline is not None else None),
-            reference_year=_peer_reference_year,
-        )
+        peer_arguments = {
+            "kenya_debt_to_gdp": ratio if _imf_headline is not None else None,
+            "reference_year": _peer_reference_year,
+        }
 
         return {
             "status": "success",
@@ -12065,18 +12123,37 @@ async def get_debt_sustainability(db: Session = Depends(get_db)):
             "projections": projections,
             "projections_source": projections_source,
             "projections_absent_reason": projections_absent_reason,
-            "regional_peers": peers,
+            "regional_peers": None,
             # What each peer column measures. The peer table repeats Kenya
             # beside the headline above it, so an undeclared basis here is a
             # contradiction on one page rather than a footnote.
             "regional_peers_basis": _peer_column_basis(_peer_reference_year),
             "currency": "KES",
             "source": "National Treasury BPS, CBK Annual Reports",
-        }
+        }, peer_arguments
 
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Debt sustainability failed: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+def _load_debt_sustainability_snapshot():
+    """Own and close the request session before the endpoint awaits providers.
+
+    The pure snapshot builder does not commit/rollback a borrowed session.
+    A synchronous FastAPI dependency also keeps this SQL work off the loop.
+    """
+    with contextlib.contextmanager(get_db)() as db:
+        return _debt_sustainability_snapshot(db)
+
+
+@app.get("/api/v1/debt/sustainability")
+async def get_debt_sustainability(snapshot=Depends(_load_debt_sustainability_snapshot)):
+    body, peer_arguments = snapshot
+    body["regional_peers"] = await _read_regional_peers(**peer_arguments)
+    return body
 
 
 #: The projection series that already exists in this database, seeded nightly
@@ -12269,9 +12346,7 @@ def _wb_fetch_indicator(indicator_code: str, country_codes: str) -> Dict[str, di
         f"https://api.worldbank.org/v2/country/{country_codes}"
         f"/indicator/{indicator_code}?format=json&per_page=100&date=2015:2026"
     )
-    resp = httpx.get(url, timeout=8)
-    resp.raise_for_status()
-    wb_data = resp.json()
+    wb_data = _peer_json(url)
     if not isinstance(wb_data, list) or len(wb_data) != 2:
         raise ValueError("Invalid World Bank observation response")
     if wb_data[1] is None:
@@ -12330,9 +12405,7 @@ def _imf_fetch_debt_to_gdp(reference_year: int) -> Dict[str, float]:
         f"https://www.imf.org/external/datamapper/api/v1"
         f"/GGXWDG_NGDP/{countries}?periods={reference_year}"
     )
-    resp = httpx.get(url, timeout=8)
-    resp.raise_for_status()
-    data = resp.json()
+    data = _peer_json(url)
 
     # IMF response: {"values": {"GGXWDG_NGDP": {"KEN": {"2023": 68.1, ...}, ...}}}
     if not isinstance(data, dict) or not isinstance(data.get("values"), dict):
@@ -12509,11 +12582,13 @@ async def get_entities(
     country: Optional[str] = Query(None, description="Filter by country ISO code"),
     entity_type: Optional[str] = Query(None, description="Filter by entity type"),
     search: Optional[str] = Query(None, description="Search entity names"),
-    page: int = Query(1, ge=1, description="Page number"),
+    page: int = Query(1, ge=1, le=10001, description="Page number; offset must not exceed 10000"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
     db: Session = Depends(get_db),
 ):
     """Get list of government entities with filters and search."""
+    if (page - 1) * limit > MAX_ENTITY_OFFSET:
+        raise HTTPException(422, 'Entity page offset must not exceed 10000')
     try:
         from sqlalchemy import func
 
@@ -12533,10 +12608,8 @@ async def get_entities(
         if search:
             query = query.filter(DBEntity.canonical_name.ilike(f"%{search}%"))
 
-        _ = query.count()  # ensure pagination consistency even if unused
-
         entities = (
-            query.order_by(DBEntity.canonical_name)
+            query.order_by(DBEntity.canonical_name, DBEntity.id)
             .offset((page - 1) * limit)
             .limit(limit)
             .all()
@@ -12611,8 +12684,8 @@ async def get_entities(
 
     except Exception as e:
         logger.error(f"Database error in get_entities: {str(e)}")
-        # Return empty list on database error — never serve hardcoded data
-        return []
+        raise HTTPException(503, "Entity records are temporarily unavailable",
+                            headers={"Cache-Control": "no-store", "Retry-After": "1"}) from e
 
 
 @app.get("/api/v1/entities/{entity_id}", response_model=EntityDetailResponse)

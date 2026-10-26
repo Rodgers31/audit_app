@@ -13,11 +13,13 @@ import re
 from uuid import UUID
 
 from fastapi import Depends, HTTPException
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from database import get_db
+from request_database import _create_engine
+from github_database_tls import connection_args
 
 CAPTURE_BODY = """BEGIN
   IF TG_RELID <> 'public.admin_audit_log'::regclass OR TG_OP <> 'INSERT' OR TG_WHEN <> 'AFTER' THEN
@@ -46,8 +48,9 @@ def reader_engine(url):
     # Separate restricted connection; no SET ROLE on a writer session.
     if not make_url(url).drivername.startswith("postgresql"):
         unavailable()
-    return create_engine(url, pool_pre_ping=True, pool_size=2, max_overflow=2,
-                         isolation_level="REPEATABLE READ")
+    return _create_engine(url, connection_args(), pool_size=1, pool_timeout=.5,
+                          statement_ms=5000, lock_ms=1000, use_deadline=True,
+                          isolation_level="REPEATABLE READ")
 
 
 def get_audit_db(db: Session = Depends(get_db)):
