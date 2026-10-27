@@ -1,11 +1,11 @@
 "use strict";
 const test=require('node:test'),assert=require('node:assert/strict');
-const semver=require('semver');
 const manifest=require('../package.json');
-test('application engine only admits the patched supported Node24 line',()=>{
- for(const version of ['20.9.0','22.23.4','24.22.0','25.0.0','26.12.1'])
-  assert.equal(semver.satisfies(version,manifest.engines.node),false,version+' must not be admitted');
- for(const version of ['24.22.1','24.22.2','24.23.0'])assert.equal(semver.satisfies(version,manifest.engines.node),true,version);
+test('application metadata declares the patched supported Node24 line',()=>{
+ assert.equal(manifest.engines.node, '>=24.22.1 <25');
+ assert.equal(require('../package-lock.json').packages[''].engines.node, manifest.engines.node);
+ const fs=require('node:fs');
+ assert.equal(fs.readFileSync(require('node:path').join(__dirname,'../.nvmrc'),'utf8').trim(), '24.22.1');
 });
 
 const { isSupportedNode }=require('./verify-node-runtime.cjs');

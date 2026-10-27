@@ -22,7 +22,7 @@
     "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
+    "test:dependency-boundaries": "node --test scripts/node-runtime.test.cjs scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
     "postinstall": "node scripts/apply-tooling-repairs.cjs",
     "pretest": "node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check",
     "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check",
