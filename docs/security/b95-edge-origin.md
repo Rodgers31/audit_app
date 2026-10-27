@@ -37,7 +37,8 @@ must be read back; do not treat environment variable defaults as installed value
 | Direct public `audit-app-4pwa.onrender.com` → any API/admin route | Render public web-service ingress → one worker/socket-peer budget + aggregate/resource bounds → public route or JWT/role authorization | Existing default origin remains reachable per retained topology. Its current platform filtering is not measured here. Adding a custom domain alone does not remove direct entry. |
 | Browser auth/recovery and `/api/auth/reset-password`; `/auth/callback`, `/reset-password` | Vercel → Next route / Supabase PKCE/session logic | FastAPI guard never wraps these Next handlers. Body/admission and recovery collector repairs belong to frontend lane/809/767. Do not challenge this entire flow. |
 | Legacy Meta/platform callback on Next | Vercel first collectors → existing callback containment/session completion | Existing connection hold stays. Scrubbing later cannot erase first-collector query retention (767). No real code/state may be used for qualification. |
-| Direct Meta launch POST and callback GET `/api/v1/social/oauth/meta/{launch,callback}` | Render → guards → exact target check, bounded fields, per-flow state/cookie, encrypted staging; exchange needs admin session (`backend/social/connections/direct_api.py:50`, `direct_callback.py`) | Hold remains. Exact target uses `request.url`; with forwarding disabled a proxy may expose HTTP scheme. Real TLS termination/Host/scheme and first collectors require validation before this flow can activate. Do not fix this by trusting arbitrary headers. |
+| Direct Meta launch POST and callback GET `/api/v1/social/oauth/meta/{launch,callback}` | Unauthenticated Render transport boundary → guards → exact target check, bounded fields, per-flow state/cookie and encrypted staging (`backend/social/connections/direct_callback.py`) | Hold remains. Exact target uses `request.url`; real TLS termination/Host/scheme and first collectors require qualification. No provider access is granted by transport staging. |
+| Direct Meta authenticated exchange POST `/api/v1/admin/social/connections/meta/direct/complete` | Render → guards → admin-session authorization, then consumption of the matching staged flow (`backend/social/connections/api.py:90`) | Keep the authenticated exchange boundary separate from public launch/callback; do not trust arbitrary forwarding headers or treat transport staging as administrator authorization. |
 | Meta privacy deletion/deauthorization POST and deletion status GET | Configured ingress → Render guards → signed-form privacy handler (`backend/social/privacy/api.py:10`, `:73`); status has opaque code, private headers | No interactive challenge; preserve raw form bytes. Source router registration/configuration must be read back. Status capabilities and callback queries must not enter new logs/caches. No rate exemption based on provider UA/Origin. |
 | Platform webhook POST `/api/v1/social/platform-events/{provider}` and Threads verification GET `/api/v1/social/platform-events/threads` | Configured ingress → Render guards → signature/receipt handling for POST; verify-token and numeric challenge for GET (`backend/social/platform_events.py:328`) | Feature/config admission remains held; trace exact registered provider path before future rollout. Preserve signed raw bytes and legitimate GET verification; no global bypass for a header named signature. |
 | GitHub freshness/cache job | Workflow first HMAC POST to direct `/api/v1/system/cache/invalidate`, then HMAC POST to www `/api/revalidate` (`.github/workflows/seed.yml:1142`, `:1164`, `:1179`) | Backend checks raw HMAC and 300s timestamp skew (`backend/routers/cache_invalidation.py:39`); Next verifies raw HMAC (`frontend/app/api/revalidate/route.ts:23`). A header's presence is not authentication. No browser challenge, GitHub IP bypass or new dispatch. |
@@ -93,9 +94,9 @@ provider IP allowlist, geographic restriction, Bot activation or universal chall
 
 `b95-edge-origin-settings.json` is explicitly disabled and is **not provider API or
 Terraform syntax**. It pins one optional Vercel dashboard proposal: exact path is
-`/api/revalidate` OR `/api/auth/reset-password`, AND method is neither POST nor
-OPTIONS → log first; only after qualification consider deny. It adds no rate-limit
-feature or persistent action. All project hosts, no Host/header-derived identity,
+`/api/revalidate`, AND method is neither POST nor OPTIONS → log first; only after qualification consider deny. It adds no rate-limit
+feature or persistent action. Recovery is excluded until a non-retaining collector
+is qualified, including unsupported-method query requests. All project hosts, no Host/header-derived identity,
 no bypass rule. It only rejects unsupported methods; it cannot bound expensive
 valid POSTs, direct Render traffic, payload size or callback privacy. Frontend
 owner must confirm HEAD/OPTIONS/slash normalization and intended methods first.
@@ -166,8 +167,11 @@ observations. No real provider credentials/query codes or log exports.
 Before optional rule activation, record previous firewall version, exact resolved
 conditions/action and pending changes; stop if any metered/add-on dialog, unrelated
 pending setting or missing entitlement appears. Observe ten minutes passively in
-Log first using aggregate counts and path/method/status only. New Log records must
-not collect sensitive bodies/queries. No synthetic live traffic is authorized here.
+Log first for `/api/revalidate` only, using aggregate counts and path/method/status.
+`/api/auth/reset-password` is excluded: existing #767 evidence shows query retention,
+so a passive-observation instruction cannot establish safe first-collector behavior.
+Do not add it until a non-retaining action/collector is independently qualified.
+New Log records must not collect sensitive bodies/queries. No synthetic live traffic is authorized here.
 Coordinator may separately approve a tiny inert method matrix; preserve originals
 for callbacks, privacy/webhooks and signed GitHub calls using local fixtures first.
 
@@ -186,3 +190,11 @@ privacy, sustained capacity, all route workloads, costs or provider acceptance.
 767 and699 remain separate. No new duplicate issue, no merge/deploy/admission,
 dispatch/cancel/schedule change, publishing/upload/native activation or live
 security/billing/access/DNS mutation is part of this document.
+
+## Review correction
+
+The disabled proposal now excludes the recovery endpoint from staged logging. The
+standalone contract resolves its own checkout and backend import path; run the
+same file inside the documented sandbox without relying on caller PYTHONPATH.
+Public Meta launch/callback staging and authenticated exchange are separate boundaries.
+No provider setting or application behavior was changed.

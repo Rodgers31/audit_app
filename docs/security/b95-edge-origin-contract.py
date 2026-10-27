@@ -4,8 +4,15 @@ Exercises real middleware and Uvicorn, without importing main, databases,
 provider adapters, or production data. This is not a deployment qualifier.
 """
 import asyncio
+import json
+from pathlib import Path
 import socket
+import sys
 import unittest
+
+# Resolve this checkout rather than depending on the caller's cwd/PYTHONPATH.
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / 'backend'))
 
 import httpx
 import uvicorn
@@ -27,6 +34,14 @@ def app_for_contract():
 
 
 class OriginContract(unittest.IsolatedAsyncioTestCase):
+    async def test_log_proposal_excludes_sensitive_recovery_path(self):
+        proposal = json.loads((REPO / 'docs/security/b95-edge-origin-settings.json').read_text())
+        rule = proposal['optional_vercel_rule']
+        if rule['initial_action'] == 'log':
+            self.assertNotIn('/api/auth/reset-password', rule['paths_exact'])
+        self.assertFalse(proposal['apply'])
+        self.assertFalse(rule['enabled'])
+
     async def test_forwarding_and_origin_headers_do_not_select_identity(self):
         app = app_for_contract()
         async with httpx.AsyncClient(base_url='http://fixture.invalid', trust_env=False,
