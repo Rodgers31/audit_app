@@ -148,7 +148,8 @@ def test_actual_pending_domain_keeps_publisher_and_job_authority(pg,tmp_path,mon
     from seeding.config import SeedingSettings
     factory,_=pg;enable(factory,monkeypatch)
     monkeypatch.setattr(domain,'create_http_client',lambda _:nullcontext(None))
-    def fetch(*_):
+    def fetch(*_, session, context):
+        assert session is not None and context.job_id is not None
         path,pdf,post=inputs(tmp_path,'pending_bills')
         authority,reason=capture_pdf_report(path,pdf,domain='pending_bills',publisher_receipt=post)
         assert authority is not None,reason

@@ -30,7 +30,7 @@ def run(
 
     with create_http_client(settings) as client:
         try:
-            payload = fetcher.fetch_national_budget_payload(client, settings)
+            payload = fetcher.fetch_national_budget_payload(client, settings, session=session, context=context)
         except Exception as exc:
             logger.exception(
                 "Failed to fetch national_budget payload",

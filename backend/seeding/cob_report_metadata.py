@@ -93,8 +93,10 @@ def capture_post_metadata(pdf_receipt, publisher_receipt, *, domain, period):
         raise ValueError('Publisher post URL and PDF edition differ')
     published_raw, modified_raw = meta('article:published_time'), meta('article:modified_time')
     published, modified = _timestamp(published_raw), _timestamp(modified_raw)
-    pdf_time, page_time = _timestamp(pdf_receipt['acquired_at']), _timestamp(publisher_receipt['acquired_at'])
-    if (not published <= modified <= min(pdf_time, page_time)
+    original_pdf_time = _timestamp(pdf_receipt['acquired_at'])
+    pdf_time = _timestamp(pdf_receipt.get('retained_pdf_validation', {}).get('validated_at', pdf_receipt['acquired_at']))
+    page_time = _timestamp(publisher_receipt['acquired_at'])
+    if (not published <= modified <= min(original_pdf_time, page_time)
             or abs((pdf_time-page_time).total_seconds()) > PAIR_SECONDS):
         raise ValueError('Contemporaneous retained artifact and post required')
     articles = soup.select('article.wpdmpro.status-publish')
@@ -126,6 +128,8 @@ def validate_stored_post(value, pdf_receipt, *, started=None, finished=None):
     """Validate stored linkage/chronology only; committed readers never download."""
     context = value.get('publication_authority')
     if context is None:
+        if 'retained_pdf_validation' in pdf_receipt:
+            raise ValueError('Current publisher post required for retained reuse')
         return
     receipt = context['receipt']
     observations = receipt['observations']
@@ -148,8 +152,9 @@ def validate_stored_post(value, pdf_receipt, *, started=None, finished=None):
         raise ValueError('Stored publisher post binding differs')
     published, modified = _timestamp(context['published_at']), _timestamp(context['modified_at'])
     acquired, checked = _timestamp(receipt['acquired_at']), _timestamp(receipt['byte_check']['checked_at'])
-    pdf_time = _timestamp(pdf_receipt['acquired_at'])
-    if (published.date().isoformat() != value['published_on'] or not published <= modified <= min(acquired,pdf_time)
+    original_pdf_time = _timestamp(pdf_receipt['acquired_at'])
+    pdf_time = _timestamp(pdf_receipt.get('retained_pdf_validation', {}).get('validated_at', pdf_receipt['acquired_at']))
+    if (published.date().isoformat() != value['published_on'] or not published <= modified <= min(acquired,original_pdf_time)
             or acquired > checked or abs((acquired-pdf_time).total_seconds()) > PAIR_SECONDS
             or started is not None and not started <= acquired <= checked <= finished):
         raise ValueError('Stored publisher post chronology differs')
