@@ -4,12 +4,12 @@
   "description": "Government Financial Transparency Audit Application Frontend",
   "private": true,
   "scripts": {
-    "predev": "node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
+    "predev": "node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
     "dev": "next dev",
-    "prebuild": "node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
+    "prebuild": "node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check && node scripts/verify-tooling-inputs.cjs",
     "build": "next build",
     "start": "next start",
-    "prelint": "node scripts/verify-tooling-inputs.cjs && node scripts/apply-tooling-repairs.cjs --check",
+    "prelint": "node scripts/verify-node-runtime.cjs && node scripts/verify-tooling-inputs.cjs && node scripts/apply-tooling-repairs.cjs --check",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -24,8 +24,11 @@
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
     "test:dependency-boundaries": "node --test scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
     "postinstall": "node scripts/apply-tooling-repairs.cjs",
-    "pretest": "node scripts/apply-tooling-repairs.cjs --check",
-    "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check"
+    "pretest": "node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check",
+    "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check",
+    "prestart": "node scripts/verify-node-runtime.cjs",
+    "verify:node-runtime": "node scripts/verify-node-runtime.cjs",
+    "test:node-runtime": "node --test scripts/node-runtime.test.cjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.0.0",
@@ -77,7 +80,7 @@
     "validate-npm-package-name": "6.0.2"
   },
   "engines": {
-    "node": "^20.9.0 || ^22.0.0 || >=24.0.0"
+    "node": ">=24.22.1 <25"
   },
   "overrides": {
     "follow-redirects": "1.16.1",

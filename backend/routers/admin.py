@@ -15,12 +15,12 @@ from typing import List, Optional
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from models import IngestionJob, IngestionStatus
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, field_validator
 from sqlalchemy import case, desc, func, or_
 from sqlalchemy.orm import Session
 
 from supabase_auth import require_admin
-from routers.admin_operations import (OperationsRoute, PRIVATE_HEADERS, bounded_domain, bounded_integer, error_count_expression, job_projection)
+from routers.admin_operations import (OperationsRoute, PRIVATE_HEADERS, bounded_domain, bounded_integer, error_count_expression, job_projection, job_timestamp)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class IngestionJobResponse(BaseModel):
     domain: str
     status: str
     dry_run: bool
-    started_at: datetime
+    started_at: Optional[datetime]
     finished_at: Optional[datetime]
     duration_seconds: Optional[float]
     items_processed: int = Field(ge=0)
@@ -50,9 +50,14 @@ class IngestionJobResponse(BaseModel):
     error_count: int
     diagnostics_redacted: bool
     metadata: dict
-    created_at: datetime
+    created_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('started_at', 'finished_at', 'created_at', mode='before')
+    @classmethod
+    def unambiguous_job_time(cls, value):
+        return job_timestamp(value)
 
 
 class IngestionJobListResponse(BaseModel):
