@@ -72,6 +72,7 @@ def run(
         metadata={
             "skipped": stats.skipped,
             "snapshot_rows_inserted": stats.snapshot_rows_inserted,
+            "imf_retained_vintages": stats.retained_vintages,
             "snapshot_time_kind": "changed_acquisition_not_publisher_release",
             "indicators": list(fetcher.INDICATORS),
             "countries": list(fetcher.COUNTRIES),

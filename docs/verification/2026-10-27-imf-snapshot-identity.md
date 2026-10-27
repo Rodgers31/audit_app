@@ -33,10 +33,28 @@ concurrency guarantee is qualified on PostgreSQL. No schema migration is needed.
 Ingestion `created` counts newly observed identities and `updated` counts actual
 content revisions. `skipped` counts unchanged observations. Metadata separately
 reports `snapshot_rows_inserted`, which can exceed meaningful changes because of
-the complete-cohort reader contract. Example: one revision among188observations
-reports created0/updated1/skipped187, with188physical snapshot rows. Repeating the
-same acquisition later reports created0/updated0/skipped188 and zero inserts.
+the complete-cohort reader contract. Example: one revision among 188 observations
+reports created 0 / updated 1 / skipped 187, with 188 physical snapshot rows. Repeating
+the same acquisition later reports created 0 / updated 0 / skipped 188 and zero inserts.
 Neither count grants social-generation or publication authority.
+
+The fetcher requests all available years for the four Kenya indicators; it does
+not truncate acquisitions to a dashboard window. The 512-row writer bound and
+prior-identity completeness guard still apply.
+
+A successful live write records each country's exact retained acquisition pointer
+in ingestion metadata (`imf_retained_vintages`). The public broader-debt reader
+qualifies a completed, non-dry-run live job against its closed native ownership
+receipt and the current Kenya cohort. It overlays `last_successful_check_at`,
+`check_age_days`, `freshness_basis` and `stale` outside the numeric cache. The
+retained `vintage` and `vintage_age_days` continue to describe the observation
+cohort. Failed, fixture, dry-run, future, mismatched or operator-reconciled
+receipts cannot freshen it. Without a qualified receipt (including older jobs
+that predate this metadata), freshness conservatively falls back to acquisition
+age. Optional missing job/claim tables are checked before querying them.
+PostgreSQL job times use the same session-timezone interpretation and five-second
+app/database clock tolerance as native terminal qualification; future check times
+must actually elapse before the public reader uses them.
 
 No existing history is consolidated automatically. Provider release identity,
 retention/deletion authority, new source activation, social generation/publishing

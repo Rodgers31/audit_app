@@ -5,7 +5,9 @@ import json
 import os
 from pathlib import Path
 from uuid import uuid4
+import asyncio
 
+import httpx
 import pytest
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.exc import OperationalError
@@ -192,3 +194,228 @@ def test_accepted_188_observation_input_replays_without_duplicate_facts(pg):
     revision = write(pg, changed)
     assert (revision.created, revision.updated, revision.skipped, revision.snapshot_rows_inserted) == (0, 1, 187, 188)
     assert len(stored(pg)) == 376
+
+
+def test_real_fetcher_parser_keeps_full_retained_coverage(pg, monkeypatch, tmp_path):
+    import seeding.domains.imf_weo as domain
+    from seeding.config import SeedingSettings
+    from seeding.http_client import SeedingHttpClient
+
+    records = json.loads((Path(__file__).parent / 'fixtures/imf/accepted-2026-10-27.json').read_text())['rows']
+    for r in records:
+        r['vintage'] = datetime.fromisoformat(r['vintage'])
+    write(pg, records)
+    payload = {}
+    for r in records:
+        payload.setdefault(r['indicator'], {})[str(r['year'])] = r['value']
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        indicator = request.url.path.split('/')[-2]
+        values = dict(payload[indicator])
+        # An upstream that honors the caller's query must not truncate history.
+        if request.url.params.get('periods'):
+            allowed = request.url.params['periods'].split(',')
+            values = {k: v for k, v in values.items() if k in allowed}
+        return httpx.Response(200, json={'values': {indicator: {'KEN': values}}}, request=request)
+
+    def client(settings):
+        return SeedingHttpClient(settings, client=httpx.Client(transport=httpx.MockTransport(respond)))
+
+    monkeypatch.setattr(domain, 'create_http_client', client)
+    settings = SeedingSettings(storage_path=tmp_path/'store', cache_path=tmp_path/'cache', log_path=tmp_path/'logs/seed.log')
+    with Session(pg) as db, db.begin():
+        result = domain.run(db, settings, LIVE)
+        assert (result.items_created, result.items_updated) == (0, 0)
+        assert result.metadata['imf_retained_vintages'] == {'KEN': records[0]['vintage'].isoformat()}
+    assert len(requests) == 4 and all('periods' not in r.url.params for r in requests)
+    payload['GGXCNL_NGDP']['1982'] = '-3.2'
+    with Session(pg) as db, db.begin():
+        revised = domain.run(db, settings, LIVE)
+        assert (revised.items_created, revised.items_updated) == (0, 1)
+    assert len(stored(pg)) == 376
+
+
+def checked_cohort(pg):
+    from models import IngestionJob, IngestionStatus, SeedingDomainClaim
+
+    now = datetime.now(timezone.utc)
+    cohort = now - timedelta(days=90)
+    write(pg, [row(at=cohort)])
+    IngestionJob.__table__.create(pg)
+    with pg.begin() as c:
+        # This unused FK target supplies fixture schema only, not dispatch authority.
+        c.exec_driver_sql('CREATE TABLE etl_dispatch_commands (id uuid PRIMARY KEY)')
+    SeedingDomainClaim.__table__.create(pg)
+    claim = uuid4()
+    start, finish = now - timedelta(hours=1, minutes=1), now - timedelta(hours=1)
+    with Session(pg) as db, db.begin():
+        job = IngestionJob(domain='imf_weo', status=IngestionStatus.COMPLETED,
+            dry_run=False, started_at=start.replace(tzinfo=None), finished_at=finish.replace(tzinfo=None),
+            meta={'source_mode': 'live', 'seeding_claim_id': str(claim),
+                  'imf_retained_vintages': {'KEN': cohort.isoformat()}})
+        db.add(job)
+        db.flush()
+        db.add(SeedingDomainClaim(id=claim, domain='imf_weo', kind='native', job_id=job.id,
+            acquired_at=start-timedelta(seconds=1), entered_at=start-timedelta(seconds=1),
+            entry_id=uuid4(), returned_at=finish+timedelta(seconds=1), released_at=finish+timedelta(seconds=2)))
+    return cohort, finish
+
+
+def test_public_broader_debt_uses_successful_unchanged_check(pg, monkeypatch):
+    import main
+
+    cohort, finish = checked_cohort(pg)
+    payload = {'status': 'success', 'stale': True, 'vintage': cohort.isoformat(), 'vintage_age_days': 90}
+
+    async def cached(**kwargs):
+        return payload
+
+    monkeypatch.setattr(main, 'DATABASE_AVAILABLE', True)
+    monkeypatch.setattr(main, '_get_debt_broader_cached', cached)
+    with Session(pg) as db:
+        actual = asyncio.run(main.get_debt_broader(db=db))
+    assert actual['stale'] is False
+    assert actual['last_successful_check_at'] == finish.isoformat()
+    assert actual['vintage_age_days'] == 90
+    assert payload['stale'] is True  # Shared numerical cache must not be mutated.
+
+
+@pytest.mark.parametrize('invalid', [
+    'dry_run', 'fixture', 'running', 'failed', 'wrong_cohort', 'wrong_claim',
+    'reconciled', 'not_returned', 'not_released', 'future', 'before_cohort',
+    'before_entry', 'errors', 'missing_pointer', 'no_job',
+])
+def test_unqualified_receipts_cannot_freshen_old_observations(pg, invalid):
+    from models import IngestionJob, IngestionStatus, SeedingDomainClaim
+    from services.imf_freshness import with_imf_check_freshness
+
+    cohort, finish = checked_cohort(pg)
+    with Session(pg) as db, db.begin():
+        job = db.scalars(select(IngestionJob)).one()
+        claim = db.scalars(select(SeedingDomainClaim)).one()
+        meta = dict(job.meta)
+        if invalid == 'dry_run': job.dry_run = True
+        elif invalid == 'fixture': meta['source_mode'] = 'fixture'
+        elif invalid == 'running': job.status = IngestionStatus.RUNNING
+        elif invalid == 'failed': job.status = IngestionStatus.FAILED
+        elif invalid == 'wrong_cohort': meta['imf_retained_vintages'] = {'KEN': finish.isoformat()}
+        elif invalid == 'wrong_claim': meta['seeding_claim_id'] = str(uuid4())
+        elif invalid == 'reconciled':
+            claim.reconciled_by, claim.reconciliation = 'fixture_operator', 'isolated test'
+        elif invalid == 'not_returned':
+            claim.returned_at, claim.released_at, claim.job_id = None, None, None
+        elif invalid == 'not_released': claim.released_at = None
+        elif invalid == 'future':
+            job.finished_at = (finish + timedelta(days=2)).replace(tzinfo=None)
+            claim.returned_at = finish + timedelta(days=2, seconds=1)
+            claim.released_at = finish + timedelta(days=2, seconds=2)
+        elif invalid == 'before_cohort':
+            job.started_at = (cohort - timedelta(minutes=1)).replace(tzinfo=None)
+            job.finished_at = (cohort - timedelta(seconds=1)).replace(tzinfo=None)
+            claim.acquired_at = claim.entered_at = cohort - timedelta(minutes=2)
+        elif invalid == 'before_entry':
+            job.started_at = (finish - timedelta(days=1)).replace(tzinfo=None)
+        elif invalid == 'errors': job.errors = ['refused source']
+        elif invalid == 'missing_pointer': meta.pop('imf_retained_vintages')
+        elif invalid == 'no_job':
+            db.delete(claim)
+            db.flush()
+            db.delete(job)
+        job.meta = meta
+    with Session(pg) as db:
+        result = with_imf_check_freshness(db, {'status': 'success'}, cohort)
+        assert result['stale'] is True
+        assert result['last_successful_check_at'] is None
+        assert result['freshness_basis'] == 'retained_acquisition'
+        assert db.scalar(text('SELECT 1')) == 1
+
+
+@pytest.mark.parametrize('present', ['neither', 'jobs_only'])
+def test_missing_optional_receipts_keep_transaction_usable(pg, present):
+    from models import IngestionJob
+    from services.imf_freshness import with_imf_check_freshness
+
+    if present == 'jobs_only': IngestionJob.__table__.create(pg)
+    with Session(pg) as db:
+        result = with_imf_check_freshness(db, {}, datetime.now(timezone.utc) - timedelta(days=90))
+        assert result['stale'] is True and result['last_successful_check_at'] is None
+        assert db.scalar(text('SELECT 1')) == 1
+
+
+def test_future_cohort_is_not_fresh(pg):
+    from services.imf_freshness import with_imf_check_freshness
+
+    with Session(pg) as db:
+        result = with_imf_check_freshness(db, {}, datetime.now(timezone.utc) + timedelta(days=1))
+        assert result['stale'] is True
+
+
+def test_old_check_does_not_hide_old_data(pg):
+    from models import IngestionJob, SeedingDomainClaim
+    from services.imf_freshness import with_imf_check_freshness
+
+    cohort, finish = checked_cohort(pg)
+    with Session(pg) as db, db.begin():
+        job = db.scalars(select(IngestionJob)).one()
+        claim = db.scalars(select(SeedingDomainClaim)).one()
+        job.started_at -= timedelta(days=61)
+        job.finished_at -= timedelta(days=61)
+        for column in ('acquired_at', 'entered_at', 'returned_at', 'released_at'):
+            setattr(claim, column, getattr(claim, column) - timedelta(days=61))
+    with Session(pg) as db:
+        result = with_imf_check_freshness(db, {}, cohort)
+        assert result['stale'] is True
+        assert result['freshness_basis'] == 'qualified_live_check'
+        assert result['check_age_days'] == 61
+
+
+@pytest.mark.parametrize('zone', ['UTC', 'America/Chicago'])
+@pytest.mark.parametrize('skew', [-2, 0, 2])
+def test_actual_native_clock_contract_qualifies_without_redating(pg, zone, skew):
+    import time
+    from sqlalchemy import event
+    from sqlalchemy.orm import sessionmaker
+    from models import EtlDispatchDomain, IngestionJob, IngestionStatus, SeedingDomainClaim
+    from seeding.exclusion import enter_domain
+    from services.imf_freshness import with_imf_check_freshness
+
+    def set_zone(connection):
+        connection.execute(text("SELECT set_config('TimeZone', :zone, false)"), {'zone': zone})
+        connection.commit()
+
+    event.listen(pg, 'engine_connect', set_zone)
+    cohort = datetime.now(timezone.utc) - timedelta(days=90)
+    write(pg, [row(at=cohort)])
+    IngestionJob.__table__.create(pg)
+    with pg.begin() as c:
+        c.exec_driver_sql('CREATE TABLE etl_dispatch_commands (id uuid PRIMARY KEY)')
+    SeedingDomainClaim.__table__.create(pg)
+    EtlDispatchDomain.__table__.create(pg)
+    factory = sessionmaker(pg)
+    execution = enter_domain(factory, 'imf_weo', False)
+    try:
+        start = datetime.now(timezone.utc) + timedelta(seconds=skew)
+        finish = start + timedelta(microseconds=10)
+        with factory() as db, db.begin():
+            job = IngestionJob(domain='imf_weo', status=IngestionStatus.COMPLETED,
+                dry_run=False, started_at=start, finished_at=finish, errors=[],
+                items_processed=1, items_created=0, items_updated=0,
+                meta={'source_mode': 'live', 'seeding_claim_id': str(execution.identity),
+                      'imf_retained_vintages': {'KEN': cohort.isoformat()}})
+            db.add(job)
+            db.flush()
+            job_id = job.id
+        execution.acknowledge(job_id)
+    finally:
+        execution.close()
+    if skew > 0:
+        with factory() as db:
+            assert with_imf_check_freshness(db, {}, cohort)['last_successful_check_at'] is None
+        time.sleep(skew + .2)
+    with factory() as db:
+        result = with_imf_check_freshness(db, {}, cohort)
+        assert result['stale'] is False
+        assert result['last_successful_check_at'] == finish.isoformat()
+        assert result['vintage_age_days'] == 90

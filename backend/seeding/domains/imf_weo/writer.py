@@ -81,6 +81,7 @@ class WriteStats:
     updated: int = 0
     skipped: int = 0
     snapshot_rows_inserted: int = 0
+    retained_vintages: Dict[str, str] = field(default_factory=dict)
     errors: List[str] = field(default_factory=list)
 
 
@@ -167,6 +168,11 @@ def persist_imf_weo(
             if len(inserted) != len(snapshot):
                 raise ValueError('IMF snapshot insertion was incomplete')
             stats.snapshot_rows_inserted = len(inserted)
+        for country in countries:
+            retained_at = records[0]['vintage'] if country in changed_countries else latest[country]
+            if retained_at.tzinfo is None:
+                retained_at = retained_at.replace(tzinfo=timezone.utc)
+            stats.retained_vintages[country] = retained_at.astimezone(timezone.utc).isoformat()
     return stats
 
 
