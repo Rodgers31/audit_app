@@ -1,0 +1,32 @@
+{
+  "kind": "review-only-proposal-not-provider-api-config",
+  "source_commit": "6fdce855950e94cb30c43dfdcd8307885795b3cf",
+  "apply": false,
+  "recommended_action": "preserve-existing-topology-and-controls",
+  "new_resources": [],
+  "new_credentials": [],
+  "cloudflare_zone_or_proxy": false,
+  "render_default_hostname_change": false,
+  "metered_waf_rate_limiting": false,
+  "bot_or_managed_ruleset_activation": false,
+  "optional_vercel_rule": {
+    "enabled": false,
+    "name": "b95-exact-next-post-methods",
+    "scope": "existing audit_app project; every project hostname",
+    "paths_exact": ["/api/revalidate"],
+    "sensitive_paths_excluded_until_nonretaining_collector_qualified": ["/api/auth/reset-password"],
+    "methods_not_in": ["POST", "OPTIONS"],
+    "initial_action": "log",
+    "possible_action_after_qualification": "deny",
+    "persistent_action": false,
+    "bypass_rules": [],
+    "header_identity_conditions": [],
+    "activation_requires": [
+      "coordinator approval after release refresh",
+      "fresh effective settings and included-feature billing readback",
+      "local method and slash-normalization parity with the frontend lane",
+      "ten-minute passive observation with no sensitive query or body export",
+      "saved previous firewall configuration version and rollback operator"
+    ]
+  }
+}
