@@ -747,6 +747,8 @@ def fetch_county_payables_payload(
     payload = county_payables_payload(entries, pdf_url, receipt=receipt)
     payload["_native_report_authority"] = authority
     payload["native_report_authority_reason"] = authority_reason
+    if authority is None:
+        logger.info("Native county report authority withheld: %s", authority_reason)
     # Separate rollout: --all and the admitted nightly keep their existing
     # contract until this producer is explicitly enabled and reviewed.
     if aging_enabled or assembly_enabled:

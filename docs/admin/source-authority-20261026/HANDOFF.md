@@ -137,3 +137,11 @@ refresh/backfill, deployment/merge, schedule activation, automatic approval,
 publishing, upload, worker/native supervision, credentials, provider message,
 plan/budget/retention/backup/key change or paid service/review occurred. The dirty
 primary checkout and coordinator CURRENT_ACCEPTANCE remain untouched.
+
+## Review observability correction
+
+County report publication refusal now logs its controlled reason when authority
+is withheld; the payload still retains the same reason and financial loading
+remains independent. The interrupted-download fixture reproduces the missing
+operator diagnostic before the fix and verifies it afterward. No new report
+authority, rollout, writer permission or live source run is implied.
