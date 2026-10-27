@@ -1,0 +1,21 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import RootLayout from '@/app/layout';
+const mockAnalytics = jest.fn(() => null);
+const mockSpeed = jest.fn(() => null);
+jest.mock('@/components/Navigation', () => () => null);
+jest.mock('@/components/Footer', () => () => null);
+jest.mock('@/lib/auth/AuthProvider', () => ({ AuthProvider: ({ children }: any) => children }));
+jest.mock('@/lib/auth/WatchlistProvider', () => ({ WatchlistProvider: ({ children }: any) => children }));
+jest.mock('@/lib/i18n/LangProvider', () => ({ LangProvider: ({ children }: any) => children }));
+jest.mock('@/lib/react-query/QueryProvider', () => ({ QueryProvider: ({ children }: any) => children }));
+jest.mock('@/lib/navigation/NavTrailTracker', () => () => null);
+jest.mock('@vercel/analytics/react', () => ({ Analytics: () => mockAnalytics() }));
+jest.mock('@vercel/speed-insights/next', () => ({ SpeedInsights: () => mockSpeed() }));
+jest.mock('next/navigation', () => ({ usePathname: () => '/reset-password', useSearchParams: () => new URLSearchParams('recovery=INERT_COLLECTOR_MARKER') }));
+test('root server markup on recovery does not mount either browser collector', () => {
+  const html = renderToStaticMarkup(<RootLayout><p>Inert form</p></RootLayout>);
+  expect(html).toContain('Inert form');
+  expect(mockAnalytics).not.toHaveBeenCalled();
+  expect(mockSpeed).not.toHaveBeenCalled();
+  expect(html).not.toContain('INERT_COLLECTOR_MARKER');
+});

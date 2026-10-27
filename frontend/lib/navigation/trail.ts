@@ -22,6 +22,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { isPrivateAuthUrl } from '@/lib/auth/privacy';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 const STORAGE_KEY = 'auditgava-nav-trail';
@@ -66,6 +67,7 @@ export function useTrackNavTrail(): void {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const search = searchParams.toString();
+    if (isPrivateAuthUrl(`${pathname}?${search}`)) return;
     const current: TrailEntry = {
       pathname,
       search: search ? `?${search}` : '',
