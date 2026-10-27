@@ -181,6 +181,22 @@ def capture_local_bytes(body, store, *, url, claimed_receipt=None):
     return receipt
 
 
+def capture_retained_pdf(session, context, store, *, domain, url, body):
+    """Restore only a DB-anchored acquisition after real retained-byte checking.
+
+    This never takes provenance from a download sidecar or exported receipt.
+    Original HTTP times are preserved; the new validation has its own job ID.
+    """
+    if __package__.startswith('backend.'):
+        from backend.seeding.retained_report_receipts import verified_retained_pdf
+    else:
+        from seeding.retained_report_receipts import verified_retained_pdf
+    value, checked_store = verified_retained_pdf(session, context, store, domain=domain, url=url, body=body)
+    captured = CapturedReceipt(value, _capability=_CAPABILITY)
+    captured._store = checked_store
+    return captured
+
+
 def response_receipt(response, store, *, source_kind="api"):
     """Reuse only an intact capability bound to the actual parser input bytes."""
     recorded = response.extensions.get("response_receipt")

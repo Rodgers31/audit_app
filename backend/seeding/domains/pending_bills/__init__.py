@@ -133,7 +133,7 @@ def _seed_counties(
 
     try:
         with create_http_client(settings) as client:
-            payload = fetcher.fetch_county_payables_payload(client, settings)
+            payload = fetcher.fetch_county_payables_payload(client, settings, session=session, context=context)
     except Exception as exc:
         logger.exception("County pending bills: CoB year-end report not read")
         errors.append(f"County pending bills not read: {exc}")

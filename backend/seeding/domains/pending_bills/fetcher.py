@@ -666,7 +666,7 @@ def county_payables_payload(
 
 
 def fetch_county_payables_payload(
-    client: SeedingHttpClient, settings: SeedingSettings
+    client: SeedingHttpClient, settings: SeedingSettings, *, session=None, context=None,
 ) -> Optional[Dict[str, Any]]:
     """County pending bills from the newest full-year CBIRR.
 
@@ -732,7 +732,8 @@ def fetch_county_payables_payload(
     check_county_payables_entries(entries, pdf_url)
     from ...pdf_evidence import receipt_for_pdf, bind_parse_receipt
 
-    receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1")
+    native_context = dict(session=session, context=context, domain='pending_bills') if session is not None else {}
+    receipt = receipt_for_pdf(client, settings, pdf_path, pdf_url, "cob-year-end-payables-v1", **native_context)
     from ...native_report_authority import capture_pdf_report
     authority, authority_reason = capture_pdf_report(pdf_path, receipt, domain="pending_bills")
     if authority is None:
@@ -774,7 +775,7 @@ def fetch_county_payables_payload(
         for cohort in cohorts:
             scope = cohort["scope"]
             aging_receipt = receipt_for_pdf(
-                client, settings, pdf_path, pdf_url, f"cob-{scope}-aging-v{cohort['version']}"
+                client, settings, pdf_path, pdf_url, f"cob-{scope}-aging-v{cohort['version']}", **native_context
             )
             key = "aging" if scope == "county_executive" else "assembly_aging"
             payload[key] = prepare_aging(cohorts, bind_parse_receipt(aging_receipt, cohorts), scope=scope)

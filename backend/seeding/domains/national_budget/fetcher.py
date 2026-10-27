@@ -39,7 +39,7 @@ logger = logging.getLogger("seeding.national_budget.fetcher")
 
 
 def fetch_national_budget_payload(
-    client: SeedingHttpClient, settings: SeedingSettings
+    client: SeedingHttpClient, settings: SeedingSettings, *, session=None, context=None,
 ) -> list[dict[str, Any]]:
     """Fetch national budget execution, trying live COB PDFs first.
 
@@ -87,7 +87,7 @@ def fetch_national_budget_payload(
         )
         try:
             expenditure, annual_status = _fetch_annual_sector_expenditure(
-                client, settings, annual
+                client, settings, annual, **(dict(session=session, context=context) if session is not None else {})
             )
             records.extend(expenditure)
         except Exception as exc:
@@ -247,7 +247,7 @@ def report_period(pages: Dict[int, str]) -> Tuple[Optional[str], bool]:
 
 
 def _fetch_annual_sector_expenditure(
-    client: SeedingHttpClient, settings: SeedingSettings, report: AnnualReport
+    client: SeedingHttpClient, settings: SeedingSettings, report: AnnualReport, *, session=None, context=None,
 ) -> Tuple[List[Dict[str, Any]], str]:
     """Download the annual report, parse and verify its Sector Summaries, and
     return ``(records, status)``. ``status`` starts with ``promoted`` only when
@@ -304,7 +304,8 @@ def _fetch_annual_sector_expenditure(
         bind_parse_receipt,
     )
 
-    receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1")
+    native_context = dict(session=session, context=context, domain='national_budget') if session is not None else {}
+    receipt = receipt_for_pdf(client, settings, pdf_path, report.url, "cob-annual-sector-v1", **native_context)
     from ...native_report_authority import capture_pdf_report
     authority, authority_reason = capture_pdf_report(pdf_path, receipt, domain="national_budget")
     if authority is None:

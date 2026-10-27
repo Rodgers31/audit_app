@@ -228,10 +228,13 @@ def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, p
             scope_key = hashlib.sha256(entity.casefold().encode()).hexdigest()[:32]
             period, start, end = _fy(f'{int(year)-1}/{year}')
         publication = None
-        if published is None and publisher_receipt is None and publisher_loader is not None:
+        retained = 'retained_pdf_validation' in receipt
+        if (published is None or retained) and publisher_receipt is None and publisher_loader is not None:
             publisher_receipt = publisher_loader()
             if publisher_receipt is None:
                 raise ValueError('Retained publisher post unavailable')
+        if retained and publisher_receipt is None:
+            raise ValueError('Current publisher post required for retained reuse')
         if publisher_receipt is not None:
             from .cob_report_metadata import capture_post_metadata
             publication, post_day = capture_post_metadata(receipt, publisher_receipt, domain=domain, period=period)
@@ -282,7 +285,9 @@ def persist_native_report(session, source, authority, *, context, domain):
     lock_native_domain(session, domain)
     session.flush()
     session.execute(select(SourceDocument.id).where(SourceDocument.id == source.id).with_for_update()).scalar_one()
-    session.refresh(source, ['meta'])
+    # A source may have changed in another transaction before this lock. Every
+    # identity/edition guard below must inspect the locked row, not ORM cache.
+    session.refresh(source, ['meta', 'url', 'publisher', 'status', 'md5', 'country_id'])
     active = dict((source.meta or {}).get(KEY) or {})
     active.pop(domain, None)
     source.meta = {**(source.meta or {}), KEY: active}
@@ -304,14 +309,17 @@ def persist_native_report(session, source, authority, *, context, domain):
         raise ValueError('Intact native report/job authority required')
     if (authority.value.get('publication_authority') is None) != (authority.publisher_receipt is None):
         raise ValueError('Retained publisher metadata capability required')
+    if 'retained_pdf_validation' in authority.receipt and authority.publisher_receipt is None:
+        raise ValueError('Current publisher post required for retained reuse')
     if authority.publisher_receipt is not None:
         retained_body(authority.publisher_receipt, domain, 'text/html')
         context_value = authority.value.get('publication_authority')
         if (not receipt_is_sealed(authority.publisher_receipt) or type(context_value) is not dict
                 or digest(context_value['receipt']) != digest(dict(authority.publisher_receipt))):
             raise ValueError('Intact retained publisher metadata required')
-    country = session.get(Country, source.country_id)
-    if country is None or country.iso_code != 'KEN':
+    country_iso = session.scalar(select(Country.iso_code)
+        .where(Country.id == source.country_id).with_for_update(read=True))
+    if country_iso != 'KEN':
         raise ValueError('Kenyan native report country required')
     artifact = (source.meta or {}).get('pdf_artifact_v1')
     if (source.status.name == 'ARCHIVED'
@@ -320,9 +328,18 @@ def persist_native_report(session, source, authority, *, context, domain):
                 or artifact.get('sha256') != authority.value['document_checksum']
                 or artifact.get('md5') != authority.value['document_md5'])):
         raise ValueError('Current native source artifact differs from parsed report')
-    job = session.get(IngestionJob, context.job_id)
+    job = session.execute(select(IngestionJob).where(IngestionJob.id == context.job_id)
+        .with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
     if job is None or job.domain != domain or job.dry_run is not False or job.status != IngestionStatus.RUNNING:
         raise ValueError('Exact running native ingestion job required')
+    if 'retained_pdf_validation' in authority.receipt:
+        from .retained_report_receipts import aware, validate_retained_pdf
+        from .cob_report_metadata import validate_stored_post
+        from datetime import timezone
+        started, finished = aware(job.started_at), datetime.now(timezone.utc)
+        validate_stored_post(authority.value, authority.receipt, started=started, finished=finished)
+        validate_retained_pdf(session, source, authority.receipt, job,
+            started=started, finished=finished)
     ext = persist_receipt(session, source, authority.receipt, extractor=VERSION)
     receipt = ext.extracted_json['response_receipt']
     if (receipt.get('byte_check', {}).get('status') != 'matched'

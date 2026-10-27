@@ -54,7 +54,8 @@ def receipt_for_response(client, response, parser_version: str) -> dict:
 
 
 def receipt_for_pdf(
-    client, settings, path: Path, url: str, parser_version: str
+    client, settings, path: Path, url: str, parser_version: str, *,
+    session=None, context=None, domain=None,
 ) -> dict:
     from .pdf_download import cached_pdf_meta
 
@@ -85,6 +86,15 @@ def receipt_for_pdf(
                 capture_local_bytes(body, store, url=url), parser_version=parser_version
             )
         return receipt
+    if session is not None and context is not None and domain in ('national_budget', 'pending_bills'):
+        from services.response_receipts import capture_retained_pdf
+        try:
+            retained = capture_retained_pdf(session, context, store, domain=domain, url=url, body=body)
+            return copy_receipt(retained, parser_version=parser_version)
+        except ValueError:
+            # Missing/stale/changed original proof keeps the local-byte refusal.
+            # Database/provider failures propagate instead of certifying a hit.
+            pass
     return copy_receipt(
         capture_local_bytes(
             body,

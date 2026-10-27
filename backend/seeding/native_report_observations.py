@@ -112,7 +112,15 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
         published = date.fromisoformat(value['published_on'])
         acquired = _aware(receipt['acquired_at'])
         verified = _aware(receipt['byte_check']['checked_at'])
-        if not published <= acquired.date() or not started <= acquired <= verified <= finished:
+        if 'retained_pdf_validation' in receipt:
+            from .retained_report_receipts import validate_retained_pdf
+            current_check = validate_retained_pdf(db, source, receipt, job, started=started, finished=finished)
+            if not acquired <= verified <= current_check:
+                raise ValueError('Original retained chronology differs')
+            verified = current_check
+        elif not started <= acquired <= verified <= finished:
+            raise ValueError('Current acquisition chronology differs')
+        if not published <= acquired.date():
             raise ValueError
         from importlib import import_module
         contracts = import_module('backend.social.generation.contracts' if __package__.startswith('backend.') else 'social.generation.contracts')
