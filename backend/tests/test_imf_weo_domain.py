@@ -2,9 +2,8 @@
 
 Covers the pure parser (handles well-formed + malformed payloads) and
 the full run() integration with a mocked IMF DataMapper transport +
-SQLite session. The run() test checks upsert idempotency (re-running
-within the same vintage is a no-op) and vintage-aware history (a new
-vintage adds rows without clobbering the old ones).
+SQLite session. The run() tests check idempotency across distinct fetch times.
+Real PostgreSQL revision/cohort/rollback cases are in test_imf_snapshot_postgres.py.
 """
 
 from __future__ import annotations
@@ -224,26 +223,13 @@ def test_rerun_within_same_vintage_is_idempotent(
         sqlite_session, settings, DomainRunContext(since=None, dry_run=False)
     )
     count_after_first = sqlite_session.execute(select(ImfWeoObservation)).scalars().all()
-    # NOTE: the real on_conflict clause is Postgres-specific. On SQLite
-    # the INSERT ... ON CONFLICT path used by the writer is a no-op
-    # fallback (sqlite supports ON CONFLICT DO NOTHING natively since 3.24
-    # but the dialect translation via sqlalchemy.dialects.postgresql
-    # doesn't apply). If the second run raises IntegrityError we catch
-    # it and treat this as passing — the idempotency guarantee we care
-    # about is the Postgres path, exercised in integration testing.
-    try:
-        second = run_imf_weo_domain(
-            sqlite_session, settings, DomainRunContext(since=None, dry_run=False)
-        )
-        rows_after_second = (
-            sqlite_session.execute(select(ImfWeoObservation)).scalars().all()
-        )
-        # If it succeeded, the no-op path worked.
-        assert len(rows_after_second) == len(count_after_first)
-    except Exception:
-        # SQLite dialect didn't map the PG on_conflict_do_nothing cleanly.
-        # The contract is still upheld in production (Postgres).
-        pass
+    second = run_imf_weo_domain(
+        sqlite_session, settings, DomainRunContext(since=None, dry_run=False)
+    )
+    rows_after_second = sqlite_session.execute(select(ImfWeoObservation)).scalars().all()
+    assert second.errors == []
+    assert second.items_created == 0
+    assert len(rows_after_second) == len(count_after_first)
 
 
 def test_domain_reports_failure_when_imf_is_down(

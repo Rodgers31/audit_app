@@ -1,0 +1,1700 @@
+{
+  "scope": "Accepted production observation export, not original IMF HTTP wire bytes or a confirmed publisher release date",
+  "run_id": 40449867771,
+  "ingestion_job_id": 3421,
+  "captured_at": "2026-10-27T12:16:28.808218+00:00",
+  "rows": [
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1982
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1983
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1984
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1985
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1986
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1987
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1988
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1989
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1990
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-6.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1991
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-8.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1992
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-8.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1993
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-4.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1994
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1995
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1996
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1997
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1998
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1999
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2000
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2001
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-1.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2002
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2003
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2004
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2005
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2006
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-1.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2007
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-2.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2008
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2009
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2010
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-3.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2011
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-5.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2012
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-5.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2013
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-5.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2014
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-6.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2015
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-7.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2016
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-7.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2017
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-6.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2018
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-7.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2019
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-8.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2020
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-7.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2021
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-6.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2022
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-5.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2023
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-5.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2024
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-6.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2025
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-6.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2026
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-6.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2027
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-5.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2028
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-5.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2029
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-5.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2030
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXCNL_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "-5.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2031
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "38.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1998
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "38.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1999
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "43.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2000
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "41.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2001
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "42.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2002
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "43.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2003
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "40.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2004
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "37.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2005
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "37.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2006
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "34.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2007
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "34.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2008
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "36.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2009
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "36.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2010
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "35.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2011
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "37.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2012
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "39.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2013
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "41.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2014
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "45.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2015
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "50.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2016
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "53.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2017
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "56.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2018
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "59.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2019
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "68.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2020
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "68.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2021
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "67.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2022
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "73.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2023
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "67.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2024
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "71.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2025
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "72.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2026
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "73.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2027
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "74.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2028
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "74.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2029
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "74.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2030
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "GGXWDG_NGDP",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "74.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2031
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1980
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1981
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1982
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "1.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1983
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "1.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1984
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1985
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "7.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1986
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1987
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "6.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1988
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1989
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1990
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "1.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1991
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-1.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1992
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1993
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "2.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1994
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1995
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1996
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.4000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1997
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "3.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1998
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "2.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1999
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2000
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2001
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2002
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "2.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2003
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2004
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2005
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2006
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "6.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2007
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "0.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2008
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "3.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2009
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "8.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2010
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2011
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2012
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "3.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2013
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2014
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2015
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.2000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2016
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "3.8000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2017
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2018
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.1000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2019
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "-0.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2020
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "7.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2021
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2022
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "5.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2023
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2024
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "4.6000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2025
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "4.5000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2026
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "4.7000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2027
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "4.9000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2028
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "5.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2029
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "5.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2030
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDP_RPCH",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "5.0000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2031
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "13.4490",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1980
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "12.6670",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1981
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "12.1960",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1982
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "11.2790",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1983
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "11.7030",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1984
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "11.6460",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1985
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "13.8320",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1986
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.1630",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1987
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.7210",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1988
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.5860",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1989
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "16.2190",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1990
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.3150",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1991
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.0840",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1992
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "10.4790",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1993
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "12.5460",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1994
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "15.9050",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1995
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "18.0640",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1996
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "18.3000",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1997
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "20.6300",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1998
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "18.5940",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 1999
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "18.2060",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2000
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "18.6970",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2001
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "19.0300",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2002
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "21.3910",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2003
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "22.7900",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2004
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "26.3070",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2005
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "29.6680",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2006
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "36.7080",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2007
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "41.0580",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2008
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "42.3470",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2009
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "45.4060",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2010
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "46.5550",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2011
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "56.4070",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2012
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "61.7030",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2013
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "68.3950",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2014
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "70.3700",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2015
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "74.8160",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2016
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "81.9650",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2017
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "92.2110",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2018
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "100.3280",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2019
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "100.9220",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2020
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "109.8750",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2021
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "114.7330",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2022
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "108.2060",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2023
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "119.3640",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2024
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": false,
+      "source": "imf_datamapper",
+      "value": "135.9190",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2025
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "151.1510",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2026
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "162.2890",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2027
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "170.0650",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2028
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "179.5060",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2029
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "191.0410",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2030
+    },
+    {
+      "country_code": "KEN",
+      "indicator": "NGDPD",
+      "is_projection": true,
+      "source": "imf_datamapper",
+      "value": "203.8110",
+      "vintage": "2026-10-27 04:38:48.017247+00:00",
+      "year": 2031
+    }
+  ]
+}

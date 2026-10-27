@@ -8,7 +8,8 @@ Kenya specifically the following four are available:
   - NGDPD        — Nominal GDP, current prices (USD billions)
   - NGDP_RPCH    — Real GDP growth rate, annual %
 
-Years are 2018–2030 (historical + current + IMF's forward projections).
+Request the full available time series, including historical observations and
+projections. A bounded dashboard window would omit previously retained years.
 
 Note on User-Agent: IMF's edge filters out non-canonical UAs (tested
 empirically — ``Mozilla/5.0`` and ``KenyaAuditApp/1.0`` both return
@@ -40,10 +41,6 @@ INDICATORS: tuple[str, ...] = (
 # Start with Kenya only. Easy to widen later for peer comparisons.
 COUNTRIES: tuple[str, ...] = ("KEN",)
 
-# Year window we care about for the dashboard (past + current + near
-# projections). IMF covers wider ranges but we don't need that now.
-_PERIODS = ",".join(str(y) for y in range(2018, 2031))
-
 # Must start with a known HTTP-client token so the IMF edge does not
 # 403 us. See module docstring.
 _IMF_UA = (
@@ -72,7 +69,7 @@ def fetch_imf_weo(
     countries = "/".join(COUNTRIES)
     try:
         for indicator in INDICATORS:
-            url = f"{_BASE_URL}/{indicator}/{countries}?periods={_PERIODS}"
+            url = f"{_BASE_URL}/{indicator}/{countries}"
             logger.info("Fetching IMF WEO %s for %s", indicator, countries)
             # Override the seeder's default UA only for this call — other
             # sources might have their own constraints.

@@ -11846,14 +11846,15 @@ async def get_debt_broader(db: Session = Depends(get_db)):
 
     Returns a timeseries with each year's debt-to-GDP ratio and an
     absolute KES estimate derived from IMF's USD GDP projection times
-    ``IMF_BROADER_USD_KES``. The last-fetched vintage is included so
-    the frontend can mark the value "stale" when the seeder has not
-    run recently.
+    ``IMF_BROADER_USD_KES``. Retained acquisition age and the last
+    qualified successful live check are separate: an unchanged check
+    advances freshness without pretending the observations were revised.
 
     **Caching**: the "unavailable" branch is NOT cached, so the first
     hit after the seeder finishes will see fresh data without waiting
     for a TTL to expire. Successful payloads are cached 24h since IMF
-    WEO only publishes twice a year.
+    WEO only publishes twice a year. Check freshness is overlaid on every
+    response outside that numeric cache.
     """
     if not DATABASE_AVAILABLE:
         return {"status": "unavailable", "reason": "database_not_configured"}
@@ -11880,9 +11881,14 @@ async def get_debt_broader(db: Session = Depends(get_db)):
         return {"status": "unavailable", "reason": "not_seeded_yet"}
     # Pass vintage as kwarg so @cached bakes it into the key —
     # a new vintage invalidates the cache automatically.
-    return await _get_debt_broader_cached(
+    payload = await _get_debt_broader_cached(
         db=db, vintage=latest_vintage_subq.isoformat()
     )
+    # A successful unchanged check retains the numeric cache key, but advances
+    # independently verified freshness. Never mutate the shared cached payload.
+    from services.imf_freshness import with_imf_check_freshness
+
+    return with_imf_check_freshness(db, payload, latest_vintage_subq)
 
 
 @cached(key_prefix="debt:broader", ttl=86400)  # IMF WEO updates twice a year
@@ -11947,9 +11953,8 @@ async def _get_debt_broader_cached(db: Session, vintage: str):
     actuals = [t for t in complete if not t.get("is_projection")]
     latest = (actuals or complete)[-1] if complete else None
 
-    # Stale = vintage > 60 days old. IMF WEO publishes twice a year
-    # (April/October) — 60 days after either release is a reasonable
-    # "something is probably wrong" threshold.
+    # Conservative acquisition-age fallback. The public route overlays
+    # independently qualified check freshness outside this numeric cache.
     age_days = (
         datetime.datetime.now(datetime.timezone.utc) - latest_vintage_subq
     ).days

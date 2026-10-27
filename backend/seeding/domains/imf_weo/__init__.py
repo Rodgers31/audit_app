@@ -1,15 +1,16 @@
 """IMF World Economic Outlook seeding domain.
 
 Fetches a small bundle of Kenya-focused macro indicators from the IMF
-DataMapper API and upserts them into ``imf_weo_observations``.
+DataMapper API and retains changed cohorts in ``imf_weo_observations``.
 
 Powers ``/api/v1/debt/broader`` — the dashboard card that shows IMF's
 general-government gross debt alongside CBK's central-government figure.
 
-Runs as part of the nightly seeding pipeline. IMF only publishes a new
-WEO vintage twice a year (April and October), so most nightly runs
-produce zero diffs; the seeder is idempotent by ``(country, indicator,
-year, vintage)``.
+Runs as part of nightly seeding. Unchanged content inserts no observation rows;
+a genuine revision retains a complete country cohort for the existing readers.
+The retained ``vintage`` is acquisition time, not a confirmed publisher edition.
+Successful live checks separately record the retained-cohort pointer in the
+ingestion job, including when the observations did not change.
 """
 
 from __future__ import annotations
@@ -71,6 +72,9 @@ def run(
         errors=errors,
         metadata={
             "skipped": stats.skipped,
+            "snapshot_rows_inserted": stats.snapshot_rows_inserted,
+            "imf_retained_vintages": stats.retained_vintages,
+            "snapshot_time_kind": "changed_acquisition_not_publisher_release",
             "indicators": list(fetcher.INDICATORS),
             "countries": list(fetcher.COUNTRIES),
         },
