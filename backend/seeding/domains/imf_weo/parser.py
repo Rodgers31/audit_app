@@ -26,6 +26,7 @@ rows (the latest historical year shifts each April/October vintage).
 from __future__ import annotations
 
 import logging
+import math
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -85,13 +86,18 @@ def parse_imf_weo(
 
 
 def _coerce_numeric(raw: Any) -> float | None:
-    """Return a float or None. IMF sometimes ships strings / nulls."""
+    """Only an explicit publisher null is missing; malformed is a refusal."""
     if raw is None:
         return None
+    if isinstance(raw, bool):
+        raise ValueError('Boolean is not an IMF numeric observation')
     try:
-        return float(raw)
-    except (TypeError, ValueError):
-        return None
+        value = float(raw)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError('Malformed IMF numeric observation') from exc
+    if not math.isfinite(value):
+        raise ValueError('Non-finite IMF numeric observation')
+    return value
 
 
 __all__ = ["parse_imf_weo"]

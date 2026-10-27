@@ -763,12 +763,11 @@ class ImfWeoObservation(Base):
         county-scoped in this app).
       * Year granularity, not an arbitrary date — WEO publishes annual
         values, with future years being IMF projections.
-      * Vintage-aware — we preserve every snapshot IMF publishes (WEO
-        drops twice a year in April and October) so we can tell stories
-        like "IMF revised Kenya's 2027 projection from 72% → 75%
-        between the April and October vintages". `(country, indicator,
-        year)` can therefore have multiple rows, each with a different
-        `vintage` timestamp.
+      * Revision-aware — a complete country snapshot is retained when its
+        observations change. ``vintage`` records that acquisition time;
+        DataMapper does not establish an authoritative publication date.
+        Unchanged checks belong to ingestion history, not another snapshot.
+        Older duplicate snapshots remain retained without redating/purging.
 
     Primary consumer: the ``/api/v1/debt/broader`` endpoint that shows
     IMF's general-government gross debt alongside the CBK central-
@@ -805,8 +804,7 @@ class ImfWeoObservation(Base):
     # added indicators or data-gap countries).
     value = Column(Numeric(20, 4), nullable=True)
     is_projection = Column(Boolean, nullable=False, default=False)
-    # When this value was published/fetched. Multiple vintages per
-    # (country, indicator, year) let us track IMF's revisions over time.
+    # Acquisition time of the retained snapshot, not a confirmed release date.
     vintage = Column(DateTime(timezone=True), nullable=False)
     source = Column(String(32), nullable=False, default="imf_datamapper")
     created_at = Column(
