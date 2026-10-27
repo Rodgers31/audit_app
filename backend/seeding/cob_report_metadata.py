@@ -105,8 +105,13 @@ def capture_post_metadata(pdf_receipt, publisher_receipt, *, domain, period):
             or times[0].get_text(' ', strip=True) != f'{published:%B} {published.day}, {published:%Y}'):
         raise ValueError('Visible publisher day differs')
     parent = times[0].find_parent('a')
+    publish_day_label = f' Publish Time : {published:%B} {published.day}, {published:%Y} '
+    publish_time_prefixes = tuple(
+        f'{publish_day_label}{hour}:{published:%M} '
+        for hour in (str(published.hour), f'{published:%H}')
+    )
     if (parent is None or parent.get('href') != page
-            or not str(parent.get('title','')).startswith(f' Publish Time : {published:%B} {published.day}, {published:%Y %H:%M} ')):
+            or not str(parent.get('title','')).startswith(publish_time_prefixes)):
         raise ValueError('Explicit visible publish time required')
     links = articles[0].select('a.wpdm-download-link')
     if len(links) != 1 or links[0].get('onclick') != f"location.href='{pdf_receipt['request_url']}';return false;":
