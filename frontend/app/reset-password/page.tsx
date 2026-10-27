@@ -32,18 +32,8 @@ function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const linkError = searchParams.get('error');
-  // PKCE recovery code, forwarded by /auth/callback under the query
-  // parameter name ``recovery`` (not ``code``) — this is critical:
-  // the browser Supabase SDK auto-detects ``?code=`` on page load
-  // and would exchange it itself, creating a session behind our
-  // back. Forwarding under ``recovery`` keeps the SDK's
-  // ``_isPKCECallback`` check returning false. See
-  // /auth/callback/route.ts for the full reasoning. The form-submit
-  // handler then POSTs this value as ``code`` to
-  // /api/auth/reset-password, which runs on the server with
-  // ``detectSessionInUrl: false`` and is the only place the
-  // exchange actually happens.
-  const recoveryCode = searchParams.get('recovery');
+  // The callback stages the PKCE code in a short-lived HttpOnly API cookie.
+  // The form never reads or forwards it, so hydration and collectors cannot.
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -101,27 +91,15 @@ function ResetPasswordForm() {
         return;
       }
 
-      if (!recoveryCode) {
-        setError('Reset link is missing its verification code. Please request a new one.');
-        return;
-      }
-
       submittingRef.current = true;
       setIsSubmitting(true);
       try {
-        // Server-side endpoint exchanges the PKCE code, updates the
-        // password, and signs out — all in one request, with a
-        // read-only cookie adapter so no auth cookies ever reach
-        // the browser. See app/api/auth/reset-password/route.ts.
-        // This replaces the previous client-side
-        // ``supabase.auth.updateUser({ password })`` flow, which
-        // unavoidably ran the GoTrueClient's auto-refresh tick
-        // alongside the update and produced the duplicate
-        // ``PUT /auth/v1/user`` → ``same_password`` error chain.
+        // Only the server exchanges PKCE and updates once; it returns the
+        // new session cookies on success without a browser auto-refresh race.
         const res = await fetch('/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: recoveryCode, password }),
+          body: JSON.stringify({ password }),
         });
 
         if (!res.ok) {
@@ -146,20 +124,12 @@ function ResetPasswordForm() {
           await refreshUser();
         } catch (err) {
           // eslint-disable-next-line no-console
-          console.warn('[reset-password] refreshUser after reset failed', err);
+          console.warn('[reset-password] session refresh failed');
         }
         setTimeout(() => {
           router.replace('/');
         }, 1200);
       } catch (err: any) {
-        // Surface the server error verbatim when present —
-        // typically "New password should be different from the old
-        // password." for the same_password code. Console-log the
-        // full object so a future "spinner stuck, no message"
-        // report is debuggable from DevTools without round-tripping
-        // back to this fix.
-        // eslint-disable-next-line no-console
-        console.error('[reset-password] reset failed', err);
         setError(
           err?.message ||
             'Failed to update password. The link may have expired — please request a new one.'
@@ -169,7 +139,7 @@ function ResetPasswordForm() {
         setIsSubmitting(false);
       }
     },
-    [password, confirmPassword, allMet, passwordsMatch, recoveryCode, refreshUser, router]
+    [password, confirmPassword, allMet, passwordsMatch, refreshUser, router]
   );
 
   // If auth is still loading, show spinner
@@ -254,6 +224,7 @@ function ResetPasswordForm() {
                       type={showPassword ? 'text' : 'password'}
                       required
                       minLength={8}
+                      maxLength={1024}
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
@@ -307,6 +278,7 @@ function ResetPasswordForm() {
                       type={showConfirm ? 'text' : 'password'}
                       required
                       minLength={8}
+                      maxLength={1024}
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);

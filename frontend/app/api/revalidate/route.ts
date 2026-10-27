@@ -1,68 +1,59 @@
-/**
- * POST /api/revalidate — the freshness loop's entry point (Layer 8).
- *
- * The nightly seed job calls this after data lands and validates, so a new
- * OAG/COB publication reaches the prerendered pages without a deploy.
- *
- * Auth: HMAC-SHA256 of the raw request body with the shared
- * REVALIDATE_SECRET, sent as `x-revalidate-signature` (hex). Unsigned or
- * mis-signed requests are rejected; an unconfigured secret disables the
- * endpoint loudly (503) rather than open (no-silent-fallbacks).
- *
- * Body: {"paths": ["/", "/audits", ...]}. Only paths in
- * lib/revalidation/paths.json are accepted. The workflow builds its body from
- * that same file, so the two cannot drift apart (issue #231). Anything else
- * comes back in `rejected`, and the workflow fails the job if that list is
- * not empty.
- */
+/** HMAC-SHA256 over exact raw bytes; only manifest paths may be revalidated. */
 import { createHmac, timingSafeEqual } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { REVALIDATE_PATHS, revalidateType } from '@/lib/revalidation/paths';
-
+import { createAdmission, jsonObject, readRequestBytes, RequestBudget, RequestFailure } from '@/lib/security/request-budget';
+export const runtime = 'nodejs';
+export const maxDuration = 10;
+const admit = createAdmission(4);
 export async function POST(req: NextRequest) {
   const secret = process.env.REVALIDATE_SECRET;
-  if (!secret) {
-    return NextResponse.json(
-      { error: 'revalidation_not_configured' },
-      { status: 503 }
-    );
-  }
-
-  const body = await req.text();
+  if (!secret)
+    return NextResponse.json({ error: 'revalidation_not_configured' }, { status: 503 });
   const signature = req.headers.get('x-revalidate-signature') ?? '';
-  const expected = createHmac('sha256', secret).update(body).digest('hex');
-  const sigBuf = Buffer.from(signature, 'utf8');
-  const expBuf = Buffer.from(expected, 'utf8');
-  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+  if (!/^[a-f0-9]{64}$/.test(signature))
     return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
-  }
-
-  let paths: unknown;
+  let release: (() => void) | undefined;
+  const budget = new RequestBudget(req, 5000);
   try {
-    paths = JSON.parse(body).paths;
-  } catch {
-    return NextResponse.json({ error: 'malformed_body' }, { status: 400 });
-  }
-  if (!Array.isArray(paths) || paths.length === 0) {
-    return NextResponse.json({ error: 'no_paths' }, { status: 400 });
-  }
-
-  const revalidated: string[] = [];
-  const rejected: string[] = [];
-  for (const p of paths) {
-    if (typeof p === 'string' && REVALIDATE_PATHS.has(p)) {
-      const type = revalidateType(p);
-      if (type) revalidatePath(p, type);
-      else revalidatePath(p);
-      revalidated.push(p);
-    } else {
-      rejected.push(String(p));
+    release = admit();
+    const bytes = await readRequestBytes(req, budget, 8192);
+    const expected = createHmac('sha256', secret).update(bytes).digest('hex');
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+      return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
     }
+    const { paths } = jsonObject(bytes);
+    if (!Array.isArray(paths) || paths.length === 0)
+      throw new RequestFailure(400, 'no_paths');
+    if (paths.length > 64 || paths.some(p => typeof p !== 'string' || p.length > 256)) {
+      throw new RequestFailure(400, 'invalid_paths');
+    }
+    const revalidated: string[] = [];
+    const rejected: string[] = [];
+    for (const p of Array.from(new Set<string>(paths))) {
+      budget.check();
+      if (REVALIDATE_PATHS.has(p)) {
+        const type = revalidateType(p);
+        if (type)
+          revalidatePath(p, type);
+        else
+          revalidatePath(p);
+        revalidated.push(p);
+      }
+      else {
+        rejected.push(p);
+      }
+    }
+    return NextResponse.json({ revalidated, rejected, at: new Date().toISOString() });
   }
-  return NextResponse.json({
-    revalidated,
-    rejected,
-    at: new Date().toISOString(),
-  });
+  catch (error) {
+    if (!(error instanceof RequestFailure))
+      throw error;
+    return NextResponse.json({ error: error.message }, { status: error.status });
+  }
+  finally {
+    budget.dispose();
+    release?.();
+  }
 }

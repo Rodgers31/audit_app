@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * The revalidation webhook (Layer 8): HMAC-gated, allowlisted, loud.
  */
@@ -7,28 +8,15 @@ const mockRevalidatePath = jest.fn();
 jest.mock('next/cache', () => ({
   revalidatePath: (...args: unknown[]) => mockRevalidatePath(...args),
 }));
-jest.mock('next/server', () => ({
-  NextRequest: class {},
-  NextResponse: {
-    json: (body: unknown, init?: { status?: number }) => ({
-      status: init?.status ?? 200,
-      json: async () => body,
-    }),
-  },
-}));
-
 import { POST } from '@/app/api/revalidate/route';
 
 const SECRET = 'test-secret';
 
 function makeRequest(body: string, signature?: string) {
-  return {
-    text: async () => body,
-    headers: {
-      get: (name: string) =>
-        name === 'x-revalidate-signature' ? (signature ?? null) : null,
-    },
-  } as any;
+  return new Request('https://app.test/api/revalidate', {
+    method: 'POST', body,
+    headers: signature ? { 'x-revalidate-signature': signature } : {},
+  }) as any;
 }
 
 function sign(body: string, secret = SECRET) {

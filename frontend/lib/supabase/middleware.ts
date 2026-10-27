@@ -7,6 +7,7 @@
  *   - /account/* → authenticated user required
  */
 import { createServerClient } from '@supabase/ssr';
+import { privateResponse, recoveryRedirect } from '@/lib/auth/recovery';
 import { profileMatchesIdentity } from '@/lib/auth/roles';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -27,6 +28,19 @@ export async function updateSession(request: NextRequest) {
   // completing a connection still requires the verified admin session API.
   if (pathname === '/admin/social/accounts/callback' || pathname === '/admin/social/accounts/platform-callback' || pathname === '/admin/social/accounts/platform-callback/') {
     return NextResponse.next({ request });
+  }
+
+  // Recovery owns session cleanup and the one PKCE exchange. A middleware
+  // refresh must not restore/rotate stale cookies before those handlers run.
+  if (pathname === '/reset-password') {
+    if (request.nextUrl.searchParams.has('recovery') || request.nextUrl.searchParams.has('code')) {
+      const values = [...request.nextUrl.searchParams.getAll('recovery'), ...request.nextUrl.searchParams.getAll('code')];
+      return recoveryRedirect(request.url, values.length === 1 ? values[0] : null, request.cookies.getAll());
+    }
+    return privateResponse(NextResponse.next({ request }));
+  }
+  if (pathname === '/auth/callback' || pathname === '/api/auth/reset-password' || pathname === '/api/revalidate') {
+    return privateResponse(NextResponse.next({ request }));
   }
 
   /* ── Fast path: anonymous visitor on a public route ──

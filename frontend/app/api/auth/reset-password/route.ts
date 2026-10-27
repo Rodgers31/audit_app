@@ -1,129 +1,116 @@
-/**
- * POST /api/auth/reset-password
- *
- * Atomic password-reset endpoint. Inputs:
- *
- *   { code: string, password: string }
- *
- * where ``code`` is the PKCE recovery code Supabase forwarded to
- * /auth/callback (passed through to /reset-password as a query param
- * named ``recovery`` without being exchanged — see
- * app/auth/callback/route.ts for that decision).
- *
- * Why exchange + updateUser run server-side
- * -----------------------------------------
- * Doing both on the client (via the browser SDK) starts the
- * GoTrueClient's ``_autoRefreshTokenTick`` the moment the exchange
- * succeeds, which races with the immediately-following ``updateUser``
- * for the gotrue Web Lock — that lock-queue contention was the actual
- * source of the duplicate ``PUT /auth/v1/user`` → ``code:
- * same_password`` error we chased across PRs #87, #92, #93, #94, #95.
- * The server-side @supabase/ssr client doesn't run an auto-refresh
- * tick, so exchange + update happen sequentially with no race.
- *
- * Why we DO write session cookies on success (auto-login)
- * -------------------------------------------------------
- * The user just typed the new password; making them retype the same
- * thing on a sign-in page is friction with no security benefit (they
- * already demonstrated control of the new credential, and PKCE
- * already proved they're the browser that initiated the flow). So
- * once update succeeds we let the SDK's normal cookie writes go
- * through to the response, and the browser ends up with a fresh
- * session attached to the just-changed password. The page then
- * calls ``refreshUser()`` and redirects to home.
- *
- * Pre-existing-session cleanup happens upstream in /auth/callback,
- * which signs out any stale session before forwarding the recovery
- * code here, so we never end up with the wrong account's cookies.
- */
+/** Exchange PKCE and update once on the server, avoiding browser auto-refresh/WebLock races. */
+import { createHash } from 'crypto';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-
+import { clearRecovery, MAX_PASSWORD_BYTES, privateResponse, RECOVERY_COOKIE, validRecoveryCode } from '@/lib/auth/recovery';
+import { createAdmission, jsonObject, readBoundedBytes, readRequestBytes, RequestBudget, RequestFailure } from '@/lib/security/request-budget';
+export const runtime = 'nodejs';
+export const maxDuration = 20;
+const admit = createAdmission(8);
+// Only active hashes; never passwords/codes or an unbounded replay registry.
+// PKCE one-use exchange remains the cross-instance replay boundary.
+const activeCodes = new Set<string>();
 export async function POST(request: Request) {
-  let body: { code?: unknown; password?: unknown };
+  const respond = (error: string, status: number) => privateResponse(NextResponse.json({ error }, { status }));
+  if (request.headers.get('origin') !== new URL(request.url).origin)
+    return respond('Invalid request origin.', 403);
+  if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
+    return respond('Expected JSON payload.', 415);
+  }
+  const budget = new RequestBudget(request, 15000);
+  let release: (() => void) | undefined;
+  let codeHash: string | undefined;
+  let consumed = false;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 });
-  }
-
-  const code = typeof body.code === 'string' ? body.code : null;
-  const password = typeof body.password === 'string' ? body.password : null;
-
-  if (!code) {
-    return NextResponse.json(
-      { error: 'Missing or invalid reset code. Please request a new reset link.' },
-      { status: 400 }
-    );
-  }
-  if (!password || password.length < 8) {
-    return NextResponse.json(
-      { error: 'Password must be at least 8 characters.' },
-      { status: 400 }
-    );
-  }
-
-  const cookieStore = await cookies();
-
-  // Build the success response up-front so cookies the SDK writes
-  // during exchange/updateUser are attached to *this* response. If
-  // we returned a fresh ``NextResponse.json`` later we'd lose them
-  // — Next.js doesn't propagate cookies set via request-scoped
-  // ``cookies().set()`` onto a different response object reliably.
-  const successResponse = NextResponse.json({ ok: true });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          // Forward every cookie the SDK wants to set onto our
-          // success response. After ``exchangeCodeForSession`` this
-          // includes ``sb-<ref>-auth-token`` (the new session) and
-          // a cleared ``sb-<ref>-auth-token-code-verifier`` (the
-          // verifier is one-shot and gets removed on use).
-          cookiesToSet.forEach(({ name, value, options }) => {
-            successResponse.cookies.set(name, value, options);
-          });
+    release = admit();
+    const body = jsonObject(await readRequestBytes(request, budget, 8192));
+    const password = body.password;
+    if (typeof password !== 'string' || password.length < 8 || password.length > MAX_PASSWORD_BYTES ||
+      new TextEncoder().encode(password).byteLength > MAX_PASSWORD_BYTES) {
+      return respond('Password must be between 8 characters and 1024 UTF-8 bytes.', 400);
+    }
+    const cookieStore = await cookies();
+    const code = cookieStore.get(RECOVERY_COOKIE)?.value;
+    if (!validRecoveryCode(code))
+      return respond('Missing or invalid reset code. Please request a new reset link.', 400);
+    const candidateHash = createHash('sha256').update(code).digest('hex');
+    if (activeCodes.has(candidateHash))
+      throw new RequestFailure(409, 'reset_already_in_progress');
+    activeCodes.add(candidateHash);
+    codeHash = candidateHash;
+    const success = privateResponse(NextResponse.json({ ok: true }));
+    // Do not let a stale unrelated session refresh or authorize updateUser.
+    const incoming = cookieStore.getAll().filter(({ name }) => !/-auth-token(\.\d+)?$/.test(name));
+    const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      global: {
+        fetch: async (input, init) => {
+          budget.check();
+          const signal = init?.signal ? AbortSignal.any([budget.signal, init.signal]) : budget.signal;
+          const response = await budget.wait(fetch(input, { ...init, signal }));
+          const bytes = await readBoundedBytes(response.body, response.headers, budget, 131072);
+          return new Response([204, 205, 304].includes(response.status) ? null : new Uint8Array(bytes).buffer, { status: response.status, statusText: response.statusText, headers: response.headers });
         },
       },
-    }
-  );
-
-  const { data: exchangeData, error: exchangeError } =
-    await supabase.auth.exchangeCodeForSession(code);
-
-  if (exchangeError || !exchangeData.session) {
-    return NextResponse.json(
-      {
-        error:
-          exchangeError?.message ??
-          'The reset link is invalid or has expired. Please request a new one.',
+      cookies: {
+        getAll: () => incoming,
+        setAll: (values) => values.forEach(({ name, value, options }) => success.cookies.set(name, value, options)),
       },
-      { status: 400 }
-    );
-  }
-
-  const { error: updateError } = await supabase.auth.updateUser({ password });
-
-  if (updateError) {
-    // We already wrote cookies on the successResponse during the
-    // exchange step above, but we're returning a different response
-    // for the error case — those orphaned cookie writes go nowhere,
-    // so the browser ends up with no session, which matches what
-    // we want when the password update failed. The just-exchanged
-    // session is also signed out below to invalidate it server-side.
-    await supabase.auth.signOut().catch(() => {
-      /* best-effort */
     });
-    return NextResponse.json(
-      { error: updateError.message ?? 'Failed to update password.' },
-      { status: 400 }
-    );
+    const failure = (message: string) => {
+      const response = respond(message, 400);
+      // Carry SDK deletions, never a newly exchanged session on failure.
+      for (const cookie of success.cookies.getAll()) {
+        if (cookie.value === '' || cookie.maxAge === 0)
+          response.cookies.set(cookie);
+      }
+      return response;
+    };
+    const operation = (async () => {
+      budget.check();
+      consumed = true;
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      budget.check();
+      if (error || !data.session)
+        return failure('The reset link is invalid or has expired. Please request a new one.');
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      budget.check();
+      if (updateError) {
+        try {
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError)
+            console.warn('[reset-password] session cleanup failed');
+        }
+        catch {
+          console.warn('[reset-password] session cleanup failed');
+        }
+        return failure('Failed to update password. Please request a new reset link.');
+      }
+      return success;
+    })();
+    // Keep admission and duplicate ownership until the actual SDK work settles,
+    // even if a dependency disregards AbortSignal and the response times out.
+    const finish = release;
+    const hash = codeHash;
+    void operation.finally(() => {
+      activeCodes.delete(hash);
+      finish();
+    }).catch(() => {
+    });
+    release = undefined;
+    codeHash = undefined;
+    const response = await budget.wait(operation);
+    return clearRecovery(response);
   }
-
-  return successResponse;
+  catch (error) {
+    const response = error instanceof RequestFailure ? respond(error.message, error.status) : respond('Password reset unavailable. Please request a new reset link.', 502);
+    return consumed ? clearRecovery(response) : response;
+  }
+  finally {
+    // The active operation owns its hash; duplicate rejections do not delete it.
+    if (codeHash && release)
+      activeCodes.delete(codeHash);
+    release?.();
+    budget.dispose();
+  }
 }
