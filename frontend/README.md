@@ -20,7 +20,7 @@ A modern React/Next.js frontend for the Government Financial Transparency Audit 
 
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Animation**: Framer Motion
@@ -33,7 +33,7 @@ A modern React/Next.js frontend for the Government Financial Transparency Audit 
 
 ### Prerequisites
 
-- Node.js `^20.9.0 || ^22.0.0 || >=24.0.0` (Node 22 is locally verified and configured for CI; Node 21/23 are unsupported by Jest)
+- Node.js `>=24.22.1 <25` (use `frontend/.nvmrc`; Docker and frontend CI select Node 24, and build/start checks verify the actual patched binary)
 - npm or yarn
 
 ### Installation
@@ -154,6 +154,7 @@ npm run start        # Start production server
 npm run lint         # Run ESLint
 npm test            # Run Jest tests
 npm run test:watch  # Run tests in watch mode
+npm run test:node-runtime # Verify the runtime guard and supported Node policy
 ```
 
 The standard `dev`, `build`, and `lint` scripts check the retained dependency
@@ -164,7 +165,10 @@ brace group. Next lint uses its default literal working directory; custom
 ESLint's effective settings for the default lint directories, including inherited,
 overridden and descendant configuration. The same check
 runs before `verify:dependency-tooling` can report CSS compatibility. Run
-`npm run test:dependency-boundaries` to exercise the rejected-input controls.
+`npm run test:dependency-boundaries` to exercise the rejected-input controls,
+including the Node runtime tests. The same script is selected by frontend CI,
+Docker validation and manual verification; this change does not enable a disabled
+workflow. Runtime tests use only Node builtins and declared repository files.
 
 These checks bound the repository's standard configured callers. They do not
 sandbox executable configuration, protect direct tool invocations or custom CLI

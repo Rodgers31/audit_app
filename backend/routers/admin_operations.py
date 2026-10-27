@@ -1,5 +1,5 @@
 """Safe operational projections; stored runner diagnostics stay private."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -97,16 +97,34 @@ def safe_job_metadata(raw):
     return result
 
 
+def job_timestamp(value):
+    """Operations storage uses UTC-naive timestamps; never infer browser time.
+
+    Preserve unknown values. Already-aware values retain their instant and are
+    normalized to UTC. This is a read-boundary contract, not a history rewrite.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, datetime):
+        raise ValueError('Invalid stored job timestamp')
+    if value.utcoffset() is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def job_projection(job, *, error_count, metadata=None):
+    started = job_timestamp(job.started_at)
+    finished = job_timestamp(job.finished_at)
+    created = job_timestamp(job.created_at)
     duration = None
-    if job.status.value != "pending" and job.finished_at and job.started_at:
-        elapsed = (job.finished_at - job.started_at).total_seconds()
+    if job.status.value != "pending" and finished and started:
+        elapsed = (finished - started).total_seconds()
         duration = elapsed if elapsed >= 0 else None
     return dict(
         id=job.id, domain=job.domain, status=job.status.value, dry_run=job.dry_run,
-        started_at=job.started_at, finished_at=job.finished_at, duration_seconds=duration,
+        started_at=started, finished_at=finished, duration_seconds=duration,
         items_processed=job.items_processed, items_created=job.items_created,
-        items_updated=job.items_updated, created_at=job.created_at,
+        items_updated=job.items_updated, created_at=created,
         errors=[DIAGNOSTIC_NOTICE] if error_count else [], error_count=error_count,
         metadata=safe_job_metadata(metadata), diagnostics_redacted=True,
     )

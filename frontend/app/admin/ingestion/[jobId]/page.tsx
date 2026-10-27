@@ -20,7 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { use } from 'react';
-import {activeJob, parseIngestionJob, type IngestionJob} from '@/lib/admin/ingestion';
+import {activeJob, formatIngestionTime as formatDate, parseIngestionJob, type IngestionJob} from '@/lib/admin/ingestion';
 import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
 
 const fadeUp = {
@@ -286,16 +286,6 @@ function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean
   );
 }
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null) return '—';

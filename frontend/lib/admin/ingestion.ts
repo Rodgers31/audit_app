@@ -4,10 +4,10 @@ import { generationReasons, generationRefusalReasons } from '@/lib/socialGenerat
 export const INGESTION_STATUSES = ['pending', 'running', 'completed', 'completed_with_errors', 'failed'] as const;
 export interface IngestionJob {
   id: number; domain: string; status: string; dry_run: boolean;
-  started_at: string; finished_at: string | null; duration_seconds: number | null;
+  started_at: string | null; finished_at: string | null; duration_seconds: number | null;
   items_processed: number; items_created: number; items_updated: number;
   errors: string[]; error_count: number; metadata: Record<string, unknown>;
-  diagnostics_redacted: boolean; created_at: string;
+  diagnostics_redacted: boolean; created_at: string | null;
 }
 export interface IngestionJobList { jobs: IngestionJob[]; total: number; page: number; page_size: number; has_more: boolean }
 export function record(value: unknown): Record<string, unknown> {
@@ -37,6 +37,41 @@ export function date(value: unknown): string {
       (offsetHour !== undefined && (Number(offsetHour) > 23 || Number(offsetMinute) > 59)) ||
       !Number.isFinite(Date.parse(raw))) throw new Error('Invalid operations date');
   return raw;
+}
+
+/** Only ingestion's legacy offset-free fields have the documented UTC contract. */
+export function jobTimestamp(value: unknown): string | null {
+  if (value === null) return null;
+  const raw = text(value);
+  return date(/(?:Z|[+-]\d{2}:\d{2})$/.test(raw) ? raw : raw + 'Z');
+}
+
+function displayInstant(value: string | null | undefined): Date | null {
+  try {
+    const normalized = jobTimestamp(value);
+    return normalized === null ? null : new Date(normalized);
+  } catch {
+    return null;
+  }
+}
+
+export function ingestionAge(value: string | null | undefined, now = Date.now()): string {
+  const instant = displayInstant(value);
+  if (instant === null || !Number.isFinite(now)) return '—';
+  const difference = now - instant.getTime();
+  const minutes = Math.floor(Math.abs(difference) / 60_000);
+  if (minutes < 1) return 'just now';
+  const amount = minutes < 60 ? `${minutes}m` : minutes < 1440 ? `${Math.floor(minutes / 60)}h` : `${Math.floor(minutes / 1440)}d`;
+  return difference < 0 ? `in ${amount}` : `${amount} ago`;
+}
+
+export function formatIngestionTime(value: string | null | undefined, timeZone?: string): string {
+  const instant = displayInstant(value);
+  if (instant === null) return '—';
+  return instant.toLocaleString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit',
+    minute: '2-digit', timeZoneName: 'short', ...(timeZone ? { timeZone } : {}),
+  });
 }
 export function boolean(value: unknown): boolean {
   if (typeof value !== 'boolean') throw new Error('Invalid operations flag');
@@ -94,11 +129,11 @@ export function parseIngestionJob(raw: unknown): IngestionJob {
   if ('post_commit_generation' in meta) metadata.post_commit_generation = parseGenerationOutcome(meta.post_commit_generation);
   if ('post_commit_report_generation' in meta) metadata.post_commit_report_generation = parseGenerationOutcome(meta.post_commit_report_generation);
   return { id: integer(v.id,1,2147483647), domain, status, dry_run:boolean(v.dry_run),
-    started_at:date(v.started_at), finished_at:v.finished_at === null ? null : date(v.finished_at),
+    started_at:jobTimestamp(v.started_at), finished_at:jobTimestamp(v.finished_at),
     duration_seconds:duration as number | null, items_processed:integer(v.items_processed),
     items_created:integer(v.items_created), items_updated:integer(v.items_updated),
     errors:errorCount ? ['Diagnostic withheld; inspect the dedicated runner logs.'] : [],
-    error_count:errorCount, diagnostics_redacted:true, metadata, created_at:date(v.created_at) };
+    error_count:errorCount, diagnostics_redacted:true, metadata, created_at:jobTimestamp(v.created_at) };
 }
 export function parseIngestionList(raw: unknown, expected: { page:number; page_size:number }): IngestionJobList {
   const v = record(raw);

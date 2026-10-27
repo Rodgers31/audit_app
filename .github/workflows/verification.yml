@@ -209,7 +209,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v6
       with:
-        node-version: '22'
+        node-version: '24.x'
         cache: npm
         cache-dependency-path: frontend/package-lock.json
     - name: Install dependencies
@@ -357,7 +357,7 @@ jobs:
         VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - uses: actions/setup-node@v6
       with:
-        node-version: '22'
+        node-version: '24.x'
         cache: npm
         cache-dependency-path: frontend/package-lock.json
     - uses: actions/setup-python@v6
@@ -435,7 +435,7 @@ jobs:
         VERIFICATION_SCOPE: ${{ inputs.verification_scope }}
     - uses: actions/setup-node@v6
       with:
-        node-version: '22'
+        node-version: '24.x'
         cache: npm
         cache-dependency-path: frontend/package-lock.json
     - uses: actions/setup-python@v6

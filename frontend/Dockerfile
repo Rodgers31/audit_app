@@ -1,5 +1,5 @@
 # Build and runtime use the same glibc base for native optional dependencies.
-FROM node:22-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -55,7 +55,7 @@ COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/package.json /app/package-lock.json ./
 COPY --from=builder --chown=node:node /app/next.config.js ./
 COPY --from=builder --chown=node:node /app/lib/config ./lib/config
-COPY --from=builder --chown=node:node /app/scripts/container-config.cjs ./scripts/container-config.cjs
+COPY --from=builder --chown=node:node /app/scripts/container-config.cjs /app/scripts/verify-node-runtime.cjs ./scripts/
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 USER node
 EXPOSE 3000
