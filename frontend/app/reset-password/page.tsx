@@ -33,7 +33,7 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const linkError = searchParams.get('error');
   // The callback stages the PKCE code in a short-lived HttpOnly API cookie.
-  // The form never reads or forwards it, so hydration and collectors cannot.
+  // The form sends only its non-authorizing per-tab fragment selector, never the code/verifier.
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -96,10 +96,12 @@ function ResetPasswordForm() {
       try {
         // Only the server exchanges PKCE and updates once; it returns the
         // new session cookies on success without a browser auto-refresh race.
+        const selectors = new URLSearchParams(window.location.hash.slice(1)).getAll('recovery-flow');
+        const flow = selectors.length === 1 ? selectors[0] : null;
         const res = await fetch('/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password }),
+          body: JSON.stringify({ password, flow }),
         });
 
         if (!res.ok) {
@@ -201,7 +203,7 @@ function ResetPasswordForm() {
                 <AlertCircle className='w-16 h-16 mx-auto text-gov-copper/60 mb-4' />
                 <p className='text-gov-copper text-sm font-medium mb-2'>{linkError}</p>
                 <p className='text-gov-forest/50 dark:text-emerald-100/50 text-xs mb-6'>
-                  Password reset links expire after 1 hour for security.
+                  This reset form expires after five minutes. Reopen your latest reset link or request a new one.
                 </p>
                 <Link
                   href='/'
@@ -350,7 +352,7 @@ function ResetPasswordForm() {
 
         {/* Security note */}
         <p className='text-center text-gov-forest/30 dark:text-emerald-100/30 text-xs mt-6'>
-          For your security, password reset links expire after 1 hour.
+          For your security, this reset form expires after five minutes. Reopen your latest reset link or request a new one.
           <br />
           If you didn&apos;t request this reset, you can safely ignore this page.
         </p>

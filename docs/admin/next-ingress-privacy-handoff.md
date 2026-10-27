@@ -23,7 +23,8 @@ application deadline and a ten-second platform `maxDuration`. Reset has a
 15-second total application deadline and a 20-second `maxDuration`; the same
 abort signal reaches every Supabase fetch and its response-body reader. Auth
 responses are capped at 128 KiB. Caller abort is 408; whole-request deadline is
-504; saturation is 503, without a queue. Synchronous JS cannot be preempted by a
+504, including a pending Next cookie lookup and the final synchronous revalidation
+boundary; saturation is 503, without a queue. Synchronous JS cannot be preempted by a
 timer; bounded body/list sizes limit that work. A provider may have completed a
 password update before a connection times out: there is no automatic retry or
 claim that abort reverses a remote effect.
@@ -39,27 +40,48 @@ restarts and separate serverless bundles have independent state: these are
 provider-side one-use code remains the cross-instance replay boundary.
 
 Reset accepts JSON and an exact same-origin Origin header, an HttpOnly
-recovery cookie, and a password of at least eight characters and at most 1024
+recovery cookie plus its matching non-authorizing per-tab flow selector, and a password of at least eight characters and at most 1024
 UTF-8 bytes. A JSON `code` cannot substitute for the cookie. The server keeps
 one sequential exchange/updateUser; no browser update or auto-refresh timer is
 introduced. Only successful exchange+update delivers new session cookies.
-Update failure attempts signout, reports generic text and delivers only SDK
-cookie deletions. A cleanup warning contains no provider error or credential.
+Update failure attempts signout, reports generic text and delivers no browser
+cookie mutations, so a delayed failure cannot erase another tab's newer session. A cleanup warning contains no provider error or credential.
 
 ## Recovery and browser collectors
 
-`/auth/callback?code=…&next=/reset-password` sets a host-only Secure/HttpOnly,
+`/auth/callback?code=…&next=/reset-password` sets one host-only Secure/HttpOnly,
 SameSite=Lax `auditgava-recovery` cookie, Path `/api/auth/reset-password`,
-Max-Age 300, then redirects to `/reset-password` without the code. Stale
-Supabase session-cookie chunks are deleted; the PKCE verifier is preserved.
-Malformed/duplicate/overlong callback code is refused. Other valid email-link
-flows retain their exchange-and-relative-redirect behavior.
+Max-Age 300. Its versioned envelope pairs that exact code with a snapshot of
+its project's PKCE verifier cookies and a fresh 128-bit random flow selector.
+The percent-encoded cookie value is at most 3,800 bytes; at most four contiguous
+verifier chunks, each at most 1,024 printable ASCII characters, are admitted,
+and mixed/chunk-gap/duplicate/wrong-project shapes are refused. The redirect is
+`/reset-password#recovery-flow=<selector>`, with no code, verifier or original query.
+The selector alone grants nothing and fragments are not sent in HTTP requests.
 
-The reset form submits only `{password}`. The API clears the recovery cookie
-when an exchange is attempted, on success or failure. The synchronous form
-submission ref remains in place. Middleware handles old `/reset-password`
-`recovery`/`code` query links before rendering, stages a single bounded value,
-and redirects without any original query. It skips session refresh only for
+The form submits `{password, flow}` using only its own fragment selector.
+Missing/mismatched selectors refuse with 409 before any exchange. Only the latest
+staged browser flow can begin: another callback replaces the single bounded
+cookie, so an older form must reopen/request its link rather than using the
+newer account's credentials. Once admitted, code and verifier are frozen for
+that operation even if another tab later changes shared browser cookies. This
+is safe latest-flow admission, not simultaneous multi-account completion.
+
+Delayed API success/failure responses never delete the shared recovery cookie
+or mutate shared verifier cookies; invalid callbacks likewise leave newer
+recovery/verifier/session state untouched. The staged envelope retains its
+original five-minute expiry and the provider's one-use PKCE code remains the
+replay boundary. The original browser verifier's existing expiry is unchanged;
+we do not claim it is five minutes or that host/header retention is accepted.
+Its exact retention remains part of #767/#488 qualification. New session cookies
+are delivered only for a successful matched flow. Stale session-cookie chunks
+are removed only when a valid new staging envelope is issued.
+
+The synchronous form submission ref remains in place. Middleware handles old
+`/reset-password`, trailing-slash variants and their `recovery`/`code` query
+links before rendering. Callback destinations normalize the same recovery path,
+including trailing slashes and destination query/fragment variants, so those
+links also defer exchange and cannot enter an ordinary email-link exchange. It skips session refresh only for
 these public auth handlers, reset page and HMAC webhook. Other account/admin
 protection remains. Secure cookies require HTTPS (or a browser's supported
 localhost exception) in local browser qualification.
@@ -146,3 +168,26 @@ Rollback is a normal source revert and coordinated deployment, with no schema,
 workflow, dependency, provider or flag rollback. An in-flight five-minute cookie
 will expire; old query URLs are handled by the new middleware. Reverting restores
 the old query-carrying form contract, so privacy acceptance must be re-evaluated.
+
+## Review round B96
+
+The original cookie-only flow was reproduced with the actual cached Supabase
+SSR client and a private two-principal HTTP fixture: tab A's password PUT targeted
+principal B after callback B replaced the shared cookie. The regression now
+refuses A before any provider request; B's correct selector updates only B,
+using B's frozen verifier even after a third browser verifier is present. Separate
+forced interleavings cover A already in flight when callback B stages, malformed
+and expired state, cookie-size refusal, slash variants, pending cookie lookup,
+and final revalidation deadline. Existing positive authentication, HMAC,
+admission, cancellation, collector and double-submit cases remain in the cohort.
+
+No first-collector redaction, real provider/browser deployment or current live
+configuration is certified by these isolated tests. Publishing and uploads stay
+off; no production action, migration, access change or paid resource is included.
+
+Concurrent tabs share the browser's ordinary authentication cookies. Two already
+admitted operations retain their own code/verifier and target their own account,
+but their successful login cookies follow the normal last-response-wins browser
+behavior. This does not provide simultaneous per-tab authenticated accounts.
+The reset page names the staged form's five-minute lifetime; it makes no claim
+that the authentication provider's link lifetime is one hour.

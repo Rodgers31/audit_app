@@ -1,7 +1,7 @@
 /** Email-link callback. Recovery defers PKCE exchange until password submission. */
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { privateResponse, recoveryRedirect, validRecoveryCode } from '@/lib/auth/recovery';
+import { isResetPasswordPath, privateResponse, recoveryRedirect, validRecoveryCode } from '@/lib/auth/recovery';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   if (searchParams.getAll('code').length !== 1 || searchParams.getAll('next').length > 1 || !validRecoveryCode(code)) {
     return recoveryRedirect(request.url, null, []);
   }
-  if (next === '/reset-password') {
+  if (isResetPasswordPath(new URL(next, origin).pathname)) {
     const cookieStore = await cookies();
     // HttpOnly, host-only, five minutes, API path only. No session is created;
     // clear stale session chunks but keep the browser's PKCE verifier intact.

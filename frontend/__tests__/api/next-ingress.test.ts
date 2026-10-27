@@ -22,7 +22,8 @@ beforeEach(() => {
   mockExchange.mockResolvedValue({ data: { session: { user: { id: 'fixture' } } }, error: null });
   mockUpdate.mockResolvedValue({ error: null });
   mockSignOut.mockResolvedValue({ error: null });
-  mockStore.get.mockReturnValue({ value: 'INERT_CODE' });
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fixture.supabase.invalid';
+  mockStore.get.mockReturnValue({ value: JSON.stringify({ version: 1, flow: 'a'.repeat(32), code: 'INERT_CODE', expiresAt: Date.now() + 300000, verifier: [{ name: 'sb-fixture-auth-token-code-verifier', value: 'INERT_VERIFIER' }] }) });
   mockStore.getAll.mockReturnValue([{ name: 'auditgava-recovery', value: 'INERT_CODE' }, { name: 'sb-fixture-auth-token-code-verifier', value: 'INERT_VERIFIER' }]);
 });
 test.each(['null', '[]', '1', '"x"', '{'])('reset rejects malformed shape %s without provider I/O', async (body) => {
@@ -44,13 +45,13 @@ test('reset requires same-origin form submission', async () => {
   expect(mockExchange).not.toHaveBeenCalled();
 });
 test('query-free recovery exchanges cookie once and updates once', async () => {
-  const res = await reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const res = await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   expect(res.status).toBe(200);
   expect(mockExchange).toHaveBeenCalledTimes(1);
   expect(mockExchange).toHaveBeenCalledWith('INERT_CODE');
   expect(mockUpdate).toHaveBeenCalledTimes(1);
   expect(res.headers.get('cache-control')).toBe('private, no-store');
-  expect(res.cookies.get('auditgava-recovery')?.maxAge).toBe(0);
+  expect(res.cookies.get('auditgava-recovery')).toBeUndefined();
 });
 test('revalidation caps raw bytes even with a valid signature', async () => {
   expect((await revalidate(signed(JSON.stringify({ paths: ['/'], pad: 'x'.repeat(9000) })))).status).toBe(413);
@@ -77,12 +78,12 @@ test('active reset duplicate is refused without releasing the first owner', asyn
   mockExchange.mockImplementationOnce(() => new Promise(resolve => {
     finish = () => resolve({ data: { session: {} }, error: null });
   }));
-  const first = reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const first = reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   while (!finish)
     await new Promise(resolve => setTimeout(resolve, 0));
-  const second = await reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const second = await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   expect(second.status).toBe(409);
-  const third = await reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const third = await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   expect(third.status).toBe(409);
   finish();
   expect((await first).status).toBe(200);
@@ -95,14 +96,14 @@ test('absent cookie cannot substitute a JSON body code', async () => {
 });
 test('forged cookie without valid PKCE evidence cannot update', async () => {
   mockExchange.mockResolvedValue({ data: { session: null }, error: { message: 'INERT_PROVIDER_MESSAGE' } });
-  const res = await reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const res = await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   expect(res.status).toBe(400);
   expect(mockUpdate).not.toHaveBeenCalled();
   expect(JSON.stringify(await res.json())).not.toContain('INERT_PROVIDER_MESSAGE');
 });
 test('password update failure delivers no session cookies and attempts signout', async () => {
   mockUpdate.mockResolvedValue({ error: { message: 'INERT_PASSWORD_ECHO' } });
-  const res = await reset(resetRequest(JSON.stringify({ password: 'InertPass123!' })));
+  const res = await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'InertPass123!' })));
   expect(res.status).toBe(400);
   expect(mockSignOut).toHaveBeenCalledTimes(1);
   expect(JSON.stringify(await res.json())).not.toContain('INERT_PASSWORD_ECHO');
@@ -155,13 +156,13 @@ test('reset aggregate admission refuses the ninth slow request and recovers afte
     pending.push({ abort, result: reset(req) });
   }
   try {
-    expect((await reset(resetRequest('{"password":"InertPass123!"}'))).status).toBe(503);
+    expect((await reset(resetRequest(JSON.stringify({ password: 'InertPass123!', flow: 'a'.repeat(32) })))).status).toBe(503);
   }
   finally {
     pending.forEach(p => p.abort.abort());
     expect((await Promise.all(pending.map(p => p.result))).map(r => r.status)).toEqual(Array(8).fill(408));
   }
-  expect((await reset(resetRequest('{"password":"InertPass123!"}'))).status).toBe(200);
+  expect((await reset(resetRequest(JSON.stringify({ password: 'InertPass123!', flow: 'a'.repeat(32) })))).status).toBe(200);
 });
 test('reset request deadline does not free duplicate ownership before SDK settles', async () => {
   jest.useFakeTimers();
@@ -169,17 +170,17 @@ test('reset request deadline does not free duplicate ownership before SDK settle
   mockExchange.mockImplementationOnce(() => new Promise(resolve => {
     finish = () => resolve({ data: { session: {} }, error: null });
   }));
-  const first = reset(resetRequest('{"password":"InertPass123!"}'));
+  const first = reset(resetRequest(JSON.stringify({ password: 'InertPass123!', flow: 'a'.repeat(32) })));
   await jest.advanceTimersByTimeAsync(1);
   expect(finish).toBeDefined();
   await jest.advanceTimersByTimeAsync(15001);
   expect((await first).status).toBe(504);
-  expect((await reset(resetRequest('{"password":"InertPass123!"}'))).status).toBe(409);
+  expect((await reset(resetRequest(JSON.stringify({ password: 'InertPass123!', flow: 'a'.repeat(32) })))).status).toBe(409);
   finish();
   await jest.advanceTimersByTimeAsync(1);
   expect(mockUpdate).not.toHaveBeenCalled();
   jest.useRealTimers();
-  expect((await reset(resetRequest('{"password":"InertPass123!"}'))).status).toBe(200);
+  expect((await reset(resetRequest(JSON.stringify({ password: 'InertPass123!', flow: 'a'.repeat(32) })))).status).toBe(200);
 });
 test('advertised body length refuses before reading the stream', async () => {
   const req = signed('{"paths":["/"]}', { 'content-length': '8193' });
@@ -194,6 +195,6 @@ test('lying Content-Length cannot bypass streamed cap', async () => {
   expect(mockInvalidate).not.toHaveBeenCalled();
 });
 test('overlong multibyte password is refused by byte count', async () => {
-  expect((await reset(resetRequest(JSON.stringify({ password: 'é'.repeat(513) })))).status).toBe(400);
+  expect((await reset(resetRequest(JSON.stringify({ flow: 'a'.repeat(32), password: 'é'.repeat(513) })))).status).toBe(400);
   expect(mockExchange).not.toHaveBeenCalled();
 });

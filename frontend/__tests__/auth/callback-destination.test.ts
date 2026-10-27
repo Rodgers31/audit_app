@@ -2,7 +2,7 @@
 import { GET } from '@/app/auth/callback/route';
 
 const mockExchange = jest.fn();
-const mockCookieStore = { getAll: jest.fn(() => []), set: jest.fn() };
+const mockCookieStore = { getAll: jest.fn<{ name: string; value: string }[], []>(() => []), set: jest.fn() };
 jest.mock('@/lib/supabase/server', () => ({
   createClient: jest.fn(async () => ({ auth: { exchangeCodeForSession: mockExchange } })),
 }));
@@ -33,8 +33,11 @@ test('normal relative destination keeps path, query and fragment', async () => {
 });
 
 test('recovery stages inert code and clears session without exchanging it', async () => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://fixture.supabase.invalid';
+  mockCookieStore.getAll.mockReturnValue([{ name: 'sb-fixture-auth-token-code-verifier', value: 'INERT_VERIFIER' }]);
   const response = await GET(new Request('https://app.example.invalid/auth/callback?code=inert-code&next=/reset-password'));
-  expect(response.headers.get('location')).toBe('https://app.example.invalid/reset-password');
+  expect(new URL(response.headers.get('location')!).pathname).toBe('/reset-password');
+  expect(new URL(response.headers.get('location')!).hash).toMatch(/^#recovery-flow=[a-f0-9]{32}$/);
   expect(mockExchange).not.toHaveBeenCalled();
   expect(response.headers.get('cache-control')).toBe('private, no-store');
   expect(response.headers.get('referrer-policy')).toBe('no-referrer');

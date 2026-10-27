@@ -7,7 +7,7 @@
  *   - /account/* → authenticated user required
  */
 import { createServerClient } from '@supabase/ssr';
-import { privateResponse, recoveryRedirect } from '@/lib/auth/recovery';
+import { isResetPasswordPath, privateResponse, recoveryRedirect } from '@/lib/auth/recovery';
 import { profileMatchesIdentity } from '@/lib/auth/roles';
 import { NextResponse, type NextRequest } from 'next/server';
 
@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
 
   // Recovery owns session cleanup and the one PKCE exchange. A middleware
   // refresh must not restore/rotate stale cookies before those handlers run.
-  if (pathname === '/reset-password') {
+  if (isResetPasswordPath(pathname)) {
     if (request.nextUrl.searchParams.has('recovery') || request.nextUrl.searchParams.has('code')) {
       const values = [...request.nextUrl.searchParams.getAll('recovery'), ...request.nextUrl.searchParams.getAll('code')];
       return recoveryRedirect(request.url, values.length === 1 ? values[0] : null, request.cookies.getAll());

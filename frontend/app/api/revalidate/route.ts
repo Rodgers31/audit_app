@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
         rejected.push(p);
       }
     }
+    budget.check();
     return NextResponse.json({ revalidated, rejected, at: new Date().toISOString() });
   }
   catch (error) {

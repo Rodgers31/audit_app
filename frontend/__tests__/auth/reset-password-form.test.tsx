@@ -7,8 +7,9 @@ jest.mock('next/navigation', () => ({ useRouter: () => ({ replace: mockReplace }
 beforeEach(() => {
   jest.clearAllMocks();
   window.scrollTo = jest.fn();
+  window.history.replaceState({}, '', '/reset-password#recovery-flow=' + 'a'.repeat(32));
 });
-test('form sends only password and synchronous double submit performs one request', async () => {
+test('form sends password and its own non-authorizing selector and synchronous double submit performs one request', async () => {
   let finish!: (value: unknown) => void;
   const fetchMock = jest.fn((_url: string, _init: RequestInit) => new Promise(resolve => {
     finish = resolve;
@@ -21,7 +22,7 @@ test('form sends only password and synchronous double submit performs one reques
   fireEvent.submit(form);
   fireEvent.submit(form);
   expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({ password: 'InertPass123!' });
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body as string)).toEqual({ password: 'InertPass123!', flow: 'a'.repeat(32) });
   finish({ ok: false, json: async () => ({ error: 'Synthetic reset refusal' }) });
   await waitFor(() => expect(screen.getByText('Synthetic reset refusal')).toBeTruthy());
   expect(mockRefresh).not.toHaveBeenCalled();

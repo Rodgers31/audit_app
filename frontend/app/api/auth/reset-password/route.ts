@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { clearRecovery, MAX_PASSWORD_BYTES, privateResponse, RECOVERY_COOKIE, validRecoveryCode } from '@/lib/auth/recovery';
+import { MAX_PASSWORD_BYTES, privateResponse, readRecovery, RECOVERY_COOKIE } from '@/lib/auth/recovery';
 import { createAdmission, jsonObject, readBoundedBytes, readRequestBytes, RequestBudget, RequestFailure } from '@/lib/security/request-budget';
 export const runtime = 'nodejs';
 export const maxDuration = 20;
@@ -21,7 +21,6 @@ export async function POST(request: Request) {
   const budget = new RequestBudget(request, 15000);
   let release: (() => void) | undefined;
   let codeHash: string | undefined;
-  let consumed = false;
   try {
     release = admit();
     const body = jsonObject(await readRequestBytes(request, budget, 8192));
@@ -30,10 +29,13 @@ export async function POST(request: Request) {
       new TextEncoder().encode(password).byteLength > MAX_PASSWORD_BYTES) {
       return respond('Password must be between 8 characters and 1024 UTF-8 bytes.', 400);
     }
-    const cookieStore = await cookies();
-    const code = cookieStore.get(RECOVERY_COOKIE)?.value;
-    if (!validRecoveryCode(code))
+    const cookieStore = await budget.wait(cookies());
+    const staged = readRecovery(cookieStore.get(RECOVERY_COOKIE)?.value);
+    if (!staged)
       return respond('Missing or invalid reset code. Please request a new reset link.', 400);
+    if (typeof body.flow !== 'string' || body.flow !== staged.flow)
+      return respond('This reset form has been replaced or expired. Please reopen your latest reset link.', 409);
+    const code = staged.code;
     const candidateHash = createHash('sha256').update(code).digest('hex');
     if (activeCodes.has(candidateHash))
       throw new RequestFailure(409, 'reset_already_in_progress');
@@ -41,7 +43,8 @@ export async function POST(request: Request) {
     codeHash = candidateHash;
     const success = privateResponse(NextResponse.json({ ok: true }));
     // Do not let a stale unrelated session refresh or authorize updateUser.
-    const incoming = cookieStore.getAll().filter(({ name }) => !/-auth-token(\.\d+)?$/.test(name));
+    // Freeze the verifier paired with this exact callback, not a later tab's cookie.
+    const incoming = staged.verifier;
     const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
       global: {
         fetch: async (input, init) => {
@@ -54,21 +57,20 @@ export async function POST(request: Request) {
       },
       cookies: {
         getAll: () => incoming,
-        setAll: (values) => values.forEach(({ name, value, options }) => success.cookies.set(name, value, options)),
+        // A delayed exchange must never delete a newer tab's shared verifier.
+        setAll: (values) => values.forEach(({ name, value, options }) => {
+          if (!/-auth-token-code-verifier(\.\d+)?$/.test(name))
+            success.cookies.set(name, value, options);
+        }),
       },
     });
     const failure = (message: string) => {
-      const response = respond(message, 400);
-      // Carry SDK deletions, never a newly exchanged session on failure.
-      for (const cookie of success.cookies.getAll()) {
-        if (cookie.value === '' || cookie.maxAge === 0)
-          response.cookies.set(cookie);
-      }
-      return response;
+      // No incoming session was admitted. A failed operation has no browser
+      // cookie authority and must not clear a newer tab's session or verifier.
+      return respond(message, 400);
     };
     const operation = (async () => {
       budget.check();
-      consumed = true;
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       budget.check();
       if (error || !data.session)
@@ -99,12 +101,13 @@ export async function POST(request: Request) {
     });
     release = undefined;
     codeHash = undefined;
-    const response = await budget.wait(operation);
-    return clearRecovery(response);
+    // Do not delete the shared staged cookie: another callback may have
+    // replaced it while this operation was in flight. Its fixed TTL remains.
+    return await budget.wait(operation);
   }
   catch (error) {
     const response = error instanceof RequestFailure ? respond(error.message, error.status) : respond('Password reset unavailable. Please request a new reset link.', 502);
-    return consumed ? clearRecovery(response) : response;
+    return response;
   }
   finally {
     // The active operation owns its hash; duplicate rejections do not delete it.
