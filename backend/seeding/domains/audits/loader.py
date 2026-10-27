@@ -30,9 +30,11 @@ from models import (
     Severity,
     SourceDocument,
 )
-from sqlalchemy import and_, select
+from sqlalchemy import and_, cast, column, select, update, values
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import Session, load_only
+from sqlalchemy.orm.attributes import flag_dirty
+from sqlalchemy.orm.exc import StaleDataError
 
 from ...config import SeedingSettings
 from ...extractors import oag_county_volume
@@ -175,6 +177,63 @@ def _ensure_period(
 #: and the tests run on SQLite. 500 keeps both happy and still turns the
 #: largest document's 986 round trips into 2.
 _LOOKUP_CHUNK = 500
+_WRITE_CHUNK = 100
+_WRITE_FIELDS = (
+    'entity_id', 'period_id', 'finding_text', 'severity', 'amount', 'page_ref',
+    'source_hash', 'audit_opinion', 'external_reference', 'provenance',
+)
+
+
+def _persist_audit_changes(session, doc_id, changed, inserted):
+    """Bound PostgreSQL update commands without giving up matched-row checks.
+
+    psycopg2 executemany sends each ORM UPDATE separately. VALUES batches keep
+    the existing source/extraction association, return every matched ID, and
+    refuse stale rows. A savepoint covers all batches and new facts; the caller
+    still owns the transaction and publication gate. Never use an upsert here:
+    an audit removed by another writer must not be silently resurrected.
+    """
+    if not changed and not inserted:
+        return
+    if len({audit.id for audit, _ in changed}) != len(changed):
+        raise StaleDataError('Duplicate audit update identity')
+    table = Audit.__table__
+    try:
+        with session.begin_nested():
+            session.add_all(inserted)
+            session.flush()
+            for start in range(0, len(changed), _WRITE_CHUNK):
+                batch = changed[start:start + _WRITE_CHUNK]
+                expected = {audit.id for audit, _ in batch}
+                incoming = values(
+                    column('_id', table.c.id.type),
+                    column('_extraction_id', table.c.extraction_id.type),
+                    column('_previous_hash', table.c.source_hash.type),
+                    *(column(name, table.c[name].type) for name in _WRITE_FIELDS),
+                    name='audit_changes',
+                ).data([
+                    (audit.id, audit.extraction_id, audit.source_hash,
+                     *(data[name] for name in _WRITE_FIELDS))
+                    for audit, data in batch
+                ])
+                statement = update(table).where(
+                    table.c.id == incoming.c['_id'],
+                    table.c.source_document_id == doc_id,
+                    table.c.extraction_id == incoming.c['_extraction_id'],
+                    table.c.source_hash.is_not_distinct_from(incoming.c['_previous_hash']),
+                ).values({name: cast(incoming.c[name], table.c[name].type)
+                          for name in _WRITE_FIELDS}).returning(table.c.id)
+                matched = set(session.execute(statement).scalars())
+                if matched != expected:
+                    raise StaleDataError('Audit source changed during bounded update')
+    finally:
+        # A callback can refresh an ORM row while Core batches are in flight.
+        # Expire on failure too, so rolled-back batch values cannot stay cached.
+        for audit, _ in changed:
+            session.expire(audit, list(_WRITE_FIELDS))
+            # Register rollback custody with the caller's ORM transaction
+            # without another UPDATE: flag_dirty carries no attribute history.
+            flag_dirty(audit)
 
 
 def _audit_lookup():
@@ -282,6 +341,9 @@ def load_blue_book_extractions(
     # nothing leaks between documents or between runs.
     _entity_cache: dict = {}
     _period_cache: dict = {}
+    postgres = session.get_bind().dialect.name == 'postgresql'
+    pending_updates = []
+    pending_inserts = []
 
     extractions = (
         session.execute(
@@ -452,53 +514,59 @@ def load_blue_book_extractions(
 
         audit_year = int(fy.split("/")[0]) + 1 if "/" in fy else None
         if existing is None:
-            session.add(
-                Audit(
-                    entity_id=entity.id,
-                    period_id=period.id,
-                    finding_text=text,
-                    severity=sev,
-                    recommended_action=None,
-                    source_document_id=doc.id,
-                    provenance=[prov_entry],
-                    query_type=payload.get("subreport"),
-                    amount=amount,
-                    status="published_report",
-                    audit_opinion=payload.get("opinion"),
-                    audit_year=audit_year,
-                    external_reference=reference,
-                    extraction_id=ext.id,
-                    page_ref=page_ref,
-                    source_hash=source_hash_of(payload),
-                    confidence_score=(
-                        float(ext.confidence) if ext.confidence is not None else None
-                    ),
-                    basis=FigureBasis.ACTUAL,
-                )
+            new_audit = Audit(
+                entity_id=entity.id,
+                period_id=period.id,
+                finding_text=text,
+                severity=sev,
+                recommended_action=None,
+                source_document_id=doc.id,
+                provenance=[prov_entry],
+                query_type=payload.get("subreport"),
+                amount=amount,
+                status="published_report",
+                audit_opinion=payload.get("opinion"),
+                audit_year=audit_year,
+                external_reference=reference,
+                extraction_id=ext.id,
+                page_ref=page_ref,
+                source_hash=source_hash_of(payload),
+                confidence_score=(
+                    float(ext.confidence) if ext.confidence is not None else None
+                ),
+                basis=FigureBasis.ACTUAL,
             )
+            if postgres:
+                pending_inserts.append(new_audit)
+            else:
+                session.add(new_audit)
             stats.created += 1
         else:
             changed = False
-            for attr, value in (
-                ("entity_id", entity.id),
-                ("period_id", period.id),
-                ("finding_text", text),
-                ("severity", sev),
-                ("amount", amount),
-                ("page_ref", page_ref),
-                ("source_hash", source_hash_of(payload)),
-                ("audit_opinion", payload.get("opinion")),
-                ("external_reference", reference),
-            ):
+            data = {
+                "entity_id": entity.id,
+                "period_id": period.id,
+                "finding_text": text,
+                "severity": sev,
+                "amount": amount,
+                "page_ref": page_ref,
+                "source_hash": source_hash_of(payload),
+                "audit_opinion": payload.get("opinion"),
+                "external_reference": reference,
+                "provenance": [prov_entry],
+            }
+            for attr, value in data.items():
                 if getattr(existing, attr) != value:
-                    setattr(existing, attr, value)
+                    if not postgres:
+                        setattr(existing, attr, value)
                     changed = True
-            if existing.provenance != [prov_entry]:
-                existing.provenance = [prov_entry]
-                changed = True
             if changed:
+                if postgres:
+                    pending_updates.append((existing, data))
                 stats.updated += 1
 
+    if postgres:
+        _persist_audit_changes(session, doc.id, pending_updates, pending_inserts)
     session.flush()
 
     # The gate's verdict, written by the gate itself — never recomputed here.

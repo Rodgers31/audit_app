@@ -2,7 +2,7 @@
   "review_id": "oag-2542-20261026",
   "issue": 812,
   "source_sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
-  "proposal_content_sha256": "f4043a186ab4cdb3858e356ccbb66172571d9d5399b24867b73ed2ddd887f7f9",
+  "proposal_content_sha256": "0fe0ac4927fcf93e4fdd52f1b1a6c6b5fe9bbee15e231037cde7a2a6167b9b3f",
   "candidate_content_sha256": "4161605e45f79c7e0e89b4ed71cb811308fe39db06e816bfa13b165623cc4330",
   "reason": "Source-checked correction of 23 final county findings: remove detached lists of unresolved 2023/2024 matters from the 2024/2025 finding text. Preserve amounts, county attribution, fiscal year, citations, confidence, all 1,269 identities and all published audit links. No retirements. Verified against the exact 688-page official PDF and complete native-parser replay.",
   "reviewed_rows": [
@@ -59,8 +59,8 @@
       "county": "Embu",
       "finding_pdf_page": 172,
       "prior_year_list_pdf_page": 173,
-      "before_sha256": "d69ebc263783ac9ae65b320c44109e386aa8427e8e1802bd0e184406a73328e5",
-      "after_content_sha256": "5113d440d6f722c699776d9fb657d286cf0ad9c74abbd8c0ccc5aa308f6f9844"
+      "before_sha256": "7f995186d51b6a8b1af3a5c64e0638426087b5980951ddc1b4d2e00c08067ca0",
+      "after_content_sha256": "ea80f7b82f7074c5ce18ef56a9b407702f3b036cc53c4d5c7a411f115ac9ed74"
     },
     {
       "extraction_id": 4768,
@@ -75,8 +75,8 @@
       "county": "Kiambu",
       "finding_pdf_page": 274,
       "prior_year_list_pdf_page": 276,
-      "before_sha256": "b62df2a8b80178c4d7f345e963efeaa533052feaf4f3325047e756395c6e29fd",
-      "after_content_sha256": "89ba4e686f6e5a221061bdf17aa5cd94ee43987ee111b48ed78926efa709da29"
+      "before_sha256": "e0455e19b9bd989a13ffa69b76c38036398a9ac734a3e24cc2a833998d8100fe",
+      "after_content_sha256": "267b162cbd1caebba071571221961b80bd11b8f7f020584ba7f6dc085123076d"
     },
     {
       "extraction_id": 4886,
@@ -91,8 +91,8 @@
       "county": "Trans Nzoia",
       "finding_pdf_page": 326,
       "prior_year_list_pdf_page": 327,
-      "before_sha256": "640013cbf04d5befe453bb149e9aa0be104f06ce71dbe49901ab829ed9c2872f",
-      "after_content_sha256": "2bf8176cf1fa6d7bc6de5d96f8c6dc7741e8806528e2661cf372ad354592e964"
+      "before_sha256": "703e76a01362129f0b31caeea4ae6bad710a6dac42526634880505f533df6598",
+      "after_content_sha256": "706f48d4a382d434a42138ace2989a9778804ddebb7621b0f221f1d0e1c24564"
     },
     {
       "extraction_id": 5025,
@@ -147,8 +147,8 @@
       "county": "Busia",
       "finding_pdf_page": 538,
       "prior_year_list_pdf_page": 540,
-      "before_sha256": "27137ff95912b5694d909152deeb2351820765b57432da02bc3d4a9fd7d1b2ef",
-      "after_content_sha256": "4fb16ad515b58ced903ada2a06fb98da5b8caae7159d4f0f213e712e8d768751"
+      "before_sha256": "736fccf786a6df61bc3def37fead69c60f8705cf7c14c9804977e1a437ea8af4",
+      "after_content_sha256": "9c0287db64a348f2c101032ffea8b6bba4faf1c9535b1e756b30b6a976acf4bc"
     },
     {
       "extraction_id": 5449,
@@ -171,8 +171,8 @@
       "county": "Kisii",
       "finding_pdf_page": 600,
       "prior_year_list_pdf_page": 602,
-      "before_sha256": "8e259977ca9138a088736bb66b80298c083aaf96ce9a803dc3187ed6e3217097",
-      "after_content_sha256": "d89713ddf6badaa1cf53a787049b048eeb003d55a5402bdff2c735270d751434"
+      "before_sha256": "a9066ff82f786ea2ceee65fa4c7544cef0b4b9ea983cd54da303ec698fd4bccb",
+      "after_content_sha256": "62e880e638667b077d9e62b719b6344a337c8d51d967a8574a18c5b97b84c8f8"
     },
     {
       "extraction_id": 5574,
@@ -187,8 +187,8 @@
       "county": "Nairobi",
       "finding_pdf_page": 682,
       "prior_year_list_pdf_page": 683,
-      "before_sha256": "220ca7d9a3f1873ba11022a2f15783ebe764aa3e835ec073da2247b4e9e7c901",
-      "after_content_sha256": "171233749594c2f3b1accff7478d73b4c464373890b53988def343ea93c28021"
+      "before_sha256": "f64c8dcab54b939b875153d271c9b613fbe811ff30ba646f9c07ea944702ad2c",
+      "after_content_sha256": "528af055997ab7c577e8311f564b927715fb77ce61254fac5138c2251d46f7b0"
     }
   ]
 }
