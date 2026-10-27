@@ -16,6 +16,7 @@ including the cache diagnostics added for issue #184.
 """
 
 from datetime import datetime, timezone
+import logging
 
 from cache.redis_cache import cache
 from config.settings import settings
@@ -67,7 +68,8 @@ async def detailed_health_check(request: Request = None, db: Session = Depends(g
             "status": "healthy",
             **_pool_status(),
         }
-    except Exception:
+    except Exception as exc:
+        logging.error("Database health check failed (%s)", type(exc).__name__)
         health_status["status"] = "degraded"
         health_status["components"]["database"] = {
             "status": "unhealthy",

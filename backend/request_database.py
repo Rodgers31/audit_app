@@ -19,6 +19,12 @@ AUDIT_STATEMENT_MS = 2000
 AUDIT_LOCK_MS = 500
 AUDIT_POOL_SIZE = 1
 AUDIT_POOL_TIMEOUT = .5
+# Restricted visibility reads need a consistent snapshot and the request SQL
+# ceiling; best-effort audit writes retain their separate shorter profile.
+AUDIT_READER_STATEMENT_MS = STATEMENT_MS
+AUDIT_READER_LOCK_MS = LOCK_MS
+AUDIT_READER_POOL_SIZE = AUDIT_POOL_SIZE
+AUDIT_READER_POOL_TIMEOUT = AUDIT_POOL_TIMEOUT
 _STATE = '_request_database_transaction_limits'
 _SETTINGS_CHANGE = re.compile(r'\b(?:SET|RESET|DISCARD|ROLLBACK)\b|\bset_config\s*\(', re.I)
 _IDENTIFIER = r'(?:[A-Za-z_][A-Za-z0-9_$]*|"(?:[^"]|"")+")'
@@ -123,6 +129,12 @@ def create_request_engine(url, connect_args):
     return _create_engine(url, connect_args, pool_size=POOL_SIZE,
         pool_timeout=POOL_TIMEOUT, statement_ms=STATEMENT_MS, lock_ms=LOCK_MS,
         use_deadline=True)
+
+
+def create_audit_reader_engine(url, connect_args):
+    return _create_engine(url, connect_args, pool_size=AUDIT_READER_POOL_SIZE,
+        pool_timeout=AUDIT_READER_POOL_TIMEOUT, statement_ms=AUDIT_READER_STATEMENT_MS,
+        lock_ms=AUDIT_READER_LOCK_MS, use_deadline=True, isolation_level='REPEATABLE READ')
 
 
 def create_audit_engine(url, connect_args):

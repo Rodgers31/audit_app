@@ -111,3 +111,19 @@ are not certified by these two complete-register endpoint fixtures.
 References: [HTTPX timeout semantics](https://www.python-httpx.org/advanced/timeouts/),
 [streaming and redirects](https://www.python-httpx.org/quickstart/), and
 [SQLAlchemy pool checkout/reset](https://docs.sqlalchemy.org/en/20/core/pooling.html).
+
+## Review round
+
+The complete-register size check now uses accelerated ASCII JSON encoding; exact
+byte-boundary fixtures preserve whole-response refusal. Restricted visibility
+reads use a named shared engine profile and public factory, while best-effort
+audit-write budgets remain unchanged. Unexpected peer failures return a sanitized
+500 and an exception-class operator signal; detailed database-health failures
+also emit a fixed message and class, without driver/provider values or traceback
+payloads. Missing diagnostics reproduced before the fix.
+
+Busy peer capacity intentionally remains retryable 503/no-store with Retry-After,
+as specified above: resource exhaustion is not a successful absence of source
+observations. The executed admission control confirms that choice; ordinary
+provider/cell absence retains its existing explicit reasons. No source value or
+partial complete-register total is substituted to report success.

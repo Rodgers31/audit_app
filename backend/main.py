@@ -2226,11 +2226,10 @@ MAX_ENTITY_OFFSET = 10000
 
 def _complete_register_response(result):
     # Refuse explicitly; never make a partial register look financially complete.
-    size = 0
-    for part in json.JSONEncoder(ensure_ascii=True).iterencode(result):
-        size += len(part.encode('utf-8'))
-        if size > MAX_PUBLIC_REGISTER_BYTES:
-            raise capacity_unavailable('Complete register exceeds public response byte budget')
+    # ASCII escaping makes string length the byte count, and dumps uses the
+    # accelerated encoder rather than Python iteration on the serving loop.
+    if len(json.dumps(result, ensure_ascii=True)) > MAX_PUBLIC_REGISTER_BYTES:
+        raise capacity_unavailable('Complete register exceeds public response byte budget')
     return result
 
 
@@ -12151,9 +12150,17 @@ def _load_debt_sustainability_snapshot():
 
 @app.get("/api/v1/debt/sustainability")
 async def get_debt_sustainability(snapshot=Depends(_load_debt_sustainability_snapshot)):
-    body, peer_arguments = snapshot
-    body["regional_peers"] = await _read_regional_peers(**peer_arguments)
-    return body
+    """Return debt sustainability measures and source-qualified regional peers."""
+    try:
+        body, peer_arguments = snapshot
+        body["regional_peers"] = await _read_regional_peers(**peer_arguments)
+        return body
+    except HTTPException:
+        raise
+    except Exception as exc:
+        # Keep the operator signal without retaining provider/driver values.
+        logging.error("Debt sustainability peer read failed (%s)", type(exc).__name__)
+        raise HTTPException(status_code=500, detail="Internal server error") from None
 
 
 #: The projection series that already exists in this database, seeded nightly

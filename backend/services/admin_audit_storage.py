@@ -18,7 +18,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from database import get_db
-from request_database import _create_engine
+from request_database import create_audit_reader_engine
 from github_database_tls import connection_args
 
 CAPTURE_BODY = """BEGIN
@@ -48,9 +48,7 @@ def reader_engine(url):
     # Separate restricted connection; no SET ROLE on a writer session.
     if not make_url(url).drivername.startswith("postgresql"):
         unavailable()
-    return _create_engine(url, connection_args(), pool_size=1, pool_timeout=.5,
-                          statement_ms=5000, lock_ms=1000, use_deadline=True,
-                          isolation_level="REPEATABLE READ")
+    return create_audit_reader_engine(url, connection_args())
 
 
 def get_audit_db(db: Session = Depends(get_db)):
