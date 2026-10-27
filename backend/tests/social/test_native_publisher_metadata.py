@@ -47,6 +47,43 @@ def test_exact_publisher_post_day_qualifies_without_artificial_pdf_label(tmp_pat
     assert authority.value['document_checksum']==pdf['digest']
 
 
+def clock_listing(domain, hour, minute, visible):
+    title,page,identifier=(TITLE,PAGE,16454) if domain=='national_budget' else (COUNTY_TITLE,COUNTY_PAGE,16482)
+    return listing(title,page,identifier).replace(
+        b'T10:32:37',f'T{hour}:{minute}:37'.encode()
+    ).replace(b'2026 10:32 Updated',f'2026 {visible} Updated'.encode())
+
+
+@pytest.mark.parametrize('domain',['national_budget','pending_bills'])
+@pytest.mark.parametrize('hour,minute,visible',[
+    ('00','07','0:07'),('00','07','00:07'),
+    ('01','32','1:32'),('01','32','01:32'),
+    ('09','44','9:44'),('09','44','09:44'),
+    ('10','32','10:32'),('23','59','23:59'),
+])
+def test_publisher_clock_accepts_equivalent_hour_padding(tmp_path,domain,hour,minute,visible):
+    path,pdf,_=inputs(tmp_path,domain)
+    page=PAGE if domain=='national_budget' else COUNTY_PAGE
+    metadata=acquisition(tmp_path,clock_listing(domain,hour,minute,visible),page,'text/html')
+    authority,reason=capture_pdf_report(path,pdf,domain=domain,publisher_receipt=metadata)
+    assert authority is not None,reason
+    assert authority.value['published_on']=='2026-09-04'
+    assert authority.value['document_checksum']==pdf['digest']
+    assert authority.value['publication_authority']['published_at']==f'2026-09-04T{hour}:{minute}:37+00:00'
+
+
+@pytest.mark.parametrize('domain',['national_budget','pending_bills'])
+@pytest.mark.parametrize('visible',[
+    '8:44','9:45','24:44','9:4','009:44','9:440','9:44:37','9:44AM',
+])
+def test_publisher_clock_mismatch_or_malformed_label_refuses(tmp_path,domain,visible):
+    path,pdf,_=inputs(tmp_path,domain)
+    page=PAGE if domain=='national_budget' else COUNTY_PAGE
+    metadata=acquisition(tmp_path,clock_listing(domain,'09','44',visible),page,'text/html')
+    authority,reason=capture_pdf_report(path,pdf,domain=domain,publisher_receipt=metadata)
+    assert authority is None and reason
+
+
 @pytest.mark.parametrize('mutation',[
     lambda b:b.replace(b'2026-09-04T10:32:37+00:00',b'2026-09-05T10:32:37+00:00',1),
     lambda b:b.replace(b'16454',b'16455'),
