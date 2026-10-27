@@ -31,7 +31,7 @@ CAPABILITIES = MappingProxyType({c.domain: c for c in (
     DraftCapability('county_officials', reason='report_contract_unavailable'),
     DraftCapability('national_debt', reason='report_date_authority_unavailable'),
     DraftCapability('national_budget', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_national_report_observation'),
-    DraftCapability('pending_bills', reason='report_date_authority_unavailable'),
+    DraftCapability('pending_bills', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_pending_bills_report_observation'),
     DraftCapability('debt_timeline', reason='report_lineage_unavailable'),
     DraftCapability('fiscal_summary', reason='report_lineage_unavailable'),
     DraftCapability('revenue_by_source', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_revenue_report_observation'),

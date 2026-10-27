@@ -38,7 +38,7 @@ def prepare(monkeypatch, settings, fake):
 
 
 def test_pending_bills_resumes_other_domains_interrupted_download(
-    settings, monkeypatch
+    settings, monkeypatch, caplog
 ):
     interrupted = _FakeClient(lambda rng: _FakeStream(WHOLE, fail_after=200))
     client, _ = prepare(monkeypatch, settings, interrupted)
@@ -53,7 +53,12 @@ def test_pending_bills_resumes_other_domains_interrupted_download(
 
     downloader = _FakeClient(resume)
     client, seen = prepare(monkeypatch, settings, downloader)
-    assert fetcher.fetch_county_payables_payload(client, settings) == {"tested": True}
+    with caplog.at_level('INFO', logger=fetcher.logger.name):
+        payload = fetcher.fetch_county_payables_payload(client, settings)
+    assert payload["tested"] is True
+    assert payload["_native_report_authority"] is None
+    assert payload["native_report_authority_reason"] == "native_report_date_or_scope_unavailable"
+    assert 'native_report_date_or_scope_unavailable' in caplog.text
     assert downloader.ranges == [f"bytes={banked}-"]
     assert seen == [WHOLE]
 

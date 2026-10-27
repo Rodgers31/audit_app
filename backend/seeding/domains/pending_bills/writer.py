@@ -38,6 +38,8 @@ def _write_pending_bills(
     county_table: dict | None = None,
     aging: dict | None = None,
     assembly_aging: dict | None = None,
+    native_report_authority=None,
+    context=None,
 ) -> tuple[int, int]:
     """
     Write pending bills records to the loans table.
@@ -294,6 +296,26 @@ def _write_pending_bills(
                     publication_batch=publication_batch, records=records)
                 key = scope_contract(scope)["metadata_key"]
                 source_doc.meta = {**source_doc.meta, key: ref}
+
+    if writes_county and source_doc is not None and context is not None:
+        from ...native_report_authority import persist_native_report
+        if context.dry_run is not dry_run:
+            raise ValueError("Native authority and writer dry-run state differ")
+        if native_report_authority is not None:
+            expected = native_report_authority.value['period'].replace(' ', '')
+            if any(r.fiscal_year.replace(' ', '') != expected
+                   or r.as_at != native_report_authority.value['period_end'] for r in records):
+                raise ValueError("Native report and pending-bill edition differ")
+        persist_native_report(session, source_doc, native_report_authority,
+            context=context, domain="pending_bills")
+    elif writes_county and source_doc is not None and not dry_run:
+        if native_report_authority is not None:
+            raise ValueError("Exact native job context required")
+        # Legacy direct writers cannot leave previously qualified authority active.
+        from ...native_report_authority import persist_native_report
+        from ...types import DomainRunContext
+        persist_native_report(session, source_doc, None,
+            context=DomainRunContext(None, False), domain="pending_bills")
 
     if not dry_run and writes_county:
         editions = {r.fiscal_year for r in records}

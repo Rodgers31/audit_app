@@ -97,7 +97,7 @@ def preview(factory, body):
         _transaction_limits(db, deadline)
         cfg = db.get(GenerationControls, 1)
         _remaining_ms(deadline)
-        source_type = {'counties_budget':'cob','national_budget':'cob','revenue_by_source':'kra','audits':'oag'}.get(body.domain)
+        source_type = {'counties_budget':'cob','national_budget':'cob','revenue_by_source':'kra','audits':'oag','pending_bills':'cob'}.get(body.domain)
         enabled = bool(cfg and cfg.drafts_enabled is True and source_type in cfg.source_allowlist)
         from ..service import SocialService, utc
         now = SocialService(db).now()

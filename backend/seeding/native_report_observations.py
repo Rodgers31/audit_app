@@ -107,6 +107,8 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
     if domain == 'audits':
         _job(db, ingestion_id, domain, scope_key=value.get('scope_key'))
     try:
+        from .cob_report_metadata import validate_stored_post
+        validate_stored_post(value, receipt, started=started, finished=finished)
         published = date.fromisoformat(value['published_on'])
         acquired = _aware(receipt['acquired_at'])
         verified = _aware(receipt['byte_check']['checked_at'])
