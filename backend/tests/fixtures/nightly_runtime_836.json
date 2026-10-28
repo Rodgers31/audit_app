@@ -1,0 +1,53 @@
+{
+  "description": "Conservative timing replay, not a live ingestion or freshness proof. Completed handler durations from run 40619863092; unfinished domains use the slowest successful live job in a bounded 16-row sample. Each duration is rounded up. Separate orchestration allowance is synthetic.",
+  "failed_run_id": 40619863092,
+  "execution_order": [
+    "audits",
+    "counties_budget",
+    "imf_weo",
+    "learning_hub",
+    "national_debt",
+    "national_gdp",
+    "pending_bills",
+    "population",
+    "stalled_projects",
+    "county_officials",
+    "debt_timeline",
+    "economic_indicators",
+    "fiscal_summary",
+    "national_budget",
+    "revenue_by_source"
+  ],
+  "handler_seconds": {
+    "audits": 354,
+    "counties_budget": 80,
+    "imf_weo": 13,
+    "learning_hub": 4,
+    "national_debt": 153,
+    "national_gdp": 33,
+    "pending_bills": 235,
+    "population": 92,
+    "stalled_projects": 6,
+    "county_officials": 38,
+    "debt_timeline": 27,
+    "economic_indicators": 160,
+    "fiscal_summary": 470,
+    "national_budget": 155,
+    "revenue_by_source": 123
+  },
+  "supplemental_live_jobs": {
+    "fiscal_summary": {
+      "job_id": 3408,
+      "seconds": "469.334418"
+    },
+    "national_budget": {
+      "job_id": 3444,
+      "seconds": "154.422992"
+    },
+    "revenue_by_source": {
+      "job_id": 3443,
+      "seconds": "122.915563"
+    }
+  },
+  "orchestration_seconds_per_domain": 3
+}

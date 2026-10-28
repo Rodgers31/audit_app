@@ -92,11 +92,13 @@ env:
   SEED_RATE_LIMIT: ${{ vars.SEED_RATE_LIMIT || '60/min' }}
   SEED_TIMEOUT_SECONDS: ${{ vars.SEED_TIMEOUT_SECONDS || '30.0' }}
   # Global wall-clock budget for `seed --all` (seconds). Kept below the
-  # "Seed all domains" step timeout-minutes (25) so the CLI exits cleanly
-  # before GitHub SIGKILLs the step. Bump both together if domains are added.
-  SEED_TOTAL_TIMEOUT_SECONDS: ${{ vars.SEED_TOTAL_TIMEOUT_SECONDS || '1320' }}
-  # CoB's indexed scan leaves room for a longer transfer within the unchanged
-  # 600s domain / 1320s whole-run caps. Other PDF sources keep their own limits.
+  # "Seed planned domains" step timeout (45 min) and seed job timeout (50 min).
+  # #836's measured daily envelope is ~33 min; allow 40 min of processing and
+  # separate cleanup/setup headroom. Recalibrate all three limits together,
+  # including any repository-variable override. Per-source caps stay at 600s.
+  SEED_TOTAL_TIMEOUT_SECONDS: ${{ vars.SEED_TOTAL_TIMEOUT_SECONDS || '2400' }}
+  # CoB's indexed scan leaves parse reserve within its unchanged 600s domain
+  # cap. Other PDF sources keep their own transfer limits.
   SEED_COB_PDF_DOWNLOAD_TIMEOUT_SECONDS: '420'
   SEED_BUDGETS_DATASET_URL: ${{ secrets.SEED_BUDGETS_DATASET_URL }}
   SEED_AUDITS_DATASET_URL: ${{ secrets.SEED_AUDITS_DATASET_URL }}
@@ -577,7 +579,7 @@ jobs:
     name: Seed Data Domains
     needs: [migrate]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     env:
       AUDIT_GITHUB_DATABASE_TLS: '1'
       # Optional receipt storage. Enable only after owner-approved capacity,
@@ -674,7 +676,7 @@ jobs:
           PY
 
       - name: Seed planned domains
-        timeout-minutes: 25
+        timeout-minutes: 45
         run: |
           cd backend
           python -m seeding.source_plan --execute
@@ -696,7 +698,6 @@ jobs:
           import re
           from database import SessionLocal
           from models import IngestionJob, IngestionStatus
-          from datetime import datetime, timedelta
 
           from seeding.staleness import (
               NON_PUBLISHER_DOMAINS,
@@ -710,15 +711,18 @@ jobs:
           domains = environment_plan().domains
 
           session = SessionLocal()
-          cutoff = datetime.utcnow() - timedelta(minutes=30)
+          # The retained pre-seed ID floor bounds this invocation's results.
+          # A fixed age window would hide early jobs in a healthy 33–40 min run.
           jobs = session.query(IngestionJob).filter(
               IngestionJob.id > int(raw_floor),
               IngestionJob.domain.in_(domains),
-              IngestionJob.started_at >= cutoff,
           ).order_by(IngestionJob.id.desc()).all()
 
           failed = 0
           print('\n--- Ingestion Job Results ---')
+          missing = sorted(set(domains) - {job.domain for job in jobs})
+          for domain in missing:
+              print(f'[MISSING] {domain}: no job after the native run boundary')
           for job in jobs:
               status = job.status.value
               mode = (job.meta or {}).get('source_mode')
@@ -751,7 +755,7 @@ jobs:
               if job.errors:
                   for err in job.errors[:3]:
                       print(f'  ERROR: {str(err)[:200]}')
-              if status == 'failed':
+              if status not in {'completed', 'completed_with_errors'}:
                   failed += 1
 
           # A run that refreshed NOTHING must not report success.
@@ -792,12 +796,12 @@ jobs:
           graded = [j for j in jobs if j.domain not in NON_PUBLISHER_DOMAINS]
           if not graded:
               print(
-                  '\nNo ingestion job rows in the last 30 minutes. The seeder '
+                  '\nNo ingestion job rows after the native run boundary. The seeder '
                   'recorded nothing, so there is nothing to call successful.'
               )
 
           session.close()
-          if failed or hollow or not graded:
+          if failed or hollow or not graded or missing:
               if failed:
                   print(f'\n{failed} domain(s) failed!')
               if hollow:

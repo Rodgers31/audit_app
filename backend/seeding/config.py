@@ -96,12 +96,14 @@ class SeedingSettings(BaseSettings):
     # Global wall-clock budget for an entire `seed --all` run. The CLI stops
     # *starting* new domains once this elapses and caps the in-flight domain's
     # alarm at the time remaining, so the process always exits cleanly before
-    # the CI step timeout (25 min) rather than being SIGKILLed mid-run — a hard
-    # kill marks the step failed and skips the downstream validation job.
-    # 22 min leaves ~3 min of headroom under the 25 min step cap. Set to 0 to
-    # disable the global budget (rely on per-domain timeouts only).
+    # the CI step timeout (45 min) rather than being killed mid-run. #836's
+    # observed daily timing envelope needs about 33 min; 40 min leaves room
+    # for variation plus 5 min for cleanup before that step cap. The workflow
+    # job has a separate 50 min cap for setup and result checks. Change all
+    # three together when recalibrating. Set to 0 to disable the global budget
+    # locally (rely on per-domain timeouts only).
     total_timeout_seconds: int = Field(
-        default=1320,
+        default=2400,
         ge=0,
         description="Global wall-clock budget for `seed --all`; 0 disables it.",
     )
