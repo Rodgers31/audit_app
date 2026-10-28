@@ -45,6 +45,7 @@ def source_scope(observation):
     require(observation.category == 'dataset_availability', 'HUMAN_REVIEW_REQUIRED')
     if observation.report:
         report = observation.report
+        require(report.published_on is not None, 'CATALOGUE_HUMAN_REVIEW_REQUIRED')
         return canonical_hash({'source_type': observation.source_type, 'source_key': observation.source_key,
             'template': 'report-availability-v1', 'entity_id': report.entity_id, 'entity': report.entity,
             'publisher': report.publisher, 'canonical_url': report.canonical_url})
@@ -109,6 +110,7 @@ def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_
     event = fresh(db, SourceEvent, post.source_event_id)
     require(event is not None)
     observation = SourceObservation.model_validate(event.observation)
+    require(observation.report is None or observation.report.published_on is not None, 'CATALOGUE_HUMAN_REVIEW_REQUIRED')
     require(observation.committed and observation.publishable and not observation.fixture and not observation.quarantined and not observation.correction_pending, 'SOURCE_NOT_ELIGIBLE')
     require(observation.category in definition.categories and observation.source_type in definition.source_allowlist, 'SOURCE_NOT_ALLOWLISTED')
     require(source_scope(observation) in snapshot.snapshot['source_scopes'], 'SOURCE_SCOPE_CHANGED')

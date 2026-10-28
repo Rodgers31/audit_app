@@ -287,8 +287,8 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
         return None
     html = resp.text if "pdf" not in (resp.headers.get("content-type") or "").lower() else ""
     from ...native_report_authority import capture_kra_release
-    authority, authority_reason = capture_kra_release(response_receipt(
-        resp, getattr(client, "receipt_store", None), source_kind="web"))
+    wrapper_receipt = response_receipt(resp, getattr(client, "receipt_store", None), source_kind="web")
+    authority, authority_reason = capture_kra_release(wrapper_receipt)
     frame = iframe_src(html)
     if frame:
         frame_url = urljoin(url, frame)
@@ -326,6 +326,7 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
                     release.content_sha256 = receipt["digest"]
                     release.native_report_authority = authority if authority and authority.value["period"] == release.fiscal_year else None
                     release.native_report_authority_reason = authority_reason
+                    release.native_report_receipt = wrapper_receipt
                     return release
         logger.warning("KRA page %s embeds %s but no release data was read", url, frame)
         return None
@@ -429,6 +430,19 @@ def _apply_kra_live(
         if not status.startswith("promoted"):
             reasons.append(f"{release.fiscal_year} {release.shape}: {status}")
             continue
+        if (release.shape == 'dashboard' and release.fiscal_year == newest_fy
+                and getattr(release, 'native_report_authority', None) is None):
+            # The official catalogue attests availability only. Fetch it once
+            # for the selected validated annual result, never for each row or
+            # failed/older discovery candidate. Numeric observations stay separate.
+            from ...kra_report_catalogue import fetch_catalogue_receipt, capture_catalogue_report
+            try:
+                release.native_report_authority, release.native_report_authority_reason = capture_catalogue_report(
+                    release.native_report_receipt, fetch_catalogue_receipt(client), fiscal_year=release.fiscal_year)
+            except Exception as exc:
+                logger.warning('KRA catalogue availability unavailable: %s', type(exc).__name__)
+                release.native_report_authority = None
+                release.native_report_authority_reason = 'native_report_date_or_scope_unavailable'
         for row in out:
             if (row.get("_revenue_source") == "kra_live" and row.get("source_url") == release.url
                     and row.get("fiscal_year") == release.fiscal_year):

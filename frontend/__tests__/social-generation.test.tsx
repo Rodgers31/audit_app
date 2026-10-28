@@ -44,3 +44,31 @@ test('neutral evidence decoder refuses mixed financial and report claims', () =>
 test.each(['', 'a'.repeat(63), 'g'.repeat(64), null, false])('neutral evidence decoder refuses malformed current source authority %p', value => {
   expect(() => decodeEvidence({ ...reportEvidence, evidence: { ...reportEvidence.evidence, source: { ...reportEvidence.evidence.source, report: { ...report, authority_fingerprint: value } } } })).toThrow();
 });
+
+const catalogue = { ...report, native_domain: 'revenue_by_source', entity: 'Kenya annual revenue performance',
+  publisher: 'Kenya Revenue Authority', document_url: 'https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026',
+  canonical_url: 'https://www.auditgava.com/budget', published_on: null, evidence_kind: 'publisher_catalogue',
+  catalogued_on: '2026-07-08', catalogue_url: 'https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance' };
+function catalogueEvidence(changes = {}) { return { ...reportEvidence, evidence: { ...reportEvidence.evidence,
+  source: { ...reportEvidence.evidence.source, source_type: 'kra', report: { ...catalogue, ...changes } } } }; }
+
+test('catalogue evidence labels its own date and unknown publication; human review required', async () => {
+  (generationApi.evidence as jest.Mock).mockResolvedValue(decodeEvidence(catalogueEvidence()));
+  mount(<GeneratedEvidence postId='p1' revisionId='r1' expectedVersion={1} />);
+  expect(await screen.findByText(/Official KRA catalogue entry date: 2026-07-08/)).toHaveTextContent('Report publication date is not stated.');
+  expect(screen.getByText(/Catalogue evidence only. Human review required/)).toBeInTheDocument();
+  expect(screen.getByText(/Catalogue availability evidence 23/)).toBeInTheDocument();
+  expect(screen.queryByText(/Publisher publication date:/)).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Open official catalogue entry' })).toHaveAttribute('href', catalogue.catalogue_url);
+  expect(describeShadowReason('CATALOGUE_HUMAN_REVIEW_REQUIRED')).toContain('automatic approval is unavailable');
+});
+
+test.each([{ published_on: '2026-07-08' }, { catalogued_on: null }, { catalogued_on: 'July 2026' },
+  { evidence_kind: 'publication' }, { native_domain: 'national_budget' }, { publisher: 'Other' },
+  { catalogue_url: 'https://evil.invalid' }, { evidence_kind: undefined }])('decoder refuses malformed catalogue distinctions %p', changes => {
+  expect(() => decodeEvidence(catalogueEvidence(changes))).toThrow();
+});
+
+test.each(['2026-02-30','2026-13-01','2026-00-08','2025-02-29','0000-01-01'])('catalogue dates must be real calendar days %s', value => {
+  expect(() => decodeEvidence(catalogueEvidence({catalogued_on:value}))).toThrow();
+});

@@ -1,0 +1,20 @@
+{
+  "purpose": "Primary source replay; acquisition/job clocks in tests are synthetic. Catalogue day is not report publication day.",
+  "urls": [
+    "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+    "https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance"
+  ],
+  "retrieved_at": "2026-10-27T23:58:31Z",
+  "files": [
+    {
+      "file": "fy2025_26_wrapper_2026-10-27.html.gz",
+      "byte_size": 91512,
+      "sha256": "ad995d6a60db6388011520a4f26c29e37c4cee057f2db7d6af7f1483b213395f"
+    },
+    {
+      "file": "catalogue_2026-10-27.html.gz",
+      "byte_size": 114676,
+      "sha256": "3d7c5eb4dfb10bfb3ede591eb547db1a6e19d883982b4eed766782cfb801176b"
+    }
+  ]
+}

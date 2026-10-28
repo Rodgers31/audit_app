@@ -14,11 +14,16 @@ function ReportSource({ report }: { report: EvidenceReport }) {
   return <article className={styles.fields} aria-label='Neutral report evidence'>
     <strong>{report.publisher} report · {report.entity}</strong>
     <p>Verified reporting scope: {report.period} ({report.period_start} to {report.period_end})</p>
-    <p>Publisher publication date: {report.published_on} · {report.locator}</p>
+    {report.evidence_kind === 'publisher_catalogue' ? <>
+      <p>Official KRA catalogue entry date: {report.catalogued_on}. Report publication date is not stated.</p>
+      <p>Catalogue evidence only. Human review required; automatic approval is unavailable.</p>
+      {httpsUrl(report.catalogue_url) && <a href={httpsUrl(report.catalogue_url)} target='_blank' rel='noopener noreferrer'>Open official catalogue entry</a>}
+      <p>{report.locator}</p>
+    </> : <p>Publisher publication date: {report.published_on} · {report.locator}</p>}
     <p>This announcement describes the source report. Financial claims remain separate and require human review.</p>
     {httpsUrl(report.document_url) && <a href={httpsUrl(report.document_url)} target='_blank' rel='noopener noreferrer'>Open publisher report</a>}
     <p className={styles.muted}>Retrieved {report.retrieved_at} · Verified {report.verified_at}</p>
-    <p className={styles.muted}>Document {report.source_document_id} · Publication evidence {report.publication_extraction_id} · Qualified scope evidence {report.qualification_extraction_id}</p>
+    <p className={styles.muted}>Document {report.source_document_id} · {report.evidence_kind === 'publisher_catalogue' ? 'Catalogue availability evidence' : 'Publication evidence'} {report.publication_extraction_id} · Qualified scope evidence {report.qualification_extraction_id}</p>
     <p className={styles.muted} style={{ overflowWrap: 'anywhere' }}>Checksum: {report.document_checksum}</p>
   </article>;
 }

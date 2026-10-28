@@ -7,12 +7,21 @@ export interface DraftControls { version: number; drafts_enabled: boolean; shado
 export interface ShadowRule { id: string; version: number; definition: { name: string; mode: 'disabled' | 'shadow'; categories: string[]; source_allowlist: string[]; account_allowlist: string[]; max_per_day: number; min_interval_minutes: number; freshness_hours: number; reason: string }; definition_hash: string; created_at: string }
 export interface ShadowDecision { id: string; post_id: string; revision_id: string; content_hash: string; outcome: 'would_allow' | 'human_review'; reasons: string[]; rule_version_id: string; rule_hash: string; created_at: string }
 export interface EvidenceFact { fact_id: string; entity: string; metric: string; period: string; comparison_basis: string; value: string; unit: string; scale: string; classification: string; document_url: string; locator: string; document_checksum: string; publisher: string; published_on: string; retrieved_at: string; verified_at: string }
-export interface EvidenceReport { source_record_id: number; authority_fingerprint: string; entity_id: number; entity: string; period: string; period_start: string; period_end: string; source_document_id: number; document_url: string; document_checksum: string; publisher: string; published_on: string; retrieved_at: string; verified_at: string; canonical_url: string; locator: string; publication_extraction_id: number; qualification_extraction_id: number }
+interface EvidenceReportBase { source_record_id: number; authority_fingerprint: string; entity_id: number; entity: string; period: string; period_start: string; period_end: string; source_document_id: number; document_url: string; document_checksum: string; publisher: string; retrieved_at: string; verified_at: string; canonical_url: string; locator: string; publication_extraction_id: number; qualification_extraction_id: number }
+type EvidenceReportDates = { published_on: string; evidence_kind?: never; catalogued_on?: never; catalogue_url?: never } | { published_on: null; evidence_kind: 'publisher_catalogue'; catalogued_on: string; catalogue_url: string };
+export type EvidenceReport = EvidenceReportBase & EvidenceReportDates;
 export interface PostEvidence { post_id: string; revision_id: string; source_event_id: string | null; evidence: { evidence_version?: number; source?: { facts: EvidenceFact[]; report?: EvidenceReport; source_type: string; source_key: string; ingestion_id: string } }; generator_metadata: { template_version?: string } | null }
 export interface Page<T> { total: number; page: number; page_size: number; has_more: boolean; items: T[] }
 function fail(): never { throw new SocialApiError('INVALID_RESPONSE', 'The generation service returned an invalid response. Refresh before continuing.'); }
 function obj(v: unknown): Record<string, unknown> { if (!v || typeof v !== 'object' || Array.isArray(v)) fail(); return v as Record<string, unknown>; }
 function text(v: unknown): string { if (typeof v !== 'string') fail(); return v; }
+function calendarDate(v: unknown): string {
+  const day = text(v);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day.startsWith('0000')) fail();
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0,10) !== day) fail();
+  return day;
+}
 function number(v: unknown): number { if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0) fail(); return v; }
 function boolean(v: unknown): boolean { if (typeof v !== 'boolean') fail(); return v; }
 function list(v: unknown): unknown[] { if (!Array.isArray(v)) fail(); return v; }
@@ -25,10 +34,20 @@ function decodeReport(v: unknown): EvidenceReport {
   const o = obj(v);
   const positive = (v: unknown) => { const result = number(v); if (result < 1) fail(); return result; };
   if (typeof o.authority_fingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(o.authority_fingerprint)) fail();
+  let dates: EvidenceReportDates;
+  if (o.evidence_kind === 'publisher_catalogue') {
+    if (o.published_on !== null || o.native_domain !== 'revenue_by_source' || o.publisher !== 'Kenya Revenue Authority'
+        || o.catalogue_url !== 'https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance'
+        || typeof o.catalogued_on !== 'string') fail();
+    dates = { published_on: null, evidence_kind: 'publisher_catalogue', catalogued_on: calendarDate(o.catalogued_on), catalogue_url: text(o.catalogue_url) };
+  } else {
+    if (o.evidence_kind !== undefined || o.catalogued_on !== undefined || o.catalogue_url !== undefined) fail();
+    dates = { published_on: calendarDate(o.published_on) };
+  }
   return { source_record_id: positive(o.source_record_id), authority_fingerprint: text(o.authority_fingerprint), entity_id: positive(o.entity_id), entity: text(o.entity), period: text(o.period),
-    period_start: text(o.period_start), period_end: text(o.period_end), source_document_id: positive(o.source_document_id),
+    period_start: calendarDate(o.period_start), period_end: calendarDate(o.period_end), source_document_id: positive(o.source_document_id),
     document_url: text(o.document_url), document_checksum: text(o.document_checksum), publisher: text(o.publisher),
-    published_on: text(o.published_on), retrieved_at: text(o.retrieved_at), verified_at: text(o.verified_at),
+    ...dates, retrieved_at: text(o.retrieved_at), verified_at: text(o.verified_at),
     canonical_url: text(o.canonical_url), locator: text(o.locator), publication_extraction_id: positive(o.publication_extraction_id),
     qualification_extraction_id: positive(o.qualification_extraction_id) };
 }
@@ -49,6 +68,7 @@ const decisionReasons: Record<string, string> = {
   EDITORIAL_REVIEW_REQUIRED: 'The post was rejected or archived and needs editorial review.',
   GENERATED_SOURCE_REQUIRED: 'A generated post with an immutable source event is required.',
   SOURCE_REVIEW_REQUIRED: 'The current report source authority changed. Review its evidence again.',
+  CATALOGUE_HUMAN_REVIEW_REQUIRED: 'Only the catalogue entry date is known. Human review is required; automatic approval is unavailable.',
   SOURCE_SUPERSEDED: 'A newer source event superseded this evidence.',
   SOURCE_CATEGORY_NOT_ALLOWLISTED: 'This source or content category is outside the rule allowlist.',
   GENERATED_COPY_EDITED: 'The factual template was edited and requires human review.',
