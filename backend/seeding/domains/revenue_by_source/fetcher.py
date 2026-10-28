@@ -295,7 +295,8 @@ def _read_release(
             original = response.history[0].request if response.history else response.request
         except (AttributeError, RuntimeError):
             return None
-        if original.method != 'GET' or str(original.url) != url:
+        if (not isinstance(original, httpx.Request)
+                or original.method != 'GET' or str(original.url) != url):
             return None
     resp = response if response is not None else _get_or_none(client, url)
     if resp is None:

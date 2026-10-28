@@ -1,5 +1,6 @@
 """The actual HTTP cache must not discard a live annual-wrapper acquisition."""
 from datetime import date, datetime, timezone
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -139,3 +140,38 @@ def test_checked_redirect_response_preserves_existing_numeric_behavior(tmp_path,
     with client:
         result = fetcher._read_release(client, URL, 'FY 2025/26', response=supplied)
     assert result is not None and len(result.heads) >= 5
+
+
+@pytest.mark.parametrize('original', [None, object(), SimpleNamespace(method='GET')])
+def test_supplied_redirect_without_a_complete_request_refuses(tmp_path, monkeypatch, original):
+    _, client, calls = cached_publisher(tmp_path, monkeypatch)
+    supplied = httpx.Response(200, content=Publisher(tmp_path / 'body').wrapper,
+        headers={'content-type': 'text/html'}, request=httpx.Request('GET', URL),
+        history=[SimpleNamespace(request=original)])
+    with client:
+        assert fetcher._read_release(client, URL, 'FY 2025/26', response=supplied) is None
+    assert calls == []
+
+
+@pytest.mark.parametrize('catalogue_fails', [False, True])
+def test_duplicate_candidates_make_at_most_one_catalogue_attempt(tmp_path, monkeypatch, catalogue_fails):
+    settings, client, calls = cached_publisher(tmp_path, monkeypatch)
+    monkeypatch.setattr(kra_discovery, 'slug_candidates',
+        lambda today: [('FY 2025/26', URL)] * 3)
+    attempts = []
+    download = client.download_to_file
+
+    def catalogue(*args, **kwargs):
+        attempts.append(args[0])
+        if catalogue_fails:
+            raise OSError('Owned catalogue transfer unavailable')
+        return download(*args, **kwargs)
+
+    monkeypatch.setattr(client, 'download_to_file', catalogue)
+    with client:
+        rows, status = fetcher._apply_kra_live([], client, settings)
+    assert status.startswith('promoted') and len(rows) >= 5
+    assert attempts == [CATALOGUE]
+    assert calls.count(URL) == 1
+    assert calls.count(CATALOGUE) == (0 if catalogue_fails else 1)
+    assert any(row.get('_native_report_authority') for row in rows) is (not catalogue_fails)
