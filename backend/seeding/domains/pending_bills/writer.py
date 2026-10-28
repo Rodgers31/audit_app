@@ -16,12 +16,12 @@ from functools import wraps
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from models import DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
+from models import Country, DebtCategory, DocumentType, Entity, EntityType, Loan, SourceDocument
 from services.publication_gate import (
     COUNTY_PENDING_BILLS_PUBLICATION,
     NATIONAL_PENDING_BILLS_PUBLICATION,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from .parser import PendingBillRecord, require_pending_amount
 
 logger = logging.getLogger("seeding.pending_bills.writer")
@@ -644,6 +644,7 @@ def _get_or_create_source_document(
     doc = (
         session.query(SourceDocument)
         .populate_existing()
+        .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
         .filter(
             SourceDocument.title == title,
             SourceDocument.doc_type == DocumentType.REPORT,
@@ -656,8 +657,6 @@ def _get_or_create_source_document(
         if source_url and doc.url != source_url:
             doc.url = source_url
         return doc
-
-    from models import Country
 
     kenya = session.query(Country).filter(Country.iso_code == "KEN").first()
     if not kenya:
