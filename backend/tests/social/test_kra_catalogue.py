@@ -126,5 +126,12 @@ def test_typed_catalogue_and_copy_preserve_unknown_day(tmp_path):
 
 def test_catalogue_cursor_state_refuses_day_before_reporting_period_end():
     from social.generation.service import valid_report_release_state
-    assert not valid_report_release_state(dict(release_hash='a'*64,catalogued_on='2020-01-01',
+    assert not valid_report_release_state(dict(release_hash='a'*64,evidence_kind='publisher_catalogue',catalogued_on='2020-01-01',
         period_start='2025-07-01',period_end='2026-06-30'))
+
+
+def test_wrapper_keeps_existing_two_mib_budget_separate_from_catalogue(tmp_path):
+    padded=WRAPPER+b'<!--'+b'x'*(600*1024)+b'-->'
+    assert capture(tmp_path,wrapper=padded)[0] is not None
+    assert capture(tmp_path,wrapper=WRAPPER+b'x'*(2*1024*1024))[0] is None
+    assert capture(tmp_path,entry=ENTRY+b'x'*(512*1024))[0] is None

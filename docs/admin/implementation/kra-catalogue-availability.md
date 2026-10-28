@@ -46,5 +46,15 @@ Code rollback is the previously accepted `fffdfd9d5c33aeccfa5e2392e6876beb7b27e7
 through the existing Render/Vercel release controls, restoring nightly admission
 to that exact source. No publication or deletion is part of this rollback.
 
+Evidence-kind transitions are explicit in durable release state. Catalogue
+states have a `publisher_catalogue` discriminator; the exact legacy publication
+state schema keeps its original bytes and identifies publication evidence.
+Changing kind for the same period is refused in preview and detection, including
+explicit backfill. Known publication timing cannot be downgraded to an unknown
+day. A later published annual report can follow a catalogue report only when
+both period boundaries and its proven publication day are strictly later.
+The selected wrapper retains the existing 2 MiB HTML budget; only the additional
+catalogue listing has the separate 512 KiB transfer limit.
+
 This closes only the supported KRA catalogue-availability gap. Other #800–#802
 source contracts and #699 ordinary worker/provider/cost acceptance remain open.

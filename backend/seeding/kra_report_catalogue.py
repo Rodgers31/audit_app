@@ -14,6 +14,7 @@ from urllib.parse import urljoin
 CATALOGUE_URL = 'https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance'
 VERSION = 'kra-publisher-catalogue-v1'
 MAX_METADATA_BYTES = 512 * 1024
+MAX_WRAPPER_BYTES = 2 * 1024 * 1024
 PAIR_SECONDS = 900
 
 
@@ -54,7 +55,7 @@ def capture_catalogue_report(wrapper, catalogue, *, fiscal_year):
         from .native_report_authority import retained_body, _capture
         body = retained_body(wrapper, 'revenue_by_source', 'text/html')
         listing = retained_body(catalogue, 'revenue_by_source', 'text/html')
-        if (len(body) > MAX_METADATA_BYTES or len(listing) > MAX_METADATA_BYTES
+        if (len(body) > MAX_WRAPPER_BYTES or len(listing) > MAX_METADATA_BYTES
                 or wrapper['response_url'] != wrapper['request_url']
                 or catalogue['request_url'] != CATALOGUE_URL or catalogue['response_url'] != CATALOGUE_URL):
             raise ValueError('Exact bounded wrapper and catalogue required')

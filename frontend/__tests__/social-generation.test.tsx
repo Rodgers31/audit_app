@@ -68,3 +68,7 @@ test.each([{ published_on: '2026-07-08' }, { catalogued_on: null }, { catalogued
   { catalogue_url: 'https://evil.invalid' }, { evidence_kind: undefined }])('decoder refuses malformed catalogue distinctions %p', changes => {
   expect(() => decodeEvidence(catalogueEvidence(changes))).toThrow();
 });
+
+test.each(['2026-02-30','2026-13-01','2026-00-08','2025-02-29','0000-01-01'])('catalogue dates must be real calendar days %s', value => {
+  expect(() => decodeEvidence(catalogueEvidence({catalogued_on:value}))).toThrow();
+});

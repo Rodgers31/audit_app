@@ -65,11 +65,13 @@ def evidence_items(observation):
 def valid_report_release_state(value):
     if (type(value) is not dict or set(value) not in (
             {'release_hash', 'published_on', 'period_start', 'period_end'},
-            {'release_hash', 'catalogued_on', 'period_start', 'period_end'})
+            {'release_hash', 'evidence_kind', 'catalogued_on', 'period_start', 'period_end'})
             or type(value['release_hash']) is not str or re.fullmatch('[a-f0-9]{64}', value['release_hash']) is None):
         return False
+    if 'catalogued_on' in value and value['evidence_kind'] != 'publisher_catalogue':
+        return False
     try:
-        dates = {key: date.fromisoformat(value[key]) for key in value if key != 'release_hash'
+        dates = {key: date.fromisoformat(value[key]) for key in value if key not in ('release_hash','evidence_kind')
             if type(value[key]) is str and len(value[key]) == 10}
         return (len(dates) == 3 and all(dates[key].isoformat() == value[key] for key in dates)
             and dates['period_start'] <= dates['period_end']
@@ -79,11 +81,25 @@ def valid_report_release_state(value):
 
 
 def report_release_regresses(current, previous):
-    # Catalogue dates and report publication dates describe different events.
-    # Compare an evidence day only within the same kind; never substitute it.
-    keys = ['period_start','period_end']
-    keys += [key for key in ('published_on','catalogued_on') if key in current and key in previous]
-    return any(current[key] < previous[key] for key in keys)
+    if not valid_report_release_state(current) or not valid_report_release_state(previous):
+        return True
+    # Existing publication states keep their exact historical bytes. Their
+    # strict published_on schema unambiguously identifies publication evidence;
+    # catalogue states carry an explicit discriminator and a distinct day.
+    current_kind = current.get('evidence_kind','publisher_publication')
+    previous_kind = previous.get('evidence_kind','publisher_publication')
+    if current_kind != previous_kind:
+        # A kind change is not another release of the same annual report, even
+        # during explicit backfill. Never replace known publication timing with
+        # unknown timing. A genuinely later *published* annual release has its
+        # own path, with both period boundaries and the day strictly later.
+        return not (current_kind == 'publisher_publication'
+            and current['period_start'] > previous['period_start']
+            and current['period_end'] > previous['period_end']
+            and current['period_end'] <= current['published_on']
+            and current['published_on'] > previous['catalogued_on'])
+    day = 'catalogued_on' if current_kind == 'publisher_catalogue' else 'published_on'
+    return any(current[key] < previous[key] for key in ('period_start','period_end',day))
 
 
 def report_release_state(observation):
@@ -94,7 +110,10 @@ def report_release_state(observation):
     key = 'catalogued_on' if isinstance(report,CataloguedNativeReportEvidence) else 'published_on'
     identity.update(period_start=report.period_start.isoformat(), period_end=report.period_end.isoformat())
     identity[key] = getattr(report,key).isoformat()
-    return {'release_hash': canonical_hash(identity), **{k: identity[k] for k in (key, 'period_start', 'period_end')}}
+    state = {'release_hash': canonical_hash(identity), **{k: identity[k] for k in (key, 'period_start', 'period_end')}}
+    if isinstance(report,CataloguedNativeReportEvidence):
+        state['evidence_kind'] = 'publisher_catalogue'
+    return state
 
 
 def generator_metadata(observation):
@@ -170,7 +189,7 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
             if not valid_report_release_state(cursor.report_state):
                 raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Report release state is unavailable.', 503)
             if report_release_regresses(release,cursor.report_state):
-                raise SocialError('REPORT_RELEASE_REGRESSION', 'An older report cannot replace the current report series.', 422)
+                raise SocialError('REPORT_RELEASE_REGRESSION', 'Report timing cannot regress, lose publication authority or change evidence kind for the same period.', 422)
         if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
             raise SocialError('EVIDENCE_VERSION_CONFLICT', 'Changed or stale evidence requires an explicit newer evidence version.')
         if refresh_backfill and observation.evidence_version <= old_event.evidence_version:

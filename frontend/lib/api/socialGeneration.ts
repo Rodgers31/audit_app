@@ -15,6 +15,13 @@ export interface Page<T> { total: number; page: number; page_size: number; has_m
 function fail(): never { throw new SocialApiError('INVALID_RESPONSE', 'The generation service returned an invalid response. Refresh before continuing.'); }
 function obj(v: unknown): Record<string, unknown> { if (!v || typeof v !== 'object' || Array.isArray(v)) fail(); return v as Record<string, unknown>; }
 function text(v: unknown): string { if (typeof v !== 'string') fail(); return v; }
+function calendarDate(v: unknown): string {
+  const day = text(v);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day.startsWith('0000')) fail();
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0,10) !== day) fail();
+  return day;
+}
 function number(v: unknown): number { if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0) fail(); return v; }
 function boolean(v: unknown): boolean { if (typeof v !== 'boolean') fail(); return v; }
 function list(v: unknown): unknown[] { if (!Array.isArray(v)) fail(); return v; }
@@ -31,14 +38,14 @@ function decodeReport(v: unknown): EvidenceReport {
   if (o.evidence_kind === 'publisher_catalogue') {
     if (o.published_on !== null || o.native_domain !== 'revenue_by_source' || o.publisher !== 'Kenya Revenue Authority'
         || o.catalogue_url !== 'https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance'
-        || typeof o.catalogued_on !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(o.catalogued_on)) fail();
-    dates = { published_on: null, evidence_kind: 'publisher_catalogue', catalogued_on: text(o.catalogued_on), catalogue_url: text(o.catalogue_url) };
+        || typeof o.catalogued_on !== 'string') fail();
+    dates = { published_on: null, evidence_kind: 'publisher_catalogue', catalogued_on: calendarDate(o.catalogued_on), catalogue_url: text(o.catalogue_url) };
   } else {
     if (o.evidence_kind !== undefined || o.catalogued_on !== undefined || o.catalogue_url !== undefined) fail();
-    dates = { published_on: text(o.published_on) };
+    dates = { published_on: calendarDate(o.published_on) };
   }
   return { source_record_id: positive(o.source_record_id), authority_fingerprint: text(o.authority_fingerprint), entity_id: positive(o.entity_id), entity: text(o.entity), period: text(o.period),
-    period_start: text(o.period_start), period_end: text(o.period_end), source_document_id: positive(o.source_document_id),
+    period_start: calendarDate(o.period_start), period_end: calendarDate(o.period_end), source_document_id: positive(o.source_document_id),
     document_url: text(o.document_url), document_checksum: text(o.document_checksum), publisher: text(o.publisher),
     ...dates, retrieved_at: text(o.retrieved_at), verified_at: text(o.verified_at),
     canonical_url: text(o.canonical_url), locator: text(o.locator), publication_extraction_id: positive(o.publication_extraction_id),
