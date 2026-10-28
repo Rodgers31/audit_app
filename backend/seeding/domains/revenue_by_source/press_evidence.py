@@ -7,7 +7,7 @@ from .kra_parser import _TAX_HEADS, _MONEY_RE, _COLLECTION_CUE, _FIGURE_DISQUALI
 
 _NUMBER = r'(?:[1-9]\d{0,2}(?:,\d{3})+|(?:0|[1-9]\d*))(?:\.\d+)?'
 _COLLECTION = re.compile(
-    r'(?:PAYE|P\.A\.Y\.E|Pay As You Earn|Corporation Tax|Corporate Tax|Domestic VAT|VAT|Domestic Excise|Excise Duty|Customs|Customs & Import Duty) '
+    r'(?:PAYE|P\.A\.Y\.E|Pay As You Earn|Corporation Tax|Corporate Tax|Domestic VAT|Domestic Excise|Customs|Customs & Import Duty) '
     r'(?:collections? stood at|collected|collections? amounted to) '
     r'(?:Kshs?|KES)\.?\s*'+_NUMBER+r'\s*(?:Trillion|Billion|tn|bn)\.?',re.I)
 

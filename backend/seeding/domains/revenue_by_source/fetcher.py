@@ -479,7 +479,7 @@ def _apply_kra_live(
                     row['measure'] = (
                         'Customs departmental collections, including agency levies' if head == 'Customs & Import Duty'
                         else 'Domestic VAT' if head == 'VAT' else 'Domestic excise' if head == 'Excise Duty' else head
-                    )
+                    ) if row['source_evidence'] else head
         if newest_fy and release.fiscal_year != newest_fy:
             # An OLDER edition promoted while KRA's newest failed. The first
             # live run of this code did exactly that — the FY 2025/26 bundle

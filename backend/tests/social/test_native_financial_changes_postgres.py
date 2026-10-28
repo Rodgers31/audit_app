@@ -236,3 +236,32 @@ def test_native_press_replaces_stale_measure_scope(pg,tmp_path,monkeypatch,head,
     value=read_revenue_financial_observation(factory,record_id=record,ingestion_id=job)
     assert value['facts'][0]['metric']=='Revenue collected: '+expected
     no_publication(factory)
+
+
+@pytest.mark.parametrize('head,before,after',[
+    ('VAT',b'Domestic VAT collected',b'VAT collected'),
+    ('Excise Duty',b'Domestic Excise collection',b'Excise Duty collection'),
+])
+def test_generic_head_cannot_authorize_domestic_scope(pg,tmp_path,monkeypatch,head,before,after):
+    from seeding.domains.revenue_by_source import fetcher
+    from seeding.source_observations import read_revenue_financial_observation,SourceObservationUnavailable
+    from services.revenue_publication import revenue_source_row
+    factory,_=pg;enable(factory,monkeypatch)
+    original=fetcher._read_release
+    def changed(client,url,hint,**kw):
+        class ChangedSource:
+            receipt_store=client.receipt_store
+            def get(self,requested,**kwargs):
+                response=client.get(requested,**kwargs)
+                return httpx.Response(response.status_code,content=response.content.replace(before,after),
+                    headers={'content-type':'text/html'},request=response.request)
+        return original(ChangedSource(),url,hint,**kw)
+    monkeypatch.setattr(fetcher,'_read_release',changed)
+    job,_=ingest_revenue(factory,tmp_path,monkeypatch)
+    with factory() as db:
+        row=db.scalar(select(RevenueBySource).where(RevenueBySource.revenue_type==head))
+        record=row.id
+        assert revenue_source_row(row)['measure']==head
+    with pytest.raises(SourceObservationUnavailable):
+        read_revenue_financial_observation(factory,record_id=record,ingestion_id=job)
+    no_publication(factory)

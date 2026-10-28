@@ -65,7 +65,9 @@ existing separate telemetry contract.
   The existing best-effort numeric parser remains independent. Unknown genuine
   article layouts remain unsupported for financial drafts.
   Promoted article rows replace stale fixture measurement labels, including
-  Customs departmental/agency-levy scope and domestic VAT/excise scope.
+  Customs departmental/agency-levy scope and domestic VAT/excise scope. The
+  narrower domestic labels require explicit source wording and qualified cells;
+  generic VAT/excise numeric rows retain generic labels and refuse financial drafts.
 
 ## Intended-source matrix
 
