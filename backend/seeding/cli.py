@@ -178,6 +178,7 @@ def _record_not_run(names, error: str, meta: dict, *, dry_run: bool, reason: str
         assert SessionLocal is not None
         now = datetime.now(timezone.utc)
         from models import IngestionJob, IngestionStatus
+        from services.receipt_retention import not_observed_summary
 
         with SessionLocal() as session:
             for name in names:
@@ -192,7 +193,7 @@ def _record_not_run(names, error: str, meta: dict, *, dry_run: bool, reason: str
                         items_created=0,
                         items_updated=0,
                         errors=[error],
-                        meta=dict(meta),
+                        meta={**meta, "receipt_retention": not_observed_summary()},
                     )
                 )
             session.commit()

@@ -12,6 +12,11 @@ _scope = ContextVar("receipt_retention_scope", default=None)
 _retries = ContextVar("receipt_capture_retries", default=None)
 
 
+def not_observed_summary():
+    """Use only when this invocation is known not to have started a capture."""
+    return {"state": "not_observed", **dict.fromkeys(_COUNTS, 0)}
+
+
 def safe_retention_summary(raw):
     """Project only coherent bounded counters; malformed evidence stays unknown."""
     if not isinstance(raw, dict) or set(raw) != {"state", *_COUNTS}:
