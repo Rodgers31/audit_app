@@ -184,7 +184,17 @@ def _write_pending_bills(
     source_doc = _get_or_create_source_document(
         session, source_url, source_title, publisher=publisher
     )
+    previous_meta = dict(source_doc.meta) if source_doc and isinstance(source_doc.meta, dict) else {}
+    stock_observations = []
+    was_current = False
     if writes_county and source_doc is not None and not dry_run:
+        from services.pending_bills_aging import current_stock_binding
+
+        # Snapshot selection under the county writer locks, before replacing
+        # any stock. A historical source cannot elect itself on an old retry.
+        was_current = session.query(SourceDocument.id).filter(
+            SourceDocument.id == source_doc.id,
+            *current_stock_binding(records[0].as_at)).first() is not None
         source_doc.meta = {
             **(source_doc.meta if isinstance(source_doc.meta, dict) else {}),
             "county_payables": dict(county_table) if county_table else None,
@@ -256,6 +266,8 @@ def _write_pending_bills(
                           "period": record.as_at, "unit": "KES", "basis": "actual",
                           "dimensions": {"lender": lender_name, "debt_category": "pending_bills"}},
                 values={"outstanding": record.total_pending})
+        if writes_county:
+            stock_observations.append((record, entity, provenance.get("source_evidence", [])))
 
         if existing:
             if not dry_run:
@@ -285,6 +297,14 @@ def _write_pending_bills(
                 session.add(loan)
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
+
+    if writes_county and source_doc is not None and not dry_run:
+        from .aging import retain_aging_pointers
+
+        retained = retain_aging_pointers(session, source_doc, previous_meta,
+            publication_batch=publication_batch, county_table=county_table,
+            stock_observations=stock_observations, context=context, was_current=was_current)
+        source_doc.meta = {**source_doc.meta, **retained}
 
     if cohorts:
         from .aging import require_intact_aging, persist_aging, scope_contract
@@ -623,6 +643,7 @@ def _get_or_create_source_document(
 
     doc = (
         session.query(SourceDocument)
+        .populate_existing()
         .filter(
             SourceDocument.title == title,
             SourceDocument.doc_type == DocumentType.REPORT,
