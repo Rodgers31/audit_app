@@ -109,7 +109,10 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
     try:
         from .cob_report_metadata import validate_stored_post
         validate_stored_post(value, receipt, started=started, finished=finished)
-        published = date.fromisoformat(value['published_on'])
+        from .kra_report_catalogue import validate_stored_catalogue
+        validate_stored_catalogue(value, receipt, started=started, finished=finished)
+        catalogue = value.get('evidence_kind') == 'publisher_catalogue'
+        published = date.fromisoformat(value['catalogued_on'] if catalogue else value['published_on'])
         acquired = _aware(receipt['acquired_at'])
         verified = _aware(receipt['byte_check']['checked_at'])
         if 'retained_pdf_validation' in receipt:
@@ -131,7 +134,10 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
             publisher=source.publisher, published_on=value['published_on'], retrieved_at=acquired.isoformat(),
             verified_at=verified.isoformat(), canonical_url='https://www.auditgava.com'+DOMAINS[domain][3],
             locator=value['locator'], publication_extraction_id=ext.id, qualification_extraction_id=ext.id)
-        contracts.NativeReportEvidence.model_validate(report)
+        if catalogue:
+            report.update(evidence_kind=value['evidence_kind'], catalogued_on=value['catalogued_on'], catalogue_url=value['catalogue_url'])
+        model = contracts.CataloguedNativeReportEvidence if catalogue else contracts.NativeReportEvidence
+        model.model_validate(report)
     except (ValueError, TypeError, KeyError):
         raise SourceObservationUnavailable('Exact report period and publication locator required') from None
     return dict(schema_version=1, source_type=DOMAINS[domain][0],

@@ -119,6 +119,29 @@ class NativeReportEvidence(ReportEvidence):
         return self
 
 
+class CataloguedNativeReportEvidence(NativeReportEvidence):
+    """KRA availability with a catalogue day; no claim of report publication day."""
+    native_domain: Literal['revenue_by_source']
+    published_on: None
+    evidence_kind: Literal['publisher_catalogue']
+    catalogued_on: date
+    catalogue_url: str
+
+    @model_validator(mode='after')
+    def bound(self):
+        from importlib import import_module
+        module = import_module('backend.seeding.kra_report_catalogue' if __package__.startswith('backend.') else 'seeding.kra_report_catalogue')
+        period, start, end = module.annual_scope(self.document_url, self.period)
+        if (self.catalogue_url != module.CATALOGUE_URL or self.publisher != 'Kenya Revenue Authority'
+                or self.canonical_url != 'https://www.auditgava.com/budget'
+                or self.entity != 'Kenya annual revenue performance' or self.scope_key != 'annual-revenue'
+                or self.period_start.isoformat() != start or self.period_end.isoformat() != end
+                or not self.period_end <= self.catalogued_on <= self.retrieved_at.date()
+                or self.verified_at < self.retrieved_at):
+            raise ValueError('Exact catalogue availability scope and chronology required')
+        return self
+
+
 class SourceObservation(StrictModel):
     schema_version: Annotated[int, Field(strict=True, ge=1, le=1)] = 1
     source_type: Literal['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra']
@@ -133,7 +156,7 @@ class SourceObservation(StrictModel):
     publishable: StrictBool
     correction_pending: StrictBool = False
     facts: Annotated[tuple[FactEvidence, ...], Field(max_length=10)] = ()
-    report: NativeReportEvidence | ReportEvidence | None = None
+    report: CataloguedNativeReportEvidence | NativeReportEvidence | ReportEvidence | None = None
 
     @model_validator(mode='after')
     def identities(self):

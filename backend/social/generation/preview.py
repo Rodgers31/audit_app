@@ -18,7 +18,7 @@ else:
 from .contracts import SourceObservation, PreviewCommand
 from .models import GenerationControls, SourceCursor, SourceEvent
 from ..service import SocialError
-from .service import render, semantic_fingerprint, report_release_state, valid_report_release_state, DETECTOR_VERSION
+from .service import render, semantic_fingerprint, report_release_state, valid_report_release_state, report_release_regresses, DETECTOR_VERSION
 
 
 def capabilities_dto():
@@ -35,7 +35,7 @@ def _decision(observation, cursor, old, *, backfill):
     if release:
         if not valid_report_release_state(cursor.report_state):
             return 'refused', 'evidence_integrity_failed'
-        if any(release[k] < cursor.report_state[k] for k in ('published_on','period_start','period_end')):
+        if report_release_regresses(release,cursor.report_state):
             return 'refused', 'report_release_regression'
     if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
         return 'refused', 'evidence_version_conflict'

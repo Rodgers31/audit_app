@@ -111,18 +111,19 @@ def _fy(raw):
     return f'FY {year}/{str(end)[-2:]}', f'{year}-07-01', f'{end}-06-30'
 
 
-def _capture(receipt, *, domain, entity, scope_key, period, start, end, published, locator, publication=None, publisher_receipt=None):
-    if date.fromisoformat(start) > date.fromisoformat(end) or date.fromisoformat(end) > published:
+def _capture(receipt, *, domain, entity, scope_key, period, start, end, published, locator, publication=None, publisher_receipt=None, catalogue=None):
+    evidence_day = date.fromisoformat(catalogue['catalogued_on']) if catalogue is not None else published
+    if date.fromisoformat(start) > date.fromisoformat(end) or date.fromisoformat(end) > evidence_day:
         raise ValueError('Completed annual reporting period required')
     acquired = datetime.fromisoformat(receipt['acquired_at'])
     checked = datetime.fromisoformat(receipt['byte_check']['checked_at'])
-    if acquired.utcoffset() is None or checked.utcoffset() is None or not published <= acquired.date() or checked < acquired:
+    if acquired.utcoffset() is None or checked.utcoffset() is None or not evidence_day <= acquired.date() or checked < acquired:
         raise ValueError('Publisher chronology invalid')
     body = receipt._store.read(receipt['storage_key'])
     if hashlib.sha256(body).hexdigest() != receipt['digest']:
         raise ValueError('Retained source changed during parsing')
     value = dict(domain=domain, entity=entity, scope_key=scope_key, period=period,
-        period_start=start, period_end=end, published_on=published.isoformat(), locator=locator,
+        period_start=start, period_end=end, published_on=published.isoformat() if published is not None else None, locator=locator,
         document_checksum=receipt['digest'], document_md5=hashlib.md5(body, usedforsecurity=False).hexdigest(), document_url=receipt['request_url'])
     retained_publisher = None
     if publication is not None:
@@ -132,6 +133,13 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
     if publication is not None:
         from .cob_report_metadata import validate_stored_post
         validate_stored_post(value, receipt)
+    if catalogue is not None:
+        from .kra_report_catalogue import VERSION as catalogue_version, validate_stored_catalogue
+        retained_publisher = copy_receipt(publisher_receipt, parser_version=catalogue_version)
+        seal_receipt(retained_publisher, [catalogue])
+        value.update(evidence_kind='publisher_catalogue', catalogued_on=catalogue['catalogued_on'],
+            catalogue_url=catalogue['catalogue_url'], catalogue_authority={**catalogue,'receipt':dict(retained_publisher)})
+        validate_stored_catalogue(value, receipt)
     captured = copy_receipt(receipt, parser_version=VERSION)
     seal_receipt(captured, [value])
     return NativeReportAuthority(value, captured, token=_TOKEN, publisher_receipt=retained_publisher)
@@ -307,16 +315,19 @@ def persist_native_report(session, source, authority, *, context, domain):
             or not official_url(source.url, domain) or source.publisher != DOMAINS[domain][2]
             or type(context.job_id) is not int or context.job_id <= 0):
         raise ValueError('Intact native report/job authority required')
-    if (authority.value.get('publication_authority') is None) != (authority.publisher_receipt is None):
+    metadata = [authority.value[key] for key in ('publication_authority','catalogue_authority') if key in authority.value]
+    if len(metadata) > 1 or bool(metadata) != (authority.publisher_receipt is not None):
         raise ValueError('Retained publisher metadata capability required')
     if 'retained_pdf_validation' in authority.receipt and authority.publisher_receipt is None:
         raise ValueError('Current publisher post required for retained reuse')
     if authority.publisher_receipt is not None:
         retained_body(authority.publisher_receipt, domain, 'text/html')
-        context_value = authority.value.get('publication_authority')
+        context_value = metadata[0]
         if (not receipt_is_sealed(authority.publisher_receipt) or type(context_value) is not dict
                 or digest(context_value['receipt']) != digest(dict(authority.publisher_receipt))):
             raise ValueError('Intact retained publisher metadata required')
+        from .kra_report_catalogue import validate_stored_catalogue
+        validate_stored_catalogue(authority.value, authority.receipt)
     country_iso = session.scalar(select(Country.iso_code)
         .where(Country.id == source.country_id).with_for_update(read=True))
     if country_iso != 'KEN':

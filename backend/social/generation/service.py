@@ -16,7 +16,7 @@ from ..contracts import PostDocument, VersionCommand, canonical_hash, canonical_
 from ..models import SocialAccount, SocialControls, SocialPost, SocialPostRevision
 from ..service import SocialError, SocialService, utc, iso
 from ..validation import validate_document
-from .contracts import SourceObservation, RuleCommand, GenerationControlsCommand, EvaluateCommand
+from .contracts import SourceObservation, RuleCommand, GenerationControlsCommand, EvaluateCommand, CataloguedNativeReportEvidence
 from .models import GenerationControls, SourceCursor, SourceEvent, AutomationRuleVersion, ShadowDecision
 
 DETECTOR_VERSION = 1
@@ -63,16 +63,27 @@ def evidence_items(observation):
 
 
 def valid_report_release_state(value):
-    if (type(value) is not dict or set(value) != {'release_hash', 'published_on', 'period_start', 'period_end'}
+    if (type(value) is not dict or set(value) not in (
+            {'release_hash', 'published_on', 'period_start', 'period_end'},
+            {'release_hash', 'catalogued_on', 'period_start', 'period_end'})
             or type(value['release_hash']) is not str or re.fullmatch('[a-f0-9]{64}', value['release_hash']) is None):
         return False
     try:
-        dates = {key: date.fromisoformat(value[key]) for key in ('published_on', 'period_start', 'period_end')
+        dates = {key: date.fromisoformat(value[key]) for key in value if key != 'release_hash'
             if type(value[key]) is str and len(value[key]) == 10}
         return (len(dates) == 3 and all(dates[key].isoformat() == value[key] for key in dates)
-            and dates['period_start'] <= dates['period_end'])
+            and dates['period_start'] <= dates['period_end']
+            and ('catalogued_on' not in dates or dates['period_end'] <= dates['catalogued_on']))
     except (ValueError, TypeError):
         return False
+
+
+def report_release_regresses(current, previous):
+    # Catalogue dates and report publication dates describe different events.
+    # Compare an evidence day only within the same kind; never substitute it.
+    keys = ['period_start','period_end']
+    keys += [key for key in ('published_on','catalogued_on') if key in current and key in previous]
+    return any(current[key] < previous[key] for key in keys)
 
 
 def report_release_state(observation):
@@ -80,14 +91,18 @@ def report_release_state(observation):
         return None
     report = observation.report
     identity = {key: getattr(report, key) for key in ('entity_id', 'entity', 'publisher', 'period')}
-    identity.update(period_start=report.period_start.isoformat(), period_end=report.period_end.isoformat(), published_on=report.published_on.isoformat())
-    return {'release_hash': canonical_hash(identity), **{key: identity[key] for key in ('published_on', 'period_start', 'period_end')}}
+    key = 'catalogued_on' if isinstance(report,CataloguedNativeReportEvidence) else 'published_on'
+    identity.update(period_start=report.period_start.isoformat(), period_end=report.period_end.isoformat())
+    identity[key] = getattr(report,key).isoformat()
+    return {'release_hash': canonical_hash(identity), **{k: identity[k] for k in (key, 'period_start', 'period_end')}}
 
 
 def generator_metadata(observation):
     value = {'template_version': 'report-availability-v1' if observation.report else TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
     if observation.report:
         value['report_source_document_id'] = observation.report.source_document_id
+        if isinstance(observation.report,CataloguedNativeReportEvidence):
+            value['template_version'] = 'catalogue-availability-v1'
     return value
 
 
@@ -95,7 +110,11 @@ def render(observation):
     """Only supplied verified strings and exact decimals enter factual copy."""
     if observation.report:
         report = observation.report
-        copy = f'Report available from {report.publisher}. Verified reporting scope: {report.entity}, {report.period}. Publisher publication date: {report.published_on.isoformat()}.'
+        copy = f'Report available from {report.publisher}. Verified reporting scope: {report.entity}, {report.period}.'
+        if isinstance(report,CataloguedNativeReportEvidence):
+            copy += f' Official KRA catalogue entry dated {report.catalogued_on.isoformat()}. Report publication date is not stated. Human review required.'
+        else:
+            copy += f' Publisher publication date: {report.published_on.isoformat()}.'
     elif observation.category == 'dataset_availability':
         copy = f'{observation.title} is available on AuditGava.'
     elif observation.category == 'new_report':
@@ -150,7 +169,7 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
         if release:
             if not valid_report_release_state(cursor.report_state):
                 raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Report release state is unavailable.', 503)
-            if any(release[key] < cursor.report_state[key] for key in ('published_on', 'period_start', 'period_end')):
+            if report_release_regresses(release,cursor.report_state):
                 raise SocialError('REPORT_RELEASE_REGRESSION', 'An older report cannot replace the current report series.', 422)
         if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
             raise SocialError('EVIDENCE_VERSION_CONFLICT', 'Changed or stale evidence requires an explicit newer evidence version.')
@@ -260,6 +279,8 @@ class GenerationService:
             reasons.append('GENERATED_SOURCE_REQUIRED')
         else:
             observation = SourceObservation.model_validate(event.observation)
+            if isinstance(observation.report,CataloguedNativeReportEvidence):
+                reasons.append('CATALOGUE_HUMAN_REVIEW_REQUIRED')
             cursor = self.db.get(SourceCursor, event.cursor_id)
             if cursor.sequence != event.sequence or observation.report and cursor.fingerprint != event.fingerprint:
                 reasons.append('SOURCE_SUPERSEDED')
