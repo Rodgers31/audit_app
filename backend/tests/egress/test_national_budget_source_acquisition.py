@@ -297,3 +297,172 @@ def test_pdf_artifact_history_is_not_initialized_as_a_new_acquisition(pg_fixture
         persist_national_budget_records(db,values,SeedingSettings(),DomainRunContext(since=None,dry_run=False))
         db.commit()
         assert snapshot(db.scalar(select(SourceDocument)))==before
+
+
+@pytest.mark.parametrize('count', [1, 40])
+@pytest.mark.parametrize('stale', [False, True])
+def test_missing_proof_has_per_source_bounds_and_preserves_history(pg_fixture, count, stale):
+    from seeding.native_report_authority import KEY
+    engine, probe = pg_fixture
+    country_id, _ = seed_country(engine)
+    values = [replace(r, source_url=records()[0].source_url) for r in budget_records(count)]
+    meta = {'padding': 'x' * 65536, 'acquisition': {'preserve': True}}
+    if stale:
+        meta[KEY] = {'national_budget': {'extraction_id': 19}, 'audits': {'preserve': True}}
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Historical source', url=values[0].source_url, doc_type=DocumentType.BUDGET,
+            status=DocumentStatus.FAILED, fetch_date=datetime(2020, 1, 1), meta=deepcopy(meta))
+        db.add(source); db.flush()
+        old = Extraction(source_document_id=source.id, extractor='old-immutable-evidence',
+            extracted_json={'retained': 'original'})
+        db.add(old); db.commit()
+        sid, eid = source.id, old.id
+    with Session(engine) as db:
+        with probe.capture():
+            result = persist_national_budget_records(db, values, SeedingSettings(), DomainRunContext(None, False))
+            db.flush()
+        samples = probe.selected('source_documents')
+        writes = [s for s in probe.samples if s.sql.startswith('UPDATE source_documents')]
+        print({'rows': count, 'stale': stale, 'source_reads': len(samples),
+            'source_writes': len(writes), 'columns': [s.columns for s in samples],
+            'returned_bytes': sum(s.selected_value_bytes for s in samples)})
+        # Resolution + row lock + pre/post-constraint scalar projections.
+        assert len(samples) == 4
+        assert len(writes) == int(stale)
+        assert not any('metadata' in s.columns for s in samples)
+        assert sum(s.selected_value_bytes for s in samples) < 1024
+        assert result.created == count and not result.errors
+        db.commit()
+    if stale:
+        del meta[KEY]['national_budget']
+    with Session(engine) as db:
+        assert db.get(SourceDocument, sid).meta == meta
+        assert db.get(Extraction, eid).extracted_json == {'retained': 'original'}
+        rows = list(db.scalars(select(BudgetLine).order_by(BudgetLine.id)))
+        assert [(r.allocated_amount, r.actual_spent) for r in rows] == [(100+i, 50+i) for i in range(count)]
+
+
+@pytest.mark.parametrize('container', [None, {}, [], 'wrong', True, 1], ids=['null', 'empty', 'array', 'string', 'bool', 'int'])
+def test_missing_proof_container_shapes(pg_fixture, container):
+    from seeding.native_report_authority import KEY, persist_native_report
+    engine, _ = pg_fixture
+    country_id, _ = seed_country(engine)
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Shape control', url=records()[0].source_url, doc_type=DocumentType.BUDGET,
+            status=DocumentStatus.FAILED, fetch_date=datetime(2020, 1, 1), meta={KEY: container, 'padding': 'x' * 65536})
+        db.add(source); db.commit()
+        before = deepcopy(source.meta)
+        if container is None or type(container) is dict:
+            persist_native_report(db, source, None, context=DomainRunContext(None, False), domain='national_budget')
+            db.commit()
+            assert source.meta == before
+        else:
+            with pytest.raises(ValueError, match='binding container invalid'):
+                persist_native_report(db, source, None, context=DomainRunContext(None, False), domain='national_budget')
+            db.rollback()
+            assert source.meta == before
+
+
+@pytest.mark.parametrize('has_binding', [False, True])
+def test_invalidation_uses_locked_current_metadata_and_rolls_back(pg_fixture, monkeypatch, has_binding):
+    import seeding.native_report_authority as authority
+    engine, _ = pg_fixture
+    country_id, _ = seed_country(engine)
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Current source', url=records()[0].source_url, doc_type=DocumentType.BUDGET,
+            status=DocumentStatus.FAILED, fetch_date=datetime(2020, 1, 1), meta={'old': True})
+        db.add(source); db.commit(); sid = source.id
+    current = {'new': 'x' * 65536, authority.KEY: {'national_budget': {'stale': True}, 'audits': {'keep': True}}}
+    if not has_binding:
+        del current[authority.KEY]['national_budget']
+    original_lock = authority.lock_native_domain
+    def replace_before_lock(db, domain):
+        with Session(engine) as other:
+            other.get(SourceDocument, sid).meta = deepcopy(current)
+            other.commit()
+        original_lock(db, domain)
+    monkeypatch.setattr(authority, 'lock_native_domain', replace_before_lock)
+    with Session(engine) as db:
+        source = db.get(SourceDocument, sid)
+        assert source.meta == {'old': True}
+        authority.persist_native_report(db, source, None, context=DomainRunContext(None, False), domain='national_budget')
+        assert source.meta == {**current, authority.KEY: {'audits': {'keep': True}}}
+        db.rollback()
+    with Session(engine) as db:
+        assert db.get(SourceDocument, sid).meta == current
+
+
+def test_suppressed_invalidation_refuses_and_preserves_old_binding(pg_fixture):
+    from sqlalchemy import text
+    from seeding.native_report_authority import KEY, persist_native_report
+    engine, _ = pg_fixture
+    country_id, _ = seed_country(engine)
+    meta = {KEY: {'national_budget': {'stale': True}}, 'padding': 'x' * 65536}
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Suppressed write', url=records()[0].source_url, doc_type=DocumentType.BUDGET,
+            status=DocumentStatus.FAILED, fetch_date=datetime(2020, 1, 1), meta=deepcopy(meta))
+        db.add(source); db.commit(); sid = source.id
+    with engine.begin() as db:
+        db.execute(text('CREATE FUNCTION keep_metadata() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.metadata=OLD.metadata; RETURN NEW; END $$'))
+        db.execute(text('CREATE TRIGGER keep_metadata BEFORE UPDATE ON source_documents FOR EACH ROW EXECUTE FUNCTION keep_metadata()'))
+    with Session(engine) as db:
+        with pytest.raises(ValueError, match='invalidation readback differs'):
+            persist_native_report(db, db.get(SourceDocument, sid), None, context=DomainRunContext(None, False), domain='national_budget')
+        db.rollback()
+        assert db.get(SourceDocument, sid).meta == meta
+
+
+def arm_deferred_binding(db):
+    from sqlalchemy import text
+    db.execute(text("CREATE FUNCTION armed_deferred_binding() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN UPDATE source_documents SET metadata=jsonb_set(metadata #- '{arm}','{native_report_authority_v1}', jsonb_build_object('national_budget',jsonb_build_object('stale',true))) WHERE id=NEW.id; RETURN NEW; END $$"))
+    db.execute(text("CREATE CONSTRAINT TRIGGER armed_deferred_binding AFTER UPDATE ON source_documents DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (NEW.metadata->>'arm'='yes') EXECUTE FUNCTION armed_deferred_binding()"))
+
+
+def test_absent_binding_still_flushes_deferred_constraint_before_success(pg_fixture):
+    from seeding.native_report_authority import persist_native_report
+    engine, _ = pg_fixture
+    country_id, _ = seed_country(engine)
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Deferred no-op control', url=records()[0].source_url,
+            doc_type=DocumentType.BUDGET, status=DocumentStatus.FAILED,
+            fetch_date=datetime(2020, 1, 1), meta={'padding': 'x' * 65536})
+        db.add(source); db.commit(); sid = source.id
+    with engine.begin() as db:
+        arm_deferred_binding(db)
+    with Session(engine) as db:
+        source = db.get(SourceDocument, sid)
+        source.meta = {**source.meta, 'arm': 'yes'}
+        with pytest.raises(ValueError, match='invalidation readback differs'):
+            persist_native_report(db, source, None, context=DomainRunContext(None, False), domain='national_budget')
+        db.rollback()
+
+
+def test_absent_binding_commit_does_not_leave_deferred_stale_binding(pg_fixture):
+    from seeding.native_report_authority import KEY, persist_native_report
+    engine, _ = pg_fixture
+    country_id, _ = seed_country(engine)
+    with Session(engine) as db:
+        source = SourceDocument(country_id=country_id, publisher='Controller of Budget',
+            title='Deferred no-op control', url=records()[0].source_url,
+            doc_type=DocumentType.BUDGET, status=DocumentStatus.FAILED,
+            fetch_date=datetime(2020, 1, 1), meta={'padding': 'x' * 65536})
+        db.add(source); db.commit(); sid = source.id
+    with engine.begin() as db:
+        arm_deferred_binding(db)
+    with Session(engine) as db:
+        source = db.get(SourceDocument, sid)
+        source.meta = {**source.meta, 'arm': 'yes'}
+        try:
+            persist_native_report(db, source, None, context=DomainRunContext(None, False), domain='national_budget')
+        except ValueError as error:
+            assert 'invalidation readback differs' in str(error)
+            db.rollback()
+            return
+        db.commit()
+    with Session(engine) as db:
+        assert 'national_budget' not in db.get(SourceDocument, sid).meta.get(KEY, {}), 'Invalidation returned success but deferred commit restored stale binding'
