@@ -56,5 +56,13 @@ both period boundaries and its proven publication day are strictly later.
 The selected wrapper retains the existing 2 MiB HTML budget; only the additional
 catalogue listing has the separate 512 KiB transfer limit.
 
+Annual slug discovery passes its original probe response into the release
+parser. A second GET through the HTTP cache loses current acquisition context
+and must not replace that response. Previously persisted cache entries retain
+unknown acquisition time and remain ineligible for report authority. The real
+client/cache/streamed-catalogue/PostgreSQL regression covers a silent baseline,
+one reasoned draft and a new-command duplicate check; uncached publisher fakes
+alone do not qualify this boundary.
+
 This closes only the supported KRA catalogue-availability gap. Other #800–#802
 source contracts and #699 ordinary worker/provider/cost acceptance remain open.

@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Optional
 
+import httpx
+
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
@@ -269,7 +271,10 @@ def _get_or_none(client: SeedingHttpClient, url: str) -> Optional[Any]:
     return resp
 
 
-def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str]):
+def _read_release(
+    client: SeedingHttpClient, url: str, hinted_fy: Optional[str],
+    *, response: Optional[httpx.Response] = None,
+):
     """Read one candidate page as a KraRelease (dashboard or prose), or None."""
     from urllib.parse import urljoin
 
@@ -282,7 +287,18 @@ def _read_release(client: SeedingHttpClient, url: str, hinted_fy: Optional[str])
     )
     from .kra_parser import extract_kra_fiscal_year, extract_kra_revenue_by_type_from_text
 
-    resp = _get_or_none(client, url)
+    if response is not None:
+        if (not isinstance(response, httpx.Response)
+                or type(response.status_code) is not int or not 200 <= response.status_code < 400):
+            return None
+        try:
+            original = response.history[0].request if response.history else response.request
+        except (AttributeError, RuntimeError):
+            return None
+        if (not isinstance(original, httpx.Request)
+                or original.method != 'GET' or str(original.url) != url):
+            return None
+    resp = response if response is not None else _get_or_none(client, url)
     if resp is None:
         return None
     html = resp.text if "pdf" not in (resp.headers.get("content-type") or "").lower() else ""
@@ -365,10 +381,13 @@ def discover_kra_releases(
     seen: List[tuple[str, str]] = []
 
     for fy, url in slug_candidates(today):
-        if _get_or_none(client, url) is None:
+        response = _get_or_none(client, url)
+        if response is None:
             continue
         seen.append((fy, url))
-        release = _read_release(client, url, fy)
+        # Keep the live probe's acquisition receipt. Fetching again would read
+        # the disk cache, whose acquisition time is deliberately unknown.
+        release = _read_release(client, url, fy, response=response)
         if release is not None:
             releases.append(release)
 
