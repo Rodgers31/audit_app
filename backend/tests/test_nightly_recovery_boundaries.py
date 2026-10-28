@@ -40,7 +40,7 @@ def test_review_never_becomes_scheduled_or_unrelated_authority(overrides):
 @pytest.mark.parametrize('domain,override,expected',[(600,None,300),(600,420,420),
     (400,420,220),(100,420,1),(600,120,120)])
 def test_cob_transfer_leaves_parse_reserve(monkeypatch,tmp_path,domain,override,expected):
-    settings=SeedingSettings(domain_timeout_seconds=domain,cob_pdf_download_timeout_seconds=override)
+    settings=SeedingSettings(total_timeout_seconds=1320,domain_timeout_seconds=domain,cob_pdf_download_timeout_seconds=override)
     seen={}
     monkeypatch.setattr(cob_cbirr,'server_fingerprint',lambda *a:'synthetic')
     from seeding import pdf_download

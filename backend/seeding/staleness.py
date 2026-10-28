@@ -1206,8 +1206,8 @@ EXEMPT_FIXTURE_REASONS = DECLARED_NO_SOURCE_REASONS | SUPERSEDED_REASONS
 def latest_job_per_domain(jobs: Iterable) -> List:
     """One row per domain — the most recent — from a window of jobs.
 
-    The nightly reads ``ingestion_jobs`` over the last 30 minutes, which can
-    hold two rows for a domain if a run was re-dispatched. A verdict about
+    A bounded ingestion-job selection can hold two rows for a domain if
+    a run was re-dispatched. A verdict about
     THIS run must be about the newest row, not whichever the query happened
     to yield first.
 
