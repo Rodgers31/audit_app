@@ -18,6 +18,11 @@ from botocore.credentials import Credentials
 
 from .receipt_manifest import ReceiptManifestCodec
 from .receipt_storage_errors import ReceiptStorageError, _SAFE_TRANSFER_REASONS
+from .receipt_retention import record_retry
+
+
+class _TransientTransportError(ReceiptStorageError):
+    """Sanitized network failure; never carries the provider's exception."""
 
 
 def validate_destination(account_id: str, bucket: str, jurisdiction: str = "default") -> str:
@@ -70,6 +75,24 @@ class R2ReceiptStore(ReceiptManifestCodec):
         return f"receipts-v1/{kind}/{digest[:2]}/{digest}"
 
     def _request(self, method: str, path: str, *, limit: int, deadline: float, body: bytes | None = None, control: bool = False) -> tuple[int, bytes]:
+        # The original operation owns the deadline, including privacy checks,
+        # backoff and readback. Re-sign each attempt, but never change the key,
+        # bytes or insert-only condition after an ambiguous PUT.
+        for attempt in range(3):
+            try:
+                result = self._request_once(method, path, limit=limit, deadline=deadline, body=body, control=control, retry=attempt > 0)
+                if result[0] not in (502, 503, 504) or attempt == 2:
+                    return result
+            except _TransientTransportError:
+                if attempt == 2:
+                    raise ReceiptStorageError("Receipt storage transport failed") from None
+            delay = 0.25 * (2 ** attempt)
+            if deadline - time.monotonic() <= delay:
+                raise ReceiptStorageError("Receipt storage exceeded transfer time limit")
+            time.sleep(delay)
+        raise ReceiptStorageError("Receipt storage transport failed")  # defensive
+
+    def _request_once(self, method: str, path: str, *, limit: int, deadline: float, body: bytes | None = None, control: bool = False, retry: bool = False) -> tuple[int, bytes]:
         try:
             headers = {"Accept-Encoding": "identity", "User-Agent": "KenyaAuditAppReceiptStore/1.0"}
             if control:
@@ -86,6 +109,10 @@ class R2ReceiptStore(ReceiptManifestCodec):
             if remaining <= 0:
                 raise ReceiptStorageError("Receipt storage exceeded transfer time limit")
             with httpx.Client(timeout=remaining, transport=self._transport, trust_env=False, follow_redirects=False) as client:
+                if time.monotonic() >= deadline:
+                    raise ReceiptStorageError("Receipt storage exceeded transfer time limit")
+                if retry:
+                    record_retry()
                 with client.stream(method, url, headers=headers, content=body) as response:
                     if time.monotonic() >= deadline:
                         raise ReceiptStorageError("Receipt storage exceeded transfer time limit")
@@ -109,6 +136,8 @@ class R2ReceiptStore(ReceiptManifestCodec):
                     if declared is not None and len(chunks) != int(declared):
                         raise ReceiptStorageError("Receipt storage returned partial bytes")
                     return status, bytes(chunks)
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError):
+            raise _TransientTransportError("Receipt storage transport failed") from None
         except ReceiptStorageError as exc:
             if type(exc) is ReceiptStorageError and len(exc.args) == 1 and isinstance(exc.args[0], str) and exc.args[0] in _SAFE_TRANSFER_REASONS:
                 raise ReceiptStorageError(exc.args[0]) from None

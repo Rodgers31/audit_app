@@ -887,6 +887,8 @@ def _seed_national_budget(
     )
     session.add(job)
     session.flush()
+    from services.receipt_retention import RetentionScope
+    retention_scope = RetentionScope()
     try:
         from seeding.config import SeedingSettings
         from seeding.registries import REGISTRY, load_builtin_domains
@@ -927,6 +929,9 @@ def _seed_national_budget(
         job.errors = [str(exc)[:2000]]
         job.meta = {**job.meta, "ownership_retained": True}
         logger.warning("national_budget bootstrap failed; ownership retained: %s", exc)
+    finally:
+        job.meta = {**job.meta, "receipt_retention": retention_scope.summary()}
+        retention_scope.close()
     job.finished_at = datetime.now(timezone.utc)
     return job
 
@@ -1069,6 +1074,7 @@ def initialize_reference_data(
     budget_ownership = None
     budget_job = None
     reference_ownership = None
+    reference_retention = None
     try:
         # Acquire before reference mutations as well: supplied SQLite sessions
         # may share a single connection, so a claim commit must not accidentally
@@ -1087,6 +1093,8 @@ def initialize_reference_data(
         except DomainBusyError as exc:
             logger.warning("bootstrap: atomic reference admission deferred: %s", exc)
             return False
+        from services.receipt_retention import RetentionScope, not_observed_summary
+        reference_retention = RetentionScope()
         try:
             budget_ownership = enter_domain(factory, "national_budget", False)
         except DomainOwnershipError as exc:
@@ -1095,7 +1103,7 @@ def initialize_reference_data(
                 domain="national_budget", status=IngestionStatus.FAILED, dry_run=False,
                 started_at=datetime.now(timezone.utc), finished_at=datetime.now(timezone.utc),
                 errors=[str(exc)], meta={"bootstrap": True, "ownership_refused": True,
-                                       "source_mode": "unknown"},
+                                       "source_mode": "unknown", "receipt_retention": not_observed_summary()},
             )
             session.add(budget_job)
 
@@ -1181,6 +1189,7 @@ def initialize_reference_data(
             budget_job.meta = {**budget_job.meta, "ownership_retained": True,
                                "outer_commit_pending": True}
         provenance = bootstrap_provenance(session)
+        provenance["receipt_retention"] = reference_retention.summary()
         provenance["seeding_claim_ids"] = reference_ownership.claim_ids
         if not owns_transaction:
             provenance["ownership_retained"] = True
@@ -1259,6 +1268,7 @@ def initialize_reference_data(
                         "source_fallback_detail": (
                             f"{type(exc).__name__}: {str(exc)[:300]}"
                         ),
+                        "receipt_retention": reference_retention.summary() if reference_retention is not None else {"state": "unverified"},
                     },
                 )
             )
@@ -1268,6 +1278,8 @@ def initialize_reference_data(
             logger.exception("bootstrap: could not record the failed job row")
         raise
     finally:
+        if reference_retention is not None:
+            reference_retention.close()
         session.close()
         if budget_ownership is not None:
             budget_ownership.close()

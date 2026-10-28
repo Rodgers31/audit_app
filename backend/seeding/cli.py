@@ -178,6 +178,7 @@ def _record_not_run(names, error: str, meta: dict, *, dry_run: bool, reason: str
         assert SessionLocal is not None
         now = datetime.now(timezone.utc)
         from models import IngestionJob, IngestionStatus
+        from services.receipt_retention import not_observed_summary
 
         with SessionLocal() as session:
             for name in names:
@@ -192,7 +193,7 @@ def _record_not_run(names, error: str, meta: dict, *, dry_run: bool, reason: str
                         items_created=0,
                         items_updated=0,
                         errors=[error],
-                        meta=dict(meta),
+                        meta={**meta, "receipt_retention": not_observed_summary()},
                     )
                 )
             session.commit()
@@ -380,7 +381,10 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
         started_at = datetime.now(timezone.utc)
         context.ownership = ownership
 
+        retention_scope = None
         try:
+            from services.receipt_retention import RetentionScope
+            retention_scope = RetentionScope()
             with SessionLocal() as session:
                 try:
                     # Create ingestion job record
@@ -468,6 +472,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     # Add scheduling telemetry only after the handler returns.
                     job.meta["execution_plan"] = execution_plan
                     job.meta["source_mode"] = provenance.get("mode")
+                    job.meta["receipt_retention"] = retention_scope.summary()
                     if provenance.get("reason"):
                         job.meta["source_fallback_reason"] = provenance["reason"]
                     if provenance.get("detail"):
@@ -580,7 +585,8 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                         # reported success.
                                         stopped_job.status = IngestionStatus.FAILED
                                         stopped_job.finished_at = datetime.now(timezone.utc)
-                                        stopped_job.meta = {**(stopped_job.meta or {}), "execution_plan": execution_plan}
+                                        stopped_job.meta = {**(stopped_job.meta or {}), "execution_plan": execution_plan,
+                                                            "receipt_retention": retention_scope.summary()}
                                         if context.audits_source_receipt is not None:
                                             stopped_job.meta = {
                                                 **(stopped_job.meta or {}),
@@ -618,7 +624,8 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                                         failed_job.status = IngestionStatus.FAILED
                                         failed_job.finished_at = datetime.now(timezone.utc)
                                         failed_job.errors = [str(exc)]
-                                        failed_job.meta = {**(failed_job.meta or {}), "execution_plan": execution_plan}
+                                        failed_job.meta = {**(failed_job.meta or {}), "execution_plan": execution_plan,
+                                                           "receipt_retention": retention_scope.summary()}
                                         if context.audits_source_receipt is not None:
                                             failed_job.meta = {
                                                 **(failed_job.meta or {}),
@@ -645,6 +652,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
 
             # Facts and the native observation are committed and their session
             # closed before the optional generated-draft transaction can begin.
+            retention_scope.close()
             if (not dry_run and domain in {"counties_budget", "national_budget", "revenue_by_source", "audits", "pending_bills"} and job_id is not None
                     and result is not None and not result.errors
                     and freshness.get(domain).get("mode") == freshness.LIVE
@@ -658,6 +666,8 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             logger.error("Execution unverified; domain ownership retained", extra={"domain": domain})
             status = 1
         finally:
+            if retention_scope is not None:
+                retention_scope.close()
             try:
                 ownership.close()
             except Exception:

@@ -109,6 +109,20 @@ export function parseGenerationOutcome(raw: unknown): Record<string, unknown> {
   }
   return result;
 }
+export type ReceiptRetention = {state: 'unverified'} | {
+  state: 'confirmed' | 'missing_bytes' | 'not_observed';
+  observed: number; retained: number; missing: number; recovered: number; retry_requests: number;
+};
+export function parseReceiptRetention(raw: unknown): ReceiptRetention {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {state: 'unverified'};
+  const v = raw as Record<string, unknown>;
+  const keys = ['observed', 'retained', 'missing', 'recovered', 'retry_requests'] as const;
+  if (Object.keys(v).length !== 6 || keys.some(k => typeof v[k] !== 'number' || !Number.isInteger(v[k]) || (v[k] as number) < 0 || (v[k] as number) > 1000000)) return {state: 'unverified'};
+  const counts = Object.fromEntries(keys.map(k => [k, v[k]])) as Record<typeof keys[number], number>;
+  const state = counts.missing ? 'missing_bytes' : counts.observed ? 'confirmed' : 'not_observed';
+  if (v.state !== state || counts.observed !== counts.retained + counts.missing || counts.recovered > Math.min(counts.retained, counts.retry_requests) || (counts.retry_requests && !counts.missing && !counts.recovered) || (!counts.observed && counts.retry_requests)) return {state: 'unverified'};
+  return {state, ...counts};
+}
 export function parseIngestionJob(raw: unknown): IngestionJob {
   const v = record(raw);
   const status = text(v.status);
@@ -128,6 +142,7 @@ export function parseIngestionJob(raw: unknown): IngestionJob {
   if (typeof meta.since === 'string') metadata.since = date(meta.since);
   if ('post_commit_generation' in meta) metadata.post_commit_generation = parseGenerationOutcome(meta.post_commit_generation);
   if ('post_commit_report_generation' in meta) metadata.post_commit_report_generation = parseGenerationOutcome(meta.post_commit_report_generation);
+  if ('receipt_retention' in meta) metadata.receipt_retention = parseReceiptRetention(meta.receipt_retention);
   return { id: integer(v.id,1,2147483647), domain, status, dry_run:boolean(v.dry_run),
     started_at:jobTimestamp(v.started_at), finished_at:jobTimestamp(v.finished_at),
     duration_seconds:duration as number | null, items_processed:integer(v.items_processed),
