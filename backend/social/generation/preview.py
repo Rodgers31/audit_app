@@ -18,7 +18,7 @@ else:
 from .contracts import SourceObservation, PreviewCommand
 from .models import GenerationControls, SourceCursor, SourceEvent
 from ..service import SocialError
-from .service import render, semantic_fingerprint, report_release_state, valid_report_release_state, report_release_regresses, DETECTOR_VERSION
+from .service import render, semantic_fingerprint, report_release_state, valid_report_release_state, report_release_regresses, prior_financial_fingerprint, established_financial_source, DETECTOR_VERSION
 
 
 def capabilities_dto():
@@ -31,20 +31,26 @@ def _decision(observation, cursor, old, *, backfill):
     if cursor is None:
         return ('eligible_change', 'explicit_backfill') if backfill else ('baseline', 'first_observation')
     fingerprint = semantic_fingerprint(observation)
+    try:
+        prior = prior_financial_fingerprint(observation, cursor, old)
+    except SocialError as error:
+        return 'refused', error.code.lower()
     release = report_release_state(observation)
     if release:
         if not valid_report_release_state(cursor.report_state):
             return 'refused', 'evidence_integrity_failed'
         if report_release_regresses(release,cursor.report_state):
             return 'refused', 'report_release_regression'
-    if observation.evidence_version < cursor.evidence_version or (fingerprint != cursor.fingerprint and observation.evidence_version <= cursor.evidence_version):
+    if observation.evidence_version < cursor.evidence_version or (fingerprint != prior and observation.evidence_version <= cursor.evidence_version):
         return 'refused', 'evidence_version_conflict'
     refresh = bool(release and backfill and old and (old.fingerprint != fingerprint or any(
         old.observation['report'][k] != getattr(observation.report, k)
         for k in ('source_record_id','authority_fingerprint'))))
+    refresh = refresh or bool(observation.financial and backfill and old
+        and old.observation != observation.model_dump(mode='json'))
     if refresh and observation.evidence_version <= old.evidence_version:
         return 'refused', 'evidence_version_conflict'
-    if fingerprint == cursor.fingerprint and not (backfill and cursor.sequence == 0) and not refresh:
+    if fingerprint == prior and not (backfill and cursor.sequence == 0) and not refresh:
         return 'unchanged', 'semantic_evidence_unchanged'
     if release and not backfill and release['release_hash'] == cursor.report_state['release_hash']:
         return 'unchanged', 'report_release_unchanged'
@@ -119,6 +125,17 @@ def preview(factory, body):
             from .service import evidence_items
             status, reason = (('refused','source_chronology_invalid') if any(utc(f.verified_at)>now or utc(f.retrieved_at)>now for f in evidence_items(value))
                 else _decision(value, cursor, by_cursor.get(cursor.id) if cursor else None, backfill=body.backfill))
+            if cursor is None and status == 'baseline':
+                try:
+                    if established_financial_source(db, value):
+                        status, reason = 'eligible_change', 'new_fact_in_established_source'
+                except SocialError as error:
+                    status, reason = 'refused', error.code.lower()
+            elif value.financial is not None and status != 'refused':
+                try:
+                    established_financial_source(db,value)
+                except SocialError as error:
+                    status, reason = 'refused', error.code.lower()
             if status == 'eligible_change':
                 try:
                     render(value)

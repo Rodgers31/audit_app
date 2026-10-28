@@ -28,14 +28,14 @@ def _unverified(reason):
             **dict.fromkeys(COUNTERS, None)}
 
 
-def _invoke(factory, record_ids, ingestion_id):
+def _invoke(factory, record_ids, ingestion_id, domain='counties_budget'):
     # Import only after the explicit environment ceiling and committed-source
     # guards. An older installation needs no social schema/import to ingest.
     if __package__.startswith('backend.'):
         from backend.social.generation.integration import maybe_generate_committed
     else:
         from social.generation.integration import maybe_generate_committed
-    return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id)
+    return maybe_generate_committed(factory, record_ids=record_ids, ingestion_id=ingestion_id, **({} if domain=='counties_budget' else {'domain':domain}))
 
 
 def _invoke_reports(factory, record_ids, ingestion_id, domain="counties_budget"):
@@ -93,13 +93,21 @@ def dispatch_committed_generation(factory, *, domain, ingestion_id, dry_run, inc
         outcome = _result("unavailable", "invalid_generation_hook_flag")
     elif not selected.financial:
         outcome = _result('unavailable', selected.reason)
+    elif domain != 'counties_budget' and os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false') != 'true':
+        flag_value=os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
+        outcome=_result('disabled' if flag_value=='false' else 'unavailable',
+            'financial_environment_disabled' if flag_value=='false' else 'invalid_financial_hook_flag')
     else:
         invoked = False
         try:
-            record_ids = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+            if domain == 'counties_budget':
+                record_ids = read_county_budget_record_ids(factory, ingestion_id=ingestion_id)
+            else:
+                from .source_observations import read_native_financial_record_ids
+                record_ids = read_native_financial_record_ids(factory, ingestion_id=ingestion_id, domain=domain)
             if record_ids:
                 invoked = True
-                outcome = _validate_result(_invoke(factory, record_ids, ingestion_id), len(record_ids))
+                outcome = _validate_result(_invoke(factory, record_ids, ingestion_id, **({} if domain=='counties_budget' else {'domain':domain})), len(record_ids))
             else:
                 outcome = _result("completed", "no_new_record_lineage")
         except SourceObservationUnavailable as error:

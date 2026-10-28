@@ -1,5 +1,9 @@
 /** Fixed operational explanations. Unknown hook text is never rendered. */
 export const generationReasons: Record<string, string> = {
+  qualified_native_cells_required: 'Financial drafts require verified business values, retained full publication dates and exact committed job evidence. Catalogue-only dates cannot qualify financial claims.',
+  financial_environment_disabled: 'The automatic native financial drafting hook is off. Human review remains required.',
+  invalid_financial_hook_flag: 'The native financial drafting hook setting is invalid.',
+  new_fact_in_established_source: 'A new qualified fact follows this source’s initial silent baseline and is eligible for human review.',
   duplicate_source_series: 'Select one record per report or fact series before previewing. Multiple anchors cannot establish independent changes.',
   unresolved_template: 'The deterministic template contains unresolved placeholders; human correction is required.',
   source_not_eligible: 'Only committed, publishable evidence with valid chronology is eligible.',

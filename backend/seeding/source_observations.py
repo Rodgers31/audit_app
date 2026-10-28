@@ -309,3 +309,23 @@ def read_audit_report_observation(factory, *, record_id, ingestion_id):
 def read_pending_bills_report_observation(factory, *, record_id, ingestion_id):
     from .native_report_observations import read_native_report_observation
     return read_native_report_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='pending_bills')
+
+
+def read_native_financial_record_ids(factory, *, ingestion_id, domain):
+    from .native_financial_observations import read_native_financial_record_ids as read
+    return read(factory, ingestion_id=ingestion_id, domain=domain)
+
+
+def read_national_financial_observation(factory, *, record_id, ingestion_id):
+    from .native_financial_observations import read_native_financial_observation
+    return read_native_financial_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='national_budget')
+
+
+def read_revenue_financial_observation(factory, *, record_id, ingestion_id):
+    from .native_financial_observations import read_native_financial_observation
+    return read_native_financial_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='revenue_by_source')
+
+
+def read_pending_bills_financial_observation(factory, *, record_id, ingestion_id):
+    from .native_financial_observations import read_native_financial_observation
+    return read_native_financial_observation(factory, record_id=record_id, ingestion_id=ingestion_id, domain='pending_bills')

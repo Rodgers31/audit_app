@@ -152,6 +152,12 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
         return _result('unavailable', 'INVALID_HOOK_FLAG')
     if flag != 'true':
         return _result('disabled', 'ENVIRONMENT_DISABLED')
+    if not reports and domain != 'counties_budget':
+        financial_flag=os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
+        if financial_flag not in {'true','false'}:
+            return _result('unavailable','INVALID_FINANCIAL_HOOK_FLAG')
+        if financial_flag!='true':
+            return _result('disabled','FINANCIAL_ENVIRONMENT_DISABLED')
     if reports:
         report_flag = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false')
         if report_flag not in {'true', 'false'}:

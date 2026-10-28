@@ -297,6 +297,7 @@ def persist_national_budget_records(
     # A rollback or later run must resolve its sources from PostgreSQL again.
     sources_by_url: dict[str, SourceDocument] = {}
     initialized_acquisitions: set[int] = set()
+    financial_rows = []
     # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
     expenditure_periods: set[tuple[int, int]] = set()
 
@@ -408,8 +409,14 @@ def persist_national_budget_records(
                 elif provenance_entry not in provenance:
                     provenance.append(provenance_entry)
                     existing.provenance = provenance
+        if context.job_id is not None and provenance_entry.get('source_evidence'):
+            financial_rows.append(line if existing is None else existing)
 
     stats.superseded += _retire_superseded_lines(session, expenditure_periods)
+    if financial_rows and not context.dry_run:
+        session.flush()
+        from ...native_financial_gate import qualify_native_financial_rows
+        qualify_native_financial_rows(session,financial_rows,domain='national_budget',context=context)
     logger.info("national_budget_persistence_prepared", extra={
         "processed_records": stats.processed, "distinct_sources": len(sources_by_url),
         "error_count": len(stats.errors),

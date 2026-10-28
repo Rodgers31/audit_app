@@ -714,6 +714,8 @@ def fetch_county_payables_payload(
     pdf_url = links[0]
     aging_enabled = os.environ.get("SEED_PENDING_BILLS_AGING_ENABLED") == "true"
     assembly_enabled = os.environ.get("SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED") == "true"
+    financial_enabled = (os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')=='true'
+        and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0)
     logger.info("county payables: reading %s", pdf_url)
     try:
         pdf_path = download_cbirr(client, pdf_url, settings).path
@@ -723,7 +725,7 @@ def fetch_county_payables_payload(
             cache_dir=Path(settings.cache_path) / "pdfs",
             kind="cob_cbirr_year_end_payables",
             parse_fn=parser.parse,
-            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled),
+            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled or financial_enabled),
             key_extra=_pdf_stack_versions(),
         )
     except Exception as exc:

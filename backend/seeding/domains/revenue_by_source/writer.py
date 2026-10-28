@@ -135,6 +135,7 @@ def persist_revenue_records(
     # Keep ordered relabeling in memory within this invocation, never in a
     # process-global cache that survives rollback or another ingestion run.
     sources_by_url: dict[str, SourceDocument] = {}
+    financial_rows = []
     country_id = _resolve_country_id(session)
     if country_id is None:
         stats.errors.append("No country found in database — seed countries first")
@@ -204,6 +205,8 @@ def persist_revenue_records(
 
             if not context.dry_run:
                 session.flush()
+                if context.job_id is not None and record.metadata.get('source_evidence'):
+                    financial_rows.append(existing if existing is not None else new_row)
 
         except Exception as exc:
             msg = (
@@ -213,6 +216,9 @@ def persist_revenue_records(
             logger.warning("revenue_record_persistence_failed", extra={"error_type": type(exc).__name__})
             stats.errors.append(msg)
 
+    if financial_rows:
+        from ...native_financial_gate import qualify_native_financial_rows
+        qualify_native_financial_rows(session,financial_rows,domain='revenue_by_source',context=context)
     logger.info("revenue_persistence_prepared", extra={
         "processed_records": stats.processed, "distinct_sources": len(sources_by_url),
         "error_count": len(stats.errors),

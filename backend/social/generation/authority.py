@@ -7,6 +7,21 @@ underlying record, eligibility, lineage and retained receipts still match.
 from sqlalchemy import text
 
 
+def verify_financial_authority(db, source):
+    """Re-read current business cells and their exact publisher/job binding."""
+    from ..service import SocialError
+    from importlib import import_module
+    module = import_module('backend.seeding.native_financial_observations' if __package__.startswith('backend.') else 'seeding.native_financial_observations')
+    try:
+        binding = source['financial']
+        current = module.current_native_financial(db, binding['record_id'],
+            int(source['ingestion_id']), domain=binding['native_domain'], lock=True)
+        if current != source:
+            raise ValueError('Native financial evidence changed')
+    except (ValueError, TypeError, KeyError):
+        raise SocialError('SOURCE_REVIEW_REQUIRED', 'Current financial source evidence changed. Review it again.', 422) from None
+
+
 def current_report_authority(db, record_id, ingestion_id, *, lock=True):
     relation = 'social_report_source_authority' if lock else 'social_report_source_authority_snapshot'
     query = text('''SELECT authority_fingerprint
