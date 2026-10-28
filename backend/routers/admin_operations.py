@@ -94,6 +94,9 @@ def safe_job_metadata(raw):
         if key in raw:
             from services.generation_outcome import safe_generation_outcome
             result[key] = safe_generation_outcome(raw[key])
+    if 'receipt_retention' in raw:
+        from services.receipt_retention import safe_retention_summary
+        result['receipt_retention'] = safe_retention_summary(raw['receipt_retention'])
     return result
 
 

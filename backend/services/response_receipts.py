@@ -13,6 +13,7 @@ if __package__.startswith("backend."):
 else:
     from models import Extraction
 from .receipt_store import ReceiptStore
+from .receipt_retention import begin_capture, finish_capture, finish_recheck
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class CapturedReceipt(dict):
         self._sealed = None
         self._store = None
         self._bound_source = []
+        self._retention_outcome = None
 
     def _acquisition_fields(self):
         return {
@@ -50,6 +52,7 @@ class CapturedReceipt(dict):
         copied._acquisition, copied._sealed = self._acquisition, self._sealed
         copied._store = self._store
         copied._bound_source = self._bound_source
+        copied._retention_outcome = self._retention_outcome
         memo[id(self)] = copied
         return copied
 
@@ -142,6 +145,8 @@ def capture_response(
             acquired_at=None,
             acquisition_kind=acquisition_kind,
         )
+    retention_token = begin_capture()
+    matched = False
     try:
         if store is None:
             raise ValueError("receipt_store_unconfigured")
@@ -155,11 +160,15 @@ def capture_response(
             raise ValueError("receipt_readback_mismatch")
         receipt["storage_key"] = key
         receipt["byte_check"] = {"status": "matched", "sha256": digest, "checked_at": now_iso()}
+        matched = True
     except Exception as exc:  # Adapter failures retain the observation, with explicit missing-byte evidence.
         receipt["failure_reason"] = f"{type(exc).__name__}: {exc}"
         logger.error("Receipt bytes not retained; observations remain qualified: %s", exc)
+    finally:
+        outcome = finish_capture(retention_token, matched=matched)
     captured = CapturedReceipt(receipt, _capability=_CAPABILITY)
     captured._store = store
+    captured._retention_outcome = outcome
     return captured
 
 
@@ -178,6 +187,8 @@ def capture_local_bytes(body, store, *, url, claimed_receipt=None):
         receipt["byte_check"]["status"] = "conflict"
         receipt["claimed_digest"] = claimed_receipt.get("digest")
         receipt._acquisition = _fingerprint(receipt._acquisition_fields())
+        if receipt._retention_outcome is not None:
+            receipt._retention_outcome.recheck(matched=False)
     return receipt
 
 
@@ -191,9 +202,16 @@ def capture_retained_pdf(session, context, store, *, domain, url, body):
         from backend.seeding.retained_report_receipts import verified_retained_pdf
     else:
         from seeding.retained_report_receipts import verified_retained_pdf
-    value, checked_store = verified_retained_pdf(session, context, store, domain=domain, url=url, body=body)
-    captured = CapturedReceipt(value, _capability=_CAPABILITY)
-    captured._store = checked_store
+    token = begin_capture()
+    matched = False
+    try:
+        value, checked_store = verified_retained_pdf(session, context, store, domain=domain, url=url, body=body)
+        captured = CapturedReceipt(value, _capability=_CAPABILITY)
+        captured._store = checked_store
+        matched = value.get("byte_check", {}).get("status") == "matched"
+    finally:
+        outcome = finish_capture(token, matched=matched)
+    captured._retention_outcome = outcome
     return captured
 
 
@@ -245,6 +263,8 @@ def persist_receipt(session, source_document, receipt: dict, *, extractor="http-
     if extraction is None or extraction not in session:
         stored = deepcopy(dict(receipt))
         if stored.get("byte_check", {}).get("status") == "matched":
+            token = begin_capture()
+            matched = False
             try:
                 body = receipt._store.read(receipt["storage_key"])
                 if (
@@ -252,6 +272,7 @@ def persist_receipt(session, source_document, receipt: dict, *, extractor="http-
                     or len(body) != receipt["byte_size"]
                 ):
                     raise ValueError("receipt_readback_mismatch")
+                matched = True
             except Exception as exc:
                 # Ingestion validates retention again before the immutable DB
                 # snapshot. This is once per acquisition, never per public read.
@@ -264,6 +285,8 @@ def persist_receipt(session, source_document, receipt: dict, *, extractor="http-
                     "failure_reason"
                 ] = f"retention_check_failed: {type(exc).__name__}: {exc}"
                 logger.error("Receipt retention failed before persistence: %s", exc)
+            finally:
+                receipt._retention_outcome = finish_recheck(token, receipt._retention_outcome, matched=matched)
         extraction = Extraction(
             source_document_id=source_document.id,
             page_number=page_number,

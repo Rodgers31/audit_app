@@ -752,6 +752,18 @@ jobs:
               if reason:
                   src += f' ({reason})'
               print(f'[{emoji}] {job.domain}: {status} | created={job.items_created} updated={job.items_updated} processed={job.items_processed}{src}')
+              # Numerical writes and immutable source-byte retention are separate
+              # outcomes. Preserve the observation contract without hiding gaps.
+              from services.receipt_retention import safe_retention_summary
+              retention = safe_retention_summary((job.meta or {}).get('receipt_retention'))
+              if retention['state'] == 'missing_bytes':
+                  print(f"  [RECEIPT WARNING] {job.domain}: {retention['missing']} unconfirmed source captures; numerical completion does not prove retained evidence")
+              elif retention['state'] == 'unverified':
+                  print(f'  [RECEIPT WARNING] {job.domain}: retention outcome unknown')
+              elif retention['state'] == 'not_observed':
+                  print(f'  [RECEIPT INFO] {job.domain}: no source captures observed; retention not qualified')
+              else:
+                  print(f"  [RECEIPT OK] {job.domain}: {retention['retained']} verified captures; {retention['recovered']} recovered after retry")
               if job.errors:
                   for err in job.errors[:3]:
                       print(f'  ERROR: {str(err)[:200]}')
