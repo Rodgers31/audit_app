@@ -116,11 +116,12 @@ def test_both_source_cohorts_replay_api_and_history(client,db_session,seed_count
     assert [b['amount'] for b in county['aging_observations'][SCOPE]['buckets']]==[None]*4
     assert county['aging_observations'][SCOPE]['reported_total']==17920000
     assert county['aging_observations'][SCOPE]['chart_supported'] is False
-    # An ordinary stock write clears both pointers but retains history.
+    # An identical qualified stock reread retains both cohort identities.
+    pointer = deepcopy(db_session.query(SourceDocument).one().meta['pending_bills_assembly_aging_v2'])
     write_pair(db_session,records,None,None)
-    assert aging_observations(db_session,as_at=aging.AS_AT)[SCOPE]['status']=='unavailable'
+    assert aging_observations(db_session,as_at=aging.AS_AT)[SCOPE]['status']=='qualified'
     assert db_session.query(Extraction).count()==before
-    assert db_session.query(SourceDocument).one().meta['pending_bills_assembly_aging_v2'] is None
+    assert db_session.query(SourceDocument).one().meta['pending_bills_assembly_aging_v2'] == pointer
 
 
 @pytest.mark.parametrize('change',['serialized','late_cell','wrong_population','wrong_fy','empty_stock','wrong_publication','filtered_empty'])

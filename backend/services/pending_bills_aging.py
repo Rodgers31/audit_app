@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import re
 
-from models import DebtCategory, Entity, EntityType, Extraction, Loan, SourceDocument
+from models import Country, DebtCategory, Entity, EntityType, Extraction, Loan, SourceDocument
 from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import joinedload
 
 SCOPES = ("county_executive", "county_assembly", "national", "combined")
 EXTRACTOR = "pending-bills-aging-v1"
@@ -45,6 +46,7 @@ def aging_observations(db, *, as_at=None, county=None, stock_context=None):
     docs = (
         db.query(SourceDocument)
         .populate_existing()
+        .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
         .filter(
             SourceDocument.publisher == "Office of the Controller of Budget (OCOB)",
             or_(*[SourceDocument.meta[key]["as_at"].astext == as_at

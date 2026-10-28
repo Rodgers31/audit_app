@@ -522,13 +522,14 @@ def retain_aging_pointers(session, source, previous, *, publication_batch,
     return retained
 
 
-def _require_current_source(db, source):
-    from models import Country, DocumentStatus
+def _require_current_source(source):
+    from models import DocumentStatus
 
     artifact = source.meta.get("pdf_artifact_v1") if isinstance(source.meta, dict) else None
     if (source.status != DocumentStatus.AVAILABLE
             or source.publisher != "Office of the Controller of Budget (OCOB)"
-            or db.query(Country.iso_code).filter(Country.id == source.country_id).scalar() != "KEN"
+            or source.country is None or source.country.id != source.country_id
+            or source.country.iso_code != "KEN"
             or source.md5 is not None and source.md5 != ARTIFACT_MD5
             or artifact is not None and (not isinstance(artifact, dict)
                 or artifact.get("sha256") != ARTIFACT_SHA256
@@ -681,7 +682,7 @@ def public_observation(db, source, extraction, ref, *, county=None, scope=SCOPE)
 
     cohort = extraction.extracted_json
     try:
-        _require_current_source(db, source)
+        _require_current_source(source)
         validate_cohort(cohort)
         if cohort["scope"] != scope:
             raise ValueError("Aging population mismatch")
