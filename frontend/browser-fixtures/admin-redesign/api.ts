@@ -1,6 +1,7 @@
 /** Explicit inert API. Unknown paths/mutations refuse; no proxy or credentials. */
 import { accounts, post, system, validation } from '@/tests/socialFixtures';
 import type { SocialPost } from '@/lib/api/social';
+import {sourceRecordsFixture} from './operations';
 const savedCopy = 'Nairobi County pending bills data.\nNairobi County — Reported pending bills: county, FY 2025/26: 86899380000.00 units KES (actual; publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed).';
 const sourceUrl='https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482';
 let current=post({title:'Nairobi County pending bills data',origin_type:'generated',content_type:'debt_update',editorial_state:'pending_review',delivery_status:'not_requested',document:{...post().document,master:{text:savedCopy,link:'https://www.auditgava.com/debt',hashtags:[],media:[]}},references:[{url:sourceUrl,label:'Controller of Budget · Table 2.10, PDF page 52'}]});
@@ -17,11 +18,17 @@ export async function GET(req:Request){
  }
  if(path==='/posts/'+current.id)return respond(current);
  if(path==='/posts/'+current.id+'/evidence')return respond({post_id:current.id,revision_id:current.revision_id,source_event_id:null,generator_metadata:{template_version:'factual-v1'},evidence:{evidence_version:3516,source:{source_type:'cob',source_key:'fixture:pending-bills',ingestion_id:'3516',facts:[{fact_id:'fixture:pending-bills:outstanding',entity:'Nairobi County',metric:'Reported pending bills',value:'86899380000.00',unit:'KES',scale:'units',period:'FY 2025/26',classification:'actual',comparison_basis:'publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed',document_url:sourceUrl,locator:'Table 2.10, Nairobi / Grand Total; PDF page 52 (printed page 18)',document_checksum:'919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20',publisher:'Office of the Controller of Budget',published_on:'2026-09-25',retrieved_at:'2026-10-29T13:25:38Z',verified_at:'2026-10-29T15:33:51Z'}]}}});
- if(path==='/automation/rules')return respond({items:[],page:1,has_more:false});
+ if(path==='/automation/rules')return respond({rules:[],total:0,page:1,page_size:20,has_more:false});
+ if(path==='/automation/decisions')return respond({decisions:[],total:0,page:1,page_size:20,has_more:false});
+ if(path==='/generation/controls')return respond({version:1,drafts_enabled:false,shadow_enabled:false,source_allowlist:[],targets:[]});
+ if(path==='/generation/capabilities')return respond([{domain:'pending_bills',financial:true,reports:true,reason:'qualified_native_cells_required'},{domain:'national_budget',financial:true,reports:true,reason:'qualified_native_cells_required'},{domain:'revenue_by_source',financial:true,reports:true,reason:'qualified_native_cells_required'},{domain:'opendata',financial:false,reports:false,reason:'source_extracted_not_publication_qualified'}]);
+ if(path==='/generation/source-records')return sourceRecordsFixture(u);
+
  return respond({detail:'Unknown inert fixture path'},404);
 }
 export async function POST(req:Request){
  const path=new URL(req.url).pathname.split('/social')[1];
+ if(path==='/generation/preview'){const body=await req.json();return respond({drafts_enabled:false,results:body.record_ids.map((record_id:number)=>({record_id,status:'baseline',reason:'first_observation',source_document_id:1}))});}
  if(path==='/posts/'+current.id+'/validate')return respond(validation(current,false));
  if(path==='/posts'){const body=await req.json();current=post({...body,origin_type:'manual'});return respond(current);}
  return respond({detail:{code:'FIXTURE_REFUSED',message:'Delivery, control changes and approval are held in this fixture.',field_errors:[],target_errors:[],retryable:false}},409);

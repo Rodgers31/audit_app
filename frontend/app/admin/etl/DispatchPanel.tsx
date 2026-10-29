@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import api from '@/lib/api/axios';
+import styles from '@/components/admin/admin.module.css';
+import { sourceLabel } from '@/lib/admin/sourceLabels';
 import { DISPATCH_SOURCES, dispatchCurrent, dispatchPermits, dispatchHttpStatus, parseCommandAcceptance, parseDispatchCapability, type CommandAcceptance, type DispatchSource } from '@/lib/admin/etlDispatch';
 import { useEtlAccess, type EtlAccess } from './useEtlAccess';
 import { CommandReceipt, etlButton } from './CommandReceipt';
@@ -96,10 +98,10 @@ export default function DispatchPanel() {
   };
   const receipt=access.enabled && !capability.isError && result?.lifetime===access.lifetime && !error ? result.value : null;
   const failure=access.enabled && error?.lifetime===access.lifetime ? error : null;
-  return <div className='space-y-5'>
-    <section aria-labelledby='dispatch-heading' className='rounded-2xl border border-neutral-border bg-white p-5 shadow-surface dark:bg-surface-base'>
+  return <div className={styles.workspace}>
+    <section aria-labelledby='dispatch-heading' className={styles.panel}>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <h2 id='dispatch-heading' className='font-display text-lg text-neutral-text'>Dedicated worker dispatch</h2>
+        <h2 id='dispatch-heading' className='font-display text-lg text-neutral-text'>Request a data check</h2>
         <button className={etlButton} disabled={!access.enabled || capability.isFetching || busy} onClick={()=>{if(access.current()) void capability.refetch();}}>Refresh worker evidence</button>
       </div>
       <p className='mt-2 text-sm text-neutral-muted'>{data?.execution_mode === 'qualification' ? 'One OpenData Dry Run is permitted. Run Now and the other sources remain disabled.' : 'Run Now permits publication under the dedicated runner. Dry Run performs checks with no publication. Calendar and health never enable execution.'}</p>
@@ -113,7 +115,7 @@ export default function DispatchPanel() {
       {ready && data && <p className='mb-3 break-all text-xs text-neutral-muted'>Worker lease through {new Date(data.worker.expires_at!).toLocaleString()} · generation {data.generation}</p>}
       <ul className='divide-y divide-neutral-border'>
         {DISPATCH_SOURCES.map(source=><li key={source} className='flex flex-wrap items-center gap-3 py-3'>
-          <div className='min-w-0 flex-1 basis-48'><p className='font-mono text-sm font-semibold text-neutral-text'>{source}</p><p className='text-sm text-neutral-muted'>{data?.sources[source].reason ?? 'Validated worker capability required.'}</p></div>
+          <div className='min-w-0 flex-1 basis-48'><p className='text-base font-semibold text-neutral-text'>{sourceLabel(source)}</p><p className='text-sm text-neutral-muted'>{data?.sources[source].reason ?? 'Validated worker capability required.'}</p></div>
           <div className='flex flex-wrap gap-2'>
             <button className={etlButton} aria-label={'Dry Run · '+source} disabled={!dispatchPermits(data,source,true,clock) || busy} onClick={event=>begin(source,true,event.currentTarget)}>Dry Run</button>
             <button className={etlButton+' bg-gov-forest !text-white'} aria-label={'Run Now · '+source} disabled={!dispatchPermits(data,source,false,clock) || busy} onClick={event=>begin(source,false,event.currentTarget)}>Run Now</button>
@@ -143,7 +145,7 @@ export default function DispatchPanel() {
         <Link className='inline-flex min-h-11 items-center underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gov-sage' href={'/admin/etl/commands/'+receipt.command.id}>View accepted command</Link>
       </div>}
     </section>
-    <CommandHistory access={access} />
+    <section className={styles.panel}><div className={styles.sectionHeading}><div><h2>Accepted commands & recovery</h2><p>Use a recorded command to follow the original request. An uncertain acceptance must be recovered with the same intent.</p></div></div><CommandHistory access={access} /></section>
   </div>;
 }
 

@@ -101,7 +101,7 @@ test.each(transitions)('adversarial late receipt GET after %s cannot show old co
   const signal = get.mock.calls[0][1].signal as AbortSignal;
   change(kind, view); expect(signal.aborted).toBe(true);
   await act(async () => pending.resolve({ data: examples.detail }));
-  expect(screen.queryByRole('link', { name: 'View ingestion observation #1' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Inspect data and draft outcomes · job #1' })).not.toBeInTheDocument();
   expect(screen.queryByText('Completed — recorded ingestion observation.')).not.toBeInTheDocument();
 });
 test.each(transitions)('adversarial late history GET after %s cannot show old actor receipt', async kind => {
@@ -115,7 +115,7 @@ test.each(transitions)('adversarial late history GET after %s cannot show old ac
   const signal = call![1].signal as AbortSignal;
   change(kind, view); expect(signal.aborted).toBe(true);
   await act(async () => pending.resolve({data:examples.list}));
-  expect(screen.queryByRole('link',{ name:'View command '+examples.detail.id })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link',{ name:new RegExp(examples.detail.id) })).not.toBeInTheDocument();
   expect(screen.queryByText('Completed — recorded ingestion observation.')).not.toBeInTheDocument();
 });
 test.each([401, 403])('adversarial current GET %s clears success while old-lifetime denial cannot deny a new session', async status => {
@@ -340,7 +340,7 @@ test('adversarial rendered completed receipt with reversed microsecond chronolog
   } });
   mount(<CommandDetail commandId={examples.detail.id} />);
   await screen.findByText('Could not verify this command receipt. Refresh to retry.');
-  expect(screen.queryByRole('link', { name: 'View ingestion observation #1' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Inspect data and draft outcomes · job #1' })).not.toBeInTheDocument();
 });
 test('adversarial rendered terminal refresh hides success after a rewritten finished timestamp', async () => {
   get.mockResolvedValueOnce({ data: examples.detail });

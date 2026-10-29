@@ -43,10 +43,11 @@ function mount(node: React.ReactNode) {
 
 test('overview does not certify a running worker from scheduler calculation', async () => {
   mount(<Overview />);
-  expect(await screen.findByText(/Worker execution unverified/)).toBeVisible();
+  fireEvent.click(screen.getByText('Calendar and system evidence'));
+  expect(await screen.findByText(/does not prove worker execution/)).toBeVisible();
   expect(screen.queryByText('Healthy')).not.toBeInTheDocument();
-  expect(screen.getByText(/Auth identities/)).toBeVisible();
-  expect(screen.getByRole('link', { name: /Social publishing/ })).toHaveAttribute('href', '/admin/social');
+  expect(await screen.findByText(/2 accounts/)).toBeVisible();
+  expect(screen.getByRole('link', { name: /Review social drafts/ })).toHaveAttribute('href', '/admin/social');
 });
 
 test('available calendar plan with unverified worker does not invent an ETL alert', async () => {
@@ -54,8 +55,9 @@ test('available calendar plan with unverified worker does not invent an ETL aler
     timestamp: '2026-10-08T00:00:00Z', scheduler_status: 'unverified', plan_status: 'available', worker_status: 'unverified', data_freshness: 'unverified',
   } : responses[path] }));
   mount(<Overview />);
-  expect(await screen.findByText('Schedule calculated')).toBeVisible();
-  expect(screen.getByText('Worker execution unverified')).toBeVisible();
+  fireEvent.click(screen.getByText('Calendar and system evidence'));
+  expect(await screen.findByText('Calendar calculation: available.')).toBeVisible();
+  expect(screen.getByText(/does not prove worker execution/)).toBeVisible();
   expect(screen.queryByText('Calculation unavailable')).not.toBeInTheDocument();
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
@@ -65,8 +67,8 @@ test('unavailable calendar plan remains actionable with unverified worker', asyn
     timestamp: '2026-10-08T00:00:00Z', scheduler_status: 'unverified', plan_status: 'unavailable', worker_status: 'unverified', data_freshness: 'unverified',
   } : responses[path] }));
   mount(<Overview />);
-  expect(await screen.findByRole('alert')).toHaveTextContent('Calculation unavailable');
-  expect(screen.getByText('Worker execution unverified')).toBeVisible();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Calendar calculation unavailable');
+  expect(screen.getByRole('link',{name:'Open Run & recover'})).toHaveAttribute('href','/admin/etl');
 });
 
 test('overview explicitly reports unavailable audit and failure evidence', async () => {
@@ -76,21 +78,22 @@ test('overview explicitly reports unavailable audit and failure evidence', async
   });
   mount(<Overview />);
   expect(await screen.findByText(/Audit evidence unavailable/)).toBeVisible();
-  expect(screen.getByText(/Failure evidence unavailable/)).toBeVisible();
+  expect(screen.getByText(/Recent failures could not be checked/)).toBeVisible();
 });
 
 test('overview rejects malformed numeric counts instead of showing a value', async () => {
   (api.get as jest.Mock).mockImplementation(async (path: string) => ({ data: path === '/admin/users/stats' ? { total_users: -1 } : responses[path] }));
   mount(<Overview />);
-  const card = await screen.findByRole('link', { name: /Users/ });
-  await waitFor(() => expect(within(card).getByText('Could not load')).toBeVisible());
+  const card = await screen.findByRole('link', { name: /Manage people and access/ });
+  await waitFor(() => expect(within(card).getByText(/Evidence unavailable/)).toBeVisible());
   expect(within(card).queryByText('-1')).not.toBeInTheDocument();
 });
 
 test('audit filters are labelled and submitted together into browser history', async () => {
   mount(<Audit />);
-  fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'etl.trigger' } });
-  fireEvent.change(screen.getByLabelText('Target id'), { target: { value: 'cob' } });
+  fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'users.update_roles' } });
+  fireEvent.click(screen.getByText('Actor and target filters'));
+  fireEvent.change(screen.getByLabelText('Target ID'), { target: { value: 'cob' } });
   fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
   expect(mockPush).toHaveBeenCalledWith(expect.stringContaining('target_id=cob'), expect.anything());
 });

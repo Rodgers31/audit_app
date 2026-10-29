@@ -66,18 +66,18 @@ export function decodeAnalytics(v: unknown): Analytics {
   return { target_id: uuid(o.target_id), platform: one(o.platform, ['facebook', 'instagram', 'threads', 'x', 'tiktok']), availability: one(o.availability, ['observed', 'unavailable']), reason: nullable(o.reason), collections, page: integer(o.page, 1), has_more: bool(o.has_more) };
 }
 const base = '/admin/social/studio';
-async function get<T>(path: string, decode: (v: unknown) => T, params?: object): Promise<T> { try { return decode((await api.get(base + path, { params })).data); } catch (e) { throw toSocialError(e); } }
+async function get<T>(path: string, decode: (v: unknown) => T, params?: object, signal?: AbortSignal): Promise<T> { try { return decode((await api.get(base + path, { params, signal })).data); } catch (e) { throw toSocialError(e); } }
 async function post<T>(path: string, body: object, key: string, decode: (v: unknown) => T): Promise<T> { try { return decode((await api.post(base + path, body, { headers: { 'Idempotency-Key': key } })).data); } catch (e) { throw toSocialError(e); } }
 export const studioApi = {
-  capabilities: () => get('/capabilities', decodeCapabilities),
-  jobs: (page: number) => get('/jobs', v => { const o = object(v); return { jobs: array(o.jobs, 10).map(decodeJob), page: integer(o.page, 1), has_more: bool(o.has_more) }; }, { page }),
+  capabilities: (signal?:AbortSignal) => get('/capabilities', decodeCapabilities, undefined, signal),
+  jobs: (page: number, signal?:AbortSignal) => get('/jobs', v => { const o = object(v); return { jobs: array(o.jobs, 10).map(decodeJob), page: integer(o.page, 1), has_more: bool(o.has_more) }; }, { page }, signal),
   create: (composition: Composition, key: string) => post('/jobs', composition, key, decodeJob),
   cancel: (job: RenderJob, key: string) => post(`/jobs/${job.id}/cancel`, { expected_version: job.version }, key, decodeJob),
   retry: (job: RenderJob, key: string) => post(`/jobs/${job.id}/retry`, { expected_version: job.version }, key, decodeJob),
   approve: (job: RenderJob, key: string) => post(`/jobs/${job.id}/approve`, { expected_version: job.version, sha256: job.sha256, review_attestation: { facts_checked: true, sources_checked: true } }, key, decodeJob),
   attach: (job: RenderJob, assetId: string, postVersion: number, key: string) => post(`/jobs/${job.id}/attach`, { expected_version: postVersion, asset_id: assetId }, key, decodePost),
-  calendar: (start: string, end: string, page: number) => get('/calendar', decodeCalendar, { start, end, page }),
-  analytics: (targetId: string, page: number) => get(`/analytics/${encodeURIComponent(targetId)}`, decodeAnalytics, { page }),
+  calendar: (start: string, end: string, page: number, signal?:AbortSignal) => get('/calendar', decodeCalendar, { start, end, page }, signal),
+  analytics: (targetId: string, page: number, signal?:AbortSignal) => get(`/analytics/${encodeURIComponent(targetId)}`, decodeAnalytics, { page }, signal),
   async media(job: RenderJob): Promise<string> {
     try {
       const response = await api.get(`${base}/jobs/${job.id}/preview`, { responseType: 'arraybuffer' });

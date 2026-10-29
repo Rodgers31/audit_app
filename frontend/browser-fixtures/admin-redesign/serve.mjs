@@ -17,8 +17,11 @@ await writeFile(resolve(root,'app/layout.tsx'),`import './globals.css';import Ha
 await mkdir(resolve(root,'app/admin'),{recursive:true});
 await writeFile(resolve(root,'app/admin/layout.tsx'),`export {default} from ${JSON.stringify(resolve('app/admin/layout'))};`);
 await writeFile(resolve(root,'app/admin/page.tsx'),`export {default} from ${JSON.stringify(resolve('app/admin/page'))};`);
-for(const route of ['social','social/new','social/[postId]']){await mkdir(resolve(root,'app/admin',route),{recursive:true});await writeFile(resolve(root,'app/admin',route,'page.tsx'),`export {default} from ${JSON.stringify(resolve('app/admin',route,'page'))};`);}
+for(const route of ['social','social/new','social/[postId]','social/automation','social/accounts','social/media','social/studio','social/privacy','ingestion','ingestion/[jobId]','etl','etl/commands/[commandId]','users','users/[userId]','audit-log']){await mkdir(resolve(root,'app/admin',route),{recursive:true});await writeFile(resolve(root,'app/admin',route,'page.tsx'),`export {default} from ${JSON.stringify(resolve('app/admin',route,'page'))};`);}
 await mkdir(resolve(root,'app/api/v1/admin/social/[...path]'),{recursive:true});
 await writeFile(resolve(root,'app/api/v1/admin/social/[...path]/route.ts'),`export {GET,POST,PATCH} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/api'))};`);
+await mkdir(resolve(root,'app/status'),{recursive:true});
+await writeFile(resolve(root,'app/status/page.tsx'),`export {default} from ${JSON.stringify(resolve('app/status/page'))};`);
+for(const gateway of ['admin','system']) {await mkdir(resolve(root,'app/api/v1',gateway,'[...path]'),{recursive:true});await writeFile(resolve(root,'app/api/v1',gateway,'[...path]/route.ts'),`export {GET,POST} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/operations'))};`);}
 const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','0.0.0.0','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
 process.on('SIGTERM',()=>server.kill('SIGTERM'));process.on('SIGINT',()=>server.kill('SIGTERM'));

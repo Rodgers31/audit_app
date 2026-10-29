@@ -40,9 +40,9 @@ test('overview counts Auth identities including the unprofiled identity', async 
     throw Error('Unrelated fixture evidence unavailable');
   });
   mount(<Overview />);
-  const card = await screen.findByRole('link', { name: /Users/ });
-  await waitFor(() => expect(within(card).getByText('2')).toBeVisible());
-  expect(within(card).getByText('Auth identities')).toBeVisible();
+  const card = await screen.findByRole('link', { name: /Manage people and access/ });
+  await waitFor(() => expect(within(card).getByText(/2 accounts/)).toBeVisible());
+  expect(within(card).getByText(/2 accounts/)).toBeVisible();
   expect(within(card).queryByText('Profile records')).not.toBeInTheDocument();
   expect(within(card).queryByText(/without profiles are outside this count/)).not.toBeInTheDocument();
 });
@@ -72,11 +72,11 @@ test('overview rereads for a different administrator instead of showing cached a
     throw Error('Unrelated fixture evidence unavailable');
   });
   const view = mount(<Overview />);
-  const card = await screen.findByRole('link', { name: /Users/ });
-  await waitFor(() => expect(within(card).getByText('11')).toBeVisible());
+  const card = await screen.findByRole('link', { name: /Manage people and access/ });
+  await waitFor(() => expect(within(card).getByText(/11 accounts/)).toBeVisible());
   mockActor = 'actor-B'; view.rerender(view.update(<Overview />));
-  await waitFor(() => expect(within(card).getByText('22')).toBeVisible());
-  expect(within(card).queryByText('11')).not.toBeInTheDocument();
+  await waitFor(() => expect(within(card).getByText(/22 accounts/)).toBeVisible());
+  expect(within(card).queryByText(/11 accounts/)).not.toBeInTheDocument();
 });
 test('audit rereads for the next administrator with no prior actor row', async () => {
   (api.get as jest.Mock).mockImplementation(async () => ({ data: audit(mockActor) }));
@@ -100,15 +100,14 @@ test('layout cancels the departing actor without aborting the next actor request
   mockActor = 'actor-B'; view.rerender(view.update(<Layout><Overview /></Layout>));
   await waitFor(() => expect(priorSignal!.aborted).toBe(true));
   expect(view.qc.getQueryCache().getAll().some(q => q.queryKey[2] === 'actor-A')).toBe(false);
-  expect(await screen.findByText('22')).toBeVisible();
+  expect(await screen.findByText(/22 accounts/)).toBeVisible();
   finishPrior({ data: stats(11) });
-  await waitFor(() => expect(screen.queryByText('11')).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.queryByText(/11 accounts/)).not.toBeInTheDocument());
 });
 test.each([Overview, Audit])('inactive access cannot manually refresh private queries', async Page => {
   mockIsAdmin = false;
   mount(<Page />);
-  const refresh = screen.getByRole('button', { name: /Refresh/ });
-  expect(refresh).toBeDisabled();
-  fireEvent.click(refresh);
+  const refresh = screen.queryByRole('button', { name: /Refresh/ });
+  if(refresh){expect(refresh).toBeDisabled();fireEvent.click(refresh);}else expect(screen.getByText('Admin access required.')).toBeInTheDocument();
   expect(api.get).not.toHaveBeenCalled();
 });

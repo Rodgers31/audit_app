@@ -65,6 +65,11 @@ export function decodeEvidence(v: unknown): PostEvidence { const o = obj(v), evi
 const base = '/admin/social';
 export const generationApi = {
   capabilities: async (signal?: AbortSignal) => decodeCapabilities((await api.get(`${base}/generation/capabilities`, { signal })).data),
+  sourceRecords: async (selection: {domain:string;ingestion_id:number;reports:boolean;page:number}, signal?:AbortSignal) => {
+    const result = decodeSourceRecords((await api.get(`${base}/generation/source-records`, {params:selection,signal})).data);
+    if (result.domain !== selection.domain || result.ingestion_id !== selection.ingestion_id || result.reports !== selection.reports || result.page !== selection.page) fail();
+    return result;
+  },
   preview: async (body: { domain: string; record_ids: number[]; ingestion_id: number; reports: boolean; backfill: boolean }) => { const result = decodePreview((await api.post(`${base}/generation/preview`, body)).data); if (result.results.length !== body.record_ids.length || result.results.some((r, i) => r.record_id !== body.record_ids[i])) fail(); return result; },
   controls: async (signal?: AbortSignal) => decodeDraftControls((await api.get(`${base}/generation/controls`, { signal })).data),
   rules: async (p = 1, signal?: AbortSignal) => page((await api.get(`${base}/automation/rules`, { params: { page: p }, signal })).data, 'rules', decodeRule),
@@ -101,6 +106,12 @@ export function describeShadowReason(code: string): string { return decisionReas
 export interface GenerationCapability { domain: string; financial: boolean; reports: boolean; reason: string }
 export interface GenerationPreviewResult { record_id: number; status: string; reason: string; source_document_id: number | null }
 export interface GenerationPreview { drafts_enabled: boolean; results: GenerationPreviewResult[] }
+export interface SourceRecords {domain:string;ingestion_id:number;reports:boolean;page:number;page_size:number;total:number;record_ids:number[];has_more:boolean}
+export function decodeSourceRecords(raw:unknown):SourceRecords {
+  const v=obj(raw), domain=text(v.domain), ingestion_id=number(v.ingestion_id), reports=boolean(v.reports), page=number(v.page), total=number(v.total), ids=list(v.record_ids).map(number), more=boolean(v.has_more);
+  if (!/^[a-z_]{1,100}$/.test(domain) || ingestion_id<1 || ingestion_id>2147483647 || page<1 || page>40 || v.page_size!==25 || total>1000 || ids.length!==Math.min(25,Math.max(0,total-(page-1)*25)) || new Set(ids).size!==ids.length || ids.some(id=>id<1||id>2147483647) || more!==(page*25<total)) fail();
+  return {domain,ingestion_id,reports,page,page_size:25,total,record_ids:ids,has_more:more};
+}
 function reasonCode(value: unknown) { const code = text(value); if (!Object.hasOwn(generationReasons, code)) fail(); return code; }
 export function decodeCapabilities(raw: unknown): GenerationCapability[] {
   const values = list(raw);

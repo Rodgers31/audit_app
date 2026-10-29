@@ -17,7 +17,7 @@ function Measurements() {
     const candidates: unknown[] = [];
     const output = document.getElementById('fixture-measurements')!;
     const required = pathname === '/admin'
-      ? ['Ingestion (last 7 days)', 'ETL today', 'ETL scheduler calculation', 'Users', 'Social publishing', 'Audit evidence (30 days)']
+      ? ['Review social drafts','Check data updates','Run or recover a data check','Manage people and access','Look up a recorded action']
       : pathname === '/admin/etl' ? ['Planned today', 'Worker evidence', 'Planning vs fixed', 'Sources'] : [];
     const observer = new PerformanceObserver(list => {
       for (const item of list.getEntries()) {
@@ -38,8 +38,8 @@ function Measurements() {
     };
     const tick = () => {
       const content = document.querySelector('.page-shell-content');
-      const targets = content ? Array.from(content.querySelectorAll('a h3, section h2, li, p'))
-        .filter(element => element.matches('a h3, section h2, li') ||
+      const targets = content ? Array.from(content.querySelectorAll('a strong, section h2, li, p'))
+        .filter(element => element.matches('a strong, section h2, li') ||
           ['Planned today', 'Worker evidence', 'Planning vs fixed'].includes(element.textContent ?? '')) : [];
       if (targets.length && started === null) started = performance.now();
       const values = targets.map(element => ({ text: element.textContent?.slice(0, 80), opacity: opacity(element) }));

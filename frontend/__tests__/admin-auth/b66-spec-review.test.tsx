@@ -85,7 +85,7 @@ describe.each([false, true])('actual guarded route ETL=%s', etl => {
     if (state === 'wrong-actor') mockAuth = { ...verified(), authUser: { id: actorB } };
     if (state === 'malformed-role') mockAuth = { ...verified(), user: { id: actorA, roles: 'admin' } };
     render(tree(etl));
-    expect(screen.queryByRole('heading', { name: etl ? 'ETL Schedule' : 'Admin Overview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: etl ? 'Run & recover' : 'What needs doing?' })).not.toBeInTheDocument();
     expect(mockGet).not.toHaveBeenCalled();
     expect(mockPost).not.toHaveBeenCalled();
     if (state !== 'restoring') expect(mockReplace).toHaveBeenCalledWith('/');
@@ -94,7 +94,7 @@ describe.each([false, true])('actual guarded route ETL=%s', etl => {
   test('slow reads preserve immediate working content; late populated sections paint without entrances', async () => {
     render(tree(etl));
     await waitFor(() => expect(pending.length).toBeGreaterThanOrEqual(etl ? 2 : 7));
-    const target = screen.getByText(etl ? 'Planned today' : 'Ingestion (last 7 days)');
+    const target = screen.getByText(etl ? 'Request a data check' : 'Check data updates');
     painted(target);
     expect(screen.getByRole('button', { name: etl ? 'Refresh' : 'Refresh overview' })).toBeDisabled();
     // Data is deliberately unresolved until all initial-state checks above run.
@@ -102,7 +102,7 @@ describe.each([false, true])('actual guarded route ETL=%s', etl => {
     await waitFor(() => expect(screen.getAllByText('Only actor A').length).toBeGreaterThan(0));
     screen.getAllByText('Only actor A').forEach(painted);
     if (!etl) {
-      ['System needs attention', 'Recent failures', 'Ingestion volume', 'Recent admin actions', 'Sources scheduled today'].forEach(label => painted(screen.getByText(label)));
+      ['Your work', 'Updates needing attention', 'Recent recorded actions'].forEach(label => painted(screen.getByText(label)));
       expect(screen.getByRole('link', { name: /Only actor A.*#1/ })).toHaveAttribute('href', '/admin/ingestion/1');
     } else {
       const row = screen.getAllByText('Only actor A')[0].closest('li')!;
@@ -116,7 +116,7 @@ describe.each([false, true])('actual guarded route ETL=%s', etl => {
     render(tree(etl));
     await waitFor(() => expect(pending.length).toBeGreaterThanOrEqual(etl ? 2 : 7));
     await settle(actorA, true);
-    await waitFor(() => expect(screen.getByText(etl ? 'Calendar plan unavailable. Refresh to retry.' : /Failure evidence unavailable\./)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(etl ? 'Calendar plan unavailable. Refresh to retry.' : /Recent failures could not be checked\./)).toBeInTheDocument());
     const refresh = screen.getByRole('button', { name: etl ? 'Refresh' : 'Refresh overview' });
     await waitFor(() => expect(refresh).toBeEnabled());
     const count = pending.length;
@@ -133,7 +133,7 @@ describe.each([false, true])('actual guarded route ETL=%s', etl => {
     const prior = [...pending];
     mockAuth = { ...verified(actorB), user: null, isLoading: true };
     view.rerender(tree(etl));
-    expect(screen.queryByRole('heading', { name: etl ? 'ETL Schedule' : 'Admin Overview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: etl ? 'Run & recover' : 'What needs doing?' })).not.toBeInTheDocument();
     expect(prior.every(item => item.signal.aborted)).toBe(true);
     await settle(); // Transport intentionally ignores abort and delivers old actor data.
     expect(screen.queryByText('Only actor A')).not.toBeInTheDocument();

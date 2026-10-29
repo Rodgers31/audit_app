@@ -7,6 +7,7 @@
  */
 'use client';
 
+import styles from '@/components/admin/admin.module.css';
 import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { AdminGuard } from '@/lib/auth/admin';
@@ -17,10 +18,7 @@ import {
   CheckCircle2,
   Clock,
   Database,
-  Globe,
   Loader2,
-  RefreshCcw,
-  Server,
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -114,26 +112,6 @@ function StatusBadge({ status }: { status: 'healthy' | 'degraded' | 'unhealthy' 
   );
 }
 
-function Card({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className='bg-surface-base border border-neutral-border rounded-xl p-5 shadow-lg'>
-      <div className='flex items-center gap-2 mb-4'>
-        <Icon className='w-5 h-5 text-gov-gold' />
-        <h3 className='text-neutral-text font-semibold text-base'>{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 function sourceLabel(src: SourceCheck): string {
   if (src.freshness === 'unknown' || src.reachable === null) return 'Not yet observed';
   const outcome = src.outcome === 'http_response' ? `HTTP ${src.status_code}` : {
@@ -223,222 +201,14 @@ function StatusDashboard() {
 
   const { auto_seeder, database, sources, alerts, summary } = data;
 
-  return (
-    <PageShell title='System Status'>
-      <div className='max-w-5xl mx-auto space-y-6 pb-16 px-4 sm:px-6'>
-        {/* ── Header row ── */}
-        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'>
-          <div className='flex items-center gap-3'>
-            <StatusBadge status={data.status} />
-            <span className='text-sm text-neutral-muted'>
-              Database checked {timeAgo(data.checked_at)}
-              {dataUpdatedAt
-                ? ` · Refreshed ${timeAgo(new Date(dataUpdatedAt).toISOString())}`
-                : ''}
-            </span>
-          </div>
-          <button
-            onClick={handleManualRefresh}
-            disabled={manualRefreshing}
-            className='inline-flex items-center gap-2 px-4 py-2 bg-surface-base border border-neutral-border hover:bg-surface-sunken text-neutral-text rounded-lg text-sm transition-colors disabled:opacity-50'>
-            <RefreshCcw className={`w-4 h-4 ${manualRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-
-        {/* ── Alerts ── */}
-        {alerts.length > 0 && (
-          <Card
-            title={`Alerts (${summary.errors} errors, ${summary.warnings} warnings)`}
-            icon={AlertTriangle}>
-            <ul className='space-y-2 max-h-64 overflow-y-auto'>
-              {alerts.map((a, i) => (
-                <li
-                  key={i}
-                  className={`flex items-start gap-2 text-sm rounded-lg px-3 py-2 ${
-                    a.level === 'error'
-                      ? 'bg-red-500/10 text-red-800 dark:text-red-300'
-                      : a.level === 'warning'
-                        ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300'
-                        : 'bg-blue-500/10 text-blue-700 dark:text-blue-300'
-                  }`}>
-                  {a.level === 'error' ? (
-                    <XCircle className='w-4 h-4 mt-0.5 shrink-0' />
-                  ) : (
-                    <AlertTriangle className='w-4 h-4 mt-0.5 shrink-0' />
-                  )}
-                  <span>
-                    <strong className='font-medium'>[{a.source}]</strong> {a.message}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-
-        {/* ── Auto-Seeder ── */}
-        <Card title='Web auto-seeder' icon={RefreshCcw}>
-          <div className='grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4'>
-            <Stat
-              label='Status'
-              value={auto_seeder?.is_running === true ? 'Running' : auto_seeder?.is_running === false ? 'Stopped' : 'Unavailable'}
-              color={auto_seeder?.is_running ? 'text-emerald-800 dark:text-emerald-300' : 'text-neutral-muted'}
-            />
-            <Stat
-              label='Total Fetches'
-              // eslint-disable-next-line local/no-zero-fallback-on-published-figure -- internal ops counter on an auth-gated page, not a published figure
-              value={count(auto_seeder?.fetch_stats?.total_fetches)}
-            />
-            <Stat
-              label='Successful'
-              value={count(auto_seeder?.fetch_stats?.successful_fetches)}
-              color='text-emerald-800 dark:text-emerald-300'
-            />
-            <Stat
-              label='Failed'
-              value={count(auto_seeder?.fetch_stats?.failed_fetches)}
-              color={
-                (auto_seeder?.fetch_stats?.failed_fetches ?? 0) > 0
-                  ? 'text-red-800 dark:text-red-300'
-                  : 'text-neutral-muted'
-              }
-            />
-          </div>
-
-          {/* Last refresh times */}
-          {auto_seeder?.last_refresh && Object.keys(auto_seeder.last_refresh).length > 0 && (
-            <div className='border-t border-gov-forest/20 pt-3'>
-              <p className='text-xs text-neutral-muted mb-2 uppercase tracking-wide'>Last Refresh</p>
-              <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-                {Object.entries(auto_seeder.last_refresh).map(([domain, ts]) => (
-                  <div key={domain} className='flex items-center gap-2 text-sm'>
-                    <Clock className='w-3.5 h-3.5 text-neutral-muted' />
-                    <span className='text-neutral-muted capitalize'>{domain}:</span>
-                    <span className='text-neutral-text'>{timeAgo(ts)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Next refresh times */}
-          {auto_seeder?.is_running && auto_seeder.next_refresh && Object.keys(auto_seeder.next_refresh).length > 0 && (
-            <div className='border-t border-gov-forest/20 pt-3 mt-3'>
-              <p className='text-xs text-neutral-muted mb-2 uppercase tracking-wide'>Next Refresh</p>
-              <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-                {Object.entries(auto_seeder.next_refresh).map(([domain, val]) => (
-                  <div key={domain} className='flex items-center gap-2 text-sm'>
-                    <Clock className='w-3.5 h-3.5 text-neutral-muted' />
-                    <span className='text-neutral-muted capitalize'>{domain}:</span>
-                    <span
-                      className={`${val === 'Due now' || val === 'Never run' ? 'text-amber-800 dark:text-amber-300' : 'text-neutral-text'}`}>
-                      {val === 'Due now' || val === 'Never run' ? val : timeAgo(val)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* ── Database Stats ── */}
-        <Card title='Database' icon={Database}>
-          <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4'>
-            <Stat label='Counties' value={count(database.entities?.counties)} target={database.entities ? '/47' : undefined} />
-            <Stat label='Population Records' value={count(database.population?.records)} />
-            <Stat
-              label='Latest Pop. Year'
-              value={
-                database.population?.latest_year ? String(database.population.latest_year) : '—'
-              }
-            />
-            <Stat
-              label='Economic Indicators'
-              value={count(database.economic_indicators?.records)}
-            />
-            <Stat label='Debt Categories' value={count(database.debt_categories?.records)} />
-            <Stat label='Loans' value={count(database.loans?.records)} />
-          </div>
-        </Card>
-
-        {/* ── Data Sources ── */}
-        <Card title='Government Data Sources' icon={Globe}>
-          <p className='text-xs text-neutral-muted mb-3'>Homepage observations only; these do not verify data freshness or ingestion. Checks run on demand, at most once per five minutes per web worker.</p>
-          {data.source_checks_in_progress && <p role='status' className='text-sm text-gov-sage mb-3'>Checking source homepages independently…</p>}
-          <div className='space-y-2'>
-            {Object.values(sources).map((src) => (
-              <div
-                key={src.key}
-                className='flex items-center justify-between bg-surface-sunken rounded-lg px-4 py-3'>
-                <div className='flex items-center gap-3'>
-                  {src.freshness === 'fresh' && src.reachable === true ? (
-                    <CheckCircle2 className='w-4 h-4 text-emerald-800 dark:text-emerald-300' />
-                  ) : (
-                    <Clock className='w-4 h-4 text-neutral-muted' />
-                  )}
-                  <div>
-                    <p className='text-sm text-neutral-text font-medium'>{src.name}</p>
-                    <p className='text-xs text-neutral-text'>{src.url}</p>
-                    {src.observed_at && <p className='text-xs text-neutral-text'>Observed {timeAgo(src.observed_at)}</p>}
-                  </div>
-                </div>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    src.freshness === 'fresh' && src.reachable === true
-                      ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300'
-                      : src.freshness === 'fresh' && src.reachable === false
-                        ? 'bg-red-500/15 text-red-800 dark:text-red-300'
-                        : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-                  }`}>
-                  {sourceLabel(src)}
-                </span>
-              </div>
-            ))}
-            {Object.keys(sources).length === 0 && (
-              <p className='text-sm text-neutral-muted'>No source checks available.</p>
-            )}
-          </div>
-        </Card>
-
-        <Card title='Execution evidence' icon={Server}>
-          <p className='text-sm text-neutral-muted'>
-            Dedicated worker execution is not checked here. The web pipeline is retired;
-            homepage responses and calendar plans do not prove that a job ran.
-          </p>
-          <Link href='/admin/etl' className='inline-block mt-3 text-sm text-gov-sage dark:text-emerald-300 underline'>
-            View dedicated worker readiness and command receipts
-          </Link>
-        </Card>
-
-        {/* ── Footer note ── */}
-        <p className='text-xs text-neutral-muted text-center pt-4'>
-          Database observations refresh every 60 seconds and are cached for 30 seconds.
-          Source observations are separate; stale or missing checks do not establish availability.
-        </p>
-      </div>
-    </PageShell>
-  );
-}
-
-/* ── Small stat component ── */
-function Stat({
-  label,
-  value,
-  color = 'text-neutral-text',
-  target,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-  target?: string;
-}) {
-  return (
-    <div>
-      <p className='text-xs text-neutral-muted mb-0.5 font-medium'>{label}</p>
-      <p className={`text-xl font-bold ${color}`}>
-        {value}
-        {target && <span className='text-sm text-neutral-muted font-normal'>{target}</span>}
-      </p>
+  return <PageShell title='System status' subtitle='Separate observed checks from worker execution and data freshness.' back={{href:'/admin',label:'Back to overview'}}>
+    <div className={styles.workspace}>
+      <section className={styles.panel}><div className={styles.sectionHeading}><div><h2>Observed checks</h2><p>Database checked {timeAgo(data.checked_at)}{dataUpdatedAt?` · fetched ${timeAgo(new Date(dataUpdatedAt).toISOString())}`:''}</p></div><button className={styles.button} disabled={manualRefreshing} onClick={handleManualRefresh}>Refresh observations</button></div><StatusBadge status={data.status}/><p className={`${styles.quiet} mt-4`}>This status describes the checks below. Dedicated worker execution is not checked here; homepage responses do not establish that a data job ran.</p><div className={`${styles.filters} mt-4`}><Link className={`${styles.button} ${styles.primary}`} href='/admin/etl'>Check worker & command receipts</Link><Link className={styles.button} href='/admin/ingestion'>Inspect data updates</Link></div></section>
+      {alerts.length>0&&<section className={styles.notice} aria-labelledby='status-attention'><h2 id='status-attention'>Observed issues · {summary.errors} errors, {summary.warnings} warnings</h2><ul>{alerts.map((alert,i)=><li key={i} className='mt-3'><strong>{alert.source}</strong> · {alert.message}</li>)}</ul></section>}
+      <section className={styles.panel}><div className={styles.sectionHeading}><div><h2>Government source homepages</h2><p>Homepage checks run on demand, at most once per five minutes per web worker. They do not verify the underlying figures or ingestion.</p></div></div>{data.source_checks_in_progress&&<p role='status'>Checking source homepages independently…</p>}<div className={styles.taskList}>{Object.values(sources).map(src=><article className={styles.task} key={src.key}><div className='min-w-0'><strong>{src.name}</strong><p className='break-all'>{src.url}</p><p>Observed {src.observed_at?timeAgo(src.observed_at):'not yet'}</p></div><span className={styles.taskAction}>{sourceLabel(src)}</span></article>)}</div>{!Object.keys(sources).length&&<p>No source checks are available. Their reachability is unknown.</p>}</section>
+      <details className={styles.disclosure}><summary>Database record inventory</summary><div><p className={styles.quiet}>Stored row counts describe inventory. They do not establish current publication authority.</p><dl className={styles.facts}><div><dt>Counties</dt><dd>{count(database.entities?.counties)}</dd></div><div><dt>Population records</dt><dd>{count(database.population?.records)}</dd></div><div><dt>Latest population year</dt><dd>{database.population?.latest_year??'Unavailable'}</dd></div><div><dt>Economic indicators</dt><dd>{count(database.economic_indicators?.records)}</dd></div><div><dt>Debt categories</dt><dd>{count(database.debt_categories?.records)}</dd></div><div><dt>Loans</dt><dd>{count(database.loans?.records)}</dd></div></dl></div></details>
+      <details className={styles.disclosure}><summary>Retired web auto-seeder diagnostics</summary><div><p>The web pipeline is retired. These process-local diagnostics are separate from the dedicated runner.</p><dl className={`${styles.facts} mt-4`}><div><dt>Local process state</dt><dd>{auto_seeder?.is_running===true?'Running':auto_seeder?.is_running===false?'Stopped':'Unavailable'}</dd></div><div><dt>Recorded fetches</dt><dd>{count(auto_seeder?.fetch_stats?.total_fetches)}</dd></div><div><dt>Recorded successes</dt><dd>{count(auto_seeder?.fetch_stats?.successful_fetches)}</dd></div><div><dt>Recorded failures</dt><dd>{count(auto_seeder?.fetch_stats?.failed_fetches)}</dd></div></dl></div></details>
+      <p className={styles.quiet}>Database observations refresh every 60 seconds and are cached for 30 seconds. Stale or missing source observations do not establish availability.</p>
     </div>
-  );
+  </PageShell>;
 }

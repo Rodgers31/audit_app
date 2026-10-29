@@ -212,3 +212,26 @@ def preview_generation(body: PreviewCommand, svc: Service):
     if svc.db.in_transaction():
         raise SocialError('REQUEST_SESSION_UNAVAILABLE', 'A fresh request session is required.', 503)
     return preview(sessionmaker(bind=svc.db.get_bind(), expire_on_commit=False), body)
+
+
+class SourceRecordsDTO(StrictModel):
+    domain: str
+    ingestion_id: int
+    reports: bool
+    page: int
+    page_size: int
+    total: int
+    record_ids: list[int]
+    has_more: bool
+
+
+@router.get('/generation/source-records', response_model=SourceRecordsDTO)
+def generation_source_records(svc: Service, domain: str = Query(max_length=100),
+                              ingestion_id: int = Query(ge=1, le=2147483647),
+                              reports: bool = False, page: int = Query(1, ge=1, le=40)):
+    from sqlalchemy.orm import sessionmaker
+    from .source_selection import source_records
+    if svc.db.in_transaction():
+        raise SocialError('REQUEST_SESSION_UNAVAILABLE', 'A fresh request session is required.', 503)
+    return source_records(sessionmaker(bind=svc.db.get_bind(), expire_on_commit=False),
+                          domain=domain, ingestion_id=ingestion_id, reports=reports, page=page)

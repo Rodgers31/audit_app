@@ -11,7 +11,7 @@ export default function MediaPicker({ onSelect, onClose, selected = [] }: { onSe
   const [detail, setDetail] = useState<string>();
   const title = useId(), library = useMediaLibrary(page, query, kind, true);
   return <section className={styles.panel} aria-labelledby={title}>
-    <h3 id={title}>Choose inspected media</h3>
+    <h3 id={title}>{onSelect?'Choose inspected media':'Inspected media library'}</h3><p className={styles.muted}>Search existing files, inspect their private preview, then review usage. Archiving never removes retained bytes or quota.</p>
     <div className={styles.filters}>
       <label>Search filenames<input maxLength={100} value={search} onChange={event => setSearch(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setQuery(search); setPage(1); } }} /></label>
       <label>Media type<select value={kind} onChange={event => { setKind(event.target.value as typeof kind); setPage(1); }}><option value=''>All media</option><option value='image'>Images</option><option value='video'>Videos</option></select></label>

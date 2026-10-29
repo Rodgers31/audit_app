@@ -22,6 +22,8 @@ import {
 import {parseSchedule,parseEtlHealth,type ScheduleSourceDecision} from '@/lib/admin/etl';
 import {useOperationsAccess} from '@/lib/admin/ingestionPolling';
 import { Suspense } from 'react';
+import styles from '@/components/admin/admin.module.css';
+import { sourceLabel } from '@/lib/admin/sourceLabels';
 import DispatchPanel from './DispatchPanel';
 
 const fadeUp = {
@@ -56,17 +58,16 @@ export default function AdminEtlPage() {
 
   const planData = access.isAdmin && !schedule.isError ? schedule.data : undefined;
   const healthData = access.isAdmin && !health.isError ? health.data : undefined;
-  if (!access.isAdmin) return <PageShell title='ETL Schedule'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
+  if (!access.isAdmin) return <PageShell title='Run & recover'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
 
   return (
     <PageShell
-      title='ETL Schedule'
-      subtitle='Calendar planning for source checks. Execution requires the dedicated runner.'
+      title='Run & recover'
+      subtitle='Check the worker, request a data check, or recover a request using its original receipt.'
       back={{ href: '/admin', label: 'Back to overview' }}>
-      <div className='space-y-5'>
+      <div className={styles.workspace}>
         <Suspense fallback={<p role='status'>Loading worker dispatch…</p>}><DispatchPanel /></Suspense>
-        <p className='text-sm text-neutral-muted'>A calendar calculation does not establish scheduler activity, job execution or financial data freshness.</p>
-        <p role='status' className='text-sm text-neutral-muted'>The calendar controls below are not connected to worker dispatch. Use the dedicated worker controls and command receipts above when available.</p>
+        <details className={styles.disclosure}><summary>Source calendar · planning evidence</summary><div><p className={styles.quiet}>This calendar predicts source checks. It does not prove that a worker is ready, that work ran, or that financial data is current.</p>
         {health.isError && <p role='alert' className='text-sm text-gov-copper'>Could not load execution evidence.</p>}
         {schedule.isError && <p role='alert' className='text-sm text-gov-copper'>Calendar plan unavailable. Refresh to retry.</p>}
         <div className='flex items-center justify-end'>
@@ -120,7 +121,7 @@ export default function AdminEtlPage() {
           initial={false}
           animate='show'
           custom={3}
-          className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl overflow-hidden shadow-surface'>
+          className={styles.panel}>
           <header className='px-5 py-3.5 border-b border-neutral-border bg-gov-cream dark:bg-surface-sunken'>
             <div className='flex items-center gap-2'>
               <PlayCircle className='w-4 h-4 text-gov-sage' />
@@ -150,6 +151,7 @@ export default function AdminEtlPage() {
             </ul>
           )}
         </motion.section>
+        </div></details>
       </div>
     </PageShell>
   );
@@ -217,7 +219,7 @@ function SourceRow({
       <div className='flex items-center gap-3 min-w-[12rem]'>
         <Icon className={`w-5 h-5 ${colour}`} />
         <div>
-          <p className='font-mono text-sm font-semibold text-neutral-text'>{source}</p>
+          <p className='text-base font-semibold text-neutral-text'>{sourceLabel(source)}</p>
           {decision.current_period && (
             <p className='text-[11px] uppercase tracking-wider text-neutral-muted mt-0.5'>
               {decision.current_period}

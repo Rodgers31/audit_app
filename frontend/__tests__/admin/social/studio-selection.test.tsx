@@ -5,6 +5,8 @@ import { studioApi } from '@/lib/api/socialStudio';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { post } from '../../../tests/socialFixtures';
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'fixture-actor'}})}));
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
 jest.mock('@/lib/api/social', () => ({ ...jest.requireActual('@/lib/api/social'), socialApi: { posts:jest.fn(), post:jest.fn() } }));
 jest.mock('@/lib/api/socialMedia', () => ({ socialMediaApi: { library:jest.fn() } }));
 jest.mock('@/lib/api/socialStudio', () => ({ ...jest.requireActual('@/lib/api/socialStudio'), studioApi: { capabilities:jest.fn(), jobs:jest.fn(), calendar:jest.fn(), attach:jest.fn() } }));
@@ -26,6 +28,7 @@ beforeEach(() => {
 afterEach(()=>qc.clear());
 async function older(){
  render(<QueryClientProvider client={qc}><SocialStudio/></QueryClientProvider>);
+ fireEvent.click(screen.getByRole('button',{name:'Review renders'}));
  fireEvent.click(await screen.findByRole('button',{name:/Existing render/}));
  fireEvent.click(await screen.findByRole('button',{name:'Next source posts'}));
  await screen.findByRole('option',{name:'Older source'});
@@ -58,13 +61,13 @@ test('independent: wrong hash, mime and non-ready asset excluded',async()=>{
 test('independent: cached source refetch failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (socialApi.post as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['studio-source']});
+ await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); fireEvent.click(attachButton()); expect(studioApi.attach).not.toHaveBeenCalled();
 });
 test('independent: cached asset refetch failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (socialMediaApi.library as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['studio-assets']});
+ await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','assets']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); fireEvent.click(attachButton()); expect(studioApi.attach).not.toHaveBeenCalled();
 });
 test('independent: changing source clears selected exact asset',async()=>{
@@ -74,13 +77,13 @@ test('independent: changing source clears selected exact asset',async()=>{
 });
 test('independent: source update while media is selected refuses stale revision',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
- qc.setQueryData(['studio-source',source.id],{...source,revision_id:'other-revision',version:8});
+ qc.setQueryData(['admin','social','fixture-actor','studio','source',source.id],{...source,revision_id:'other-revision',version:8});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
 });
 test('independent: pending source refetch blocks attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  let resolve:any; (socialApi.post as jest.Mock).mockImplementation(()=>new Promise(r=>{resolve=r;}));
- const pending=qc.invalidateQueries({queryKey:['studio-source']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled()); resolve(source); await pending;
  await waitFor(()=>expect(attachButton()).toBeEnabled());
 });
@@ -88,7 +91,7 @@ test('independent: pending source refetch blocks attachment',async()=>{
 test('independent: out-of-order source completion cannot restore prior source',async()=>{
  await older(); let resolve:any;
  (socialApi.post as jest.Mock).mockImplementation(()=>new Promise(r=>{resolve=r;}));
- const pending=qc.invalidateQueries({queryKey:['studio-source']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','source']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
  fireEvent.change(screen.getByLabelText('Source post'),{target:{value:''}}); resolve(source); await pending;
  expect(screen.getByLabelText('Source post')).toHaveValue(''); expect(screen.getByLabelText('Title · 70 characters')).toHaveValue(''); expect(attachButton()).toBeDisabled();
@@ -96,7 +99,7 @@ test('independent: out-of-order source completion cannot restore prior source',a
 test('independent: cached job network failure disables attachment',async()=>{
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  (studioApi.jobs as jest.Mock).mockRejectedValue(new Error('offline'));
- await qc.invalidateQueries({queryKey:['studio-jobs']});
+ await qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','jobs']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
 });
 
@@ -112,7 +115,7 @@ test('late asset response for previous page cannot restore attachment',async()=>
  await older(); await waitFor(()=>expect(attachButton()).toBeEnabled());
  let release:(value:unknown)=>void=()=>{};
  (socialMediaApi.library as jest.Mock).mockImplementation(page=>page===2?new Promise(r=>{release=r}):Promise.resolve({assets:[],has_more:true}));
- const pending=qc.invalidateQueries({queryKey:['studio-assets']});
+ const pending=qc.invalidateQueries({queryKey:['admin','social','fixture-actor','studio','assets']});
  await waitFor(()=>expect(attachButton()).toBeDisabled());
  // Page buttons wait for the in-flight page; changing source clears the selection immediately.
  fireEvent.change(screen.getByLabelText('Source post'),{target:{value:''}});

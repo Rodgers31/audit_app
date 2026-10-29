@@ -7,6 +7,8 @@
  */
 'use client';
 
+import styles from '@/components/admin/admin.module.css';
+import Link from 'next/link';
 import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { useAdmin } from '@/lib/auth/admin';
@@ -47,7 +49,7 @@ export default function AuditLogPage() {
   return (
     <Suspense
       fallback={
-        <PageShell title='Audit Log' subtitle='Loading…'>
+        <PageShell title='Activity' subtitle='Loading…'>
           <div className='py-16 flex justify-center'>
             <Loader2 className='w-6 h-6 text-gov-sage animate-spin' />
           </div>
@@ -105,14 +107,15 @@ function AuditLogInner() {
 
   return (
     <PageShell
-      title='Audit Log'
+      title='Activity'
       subtitle={
         data && !error
           ? `${data.total.toLocaleString()} action${data.total === 1 ? '' : 's'} recorded.`
           : 'Recorded user and ETL actions. Social publishing has its own activity trail.'
       }
       back={{ href: '/admin', label: 'Back to overview' }}>
-      <div className='space-y-5'>
+      <div className={styles.workspace}>
+        <div className={styles.notice}><strong>Find a recorded change</strong><p>Choose an action and time window. Actor and target IDs are optional technical filters. <Link href='/admin/social'>Open Social</Link> for post and delivery history.</p></div>
         <AuditFilters key={searchParams.toString()} filters={filters} apply={setQuery} clear={() => router.push('/admin/audit-log', { scroll: false })} />
         <div className='flex flex-wrap items-center justify-between gap-3 text-xs text-neutral-muted'>
           <p>Audit recording is best-effort. Missing evidence does not prove no activity. Payload fields may be redacted.</p>
@@ -174,7 +177,7 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
           hasPayload ? 'hover:bg-gov-cream/50 dark:hover:bg-surface-elevated cursor-pointer' : 'cursor-default'
         }`}>
         <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-semibold bg-gov-sage/15 text-gov-forest dark:text-emerald-200 ring-1 ring-inset ring-gov-sage/20'>
-          {entry.action}
+          {({'users.update_roles':'Access changed','users.send_reset':'Password recovery requested','users.delete':'Account removed'} as Record<string,string>)[entry.action] ?? entry.action.replaceAll('_',' ')}
         </span>
         {entry.target_type && (
           <span className='text-xs text-neutral-muted'>
@@ -214,12 +217,9 @@ function AuditRow({ entry, index }: { entry: AuditEntry; index: number }) {
 
 function AuditFilters({ filters, apply, clear }: { filters: ReturnType<typeof auditFilters>; apply: (updates: Record<string, string | number | null>) => void; clear: () => void }) {
   const [draft, setDraft] = useState(filters);
-  return <form onSubmit={event => { event.preventDefault(); apply({ actor_id: draft.actor_id.trim(), action: draft.action.trim(), target_type: draft.target_type.trim(), target_id: draft.target_id.trim(), days: draft.days }); }} className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl p-4 shadow-surface flex flex-wrap items-end gap-3'>
-    {([{ key: 'actor_id', label: 'Actor (UUID)', max: 64 }, { key: 'action', label: 'Action', max: 80 }, { key: 'target_type', label: 'Target type', max: 40 }, { key: 'target_id', label: 'Target id', max: 64 }] as const).map(({ key, label, max }) => (
-      <label key={key} className='flex flex-col text-xs text-neutral-muted gap-1'>{label}
-        <input type='text' value={draft[key]} maxLength={max} onChange={event => setDraft({ ...draft, [key]: event.target.value })} className='w-44 max-w-full min-h-11 px-3 py-1.5 rounded-lg border border-neutral-border focus:ring-2 focus:ring-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken font-mono' />
-      </label>
-    ))}
+  return <form onSubmit={event => { event.preventDefault(); apply({ actor_id: draft.actor_id.trim(), action: draft.action.trim(), target_type: draft.target_type.trim(), target_id: draft.target_id.trim(), days: draft.days }); }} className={`${styles.panel} ${styles.filters}`}>
+    <label className='flex flex-col gap-1 text-sm'>Action<select value={draft.action} onChange={e=>setDraft({...draft,action:e.target.value})} className={styles.button}><option value=''>All actions</option>{draft.action&&!['users.update_roles','users.send_reset','users.delete'].includes(draft.action)&&<option value={draft.action}>{draft.action}</option>}<option value='users.update_roles'>Access changed</option><option value='users.send_reset'>Password recovery requested</option><option value='users.delete'>Account removed</option></select></label>
+    <details className={styles.disclosure} open={!!(filters.actor_id||filters.target_id||filters.target_type)}><summary>Actor and target filters</summary><div className={styles.filters}>{([{key:'actor_id',label:'Actor UUID',max:64},{key:'target_type',label:'Target type',max:40},{key:'target_id',label:'Target ID',max:64}] as const).map(({key,label,max})=><label key={key}>{label}<input value={draft[key]} maxLength={max} onChange={e=>setDraft({...draft,[key]:e.target.value})}/></label>)}</div></details>
     <label className='flex flex-col text-xs text-neutral-muted gap-1'>Time window
       <select value={draft.days} onChange={event => setDraft({ ...draft, days: Number(event.target.value) })} className='min-h-11 px-3 py-1.5 rounded-lg border border-neutral-border bg-gov-cream/40 dark:bg-surface-sunken focus:ring-2 focus:ring-gov-sage/40'>
         {DAYS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.value === 0 ? opt.label : `Last ${opt.label}`}</option>)}

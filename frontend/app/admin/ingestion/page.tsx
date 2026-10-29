@@ -10,18 +10,16 @@
 import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import styles from '@/components/admin/admin.module.css';
+import { sourceLabel, sourceLabels } from '@/lib/admin/sourceLabels';
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  ChevronRight,
   Clock,
   Loader2,
-  Pause,
   PlayCircle,
-  RefreshCcw,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -47,15 +45,6 @@ const DAYS_OPTIONS = [
 ];
 
 const PAGE_SIZE = 20;
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 12 },
-  show: (i: number = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
 
 export default function IngestionJobsPage() {
   return (
@@ -116,216 +105,27 @@ function IngestionJobsInner() {
   const data = access.isAdmin && !error ? jobs.data : undefined;
   if (!access.isAdmin) return <PageShell title='Ingestion Jobs'><p>{access.isLoading ? 'Verifying access…' : 'Admin access required.'}</p></PageShell>;
 
-  return (
-    <PageShell
-      title='Ingestion Jobs'
-      subtitle={
-        data
-          ? `${data.total.toLocaleString()} job${data.total === 1 ? '' : 's'} in the last ${days} day${days === 1 ? '' : 's'}.`
-          : 'Inspect what the data pipeline did recently.'
-      }
-      back={{ href: '/admin', label: 'Back to overview' }}>
-      <div className='space-y-5'>
-        {/* ── Filter bar ── */}
-        <div className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl p-4 shadow-surface flex flex-wrap items-end gap-3'>
-          <FilterField label='Domain'>
-            <input
-              type='text'
-              aria-label='Domain'
-              maxLength={100}
-              value={domain}
-              onChange={(e) => setQuery({ domain: e.target.value || null })}
-              placeholder='e.g. counties_budget'
-              className='w-48 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'
-            />
-          </FilterField>
-          <FilterField label='Status'>
-            <select
-              aria-label='Status'
-              value={status}
-              onChange={(e) => setQuery({ status: e.target.value || null })}
-              className='w-52 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'>
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <FilterField label='Time window'>
-            <select
-              aria-label='Time window'
-              value={days}
-              onChange={(e) => setQuery({ days: e.target.value })}
-              className='w-40 px-3 py-1.5 text-sm rounded-lg border border-neutral-border focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 bg-gov-cream/40 dark:bg-surface-sunken'>
-              {!DAYS_OPTIONS.some(opt => opt.value === days) && <option value={days}>Last {days} days</option>}
-              {DAYS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  Last {opt.label}
-                </option>
-              ))}
-            </select>
-          </FilterField>
-          <div className='ml-auto flex items-center gap-2'>
-            {(domain || status || days !== 7) && (
-              <button
-                onClick={() => router.push('/admin/ingestion')}
-                className='text-xs text-neutral-muted hover:text-neutral-text underline underline-offset-2 px-2'>
-                Clear filters
-              </button>
-            )}
-            <button
-              onClick={() => { if(access.enabled) void refetch(); }}
-              disabled={isFetching || !access.enabled}
-              className='inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-surface-base border border-neutral-border hover:border-gov-sage/40 text-neutral-text rounded-lg text-sm transition-all shadow-surface disabled:opacity-50'>
-              <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        {/* ── Body ── */}
-        {isLoading || (!data && !error) ? (
-          <BodyState>
-            <Loader2 className='w-6 h-6 text-gov-sage animate-spin' />
-            <p className='text-neutral-muted text-sm'>Loading jobs…</p>
-          </BodyState>
-        ) : error ? (
-          <BodyState>
-            <XCircle className='w-8 h-8 text-gov-copper dark:text-red-400' />
-            <p className='text-gov-copper dark:text-red-400 text-sm'>Could not load jobs.</p>
-            <button
-              onClick={() => { if(access.enabled) void refetch(); }}
-              disabled={!access.enabled || isFetching}
-              className='px-3 py-1.5 bg-gov-sage/10 hover:bg-gov-sage/20 text-gov-forest dark:text-emerald-200 rounded-lg text-sm transition-colors'>
-              Retry
-            </button>
-          </BodyState>
-        ) : !data || data.jobs.length === 0 ? (
-          <BodyState>
-            <Pause className='w-8 h-8 text-neutral-muted/40' />
-            <p className='text-neutral-muted text-sm'>{page > 1 ? 'No jobs on this page.' : 'No jobs match these filters.'}</p>
-            {page > 1 && data && <Pagination page={page} pageSize={PAGE_SIZE} total={data.total} hasMore={false} onChange={p => setQuery({page:p})} />}
-          </BodyState>
-        ) : (
-          <>
-            <div className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl overflow-hidden shadow-surface'>
-              {/* Desktop table */}
-              <table className='hidden md:table w-full text-sm'>
-                <thead className='bg-gov-cream dark:bg-surface-sunken border-b border-neutral-border text-[11px] uppercase tracking-wider text-neutral-muted'>
-                  <tr>
-                    <th className='px-4 py-3 text-left font-semibold'>Domain</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Status</th>
-                    <th className='px-4 py-3 text-left font-semibold'>Started</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Duration</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Items</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Created</th>
-                    <th className='px-4 py-3 text-right font-semibold'>Updated</th>
-                    <th className='px-2 py-3'></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.jobs.map((job, i) => (
-                    <motion.tr
-                      key={job.id}
-                      variants={fadeUp}
-                      initial='hidden'
-                      animate='show'
-                      custom={i}
-                      className='border-b last:border-0 border-neutral-border/60 hover:bg-gov-cream/60 dark:hover:bg-surface-elevated cursor-pointer transition-colors group'>
-                      <td className='px-4 py-3'>
-                        <div className='flex items-center gap-2'>
-                          <Link href={`/admin/ingestion/${job.id}`} aria-label={`View job #${job.id}`} className='font-mono text-xs font-semibold text-neutral-text underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-gov-sage'>
-                            {job.domain}
-                          </Link>
-                          {job.dry_run && (
-                            <span className='text-[11px] uppercase tracking-wider bg-gov-warning/15 text-gov-warning dark:text-amber-300 px-1.5 py-0.5 rounded font-semibold'>
-                              dry-run
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className='px-4 py-3'>
-                        <StatusBadge status={job.status} hasErrors={job.errors.length > 0} />
-                      </td>
-                      <td className='px-4 py-3 text-neutral-muted whitespace-nowrap'>
-                        {job.status === 'pending' ? 'Awaiting execution' : timeAgo(job.started_at)}
-                      </td>
-                      <td className='px-4 py-3 text-right text-neutral-muted whitespace-nowrap'>
-                        {formatDuration(job.duration_seconds)}
-                      </td>
-                      <td className='px-4 py-3 text-right text-neutral-text font-medium'>
-                        {job.items_processed.toLocaleString()}
-                      </td>
-                      <td className='px-4 py-3 text-right text-emerald-600 dark:text-emerald-400 font-medium'>
-                        {job.items_created.toLocaleString()}
-                      </td>
-                      <td className='px-4 py-3 text-right text-blue-600 dark:text-blue-400 font-medium'>
-                        {job.items_updated.toLocaleString()}
-                      </td>
-                      <td className='px-2 py-3'>
-                        <ChevronRight className='w-4 h-4 text-neutral-muted/40 group-hover:text-gov-sage group-hover:translate-x-0.5 transition-all' />
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Mobile card list */}
-              <ul className='md:hidden divide-y divide-neutral-border/60'>
-                {data.jobs.map((job, i) => (
-                  <motion.li
-                    key={job.id}
-                    variants={fadeUp}
-                    initial='hidden'
-                    animate='show'
-                    custom={i}>
-                    <Link
-                      href={`/admin/ingestion/${job.id}`}
-                      className='block px-4 py-3 hover:bg-gov-cream/60 dark:hover:bg-surface-elevated transition-colors'>
-                      <div className='flex items-center justify-between gap-2 mb-1'>
-                        <span className='font-mono text-xs font-semibold text-neutral-text'>
-                          {job.domain}
-                        </span>
-                        <StatusBadge status={job.status} hasErrors={job.errors.length > 0} />
-                        {job.dry_run && <span className='text-xs text-gov-warning'>dry-run</span>}
-                      </div>
-                      <div className='flex items-center justify-between text-xs text-neutral-muted'>
-                        <span>{job.status === 'pending' ? 'Awaiting execution' : timeAgo(job.started_at)}</span>
-                        <span>{formatDuration(job.duration_seconds)}</span>
-                      </div>
-                      <div className='flex items-center gap-3 text-xs mt-1'>
-                        <span className='text-neutral-muted'>
-                          {job.items_processed.toLocaleString()} processed
-                        </span>
-                        <span className='text-emerald-600 dark:text-emerald-400 font-medium'>
-                          +{job.items_created.toLocaleString()}
-                        </span>
-                        <span className='text-blue-600 dark:text-blue-400 font-medium'>
-                          ~{job.items_updated.toLocaleString()}
-                        </span>
-                      </div>
-                    </Link>
-                  </motion.li>
-                ))}
-              </ul>
-            </div>
-
-            <Pagination
-              page={page}
-              pageSize={PAGE_SIZE}
-              total={data.total}
-              hasMore={data.has_more}
-              onChange={(p) => setQuery({ page: p })}
-            />
-          </>
-        )}
-      </div>
-    </PageShell>
-  );
+  return <PageShell title='Data updates' subtitle='Inspect recorded data jobs, then check their separate draft outcomes.' back={{href:'/admin',label:'Back to overview'}}>
+    <div className={styles.workspace}>
+      <section className={styles.panel} aria-label='Find data updates'><div className={styles.toolbar}>
+        <div className={styles.filters}>
+          <label>Source<select value={domain} onChange={e=>setQuery({domain:e.target.value})}><option value=''>All sources</option>{domain&&!Object.hasOwn(sourceLabels,domain)&&<option value={domain}>{sourceLabel(domain)}</option>}{Object.entries(sourceLabels).filter(([key])=>!['treasury','cob','oag','knbs','kra'].includes(key)).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+          <label>Outcome<select value={status} onChange={e=>setQuery({status:e.target.value})}>{STATUS_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>{opt.label}</option>)}</select></label>
+          <label>Time window<select value={days} onChange={e=>setQuery({days:Number(e.target.value)})}>{!DAYS_OPTIONS.some(opt=>opt.value===days)&&<option value={days}>Last {days} days</option>}{DAYS_OPTIONS.map(opt=><option key={opt.value} value={opt.value}>Last {opt.label}</option>)}</select></label>
+        </div><div className={styles.filters}><button className={styles.button} disabled={!access.enabled||isFetching} onClick={()=>{if(access.enabled)void refetch();}}>Refresh updates</button>{(domain||status||days!==7)&&<button className={styles.button} onClick={()=>router.push('/admin/ingestion')}>Clear filters</button>}</div>
+      </div></section>
+      <section className={styles.panel} aria-labelledby='updates-heading'><div className={styles.sectionHeading}><div><h2 id='updates-heading'>Recorded jobs</h2><p>{data?`${data.total} matching jobs in the last ${days} days.`:'Current evidence is being checked.'} A completed data job does not establish that a draft was created.</p></div><Link className={styles.button} href='/admin/etl'>Run & recover a check</Link></div>
+        {isLoading||(!data&&!error)?<p role='status'>Loading jobs…</p>:error?<div role='alert'><p>Could not load data updates. Their outcomes are unknown.</p><button className={styles.button} disabled={!access.enabled||isFetching} onClick={()=>{if(access.enabled)void refetch();}}>Retry</button></div>:!data?.jobs.length?<p>{page>1?'No jobs on this page.':'No jobs match these filters.'}</p>:<div className={styles.taskList}>{data.jobs.map(job=><article key={job.id} className={styles.job}>
+          <div><Link href={`/admin/ingestion/${job.id}${canonicalQuery?'?'+canonicalQuery:''}`} className={styles.jobLink}>{sourceLabel(job.domain)}</Link><p className={styles.quiet}>Job #{job.id} · {job.status==='pending'?'Awaiting execution':timeAgo(job.started_at)}{job.dry_run?' · Dry run':''}</p></div>
+          <div><StatusBadge status={job.status} hasErrors={job.error_count>0}/><p className={styles.quiet}>{formatDuration(job.duration_seconds)} · {job.error_count} errors</p></div>
+          <div><strong>{job.items_created.toLocaleString()} created · {job.items_updated.toLocaleString()} updated</strong><p className={styles.quiet}>{job.items_processed.toLocaleString()} data items processed</p></div>
+          <Link className={styles.button} href={`/admin/ingestion/${job.id}${canonicalQuery?'?'+canonicalQuery:''}`} aria-label={`Inspect outcome → ${sourceLabel(job.domain)} job #${job.id}`}>Inspect outcome →</Link>
+        </article>)}</div>}
+        {data&&!error&&(data.total>0||page>1)&&<Pagination page={page} pageSize={PAGE_SIZE} total={data.total} hasMore={data.has_more} onChange={p=>setQuery({page:p})}/>}
+      </section>
+    </div>
+  </PageShell>;
 }
-
-/* ── Helpers ── */
 
 function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean }) {
   const config = ((): {
@@ -396,17 +196,6 @@ function StatusBadge({ status, hasErrors }: { status: string; hasErrors: boolean
   );
 }
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className='flex flex-col'>
-      <label className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
-
 function Pagination({
   page,
   pageSize,
@@ -449,15 +238,6 @@ function Pagination({
     </div>
   );
 }
-
-function BodyState({ children }: { children: React.ReactNode }) {
-  return (
-    <div className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl py-16 flex flex-col items-center justify-center gap-3 shadow-surface'>
-      {children}
-    </div>
-  );
-}
-
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null) return '—';
