@@ -292,11 +292,23 @@ def persist_national_budget_records(
     settings: SeedingSettings,
     context: DomainRunContext,
 ) -> PersistenceStats:
+    from ...native_report_authority import lock_native_domain, persist_native_report
+
     stats = PersistenceStats()
+    if type(context.dry_run) is not bool:
+        raise ValueError("Explicit native dry-run state required")
+    if not context.dry_run:
+        # Coalesced invalidations run after the rows, so take the domain lock
+        # before any source/financial autoflush can invert the admission order.
+        lock_native_domain(session, "national_budget")
     # Invocation-local ORM identities never escape the caller's transaction.
     # A rollback or later run must resolve its sources from PostgreSQL again.
     sources_by_url: dict[str, SourceDocument] = {}
     initialized_acquisitions: set[int] = set()
+    # Coalesce missing-proof requests, not source snapshots. Each invalidation
+    # reads the current row under its own transaction lock. A later proof must
+    # first observe any preceding invalidation for that source.
+    pending_invalidations: dict[int, SourceDocument] = {}
     # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
     expenditure_periods: set[tuple[int, int]] = set()
 
@@ -347,9 +359,14 @@ def persist_national_budget_records(
             _initialize_pdf_acquisition(session, source,
                 record.provenance_extra["source_evidence"], provenance_entry["source_evidence"],
                 initialized_acquisitions)
-        from ...native_report_authority import persist_native_report
-        persist_native_report(session, source, record.provenance_extra.get("_native_report_authority"),
-            context=context, domain="national_budget")
+        authority = record.provenance_extra.get("_native_report_authority")
+        if authority is None:
+            pending_invalidations[source.id] = source
+        else:
+            pending = pending_invalidations.pop(source.id, None)
+            if pending is not None:
+                persist_native_report(session, pending, None, context=context, domain="national_budget")
+            persist_native_report(session, source, authority, context=context, domain="national_budget")
         declares_measure = "measure" in record.provenance_extra
         if record.provenance_extra.get("measure") == EXPENDITURE_MEASURE:
             expenditure_periods.add((entity.id, period.id))
@@ -409,6 +426,8 @@ def persist_national_budget_records(
                     provenance.append(provenance_entry)
                     existing.provenance = provenance
 
+    for source in pending_invalidations.values():
+        persist_native_report(session, source, None, context=context, domain="national_budget")
     stats.superseded += _retire_superseded_lines(session, expenditure_periods)
     logger.info("national_budget_persistence_prepared", extra={
         "processed_records": stats.processed, "distinct_sources": len(sources_by_url),

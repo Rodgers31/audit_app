@@ -293,22 +293,15 @@ def persist_native_report(session, source, authority, *, context, domain):
     lock_native_domain(session, domain)
     session.flush()
     session.execute(select(SourceDocument.id).where(SourceDocument.id == source.id).with_for_update()).scalar_one()
+    if authority is None:
+        _invalidate_native_report(session, source, domain)
+        return None
     # A source may have changed in another transaction before this lock. Every
     # identity/edition guard below must inspect the locked row, not ORM cache.
     session.refresh(source, ['meta', 'url', 'publisher', 'status', 'md5', 'country_id'])
     active = dict((source.meta or {}).get(KEY) or {})
     active.pop(domain, None)
     source.meta = {**(source.meta or {}), KEY: active}
-    if authority is None:
-        session.flush()
-        if session.get_bind().dialect.name == 'postgresql':
-            from sqlalchemy import text
-            session.execute(text('SET CONSTRAINTS ALL IMMEDIATE'))
-        session.refresh(source, ['meta'])
-        stored = (source.meta or {}).get(KEY)
-        if type(stored) is not dict or domain in stored:
-            raise ValueError('Native authority invalidation readback differs')
-        return None
     if (not isinstance(authority, NativeReportAuthority) or authority._snapshot != digest(authority.value)
             or not receipt_is_sealed(authority.receipt) or authority.receipt.get('observations') != [authority.value]
             or authority.value['domain'] != domain or authority.value['document_url'] != source.url
@@ -389,3 +382,43 @@ def persist_native_report(session, source, authority, *, context, domain):
     if digest(source.meta[KEY][domain]) != digest(binding):
         raise ValueError('Native authority binding readback differs')
     return ext.id
+
+
+def _invalidate_native_report(session, source, domain):
+    """Remove only the locked source's current domain binding, without JSON egress."""
+    from sqlalchemy import select, update, func, text
+    if __package__.startswith('backend.'):
+        from backend.models import SourceDocument
+    else:
+        from models import SourceDocument
+    dialect = session.get_bind().dialect.name
+    if dialect == 'postgresql':
+        from sqlalchemy.dialects.postgresql import array
+        kind = func.jsonb_typeof(SourceDocument.meta[KEY])
+        present = SourceDocument.meta[KEY].has_key(domain)
+        removal = SourceDocument.meta.op('#-')(array([KEY, domain]))
+    elif dialect == 'sqlite':
+        path = '$.' + KEY
+        kind = func.json_type(SourceDocument.meta, path)
+        present = func.json_type(SourceDocument.meta, path + '.' + domain).isnot(None)
+        removal = func.json_remove(SourceDocument.meta, path + '.' + domain)
+    else:
+        raise ValueError('Native authority invalidation dialect unavailable')
+    query = select(kind, present).where(SourceDocument.id == source.id)
+    shape, exists = session.execute(query).one()
+    if shape not in (None, 'null', 'object'):
+        raise ValueError('Native authority binding container invalid')
+    if exists:
+        session.execute(update(SourceDocument).where(SourceDocument.id == source.id)
+            .values(meta=removal).execution_options(synchronize_session=False))
+    # The ORM may still hold the previous binding. Expire, never merge it back
+    # into the narrow database update or fetch unrelated metadata for readback.
+    session.expire(source, ['meta'])
+    # A prior write can have queued a deferred trigger even when this binding
+    # is absent. Keep the constraint/readback barrier on the no-write path too.
+    if dialect == 'postgresql':
+        session.execute(text('SET CONSTRAINTS ALL IMMEDIATE'))
+    stored_shape, stored = session.execute(query).one()
+    allowed_shapes = ('object',) if exists else (None, 'null', 'object')
+    if stored_shape not in allowed_shapes or stored:
+        raise ValueError('Native authority invalidation readback differs')
