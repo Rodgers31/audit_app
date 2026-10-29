@@ -46,7 +46,7 @@ was OOM-killed; its separate retained-parser component used about 889 MiB peak
 under 2 GiB. The B116 external receipts measure the complete offline producer,
 private migrated PostgreSQL and API replay under a 2 GiB, one-CPU bound. These
 local Linux/Python3.12 results do not certify serving-runtime parity, GitHub runner
-performance, production storage, egress, quotas, live 600s domain/1320s total
+performance, production storage, egress, quotas, current 600s domain/2400s processing
 budgets, or current official HTTP authority. Keep those gates distinct.
 
 Before rollout, coordinator must verify reviewed release and selected runner,
