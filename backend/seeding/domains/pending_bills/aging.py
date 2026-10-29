@@ -9,6 +9,7 @@ from copy import deepcopy
 from decimal import Decimal
 import hashlib
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -17,6 +18,8 @@ from services.pending_bills_aging import EXTRACTOR, ASSEMBLY_EXTRACTOR, absent_o
 from .parser import require_pending_amount
 
 ARTIFACT_SHA256 = "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20"
+# Legacy SourceDocument checksum for this same reviewed byte edition.
+ARTIFACT_MD5 = "dfafc8c1d53ea3258ea485ddec0b3fd6"
 AS_AT = "2026-06-30"
 FISCAL_YEAR = "FY2025/26"
 TABLE = "Table 2.11"
@@ -24,6 +27,7 @@ BANDS = ("Under one year", "1-2 years", "2-3 years", "Over 3 years")
 SCOPE = "county_executive"
 MILLION = Decimal(1000000)
 ASSEMBLY_SCOPE = "county_assembly"
+logger = logging.getLogger("seeding.pending_bills.aging")
 
 
 def scope_contract(scope):
@@ -443,6 +447,96 @@ def persist_aging(session, source, cohort, *, publication_batch, records):
     return ref
 
 
+def retain_aging_pointers(session, source, previous, *, publication_batch,
+                          county_table, stock_observations, context, was_current):
+    """Keep observations only across a qualified reread of the identical stock.
+
+    Flags select new acquisition, not deletion of already qualified evidence.
+    A correction, changed absence statement, edition or unqualified stock write
+    invalidates selection. Historical extractions are never rewritten/revived.
+    """
+    from services.figure_qualification import ObservationIdentity, evaluate_qualification
+    from models import IngestionJob
+    from seeding.retained_report_receipts import KEY, aware, validate_retained_pdf
+    from datetime import datetime, timezone
+
+    refs = {scope: previous.get(scope_contract(scope)["metadata_key"])
+            for scope in (SCOPE, ASSEMBLY_SCOPE)}
+    if not any(refs.values()):
+        return {}
+    if (was_current is not True
+            or previous.get("pending_bills_publication_batch") != publication_batch
+            or previous.get("county_payables") != county_table or not stock_observations):
+        logger.info("Aging pointers cleared: county stock edition or coverage replaced")
+        return {}
+    # Qualify the newly persisted stock evidence, not its supplied digest or
+    # an earlier cohort. Fetch receipts once for the entire stock publication.
+    ids = {e.get("receipt", {}).get("extraction_id")
+           for _, _, evidence in stock_observations for e in evidence}
+    receipts = {e.id: e.extracted_json.get("response_receipt")
+                for e in session.query(Extraction).populate_existing().filter(
+                    Extraction.id.in_([i for i in ids if type(i) is int]),
+                    Extraction.source_document_id == source.id).all()}
+    try:
+        for receipt in receipts.values():
+            if isinstance(receipt, dict) and KEY in receipt:
+                if context is None or type(context.job_id) is not int:
+                    raise ValueError("Current retained-source job required")
+                job = session.get(IngestionJob, context.job_id, populate_existing=True)
+                from models import IngestionStatus
+                if (job is None or job.status != IngestionStatus.RUNNING
+                        or job.dry_run is not False or context.dry_run is not False):
+                    raise ValueError("Exact running retained-source job required")
+                validate_retained_pdf(session, source, receipt, job,
+                    started=aware(job.started_at), finished=datetime.now(timezone.utc))
+        for record, entity, evidence in stock_observations:
+            if len(evidence) != 1:
+                raise ValueError("Missing/ambiguous stock evidence")
+            identity = ObservationIdentity(measure="outstanding", entity_id=entity.id,
+                geography=entity.canonical_name, period=record.as_at, unit="KES", basis="actual",
+                dimensions={"lender": f"Pending Bills — County Governments ({record.entity_name})",
+                            "debt_category": "pending_bills"})
+            cell = evidence[0]
+            q = evaluate_qualification(identity, record.total_pending, source=source,
+                evidence=cell, receipt=receipts.get(cell.get("receipt", {}).get("extraction_id")))
+            if q.status != "verified" or q.digest != ARTIFACT_SHA256:
+                raise ValueError("Unqualified or changed stock artifact")
+    except (ValueError, TypeError, KeyError, AttributeError):
+        logger.info("Aging pointers cleared: current stock artifact is unqualified")
+        return {}
+    retained = {}
+    for scope, ref in refs.items():
+        contract = scope_contract(scope)
+        if (not isinstance(ref, dict) or ref.get("publication_batch") != publication_batch
+                or ref.get("source_url") != source.url or ref.get("as_at") != AS_AT
+                or type(ref.get("extraction_id")) is not int):
+            continue
+        extraction = session.query(Extraction).populate_existing().filter(
+            Extraction.id == ref["extraction_id"], Extraction.source_document_id == source.id,
+            Extraction.extractor == contract["extractor"]).one_or_none()
+        if extraction is not None and public_observation(
+                session, source, extraction, ref, scope=scope)["status"] == "qualified":
+            retained[contract["metadata_key"]] = deepcopy(ref)
+        else:
+            logger.info("Aging pointer cleared: %s retained cohort failed qualification", scope)
+    return retained
+
+
+def _require_current_source(source):
+    from models import DocumentStatus
+
+    artifact = source.meta.get("pdf_artifact_v1") if isinstance(source.meta, dict) else None
+    if (source.status != DocumentStatus.AVAILABLE
+            or source.publisher != "Office of the Controller of Budget (OCOB)"
+            or source.country is None or source.country.id != source.country_id
+            or source.country.iso_code != "KEN"
+            or source.md5 is not None and source.md5 != ARTIFACT_MD5
+            or artifact is not None and (not isinstance(artifact, dict)
+                or artifact.get("sha256") != ARTIFACT_SHA256
+                or artifact.get("md5") != ARTIFACT_MD5)):
+        raise ValueError("Current source edition is unavailable or changed")
+
+
 def validate_cohort(cohort):
     from seeding.pdf_parsers import KENYAN_COUNTIES
 
@@ -588,6 +682,7 @@ def public_observation(db, source, extraction, ref, *, county=None, scope=SCOPE)
 
     cohort = extraction.extracted_json
     try:
+        _require_current_source(source)
         validate_cohort(cohort)
         if cohort["scope"] != scope:
             raise ValueError("Aging population mismatch")

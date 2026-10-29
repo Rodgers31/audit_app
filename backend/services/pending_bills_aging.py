@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import re
 
-from models import DebtCategory, Entity, EntityType, Extraction, Loan, SourceDocument
+from models import Country, DebtCategory, Entity, EntityType, Extraction, Loan, SourceDocument
 from sqlalchemy import and_, or_, select
+from sqlalchemy.orm import joinedload
 
 SCOPES = ("county_executive", "county_assembly", "national", "combined")
 EXTRACTOR = "pending-bills-aging-v1"
@@ -35,56 +36,22 @@ def aging_observations(db, *, as_at=None, county=None, stock_context=None):
     result = {scope: absent_observation(scope) for scope in SCOPES}
     if as_at is None or (stock_context is not None and not stock_context):
         return result
-    from services.publication_gate import COUNTY_PENDING_BILLS_PUBLICATION
-
     # The document's retained pointer is history, not current publication
     # authority. Every presently published stock row on this date must agree
     # with the cohort's source AND batch. This also refuses mixed partial
     # replacements without deleting the older extraction/pointer history.
-    current_stock = and_(
-        Entity.type == EntityType.COUNTY,
-        Loan.debt_category == DebtCategory.PENDING_BILLS,
-        Loan.provenance["publication"].astext == COUNTY_PENDING_BILLS_PUBLICATION,
-        Loan.provenance["category"].astext == "county",
-        Loan.provenance["as_at"].astext == as_at,
-    )
-    active_batch = SourceDocument.meta["pending_bills_publication_batch"].astext
-
-    def active_stock_where(binding):
-        return (
-            select(1)
-            .select_from(Loan)
-            .join(Entity, Entity.id == Loan.entity_id)
-            .where(current_stock, binding)
-            .correlate(SourceDocument)
-            .exists()
-        )
-
-    same_binding = active_stock_where(
-        and_(
-            Loan.source_document_id == SourceDocument.id,
-            Loan.provenance["publication_batch"].astext == active_batch,
-        )
-    )
-    other_binding = active_stock_where(
-        or_(
-            Loan.source_document_id.is_(None),
-            Loan.source_document_id != SourceDocument.id,
-            Loan.provenance["publication_batch"].astext.is_(None),
-            Loan.provenance["publication_batch"].astext != active_batch,
-        )
-    )
+    bindings = current_stock_binding(as_at)
     # Metadata points at one immutable extraction. A title or latest source
     # document cannot establish a prior observation's artifact identity.
     docs = (
         db.query(SourceDocument)
         .populate_existing()
+        .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
         .filter(
             SourceDocument.publisher == "Office of the Controller of Budget (OCOB)",
             or_(*[SourceDocument.meta[key]["as_at"].astext == as_at
                    for key, _ in COHORTS.values()]),
-            same_binding,
-            ~other_binding,
+            *bindings,
         )
         .limit(2)
         .all()
@@ -126,3 +93,43 @@ def aging_observations(db, *, as_at=None, county=None, stock_context=None):
             doc, extraction, ref = candidates[0]
             result[scope] = public_observation(db, doc, extraction, ref, county=county, scope=scope)
     return result
+
+
+def current_stock_binding(as_at):
+    """Correlated predicates shared by reads and pre-write selection fences."""
+    from services.publication_gate import COUNTY_PENDING_BILLS_PUBLICATION
+
+    current_stock = and_(
+        Entity.type == EntityType.COUNTY,
+        Loan.debt_category == DebtCategory.PENDING_BILLS,
+        Loan.provenance["publication"].astext == COUNTY_PENDING_BILLS_PUBLICATION,
+        Loan.provenance["category"].astext == "county",
+        Loan.provenance["as_at"].astext == as_at,
+    )
+    active_batch = SourceDocument.meta["pending_bills_publication_batch"].astext
+
+    def active_stock_where(binding):
+        return (
+            select(1)
+            .select_from(Loan)
+            .join(Entity, Entity.id == Loan.entity_id)
+            .where(current_stock, binding)
+            .correlate(SourceDocument)
+            .exists()
+        )
+
+    same_binding = active_stock_where(
+        and_(
+            Loan.source_document_id == SourceDocument.id,
+            Loan.provenance["publication_batch"].astext == active_batch,
+        )
+    )
+    other_binding = active_stock_where(
+        or_(
+            Loan.source_document_id.is_(None),
+            Loan.source_document_id != SourceDocument.id,
+            Loan.provenance["publication_batch"].astext.is_(None),
+            Loan.provenance["publication_batch"].astext != active_batch,
+        )
+    )
+    return same_binding, ~other_binding

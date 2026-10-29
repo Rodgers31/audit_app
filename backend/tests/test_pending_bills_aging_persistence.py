@@ -235,7 +235,7 @@ def test_untrusted_json_or_late_corruption_rolls_back_entire_edition(
         assert db_session.query(Extraction).count() == 0
 
 
-def test_new_unaged_write_clears_pointer_without_deleting_history(
+def test_identical_qualified_stock_write_retains_pointer_without_deleting_history(
     db_session, seed_country, tmp_path, monkeypatch
 ):
     populate_counties(db_session, seed_country.id)
@@ -249,7 +249,7 @@ def test_new_unaged_write_clears_pointer_without_deleting_history(
     write(db_session, records, None)
     assert (
         aging_observations(db_session, as_at=aging.AS_AT)["county_executive"]["status"]
-        == "unavailable"
+        == "qualified"
     )
     assert db_session.query(Extraction).count() == count
 
