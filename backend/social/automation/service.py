@@ -16,6 +16,7 @@ from ..service import SocialError, utc, iso
 from ..validation import validate_document, capability_for
 from ..generation.models import AutomationRuleVersion, ShadowDecision, SourceEvent, SourceCursor
 from ..generation.contracts import RuleCommand, SourceObservation
+from ..generation.destination import draft_destination
 from ..generation.service import _insert, semantic_fingerprint, verify_generated_revision, generator_metadata, evidence_items, TEMPLATE_VERSION, render_for_revision
 from .contracts import OperatingEvidenceCommand, SnapshotCommand, PolicyControlsCommand, AuthorizePolicyCommand, SchedulePolicyCommand
 from .models import OperatingEvidence, AuthorizedPolicySnapshot, PolicyDecision, PolicySelection
@@ -142,7 +143,7 @@ def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_
         require(abs(Decimal(observation.facts[0].value) - Decimal(prior_observation.facts[0].value)) >= Decimal(threshold), 'BELOW_MATERIALITY')
     require(semantic_fingerprint(observation) == event.fingerprint == revision.evidence_snapshot.get('fingerprint'))
     document = PostDocument.model_validate(revision.document)
-    require(document.master.text == expected_text and document.master.link == evidence_items(observation)[0].canonical_url and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
+    require(document.master.text == expected_text and document.master.link == draft_destination(svc.db, observation, template_version=selected_template) and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
     expiry = min(utc(f.verified_at) + timedelta(hours=definition.freshness_hours) for f in evidence_items(observation))
     require(now < expiry and all(utc(f.verified_at) <= now and utc(f.retrieved_at) <= now for f in evidence_items(observation)), 'EVIDENCE_STALE')
     accounts = sorted(str(t.account_id) for t in document.targets)

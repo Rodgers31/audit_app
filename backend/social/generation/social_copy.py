@@ -6,11 +6,12 @@ summary of findings, infer wrongdoing, convert currencies or authorize delivery.
 from .contracts import CataloguedNativeReportEvidence, SourceObservation
 from .copy_common import compact_value
 from .financial_copy import day
+from ..service import SocialError
 
 FACT_VERSION = 'factual-v2'
-REPORT_VERSION = 'report-availability-v2'
-CATALOGUE_VERSION = 'catalogue-availability-v2'
-VERSIONS = {FACT_VERSION, REPORT_VERSION, CATALOGUE_VERSION}
+REPORT_VERSION = 'report-availability-v3'
+CATALOGUE_VERSION = 'catalogue-availability-v3'
+VERSIONS = {FACT_VERSION, REPORT_VERSION, CATALOGUE_VERSION, 'report-availability-v2', 'catalogue-availability-v2'}
 
 
 def quantity(fact):
@@ -28,8 +29,13 @@ def sentence(value):
     return value if value.endswith(('.', '!', '?')) else value + '.'
 
 
-def render_social(observation):
+def render_social(observation, *, version):
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
+    supported = (set() if observation.financial is not None
+                 else {CATALOGUE_VERSION, 'catalogue-availability-v2'} if isinstance(observation.report, CataloguedNativeReportEvidence)
+                 else {REPORT_VERSION, 'report-availability-v2'} if observation.report else {FACT_VERSION})
+    if type(version) is not str or version not in supported:
+        raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     paragraphs = []
     if observation.correction_pending or observation.category == 'correction':
         paragraphs.append('Correction awaiting human review.')
@@ -44,7 +50,11 @@ def render_social(observation):
         else:
             paragraphs.append(f'{report.entity}: explore the {label} report for {report.period}.')
             paragraphs.append(f'Published by {report.publisher} on {day(report.published_on)}.')
-        paragraphs.append('Read the report and follow its source on AuditGava.')
+        if version in (REPORT_VERSION, CATALOGUE_VERSION):
+            paragraphs.append('Read the original report entry on the publisher’s website.' if isinstance(report, CataloguedNativeReportEvidence)
+                              else 'Read the original report on the publisher’s website.')
+        else:
+            paragraphs.append('Read the report and follow its source on AuditGava.')
     else:
         lead = observation.title
         if observation.category == 'dataset_availability':

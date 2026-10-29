@@ -41,7 +41,7 @@ def day(value):
 
 
 def render_financial(observation, *, version=VERSION):
-    if version not in ('financial-v2', VERSION):
+    if version not in ('financial-v2', VERSION, 'financial-v4'):
         unavailable()
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     if observation.financial is None or not observation.facts:
@@ -108,7 +108,8 @@ def render_financial(observation, *, version=VERSION):
     else:
         unavailable()
     paragraphs.append(f'Source: {first.publisher}, {first.period}.')
-    paragraphs.append('Explore the figures and original source on AuditGava.')
+    paragraphs.append('Read the original source on the publisher’s website.' if version == 'financial-v4'
+                      else 'Explore the figures and original source on AuditGava.')
     if observation.correction_pending or observation.category == 'correction':
         paragraphs.insert(0, 'Correction awaiting human review.')
     return '\n\n'.join(paragraphs)

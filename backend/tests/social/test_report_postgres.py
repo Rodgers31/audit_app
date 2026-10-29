@@ -159,7 +159,7 @@ def test_actual_postcommit_creates_neutral_baselines_without_relabelling_finance
             revision = db.get(SocialPostRevision, post.current_revision_id)
             assert revision.evidence_snapshot['source']['facts']==[]
             assert 'KES' not in revision.document['master']['text']
-            assert revision.generator_metadata['template_version']=='report-availability-v2'
+            assert revision.generator_metadata['template_version']=='report-availability-v3'
         assert db.scalar(select(func.count()).select_from(SocialPublication))==0
 
 

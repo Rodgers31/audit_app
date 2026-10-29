@@ -29,6 +29,10 @@ def test_unavailable_county_identity_cannot_be_replaced_by_a_generic_debt_link(c
         draft_destination(reader(**change),financial())
 
 
-def test_other_domains_keep_their_existing_canonical_destination():
-    source=financial('revenue_by_source')
-    assert draft_destination(None,source)==source.facts[0].canonical_url
+@pytest.mark.parametrize('domain',['national_budget','revenue_by_source'])
+def test_national_financial_link_selects_original_source_and_retains_saved_destinations(domain):
+    source=financial(domain);before=source.model_dump(mode='json')
+    assert draft_destination(None,source)==source.facts[0].document_url
+    for version in ('factual-v1','financial-v2','financial-v3'):
+        assert draft_destination(None,source,template_version=version)==source.facts[0].canonical_url
+    assert source.model_dump(mode='json')==before

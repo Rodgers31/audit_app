@@ -3,11 +3,22 @@ from importlib import import_module
 from urllib.parse import quote, urlencode
 
 from ..service import SocialError
+from .contracts import SourceObservation
 
 
-def draft_destination(db, observation):
+def draft_destination(db, observation, *, template_version=None):
+    observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
+    # A saved revision keeps its reviewed destination contract. New report copy
+    # points at its qualified document rather than an unrelated default year.
+    from .service import generator_metadata
+    selected = generator_metadata(observation, template_version=template_version)['template_version']
+    if selected in ('report-availability-v3', 'catalogue-availability-v3'):
+        return observation.report.document_url
+    if selected == 'financial-v4':
+        return observation.facts[0].document_url
+
     financial = observation.financial
-    if financial and financial.native_domain == 'pending_bills' and observation.facts[0].metric == 'Reported pending bills: county':
+    if selected == 'financial-v3' and financial and financial.native_domain == 'pending_bills' and observation.facts[0].metric == 'Reported pending bills: county':
         models = import_module('backend.models' if __package__.startswith('backend.') else 'models')
         loan = db.get(models.Loan, financial.record_id, populate_existing=True)
         entity = db.get(models.Entity, loan.entity_id, populate_existing=True) if loan else None

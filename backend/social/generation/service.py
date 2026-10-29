@@ -216,14 +216,15 @@ def report_release_state(observation):
 
 
 def generator_metadata(observation, *, template_version=None):
-    default = (FINANCIAL_TEMPLATE_VERSION if observation.financial is not None
+    default = ('financial-v4' if observation.financial is not None and observation.financial.native_domain in ('national_budget', 'revenue_by_source')
+               else FINANCIAL_TEMPLATE_VERSION if observation.financial is not None
                else REPORT_VERSION if observation.report else FACT_VERSION)
     if isinstance(observation.report, CataloguedNativeReportEvidence):
         default = CATALOGUE_VERSION
     selected = default if template_version is None else template_version
-    legacy = ({'catalogue-availability-v1'} if isinstance(observation.report, CataloguedNativeReportEvidence)
-              else {'report-availability-v1'} if observation.report else
-              {TEMPLATE_VERSION, 'financial-v2'} if observation.financial is not None else {TEMPLATE_VERSION})
+    legacy = ({'catalogue-availability-v1', 'catalogue-availability-v2'} if isinstance(observation.report, CataloguedNativeReportEvidence)
+              else {'report-availability-v1', 'report-availability-v2'} if observation.report else
+              {TEMPLATE_VERSION, 'financial-v2', 'financial-v3'} if observation.financial is not None else {TEMPLATE_VERSION})
     if selected != default and selected not in legacy:
         raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     value = {'template_version': selected, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
@@ -235,7 +236,7 @@ def generator_metadata(observation, *, template_version=None):
 def render(observation, *, template_version=None):
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     selected = generator_metadata(observation, template_version=template_version)['template_version']
-    if selected in (FINANCIAL_TEMPLATE_VERSION, 'financial-v2'):
+    if selected in (FINANCIAL_TEMPLATE_VERSION, 'financial-v2', 'financial-v4'):
         if unresolved_placeholders([observation.title, [f.model_dump(mode='json') for f in observation.facts]]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         copy = render_financial(observation, version=selected)
@@ -245,7 +246,7 @@ def render(observation, *, template_version=None):
     if selected in SOCIAL_TEMPLATE_VERSIONS:
         if unresolved_placeholders([observation.title, observation.model_dump(mode='json')]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
-        copy = render_social(observation)
+        copy = render_social(observation, version=selected)
         if unresolved_placeholders(copy):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         return copy
