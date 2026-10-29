@@ -391,8 +391,14 @@ class QueueRepository:
             return "AUTHORIZATION_HASH_MISMATCH"
         from ..generation.authority import verify_report_authority
         from ..service import SocialError
+        source = revision['evidence_snapshot'].get('source')
+        if isinstance(source, dict) and source.get('financial') is not None:
+            # This draft-only lane has no accepted digest witness available to
+            # the restricted worker. Do not skip current-source verification or
+            # give its Connection ORM/business-table access to approximate it.
+            return "SOURCE_REVIEW_REQUIRED"
         try:
-            verify_report_authority(conn, revision['evidence_snapshot'].get('source'))
+            verify_report_authority(conn, source)
         except SocialError as error:
             return error.code
         if pub["authorization_kind"] == "policy":

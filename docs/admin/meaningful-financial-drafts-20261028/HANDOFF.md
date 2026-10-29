@@ -4,6 +4,20 @@ Base: `f33cdcfb3afbcb7d1634f39b4df7e0fe92d0025e`. This is engineering and
 offline source qualification. #802 and the original-plan checklist #699 retain
 their outstanding source and operational acceptance criteria.
 
+Prospective numeric qualification applies only to the matching official native
+authority from the exact writer job/country; other publishers and non-county
+pending-bill scopes keep their existing numeric-publication decisions. Bounded
+admin qualification requires the native-financial flag to be literally off.
+
+Native financial delivery is not qualified for the restricted worker. Its
+Connection has only the accepted social/digest-view access, not ORM access to
+financial business tables. Worker admission therefore returns
+`SOURCE_REVIEW_REQUIRED` for these financial revisions, even after human
+approval, until a separately reviewed current-authority witness is available.
+This closes admission of changed financial evidence without adding grants or
+claiming publishing readiness. Draft review remains supported and history is
+retained; publishing, uploads and workers stay off.
+
 ## Contract
 
 The new native financial lane consumes exact current-job BudgetLine,
