@@ -9,7 +9,7 @@ test('county source note describes application coverage without claiming countie
 });
 
 import CountyBorrowingNote from '@/components/county/CountyBorrowingNote';
-import { borrowingCoverageKey } from '@/lib/countyBorrowingCoverage';
+import { borrowingCoverageKey, borrowingSources, type BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
 
 test.each([
   [null, 'no_eligible_instruments', undefined, undefined, 'not_integrated'],
@@ -59,4 +59,68 @@ test('home county panel keeps a reported zero balance visible', () => {
   render(<LangProvider><CountyDetailsPanel county={county} /></LangProvider>);
   expect(screen.getByText('KES 0')).toBeInTheDocument();
   expect(screen.getAllByRole('note').map(node => node.textContent).join(' ')).toContain('dated zero');
+});
+
+test('checked source dates distinguish the reporting period from the scope review', () => {
+  render(<LangProvider><CountyBorrowingNote balance={null} coverage={{
+    status: 'not_reported_in_checked_source', complete_liability_coverage: false,
+    sources: [{url: 'https://www.treasury.go.ke/report.pdf', scope: 'guarantees_only', pdf_pages: [53],
+      reporting_period_end: '2025-06-30', scope_reviewed_on: '2026-10-25'}],
+  }} /></LangProvider>);
+  expect(screen.getByRole('note')).toHaveTextContent('Report period ended: 2025-06-30');
+  expect(screen.getByRole('note')).toHaveTextContent('Source scope reviewed: 2026-10-25');
+  expect(screen.getByRole('note')).not.toHaveTextContent('Published');
+  expect(screen.getByRole('note')).not.toHaveTextContent('dated zero');
+});
+
+test('unknown scope review date is not completed from the reporting date', () => {
+  render(<LangProvider><CountyBorrowingNote balance={null} coverage={{
+    status: 'withheld_or_conflicting', complete_liability_coverage: false,
+    sources: [{url: 'https://www.oagkenya.go.ke/report.pdf', scope: 'audit_finding', pdf_pages: [499],
+      reporting_period_end: '2024-06-30', scope_reviewed_on: null}],
+  }} /></LangProvider>);
+  expect(screen.getByRole('note')).toHaveTextContent('Report period ended: 2024-06-30');
+  expect(screen.getByRole('note')).not.toHaveTextContent('Source scope reviewed:');
+});
+
+test.each(['2026-02-30', '2026-10', '2026-10-25T00:00:00Z', true, 20261025])(
+  'malformed scope review date cannot be rendered as source authority: %p', scope_reviewed_on => {
+    const coverage = {status: 'not_reported_in_checked_source', sources: [{
+      url: 'https://www.treasury.go.ke/report.pdf', scope: 'guarantees_only', pdf_pages: [53],
+      reporting_period_end: '2025-06-30', scope_reviewed_on,
+    }]} as unknown as BorrowingCoverage;
+    render(<LangProvider><CountyBorrowingNote balance={null} coverage={coverage} /></LangProvider>);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByRole('note')).not.toHaveTextContent('Source scope reviewed:');
+  },
+);
+
+test.each(['2026-10-29', '2999-01-01'])(
+  'a future scope review cannot authorize a source citation: %s', scope_reviewed_on => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-28T23:59:59.000Z'));
+    try {
+      const coverage: BorrowingCoverage = {status: 'not_reported_in_checked_source', sources: [{
+        url: 'https://www.treasury.go.ke/report.pdf', scope: 'guarantees_only', pdf_pages: [53],
+        reporting_period_end: '2025-06-30', scope_reviewed_on,
+      }]};
+      expect(borrowingSources(coverage)).toEqual([]);
+      render(<LangProvider><CountyBorrowingNote balance={null} coverage={coverage} /></LangProvider>);
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getByRole('note')).not.toHaveTextContent('Source scope reviewed:');
+    } finally {
+      jest.useRealTimers();
+    }
+  },
+);
+
+test('scope review uses the current UTC day and keeps legacy undated citations', () => {
+  jest.useFakeTimers().setSystemTime(new Date('2026-10-28T00:00:00.000Z'));
+  try {
+    const source = {url: 'https://www.treasury.go.ke/report.pdf', scope: 'guarantees_only', pdf_pages: [53]};
+    expect(borrowingSources({sources: [source]})).toHaveLength(1);
+    expect(borrowingSources({sources: [{...source, scope_reviewed_on: '2026-10-28'}]})).toHaveLength(1);
+    expect(borrowingSources({sources: [{...source, scope_reviewed_on: '2026-10-29'}]})).toEqual([]);
+  } finally {
+    jest.useRealTimers();
+  }
 });

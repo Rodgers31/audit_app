@@ -947,6 +947,8 @@ export const MESSAGES = {
     plain: 'The selected loans have a reported zero balance on the stated date. The county may still owe other money. Unpaid bills are separate.',
   },
   'county.borrowing.checked_source': { en: 'Checked source', sw: 'Chanzo kilichochunguzwa', plain: 'Checked source' },
+  'county.borrowing.report_period_ended': { en: 'Report period ended', sw: 'Kipindi cha ripoti kiliisha', plain: 'Report period ended' },
+  'county.borrowing.scope_reviewed': { en: 'Source scope reviewed', sw: 'Wigo wa chanzo ulichunguzwa', plain: 'Source scope reviewed' },
   'county.debt.title': { en: 'Debt & Pending Bills', sw: 'Deni na Ankara Zilizokwama', plain: 'What the County Owes' },
   'county.debt.total': { en: 'Total debt', sw: 'Deni jumla', plain: 'Total owed' },
   'county.debt.pending_bills': { en: 'Pending bills', sw: 'Ankara zilizokwama', plain: 'Unpaid bills' },
