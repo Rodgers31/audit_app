@@ -21,7 +21,8 @@ export function borrowingSources(coverage?: BorrowingCoverage): readonly Borrowi
         !source.scope || source.scope.length > 200 || typeof source.url !== 'string' || source.url.length > 2048 ||
         !Array.isArray(source.pdf_pages) || !source.pdf_pages.length || source.pdf_pages.length > 4 ||
         (source.reporting_period_end != null && !stockDate(source.reporting_period_end)) ||
-        (source.scope_reviewed_on != null && !stockDate(source.scope_reviewed_on)) ||
+        (source.scope_reviewed_on != null && (!stockDate(source.scope_reviewed_on) ||
+          source.scope_reviewed_on > new Date().toISOString().slice(0, 10))) ||
         !source.pdf_pages.every((page: unknown) => typeof page === 'number' && Number.isInteger(page) && page > 0 && page <= 5000)) return false;
     try { const url = new URL(source.url); return url.protocol === 'https:' && !url.username && !url.password; } catch { return false; }
   });
