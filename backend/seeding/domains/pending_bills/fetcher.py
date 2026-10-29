@@ -714,6 +714,9 @@ def fetch_county_payables_payload(
     pdf_url = links[0]
     aging_enabled = os.environ.get("SEED_PENDING_BILLS_AGING_ENABLED") == "true"
     assembly_enabled = os.environ.get("SEED_PENDING_BILLS_ASSEMBLY_AGING_ENABLED") == "true"
+    # Existing cohorts need newly qualified stock cells even when neither
+    # acquisition flag is selected. Cached normalized JSON grants no authority.
+    adopted_aging = _has_aging_pointer(session, pdf_url)
     logger.info("county payables: reading %s", pdf_url)
     try:
         pdf_path = download_cbirr(client, pdf_url, settings).path
@@ -723,7 +726,7 @@ def fetch_county_payables_payload(
             cache_dir=Path(settings.cache_path) / "pdfs",
             kind="cob_cbirr_year_end_payables",
             parse_fn=parser.parse,
-            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled),
+            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled or adopted_aging),
             key_extra=_pdf_stack_versions(),
         )
     except Exception as exc:
@@ -780,6 +783,22 @@ def fetch_county_payables_payload(
             key = "aging" if scope == "county_executive" else "assembly_aging"
             payload[key] = prepare_aging(cohorts, bind_parse_receipt(aging_receipt, cohorts), scope=scope)
     return payload
+
+
+def _has_aging_pointer(session, pdf_url):
+    if session is None:
+        return False
+    from models import SourceDocument
+    from sqlalchemy import or_, select
+    from services.pending_bills_aging import current_stock_binding
+    from .aging import AS_AT
+
+    return session.execute(select(SourceDocument.id).where(
+        SourceDocument.url == pdf_url, SourceDocument.publisher == COB_PUBLISHER,
+        or_(SourceDocument.meta["pending_bills_aging_v1"]["extraction_id"].astext.isnot(None),
+            SourceDocument.meta["pending_bills_assembly_aging_v2"]["extraction_id"].astext.isnot(None)),
+        *current_stock_binding(AS_AT),
+    ).limit(1)).first() is not None
 
 
 def check_county_payables_entries(entries: List[Dict[str, Any]], pdf_url: str) -> None:
