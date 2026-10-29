@@ -138,151 +138,162 @@ def _read_county_evidence(factory, *, record_id, ingestion_id, report):
         # READ ONLY additionally refuses accidental writes through this seam.
         db.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"))
         _read_limits(db)
-        now = db.scalar(select(func.current_timestamp()))
-        job = db.execute(select(IngestionJob,
-            func.timezone(func.current_setting("TimeZone"), IngestionJob.started_at),
-            func.timezone(func.current_setting("TimeZone"), IngestionJob.finished_at))
-            .where(IngestionJob.id == ingestion_id)).one_or_none()
-        if job is None:
-            raise SourceObservationUnavailable("Committed successful live CoB ingestion required")
-        job, started, finished = job
-        if (job is None or job.domain != "counties_budget" or job.dry_run is not False
-                or job.status != IngestionStatus.COMPLETED or job.finished_at is None
-                or type(job.errors) is not list or job.errors
-                or not isinstance(job.meta, dict) or job.meta.get("source_mode") != "live"):
-            raise SourceObservationUnavailable("Committed successful live CoB ingestion required")
-        if started is None or finished is None or not started <= finished <= now:
-            raise SourceObservationUnavailable("Stored ingestion chronology invalid")
-        row = db.get(BudgetLine, record_id)
-        if (row is None or row.publishable is not True or row.quarantine_reason or budget_line_is_unreported(row)
-                or row.currency != "KES" or not isinstance(row.provenance, list)):
-            raise SourceObservationUnavailable("Publishable actual CoB record required")
-        entries = [entry for entry in row.provenance if isinstance(entry, dict)
-                   and type(entry.get("ingestion_job_id")) is int
-                   and entry["ingestion_job_id"] == ingestion_id
-                   and entry.get("data_quality") == "official"]
-        if len(entries) != 1:
-            raise SourceObservationUnavailable("Exact record ingestion lineage unavailable")
-        # Historical observations remain immutable. Only this exact requested
-        # ingestion entry can establish the current record's claim; combining
-        # older acquisitions would misclassify a legitimate new run as ambiguous.
-        from types import SimpleNamespace
-        view = SimpleNamespace(**{column.key: getattr(row, column.key) for column in row.__table__.columns})
-        view.provenance = entries
-        q = qualify_rows(db, "budget_lines", [view])[row.id]["actual_spent"]
-        if (q["status"] != "verified" or q["source_kind"] != "pdf"
-                or q["document_bytes_checked"] is not True or q["value_checked"] is not True
-                or q["identity"]["basis"] != "actual"
-                or q["source_document_id"] != row.source_document_id
-                or q["digest"] != entries[0].get("artifact_sha256")):
-            raise SourceObservationUnavailable("Verified measure-specific PDF evidence required")
-        linked = entries[0].get("source_evidence")
-        if not isinstance(linked, list) or not any(
-                isinstance(e, dict) and isinstance(e.get("receipt"), dict)
-                and e["receipt"].get("extraction_id") == q["receipt_id"]
-                and e["receipt"].get("digest") == q["digest"]
-                and isinstance(e.get("identity"), dict)
-                and e["identity"].get("measure") == "actual_spent" for e in linked):
-            raise SourceObservationUnavailable("Qualified evidence ingestion lineage unavailable")
-        doc = db.get(SourceDocument, row.source_document_id)
-        try:
-            url = urlsplit(doc.url)
-            if (doc.status != DocumentStatus.AVAILABLE or url.scheme != "https"
-                    or url.hostname not in ("cob.go.ke", "www.cob.go.ke")
-                    or url.username or url.password or url.port not in (None, 443)):
-                raise ValueError
-        except (ValueError, TypeError, AttributeError):
-            raise SourceObservationUnavailable("Official available CoB document required") from None
-        meta = doc.meta if isinstance(doc.meta, dict) else {}
-        try:
-            published = date.fromisoformat(meta["publication_date"])
-        except (ValueError, TypeError, KeyError):
-            raise SourceObservationUnavailable("Publisher publication date unavailable") from None
-        if "publication_date_evidence" not in meta:
-            raise SourceObservationUnavailable("Retained publisher date authority required")
-        if "publication_date_evidence" in meta:
-            proof = meta["publication_date_evidence"]
-            if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
-                    or proof.get("digest") != q["digest"] or proof.get("request_url") != doc.url
-                    or type(proof.get("extraction_id")) is not int):
-                raise SourceObservationUnavailable("Exact publisher date artifact evidence required")
-            dated = db.get(Extraction, proof["extraction_id"])
-            dated_receipt = dated.extracted_json.get("response_receipt") if dated and isinstance(dated.extracted_json, dict) else None
-            observation = {key: value for key, value in proof.items() if key != "extraction_id"}
-            if (dated is None or dated.source_document_id != doc.id or dated.extractor != "cob-publication-date-v1"
-                    or type(dated_receipt) is not dict or dated_receipt.get("digest") != q["digest"]
-                    or dated_receipt.get("request_url") != doc.url or dated_receipt.get("observations") != [observation]
-                    or dated_receipt.get("byte_check", {}).get("status") != "matched"):
-                raise SourceObservationUnavailable("Stored publisher date receipt required")
-        extraction = db.get(Extraction, q["receipt_id"])
-        receipt = extraction.extracted_json["response_receipt"]
-        if receipt["request_url"] != doc.url:
-            raise SourceObservationUnavailable("Exact acquired document URL required")
-        retrieved = _aware(receipt["acquired_at"])
-        verified = _aware(receipt["byte_check"]["checked_at"])
-        if published > retrieved.date() or not retrieved <= verified <= finished <= now:
-            raise SourceObservationUnavailable("Stored evidence chronology invalid")
-        entity = db.get(Entity, row.entity_id)
-        if entity is None or not entity.canonical_name:
-            raise SourceObservationUnavailable("Source entity unavailable")
-        if report and entity.type != EntityType.COUNTY:
-            raise SourceObservationUnavailable("County report entity required")
-        amount = format(Decimal(row.actual_spent), "f")
-        if not re.fullmatch(r"(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,8})?", amount):
-            raise SourceObservationUnavailable("Bounded exact monetary value required")
-        locator = q["locator"]
-        if not isinstance(locator, dict) or type(locator.get("page")) is not int or locator["page"] <= 0:
-            raise SourceObservationUnavailable("PDF page locator unavailable")
-        fact = {
-            "fact_id": f"budget_lines:{row.id}:actual_spent", "entity": entity.canonical_name,
-            "metric": f"Actual spending: {row.category}" + (f" / {row.subcategory}" if row.subcategory else ""),
-            "period": q["identity"]["period"], "comparison_basis": "actual expenditure, same category and reporting period",
-            "value": amount, "unit": "KES", "scale": "units", "classification": "actual",
-            "source_document_id": doc.id, "document_url": doc.url,
-            "locator": f"PDF page {locator['page']}; table {locator.get('table', 'unspecified')}; cell {locator.get('cell', 'unspecified')}",
-            "document_checksum": q["digest"], "publisher": doc.publisher,
-            "published_on": published.isoformat(), "retrieved_at": retrieved.isoformat(),
-            "verified_at": verified.isoformat(), "canonical_url": f"https://www.auditgava.com/counties/{entity.id}",
-        }
-        if any(not isinstance(fact[key], str) or not fact[key].strip() or len(fact[key]) > 300
-               for key in ("entity", "metric", "period", "locator", "publisher")):
-            raise SourceObservationUnavailable("Bounded fact text required")
-        if report:
-            cohort = db.execute(select(BudgetLine.source_document_id, BudgetLine.period_id).where(
-                BudgetLine.entity_id == row.entity_id,
-                BudgetLine.provenance.contains([{"ingestion_job_id": ingestion_id}])).limit(1001)).all()
-            if not cohort or len(cohort) > 1000 or any(pair != (doc.id, row.period_id) for pair in cohort):
-                raise SourceObservationUnavailable("One bounded unambiguous county report and period required")
-            period = db.get(FiscalPeriod, row.period_id)
-            location = proof.get('locator')
-            if (period is None or not isinstance(period.start_date, datetime) or not isinstance(period.end_date, datetime)
-                    or not isinstance(location, dict) or type(location.get('page')) is not int or not 1 <= location['page'] <= 3
-                    or type(location.get('text_span')) is not str or not location['text_span'].strip()):
-                raise SourceObservationUnavailable("Exact report period and publication locator required")
-            neutral = {key: fact[key] for key in ('entity', 'period', 'source_document_id', 'document_url',
-                'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at', 'canonical_url')}
-            if __package__.startswith('backend.'):
-                from backend.social.generation.authority import current_report_authority
-            else:
-                from social.generation.authority import current_report_authority
-            authority = current_report_authority(db, record_id, ingestion_id, lock=False)
-            if authority is None:
-                raise SourceObservationUnavailable("Current report authority unavailable")
-            neutral.update(entity_id=entity.id, source_record_id=record_id, authority_fingerprint=authority,
-                period_start=period.start_date.date().isoformat(),
-                period_end=period.end_date.date().isoformat(), publication_extraction_id=proof['extraction_id'],
-                qualification_extraction_id=q['receipt_id'], locator=f"PDF page {location['page']}; {location['text_span']}")
-            return {'schema_version': 1, 'source_type': 'cob', 'source_key': f'cob:county:{entity.id}:reports',
-                'evidence_version': ingestion_id, 'ingestion_id': str(ingestion_id),
-                'category': 'dataset_availability', 'title': f'Controller of Budget report · {entity.canonical_name}',
-                'committed': True, 'fixture': False, 'quarantined': False, 'publishable': True,
-                'correction_pending': False, 'facts': [], 'report': neutral}
-        return {"schema_version": 1, "source_type": "cob", "source_key": fact["fact_id"],
-                "evidence_version": ingestion_id, "ingestion_id": str(ingestion_id),
-                "category": "budget_update", "title": f"{entity.canonical_name} expenditure data",
-                "committed": True, "fixture": False, "quarantined": False,
-                "publishable": True, "correction_pending": False, "facts": [fact]}
+        return current_county_evidence(db, record_id=record_id, ingestion_id=ingestion_id, report=report)
 
+
+def current_county_evidence(db, *, record_id, ingestion_id, report):
+    """Read already locked current evidence in the caller's admission transaction.
+
+    The public factory reader still enforces a fresh read-only snapshot. The
+    mutation caller holds the digest port's source/cohort locks before entry.
+    Populate existing identities so an older Session cannot certify old values.
+    """
+    _positive_id(record_id)
+    _positive_id(ingestion_id)
+    now = db.scalar(select(func.current_timestamp()))
+    job = db.execute(select(IngestionJob,
+        func.timezone(func.current_setting("TimeZone"), IngestionJob.started_at),
+        func.timezone(func.current_setting("TimeZone"), IngestionJob.finished_at))
+        .where(IngestionJob.id == ingestion_id).execution_options(populate_existing=True)).one_or_none()
+    if job is None:
+        raise SourceObservationUnavailable("Committed successful live CoB ingestion required")
+    job, started, finished = job
+    if (job is None or job.domain != "counties_budget" or job.dry_run is not False
+            or job.status != IngestionStatus.COMPLETED or job.finished_at is None
+            or type(job.errors) is not list or job.errors
+            or not isinstance(job.meta, dict) or job.meta.get("source_mode") != "live"):
+        raise SourceObservationUnavailable("Committed successful live CoB ingestion required")
+    if started is None or finished is None or not started <= finished <= now:
+        raise SourceObservationUnavailable("Stored ingestion chronology invalid")
+    row = db.get(BudgetLine, record_id, populate_existing=True)
+    if (row is None or row.publishable is not True or row.quarantine_reason or budget_line_is_unreported(row)
+            or row.currency != "KES" or not isinstance(row.provenance, list)):
+        raise SourceObservationUnavailable("Publishable actual CoB record required")
+    entries = [entry for entry in row.provenance if isinstance(entry, dict)
+               and type(entry.get("ingestion_job_id")) is int
+               and entry["ingestion_job_id"] == ingestion_id
+               and entry.get("data_quality") == "official"]
+    if len(entries) != 1:
+        raise SourceObservationUnavailable("Exact record ingestion lineage unavailable")
+    # Historical observations remain immutable. Only this exact requested
+    # ingestion entry can establish the current record's claim; combining
+    # older acquisitions would misclassify a legitimate new run as ambiguous.
+    from types import SimpleNamespace
+    view = SimpleNamespace(**{column.key: getattr(row, column.key) for column in row.__table__.columns})
+    view.provenance = entries
+    q = qualify_rows(db, "budget_lines", [view])[row.id]["actual_spent"]
+    if (q["status"] != "verified" or q["source_kind"] != "pdf"
+            or q["document_bytes_checked"] is not True or q["value_checked"] is not True
+            or q["identity"]["basis"] != "actual"
+            or q["source_document_id"] != row.source_document_id
+            or q["digest"] != entries[0].get("artifact_sha256")):
+        raise SourceObservationUnavailable("Verified measure-specific PDF evidence required")
+    linked = entries[0].get("source_evidence")
+    if not isinstance(linked, list) or not any(
+            isinstance(e, dict) and isinstance(e.get("receipt"), dict)
+            and e["receipt"].get("extraction_id") == q["receipt_id"]
+            and e["receipt"].get("digest") == q["digest"]
+            and isinstance(e.get("identity"), dict)
+            and e["identity"].get("measure") == "actual_spent" for e in linked):
+        raise SourceObservationUnavailable("Qualified evidence ingestion lineage unavailable")
+    doc = db.get(SourceDocument, row.source_document_id, populate_existing=True)
+    try:
+        url = urlsplit(doc.url)
+        if (doc.status != DocumentStatus.AVAILABLE or url.scheme != "https"
+                or url.hostname not in ("cob.go.ke", "www.cob.go.ke")
+                or url.username or url.password or url.port not in (None, 443)):
+            raise ValueError
+    except (ValueError, TypeError, AttributeError):
+        raise SourceObservationUnavailable("Official available CoB document required") from None
+    meta = doc.meta if isinstance(doc.meta, dict) else {}
+    try:
+        published = date.fromisoformat(meta["publication_date"])
+    except (ValueError, TypeError, KeyError):
+        raise SourceObservationUnavailable("Publisher publication date unavailable") from None
+    if "publication_date_evidence" not in meta:
+        raise SourceObservationUnavailable("Retained publisher date authority required")
+    if "publication_date_evidence" in meta:
+        proof = meta["publication_date_evidence"]
+        if (type(proof) is not dict or proof.get("publication_date") != published.isoformat()
+                or proof.get("digest") != q["digest"] or proof.get("request_url") != doc.url
+                or type(proof.get("extraction_id")) is not int):
+            raise SourceObservationUnavailable("Exact publisher date artifact evidence required")
+        dated = db.get(Extraction, proof["extraction_id"], populate_existing=True)
+        dated_receipt = dated.extracted_json.get("response_receipt") if dated and isinstance(dated.extracted_json, dict) else None
+        observation = {key: value for key, value in proof.items() if key != "extraction_id"}
+        if (dated is None or dated.source_document_id != doc.id or dated.extractor != "cob-publication-date-v1"
+                or type(dated_receipt) is not dict or dated_receipt.get("digest") != q["digest"]
+                or dated_receipt.get("request_url") != doc.url or dated_receipt.get("observations") != [observation]
+                or dated_receipt.get("byte_check", {}).get("status") != "matched"):
+            raise SourceObservationUnavailable("Stored publisher date receipt required")
+    extraction = db.get(Extraction, q["receipt_id"], populate_existing=True)
+    receipt = extraction.extracted_json["response_receipt"]
+    if receipt["request_url"] != doc.url:
+        raise SourceObservationUnavailable("Exact acquired document URL required")
+    retrieved = _aware(receipt["acquired_at"])
+    verified = _aware(receipt["byte_check"]["checked_at"])
+    if published > retrieved.date() or not retrieved <= verified <= finished <= now:
+        raise SourceObservationUnavailable("Stored evidence chronology invalid")
+    entity = db.get(Entity, row.entity_id, populate_existing=True)
+    if entity is None or not entity.canonical_name:
+        raise SourceObservationUnavailable("Source entity unavailable")
+    if report and entity.type != EntityType.COUNTY:
+        raise SourceObservationUnavailable("County report entity required")
+    amount = format(Decimal(row.actual_spent), "f")
+    if not re.fullmatch(r"(?:0|[1-9][0-9]{0,17})(?:\.[0-9]{1,8})?", amount):
+        raise SourceObservationUnavailable("Bounded exact monetary value required")
+    locator = q["locator"]
+    if not isinstance(locator, dict) or type(locator.get("page")) is not int or locator["page"] <= 0:
+        raise SourceObservationUnavailable("PDF page locator unavailable")
+    fact = {
+        "fact_id": f"budget_lines:{row.id}:actual_spent", "entity": entity.canonical_name,
+        "metric": f"Actual spending: {row.category}" + (f" / {row.subcategory}" if row.subcategory else ""),
+        "period": q["identity"]["period"], "comparison_basis": "actual expenditure, same category and reporting period",
+        "value": amount, "unit": "KES", "scale": "units", "classification": "actual",
+        "source_document_id": doc.id, "document_url": doc.url,
+        "locator": f"PDF page {locator['page']}; table {locator.get('table', 'unspecified')}; cell {locator.get('cell', 'unspecified')}",
+        "document_checksum": q["digest"], "publisher": doc.publisher,
+        "published_on": published.isoformat(), "retrieved_at": retrieved.isoformat(),
+        "verified_at": verified.isoformat(), "canonical_url": f"https://www.auditgava.com/counties/{entity.id}",
+    }
+    if any(not isinstance(fact[key], str) or not fact[key].strip() or len(fact[key]) > 300
+           for key in ("entity", "metric", "period", "locator", "publisher")):
+        raise SourceObservationUnavailable("Bounded fact text required")
+    if report:
+        cohort = db.execute(select(BudgetLine.source_document_id, BudgetLine.period_id).where(
+            BudgetLine.entity_id == row.entity_id,
+            BudgetLine.provenance.contains([{"ingestion_job_id": ingestion_id}])).limit(1001)).all()
+        if not cohort or len(cohort) > 1000 or any(pair != (doc.id, row.period_id) for pair in cohort):
+            raise SourceObservationUnavailable("One bounded unambiguous county report and period required")
+        period = db.get(FiscalPeriod, row.period_id, populate_existing=True)
+        location = proof.get('locator')
+        if (period is None or not isinstance(period.start_date, datetime) or not isinstance(period.end_date, datetime)
+                or not isinstance(location, dict) or type(location.get('page')) is not int or not 1 <= location['page'] <= 3
+                or type(location.get('text_span')) is not str or not location['text_span'].strip()):
+            raise SourceObservationUnavailable("Exact report period and publication locator required")
+        neutral = {key: fact[key] for key in ('entity', 'period', 'source_document_id', 'document_url',
+            'document_checksum', 'publisher', 'published_on', 'retrieved_at', 'verified_at', 'canonical_url')}
+        if __package__.startswith('backend.'):
+            from backend.social.generation.authority import current_report_authority
+        else:
+            from social.generation.authority import current_report_authority
+        authority = current_report_authority(db, record_id, ingestion_id, lock=False)
+        if authority is None:
+            raise SourceObservationUnavailable("Current report authority unavailable")
+        neutral.update(entity_id=entity.id, source_record_id=record_id, authority_fingerprint=authority,
+            period_start=period.start_date.date().isoformat(),
+            period_end=period.end_date.date().isoformat(), publication_extraction_id=proof['extraction_id'],
+            qualification_extraction_id=q['receipt_id'], locator=f"PDF page {location['page']}; {location['text_span']}")
+        return {'schema_version': 1, 'source_type': 'cob', 'source_key': f'cob:county:{entity.id}:reports',
+            'evidence_version': ingestion_id, 'ingestion_id': str(ingestion_id),
+            'category': 'dataset_availability', 'title': f'Controller of Budget report · {entity.canonical_name}',
+            'committed': True, 'fixture': False, 'quarantined': False, 'publishable': True,
+            'correction_pending': False, 'facts': [], 'report': neutral}
+    return {"schema_version": 1, "source_type": "cob", "source_key": fact["fact_id"],
+            "evidence_version": ingestion_id, "ingestion_id": str(ingestion_id),
+            "category": "budget_update", "title": f"{entity.canonical_name} expenditure data",
+            "committed": True, "fixture": False, "quarantined": False,
+            "publishable": True, "correction_pending": False, "facts": [fact]}
 
 # Scoped lazy wrappers preserve both supported launch modes and the existing
 # SourceObservationUnavailable exception identity.

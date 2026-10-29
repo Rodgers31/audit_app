@@ -392,13 +392,15 @@ class QueueRepository:
         from ..generation.authority import verify_report_authority
         from ..service import SocialError
         source = revision['evidence_snapshot'].get('source')
-        if isinstance(source, dict) and source.get('financial') is not None:
-            # This draft-only lane has no accepted digest witness available to
-            # the restricted worker. Do not skip current-source verification or
-            # give its Connection ORM/business-table access to approximate it.
-            return "SOURCE_REVIEW_REQUIRED"
         try:
-            verify_report_authority(conn, source)
+            native = isinstance(source, dict) and (
+                source.get('financial') is not None or source.get('report') is None
+                or isinstance(source.get('report'), dict) and source['report'].get('native_domain') is not None)
+            if native or revision['evidence_snapshot'].get('source_event_id') and not isinstance(source, dict):
+                from ..generation.worker_authority import verify_worker_authority
+                verify_worker_authority(conn, source, revision['evidence_snapshot'].get('worker_authority'))
+            else:
+                verify_report_authority(conn, source)
         except SocialError as error:
             return error.code
         if pub["authorization_kind"] == "policy":

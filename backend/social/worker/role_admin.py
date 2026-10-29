@@ -13,6 +13,7 @@ def main(argv=None):
     parser.add_argument('--role', required=True)
     parser.add_argument('--schema', default='public')
     parser.add_argument('--native-platforms', action='store_true', help='Include the reviewed optional Threads/X/TikTok worker table contract')
+    parser.add_argument('--native-authority', action='store_true', help='Install the reviewed native digest views and their single SELECT grant')
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--install', action='store_true', help='Grant the reviewed contract to an existing dedicated login')
     mode.add_argument('--verify', action='store_true', help='Verify through the actual worker login')
@@ -22,9 +23,15 @@ def main(argv=None):
     try:
         if re.fullmatch(r'[A-Z][A-Z0-9_]{0,127}', args.database_url_env) is None:
             raise ValueError()
+        if args.native_authority and (not args.install or args.native_platforms):
+            raise ValueError()
         config = WorkerConfig(os.environ.get(args.database_url_env), database_schema=args.schema)
         engine = create_worker_engine(config)
-        function = install_worker_role if args.install else verify_worker_role
+        if args.native_authority:
+            from .native_authority_schema import install_native_authority
+            function = install_native_authority
+        else:
+            function = install_worker_role if args.install else verify_worker_role
         if args.native_platforms:
             function(engine, args.role, args.schema, platforms=True)
         else:

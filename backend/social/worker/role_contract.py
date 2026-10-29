@@ -33,7 +33,8 @@ REPORT_VIEW_SHA256 = {
 # PostgreSQL replay reproduces this exact body; joins, predicates and locks are
 # unchanged. Keep this one locked-view variant explicit, never normalize SQL.
 REPORT_LOCKED_VIEW_HISTORICAL_SHA256 = 'a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0'
-READ_VIEWS = frozenset({'social_report_source_authority'})
+NATIVE_VIEW_SHA256 = {'social_native_source_authority': '921b807c9637ae9541cf63e74313a4816875afef3de92d42cf6fc25226b09f4a', 'social_native_source_authority_snapshot': 'f219c56c5f21622cfae0fe875e2020770859c90f2d1978625d21a40781aa6ba6'}
+READ_VIEWS = frozenset({'social_report_source_authority', 'social_native_source_authority'})
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
     'social_accounts': frozenset('hold_reason publish_lease_target_id publish_lease_token publish_lease_expires_at updated_at'.split()),
@@ -406,22 +407,43 @@ def _views(conn, schema):
           AND attname='report_state' AND NOT attisdropped)'''), {'schema': schema}).scalar()
     if not rows:
         _require(report_schema is False)
-        return
-    _require(len(rows) == len(REPORT_VIEW_SHA256) and report_schema is True)
-    for row in rows:
-        _require(row['relname'] in REPORT_VIEW_SHA256
-                 and row['source_owner'] is True and row['application_owner'] is True
-                 and row['exact_return_rule'] is True
-             and list(row['types']) == ['integer', 'integer', 'text']
-             and list(row['reloptions'] or []) == ['security_barrier=true']
-             and list(row['columns']) == ['record_id', 'ingestion_id', 'authority_fingerprint'])
-        definition = row['definition']
-        for clause in ('FROM ', 'JOIN '):
-            definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
-        accepted = {REPORT_VIEW_SHA256[row['relname']]}
-        if row['relname'] == 'social_report_source_authority':
-            accepted.add(REPORT_LOCKED_VIEW_HISTORICAL_SHA256)
-        _require(hashlib.sha256(definition.encode()).hexdigest() in accepted)
+    else:
+        _require(len(rows) == len(REPORT_VIEW_SHA256) and report_schema is True)
+        for row in rows:
+            _require(row['relname'] in REPORT_VIEW_SHA256
+                     and row['source_owner'] is True and row['application_owner'] is True
+                     and row['exact_return_rule'] is True
+                 and list(row['types']) == ['integer', 'integer', 'text']
+                 and list(row['reloptions'] or []) == ['security_barrier=true']
+                 and list(row['columns']) == ['record_id', 'ingestion_id', 'authority_fingerprint'])
+            definition = row['definition']
+            for clause in ('FROM ', 'JOIN '):
+                definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
+            accepted = {REPORT_VIEW_SHA256[row['relname']]}
+            if row['relname'] == 'social_report_source_authority':
+                accepted.add(REPORT_LOCKED_VIEW_HISTORICAL_SHA256)
+            _require(hashlib.sha256(definition.encode()).hexdigest() in accepted)
+
+    native = list(conn.execute(text('''SELECT c.relname,c.reloptions,pg_get_viewdef(c.oid,true) AS definition,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.social_source_events')) AS source_owner,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.budget_lines')) AS application_owner,
+        ARRAY(SELECT a.attname::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS columns,
+        ARRAY(SELECT a.atttypid::regtype::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS types,
+        (SELECT count(*)=1 AND bool_and(r.rulename='_RETURN' AND r.ev_type='1' AND r.is_instead AND r.ev_enabled='O') FROM pg_rewrite r WHERE r.ev_class=c.oid) AS exact_return_rule
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema
+          AND c.relname IN ('social_native_source_authority','social_native_source_authority_snapshot') AND c.relkind='v'
+    '''),{'schema':schema}).mappings())
+    if native:
+        _require(len(native)==2 and len(NATIVE_VIEW_SHA256)==2)
+        for row in native:
+            _require(row['source_owner'] is True and row['application_owner'] is True and row['exact_return_rule'] is True
+                and list(row['columns'])==['source_kind','native_domain','record_id','ingestion_id','authority_fingerprint']
+                and list(row['types'])==['text','text','integer','integer','text']
+                and list(row['reloptions'] or [])==['security_barrier=true'])
+            definition=row['definition']
+            for clause in ('FROM ','JOIN '):
+                definition=definition.replace(clause+_quoted(conn,schema)+'.',clause).replace(clause+schema+'.',clause)
+            _require(hashlib.sha256(definition.encode()).hexdigest()==NATIVE_VIEW_SHA256.get(row['relname']))
 
 
 def _verify(conn, role, schema, *, current, platforms=False):

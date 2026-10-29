@@ -610,17 +610,25 @@ def row_identities(table, row, entities=None, periods=None):
     }
 
 
-def qualify_rows(db, table, rows):
+def qualify_rows(db, table, rows, *, refresh_identity_map=False):
     """Bounded context loads, independent of row count (at most five queries).
 
     Budget context uses plain projections so unrelated model columns cannot be
     loaded lazily. Source metadata and the complete response receipt remain
     intact; other tables retain their full publication-check context.
+    Mutation-time native readers can refresh held context identities through
+    these same queries; ordinary writer/query behavior remains unchanged.
     """
     if __package__.startswith('backend.'):
         from backend.models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
     else:
         from models import Country, Entity, Extraction, FiscalPeriod, SourceDocument
+
+    if type(refresh_identity_map) is not bool:
+        raise ValueError('Typed identity refresh required')
+    def context_query(*columns):
+        query = db.query(*columns)
+        return query.populate_existing() if refresh_identity_map else query
 
     rows = list(rows)
     budget = table == "budget_lines"
@@ -634,7 +642,7 @@ def qualify_rows(db, table, rows):
     docs = (
         {
             d.id: d
-            for d in db.query(
+            for d in context_query(
                 *(
                     (
                         SourceDocument.id, SourceDocument.country_id,
@@ -653,7 +661,7 @@ def qualify_rows(db, table, rows):
     entities = (
         {
             e.id: e
-            for e in db.query(
+            for e in context_query(
                 *(
                     (Entity.id, Entity.country_id, Entity.type, Entity.canonical_name)
                     if budget
@@ -668,7 +676,7 @@ def qualify_rows(db, table, rows):
     periods = (
         {
             p.id: p
-            for p in db.query(FiscalPeriod.id, FiscalPeriod.label)
+            for p in context_query(FiscalPeriod.id, FiscalPeriod.label)
             .filter(FiscalPeriod.id.in_(period_ids))
             .all()
         }
@@ -681,7 +689,7 @@ def qualify_rows(db, table, rows):
     countries = (
         {
             c.id: c
-            for c in db.query(
+            for c in context_query(
                 *((Country.id, Country.iso_code) if budget else (Country,))
             ).filter(Country.id.in_(country_ids)).all()
         }
@@ -703,7 +711,7 @@ def qualify_rows(db, table, rows):
     receipts = (
         {
             r.id: r
-            for r in db.query(
+            for r in context_query(
                 *(
                     (
                         Extraction.id, Extraction.source_document_id,

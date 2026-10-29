@@ -45,6 +45,11 @@ on:
         required: false
         type: boolean
         default: false
+      reacquire_pending_pdf:
+        description: 'Fresh PDF acquisition for only pending_bills (normal nightly cache unchanged)'
+        required: false
+        type: boolean
+        default: false
       audits_review:
         description: 'One-time source-checked OAG repair (empty for ordinary refresh)'
         required: false
@@ -137,6 +142,7 @@ env:
   SEED_PLAN_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
   SEED_PLAN_BOOTSTRAP: ${{ github.event.inputs.run_bootstrap || 'false' }}
   SEED_PLAN_AUDITS_REVIEW: ${{ github.event.inputs.audits_review || '' }}
+  SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF: ${{ github.event.inputs.reacquire_pending_pdf || 'false' }}
   SEED_LOG_LEVEL: INFO
   SOCIAL_GENERATION_HOOK_ENABLED: ${{ vars.SOCIAL_GENERATION_HOOK_ENABLED || 'false' }}
   SOCIAL_REPORT_GENERATION_ENABLED: ${{ vars.SOCIAL_REPORT_GENERATION_ENABLED || 'false' }}
@@ -645,6 +651,9 @@ jobs:
       # HIT in either run was a COB PDF 27 days old, i.e. nothing had been
       # saved in a month.
       - name: Restore downloaded source PDFs
+        # A forced manual acquisition starts with this fresh runner's empty
+        # cache, so an assembled range/old sidecar cannot stand in for HTTP200.
+        if: env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true'
         id: restore_pdfs
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
@@ -884,7 +893,9 @@ jobs:
       # frugality #175 was after, and keeps "Unable to reserve cache" out of
       # the log, where it reads as a failure rather than as a no-op.
       - name: Save downloaded source PDFs
-        if: always() && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
+        # Keep the ordinary all-source cache bank intact after a one-source
+        # qualification; do not replace its latest snapshot with one PDF.
+        if: always() && env.SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF != 'true' && steps.pdf_cache_state.outputs.files != '0' && steps.pdf_cache_state.outputs.key != steps.restore_pdfs.outputs.cache-matched-key
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: backend/data/seeding/cache/pdfs

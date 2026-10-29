@@ -76,7 +76,7 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
         from backend.models import SourceDocument
     else:
         from models import SourceDocument
-    source = db.get(SourceDocument, row.source_document_id)
+    source = db.get(SourceDocument, row.source_document_id, populate_existing=True)
     bindings = source.meta.get(KEY) if source and type(source.meta) is dict else None
     binding = bindings.get(domain) if type(bindings) is dict else None
     if type(binding) is not dict:
@@ -87,7 +87,7 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
         raise SourceObservationUnavailable('Publisher publication date unavailable')
     period = report['period'].replace(' ', '')
     if domain == 'national_budget':
-        entity, fiscal = db.get(Entity,row.entity_id), db.get(FiscalPeriod,row.period_id)
+        entity, fiscal = db.get(Entity,row.entity_id,populate_existing=True), db.get(FiscalPeriod,row.period_id,populate_existing=True)
         if (entity is None or entity.type != EntityType.NATIONAL or entity.country_id != report['entity_id']
                 or fiscal is None or fiscal.label.replace(' ','') != period
                 or fiscal.start_date.date().isoformat() != report['period_start']
@@ -118,7 +118,7 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
         labels, comparison = {'amount_billion_kes':'Revenue collected'}, {'amount_billion_kes':'published collections on the same revenue-head basis and annual reporting period'}
         unit, scale, entity_name, view = 'KES', 'billions', 'Kenya', row
     else:
-        entity = db.get(Entity,row.entity_id)
+        entity = db.get(Entity,row.entity_id,populate_existing=True)
         if (row.debt_category != DebtCategory.PENDING_BILLS or row.currency != 'KES'
                 or entity is None or entity.type != EntityType.COUNTY or entity.country_id != report['entity_id']
                 or entry.get('as_at') != report['period_end']
@@ -140,7 +140,7 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
             basis+='; '+'; '.join(warnings[code] for code in sorted(n['code'] for n in notes))
         labels, comparison = {'outstanding':'Reported pending bills'}, {'outstanding':basis}
         unit, scale, entity_name, view = 'KES','units',entity.canonical_name,row
-    qualifications = qualify_rows(db, table, [view])[row.id]
+    qualifications = qualify_rows(db, table, [view], refresh_identity_map=True)[row.id]
     key = f'{DOMAINS[domain][0]}:financial:{domain}:'+digest(identity)
     facts = []
     for measure in measures:
@@ -152,7 +152,7 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
                 or q['identity']['basis'] != 'actual' or q['source_document_id'] != source.id
                 or q['digest'] != report['document_checksum']):
             raise SourceObservationUnavailable('Verified measure-specific PDF evidence required')
-        ext = db.get(Extraction,q['receipt_id'])
+        ext = db.get(Extraction,q['receipt_id'],populate_existing=True)
         receipt = ext.extracted_json.get('response_receipt') if ext and type(ext.extracted_json) is dict else None
         if type(receipt) is not dict or receipt.get('request_url') != source.url:
             raise SourceObservationUnavailable('Qualified evidence ingestion lineage unavailable')

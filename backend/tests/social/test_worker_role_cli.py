@@ -95,3 +95,24 @@ def test_parser_errors_never_echo_mistaken_secret_arguments(cli, capsys):
     assert stopped.value.code == 2
     output = capsys.readouterr()
     assert 'PRIVATE_SECRET' not in output.out + output.err
+
+
+def test_native_authority_operator_mode_is_explicit_and_private(monkeypatch,capsys):
+    from social.worker import native_authority_schema
+    calls=[]
+    engine=SimpleNamespace(dispose=lambda:calls.append('dispose'))
+    monkeypatch.setenv('NAMED_INERT_DSN','postgresql://inert:PRIVATE_SECRET@localhost/inert')
+    monkeypatch.setattr(role_admin,'create_worker_engine',lambda config:engine)
+    monkeypatch.setattr(native_authority_schema,'install_native_authority',lambda *args:calls.append(args))
+    assert role_admin.main(['--database-url-env','NAMED_INERT_DSN','--role','inert_worker','--install','--native-authority'])==0
+    assert calls==[(engine,'inert_worker','public'),'dispose']
+    output=capsys.readouterr()
+    assert '"status":"ok"' in output.out and 'PRIVATE_' not in output.out+output.err
+
+
+@pytest.mark.parametrize('mode',[['--verify'],['--install','--native-platforms']])
+def test_native_authority_rejects_other_operator_modes_before_engine(monkeypatch,capsys,mode):
+    monkeypatch.setenv('NAMED_INERT_DSN','postgresql://inert:PRIVATE_SECRET@localhost/inert')
+    monkeypatch.setattr(role_admin,'create_worker_engine',lambda config:pytest.fail('No engine for an unsupported profile'))
+    assert role_admin.main(['--database-url-env','NAMED_INERT_DSN','--role','inert_worker','--native-authority',*mode])==1
+    assert '"status":"unavailable"' in capsys.readouterr().out

@@ -340,6 +340,10 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     document = PostDocument.model_validate({'master': {'text': render(observation), 'link': evidence_items(observation)[0].canonical_url}, 'targets': cfg.targets})
     references = [{'url': f.document_url, 'label': f'{f.publisher} · {f.locator}'} for f in evidence_items(observation)]
     evidence = {'references': references, 'source_event_id': str(event.id), 'evidence_version': event.evidence_version, 'source': event.observation, 'fingerprint': fingerprint}
+    from .worker_authority import capture_worker_authority
+    witness = capture_worker_authority(svc.db, event.observation)
+    if witness is not None:
+        evidence['worker_authority'] = witness
     post = SocialPost(id=uuid4(), origin_type='generated', creation_method='pipeline', title=observation.title, content_type=observation.category, editorial_state='pending_review', source_event_id=event.id, created_by=svc.actor)
     svc.db.add(post)
     svc.db.flush()
@@ -499,6 +503,9 @@ def verify_generated_revision(db, post, revision, *, lock=True):
     if event.observation.get('financial') is not None:
         from .authority import verify_financial_authority
         verify_financial_authority(db, event.observation)
+    if revision.evidence_snapshot.get('worker_authority') is not None:
+        from .worker_authority import verify_worker_authority
+        verify_worker_authority(db, event.observation, revision.evidence_snapshot['worker_authority'])
     if unresolved_placeholders(revision.document) or unresolved_placeholders(revision.evidence_snapshot):
         raise SocialError('UNRESOLVED_TEMPLATE', 'Resolve every placeholder before authorization.', 422)
 
