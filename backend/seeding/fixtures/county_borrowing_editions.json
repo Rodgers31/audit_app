@@ -15,6 +15,7 @@
     "status": "not_reported_in_checked_source",
     "reason": "No county borrower is listed in Table 16; this does not cover all county liabilities.",
     "reporting_period_end": "2025-06-30",
+    "scope_reviewed_on": "2026-10-25",
     "instruments": [],
     "md5": "48ad959e21dbca8ce7772e42a24219c9"
   },
@@ -37,6 +38,7 @@
     "status": "withheld_or_conflicting",
     "reason": "Borrowing obtained is reported, but lender, explicit contract reference, issue date and dated outstanding balance are absent; regularity was not confirmed.",
     "reporting_period_end": "2024-06-30",
+    "scope_reviewed_on": "2026-10-25",
     "instruments": [],
     "md5": "0c0f7b1eb6f63d3b16d0720ed627da40"
   }

@@ -3,12 +3,35 @@
 A checked national guarantee register is only that scope. An audit narrative
 without a dated contract balance does not become an instrument or a zero.
 """
+from datetime import date, datetime, timezone
+
 from sqlalchemy import select
 from models import Country, Entity, EntityType, SourceDocument, Extraction, DocumentStatus
 from seeding import county_borrowing_contract as parser, county_borrowing_contract as source
 
 MAX_COUNTIES = 47
 MAX_SOURCE_ACCOUNTS = 8
+
+
+def scope_reviewed_on(spec):
+    """A human checked-scope date, independent of acquisition/publication.
+
+    Older or synthetic editions without a review annotation remain explicitly
+    unknown. An annotation cannot be repaired from a report end or fetch time.
+    This display metadata does not change the retained v1 extraction identity.
+    """
+    if 'scope_reviewed_on' not in spec:
+        return None
+    value = spec['scope_reviewed_on']
+    try:
+        if type(value) is not str:
+            raise ValueError
+        day = date.fromisoformat(value)
+        if day.isoformat() != value or day > datetime.now(timezone.utc).date():
+            raise ValueError
+    except ValueError:
+        raise RuntimeError('County borrowing scope review date is invalid; withhold the projection') from None
+    return value
 
 
 def county_borrowing_coverage(db, entity_ids):
@@ -48,6 +71,7 @@ def county_borrowing_coverage(db, entity_ids):
                 continue
             account = {'status': spec['status'], 'scope': spec['scope'], 'reason': spec['reason'],
                 'reporting_period_end': spec['reporting_period_end'], 'source_document_id': doc.id,
+                'scope_reviewed_on': scope_reviewed_on(spec),
                 'extraction_id': extraction.id, 'url': doc.url,
                 'pdf_pages': [int(p) for p in spec['pages']], 'artifact_sha256': spec['sha256']}
             result[i]['sources'].append(account)
