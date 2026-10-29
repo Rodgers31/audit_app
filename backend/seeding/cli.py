@@ -126,12 +126,14 @@ def _domain_timeout(seconds: int) -> Iterator[None]:
 def _post_commit_generation(factory, *, domain, ingestion_id, dry_run):
     """One hard budget; keep the first phase's confirmed result on later timeout."""
     from .generation_dispatch import dispatch_committed_generation, dispatch_committed_report_generation, record_generation_timeout
+    from .generation_limits import generation_envelope_seconds
+    include_reports = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false'
     financial_outcome, reports_started = None, False
     try:
-        with _domain_timeout(30):
+        with _domain_timeout(generation_envelope_seconds(domain, include_reports=include_reports)):
             financial_outcome = dispatch_committed_generation(factory, domain=domain,
                 ingestion_id=ingestion_id, dry_run=dry_run, include_reports=False)
-            if os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false':
+            if include_reports:
                 reports_started = True
                 dispatch_committed_report_generation(factory, domain=domain, ingestion_id=ingestion_id, dry_run=dry_run)
     except DomainTimeoutError:
