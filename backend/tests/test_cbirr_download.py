@@ -155,6 +155,78 @@ class TestListing:
         assert [e.wpdmdl for e in editions] == sorted((e.wpdmdl for e in editions), reverse=True)
 
 
+class TestPublisherTransportIdentity:
+    """Replay observed MIME negotiation; no live request or report authority claim.
+
+    CoB's download returned octet-stream for our browser impersonation and PDF
+    for the configured seeder identity, with Accept held constant (2026-10-29).
+    Exercise the actual shared download and retained-receipt admission seam.
+    """
+
+    @pytest.mark.parametrize("custom_identity", [False, True])
+    def test_shared_download_retains_qualifiable_publisher_transport(self, settings, custom_identity):
+        from seeding import cob_cbirr
+        from seeding.native_report_authority import retained_body
+        from seeding.pdf_evidence import receipt_for_pdf
+        from services.receipt_retention import RetentionScope
+
+        if custom_identity:
+            settings.user_agent = "AuditGavaOwnedFixture/1.0"
+        calls = []
+
+        def serve(request):
+            calls.append((request.method, request.headers.get("user-agent")))
+            # Recorded negotiation, not a claim about every possible user agent.
+            mime = ("application/pdf" if request.headers.get("user-agent") == settings.user_agent
+                    else "application/octet-stream")
+            return httpx.Response(200, content=_PDF_A if request.method == "GET" else b"",
+                                  headers={"content-type": mime, "etag": '"same-edition"'})
+
+        cob_cbirr._FINGERPRINTS.clear()
+        scope = RetentionScope()
+        try:
+            with _client(settings, serve) as client:
+                first = cob_cbirr.download_cbirr(client, EDITION_URL, settings)
+                second = cob_cbirr.download_cbirr(client, EDITION_URL, settings)
+                receipt = receipt_for_pdf(client, settings, first.path, EDITION_URL, "owned-control-v1")
+                assert retained_body(receipt, "pending_bills", "application/pdf") == _PDF_A
+                assert first.path == second.path
+                assert receipt["content_type"] == "application/pdf"
+                assert receipt["digest_scope"] == "decoded_stream_body"
+                assert scope.summary()["state"] == "confirmed"
+            assert calls == [("HEAD", settings.user_agent), ("GET", settings.user_agent)]
+        finally:
+            scope.close()
+            cob_cbirr._FINGERPRINTS.clear()
+
+    def test_octet_stream_is_still_ineligible_even_when_bytes_look_like_pdf(self, settings):
+        from seeding import cob_cbirr
+        from seeding.native_report_authority import retained_body
+        from seeding.pdf_evidence import cell_evidence, receipt_for_pdf
+
+        def serve(request):
+            return httpx.Response(200, content=_PDF_A if request.method == "GET" else b"",
+                                  headers={"content-type": "application/octet-stream"})
+
+        cob_cbirr._FINGERPRINTS.clear()
+        try:
+            with _client(settings, serve) as client:
+                pdf = cob_cbirr.download_cbirr(client, EDITION_URL, settings)
+                receipt = receipt_for_pdf(client, settings, pdf.path, EDITION_URL, "owned-control-v1")
+                assert receipt["content_type"] == "application/octet-stream"
+                assert receipt["byte_check"]["status"] == "matched"
+                with pytest.raises(ValueError, match="Retained official acquisition required"):
+                    retained_body(receipt, "pending_bills", "application/pdf")
+                cell = cell_evidence(receipt=receipt,
+                    identity=dict(measure="outstanding", geography="KEN", period="2026-06-30",
+                                  unit="KES", basis="actual", dimensions={}),
+                    raw_value="1", value="1000000", raw_unit="KES million", factor="1000000",
+                    locator=dict(page=1, table="Owned fixture", cell="total"))
+                assert cell["checks"]["transport"] is False
+        finally:
+            cob_cbirr._FINGERPRINTS.clear()
+
+
 class TestAdversarialFindings:
     """An adversarial pass made the first version keep the wrong bytes."""
 

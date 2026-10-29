@@ -34,7 +34,10 @@ _BROWSER_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
-PDF_HEADERS = {"User-Agent": _BROWSER_UA, "Accept": "application/pdf,*/*;q=0.8"}
+# Keep the client's configured seeder identity for document requests. CoB
+# serves application/octet-stream to the browser impersonation, which cannot
+# qualify as a PDF acquisition. Listing-page compatibility is separate below.
+PDF_HEADERS = {"Accept": "application/pdf,*/*;q=0.8"}
 HTML_HEADERS = {
     "User-Agent": _BROWSER_UA,
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
