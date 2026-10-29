@@ -18,6 +18,7 @@ from ..service import SocialError, SocialService, utc, iso
 from ..validation import validate_document
 from .contracts import SourceObservation, RuleCommand, GenerationControlsCommand, EvaluateCommand, CataloguedNativeReportEvidence
 from .models import GenerationControls, SourceCursor, SourceEvent, AutomationRuleVersion, ShadowDecision
+from .financial_copy import VERSION as FINANCIAL_TEMPLATE_VERSION, render_financial
 
 DETECTOR_VERSION = 1
 TEMPLATE_VERSION = 'factual-v1'
@@ -213,16 +214,47 @@ def report_release_state(observation):
     return state
 
 
-def generator_metadata(observation):
-    value = {'template_version': 'report-availability-v1' if observation.report else TEMPLATE_VERSION, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
+def generator_metadata(observation, *, template_version=None):
+    default = (FINANCIAL_TEMPLATE_VERSION if observation.financial is not None
+               else 'report-availability-v1' if observation.report else TEMPLATE_VERSION)
+    if isinstance(observation.report, CataloguedNativeReportEvidence):
+        default = 'catalogue-availability-v1'
+    selected = default if template_version is None else template_version
+    if selected != default and not (selected == TEMPLATE_VERSION and observation.report is None):
+        raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
+    value = {'template_version': selected, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
     if observation.report:
         value['report_source_document_id'] = observation.report.source_document_id
-        if isinstance(observation.report,CataloguedNativeReportEvidence):
-            value['template_version'] = 'catalogue-availability-v1'
     return value
 
 
-def render(observation):
+def render(observation, *, template_version=None):
+    observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
+    selected = generator_metadata(observation, template_version=template_version)['template_version']
+    if selected == FINANCIAL_TEMPLATE_VERSION:
+        if unresolved_placeholders([observation.title, [f.model_dump(mode='json') for f in observation.facts]]):
+            raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
+        copy = render_financial(observation)
+        if unresolved_placeholders(copy):
+            raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
+        return copy
+    return _render_legacy(observation)
+
+
+def render_for_revision(observation, metadata):
+    if type(metadata) is not dict or type(metadata.get('template_version')) is not str:
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Saved generator metadata differs from its source evidence.', 503)
+    expected = generator_metadata(observation, template_version=metadata['template_version'])
+    try:
+        matches = canonical_json(metadata) == canonical_json(expected)
+    except (TypeError, ValueError):
+        matches = False
+    if not matches:
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Saved generator metadata differs from its source evidence.', 503)
+    return render(observation, template_version=metadata['template_version'])
+
+
+def _render_legacy(observation):
     """Only supplied verified strings and exact decimals enter factual copy."""
     if observation.report:
         report = observation.report
@@ -461,7 +493,7 @@ class GenerationService:
                     reasons.append(error.code)
             if observation.category not in definition.categories or observation.source_type not in definition.source_allowlist:
                 reasons.append('SOURCE_CATEGORY_NOT_ALLOWLISTED')
-            if revision.document.get('master', {}).get('text', '') != render(observation):
+            if revision.document.get('master', {}).get('text', '') != render_for_revision(observation, revision.generator_metadata):
                 reasons.append('GENERATED_COPY_EDITED')
             if observation.correction_pending or observation.category == 'correction':
                 reasons.append('CORRECTION_REQUIRES_REVIEW')

@@ -1,0 +1,200 @@
+[
+  {
+    "domain": "pending_bills",
+    "scope": "read-only typed copy fixture; no source acquisition or production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:pending_bills:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "debt_update",
+      "title": "Nairobi County pending bills data",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:outstanding",
+          "entity": "Nairobi County",
+          "metric": "Reported pending bills: county",
+          "period": "FY 2025/26",
+          "comparison_basis": "publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed",
+          "value": "86899380000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T18:15:48.588908Z",
+          "verified_at": "2026-10-29T18:15:48.588908Z",
+          "canonical_url": "https://www.auditgava.com/debt"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "pending_bills",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "legacy": "Nairobi County pending bills data.\nNairobi County — Reported pending bills: county, FY 2025/26: 86899380000.00 units KES (actual; publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed).",
+    "current": "Nairobi County: KSh 86,899,380,000 in reported pending bills as at 30 June 2026.\n\nThis is the report’s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "generator_metadata": {
+      "template_version": "financial-v2",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:outstanding"
+      ]
+    }
+  },
+  {
+    "domain": "national_budget",
+    "scope": "read-only typed copy fixture; no source acquisition or production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:national_budget:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "budget_update",
+      "title": "Kenya national budget data",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:allocated_amount",
+          "entity": "Kenya",
+          "metric": "Revised gross budget: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "revised gross budget, same sector and annual reporting period",
+          "value": "1500000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T18:15:48.589253Z",
+          "verified_at": "2026-10-29T18:15:48.589253Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        },
+        {
+          "fact_id": "owned:actual_spent",
+          "entity": "Kenya",
+          "metric": "Actual expenditure: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "actual expenditure, same sector and annual reporting period",
+          "value": "1200000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T18:15:48.589253Z",
+          "verified_at": "2026-10-29T18:15:48.589253Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "national_budget",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "legacy": "Kenya national budget data.\nKenya — Actual expenditure: Health, FY 2025/26: 1200000000.00 units KES (actual; actual expenditure, same sector and annual reporting period).\nKenya — Revised gross budget: Health, FY 2025/26: 1500000000.00 units KES (actual; revised gross budget, same sector and annual reporting period).",
+    "current": "Kenya: KSh 1,200,000,000 in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1,500,000,000.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "generator_metadata": {
+      "template_version": "financial-v2",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:allocated_amount",
+        "owned:actual_spent"
+      ]
+    }
+  },
+  {
+    "domain": "revenue_by_source",
+    "scope": "read-only typed copy fixture; no source acquisition or production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "kra",
+      "source_key": "kra:financial:revenue_by_source:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "budget_update",
+      "title": "Kenya revenue by source data",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:outstanding",
+          "entity": "Kenya",
+          "metric": "Revenue collected: Customs departmental collections, including agency levies",
+          "period": "FY 2025/26",
+          "comparison_basis": "published collections on the same revenue-head basis and annual reporting period",
+          "value": "800.25",
+          "unit": "KES",
+          "scale": "billions",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://www.kra.go.ke/news-center/press-release/2235-result",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Kenya Revenue Authority",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T18:15:48.589407Z",
+          "verified_at": "2026-10-29T18:15:48.589407Z",
+          "canonical_url": "https://www.auditgava.com/revenue"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "revenue_by_source",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "legacy": "Kenya revenue by source data.\nKenya — Revenue collected: Customs departmental collections, including agency levies, FY 2025/26: 800.25 billions KES (actual; published collections on the same revenue-head basis and annual reporting period).",
+    "current": "Kenya, FY 2025/26: KSh 800.25 billion reported for Customs departmental collections, including agency levies.\n\nSource: Kenya Revenue Authority, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "generator_metadata": {
+      "template_version": "financial-v2",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:outstanding"
+      ]
+    }
+  }
+]
