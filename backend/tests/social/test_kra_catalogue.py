@@ -110,10 +110,10 @@ def test_typed_catalogue_and_copy_preserve_unknown_day(tmp_path):
     from social.generation.service import render, generator_metadata, report_release_state, valid_report_release_state
     value = report(capture(tmp_path)[0]); parsed = SourceObservation.model_validate(observation(value))
     text = render(parsed)
-    assert 'Official KRA catalogue entry dated 2026-07-08.' in text
-    assert 'Report publication date is not stated. Human review required.' in text
+    assert 'Catalogue entry dated 8 July 2026.' in text
+    assert 'The report’s publication date is not stated. Human review is required.' in text
     assert '2.8' not in text and 'Publisher publication date' not in text
-    assert generator_metadata(parsed)['template_version'] == 'catalogue-availability-v1'
+    assert generator_metadata(parsed)['template_version'] == 'catalogue-availability-v2'
     state = report_release_state(parsed)
     assert state['catalogued_on'] == '2026-07-08' and 'published_on' not in state
     assert valid_report_release_state(state)

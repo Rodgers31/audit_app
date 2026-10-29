@@ -1,6 +1,6 @@
 # Versioned deterministic financial copy
 
-This increment improves the existing shared renderer for qualified pending-bills, national-budget and KRA financial observations. It uses no model, paid service, source acquisition or new generation route. It is based on the bounded cohort repair in draft PR #851; publication and production admission remain outside this increment.
+This increment improves the existing shared renderer for qualified pending-bills, national-budget and KRA financial observations. The follow-up in [UNIVERSAL_COPY.md](UNIVERSAL_COPY.md) extends readable wording to every existing general-fact category and neutral report family across county and national entities. It uses no model, paid service, source acquisition or new generation route. It is based on the bounded cohort repair in draft PR #851; publication and production admission remain outside this increment.
 
 ## Editorial rules
 
@@ -12,7 +12,7 @@ The financial template accepts the supported actual-KES reporting bases. Unknown
 
 ## Version and authority boundaries
 
-New native financial drafts record `financial-v3`. `factual-v1` and `financial-v2` remain reproducible for saved financial revisions, and existing non-native fact/report templates keep their original versions and text. The advisory comparison reads the saved revision's exact metadata rather than treating old template text as a human edit. Unknown/missing versions and mismatched metadata refuse; canonical JSON comparison preserves boolean/integer distinctions.
+New native financial drafts record `financial-v3`. `factual-v1` and `financial-v2` remain reproducible for saved financial revisions, and saved non-native fact/report revisions keep their pinned versions and text. New general-fact/report/catalogue drafts use their V2 wording described in UNIVERSAL_COPY.md. The advisory comparison reads the saved revision's exact metadata rather than treating old template text as a human edit. Unknown/missing versions and mismatched metadata refuse; canonical JSON comparison preserves boolean/integer distinctions.
 
 Source observations, semantic fingerprints, cursor decisions, event evidence, worker-authority checks, immutable revisions, explicit attestation and publication gates remain in place. Changing a template does not make unchanged source data a new event or rewrite a saved draft. Financial content continues to require human review; automation categories and policy authority are unchanged. No flags, scheduled jobs, providers or workers are enabled.
 

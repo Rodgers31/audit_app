@@ -35,7 +35,7 @@ def test_report_contract_has_no_synthetic_financial_fact():
     assert observation.facts == ()
     text = render(observation)
     assert 'Controller of Budget' in text and 'Nairobi City County' in text and 'FY2025/26' in text
-    assert '2026-07-01' in text
+    assert '1 July 2026' in text
     assert not any(term in text for term in ('KES', 'actual spending', '1 report', 'available on AuditGava'))
 
 
@@ -75,7 +75,7 @@ def test_report_baseline_release_replay_and_artifact_refresh(db):
     assert consume(db, newer)['status'] == 'unchanged'
     assert db.scalar(select(func.count()).select_from(SocialPost)) == 2
     revision = db.get(SocialPostRevision, db.get(SocialPost, UUID(created['post_id'])).current_revision_id)
-    assert revision.generator_metadata['template_version'] == 'report-availability-v1'
+    assert revision.generator_metadata['template_version'] == 'report-availability-v2'
     assert revision.evidence_snapshot['source']['facts'] == []
 
 

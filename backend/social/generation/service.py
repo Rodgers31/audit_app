@@ -19,6 +19,7 @@ from ..validation import validate_document
 from .contracts import SourceObservation, RuleCommand, GenerationControlsCommand, EvaluateCommand, CataloguedNativeReportEvidence
 from .models import GenerationControls, SourceCursor, SourceEvent, AutomationRuleVersion, ShadowDecision
 from .financial_copy import VERSION as FINANCIAL_TEMPLATE_VERSION, render_financial
+from .social_copy import FACT_VERSION, REPORT_VERSION, CATALOGUE_VERSION, VERSIONS as SOCIAL_TEMPLATE_VERSIONS, render_social
 
 DETECTOR_VERSION = 1
 TEMPLATE_VERSION = 'factual-v1'
@@ -216,11 +217,14 @@ def report_release_state(observation):
 
 def generator_metadata(observation, *, template_version=None):
     default = (FINANCIAL_TEMPLATE_VERSION if observation.financial is not None
-               else 'report-availability-v1' if observation.report else TEMPLATE_VERSION)
+               else REPORT_VERSION if observation.report else FACT_VERSION)
     if isinstance(observation.report, CataloguedNativeReportEvidence):
-        default = 'catalogue-availability-v1'
+        default = CATALOGUE_VERSION
     selected = default if template_version is None else template_version
-    if selected != default and not (selected == TEMPLATE_VERSION and observation.report is None) and not (selected == 'financial-v2' and observation.financial is not None):
+    legacy = ({'catalogue-availability-v1'} if isinstance(observation.report, CataloguedNativeReportEvidence)
+              else {'report-availability-v1'} if observation.report else
+              {TEMPLATE_VERSION, 'financial-v2'} if observation.financial is not None else {TEMPLATE_VERSION})
+    if selected != default and selected not in legacy:
         raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     value = {'template_version': selected, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
     if observation.report:
@@ -235,6 +239,13 @@ def render(observation, *, template_version=None):
         if unresolved_placeholders([observation.title, [f.model_dump(mode='json') for f in observation.facts]]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         copy = render_financial(observation, version=selected)
+        if unresolved_placeholders(copy):
+            raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
+        return copy
+    if selected in SOCIAL_TEMPLATE_VERSIONS:
+        if unresolved_placeholders([observation.title, observation.model_dump(mode='json')]):
+            raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
+        copy = render_social(observation)
         if unresolved_placeholders(copy):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         return copy

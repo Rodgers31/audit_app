@@ -1,8 +1,9 @@
 """Versioned financial wording from qualified cells, without derived claims."""
-from decimal import Decimal, ROUND_HALF_UP, localcontext
+from decimal import Decimal
 
 from ..service import SocialError
 from .contracts import SourceObservation
+from .copy_common import compact_value
 
 VERSION = 'financial-v3'
 SCALES = {'units': '', 'thousands': ' thousand', 'millions': ' million', 'billions': ' billion'}
@@ -29,24 +30,8 @@ def exact_amount(fact):
 
 def amount(fact):
     """Compact display only. Source cells and their precision stay untouched."""
-    with localcontext() as context:
-        context.prec = 80
-        source_multiplier = {'units': 1, 'thousands': 1000, 'millions': 1000000, 'billions': 1000000000}
-        value = Decimal(fact.value) * source_multiplier[fact.scale]
-        scales = [(Decimal(1000000000), 'billion'), (Decimal(1000000), 'million'), (Decimal(1000), 'thousand')]
-        selected = next(((size, label) for size, label in scales if abs(value) >= size), None)
-        if selected is None:
-            # Small values must not disappear through rounding.
-            return 'KSh ' + format(value.normalize() if value else Decimal(0), ',f')
-        size, label = selected
-        rounded = (value / size).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
-        if abs(rounded) >= 1000 and label != 'billion':
-            size *= 1000
-            label = 'million' if label == 'thousand' else 'billion'
-            rounded = (value / size).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
-        number = format(rounded, ',f').rstrip('0').rstrip('.')
-        approximation = 'about ' if rounded * size != value else ''
-        return f'{approximation}KSh {number} {label}'
+    value, approximate = compact_value(fact)
+    return ('about ' if approximate else '') + 'KSh ' + value
 
 
 def day(value):

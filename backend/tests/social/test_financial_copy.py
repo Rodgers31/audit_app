@@ -74,11 +74,11 @@ def test_revenue_copy_keeps_departmental_scope_and_source_scale():
     assert 'tax revenue' not in text.lower()
 
 
-def test_other_fact_templates_keep_their_existing_bytes_and_version():
+def test_saved_generic_v1_keeps_its_existing_bytes_and_version():
     source=observation()
-    assert render(source)==('County expenditure dataset is available on AuditGava.\n'
+    assert render(source,template_version='factual-v1')==('County expenditure dataset is available on AuditGava.\n'
         'County fixture — Approved budget, FY2025/26: 123.45 millions KES (actual; County total).')
-    assert generator_metadata(source)['template_version']=='factual-v1'
+    assert generator_metadata(source,template_version='factual-v1')['template_version']=='factual-v1'
 
 
 def test_saved_financial_v1_text_is_reproducible_after_the_new_template():
