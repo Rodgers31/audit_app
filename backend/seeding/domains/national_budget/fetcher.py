@@ -253,6 +253,7 @@ def _fetch_annual_sector_expenditure(
     return ``(records, status)``. ``status`` starts with ``promoted`` only when
     at least one sector passed verification."""
     import pdfplumber
+    import os
 
     from ...parse_cache import parse_with_cache
     from ...pdf_download import get_or_download_pdf
@@ -272,6 +273,8 @@ def _fetch_annual_sector_expenditure(
         cache_dir=cache_dir,
         kind="cob_ng_birr_page_text",
         parse_fn=lambda: _extract_page_texts(pdf_path),
+        enabled=not (os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')=='true'
+            and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0),
         key_extra=f"pdfplumber=={pdfplumber.__version__}",
     )
     pages = {int(r["page"]): str(r["text"]) for r in page_rows}

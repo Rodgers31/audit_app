@@ -19,8 +19,9 @@ class DraftCapability:
     report_reader: str | None = None
 
 
-# All 15 legacy native domains, plus the three explicit opt-ins. Only CoB county
-# budgets currently bind exact lineage, qualified scope and retained full dates.
+# All 15 legacy native domains, plus the three explicit opt-ins. Capability is
+# adapter availability; each record still needs exact current evidence. The
+# prospective native financial hook has a separate literal default-off ceiling.
 CAPABILITIES = MappingProxyType({c.domain: c for c in (
     DraftCapability('counties_budget', financial=True, reports=True, reason='qualified_cob_adapter',
         records_reader='read_county_budget_record_ids', financial_reader='read_county_budget_observation',
@@ -30,11 +31,11 @@ CAPABILITIES = MappingProxyType({c.domain: c for c in (
     DraftCapability('population', reason='report_date_authority_unavailable'),
     DraftCapability('county_officials', reason='report_contract_unavailable'),
     DraftCapability('national_debt', reason='report_date_authority_unavailable'),
-    DraftCapability('national_budget', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_national_report_observation'),
-    DraftCapability('pending_bills', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_pending_bills_report_observation'),
+    DraftCapability('national_budget', financial=True, reports=True, reason='qualified_native_cells_required', records_reader='read_native_financial_record_ids', financial_reader='read_national_financial_observation', report_reader='read_national_report_observation'),
+    DraftCapability('pending_bills', financial=True, reports=True, reason='qualified_native_cells_required', records_reader='read_native_financial_record_ids', financial_reader='read_pending_bills_financial_observation', report_reader='read_pending_bills_report_observation'),
     DraftCapability('debt_timeline', reason='report_lineage_unavailable'),
     DraftCapability('fiscal_summary', reason='report_lineage_unavailable'),
-    DraftCapability('revenue_by_source', reports=True, reason='financial_adapter_unavailable', records_reader='read_native_report_record_ids', report_reader='read_revenue_report_observation'),
+    DraftCapability('revenue_by_source', financial=True, reports=True, reason='qualified_native_cells_required', records_reader='read_native_financial_record_ids', financial_reader='read_revenue_financial_observation', report_reader='read_revenue_report_observation'),
     DraftCapability('learning_hub', reason='report_contract_unavailable'),
     DraftCapability('stalled_projects', reason='report_date_authority_unavailable'),
     DraftCapability('national_gdp', reason='report_date_authority_unavailable'),
@@ -73,6 +74,9 @@ def skipped_generation(domain, *, dry_run, source_mode, completed):
             state, reason = 'unavailable', 'invalid_generation_hook_flag'
         elif not (selected.reports if reports else selected.financial):
             state, reason = 'unavailable', selected.reason
+        elif not reports and domain != 'counties_budget' and os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')!='true':
+            financial_flag=os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
+            state, reason = ('disabled','financial_environment_disabled') if financial_flag=='false' else ('unavailable','invalid_financial_hook_flag')
         elif reports and os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false') != 'true':
             report_flag = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED', 'false')
             state, reason = ('disabled', 'report_environment_disabled') if report_flag == 'false' else ('unavailable', 'invalid_report_hook_flag')
