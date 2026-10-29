@@ -118,6 +118,9 @@
 .draftList { display: grid; }
 .queueCard { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 8px; border-bottom: 1px solid var(--line); }
 .queueCard > .fields { flex: 1 1 260px; gap: 8px; }
+.queuePreview { flex: 1 0 100%; min-width: 0; }
+.queuePreview > .fields { max-width: 640px; margin-top: 20px; }
+.destination { margin-top: 18px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
 .queueCard h3 a { text-decoration: none; }
 .queueCard h3 a:hover { text-decoration: underline; }
 .status { align-items: center; margin-bottom: 0; }

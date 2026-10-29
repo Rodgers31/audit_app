@@ -2,9 +2,10 @@
 import { accounts, post, system, validation } from '@/tests/socialFixtures';
 import type { SocialPost } from '@/lib/api/social';
 import {sourceRecordsFixture} from './operations';
-const savedCopy = 'Nairobi County pending bills data.\nNairobi County — Reported pending bills: county, FY 2025/26: 86899380000.00 units KES (actual; publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed).';
+import example from './social-example.json';
+const savedCopy = example.text;
 const sourceUrl='https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482';
-let current=post({title:'Nairobi County pending bills data',origin_type:'generated',content_type:'debt_update',editorial_state:'pending_review',delivery_status:'not_requested',document:{...post().document,master:{text:savedCopy,link:'https://www.auditgava.com/debt',hashtags:[],media:[]}},references:[{url:sourceUrl,label:'Controller of Budget · Table 2.10, PDF page 52'}]});
+let current=post({title:'Nairobi County pending bills data',origin_type:'generated',content_type:'debt_update',editorial_state:'pending_review',delivery_status:'not_requested',document:{...post().document,master:{text:savedCopy,link:example.link,hashtags:[],media:[]}},references:[{url:sourceUrl,label:'Controller of Budget · Table 2.10, PDF page 52'}]});
 const connected=accounts.map(a=>({...a,publishing_enabled:false}));
 const respond=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private,no-store'}});
 export async function GET(req:Request){
@@ -17,7 +18,7 @@ export async function GET(req:Request){
   return respond({posts:rows,total:rows.length,page:1,page_size:20,has_more:false});
  }
  if(path==='/posts/'+current.id)return respond(current);
- if(path==='/posts/'+current.id+'/evidence')return respond({post_id:current.id,revision_id:current.revision_id,source_event_id:null,generator_metadata:{template_version:'factual-v1'},evidence:{evidence_version:3516,source:{source_type:'cob',source_key:'fixture:pending-bills',ingestion_id:'3516',facts:[{fact_id:'fixture:pending-bills:outstanding',entity:'Nairobi County',metric:'Reported pending bills',value:'86899380000.00',unit:'KES',scale:'units',period:'FY 2025/26',classification:'actual',comparison_basis:'publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed',document_url:sourceUrl,locator:'Table 2.10, Nairobi / Grand Total; PDF page 52 (printed page 18)',document_checksum:'919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20',publisher:'Office of the Controller of Budget',published_on:'2026-09-25',retrieved_at:'2026-10-29T13:25:38Z',verified_at:'2026-10-29T15:33:51Z'}]}}});
+ if(path==='/posts/'+current.id+'/evidence')return respond({post_id:current.id,revision_id:current.revision_id,source_event_id:null,generator_metadata:{template_version:example.template_version},evidence:{evidence_version:3516,source:{source_type:'cob',source_key:'fixture:pending-bills',ingestion_id:'3516',facts:[{fact_id:'fixture:pending-bills:outstanding',entity:'Nairobi County',metric:'Reported pending bills',value:'86899380000.00',unit:'KES',scale:'units',period:'FY 2025/26',classification:'actual',comparison_basis:'publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed',document_url:sourceUrl,locator:'Table 2.10, Nairobi / Grand Total; PDF page 52 (printed page 18)',document_checksum:'919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20',publisher:'Office of the Controller of Budget',published_on:'2026-09-25',retrieved_at:'2026-10-29T13:25:38Z',verified_at:'2026-10-29T15:33:51Z'}]}}});
  if(path==='/automation/rules')return respond({rules:[],total:0,page:1,page_size:20,has_more:false});
  if(path==='/automation/decisions')return respond({decisions:[],total:0,page:1,page_size:20,has_more:false});
  if(path==='/generation/controls')return respond({version:1,drafts_enabled:false,shadow_enabled:false,source_allowlist:[],targets:[]});

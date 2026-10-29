@@ -930,7 +930,7 @@ def _county_pending_bills_fields(
             "pending_bills_notes": [],
             "pending_bills_absence": absence,
         }
-    details = county_pending_bills_details(loans)
+    details = county_pending_bills_details(selection["rows"])
     return {
         "pending_bills_selection": {k: v for k, v in selection.items() if k != "rows"},
         "pending_bills_as_at": details["as_at"],
@@ -11675,7 +11675,7 @@ def _pending_bills_summary_from_loans(db: Session) -> dict:
 
 @app.get("/api/v1/pending-bills/counties/{county_id}")
 @cached(key_prefix="pending_bills:county", ttl=NIGHTLY_REFRESH_TTL)
-async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db)):
+async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_db), as_at: Optional[datetime.date] = None):
     """Get pending bills breakdown for a specific county by type and aging."""
     try:
         # Resolve county entity
@@ -11704,7 +11704,7 @@ async def get_pending_bills_by_county(county_id: str, db: Session = Depends(get_
         # The same figure the county page prints beside this card, and
         # null — not 0 — for a county the CoB year-end report has no
         # figure for.
-        reporting_date = county_pending_reporting_date(db)
+        reporting_date = as_at.isoformat() if as_at else county_pending_reporting_date(db)
         selection = select_county_pending_bills(pending_loans, as_at=reporting_date)
         pending_observations = pending_loans
         pending_loans = selection["rows"]

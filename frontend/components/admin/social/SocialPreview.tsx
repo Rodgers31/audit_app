@@ -21,7 +21,7 @@ export default function SocialPreview({ master, target, account, validation }: {
     })}</ul>}
     <p className={styles.copy}>{text || 'Your post text will appear here.'}</p>
     {!!content.hashtags.length && <p className={styles.copy}>{content.hashtags.join(' ')}</p>}
-    {link && <p className={styles.copy}>{httpsUrl(link) ? <a href={httpsUrl(link)} target='_blank' rel='noopener noreferrer'>{link}</a> : link}</p>}
+    {link && <div className={styles.destination}><span className={styles.muted}>Post destination</span><p className={styles.copy}>{httpsUrl(link) ? <a href={httpsUrl(link)} target='_blank' rel='noopener noreferrer'>{link}</a> : link}</p></div>}
     {account?.platform === 'instagram' && link && <p className={styles.muted}>Caption URLs may not be clickable on Instagram.</p>}
     {account?.platform === 'tiktok' && <p className={styles.muted}>TikTok {target?.tiktok_options?.mode === 'draft' ? 'draft inbox delivery requires completion in TikTok and is never a public success.' : 'direct publication requires approved product access, explicit privacy and consent.'}</p>}
     {xCount && <p className={styles.muted} aria-live='polite'>{xCount.length === null ? `X counter unavailable: ${xCount.error}` : `${xCount.length} / 280 weighted X characters, including hashtags and link.`} Paid access and a reserved budget are required.</p>}

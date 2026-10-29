@@ -146,6 +146,29 @@ def test_every_county_endpoint_serves_the_cob_figure(client, counties):
     assert card["total_pending"] == NAIROBI_COB
 
 
+def test_county_social_destination_pins_the_day_and_does_not_substitute_or_mix_cache(client, counties):
+    from main import clear_all_caches
+    clear_all_caches()
+    path = '/api/v1/pending-bills/counties/nairobi-county'
+    actual = client.get(path + '?as_at=2026-06-30')
+    assert actual.status_code == 200
+    assert actual.json()['total_pending'] == NAIROBI_COB
+    assert actual.json()['pending_bills_as_at'] == '2026-06-30'
+    absent = client.get(path + '?as_at=2025-06-30')
+    assert absent.status_code == 200
+    assert absent.json()['total_pending'] is None
+    assert absent.json()['pending_bills_source'] is None
+    assert client.get(path).json()['total_pending'] == NAIROBI_COB
+    assert client.get(path + '?as_at=2026-06-30').json()['total_pending'] == NAIROBI_COB
+    # Explicit official codes and slugs retain their distinct county identity.
+    assert client.get('/api/v1/pending-bills/counties/mombasa-county?as_at=2026-06-30').json()['total_pending'] is None
+
+
+@pytest.mark.parametrize('day', ['bad', '2026-02-30', '2026-06-30T12:00:00Z'])
+def test_county_social_destination_refuses_invalid_reporting_dates(client, counties, day):
+    assert client.get('/api/v1/pending-bills/counties/nairobi-county?as_at=' + day).status_code == 422
+
+
 def test_a_county_with_only_a_fixture_row_is_absent_everywhere(client, counties):
     """RED before #238: Mombasa answered 12.3B, a figure nobody published.
 

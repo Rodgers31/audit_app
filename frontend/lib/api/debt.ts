@@ -382,10 +382,14 @@ export const getPendingBillsSummary = async (signal?: AbortSignal): Promise<Pend
 
 // County-level pending bills breakdown
 export interface CountyPendingBillsResponse {
+  pending_bills_as_at?: string | null;
+  pending_bills_source?: { publisher?: string; title?: string; url?: string } | null;
+  pending_bills_notes?: Array<{ code: string } & Record<string, unknown>>;
+  selection?: { as_at: string | null };
   aging_observations?: PendingBillsAgingObservations;
   county_id: string;
   county_name: string;
-  total_pending: number;
+  total_pending: number | null;
   breakdown_by_type: {
     type: string;
     amount: number;
@@ -399,9 +403,24 @@ export interface CountyPendingBillsResponse {
   }[];
 }
 
-export const getCountyPendingBills = async (countyId: string, signal?: AbortSignal): Promise<CountyPendingBillsResponse> => {
-  const response = await apiGet<CountyPendingBillsResponse>(apiClient, DEBT_ENDPOINTS.PENDING_BILLS_COUNTY(countyId), signal);
-  return response.data;
+export const getCountyPendingBills = async (countyId: string, signal?: AbortSignal, asAt?: string): Promise<CountyPendingBillsResponse> => {
+  const path = DEBT_ENDPOINTS.PENDING_BILLS_COUNTY(countyId) + (asAt ? '?as_at=' + encodeURIComponent(asAt) : '');
+  const response = await apiGet<CountyPendingBillsResponse>(apiClient, path, signal);
+  const value = response.data;
+  const noteCodes = new Set(['assembly_not_printed', 'cob_marked_inconsistent', 'chapter_table_differs']);
+  if (!value || value.county_id !== countyId ||
+      !(value.total_pending === null || typeof value.total_pending === 'number' && Number.isFinite(value.total_pending) && value.total_pending >= 0) ||
+      value.pending_bills_notes !== undefined && (!Array.isArray(value.pending_bills_notes) || value.pending_bills_notes.some(note => {
+        if (!note || typeof note !== 'object' || !noteCodes.has(note.code)) return true;
+        if (['table', 'chapter_table'].some(key => note[key] != null && typeof note[key] !== 'string')) return true;
+        if (note.chapter_page != null && !(typeof note.chapter_page === 'number' && Number.isInteger(note.chapter_page) && note.chapter_page > 0)) return true;
+        return note.code === 'chapter_table_differs' && !(typeof note.chapter_total === 'string' &&
+          /^\d+(?:\.\d+)?$/.test(note.chapter_total) && note.chapter_total === note.chapter_total.trim() && Number.isFinite(Number(note.chapter_total)));
+      })) ||
+      asAt && (value.selection?.as_at !== asAt || value.total_pending !== null && value.pending_bills_as_at !== asAt)) {
+    throw new Error('Pending bills response does not match the requested county and reporting date.');
+  }
+  return value;
 };
 
 // Debt sustainability indicators (national level)
