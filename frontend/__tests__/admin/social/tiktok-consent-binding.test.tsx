@@ -23,7 +23,7 @@ function options(): TikTokPostOptions { return JSON.parse(screen.getByTestId('co
 
 test('editing the effective master content clears all exact-content confirmations', () => {
   mount();
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Changed content requiring new review' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Changed content requiring new review' } });
   expect(options()).toMatchObject({ upload_consent: false, music_usage_confirmed: false, branded_content_policy_confirmed: false });
 });
 test('editing a provider disclosure clears all confirmations', () => {
@@ -33,7 +33,7 @@ test('editing a provider disclosure clears all confirmations', () => {
 });
 test('internal metadata and checking another confirmation preserve reviewed consent', () => {
   mount({}, { ...confirmed, music_usage_confirmed: false });
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Internal title only' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Internal title only' } });
   fireEvent.click(screen.getByRole('button', { name: 'Add source reference' }));
   fireEvent.change(screen.getByLabelText('Source URL 1'), { target: { value: 'https://example.test/evidence' } });
   fireEvent.click(screen.getByRole('button', { name: 'Fixture music confirmation' }));
@@ -41,7 +41,7 @@ test('internal metadata and checking another confirmation preserve reviewed cons
 });
 test('an account override preserving effective content keeps consent when master text changes', () => {
   mount({ text: { mode: 'replace', value: 'Exact account-specific reviewed content' } });
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Changed master has no effect for this account' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Changed master has no effect for this account' } });
   expect(options()).toMatchObject({ upload_consent: true, music_usage_confirmed: true, branded_content_policy_confirmed: true });
 });
 

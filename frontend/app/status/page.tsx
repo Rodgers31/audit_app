@@ -7,7 +7,7 @@
  */
 'use client';
 
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { AdminGuard } from '@/lib/auth/admin';
 import { useQuery } from '@tanstack/react-query';

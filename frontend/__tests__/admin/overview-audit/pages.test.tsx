@@ -124,6 +124,8 @@ test('admin navigation exposes current subsection and named keyboard navigation'
   mockPath = '/admin/social/accounts';
   mount(<Layout><p>inert</p></Layout>);
   const nav = screen.getByRole('navigation', { name: 'Admin navigation' });
-  expect(within(nav).getByRole('link', { name: 'Social accounts' })).toHaveAttribute('aria-current', 'page');
-  expect(within(nav).getByRole('link', { name: 'Social Media' })).not.toHaveAttribute('aria-current');
+  expect(within(nav).getByRole('link', { name: 'Social' })).toHaveAttribute('aria-current', 'page');
+  expect(within(nav).getByRole('link', { name: 'Overview' })).not.toHaveAttribute('aria-current');
+  fireEvent.click(screen.getByText('Manage social'));
+  expect(screen.getByRole('link', { name: 'Connected accounts' })).toHaveAttribute('href', '/admin/social/accounts');
 });

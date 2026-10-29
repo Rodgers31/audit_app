@@ -29,7 +29,7 @@ test('confirmation archives without save/queue calls and preserves read-only rec
   fireEvent.click(screen.getByRole('button', { name: 'Confirm archive' })); await screen.findByText(retained);
   expect(send).toHaveBeenCalledTimes(1); expect(send.mock.calls[0][0]).toBe(`/admin/social/posts/${p.id}/archive`);
   expect(send.mock.calls[0][1]).toEqual({ expected_version: 1 }); expect(api.patch).not.toHaveBeenCalled();
-  expect(screen.getByLabelText('Internal title')).toBeDisabled();
+  expect(screen.getByLabelText('Draft title')).toBeDisabled();
   expect(screen.queryByRole('button', { name: 'Publish now' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Cancel unsent deliveries' })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Duplicate as new manual draft' })).toBeEnabled();
@@ -41,16 +41,16 @@ test('ambiguous retry retains version/key and invalid receipt preserves original
   await screen.findByRole('alert'); fireEvent.click(screen.getByRole('button', { name: 'Confirm archive' }));
   await screen.findByText(/archive receipt did not confirm/);
   expect(send).toHaveBeenCalledTimes(2); expect(send.mock.calls[0]).toEqual(send.mock.calls[1]);
-  expect(screen.getByLabelText('Internal title')).toBeEnabled();
+  expect(screen.getByLabelText('Draft title')).toBeEnabled();
 });
 
 test('unsafe eligibility explains independent cancellation', () => {
   const p = fixture(); p.archive = { eligible: false, archived_at: null, message: 'Use independent cancellation or reconciliation before archive.' }; mount(p);
-  expect(screen.getByRole('button', { name: 'Archive post' })).toBeDisabled(); expect(screen.getByText(/Use independent cancellation/)).toBeVisible();
+  fireEvent.click(screen.getByText('More draft actions')); expect(screen.getByRole('button', { name: 'Archive post' })).toBeDisabled(); expect(screen.getByText(/Use independent cancellation/)).toBeVisible();
 });
 
 test('local edits cannot be implicitly saved by archive', () => {
-  mount(); fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Unsaved title' } });
+  mount(); fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Unsaved title' } });
   expect(screen.getByRole('button', { name: 'Archive post' })).toBeDisabled(); expect(send).not.toHaveBeenCalled();
 });
 
@@ -58,7 +58,7 @@ test('Archived queue fetches explicit state filter', async () => {
   get.mockImplementation(async (path: string) => ({ data: path.includes('/system/') ? { ...system, publishing_enabled: false } : path.endsWith('/accounts') ? { accounts: [] } : { posts: [], total: 0, page: 1, page_size: 20, has_more: false } }));
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={qc}><SocialWorkspace /></QueryClientProvider>);
-  fireEvent.click(screen.getByRole('button', { name: 'Archived' }));
+  fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'archived' } });
   await waitFor(() => expect(get.mock.calls.some(([path, options]) => path === '/admin/social/posts' && options.params.editorial_state === 'archived')).toBe(true));
 });
 
@@ -71,7 +71,7 @@ test('pending archive disables editing and sibling commands until its receipt se
   send.mockImplementation(() => new Promise(resolve => { settle = resolve; })); mount(p);
   fireEvent.click(screen.getByRole('button', { name: 'Archive post' })); fireEvent.click(screen.getByRole('button', { name: 'Confirm archive' }));
   await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
-  expect(screen.getByLabelText('Internal title')).toBeDisabled();
+  expect(screen.getByLabelText('Draft title')).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Submit for review' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Duplicate as new manual draft' })).toBeDisabled();
   settle({ data: archived(p) }); await screen.findByText(retained);
@@ -81,7 +81,7 @@ test('legacy archived history without a timestamp remains visible and read-only'
   const p = { ...fixture(), editorial_state: 'archived', archive: { eligible: false, archived_at: null, message: retained } };
   expect(decodePost(p).archive?.archived_at).toBeNull();
   mount(decodePost(p));
-  expect(screen.getByLabelText('Internal title')).toBeDisabled();
+  expect(screen.getByLabelText('Draft title')).toBeDisabled();
   expect(screen.getByRole('heading', { name: 'Archived history' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Duplicate as new manual draft' })).toBeEnabled();
 });
@@ -91,7 +91,7 @@ test('valid eligible draft metadata is accepted and remains editable', () => {
   const p = fixture(); p.archive = { eligible: true, archived_at: null, message: 'x' };
   expect(decodePost(p)).toEqual(p);
   mount(decodePost(p));
-  expect(screen.getByLabelText('Internal title')).toBeEnabled();
+  expect(screen.getByLabelText('Draft title')).toBeEnabled();
   expect(screen.getByRole('button', { name: 'Archive post' })).toBeEnabled();
 });
 
@@ -115,3 +115,5 @@ test('inconsistent timestamp returned by the API cannot render an editable compo
   expect(screen.queryByRole('button', { name: 'Archive post' })).not.toBeInTheDocument();
   expect(send).not.toHaveBeenCalled(); expect(api.patch).not.toHaveBeenCalled();
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

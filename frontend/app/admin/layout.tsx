@@ -3,17 +3,15 @@
  *
  * Wraps every admin route in <AdminGuard> (third defence layer behind
  * Next.js middleware and backend ``require_admin``) and renders a
- * sticky pill-style sub-nav that floats just below the main app
- * navigation. Pages themselves provide their own dark hero band via
- * <PageShell> so the typography and animation match the rest of the
- * public site (about, debt, budget, etc.).
+ * task navigation and compact private-page headers. Public pages keep
+ * their own shell; authorization and actor-scoped cache eviction are shared.
  */
 'use client';
 
 import { AdminGuard, useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Activity,
   BarChart3,
@@ -25,17 +23,16 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import styles from '@/components/admin/admin.module.css';
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: BarChart3, exact: true },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/ingestion', label: 'Ingestion', icon: ListChecks },
-  { href: '/admin/etl', label: 'ETL Schedule', icon: PlayCircle },
-  { href: '/admin/audit-log', label: 'Audit Log', icon: History },
-  { href: '/admin/social', label: 'Social Media', icon: Send },
-  { href: '/admin/social/new', label: 'Compose', icon: Send },
-  { href: '/admin/social/accounts', label: 'Social accounts', icon: Users },
-  { href: '/status', label: 'Pipeline Status', icon: Activity },
+  { href: '/admin/social', label: 'Social', icon: Send },
+  { href: '/admin/ingestion', label: 'Data updates', icon: ListChecks },
+  { href: '/admin/etl', label: 'Run & recover', icon: PlayCircle },
+  { href: '/admin/users', label: 'People', icon: Users },
+  { href: '/admin/audit-log', label: 'Activity', icon: History },
+  { href: '/status', label: 'System status', icon: Activity },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -66,34 +63,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
 function AdminNav() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   const activeHref = NAV_ITEMS.filter(({ href, exact }) => exact ? pathname === href : pathname === href || pathname.startsWith(href + '/'))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
-  return (
-    <div className='sticky top-[72px] z-30 bg-gov-dark/95 backdrop-blur-md border-b border-gov-forest/40 shadow-md'>
-      <div className='max-w-[1340px] mx-auto px-5 lg:px-8'>
-        <nav aria-label='Admin navigation' className='flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-2.5 scrollbar-hide'>
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-            const active = activeHref === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? 'page' : undefined}
-                onFocus={(event) => event.currentTarget.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })}
-                className={`inline-flex min-h-11 items-center gap-2 px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold transition-all whitespace-nowrap focus-visible:outline focus-visible:outline-2 focus-visible:outline-gov-gold ${
-                  active
-                    ? 'bg-gov-gold/20 text-gov-gold ring-1 ring-inset ring-gov-gold/40 shadow-sm'
-                    : 'text-white/70 hover:text-white hover:bg-white/10 ring-1 ring-inset ring-transparent'
-                }`}>
-                <Icon className='w-3.5 h-3.5' />
-                {label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-    </div>
-  );
+  return <>
+    <div className={styles.nav}><div className={styles.navInner}>
+      <span className={styles.identity}>AuditGava / Admin</span>
+      <button type='button' className={styles.menuButton} aria-controls='admin-task-navigation' aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>Menu</button>
+      <nav id='admin-task-navigation' aria-label='Admin navigation' className={`${styles.links} ${menuOpen ? styles.navExpanded : ''}`}>
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={activeHref === href ? 'page' : undefined}><Icon aria-hidden='true' />{label}</Link>)}
+      </nav>
+    </div></div>
+    {pathname.startsWith('/admin/social') && <div className={styles.socialNav}><nav className={styles.socialNavInner} aria-label='Social workspace'>
+      <Link href='/admin/social' aria-current={pathname === '/admin/social' ? 'page' : undefined}>Review drafts</Link>
+      <Link href='/admin/social/new' aria-current={pathname === '/admin/social/new' ? 'page' : undefined}>Write a post</Link>
+      <Link href='/admin/social/studio' aria-current={pathname === '/admin/social/studio' ? 'page' : undefined}>Studio & calendar</Link>
+      <details className={styles.settings}><summary>Manage social</summary><div>
+        <Link href='/admin/social/automation'>Draft automation</Link><Link href='/admin/social/media'>Media library</Link><Link href='/admin/social/accounts'>Connected accounts</Link><Link href='/admin/social/privacy'>Privacy & retention</Link>
+      </div></details>
+    </nav></div>}
+  </>;
 }

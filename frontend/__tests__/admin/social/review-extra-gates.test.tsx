@@ -170,8 +170,8 @@ test('AUTHORIZATION_EXPIRED on resume preserves the reason, identity and key wit
 test.each(['title', 'hashtags', 'override', 'source'])('an approved %s edit then semantic revert cannot enable submit or revoke authorization by no-op save', async field => {
   const p = approved(); send.mockResolvedValue({ data: validation(p) }); const qc = mount(p);
   if (field === 'title') {
-    fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Temporary title' } });
-    fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: p.title } });
+    fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Temporary title' } });
+    fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: p.title } });
   }
   if (field === 'hashtags') fireEvent.change(screen.getByLabelText(/Master hashtags/), { target: { value: '#Evidence  ' } });
   if (field === 'override') { fireEvent.click(screen.getByRole('button', { name: 'Customize text' })); fireEvent.click(screen.getByRole('button', { name: 'Reset text to master' })); }
@@ -201,3 +201,5 @@ test('fresh active heartbeat cannot mask a stale scan and a stopped worker may o
   rerender(<QueryClientProvider client={qc}><SocialSystemStrip status={{ ...system, worker: { state: 'stopped', heartbeat_at: timestamp, last_scan_at: null } }} refresh={jest.fn()} /></QueryClientProvider>);
   expect(screen.getByText('Worker: stopped')).toBeInTheDocument();
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

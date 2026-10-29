@@ -56,11 +56,10 @@ test('history endpoint is fetched only on inspection and pages exact post receip
 });
 test('global history renders revoked receipts even though current draft targets are empty', async () => {
   const p = revised(); get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : path.endsWith('/posts') ? { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } : p }));
-  mount(p, true); fireEvent.click(screen.getByRole('button', { name: 'History' }));
-  await screen.findByText('1 history posts');
+  mount(p, true); fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'history' } });
+  await screen.findByText('1 history post');
   expect(screen.getByText(/Historical Facebook.*cancelled/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /What does unsupported expenditure mean/ }));
-  await screen.findByRole('region', { name: 'Delivery history' });
+  expect(screen.getByRole('link', { name: 'What does unsupported expenditure mean?' })).toHaveAttribute('href', `/admin/social/${p.id}?queue=view%3Dhistory`);
   expect(get.mock.calls.some(([path]) => path === `/admin/social/posts/${p.id}`)).toBe(false);
 });
 test('summary preserves the exact bounded historical identity', () => {
@@ -83,3 +82,5 @@ test('history decoding rejects ambiguous counts, duplicate targets and foreign p
   get.mockResolvedValue({ data: { ...page, page: 2, targets: [] } });
   await expect(socialApi.history(p.id, 1)).rejects.toThrow(SocialApiError);
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

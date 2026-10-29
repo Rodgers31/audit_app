@@ -183,3 +183,5 @@ test('a once-fresh heartbeat becomes stale while the page is idle', async () => 
   expect(screen.queryByText('Worker: active')).not.toBeInTheDocument();
   expect(screen.getByText('Worker heartbeat stale or unavailable')).toBeInTheDocument();
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

@@ -47,7 +47,7 @@ test('pending media blocks publication commands and completion preserves current
   expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Save & validate' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Duplicate as new manual draft' })).toBeDisabled();
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'New text entered while upload was pending.' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'New text entered while upload was pending.' } });
   fireEvent.click(screen.getByRole('button', { name: 'Customize text' }));
   fireEvent.change(screen.getByLabelText('Account text'), { target: { value: 'A newer Facebook override.' } });
   expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
@@ -69,7 +69,7 @@ test('switching account while an override uploads never attaches that asset to t
   await act(async () => finish({ data: asset() }));
   await waitFor(() => expect(screen.queryByText('Inspecting actual media bytes…')).not.toBeInTheDocument());
   expect(screen.queryByLabelText('Account media 1 alt text')).not.toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Save the explicitly empty account overrides.' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Save the explicitly empty account overrides.' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
   expect(patch.mock.calls[0][1].document.targets.map((t: { overrides: object }) => t.overrides)).toEqual([{ media: { mode: 'replace', value: [] } }, { media: { mode: 'replace', value: [] } }]);

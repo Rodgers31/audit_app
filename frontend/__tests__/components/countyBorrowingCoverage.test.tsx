@@ -34,7 +34,6 @@ test('checked-source absence keeps scope and accessible provenance separate from
   expect(screen.getByRole('link', {name: /Checked source 1/})).toHaveAttribute('href', 'https://www.treasury.go.ke/report.pdf');
 });
 
-import type { BorrowingCoverage } from '@/lib/countyBorrowingCoverage';
 
 test('conflicting evidence and invalid stock dates cannot certify a balance', () => {
   expect(borrowingCoverageKey(20, 'duplicate_instrument_observations')).toBe('county.borrowing.withheld');
