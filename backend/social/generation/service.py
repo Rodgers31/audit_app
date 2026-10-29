@@ -503,9 +503,13 @@ def verify_generated_revision(db, post, revision, *, lock=True):
     if event.observation.get('financial') is not None:
         from .authority import verify_financial_authority
         verify_financial_authority(db, event.observation)
-    if revision.evidence_snapshot.get('worker_authority') is not None:
+    source = event.observation
+    native = (source.get('financial') is not None or source.get('report') is None
+              or isinstance(source.get('report'), dict)
+              and source['report'].get('native_domain') is not None)
+    if native or revision.evidence_snapshot.get('worker_authority') is not None:
         from .worker_authority import verify_worker_authority
-        verify_worker_authority(db, event.observation, revision.evidence_snapshot['worker_authority'])
+        verify_worker_authority(db, source, revision.evidence_snapshot.get('worker_authority'))
     if unresolved_placeholders(revision.document) or unresolved_placeholders(revision.evidence_snapshot):
         raise SocialError('UNRESOLVED_TEMPLATE', 'Resolve every placeholder before authorization.', 422)
 

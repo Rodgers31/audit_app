@@ -26,6 +26,7 @@ from social.generation.service import consume_observation
 from social.models import SocialPost, SocialPostRevision
 from social.service import SocialService, SocialError
 from test_b83_generation_postgres import pg, no_publication
+from native_worker_fixture import restricted
 from test_b86_native_postgres import enable
 from test_api_admin import make_client, key
 from test_kra_catalogue import URL, CATALOGUE
@@ -135,13 +136,13 @@ def test_bad_catalogue_preserves_numeric_observations_but_invalidates_report(pg,
         assert db.scalar(select(func.count()).select_from(SocialPost))==0
 
 
-def test_catalogue_shadow_and_policy_require_human_even_with_future_automation(pg,tmp_path,monkeypatch):
+def test_catalogue_shadow_and_policy_require_human_even_with_future_automation(restricted,tmp_path,monkeypatch):
     from uuid import UUID
     from types import SimpleNamespace
     from test_domain_support import account, call
     from test_generation import rule, evaluate
     from social.automation.service import source_scope, candidate_gates
-    factory,_=pg;enable(factory,monkeypatch);job,record=ingest(factory,tmp_path)
+    factory,_,_,_=restricted;enable(factory,monkeypatch);job,record=ingest(factory,tmp_path)
     value=read_revenue_report_observation(factory,record_id=record,ingestion_id=job)
     parsed=SourceObservation.model_validate(value)
     with factory() as db:

@@ -83,10 +83,22 @@ def definition(*, locked):
 
 def create_views(conn):
     """Called only by the explicit operator installer, inside its transaction."""
+    from sqlalchemy import text
+    from .role_contract import _quoted
     for suffix,locked in [('_snapshot',False),('',True)]:
         name='social_native_source_authority'+suffix
         conn.exec_driver_sql('CREATE VIEW public.'+name+' WITH (security_barrier=true) AS '+definition(locked=locked))
         conn.exec_driver_sql('REVOKE ALL ON public.'+name+' FROM PUBLIC')
+        # Schema/owner defaults may grant new views to application roles. Only
+        # these freshly created, still-uncommitted objects are made private;
+        # existing objects and the global/default ACLs are never repaired here.
+        defaults = conn.execute(text('''SELECT DISTINCT r.rolname
+            FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a
+            JOIN pg_roles r ON r.oid=a.grantee
+            WHERE c.oid=to_regclass(:view) AND a.grantee<>c.relowner'''),
+            {'view': 'public.'+name}).scalars().all()
+        for grantee in defaults:
+            conn.exec_driver_sql('REVOKE ALL ON public.'+name+' FROM '+_quoted(conn,grantee))
 
 
 def install_native_authority(engine, role, schema='public'):
@@ -112,7 +124,12 @@ def install_native_authority(engine, role, schema='public'):
                 create_views(conn)
                 conn.execute(text('SET LOCAL search_path=pg_catalog,pg_temp'))
                 _views(conn,schema)
-                conn.execute(text('GRANT SELECT ON public.social_native_source_authority TO '+_quoted(conn,role)))
+            # Existing exact private views do not imply permission to grant
+            # them through the ordinary role installer. Only this explicitly
+            # selected operation supplies (or restores) the digest SELECT.
+            conn.execute(text('GRANT SELECT ON public.social_native_source_authority TO '+_quoted(conn,role)))
+            _require(conn.scalar(text("SELECT has_table_privilege(:role,'public.social_native_source_authority','SELECT')"),
+                                 {'role': role}))
             _verify(conn,role,schema,current=False)
     except Exception:
         raise WorkerRoleError('WORKER_ROLE_UNAVAILABLE') from None
