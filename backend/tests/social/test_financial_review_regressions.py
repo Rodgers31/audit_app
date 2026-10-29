@@ -8,6 +8,7 @@ from sqlalchemy import select, func, text
 
 import test_native_financial_changes_postgres as producer_fixture
 from test_b83_generation_postgres import pg, no_publication
+from native_worker_fixture import restricted
 from test_native_financial_changes_postgres import enable
 from models import RevenueBySource
 from social.models import SocialPost, SocialPostRevision
@@ -73,8 +74,8 @@ def test_explicit_quarantined_financial_row_cannot_be_promoted(pg,tmp_path,monke
     no_publication(factory)
 
 
-def test_same_value_evidence_refresh_has_explicit_recovery_for_existing_draft(pg,tmp_path,monkeypatch):
-    factory,_=pg;enable(factory,monkeypatch)
+def test_same_value_evidence_refresh_has_explicit_recovery_for_existing_draft(restricted,tmp_path,monkeypatch):
+    factory,_,_,_=restricted;enable(factory,monkeypatch)
     job,record=ingest(factory,tmp_path,monkeypatch)
     assert dispatch(factory,job)['drafts_created']==0
     job,record=ingest(factory,tmp_path,monkeypatch,paye='561')

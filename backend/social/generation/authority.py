@@ -10,6 +10,8 @@ from sqlalchemy import text
 def verify_financial_authority(db, source):
     """Re-read current business cells and their exact publisher/job binding."""
     from ..service import SocialError
+    if not callable(getattr(db, 'get', None)):
+        raise SocialError('SOURCE_REVIEW_REQUIRED', 'A current restricted-worker source witness is required.', 422)
     from importlib import import_module
     module = import_module('backend.seeding.native_financial_observations' if __package__.startswith('backend.') else 'seeding.native_financial_observations')
     try:
@@ -23,7 +25,7 @@ def verify_financial_authority(db, source):
 
 
 def current_report_authority(db, record_id, ingestion_id, *, lock=True):
-    relation = 'social_report_source_authority' if lock else 'social_report_source_authority_snapshot'
+    relation = 'public.social_report_source_authority' if lock else 'public.social_report_source_authority_snapshot'
     query = text('''SELECT authority_fingerprint
         FROM '''+relation+'''
         WHERE record_id=:record AND ingestion_id=:ingestion LIMIT 2''')
@@ -46,6 +48,8 @@ def verify_report_authority(db, source):
     if report is None:
         return
     if isinstance(report, dict) and report.get('native_domain') is not None:
+        if not callable(getattr(db, 'get', None)):
+            raise SocialError('SOURCE_REVIEW_REQUIRED', 'A current restricted-worker source witness is required.', 422)
         from importlib import import_module
         module = import_module('backend.seeding.native_report_observations' if __package__.startswith('backend.') else 'seeding.native_report_observations')
         try:

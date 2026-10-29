@@ -10,6 +10,7 @@ from seeding.domains.revenue_by_source.fetcher import _read_release
 from seeding.types import DomainRunContext
 from test_b86_native_authority import HTML,KRA_URL
 from test_b83_generation_postgres import pg
+from native_worker_fixture import restricted
 
 def test_qualifying_press_comprehension_does_not_raise_nameerror_and_retains_cells(tmp_path):
  class Client:
@@ -74,8 +75,8 @@ from test_policy_hook_registry import validation_environment
 from test_report_postgres import repository_gate
 
 
-def test_actual_human_approved_financial_worker_gate_refuses_changed_source(pg,tmp_path,monkeypatch):
- factory,engine=pg;enable(factory,monkeypatch);validation_environment(monkeypatch)
+def test_actual_human_approved_financial_worker_gate_refuses_changed_source(restricted,tmp_path,monkeypatch):
+ factory,engine,_,_=restricted;enable(factory,monkeypatch);validation_environment(monkeypatch)
  from social.adapters.validation_registry import load_native_validation_registry
  registry=load_native_validation_registry();adapter=registry.adapters[('facebook','facebook_pages')]
  with factory() as db:
@@ -99,4 +100,4 @@ def test_actual_human_approved_financial_worker_gate_refuses_changed_source(pg,t
    verify_generated_revision(db,db.get(SocialPost,post_id),db.get(SocialPostRevision,revision_id))
  with factory() as db:after=repository_gate(db,engine,pub_id,account_id)
  Path('/output/worker-gate.json').write_text(json.dumps({'before':before,'after_changed_business_value':after,'source_record':record,'synthetic_fixture_only':True},indent=2))
- assert before == after == 'SOURCE_REVIEW_REQUIRED', 'Native financial dispatch requires an accepted restricted-worker witness'
+ assert before is None and after == 'SOURCE_REVIEW_REQUIRED', 'An installed current witness admits only unchanged reviewed evidence'

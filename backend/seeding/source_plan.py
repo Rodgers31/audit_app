@@ -29,6 +29,7 @@ class SourcePlan:
     bootstrap: bool
     dry_run: bool
     audits_review: str = ""
+    reacquire_pending_pdf: bool = False
 
     @property
     def argv(self):
@@ -44,7 +45,8 @@ class SourcePlan:
 
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
-               bootstrap='false', county_borrowing='false', audits_review=''):
+               bootstrap='false', county_borrowing='false', audits_review='',
+               reacquire_pending_pdf='false'):
     if audits_review not in ('', 'oag-2542-20261026'):
         raise ValueError('Unknown source-checked audits review')
     enabled = {'cra': boolean(cra), 'opendata': boolean(opendata),
@@ -54,10 +56,11 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
         raise ValueError('KNBS discovery requires the OpenData opt-in too')
     dry = boolean(dry_run)
     boot = boolean(bootstrap)
+    reacquire = boolean(reacquire_pending_pdf)
     if type(domain) is not str or domain not in ('', *LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing'):
         raise ValueError('Unknown source plan domain')
     if event == 'schedule':
-        if schedule not in (DAILY, WEEKLY) or domain or dry or boot or audits_review:
+        if schedule not in (DAILY, WEEKLY) or domain or dry or boot or audits_review or reacquire:
             raise ValueError('Unsupported scheduled source plan')
         weekly = schedule == WEEKLY
         # Admit explicit opt-ins before legacy work can consume the shared
@@ -67,12 +70,14 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
         return SourcePlan(domains, weekly, False)
     if event != 'workflow_dispatch' or schedule != '':
         raise ValueError('Unsupported source plan event')
+    if reacquire and (domain != 'pending_bills' or boot or audits_review):
+        raise ValueError('PDF reacquisition requires only the manual pending-bills domain')
     if domain in enabled and not enabled[domain]:
         raise ValueError('Selected source requires its explicit opt-in')
     domains = (domain,) if domain else (*(d for d, on in enabled.items() if on), *LEGACY_DOMAINS)
     if audits_review and (dry or 'audits' not in domains):
         raise ValueError('Source-checked review requires a live audits selection')
-    return SourcePlan(domains, boot, dry, audits_review)
+    return SourcePlan(domains, boot, dry, audits_review, reacquire)
 
 
 def environment_plan():
@@ -85,7 +90,8 @@ def environment_plan():
         opendata=os.environ.get('SEED_OPENDATA_INGESTION_ENABLED', 'false'),
         discovery=os.environ.get('SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'false'),
         county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'),
-        audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''))
+        audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''),
+        reacquire_pending_pdf=os.environ.get('SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF', 'false'))
 
 
 def validate_plan(plan):
@@ -97,6 +103,8 @@ def validate_plan(plan):
             or type(plan.bootstrap) is not bool or type(plan.dry_run) is not bool
             or type(plan.audits_review) is not str
             or plan.audits_review not in ('', 'oag-2542-20261026')
+            or type(plan.reacquire_pending_pdf) is not bool
+            or (plan.reacquire_pending_pdf and (plan.domains != ('pending_bills',) or plan.bootstrap or plan.audits_review))
             or (plan.audits_review and (plan.dry_run or 'audits' not in plan.domains))):
         raise ValueError('Invalid source plan output or invocation')
 
@@ -126,9 +134,14 @@ def main():
             write_plan_outputs(plan)
         print(json.dumps({'domains': plan.domains, 'bootstrap': plan.bootstrap,
                           'dry_run': plan.dry_run, 'audits_review': plan.audits_review,
+                          'reacquire_pending_pdf': plan.reacquire_pending_pdf,
                           'evidence': 'selection_plan_only'}), flush=True)
         if sys.argv[1] == '--execute':
-            return subprocess.run(plan.argv, check=False).returncode
+            args = plan.argv  # Validate direct plans before constructing execution options.
+            options = {'check': False}
+            if plan.reacquire_pending_pdf:
+                options['env'] = dict(os.environ, SEED_PDF_CACHE_TTL_SECONDS='0')
+            return subprocess.run(args, **options).returncode
         return 0
     except (KeyError, ValueError) as exc:
         print('Source plan refused: ' + str(exc), file=sys.stderr)

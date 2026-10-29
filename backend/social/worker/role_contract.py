@@ -33,7 +33,9 @@ REPORT_VIEW_SHA256 = {
 # PostgreSQL replay reproduces this exact body; joins, predicates and locks are
 # unchanged. Keep this one locked-view variant explicit, never normalize SQL.
 REPORT_LOCKED_VIEW_HISTORICAL_SHA256 = 'a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0'
+NATIVE_VIEW_SHA256 = {'social_native_source_authority': '921b807c9637ae9541cf63e74313a4816875afef3de92d42cf6fc25226b09f4a', 'social_native_source_authority_snapshot': 'f219c56c5f21622cfae0fe875e2020770859c90f2d1978625d21a40781aa6ba6'}
 READ_VIEWS = frozenset({'social_report_source_authority'})
+OPTIONAL_READ_VIEWS = frozenset({'social_native_source_authority'})
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})
 UPDATES = {
     'social_accounts': frozenset('hold_reason publish_lease_target_id publish_lease_token publish_lease_expires_at updated_at'.split()),
@@ -216,20 +218,44 @@ def _grants(conn, role, schema, *, complete, platforms=False):
         SELECT c.oid,n.nspname,c.relname,c.relkind,c.relrowsecurity,
                CASE WHEN c.relkind='S' THEN
                  has_sequence_privilege(:role,c.oid,'USAGE,SELECT,UPDATE')
-               ELSE false END AS sequence_access
+               ELSE false END AS sequence_access,
+               CASE WHEN n.nspname=:schema AND c.relname='social_native_source_authority' AND c.relkind='v'
+                 THEN has_table_privilege(:role,c.oid,'SELECT') ELSE false END AS native_effective_read,
+               CASE WHEN n.nspname=:schema AND c.relname='social_native_source_authority' AND c.relkind='v'
+                 THEN EXISTS(SELECT 1 FROM aclexplode(c.relacl) a
+                   WHERE a.grantee=(SELECT oid FROM pg_roles WHERE rolname=:role)
+                     AND a.privilege_type='SELECT' AND NOT a.is_grantable)
+                 ELSE false END AS native_direct_read,
+               CASE WHEN n.nspname=:schema AND c.relname='social_native_source_authority' AND c.relkind='v'
+                 THEN NOT EXISTS(SELECT 1 FROM aclexplode(c.relacl) a
+                   WHERE a.grantee<>c.relowner AND
+                     (a.grantee<>(SELECT oid FROM pg_roles WHERE rolname=:role)
+                      OR a.privilege_type<>'SELECT' OR a.is_grantable))
+                 ELSE true END AS native_scoped_acl
         FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
         WHERE """ + INVENTORIED + """ AND c.relkind IN ('r','p','v','m','f','S')
-    """), {'role': role}).mappings())
+    """), {'role': role, 'schema': schema}).mappings())
     found = set()
+    optional_reads = set()
     for obj in objects:
         table = obj['relname'] if obj['nspname'] == schema else None
-        if table in READ_VIEWS:
+        if table in READ_VIEWS | OPTIONAL_READ_VIEWS:
             _require(obj['relkind'] == 'v' and obj['relrowsecurity'] is False)
+        if table in OPTIONAL_READ_VIEWS:
+            # A prior explicit, complete grant is tolerated by the runtime/base
+            # installer. Effective PUBLIC/role/column access cannot stand in
+            # for that direct table grant; the base installer never creates it.
+            _require(obj['native_scoped_acl'] is True
+                     and type(obj['native_effective_read']) is bool
+                     and obj['native_effective_read'] is obj['native_direct_read'])
+            if obj['native_direct_read'] is True:
+                optional_reads.add(table)
         if table in contract.tables:
             found.add(table)
             _require(obj['relkind'] == 'r' and obj['relrowsecurity'] is True)
         _require(obj['sequence_access'] is False)
     _require(found == contract.tables)
+    read_relations = contract.read_relations | optional_reads
     tables = conn.execute(text("""
         SELECT n.nspname,c.relname,p.privilege,
                has_table_privilege(:role,c.oid,p.privilege) AS present,
@@ -241,7 +267,7 @@ def _grants(conn, role, schema, *, complete, platforms=False):
     """), {'role': role})
     # Baseline catalog access is tolerated, never required: revoking it only narrows.
     for namespace, table, privilege, present, grantable, baseline in tables:
-        required = namespace == schema and table in contract.read_relations and privilege == 'SELECT'
+        required = namespace == schema and table in read_relations and privilege == 'SELECT'
         _require(not grantable and (not present or required or baseline)
                  and (not complete or not required or present))
     columns = conn.execute(text("""
@@ -256,7 +282,7 @@ def _grants(conn, role, schema, *, complete, platforms=False):
     """), {'role': role})
     for namespace, table, column, privilege, present, grantable, baseline in columns:
         required = namespace == schema and (
-            table in contract.read_relations if privilege == 'SELECT' else
+            table in read_relations if privilege == 'SELECT' else
             column in (contract.inserts if privilege == 'INSERT' else
                        contract.updates if privilege == 'UPDATE' else {}).get(table, ()))
         _require(not grantable and (not present or required or baseline)
@@ -406,22 +432,49 @@ def _views(conn, schema):
           AND attname='report_state' AND NOT attisdropped)'''), {'schema': schema}).scalar()
     if not rows:
         _require(report_schema is False)
-        return
-    _require(len(rows) == len(REPORT_VIEW_SHA256) and report_schema is True)
-    for row in rows:
-        _require(row['relname'] in REPORT_VIEW_SHA256
-                 and row['source_owner'] is True and row['application_owner'] is True
-                 and row['exact_return_rule'] is True
-             and list(row['types']) == ['integer', 'integer', 'text']
-             and list(row['reloptions'] or []) == ['security_barrier=true']
-             and list(row['columns']) == ['record_id', 'ingestion_id', 'authority_fingerprint'])
-        definition = row['definition']
-        for clause in ('FROM ', 'JOIN '):
-            definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
-        accepted = {REPORT_VIEW_SHA256[row['relname']]}
-        if row['relname'] == 'social_report_source_authority':
-            accepted.add(REPORT_LOCKED_VIEW_HISTORICAL_SHA256)
-        _require(hashlib.sha256(definition.encode()).hexdigest() in accepted)
+    else:
+        _require(len(rows) == len(REPORT_VIEW_SHA256) and report_schema is True)
+        for row in rows:
+            _require(row['relname'] in REPORT_VIEW_SHA256
+                     and row['source_owner'] is True and row['application_owner'] is True
+                     and row['exact_return_rule'] is True
+                 and list(row['types']) == ['integer', 'integer', 'text']
+                 and list(row['reloptions'] or []) == ['security_barrier=true']
+                 and list(row['columns']) == ['record_id', 'ingestion_id', 'authority_fingerprint'])
+            definition = row['definition']
+            for clause in ('FROM ', 'JOIN '):
+                definition = definition.replace(clause+_quoted(conn, schema)+'.', clause).replace(clause+schema+'.', clause)
+            accepted = {REPORT_VIEW_SHA256[row['relname']]}
+            if row['relname'] == 'social_report_source_authority':
+                accepted.add(REPORT_LOCKED_VIEW_HISTORICAL_SHA256)
+            _require(hashlib.sha256(definition.encode()).hexdigest() in accepted)
+
+    native = list(conn.execute(text('''SELECT c.relname,c.reloptions,pg_get_viewdef(c.oid,true) AS definition,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.social_source_events')) AS source_owner,
+        c.relowner=(SELECT relowner FROM pg_class WHERE oid=to_regclass(quote_ident(:schema)||'.budget_lines')) AS application_owner,
+        ARRAY(SELECT a.attname::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS columns,
+        ARRAY(SELECT a.atttypid::regtype::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS types,
+        (SELECT count(*)=1 AND bool_and(r.rulename='_RETURN' AND r.ev_type='1' AND r.is_instead AND r.ev_enabled='O') FROM pg_rewrite r WHERE r.ev_class=c.oid) AS exact_return_rule,
+        NOT EXISTS(SELECT 1 FROM aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) a
+          WHERE a.grantee=0 OR (a.grantee<>c.relowner AND
+            (c.relname='social_native_source_authority_snapshot' OR a.privilege_type<>'SELECT' OR a.is_grantable)))
+        AND NOT EXISTS(SELECT 1 FROM pg_attribute a CROSS JOIN LATERAL aclexplode(a.attacl) e
+          WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped AND e.grantee<>c.relowner) AS private_acl
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=:schema
+          AND c.relname IN ('social_native_source_authority','social_native_source_authority_snapshot') AND c.relkind='v'
+    '''),{'schema':schema}).mappings())
+    if native:
+        _require(len(native)==2 and len(NATIVE_VIEW_SHA256)==2)
+        for row in native:
+            _require(row['source_owner'] is True and row['application_owner'] is True and row['exact_return_rule'] is True
+                and row['private_acl'] is True
+                and list(row['columns'])==['source_kind','native_domain','record_id','ingestion_id','authority_fingerprint']
+                and list(row['types'])==['text','text','integer','integer','text']
+                and list(row['reloptions'] or [])==['security_barrier=true'])
+            definition=row['definition']
+            for clause in ('FROM ','JOIN '):
+                definition=definition.replace(clause+_quoted(conn,schema)+'.',clause).replace(clause+schema+'.',clause)
+            _require(hashlib.sha256(definition.encode()).hexdigest()==NATIVE_VIEW_SHA256.get(row['relname']))
 
 
 def _verify(conn, role, schema, *, current, platforms=False):

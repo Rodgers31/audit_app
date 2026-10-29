@@ -25,6 +25,9 @@ def connection(definitions, kind):
                  columns=['record_id', 'ingestion_id', 'authority_fingerprint'])
             for row in definitions[kind]['views']]
     def execute(sql, values):
+        if 'social_native_source_authority_snapshot' in str(sql):
+            # This historical report-only fixture has no optional native views.
+            return SimpleNamespace(mappings=lambda: [])
         if 'pg_get_viewdef' in str(sql):
             return SimpleNamespace(mappings=lambda: rows)
         return SimpleNamespace(scalar=lambda: True)

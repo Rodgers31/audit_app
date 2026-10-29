@@ -14,7 +14,7 @@ def _job(db, ingestion_id, domain, *, scope_key=None):
     row = db.execute(select(IngestionJob,
         func.timezone(func.current_setting('TimeZone'), IngestionJob.started_at),
         func.timezone(func.current_setting('TimeZone'), IngestionJob.finished_at))
-        .where(IngestionJob.id == ingestion_id)).one_or_none()
+        .where(IngestionJob.id == ingestion_id).execution_options(populate_existing=True)).one_or_none()
     # Validation follows any authority-lock wait. Transaction-start time can
     # predate a valid completion that became visible after acquiring the lock.
     now = db.scalar(select(func.statement_timestamp()))
@@ -65,7 +65,7 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
         raise SourceObservationUnavailable('Current report authority unavailable')
     if lock:
         lock_native_domain(db, domain)
-    ext = db.get(Extraction, record_id)
+    ext = db.get(Extraction, record_id, populate_existing=True)
     if ext is None or ext.extractor != VERSION:
         raise SourceObservationUnavailable('Stored publisher date receipt required')
     source_query = select(SourceDocument).where(SourceDocument.id == ext.source_document_id)
@@ -85,7 +85,7 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
             or binding.get('source_identity') != source_identity(source) or source.publisher != DOMAINS[domain][2]
             or source.status != DocumentStatus.AVAILABLE or not official_url(source.url, domain)):
         raise SourceObservationUnavailable('Current report authority unavailable')
-    country = db.get(Country, source.country_id)
+    country = db.get(Country, source.country_id, populate_existing=True)
     if country is None or country.iso_code != "KEN":
         raise SourceObservationUnavailable("Current report authority unavailable")
     raw = ext.extracted_json
