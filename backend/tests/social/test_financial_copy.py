@@ -41,16 +41,16 @@ def financial(domain='pending_bills', *, value='86899380000.00', notes=''):
     return SourceObservation.model_validate(raw)
 
 
-def test_nairobi_copy_leads_with_an_exact_readable_figure_and_retains_the_limit():
+def test_nairobi_copy_leads_with_compact_approximation_and_retains_exact_evidence():
     source=financial();before=source.model_dump(mode='json')
     text=render(source)
     assert text == (
-        'Nairobi County: KSh 86,899,380,000 in reported pending bills as at 30 June 2026.\n\n'
+        'Nairobi County: about KSh 86.9 billion in reported pending bills as at 30 June 2026.\n\n'
         'This is the report’s Grand Total. Completeness is not established by this figure.\n\n'
         'Source: Office of the Controller of Budget, FY 2025/26.\n\n'
         'Explore the figures and original source on AuditGava.')
     assert source.model_dump(mode='json')==before
-    assert generator_metadata(source)['template_version']=='financial-v2'
+    assert generator_metadata(source)['template_version']=='financial-v3'
 
 
 def test_pending_bills_reader_notes_are_explicit_in_the_post():
@@ -62,14 +62,14 @@ def test_pending_bills_reader_notes_are_explicit_in_the_post():
 
 def test_budget_copy_distinguishes_reported_spending_from_revised_budget():
     text=render(financial('national_budget'))
-    assert 'Kenya: KSh 1,200,000,000 in actual expenditure for Health in FY 2025/26.' in text
-    assert 'The revised gross budget for the same sector and reporting year was KSh 1,500,000,000.' in text
+    assert 'Kenya: KSh 1.2 billion in actual expenditure for Health in FY 2025/26.' in text
+    assert 'The revised gross budget for the same sector and reporting year was KSh 1.5 billion.' in text
     assert '%' not in text and 'overspent' not in text.lower()
 
 
 def test_revenue_copy_keeps_departmental_scope_and_source_scale():
     text=render(financial('revenue_by_source'))
-    assert 'Kenya, FY 2025/26: KSh 800.25 billion reported for Customs departmental collections, including agency levies.' in text
+    assert 'Kenya, FY 2025/26: about KSh 800.3 billion reported for Customs departmental collections, including agency levies.' in text
     assert 'Source: Kenya Revenue Authority' in text
     assert 'tax revenue' not in text.lower()
 
@@ -97,13 +97,39 @@ def test_saved_financial_v1_text_is_reproducible_after_the_new_template():
     ('999999999999999999.99999999','KSh 999,999,999,999,999,999.99999999'),
 ])
 def test_copy_formats_exact_decimals_without_float_or_rounding(value,expected):
-    assert expected+' in reported pending bills' in render(financial(value=value))
+    assert expected+' in reported pending bills' in render(financial(value=value),template_version='financial-v2')
 
 
 @pytest.mark.parametrize('scale,suffix',[('units',''),('thousands',' thousand'),('millions',' million'),('billions',' billion')])
 def test_copy_retains_the_supplied_scale_exactly(scale,suffix):
     raw=financial(value='12.50').model_dump(mode='json');raw['facts'][0]['scale']=scale
-    assert 'KSh 12.5'+suffix+' in reported pending bills' in render(SourceObservation.model_validate(raw))
+    assert 'KSh 12.5'+suffix+' in reported pending bills' in render(SourceObservation.model_validate(raw),template_version='financial-v2')
+
+
+def test_saved_v2_copy_replays_exactly_after_compact_default():
+    source=financial()
+    metadata=generator_metadata(source,template_version='financial-v2')
+    assert render_for_revision(source,metadata).startswith('Nairobi County: KSh 86,899,380,000 in reported pending bills')
+    assert render(source)!=render_for_revision(source,metadata)
+
+
+@pytest.mark.parametrize('value,scale,expected',[
+    ('36000000','units','KSh 36 million'),('36000','thousands','KSh 36 million'),
+    ('36','millions','KSh 36 million'),('0.036','billions','KSh 36 million'),
+    ('999950000','units','about KSh 1 billion'),('999949999','units','about KSh 999.9 million'),
+    ('999950','units','about KSh 1 million'),('999.99','units','KSh 999.99'),
+    ('0.00000001','units','KSh 0.00000001'),('0.00','billions','KSh 0'),
+    ('-86899380000','units','about KSh -86.9 billion'),
+    ('999999999999999999.99999999','billions','about KSh 1,000,000,000,000,000,000 billion'),
+])
+def test_compact_amount_converts_source_scales_without_changing_cells_even_under_low_decimal_context(value,scale,expected):
+    from decimal import localcontext
+    raw=financial(value=value).model_dump(mode='json');raw['facts'][0]['scale']=scale
+    source=SourceObservation.model_validate(raw)
+    with localcontext() as context:
+        context.prec=6
+        assert expected+' in reported pending bills' in render(source)
+    assert source.facts[0].value==value and source.facts[0].scale==scale
 
 
 @pytest.mark.parametrize('field,value',[

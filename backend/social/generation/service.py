@@ -220,7 +220,7 @@ def generator_metadata(observation, *, template_version=None):
     if isinstance(observation.report, CataloguedNativeReportEvidence):
         default = 'catalogue-availability-v1'
     selected = default if template_version is None else template_version
-    if selected != default and not (selected == TEMPLATE_VERSION and observation.report is None):
+    if selected != default and not (selected == TEMPLATE_VERSION and observation.report is None) and not (selected == 'financial-v2' and observation.financial is not None):
         raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     value = {'template_version': selected, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
     if observation.report:
@@ -231,10 +231,10 @@ def generator_metadata(observation, *, template_version=None):
 def render(observation, *, template_version=None):
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     selected = generator_metadata(observation, template_version=template_version)['template_version']
-    if selected == FINANCIAL_TEMPLATE_VERSION:
+    if selected in (FINANCIAL_TEMPLATE_VERSION, 'financial-v2'):
         if unresolved_placeholders([observation.title, [f.model_dump(mode='json') for f in observation.facts]]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
-        copy = render_financial(observation)
+        copy = render_financial(observation, version=selected)
         if unresolved_placeholders(copy):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         return copy
@@ -402,7 +402,8 @@ def _consume_current_observation(svc, observation, cfg, now, *, backfill):
     event = SourceEvent(id=uuid4(), cursor_id=cursor.id, sequence=cursor.sequence, evidence_version=observation.evidence_version, fingerprint=fingerprint, observation=observation.model_dump(mode='json'))
     svc.db.add(event)
     svc.db.flush()
-    document = PostDocument.model_validate({'master': {'text': render(observation), 'link': evidence_items(observation)[0].canonical_url}, 'targets': cfg.targets})
+    from .destination import draft_destination
+    document = PostDocument.model_validate({'master': {'text': render(observation), 'link': draft_destination(svc.db, observation)}, 'targets': cfg.targets})
     references = [{'url': f.document_url, 'label': f'{f.publisher} · {f.locator}'} for f in evidence_items(observation)]
     evidence = {'references': references, 'source_event_id': str(event.id), 'evidence_version': event.evidence_version, 'source': event.observation, 'fingerprint': fingerprint}
     from .worker_authority import capture_worker_authority

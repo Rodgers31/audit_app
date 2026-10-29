@@ -10,10 +10,10 @@
       "ingestion_id": "1",
       "category": "debt_update",
       "title": "Nairobi County pending bills data",
-      "committed": false,
-      "fixture": true,
+      "committed": true,
+      "fixture": false,
       "quarantined": false,
-      "publishable": false,
+      "publishable": true,
       "correction_pending": false,
       "facts": [
         {
@@ -32,8 +32,8 @@
           "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "publisher": "Office of the Controller of Budget",
           "published_on": "2026-09-25",
-          "retrieved_at": "2026-10-29T18:15:48.588908Z",
-          "verified_at": "2026-10-29T18:15:48.588908Z",
+          "retrieved_at": "2026-10-29T20:01:00.827546Z",
+          "verified_at": "2026-10-29T20:01:00.827546Z",
           "canonical_url": "https://www.auditgava.com/debt"
         }
       ],
@@ -48,15 +48,14 @@
         "published_on": "2026-09-25"
       }
     },
-    "legacy": "Nairobi County pending bills data.\nNairobi County — Reported pending bills: county, FY 2025/26: 86899380000.00 units KES (actual; publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed).",
-    "current": "Nairobi County: KSh 86,899,380,000 in reported pending bills as at 30 June 2026.\n\nThis is the report’s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
     "generator_metadata": {
-      "template_version": "financial-v2",
+      "template_version": "financial-v3",
       "detector_version": 1,
       "fact_ids": [
         "owned:outstanding"
       ]
-    }
+    },
+    "text": "Nairobi County: about KSh 86.9 billion in reported pending bills as at 30 June 2026.\n\nThis is the report\u2019s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava."
   },
   {
     "domain": "national_budget",
@@ -69,10 +68,10 @@
       "ingestion_id": "1",
       "category": "budget_update",
       "title": "Kenya national budget data",
-      "committed": false,
-      "fixture": true,
+      "committed": true,
+      "fixture": false,
       "quarantined": false,
-      "publishable": false,
+      "publishable": true,
       "correction_pending": false,
       "facts": [
         {
@@ -91,8 +90,8 @@
           "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "publisher": "Office of the Controller of Budget",
           "published_on": "2026-09-25",
-          "retrieved_at": "2026-10-29T18:15:48.589253Z",
-          "verified_at": "2026-10-29T18:15:48.589253Z",
+          "retrieved_at": "2026-10-29T20:01:00.827963Z",
+          "verified_at": "2026-10-29T20:01:00.827963Z",
           "canonical_url": "https://www.auditgava.com/budget"
         },
         {
@@ -111,8 +110,8 @@
           "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "publisher": "Office of the Controller of Budget",
           "published_on": "2026-09-25",
-          "retrieved_at": "2026-10-29T18:15:48.589253Z",
-          "verified_at": "2026-10-29T18:15:48.589253Z",
+          "retrieved_at": "2026-10-29T20:01:00.827963Z",
+          "verified_at": "2026-10-29T20:01:00.827963Z",
           "canonical_url": "https://www.auditgava.com/budget"
         }
       ],
@@ -127,16 +126,15 @@
         "published_on": "2026-09-25"
       }
     },
-    "legacy": "Kenya national budget data.\nKenya — Actual expenditure: Health, FY 2025/26: 1200000000.00 units KES (actual; actual expenditure, same sector and annual reporting period).\nKenya — Revised gross budget: Health, FY 2025/26: 1500000000.00 units KES (actual; revised gross budget, same sector and annual reporting period).",
-    "current": "Kenya: KSh 1,200,000,000 in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1,500,000,000.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
     "generator_metadata": {
-      "template_version": "financial-v2",
+      "template_version": "financial-v3",
       "detector_version": 1,
       "fact_ids": [
         "owned:allocated_amount",
         "owned:actual_spent"
       ]
-    }
+    },
+    "text": "Kenya: KSh 1.2 billion in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1.5 billion.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava."
   },
   {
     "domain": "revenue_by_source",
@@ -149,10 +147,10 @@
       "ingestion_id": "1",
       "category": "budget_update",
       "title": "Kenya revenue by source data",
-      "committed": false,
-      "fixture": true,
+      "committed": true,
+      "fixture": false,
       "quarantined": false,
-      "publishable": false,
+      "publishable": true,
       "correction_pending": false,
       "facts": [
         {
@@ -171,8 +169,8 @@
           "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
           "publisher": "Kenya Revenue Authority",
           "published_on": "2026-09-25",
-          "retrieved_at": "2026-10-29T18:15:48.589407Z",
-          "verified_at": "2026-10-29T18:15:48.589407Z",
+          "retrieved_at": "2026-10-29T20:01:00.828140Z",
+          "verified_at": "2026-10-29T20:01:00.828140Z",
           "canonical_url": "https://www.auditgava.com/revenue"
         }
       ],
@@ -187,14 +185,13 @@
         "published_on": "2026-09-25"
       }
     },
-    "legacy": "Kenya revenue by source data.\nKenya — Revenue collected: Customs departmental collections, including agency levies, FY 2025/26: 800.25 billions KES (actual; published collections on the same revenue-head basis and annual reporting period).",
-    "current": "Kenya, FY 2025/26: KSh 800.25 billion reported for Customs departmental collections, including agency levies.\n\nSource: Kenya Revenue Authority, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
     "generator_metadata": {
-      "template_version": "financial-v2",
+      "template_version": "financial-v3",
       "detector_version": 1,
       "fact_ids": [
         "owned:outstanding"
       ]
-    }
+    },
+    "text": "Kenya, FY 2025/26: about KSh 800.3 billion reported for Customs departmental collections, including agency levies.\n\nSource: Kenya Revenue Authority, FY 2025/26.\n\nExplore the figures and original source on AuditGava."
   }
 ]

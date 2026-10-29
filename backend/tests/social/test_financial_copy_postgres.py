@@ -16,6 +16,28 @@ from native_worker_fixture import restricted
 from test_native_financial_changes_postgres import enable, ingest_revenue
 
 
+def test_real_pending_writer_creates_a_county_and_date_specific_destination(restricted,tmp_path,monkeypatch):
+    from test_automatic_cohort_timeout_postgres import ingest_cohort, enabled
+    from models import Entity
+    factory,_,_,_=restricted
+    enabled(factory,monkeypatch)
+    first=ingest_cohort(factory,tmp_path)
+    result=dispatch_committed_generation(factory,domain='pending_bills',ingestion_id=first,dry_run=False,include_reports=False)
+    assert result['baselines']==46 and result['drafts_created']==0,result
+    newer=ingest_cohort(factory,tmp_path,correction='Nairobi',retained=True)
+    result=dispatch_committed_generation(factory,domain='pending_bills',ingestion_id=newer,dry_run=False,include_reports=False)
+    assert result['drafts_created']==1,result
+    with factory() as db:
+        post=db.scalar(select(SocialPost));revision=db.get(SocialPostRevision,post.current_revision_id)
+        entity=db.scalar(select(Entity).where(Entity.canonical_name=='Nairobi County'))
+        assert revision.document['master']['link']==f'https://www.auditgava.com/counties/{entity.slug}?tab=budget&as_at=2026-06-30#pending-bills'
+        assert 'KSh 12 million in reported pending bills' in revision.document['master']['text']
+        assert revision.evidence_snapshot['source']['facts'][0]['value']=='12000000.00'
+        assert revision.evidence_snapshot['source']['facts'][0]['canonical_url']=='https://www.auditgava.com/debt'
+        verify_generated_revision(db,post,revision)
+    no_publication(factory)
+
+
 def prepare(factory,tmp_path,monkeypatch,*,legacy=False):
     import social.generation.service as generation
     enable(factory,monkeypatch)
@@ -34,14 +56,14 @@ def prepare(factory,tmp_path,monkeypatch,*,legacy=False):
     with factory() as db:return db.scalar(select(SocialPost.id))
 
 
-def test_financial_v2_draft_has_current_witness_and_still_requires_human_review(restricted,tmp_path,monkeypatch):
+def test_financial_v3_draft_has_current_witness_and_still_requires_human_review(restricted,tmp_path,monkeypatch):
     from social.automation.service import candidate_gates
     factory,_,_,_=restricted
     post_id=prepare(factory,tmp_path,monkeypatch)
     with factory.begin() as db:
         post=db.get(SocialPost,post_id);revision=db.get(SocialPostRevision,post.current_revision_id)
         source=SourceObservation.model_validate(revision.evidence_snapshot['source'])
-        assert revision.generator_metadata['template_version']=='financial-v2'
+        assert revision.generator_metadata['template_version']=='financial-v3'
         assert revision.document['master']['text']==render(source)
         assert 'KSh 561 billion reported for PAYE.' in revision.document['master']['text']
         verify_generated_revision(db,post,revision)  # Alive current-source control.
@@ -122,7 +144,7 @@ def national_ingestion(factory,tmp_path,*,actual='1200000000.00'):
     return job_id
 
 
-def test_real_national_writer_qualified_two_measure_change_uses_financial_v2(pg,tmp_path,monkeypatch):
+def test_real_national_writer_qualified_two_measure_change_uses_financial_v3(pg,tmp_path,monkeypatch):
     factory,_=pg;enable(factory,monkeypatch)
     first=national_ingestion(factory,tmp_path)
     result=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=first,dry_run=False,include_reports=False)
@@ -132,8 +154,8 @@ def test_real_national_writer_qualified_two_measure_change_uses_financial_v2(pg,
     assert result['drafts_created']==1,result
     with factory() as db:
         post=db.scalar(select(SocialPost));revision=db.get(SocialPostRevision,post.current_revision_id)
-        assert post.editorial_state=='pending_review' and revision.generator_metadata['template_version']=='financial-v2'
+        assert post.editorial_state=='pending_review' and revision.generator_metadata['template_version']=='financial-v3'
         assert len(revision.evidence_snapshot['source']['facts'])==2
-        assert 'KSh 1,250,000,000 in actual expenditure for Health' in revision.document['master']['text']
-        assert 'revised gross budget for the same sector and reporting year was KSh 1,500,000,000' in revision.document['master']['text']
+        assert 'about KSh 1.3 billion in actual expenditure for Health' in revision.document['master']['text']
+        assert 'revised gross budget for the same sector and reporting year was KSh 1.5 billion' in revision.document['master']['text']
     no_publication(factory)

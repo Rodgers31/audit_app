@@ -1,10 +1,10 @@
 """Versioned financial wording from qualified cells, without derived claims."""
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP, localcontext
 
 from ..service import SocialError
 from .contracts import SourceObservation
 
-VERSION = 'financial-v2'
+VERSION = 'financial-v3'
 SCALES = {'units': '', 'thousands': ' thousand', 'millions': ' million', 'billions': ' billion'}
 PENDING_NOTES = {
     'assembly figure not reported': 'The assembly figure was not reported.',
@@ -17,7 +17,7 @@ def unavailable():
     raise SocialError('UNRESOLVED_TEMPLATE', 'The financial copy needs one consistent, supported reporting scope.', 422)
 
 
-def amount(fact):
+def exact_amount(fact):
     number = Decimal(fact.value)
     if number == 0:
         number = Decimal(0)
@@ -27,13 +27,37 @@ def amount(fact):
     return ('KSh' if fact.unit == 'KES' else fact.unit) + ' ' + exact + SCALES[fact.scale]
 
 
+def amount(fact):
+    """Compact display only. Source cells and their precision stay untouched."""
+    with localcontext() as context:
+        context.prec = 80
+        source_multiplier = {'units': 1, 'thousands': 1000, 'millions': 1000000, 'billions': 1000000000}
+        value = Decimal(fact.value) * source_multiplier[fact.scale]
+        scales = [(Decimal(1000000000), 'billion'), (Decimal(1000000), 'million'), (Decimal(1000), 'thousand')]
+        selected = next(((size, label) for size, label in scales if abs(value) >= size), None)
+        if selected is None:
+            # Small values must not disappear through rounding.
+            return 'KSh ' + format(value.normalize() if value else Decimal(0), ',f')
+        size, label = selected
+        rounded = (value / size).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+        if abs(rounded) >= 1000 and label != 'billion':
+            size *= 1000
+            label = 'million' if label == 'thousand' else 'billion'
+            rounded = (value / size).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+        number = format(rounded, ',f').rstrip('0').rstrip('.')
+        approximation = 'about ' if rounded * size != value else ''
+        return f'{approximation}KSh {number} {label}'
+
+
 def day(value):
     months = ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
               'September', 'October', 'November', 'December')
     return f'{value.day} {months[value.month - 1]} {value.year}'
 
 
-def render_financial(observation):
+def render_financial(observation, *, version=VERSION):
+    if version not in ('financial-v2', VERSION):
+        unavailable()
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     if observation.financial is None or not observation.facts:
         unavailable()
@@ -45,6 +69,7 @@ def render_financial(observation):
                        first.document_checksum) for f in facts)):
         unavailable()
     domain = observation.financial.native_domain
+    display_amount = exact_amount if version == 'financial-v2' else amount
     paragraphs = []
     if domain == 'pending_bills':
         if len(facts) != 1 or not first.metric.startswith('Reported pending bills: '):
@@ -53,7 +78,7 @@ def render_financial(observation):
         if not scope:
             unavailable()
         subject = first.entity if scope.lower() == 'county' else f'{first.entity} ({scope})'
-        paragraphs.append(f'{subject}: {amount(first)} in reported pending bills as at {day(observation.financial.period_end)}.')
+        paragraphs.append(f'{subject}: {display_amount(first)} in reported pending bills as at {day(observation.financial.period_end)}.')
         basis = (f'publisher-reported Grand Total stock as at {observation.financial.period_end.isoformat()}; '
                  'completeness is not assumed')
         if first.comparison_basis == basis or first.comparison_basis.startswith(basis + '; '):
@@ -81,18 +106,18 @@ def render_financial(observation):
         scope = next(iter(scopes))
         actual, budget = measures.get('Actual expenditure'), measures.get('Revised gross budget')
         if actual:
-            paragraphs.append(f'{first.entity}: {amount(actual)} in actual expenditure for {scope} in {first.period}.')
+            paragraphs.append(f'{first.entity}: {display_amount(actual)} in actual expenditure for {scope} in {first.period}.')
             if budget:
-                paragraphs.append(f'The revised gross budget for the same sector and reporting year was {amount(budget)}.')
+                paragraphs.append(f'The revised gross budget for the same sector and reporting year was {display_amount(budget)}.')
         elif budget:
-            paragraphs.append(f'{first.entity}: a revised gross budget of {amount(budget)} for {scope} in {first.period}.')
+            paragraphs.append(f'{first.entity}: a revised gross budget of {display_amount(budget)} for {scope} in {first.period}.')
         else:
             unavailable()
     elif domain == 'revenue_by_source':
         prefix = 'Revenue collected: '
         if len(facts) != 1 or not first.metric.startswith(prefix) or not first.metric[len(prefix):]:
             unavailable()
-        paragraphs.append(f'{first.entity}, {first.period}: {amount(first)} reported for {first.metric[len(prefix):]}.')
+        paragraphs.append(f'{first.entity}, {first.period}: {display_amount(first)} reported for {first.metric[len(prefix):]}.')
         if first.comparison_basis != 'published collections on the same revenue-head basis and annual reporting period':
             unavailable()
     else:
