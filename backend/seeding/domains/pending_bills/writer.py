@@ -160,6 +160,7 @@ def _write_pending_bills(
             raise ValueError("County edition repeats a county identity")
 
     written: set[tuple[int, str]] = set()
+    financial_rows = []
     # Same URL/date does not identify a correction edition. Fingerprint this
     # whole batch so a partial same-day replacement cannot be added to rows
     # retained from an earlier parse (including same-URL reissues).
@@ -243,6 +244,8 @@ def _write_pending_bills(
             "source_url": record.source_url or source_url,
             "extracted_at": datetime.now(timezone.utc).isoformat(),
         }
+        if context is not None and type(context.job_id) is int and context.job_id>0:
+            provenance['ingestion_job_id']=context.job_id
         if record.eligible_pending is not None:
             provenance["eligible_pending"] = float(record.eligible_pending)
         if record.ineligible_pending is not None:
@@ -297,6 +300,8 @@ def _write_pending_bills(
                 session.add(loan)
             created += 1
             logger.debug(f"Created: {lender_name} = {record.total_pending}")
+        if not dry_run and provenance.get('source_evidence') and 'ingestion_job_id' in provenance:
+            financial_rows.append(existing if existing is not None else loan)
 
     if writes_county and source_doc is not None and not dry_run:
         from .aging import retain_aging_pointers
@@ -345,6 +350,9 @@ def _write_pending_bills(
 
     if not dry_run:
         session.flush()
+        if financial_rows:
+            from ...native_financial_gate import qualify_native_financial_rows
+            qualify_native_financial_rows(session,financial_rows,domain='pending_bills',context=context)
 
     logger.info(
         f"Pending bills write complete: " f"{created} created, {updated} updated"

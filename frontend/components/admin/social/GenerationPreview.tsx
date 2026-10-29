@@ -19,12 +19,12 @@ export default function GenerationPreview() {
   const valid = /^[1-9]\d*$/.test(job) && Number(job) <= 2147483647 && ids.length <= 25 && new Set(ids).size === ids.length && records.split(',').every(v => /^[1-9]\d*$/.test(v.trim())) && ids.every(v => Number.isSafeInteger(v) && v <= 2147483647);
   const selected = capabilities.data?.find(c => c.domain === domain);
   return <section className={styles.fields}><h2>Preview draft eligibility</h2>
-    <p>Read-only preview saves no baseline, event, draft or backfill. Detection rechecks the current evidence. CoB county budgets support financial and neutral report drafts. National budget, county pending-bills reports, KRA revenue releases and audits support neutral reports when their retained publisher date and scope qualify. Other sources show their missing contracts.</p>
+    <p>Read-only preview saves no baseline, event, draft or backfill. Detection rechecks the current evidence. County and national budgets, county pending bills and dated KRA annual articles support qualified financial drafts. Audits support neutral reports when retained publisher date and scope qualify. KRA catalogue dates cannot qualify financial claims. Other sources show their missing contracts.</p>
     {capabilities.error && <SocialErrorBanner error={capabilities.error} onRetry={() => capabilities.refetch()} />}
     <form onSubmit={e => { e.preventDefault(); if (isAdmin && valid) preview.mutate({domain,record_ids:ids,ingestion_id:Number(job),reports,backfill}); }}>
       <fieldset disabled={!isAdmin || preview.isPending}><legend>Committed source selection</legend>
         <label>Source domain<select value={domain} onChange={e => { setDomain(e.target.value); preview.reset(); }}>{(capabilities.data ?? []).map(c => <option key={c.domain} value={c.domain}>{c.domain}</option>)}</select></label>
-        {selected && <p>{describeGenerationReason(selected.reason)} {domain !== 'counties_budget' && selected.reports ? 'Use native report Extraction IDs from the completed job metadata.' : ''}</p>}
+        {selected && <p>{describeGenerationReason(selected.reason)} {reports && domain !== 'counties_budget' && selected.reports ? 'Use native report Extraction IDs from the completed job metadata.' : !reports ? 'Financial IDs: BudgetLine for budgets, RevenueBySource for revenue, Loan for pending bills.' : ''}</p>}
         <label>Preview record IDs (comma separated, up to 25)<input value={records} onChange={e => {setRecords(e.target.value);preview.reset();}} /></label>
         <label>Preview ingestion job ID<input inputMode='numeric' value={job} onChange={e => {setJob(e.target.value);preview.reset();}} /></label>
         <label><input type='checkbox' checked={reports} onChange={e => {setReports(e.target.checked);preview.reset();}} /> Preview neutral report evidence</label>

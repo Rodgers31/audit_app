@@ -717,6 +717,8 @@ def fetch_county_payables_payload(
     # Existing cohorts need newly qualified stock cells even when neither
     # acquisition flag is selected. Cached normalized JSON grants no authority.
     adopted_aging = _has_aging_pointer(session, pdf_url)
+    financial_enabled = (os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')=='true'
+        and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0)
     logger.info("county payables: reading %s", pdf_url)
     try:
         pdf_path = download_cbirr(client, pdf_url, settings).path
@@ -726,7 +728,7 @@ def fetch_county_payables_payload(
             cache_dir=Path(settings.cache_path) / "pdfs",
             kind="cob_cbirr_year_end_payables",
             parse_fn=parser.parse,
-            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled or adopted_aging),
+            enabled=settings.parse_cache_enabled and not (aging_enabled or assembly_enabled or adopted_aging or financial_enabled),
             key_extra=_pdf_stack_versions(),
         )
     except Exception as exc:

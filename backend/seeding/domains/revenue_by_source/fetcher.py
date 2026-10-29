@@ -360,6 +360,9 @@ def _read_release(
     )
     release.native_report_authority = authority if authority and authority.value["period"] == fy else None
     release.native_report_authority_reason = authority_reason
+    if release.native_report_authority is not None:
+        from .press_evidence import bind_press_cells
+        bind_press_cells(release, wrapper_receipt)
     return release
 
 
@@ -467,6 +470,16 @@ def _apply_kra_live(
                     and row.get("fiscal_year") == release.fiscal_year):
                 row["_native_report_authority"] = getattr(release, "native_report_authority", None)
                 row["native_report_authority_reason"] = getattr(release, "native_report_authority_reason", "native_report_date_or_scope_unavailable")
+                if release.shape == 'press_release':
+                    from .press_evidence import row_evidence
+                    row['source_evidence'] = row_evidence(release,row)
+                    # The promoted release replaces the measurement scope too;
+                    # a fixture's old tax/Exchequer label cannot describe it.
+                    head = row['revenue_type']
+                    row['measure'] = (
+                        'Customs departmental collections, including agency levies' if head == 'Customs & Import Duty'
+                        else 'Domestic VAT' if head == 'VAT' else 'Domestic excise' if head == 'Excise Duty' else head
+                    ) if row['source_evidence'] else head
         if newest_fy and release.fiscal_year != newest_fy:
             # An OLDER edition promoted while KRA's newest failed. The first
             # live run of this code did exactly that — the FY 2025/26 bundle

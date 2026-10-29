@@ -309,6 +309,7 @@ def persist_national_budget_records(
     # reads the current row under its own transaction lock. A later proof must
     # first observe any preceding invalidation for that source.
     pending_invalidations: dict[int, SourceDocument] = {}
+    financial_rows = []
     # (entity_id, period_id) pairs that received verified EXPENDITURE rows.
     expenditure_periods: set[tuple[int, int]] = set()
 
@@ -425,10 +426,16 @@ def persist_national_budget_records(
                 elif provenance_entry not in provenance:
                     provenance.append(provenance_entry)
                     existing.provenance = provenance
+        if context.job_id is not None and provenance_entry.get('source_evidence'):
+            financial_rows.append(line if existing is None else existing)
 
     for source in pending_invalidations.values():
         persist_native_report(session, source, None, context=context, domain="national_budget")
     stats.superseded += _retire_superseded_lines(session, expenditure_periods)
+    if financial_rows and not context.dry_run:
+        session.flush()
+        from ...native_financial_gate import qualify_native_financial_rows
+        qualify_native_financial_rows(session,financial_rows,domain='national_budget',context=context)
     logger.info("national_budget_persistence_prepared", extra={
         "processed_records": stats.processed, "distinct_sources": len(sources_by_url),
         "error_count": len(stats.errors),

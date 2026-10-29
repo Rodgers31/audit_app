@@ -41,8 +41,9 @@ def controls_dto(row):
     return {k: getattr(row, k) for k in ('version', 'drafts_enabled', 'shadow_enabled', 'source_allowlist', 'targets')}
 
 
-def semantic_fingerprint(observation):
+def legacy_fingerprint(observation):
     value = observation.model_dump(mode='json')
+    value.pop('financial', None)
     # Retrieval/verification/ingestion are observations, not a semantic change.
     for key in ('evidence_version', 'ingestion_id', 'committed', 'fixture', 'quarantined', 'publishable'):
         value.pop(key)
@@ -56,6 +57,102 @@ def semantic_fingerprint(observation):
             value['report'].pop(key)
     value['facts'].sort(key=lambda f: f['fact_id'])
     return canonical_hash({'detector': DETECTOR_VERSION, 'source': value})
+
+
+def semantic_fingerprint(observation):
+    if observation.report is not None:
+        return legacy_fingerprint(observation)
+    # A changed artifact is evidence to recheck, not a changed business fact.
+    # Keep the immutable full observation on the event; compare only its scope
+    # and exact business values here. Canonical decimal spelling avoids 1/1.00.
+    from decimal import Decimal
+    facts = []
+    for fact in observation.facts:
+        value = fact.model_dump(mode='json', include={
+            'fact_id', 'entity', 'metric', 'period', 'comparison_basis', 'value',
+            'unit', 'scale', 'classification'})
+        number = Decimal(value['value'])
+        value['value'] = '0' if number == 0 else format(number.normalize(), 'f')
+        facts.append(value)
+    return canonical_hash(dict(detector=DETECTOR_VERSION, financial_semantics=2,
+        source_type=observation.source_type, source_key=observation.source_key,
+        category=observation.category, correction_pending=observation.correction_pending,
+        facts=sorted(facts, key=lambda f: f['fact_id'])))
+
+
+def prior_financial_fingerprint(observation, cursor, old):
+    """Upgrade known legacy evidence without replacing a silent baseline.
+
+    An old baseline stores only a hash. If neither its original observation nor
+    an exact legacy match is available, no algorithm can recover its values.
+    Refuse instead of silently resetting it or manufacturing a change.
+    """
+    if observation.report is not None:
+        return cursor.fingerprint
+    state = cursor.report_state
+    if valid_financial_state(state):
+        if observation.financial is not None:
+            current = financial_state(observation)
+            if set(current) != set(state) or any(current[key] < state[key] for key in ('period_start','period_end','published_on')):
+                raise SocialError('REPORT_RELEASE_REGRESSION', 'Financial reporting scope and publisher timing cannot regress.', 422)
+        return cursor.fingerprint
+    if state is not None:
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial cursor state is malformed.', 503)
+    if old is not None:
+        previous = SourceObservation.model_validate(old.observation)
+        if old.fingerprint not in (legacy_fingerprint(previous), semantic_fingerprint(previous)):
+            raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Legacy financial evidence differs.', 503)
+        return semantic_fingerprint(previous)
+    if legacy_fingerprint(observation) == cursor.fingerprint:
+        return semantic_fingerprint(observation)
+    raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Retain and reconcile the original financial baseline before migration.', 503)
+
+
+def financial_state(observation):
+    state = {'financial_semantics': 2}
+    if observation.financial is not None:
+        state.update({key:getattr(observation.financial,key).isoformat() for key in ('period_start','period_end','published_on')})
+    return state
+
+
+def valid_financial_state(state):
+    if type(state) is not dict or type(state.get('financial_semantics')) is not int or state['financial_semantics'] != 2:
+        return False
+    if set(state) == {'financial_semantics'}:
+        return True
+    if set(state) != {'financial_semantics','period_start','period_end','published_on'}:
+        return False
+    try:
+        dates = {k:date.fromisoformat(state[k]) for k in ('period_start','period_end','published_on')
+                 if type(state[k]) is str and len(state[k])==10}
+        return len(dates)==3 and all(dates[k].isoformat()==state[k] for k in dates) and dates['period_start']<=dates['period_end']<=dates['published_on']
+    except (TypeError,ValueError):
+        return False
+
+
+def established_financial_source(db, observation, *, initialize=False):
+    if observation.financial is None:
+        return False
+    identity = dict(source_type=observation.source_type,
+        source_key=f'{observation.source_type}:financial:{observation.financial.native_domain}:baseline',
+        detector_version=DETECTOR_VERSION)
+    current={key:getattr(observation.financial,key).isoformat() for key in ('period_start','period_end','published_on')}
+    if initialize:
+        _insert(db, SourceCursor, dict(id=uuid4(), **identity, evidence_version=observation.evidence_version,
+            sequence=0, fingerprint=canonical_hash(identity), report_state={'financial_baseline':1,**current}), list(identity))
+    root = db.scalar(select(SourceCursor).filter_by(**identity))
+    if root is None:
+        return False
+    if (root.sequence != 0 or type(root.report_state) is not dict or set(root.report_state) != {'financial_baseline',*current}
+            or type(root.report_state['financial_baseline']) is not int or root.report_state['financial_baseline'] != 1
+            or not valid_financial_state({'financial_semantics':2,**{k:root.report_state[k] for k in current}})
+            or root.fingerprint != canonical_hash(identity)):
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial source baseline differs.', 503)
+    if any(current[k]<root.report_state[k] for k in current):
+        raise SocialError('REPORT_RELEASE_REGRESSION','Financial source reporting scope cannot regress.',422)
+    if initialize:
+        root.report_state={'financial_baseline':1,**current}
+    return root.evidence_version < observation.evidence_version
 
 
 def evidence_items(observation):
@@ -172,18 +269,29 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
     if observation.report is not None and getattr(observation.report, 'native_domain', None) is not None:
         from .authority import verify_report_authority
         verify_report_authority(svc.db, observation.model_dump(mode='json'))
+    if observation.financial is not None:
+        from .authority import verify_financial_authority
+        verify_financial_authority(svc.db, observation.model_dump(mode='json'))
+    render(observation)  # Reject unresolved copy even when business values match.
     fingerprint = semantic_fingerprint(observation)
     release = report_release_state(observation)
     identity = dict(source_type=observation.source_type, source_key=observation.source_key, detector_version=DETECTOR_VERSION)
     initial_id = uuid4()
-    _insert(svc.db, SourceCursor, dict(id=initial_id, **identity, evidence_version=observation.evidence_version, sequence=0, fingerprint=fingerprint, report_state=release), list(identity))
+    state = release if release else financial_state(observation)
+    _insert(svc.db, SourceCursor, dict(id=initial_id, **identity, evidence_version=observation.evidence_version, sequence=0, fingerprint=fingerprint, report_state=state), list(identity))
     cursor = svc.db.scalar(select(SourceCursor).filter_by(**identity).with_for_update().execution_options(populate_existing=True))
     initial = cursor.id == initial_id
     old_event = svc.db.scalar(select(SourceEvent).where(SourceEvent.cursor_id == cursor.id, SourceEvent.sequence == cursor.sequence)) if cursor.sequence else None
+    if not initial and observation.report is None:
+        prior = prior_financial_fingerprint(observation, cursor, old_event)
+        cursor.fingerprint, cursor.report_state = prior, state
     refresh_backfill = bool(release and backfill and old_event and (
         old_event.fingerprint != fingerprint or any(
             old_event.observation['report'][key] != getattr(observation.report, key)
             for key in ('source_record_id', 'authority_fingerprint'))))
+    refresh_backfill = refresh_backfill or bool(observation.financial and backfill and old_event
+        and old_event.observation != observation.model_dump(mode='json'))
+    established = established_financial_source(svc.db, observation, initialize=True)
     if not initial:
         if release:
             if not valid_report_release_state(cursor.report_state):
@@ -197,7 +305,7 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
         if fingerprint == cursor.fingerprint and not (backfill and cursor.sequence == 0) and not refresh_backfill:
             cursor.evidence_version = observation.evidence_version
             return {'status': 'unchanged', 'event_id': None, 'post_id': None, 'sequence': cursor.sequence}
-    if initial and not backfill:
+    if initial and not backfill and not established:
         svc.audit('generation.baseline', details={**identity, 'evidence_version': observation.evidence_version, 'fingerprint': fingerprint})
         svc.db.flush()
         return {'status': 'baseline', 'event_id': None, 'post_id': None, 'sequence': 0}
@@ -210,6 +318,11 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
             if old_post.editorial_state != 'archived' and old_post.archived_at is None:
                 svc.cancel(old_post.id, VersionCommand(expected_version=old_post.row_version))
             svc.audit('generation.source_superseded', post=old_post, reason='New explicit source evidence version', details={'source_event_id': str(old_event.id), 'new_evidence_version': observation.evidence_version})
+        elif (observation.financial is not None and old_post is not None
+                and old_post.editorial_state != 'archived' and old_post.archived_at is None):
+            svc.archive(old_post.id, VersionCommand(expected_version=old_post.row_version))
+            svc.audit('generation.source_superseded', post=old_post, reason='New current financial evidence requires human review',
+                details={'source_event_id':str(old_event.id),'new_evidence_version':observation.evidence_version})
     if release and not backfill and release['release_hash'] == cursor.report_state['release_hash']:
         # A new acquisition/artifact can invalidate old authority without making
         # another report available. Preserve the release baseline; create no copy.
@@ -220,7 +333,7 @@ def consume_observation(svc: SocialService, observation, *, backfill=False):
         return {'status': 'unchanged', 'event_id': None, 'post_id': None, 'sequence': cursor.sequence}
     cursor.sequence += 1
     cursor.evidence_version, cursor.fingerprint, cursor.observed_at = observation.evidence_version, fingerprint, now
-    cursor.report_state = release
+    cursor.report_state = state
     event = SourceEvent(id=uuid4(), cursor_id=cursor.id, sequence=cursor.sequence, evidence_version=observation.evidence_version, fingerprint=fingerprint, observation=observation.model_dump(mode='json'))
     svc.db.add(event)
     svc.db.flush()
@@ -318,7 +431,7 @@ class GenerationService:
             now = self.svc.now()
             if any(utc(f.verified_at) > now or utc(f.verified_at) < now - timedelta(hours=definition.freshness_hours) for f in evidence_items(observation)):
                 reasons.append('EVIDENCE_STALE')
-            if semantic_fingerprint(observation) != event.fingerprint or revision.evidence_snapshot.get('source_event_id') != str(event.id) or revision.evidence_snapshot.get('source') != event.observation:
+            if event.fingerprint not in (semantic_fingerprint(observation), legacy_fingerprint(observation)) or revision.evidence_snapshot.get('source_event_id') != str(event.id) or revision.evidence_snapshot.get('source') != event.observation:
                 reasons.append('EVIDENCE_INTEGRITY_FAILED')
         if canonical_hash({'document': revision.document, 'evidence_snapshot': revision.evidence_snapshot}) != revision.content_hash:
             reasons.append('REVISION_INTEGRITY_FAILED')
@@ -383,6 +496,9 @@ def verify_generated_revision(db, post, revision, *, lock=True):
         raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Generated provenance does not match its immutable source event.', 503)
     from .authority import verify_report_authority
     verify_report_authority(db, event.observation)
+    if event.observation.get('financial') is not None:
+        from .authority import verify_financial_authority
+        verify_financial_authority(db, event.observation)
     if unresolved_placeholders(revision.document) or unresolved_placeholders(revision.evidence_snapshot):
         raise SocialError('UNRESOLVED_TEMPLATE', 'Resolve every placeholder before authorization.', 422)
 

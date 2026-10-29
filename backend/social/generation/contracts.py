@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from urllib.parse import urlsplit
 from uuid import UUID
 
-from pydantic import Field, StrictBool, StringConstraints, field_validator, model_validator
+from pydantic import Field, StrictBool, StringConstraints, field_validator, model_validator, model_serializer
 from ..contracts import StrictModel, Reference, DocumentTarget, Reason, PositiveVersion
 
 Text = Annotated[str, StringConstraints(strict=True, strip_whitespace=True, min_length=1, max_length=300)]
@@ -142,6 +142,22 @@ class CataloguedNativeReportEvidence(NativeReportEvidence):
         return self
 
 
+class NativeFinancialEvidence(StrictModel):
+    native_domain: Literal['national_budget', 'revenue_by_source', 'pending_bills']
+    record_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
+    report_record_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
+    authority_fingerprint: Annotated[str, StringConstraints(strict=True, pattern=r'^[a-f0-9]{64}$')]
+    period_start: date
+    period_end: date
+    published_on: date
+
+    @model_validator(mode='after')
+    def chronology(self):
+        if self.period_start > self.period_end or self.period_end > self.published_on:
+            raise ValueError('Completed financial reporting scope required')
+        return self
+
+
 class SourceObservation(StrictModel):
     schema_version: Annotated[int, Field(strict=True, ge=1, le=1)] = 1
     source_type: Literal['treasury', 'cob', 'oag', 'knbs', 'cra', 'kra']
@@ -157,9 +173,19 @@ class SourceObservation(StrictModel):
     correction_pending: StrictBool = False
     facts: Annotated[tuple[FactEvidence, ...], Field(max_length=10)] = ()
     report: CataloguedNativeReportEvidence | NativeReportEvidence | ReportEvidence | None = None
+    financial: NativeFinancialEvidence | None = None
+
+    @model_serializer(mode='wrap')
+    def preserve_legacy_evidence(self, handler):
+        value = handler(self)
+        if self.financial is None:
+            value.pop('financial', None)
+        return value
 
     @model_validator(mode='after')
     def identities(self):
+        if self.financial is not None and self.report is not None:
+            raise ValueError('Financial and neutral report observations are distinct')
         if self.report is not None:
             if isinstance(self.report, NativeReportEvidence):
                 sources = {'national_budget':'cob', 'revenue_by_source':'kra', 'audits':'oag','pending_bills':'cob'}

@@ -196,6 +196,6 @@ def test_pending_cli_commits_before_report_hook(pg,tmp_path,monkeypatch):
         job=db.scalar(select(IngestionJob).where(IngestionJob.domain=='pending_bills'))
         assert job.status==IngestionStatus.COMPLETED
         assert job.meta['post_commit_report_generation']['baselines']==1
-        assert job.meta['post_commit_generation']['reason']=='financial_adapter_unavailable'
+        assert job.meta['post_commit_generation']['reason']=='financial_environment_disabled'
         assert job.meta['native_report_records']['pending_bills']
     no_publication(factory)
