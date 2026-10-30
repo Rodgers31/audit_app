@@ -19,7 +19,7 @@ from test_connections_support import config, db
 from test_media_storage_adversary import BUCKET, KEY, ORIGIN, SDK, signed_url, storage
 from test_media_support import FakeStorage, png
 from test_worker_materials import final_media
-from test_domain_postgres import pg_engine
+from test_domain_postgres import current_pg_engine as pg_engine
 
 
 def test_real_r2_signed_preview_can_supply_native_material(db):

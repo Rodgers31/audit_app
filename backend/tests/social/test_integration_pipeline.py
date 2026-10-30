@@ -46,15 +46,17 @@ def migrated_engine():
     spec = importlib.util.spec_from_file_location("social_integration_migration", migration_path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
-    connection_path = Path(__file__).parents[2] / 'alembic/versions/c96d13e2f411_social_meta_credentials.py'
-    connection_spec = importlib.util.spec_from_file_location('social_integration_credentials', connection_path)
-    connections = importlib.util.module_from_spec(connection_spec)
-    connection_spec.loader.exec_module(connections)
     try:
         with engine.begin() as conn:
             with Operations.context(MigrationContext.configure(conn)):
                 migration.upgrade()
-                connections.upgrade()
+        from current_social_schema import upgrade_current_social_runtime
+        upgrade_current_social_runtime(engine)
+        # The current fake X flow needs the same explicit budget table that
+        # production requires, without contacting any provider or buying access.
+        from test_connections_migration_postgres import _migration
+        with engine.begin() as conn, Operations.context(MigrationContext.configure(conn)):
+            _migration('a703b15a0001_platform_connections.py').upgrade()
         yield engine
     finally:
         engine.dispose()
@@ -82,6 +84,10 @@ def setup_client(engine, platforms=("facebook", "threads")):
             accounts.append(str(account.id))
             db.add(account)
         db.commit()
+    with engine.begin() as connection:
+        connection.execute(text("INSERT INTO social_platform_budgets "
+            "(account_id,access_verified,enabled,limit_microusd) "
+            "SELECT id,true,true,1000 FROM social_accounts WHERE platform='x'"))
     app = FastAPI()
     app.include_router(router)
     app.add_middleware(SocialNoStoreMiddleware)
@@ -108,7 +114,7 @@ def create_and_publish(client, accounts):
     response = command(client, "/posts", {
         "title": "Integrator fixture", "content_type": "announcement",
         "document": {"schema_version": 1,
-                     "master": {"text": "Traceable fixture only", "link": None, "hashtags": [], "media": []},
+                     "master": {"text": "Traceable fixture only", "link": "https://www.auditgava.com/", "hashtags": [], "media": []},
                      "targets": [{"account_id": account, "format": "text", "overrides": {}} for account in accounts]},
         "references": [],
     })
@@ -132,7 +138,8 @@ class ExplicitFake:
 
     def next_operation(self, payload, checkpoint):
         return OperationPlan(operation_id=uuid4(), operation="publish", publication_capable=True,
-                             safe_replay_class="requires_reconciliation", checkpoint=checkpoint)
+                             safe_replay_class="requires_reconciliation", checkpoint=checkpoint,
+                             estimated_cost_microusd=1 if payload.platform == 'x' else 0)
 
     async def execute(self, payload, operation, credential, media_access):
         self.calls += 1

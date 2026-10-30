@@ -1,0 +1,48 @@
+{
+  "supersedes": "Earlier 60failures/33errors baseline parity as release acceptance; historical receipt retained",
+  "product_changes_from_reviewed_candidate4": [],
+  "native_input_manifest_sha256": "608b12555ada62080f413c4eca88900adf895b0b835af99dbfe8c984edce91c4",
+  "native_junit_sha256": "0656923d749184897f97343f3e66a0b30c5117b73c8c1aa3ec79eb09bbdff0d4",
+  "original_inventory_sha256": "fafbf331710752689dc7eaa90ac0352f12745be2c4481e187d7306e3185afa9d",
+  "runtime_image_id": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "python_distributions_unchanged": 97,
+  "readonly_added_tool_files": 171,
+  "runtime": "Python3.12.15 pytest9.1.1 PostgreSQL17; FFmpeg/ffprobe7.1.5 procps4.0.4",
+  "execution": "Native python -m pytest -p no:cacheprovider -q -rs tests/social; capped2CPU/3GiB/256PIDs; offline namespace; readonly exact source; private Git index; separate B83+Reels guarded fixtures",
+  "original93_final": {
+    "passed": 93,
+    "skipped": 0,
+    "missing": 0,
+    "failed": 0
+  },
+  "native_primary": {
+    "passed": 4473,
+    "skipped": 708,
+    "failed": 0,
+    "errors": 0,
+    "passing_subtests": 84
+  },
+  "pytest_seconds": 472.26,
+  "orchestration_seconds": 479.613,
+  "test_repairs_sha256": {
+    "backend/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "backend/tests/social/test_archive.py": "a89ec9fd1a72bb08063e8b3ee9559b3c8cc9f4b162d952572ed958237314e033",
+    "backend/tests/social/test_automation.py": "a4d5c49d96d3c6e1b8bc50775e71a5c722d88c8cf186cbea1f4febea8f4bca80",
+    "backend/tests/social/test_generation.py": "28c6efd5edd5a359f712a66729546be88d111aa14ae3323d448a97f70eb9e93e",
+    "backend/tests/social/test_native_financial_admission_regressions.py": "79b41d1ac32e7f81ee700fdb6f87356ba8b7c4a824c22c47baf637d8bb20ee5c",
+    "backend/tests/social/test_policy_hook_registry.py": "0c57af2721c8a08e7a55a0a43205c88d95512beb1194923382ed72ea99edc2d0",
+    "backend/tests/social/test_postgres_target_safety.py": "861c570b838f2c34e6507934366af1f29c36087905fb4e05087e7d72585245f3",
+    "backend/tests/social/test_unit_source_authority_fixture.py": "0efcc2ba5117f0099880e39ee0c53df59a1153aed76b3026b563047950fe40de",
+    "backend/tests/social/unit_source_authority_fixture.py": "46dd1faab14ac88e7b2b84677cb8c049280e3d119eb90d8d2bea3d3055dc68af"
+  },
+  "frontend_prior_unchanged_product_result": {
+    "suites": 207,
+    "passed": 2792,
+    "skipped": 1,
+    "types": "passed",
+    "lint": "passed",
+    "production_build": "passed"
+  },
+  "public_county_api_prior_unchanged_product_passed": 32,
+  "limits": "708 separately guarded historical fixture skips remain unverified. No production deployment or activation. Provider/uploads/ingestion/cohort acceptance remain held."
+}

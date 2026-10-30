@@ -1,0 +1,44 @@
+{
+  "verification": "Read-only production accounts UI; no provider authentication, maintenance, configuration or publishing action",
+  "source": "https://www.auditgava.com/admin/social/accounts",
+  "observed_date_utc": "2026-10-30",
+  "platforms": {
+    "facebook": {
+      "stored_identity": "connected",
+      "publishing_enabled": false,
+      "adapter_available": false
+    },
+    "instagram": {
+      "stored_identity": "connected",
+      "publishing_enabled": false,
+      "adapter_available": false
+    },
+    "threads": {
+      "stored_identity": "none",
+      "connections": "disabled",
+      "access": "unverified",
+      "credentials": "missing"
+    },
+    "x": {
+      "stored_identity": "none",
+      "connections": "disabled",
+      "access": "unverified",
+      "budget": "zero"
+    },
+    "tiktok": {
+      "stored_identity": "none",
+      "access": "product_access_unavailable"
+    }
+  },
+  "new_callback_connection_hold": "CALLBACK_INGRESS_UNVERIFIED",
+  "local_preview": {
+    "all_five_accounts": "synthetic preview samples",
+    "connection_state_label": "preview only",
+    "publishing_enabled": false,
+    "adapters_available": false,
+    "banner": "All accounts are preview samples, with no live connections"
+  },
+  "live_provider_acceptance": "Not tested or claimed; no live provider request",
+  "production_changes": [],
+  "production_workers": "off; no activation performed"
+}

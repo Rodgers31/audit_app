@@ -182,7 +182,11 @@ class SocialService:
         post = SocialPost(id=uuid4(), origin_type="manual", creation_method="duplicate" if duplicated_from else "admin", title=body.title, content_type=body.content_type, editorial_state="draft", duplicated_from_id=duplicated_from, created_by=self.actor)
         self.db.add(post)
         self.db.flush()
-        revision = self._new_revision(post, body.document, body.references, 1)
+        document = body.document
+        if document.master.link is None:
+            from .destinations import HOME
+            document = document.model_copy(update={'master': document.master.model_copy(update={'link': HOME})})
+        revision = self._new_revision(post, document, body.references, 1)
         self.audit("post.duplicated" if duplicated_from else "post.created", post=post, new="draft", details={"revision_id": str(revision.id), "content_hash": revision.content_hash})
         self.db.flush()
         return self.detail(post.id)
@@ -192,8 +196,14 @@ class SocialService:
             return False
         return bool(self.db.scalar(select(SocialPublishAttempt.id).join(SocialPostTarget, SocialPublishAttempt.target_id == SocialPostTarget.id).where(SocialPostTarget.publication_id == publication.id, SocialPublishAttempt.dispatch_started_at.is_not(None)).limit(1))) or any(t.state in INFLIGHT or t.submit_count > 0 for t in self._targets(publication))
 
-    def patch(self, post_id, body):
+    def patch(self, post_id, body, *, _prepared_metadata=None):
         post, old, publication = self._locked(post_id, body.expected_version)
+        if _prepared_metadata is not None:
+            if post.origin_type != 'generated':
+                raise SocialError('GENERATED_DRAFT_REQUIRED', 'Only generated drafts have an editorial preparation receipt.', 422)
+            from .generation.contracts import SourceObservation
+            from .generation.service import render_for_revision
+            render_for_revision(SourceObservation.model_validate(old.evidence_snapshot['source']), _prepared_metadata)
         # Past revisions are checked as well: revocation cannot reopen dispatched content.
         pubs = list(self.db.scalars(select(SocialPublication).where(SocialPublication.post_id == post.id)))
         if any(self._dispatched(p) for p in pubs):
@@ -216,7 +226,7 @@ class SocialService:
             post.content_type = body.content_type
         document = body.document if body.document is not None else PostDocument.model_validate(old.document)
         references = body.references if body.references is not None else old.evidence_snapshot["references"]
-        new = self._new_revision(post, document, references, old.revision_no + 1, evidence_snapshot=old.evidence_snapshot if post.origin_type == "generated" else None, generator_metadata=old.generator_metadata)
+        new = self._new_revision(post, document, references, old.revision_no + 1, evidence_snapshot=old.evidence_snapshot if post.origin_type == "generated" else None, generator_metadata=old.generator_metadata if _prepared_metadata is None else _prepared_metadata)
         post.editorial_state = "draft"
         self._touch(post)
         self.audit("post.revised", post=post, previous=previous, new="draft", details={"revision_id": str(new.id), "previous_revision_id": str(old.id)})
@@ -755,7 +765,8 @@ class SocialService:
         accounts = (SimpleNamespace(**row._mapping) for row in self.db.execute(
             select(*fields).order_by(SocialAccount.display_name, SocialAccount.id).limit(100)))
         from .validation import capability_context
-        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters,capability_context(self.db,a)).model_dump(mode="json")} for a in accounts]}
+        from .draft_formats import draft_formats
+        return {"accounts": [{"id": str(a.id), "platform": a.platform, "display_name": a.display_name, "handle": a.handle, "profile_url": a.profile_url, "connection_state": a.connection_state, "publishing_enabled": a.publishing_enabled, "capabilities": capability_for(a, self.available_adapters,capability_context(self.db,a)).model_dump(mode="json"), "draft_formats": draft_formats(a.platform, a.api_product)} for a in accounts]}
 
     def platforms(self):
         from .contracts import CapabilitySet

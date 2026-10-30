@@ -208,3 +208,43 @@ def test_rate_limit_never_retries_before_exact_provider_delay(header,seconds,saf
         finally:
             await provider.close()
     run(exercise())
+
+
+@pytest.mark.parametrize('format',['text','image','carousel','video'])
+def test_contextual_topic_is_sent_natively_once_without_caption_hashtag_block(format):
+    async def scenario():
+        graph,p=Graph(),payload(format, hashtags=('#PendingBills',),link='https://www.auditgava.com/debt')
+        bodies=[]
+        async def transport(request):
+            if request.method=='POST' and request.url.path.endswith('/threads'):
+                bodies.append(parse_qs((await request.aread()).decode()))
+            return await graph(request)
+        provider=adapter(transport)
+        assert provider.validate(p,caps(provider,p)).valid
+        checkpoint={}
+        for _ in range(12):
+            plan=provider.next_operation(p,checkpoint)
+            if plan.operation=='publish': break
+            checkpoint=(await provider.execute(p,plan,material(provider,p),Media())).checkpoint
+        else: pytest.fail('Topic container was not prepared')
+        parent=[body for body in bodies if body.get('is_carousel_item') != ['true']]
+        assert len(parent)==1 and parent[0]['topic_tag']==['PendingBills']
+        assert '#PendingBills' not in parent[0]['text'][0]
+        assert 'https://www.auditgava.com/debt' in parent[0]['text'][0]
+        assert all('topic_tag' not in b for b in bodies if b.get('is_carousel_item')==['true'])
+        assert all(b.get('auto_publish_text') != ['true'] for b in bodies)
+        assert not any(path.endswith('/threads_publish') for _,path in graph.calls)
+        await provider.close()
+    run(scenario())
+
+
+def test_multiple_topics_and_disabled_adapter_never_gain_publish_permission():
+    graph,p=Graph(),payload(hashtags=('#PAYE','#Kenya'))
+    provider=adapter(graph)
+    assert 'HASHTAG_LIMIT' in {issue.code for issue in provider.validate(p,caps(provider,p)).errors}
+    run(provider.close())
+    provider=ThreadsAdapter(ThreadsAdapterConfig(),transport=httpx.MockTransport(graph),now=lambda:NOW)
+    assert not provider.validate(payload(hashtags=('#PAYE',)),caps(provider,p)).valid
+    assert not provider.capabilities({}).adapter_available
+    assert graph.calls==[]
+    run(provider.close())

@@ -1,0 +1,101 @@
+{
+  "verification": "Read-only; no deployment, production writes, source acquisition or worker activation",
+  "backend": {
+    "service": "srv-d6hr3t5m5p6s73bomqu0",
+    "deployment": "dep-dbhm6regekts73ble1b0",
+    "sha": "7797ecb4266169c438ecd2c82e6d817d6577ff19",
+    "auto_deploy": false,
+    "health_http": 200,
+    "ready_http": 200,
+    "migration": "a756b20a0001",
+    "observed_web_processes": [
+      "Gunicorn master PID1",
+      "Gunicorn web worker PID26"
+    ],
+    "social_worker_or_supervisor_processes": [],
+    "process_inventory_at": "2026-10-30T01:26:12Z"
+  },
+  "frontend": {
+    "github_deployment": 7416253537,
+    "sha": "7797ecb4266169c438ecd2c82e6d817d6577ff19",
+    "state": "success",
+    "created_at": "2026-10-29T15:16:28Z",
+    "url": "https://audit-h2pibl3oq-rodgers31s-projects.vercel.app"
+  },
+  "database_at": "2026-10-30T01:26:12Z",
+  "database_transaction_read_only": "on",
+  "controls": {
+    "publishing": false,
+    "auto_approve": false,
+    "auto_schedule": false,
+    "auto_publish": false,
+    "version": 1
+  },
+  "accounts": [
+    {
+      "platform": "facebook",
+      "count": 1,
+      "publishing_enabled": false
+    },
+    {
+      "platform": "instagram",
+      "count": 1,
+      "publishing_enabled": false
+    }
+  ],
+  "delivery_target_state_counts": [],
+  "worker_heartbeat": {
+    "state": "stopped",
+    "last_at": "2026-10-15T23:14:27Z",
+    "fresh": false
+  },
+  "runtime_flags": {
+    "SOCIAL_MEDIA_ENABLED": "false",
+    "SOCIAL_WORKER_SUPERVISOR_ENABLED": "unset; documented default off",
+    "SOCIAL_NATIVE_ENABLED": "unset; documented default off",
+    "SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED": "unset; documented default off",
+    "SOCIAL_POLICY_AUTOMATION_ENABLED": "unset; documented default off",
+    "SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED": "unset; documented default off",
+    "SOCIAL_STUDIO_ENABLED": "unset; documented default off",
+    "SOCIAL_GENERATION_HOOK_ENABLED": "unset; documented default off",
+    "SOCIAL_REPORT_GENERATION_ENABLED": "unset; documented default off"
+  },
+  "source_ports_at": "2026-10-30T01:08:32Z",
+  "source_ports": {
+    "public.social_native_source_authority": {
+      "exists": true,
+      "current_application_login_select": true
+    },
+    "public.social_native_source_authority_snapshot": {
+      "exists": true,
+      "current_application_login_select": true
+    },
+    "public.social_report_source_authority": {
+      "exists": true,
+      "current_application_login_select": true
+    },
+    "public.social_report_source_authority_snapshot": {
+      "exists": true,
+      "current_application_login_select": true
+    }
+  },
+  "media_tools_at": "2026-10-30T01:15:54Z",
+  "media_tools": {
+    "ffmpeg": {
+      "version": "7.1.5-0+deb13u1",
+      "exit": 0
+    },
+    "ffprobe": {
+      "version": "7.1.5-0+deb13u1",
+      "exit": 0
+    }
+  },
+  "admin_fresh_reload": "Authenticated status loads: Publishing paused; automatic publishing off; no queued destinations; no available adapters; media storage disabled; both accounts publishing disabled. Prior status-unavailable response no longer reproduced; no cause inferred.",
+  "workflow_holds": {
+    "CI/CD Pipeline": "disabled_manually",
+    "Build and Deploy (Docker Hub)": "disabled_manually",
+    "preview_and_hosted_runs": "Held; not started"
+  },
+  "limit": "Confirms held current production state. Does not certify provider access, uploads, worker readiness, new release deployment, source approval or eventual publication.",
+  "runtime_flags_at": "2026-10-30T01:26:12Z"
+}

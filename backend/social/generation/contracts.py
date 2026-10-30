@@ -264,3 +264,9 @@ class EvaluateCommand(StrictModel):
     revision_id: UUID
     rule_id: UUID
     rule_version: PositiveVersion
+
+
+class PrepareDraftCommand(StrictModel):
+    expected_version: PositiveVersion
+    revision_id: UUID
+    reason: Reason

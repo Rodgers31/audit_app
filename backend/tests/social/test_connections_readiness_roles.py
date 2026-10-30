@@ -7,6 +7,7 @@ browser memberships, Supabase grants, or the privacy session's future policies.
 import importlib.util
 import os
 from pathlib import Path
+from contextlib import contextmanager
 import shutil
 import socket
 import subprocess
@@ -17,7 +18,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 import pytest
 from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import DBAPIError
 
 
@@ -42,9 +43,101 @@ def migration(filename):
     return module
 
 
+def install_readiness_schema(engine, *, owner_marker=None):
+    with engine.begin() as connection:
+        assert connection.execute(text("SHOW data_directory")).scalar() == "/var/lib/postgresql/data"
+        assert connection.execute(text("SELECT current_user")).scalar() == "readiness_admin"
+        for role in ROLE_NAMES:
+            connection.execute(text("CREATE ROLE " + role + " NOLOGIN NOSUPERUSER NOBYPASSRLS"))
+        connection.execute(text("CREATE SCHEMA " + SCHEMA + " AUTHORIZATION readiness_owner"))
+        connection.execute(text("GRANT USAGE ON SCHEMA " + SCHEMA + " TO anon, authenticated, readiness_backend, readiness_browser_parent"))
+        connection.execute(text("SET LOCAL ROLE readiness_owner"))
+        connection.execute(text("SET LOCAL search_path TO " + SCHEMA))
+        # Positive precondition: emulate provider schema defaults that grant
+        # browser access, so the real migration REVOKE must remove it.
+        connection.execute(text("ALTER DEFAULT PRIVILEGES IN SCHEMA " + SCHEMA + " GRANT ALL ON TABLES TO anon, authenticated"))
+        connection.execute(text("CREATE TABLE readiness_grant_control (value INTEGER)"))
+        connection.execute(text("INSERT INTO readiness_grant_control VALUES (9)"))
+        for role in ("anon", "authenticated"):
+            connection.execute(text("SET LOCAL ROLE " + role))
+            assert connection.execute(text("SELECT value FROM readiness_grant_control")).scalar() == 9
+        connection.execute(text("SET LOCAL ROLE readiness_owner"))
+        connection.execute(text("DROP TABLE readiness_grant_control"))
+        with Operations.context(MigrationContext.configure(connection)):
+            for filename in MIGRATIONS:
+                migration(filename).upgrade()
+        connection.execute(text("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA " + SCHEMA + " TO readiness_backend"))
+        connection.execute(text("INSERT INTO social_credentials (id,provider,credential_kind,encrypted_bundle,key_version) "
+                                "VALUES ('00000000-0000-0000-0000-000000000001','meta','facebook_user',:bundle,'fixture-v1')"),
+                           {"bundle": b"inert-envelope-fixture"})
+        if owner_marker is not None:
+            # Commit ownership atomically with the schema and all five roles.
+            # A lost commit acknowledgment can then be reconciled safely.
+            connection.execute(text('COMMENT ON SCHEMA ' + SCHEMA + ' IS :marker'),
+                               {'marker': owner_marker})
+
+
+@contextmanager
+def assigned_readiness_postgres(raw):
+    """Controller-owned offline fixture; never adopts the Docker default lane."""
+    message = 'Use only the assigned offline readiness55478/readiness_test fixture'
+    try:
+        url = make_url(raw)
+        valid = (isinstance(raw, str) and '?' not in raw
+            and url.drivername == 'postgresql+psycopg2' and url.host == '127.0.0.1'
+            and url.port == 55478 and url.database == 'readiness_test'
+            and url.username == 'readiness_admin' and not url.query)
+    except Exception:
+        raise ValueError(message) from None
+    if not valid:
+        raise ValueError(message)
+    engine = create_engine(url.set(query={'hostaddr': '127.0.0.1'}),
+        pool_size=1, max_overflow=0,
+        connect_args={'options': '-cstatement_timeout=15000 -clock_timeout=5000'})
+    ownership_checked = False
+    marker = 'auditgava-readiness-' + uuid4().hex
+    try:
+        with engine.connect() as connection:
+            identity = connection.execute(text("SELECT current_database(), session_user, "
+                "host(inet_server_addr()), inet_server_port(), current_setting('server_version_num')::int / 10000")).one()
+            if tuple(identity) != ('readiness_test', 'readiness_admin', '127.0.0.1', 55478, 17):
+                raise ValueError(message)
+            if connection.scalar(text('SHOW data_directory')) != '/var/lib/postgresql/data':
+                raise ValueError(message)
+            existing = connection.execute(text('SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname=:schema), '
+                'EXISTS(SELECT 1 FROM pg_roles WHERE rolname=ANY(:roles))'),
+                {'schema': SCHEMA, 'roles': list(ROLE_NAMES)}).one()
+            if any(existing):
+                raise ValueError('Assigned readiness names already exist; refusing to adopt them')
+        ownership_checked = True
+        install_readiness_schema(engine, owner_marker=marker)
+        yield engine
+    finally:
+        try:
+            if ownership_checked:
+                with engine.begin() as connection:
+                    retained = connection.scalar(text("SELECT obj_description(oid,'pg_namespace') "
+                        "FROM pg_namespace WHERE nspname=:schema"), {'schema': SCHEMA})
+                    if retained == marker:
+                        connection.execute(text('DROP SCHEMA ' + SCHEMA + ' CASCADE'))
+                        for role in ROLE_NAMES:
+                            connection.execute(text('DROP ROLE ' + role))
+                    elif connection.scalar(text('SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname=:schema) '
+                        'OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname=ANY(:roles))'),
+                        {'schema': SCHEMA, 'roles': list(ROLE_NAMES)}):
+                        raise ValueError('Readiness ownership marker changed; refusing foreign cleanup')
+        finally:
+            engine.dispose()
+
+
 @pytest.fixture(scope="module")
 def readiness_postgres():
     """Own cached-image container, loopback port, tmpfs and unconditional stop."""
+    external = os.environ.get('SOCIAL_READINESS_TEST_DATABASE_URL')
+    if external is not None:
+        with assigned_readiness_postgres(external) as engine:
+            yield engine
+        return
     docker = shutil.which("docker")
     if not docker:
         pytest.skip("Disposable local role execution requires Docker and cached postgres:17")
@@ -84,32 +177,7 @@ def readiness_postgres():
         assert binding.stdout.decode().strip() == "127.0.0.1 " + str(port)
         engine = create_engine(URL.create("postgresql+psycopg2", username="readiness_admin", host="127.0.0.1",
                                           port=port, database="postgres"), pool_size=1, max_overflow=0)
-        with engine.begin() as connection:
-            assert connection.execute(text("SHOW data_directory")).scalar() == "/var/lib/postgresql/data"
-            assert connection.execute(text("SELECT current_user")).scalar() == "readiness_admin"
-            for role in ROLE_NAMES:
-                connection.execute(text("CREATE ROLE " + role + " NOLOGIN NOSUPERUSER NOBYPASSRLS"))
-            connection.execute(text("CREATE SCHEMA " + SCHEMA + " AUTHORIZATION readiness_owner"))
-            connection.execute(text("GRANT USAGE ON SCHEMA " + SCHEMA + " TO anon, authenticated, readiness_backend, readiness_browser_parent"))
-            connection.execute(text("SET LOCAL ROLE readiness_owner"))
-            connection.execute(text("SET LOCAL search_path TO " + SCHEMA))
-            # Positive precondition: emulate provider schema defaults that grant
-            # browser access, so the real migration REVOKE must remove it.
-            connection.execute(text("ALTER DEFAULT PRIVILEGES IN SCHEMA " + SCHEMA + " GRANT ALL ON TABLES TO anon, authenticated"))
-            connection.execute(text("CREATE TABLE readiness_grant_control (value INTEGER)"))
-            connection.execute(text("INSERT INTO readiness_grant_control VALUES (9)"))
-            for role in ("anon", "authenticated"):
-                connection.execute(text("SET LOCAL ROLE " + role))
-                assert connection.execute(text("SELECT value FROM readiness_grant_control")).scalar() == 9
-            connection.execute(text("SET LOCAL ROLE readiness_owner"))
-            connection.execute(text("DROP TABLE readiness_grant_control"))
-            with Operations.context(MigrationContext.configure(connection)):
-                for filename in MIGRATIONS:
-                    migration(filename).upgrade()
-            connection.execute(text("GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA " + SCHEMA + " TO readiness_backend"))
-            connection.execute(text("INSERT INTO social_credentials (id,provider,credential_kind,encrypted_bundle,key_version) "
-                                    "VALUES ('00000000-0000-0000-0000-000000000001','meta','facebook_user',:bundle,'fixture-v1')"),
-                               {"bundle": b"inert-envelope-fixture"})
+        install_readiness_schema(engine)
         yield engine
     finally:
         if engine is not None:

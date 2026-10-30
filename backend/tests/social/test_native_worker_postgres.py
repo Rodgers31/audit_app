@@ -56,9 +56,10 @@ def prepare(engine, config, graph, monkeypatch, *, platform='facebook', image=Fa
             asset=db.get(SocialMediaAsset,ready.id)
             monkeypatch.setattr(native_fixture,'IMAGE',content)
             monkeypatch.setattr(native_fixture,'FETCH_URL',ENDPOINT+'/media-test/'+asset.storage_key+'?fixture=preview-secret')
-        body=draft_body((account,))
+        body=draft_body(document={'master':{'text':'Verified announcement','link':'https://www.auditgava.com/'},
+            'targets':[{'account_id':str(account.id),'format':'text','overrides':{}}]})
         if asset:
-            body=draft_body(document={'master':{'text':'Verified announcement','media':[{'asset_id':str(asset.id),'alt_text':'A green inspection fixture'}]},
+            body=draft_body(document={'master':{'text':'Verified announcement','link':'https://www.auditgava.com/','media':[{'asset_id':str(asset.id),'alt_text':'A green inspection fixture'}]},
                 'targets':[{'account_id':str(account.id),'format':'image','overrides':{}}]})
         _,created=call(db,body,lambda service:service.create(body),adapters=reg.adapters,route='native-create')
         approve=ApproveCommand(expected_version=created['version'],revision_id=created['revision_id'])

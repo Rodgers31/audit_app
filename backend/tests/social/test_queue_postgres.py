@@ -69,7 +69,8 @@ def repository(engine, **settings):
                            authority.owner_id, authority=authority)
 
 
-def seed(engine, *, count=1, same_account=False, paused=False, state="queued", checkpoint=None):
+def seed(engine, *, count=1, same_account=False, paused=False, state="queued", checkpoint=None,
+         website_link="https://www.auditgava.com/"):
     now = datetime.now(timezone.utc)
     ids = {"post": uuid4(), "revision": uuid4(), "publication": uuid4(), "targets": [], "accounts": []}
     capability = CapabilitySet(eligible=True, supported_formats=("text",),
@@ -87,7 +88,7 @@ def seed(engine, *, count=1, same_account=False, paused=False, state="queued", c
         post = SocialPost(id=ids["post"], title="Test", content_type="announcement", editorial_state="approved")
         db.add(post)
         db.flush()
-        document = {"schema_version": 1, "master": {"text": "fixture", "link": None, "hashtags": [], "media": []}, "targets": [{"account_id":str(account_id),"format":"text","overrides":{}} for account_id in ids["accounts"]]}
+        document = {"schema_version": 1, "master": {"text": "fixture", "link": website_link, "hashtags": [], "media": []}, "targets": [{"account_id":str(account_id),"format":"text","overrides":{}} for account_id in ids["accounts"]]}
         evidence = {"references": []}
         revision_hash = canonical_hash({"document": document, "evidence_snapshot": evidence})
         db.add(SocialPostRevision(id=ids["revision"], post_id=post.id, revision_no=1,
@@ -116,7 +117,7 @@ def seed(engine, *, count=1, same_account=False, paused=False, state="queued", c
                 db.flush()
             account_id = ids["accounts"][0 if same_account else index]
             payload = ResolvedPostPayload(account_id=account_id, platform="facebook", api_product="fake",
-                external_account_id=str(0 if same_account else index), format="text", text="fixture",
+                external_account_id=str(0 if same_account else index), format="text", text="fixture", link=website_link,
                 evidence_hash=canonical_hash(evidence), content_hash="0"*64)
             payload = payload.model_copy(update={"content_hash": canonical_hash(payload.model_dump(mode="json", exclude={"content_hash"}))})
             target_id = uuid4()
@@ -320,6 +321,20 @@ def test_imported_over_budget_history_waits_until_fewer_than_100_reads_remain(en
     assert row(engine,target_id)["next_action_at"]-datetime.now(timezone.utc) > timedelta(hours=23)
 
 
+@pytest.mark.parametrize('website_link', [None, 'https://cob.go.ke/report.pdf',
+    'https://www.auditgava.com.evil.example/', 'https://evil.example/?next=https://www.auditgava.com/'])
+def test_self_consistent_legacy_target_without_auditgava_destination_cannot_dispatch(engine, website_link):
+    ids = seed(engine, website_link=website_link)
+    repo = repository(engine)
+    claim = repo.claim_due()[0]
+    assert intent(repo, claim) is None
+    target = row(engine, ids['targets'][0])
+    assert target['state'] == 'blocked' and target['error_code'] == 'AUDITGAVA_DESTINATION_REQUIRED'
+    assert target['submit_count'] == 0
+    with engine.connect() as conn:
+        assert conn.execute(text('SELECT count(*) FROM social_publish_attempts')).scalar_one() == 0
+
+
 def test_empty_queue_minimal_query_and_idle_heartbeat(engine):
     repo = repository(engine)
     statements = []
@@ -328,8 +343,16 @@ def test_empty_queue_minimal_query_and_idle_heartbeat(engine):
     sqlalchemy_event.listen(engine, "before_cursor_execute", observe)
     try:
         assert repo.claim_due(2) == []
-        assert len(statements) == 2
-        assert 'social_worker_runtime_ownership' in statements[0]
+        # The native worker Engine adds one transaction-local deadline setter;
+        # the injected scoped owner Engine in compatibility tests has no hook.
+        # Both must perform exactly the same two queue/authority queries.
+        queries = statements
+        if statements[0].startswith('SET LOCAL lock_timeout='):
+            assert statements[0] == "SET LOCAL lock_timeout='2s';SET LOCAL statement_timeout='5s'"
+            queries = statements[1:]
+        assert len(queries) == 2
+        assert 'social_worker_runtime_ownership' in queries[0]
+        assert 'FOR UPDATE OF t SKIP LOCKED' in queries[1]
         assert repo.next_due_delay(30) == 30
         repo.heartbeat(state="idle", active_claims=0, scanned=True)
     finally:
@@ -900,7 +923,7 @@ def test_worker_failure_receipt_allows_real_domain_retry_command(engine):
         def command(body,action,route):
             return svc.command(actor=actor,route=route,key=uuid4(),request_id=uuid4(),
                 body=body.model_dump(mode="json"),action=action)[1]
-        body = CreatePost(title="Receipt compatibility",document={"master":{"text":"Verified test"},
+        body = CreatePost(title="Receipt compatibility",document={"master":{"text":"Verified test","link":"https://www.auditgava.com/"},
             "targets":[{"account_id":account_id,"format":"text"}]})
         created = command(body,lambda:svc.create(body),"posts.create")
         controls = ControlsCommand(expected_version=1,publishing_enabled=True,reason="Explicit fake test")
@@ -966,7 +989,7 @@ def test_unselected_account_with_self_consistent_unapproved_payload_has_no_permi
             granted_scopes=["publish"],capability_snapshot=account.capability_snapshot))
         db.flush()
         payload = ResolvedPostPayload(account_id=account_id,platform="facebook",api_product="fake",
-            external_account_id="unauthorized-B",format="text",text="UNAPPROVED DIFFERENT COPY",
+            external_account_id="unauthorized-B",format="text",text="UNAPPROVED DIFFERENT COPY",link="https://www.auditgava.com/",
             evidence_hash="f"*64,content_hash="0"*64)
         payload = payload.model_copy(update={"content_hash":canonical_hash(payload.model_dump(mode="json",exclude={"content_hash"}))})
         db.add(SocialPostTarget(id=target_id,publication_id=ids["publication"],account_id=account_id,

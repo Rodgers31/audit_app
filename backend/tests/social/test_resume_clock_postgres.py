@@ -13,7 +13,7 @@ from social.service import SocialError
 from social.worker.config import WorkerConfig
 from social.worker.repository import LeaseLost, QueueRepository
 from test_domain_commands import enable, make
-from test_domain_postgres import pg_engine
+from test_domain_postgres import current_pg_engine as pg_engine
 from test_queue_postgres import repository
 from test_domain_support import account, call
 

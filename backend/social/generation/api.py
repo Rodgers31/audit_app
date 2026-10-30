@@ -7,13 +7,13 @@ from fastapi import APIRouter, Query, Request
 from pydantic import Field
 from sqlalchemy import func, select
 
-from ..api import Admin, Service, command
+from ..api import Admin, Service, command, PostDetail
 from ..contracts import StrictModel, DocumentTarget
 from ..http_boundary import IdempotencyKey, SocialRoute, social_admin
 from fastapi import Depends
 from ..service import SocialError
 from ..models import SocialCommandReceipt
-from .contracts import GenerationControlsCommand, RuleCommand, EvaluateCommand, SourceObservation, DetectCommand, PreviewCommand
+from .contracts import GenerationControlsCommand, RuleCommand, EvaluateCommand, SourceObservation, DetectCommand, PreviewCommand, PrepareDraftCommand
 from .models import GenerationControls, AutomationRuleVersion, ShadowDecision, SourceEvent
 from .service import GenerationService, controls_dto, rule_dto, decision_dto, consume_observation
 
@@ -100,6 +100,11 @@ def evidence(post_id: UUID, svc: Service):
     post = svc._post(post_id)
     revision = svc._revision(post)
     return dict(post_id=post.id, revision_id=revision.id, source_event_id=post.source_event_id, evidence=revision.evidence_snapshot, generator_metadata=revision.generator_metadata)
+
+
+@router.post('/posts/{post_id}/prepare', response_model=PostDetail)
+def prepare_draft(post_id: UUID, request: Request, body: PrepareDraftCommand, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: GenerationService(svc).prepare(post_id, body))
 
 
 @router.get('/automation/rules', response_model=RulesDTO)

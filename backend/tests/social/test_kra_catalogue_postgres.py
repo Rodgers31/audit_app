@@ -105,7 +105,7 @@ def test_real_catalogue_producer_baseline_backfill_and_new_command_replay(pg,tmp
         assert db.scalar(select(func.count()).select_from(SourceEvent))==1
         revision=db.scalar(select(SocialPostRevision));post=db.scalar(select(SocialPost))
         assert post.editorial_state=='pending_review'
-        assert 'Report publication date is not stated. Human review required.' in revision.document['master']['text']
+        assert 'The report’s publication date is not stated. Human review is required.' in revision.document['master']['text']
         assert '2.8' not in revision.document['master']['text']
         assert revision.evidence_snapshot['source']['report']['evidence_kind']=='publisher_catalogue'
         assert db.scalar(select(func.count()).select_from(RevenueBySource))>=5

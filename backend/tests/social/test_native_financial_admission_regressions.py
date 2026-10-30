@@ -99,5 +99,5 @@ def test_actual_human_approved_financial_worker_gate_refuses_changed_source(rest
   with pytest.raises(SocialError,match='SOURCE_REVIEW_REQUIRED'):
    verify_generated_revision(db,db.get(SocialPost,post_id),db.get(SocialPostRevision,revision_id))
  with factory() as db:after=repository_gate(db,engine,pub_id,account_id)
- Path('/output/worker-gate.json').write_text(json.dumps({'before':before,'after_changed_business_value':after,'source_record':record,'synthetic_fixture_only':True},indent=2))
+ (tmp_path / 'worker-gate.json').write_text(json.dumps({'before':before,'after_changed_business_value':after,'source_record':record,'synthetic_fixture_only':True},indent=2))
  assert before is None and after == 'SOURCE_REVIEW_REQUIRED', 'An installed current witness admits only unchanged reviewed evidence'

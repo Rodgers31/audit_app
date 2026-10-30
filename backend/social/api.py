@@ -13,7 +13,7 @@ if __package__ == "backend.social":
 else:
     from database import get_db
     from supabase_auth import AdminUser, require_admin
-from .contracts import ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, ScheduleEditCommand, RescheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
+from .contracts import PostFormat, ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, ScheduleEditCommand, RescheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
 from .service import SocialError, SocialService
 from .http_boundary import IdempotencyKey, NO_STORE, SocialRoute, social_admin
 
@@ -120,6 +120,7 @@ class AccountDTO(StrictModel):
     connection_state: str
     publishing_enabled: bool
     capabilities: CapabilitySet
+    draft_formats: tuple[PostFormat, ...] = ()
 
 class AccountsDTO(StrictModel):
     accounts: tuple[AccountDTO, ...]

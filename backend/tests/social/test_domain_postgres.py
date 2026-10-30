@@ -2,6 +2,7 @@
 import importlib.util
 import os
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -27,8 +28,8 @@ def migration():
     return module
 
 
-@pytest.fixture
-def pg_engine():
+@contextmanager
+def owned_domain_engine():
     dsn = os.getenv("SOCIAL_TEST_DATABASE_URL")
     if not dsn:
         pytest.skip("Set SOCIAL_TEST_DATABASE_URL for the isolated PostgreSQL lane")
@@ -50,6 +51,22 @@ def pg_engine():
         admin.dispose()
 
 
+@pytest.fixture
+def pg_engine():
+    """Keep the exact original manual-domain migration contract."""
+    with owned_domain_engine() as engine:
+        yield engine
+
+
+@pytest.fixture
+def current_pg_engine():
+    """Current ORM/queue tests explicitly opt into real policy descendants."""
+    from current_social_schema import upgrade_current_social_runtime
+    with owned_domain_engine() as engine:
+        upgrade_current_social_runtime(engine)
+        yield engine
+
+
 def test_pg_migration_upgrade_rls_empty_downgrade(pg_engine):
     with pg_engine.begin() as conn:
         rows = conn.execute(text("SELECT relname,relrowsecurity FROM pg_class WHERE relnamespace=current_schema()::regnamespace AND relkind='r'"))
@@ -61,7 +78,8 @@ def test_pg_migration_upgrade_rls_empty_downgrade(pg_engine):
         assert conn.execute(text("SELECT count(*) FROM pg_class WHERE relnamespace=current_schema()::regnamespace AND relkind='r'")).scalar() == 0
 
 
-def test_pg_same_key_race_and_optimistic_edit(pg_engine):
+def test_pg_same_key_race_and_optimistic_edit(current_pg_engine):
+    pg_engine = current_pg_engine
     body, key = draft_body(), uuid4()
     def create_once():
         with Session(pg_engine, expire_on_commit=False) as db:
@@ -87,7 +105,8 @@ def test_pg_same_key_race_and_optimistic_edit(pg_engine):
         assert db.scalar(select(func.count()).select_from(SocialAuditEvent)) == 2
 
 
-def test_pg_database_guards_raw_sql_history_target_authorization(pg_engine):
+def test_pg_database_guards_raw_sql_history_target_authorization(current_pg_engine):
+    pg_engine = current_pg_engine
     with Session(pg_engine, expire_on_commit=False) as db:
         row = account(db)
         body = draft_body((row,))
@@ -115,7 +134,8 @@ def test_pg_database_guards_raw_sql_history_target_authorization(pg_engine):
                     migration().downgrade()
 
 
-def test_pg_revision_owner_and_one_publication_per_revision(pg_engine):
+def test_pg_revision_owner_and_one_publication_per_revision(current_pg_engine):
+    pg_engine = current_pg_engine
     with Session(pg_engine, expire_on_commit=False) as db:
         row = account(db)
         first_body, second_body = draft_body((row,)), draft_body((row,), title="Second")
@@ -127,7 +147,8 @@ def test_pg_revision_owner_and_one_publication_per_revision(pg_engine):
                 conn.execute(text("UPDATE social_posts SET current_revision_id=:revision WHERE id=:post"), {"revision": first["revision_id"], "post": second["id"]})
 
 
-def test_pg_ready_asset_and_published_proof_guards(pg_engine):
+def test_pg_ready_asset_and_published_proof_guards(current_pg_engine):
+    pg_engine = current_pg_engine
     from social.models import SocialMediaAsset
     with Session(pg_engine, expire_on_commit=False) as db:
         row = account(db)

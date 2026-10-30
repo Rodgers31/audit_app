@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from social.models import SocialControls
 from test_domain_postgres import migration
 from test_connections_migration_postgres import upgrade
+from current_social_schema import add_current_worker_policy
 
 
 @pytest.fixture
@@ -40,6 +41,7 @@ def role_database():
         with owner.begin() as conn, Operations.context(MigrationContext.configure(conn)):
             migration().upgrade()
         upgrade(owner, current=True)
+        add_current_worker_policy(owner)
         with Session(owner) as db:
             db.add(SocialControls(id=1,publishing_enabled=False)); db.commit()
         yield owner,worker,schema,role

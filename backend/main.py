@@ -2061,6 +2061,10 @@ except Exception as e:
     logger.warning(f"Could not register data provenance router: {e}")
 
 
+from routers.public_reports import router as public_reports_router
+app.include_router(public_reports_router)
+
+
 # Cross-worker cache invalidation (issue #231). The nightly's signed call
 # lands on one gunicorn worker and bumps a marker file; every other worker
 # clears its own in-process caches on the next request it serves. One

@@ -55,19 +55,8 @@ def runtime_engine():
 def actual_app_pipeline(monkeypatch):
     import main
     original = pipeline.setup_client
-    original_plan = pipeline.ExplicitFake.next_operation
-    def local_plan(adapter, payload, checkpoint):
-        plan = original_plan(adapter, payload, checkpoint)
-        return plan.model_copy(update={'estimated_cost_microusd': 1}) if payload.platform == 'x' else plan
-    monkeypatch.setattr(pipeline.ExplicitFake, 'next_operation', local_plan)
     def setup(engine, platforms=('facebook','threads')):
         fixture, accounts = original(engine, platforms)
-        # The current worker requires both global and per-account spending
-        # admission for the inert X adapter's synthetic reservation.
-        with engine.begin() as connection:
-            connection.execute(text("INSERT INTO social_platform_budgets "
-                "(account_id,access_verified,enabled,limit_microusd) "
-                "SELECT id,true,true,1000 FROM social_accounts WHERE platform='x'"))
         main.app.dependency_overrides.update(fixture.app.dependency_overrides)
         return local_client(main.app), accounts
     monkeypatch.setattr(pipeline, 'setup_client', setup)
@@ -122,6 +111,8 @@ GET /automation/rules
 GET /connections/meta/flows/{flow_id}
 GET /connections/meta/status
 GET /generation/controls
+GET /generation/capabilities
+GET /generation/source-records
 GET /media/assets
 GET /media/assets/{asset_id}/preview
 GET /media/assets/{asset_id}/retirement-scope
@@ -161,10 +152,13 @@ POST /automation/operating-evidence
 POST /automation/policy-snapshots
 POST /automation/rules/{rule_id}/versions
 POST /connections/meta/complete
+POST /connections/meta/direct/start
+POST /connections/meta/direct/complete
 POST /connections/meta/flows/{flow_id}/select
 POST /connections/meta/start
 POST /generation/detect
 POST /generation/detect-reports
+POST /generation/preview
 POST /media/assets/{asset_id}/archive
 POST /media/assets/{asset_id}/retire
 POST /media/uploads
@@ -185,6 +179,7 @@ POST /posts/{post_id}/duplicate
 POST /posts/{post_id}/policy-authorize
 POST /posts/{post_id}/policy-schedule
 POST /posts/{post_id}/publish
+POST /posts/{post_id}/prepare
 POST /posts/{post_id}/publish-now
 POST /posts/{post_id}/reject
 POST /posts/{post_id}/reschedule
@@ -208,7 +203,7 @@ POST /targets/{target_id}/public-proof
 POST /targets/{target_id}/record-existing
 POST /targets/{target_id}/retry
 """.strip().splitlines()}
-    assert len(routes) == len(set(routes)) == 94
+    assert len(routes) == len(set(routes)) == 100
     assert {(method, path.removeprefix('/api/v1/admin/social')) for method, path in routes} == expected
     for status in (401,403):
         def denied():

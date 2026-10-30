@@ -18,6 +18,8 @@ from test_queue_postgres import repository
 @pytest.fixture
 def native_pg(pg_engine):
     upgrade(pg_engine, current=True)
+    from current_social_schema import add_current_worker_policy
+    add_current_worker_policy(pg_engine)
     return pg_engine
 
 

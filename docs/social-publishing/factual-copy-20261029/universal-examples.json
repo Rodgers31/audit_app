@@ -1,0 +1,349 @@
+[
+  {
+    "label": "Another county: spending",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "county:1:budget:2025",
+      "evidence_version": 1,
+      "ingestion_id": "job:42",
+      "category": "budget_update",
+      "title": "County spending figures",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "county:1:budget",
+          "entity": "Mombasa County",
+          "metric": "Actual spending",
+          "period": "FY2025/26",
+          "comparison_basis": "Actual expenditure for the stated reporting period",
+          "value": "36789000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://example.gov/report.pdf",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Controller of Budget",
+          "published_on": "2026-01-01",
+          "retrieved_at": "2026-10-29T21:19:00.819175Z",
+          "verified_at": "2026-10-29T21:19:00.819175Z",
+          "canonical_url": "https://www.auditgava.com/counties/1"
+        }
+      ],
+      "report": null
+    },
+    "generator_metadata": {
+      "template_version": "factual-v3",
+      "detector_version": 1,
+      "fact_ids": [
+        "county:1:budget"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "County spending figures.\n\nMombasa County, FY2025/26\nReported figure — Actual spending: about KSh 36.8 million.\nReporting basis: Actual expenditure for the stated reporting period.\nSource: Controller of Budget.\n\nExplore the figures and original sources on AuditGava."
+  },
+  {
+    "label": "National government: expenditure and revised budget",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:national_budget:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "budget_update",
+      "title": "Kenya national budget data",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:allocated_amount",
+          "entity": "Kenya",
+          "metric": "Revised gross budget: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "revised gross budget, same sector and annual reporting period",
+          "value": "1500000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T21:19:00.819575Z",
+          "verified_at": "2026-10-29T21:19:00.819575Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        },
+        {
+          "fact_id": "owned:actual_spent",
+          "entity": "Kenya",
+          "metric": "Actual expenditure: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "actual expenditure, same sector and annual reporting period",
+          "value": "1200000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T21:19:00.819575Z",
+          "verified_at": "2026-10-29T21:19:00.819575Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "national_budget",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "generator_metadata": {
+      "template_version": "financial-v5",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:allocated_amount",
+        "owned:actual_spent"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "Kenya: KSh 1.2 billion in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1.5 billion.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava."
+  },
+  {
+    "label": "Another county: audit finding",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "oag",
+      "source_key": "county:1:budget:2025",
+      "evidence_version": 1,
+      "ingestion_id": "job:42",
+      "category": "audit_finding",
+      "title": "Supporting documents queried in an audit",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "county:1:budget",
+          "entity": "Garissa County",
+          "metric": "Expenditure queried for missing supporting documents",
+          "period": "FY2025/26",
+          "comparison_basis": "Reported audit query; no conclusion about theft is supplied",
+          "value": "36000000",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://example.gov/report.pdf",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Auditor-General",
+          "published_on": "2026-01-01",
+          "retrieved_at": "2026-10-29T21:19:00.819816Z",
+          "verified_at": "2026-10-29T21:19:00.819816Z",
+          "canonical_url": "https://www.auditgava.com/counties/1"
+        }
+      ],
+      "report": null
+    },
+    "generator_metadata": {
+      "template_version": "factual-v3",
+      "detector_version": 1,
+      "fact_ids": [
+        "county:1:budget"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "Audit finding: Supporting documents queried in an audit.\n\nGarissa County, FY2025/26\nReported figure — Expenditure queried for missing supporting documents: KSh 36 million.\nReporting basis: Reported audit query; no conclusion about theft is supplied.\nSource: Office of the Auditor-General.\n\nExplore the figures and original sources on AuditGava."
+  },
+  {
+    "label": "Non-financial national data: projection",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "knbs",
+      "source_key": "county:1:budget:2025",
+      "evidence_version": 1,
+      "ingestion_id": "job:42",
+      "category": "dataset_availability",
+      "title": "Population projections",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "county:1:budget",
+          "entity": "Kenya",
+          "metric": "Population",
+          "period": "2028 projection",
+          "comparison_basis": "Projection for the stated year",
+          "value": "56789100",
+          "unit": "people",
+          "scale": "units",
+          "classification": "projected",
+          "source_document_id": 1,
+          "document_url": "https://example.gov/report.pdf",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Kenya National Bureau of Statistics",
+          "published_on": "2026-01-01",
+          "retrieved_at": "2026-10-29T21:19:00.819910Z",
+          "verified_at": "2026-10-29T21:19:00.819910Z",
+          "canonical_url": "https://www.auditgava.com/counties/1"
+        }
+      ],
+      "report": null
+    },
+    "generator_metadata": {
+      "template_version": "factual-v3",
+      "detector_version": 1,
+      "fact_ids": [
+        "county:1:budget"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "Available on AuditGava: Population projections.\n\nKenya, 2028 projection\nProjection — Population: about 56.8 million people.\nReporting basis: Projection for the stated year.\nSource: Kenya National Bureau of Statistics.\n\nExplore the figures and original sources on AuditGava."
+  },
+  {
+    "label": "Another county: report announcement",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:county:1:reports",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "dataset_availability",
+      "title": "Controller of Budget report · Nairobi City County",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [],
+      "report": {
+        "entity_id": 1,
+        "source_record_id": 1,
+        "authority_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entity": "Kisumu County",
+        "period": "FY2025/26",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "source_document_id": 1,
+        "document_url": "https://cob.go.ke/report-1.pdf",
+        "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "publisher": "Controller of Budget",
+        "published_on": "2026-07-01",
+        "retrieved_at": "2026-10-15T00:00:00Z",
+        "verified_at": "2026-10-15T00:00:01Z",
+        "canonical_url": "https://www.auditgava.com/counties/1",
+        "locator": "PDF page 1; Publication date: 2026-07-01",
+        "publication_extraction_id": 1,
+        "qualification_extraction_id": 1
+      }
+    },
+    "generator_metadata": {
+      "template_version": "report-availability-v4",
+      "detector_version": 1,
+      "fact_ids": [],
+      "report_source_document_id": 1,
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "Kisumu County: explore the budget implementation report for FY2025/26.\n\nPublished by Controller of Budget on 1 July 2026.\n\nExplore the report and original sources on AuditGava."
+  },
+  {
+    "label": "Catalogue availability: publication day unknown",
+    "scope": "Closed wording fixture only; not source acquisition, approval or a production draft",
+    "input": {
+      "schema_version": 1,
+      "source_type": "kra",
+      "source_key": "kra:native:revenue_by_source:1:annual-revenue",
+      "evidence_version": 3,
+      "ingestion_id": "3",
+      "category": "dataset_availability",
+      "title": "KRA report availability",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [],
+      "report": {
+        "entity_id": 1,
+        "source_record_id": 11,
+        "authority_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entity": "Kenya annual revenue performance",
+        "period": "FY 2025/26",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "source_document_id": 2,
+        "document_url": "https://www.kra.go.ke/annual-revenue-performance-fy-2025-2026",
+        "document_checksum": "7cb4839a5d949df556e6ed5b0b740ba8f01b57a52b4317e1f85ef723ff57b2be",
+        "publisher": "Kenya Revenue Authority",
+        "published_on": null,
+        "retrieved_at": "2026-10-29T21:20:00.887375Z",
+        "verified_at": "2026-10-29T21:20:00.887377Z",
+        "canonical_url": "https://www.auditgava.com/budget",
+        "locator": "Official KRA catalogue: exact annual report title/link/category and entry date; report publication date not stated",
+        "publication_extraction_id": 11,
+        "qualification_extraction_id": 11,
+        "native_domain": "revenue_by_source",
+        "scope_key": "annual-revenue",
+        "evidence_kind": "publisher_catalogue",
+        "catalogued_on": "2026-07-08",
+        "catalogue_url": "https://www.kra.go.ke/component/search/?searchphrase=all&searchword=KRA+performance"
+      }
+    },
+    "generator_metadata": {
+      "template_version": "catalogue-availability-v4",
+      "detector_version": 1,
+      "fact_ids": [],
+      "report_source_document_id": 2,
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [],
+      "editorial_profiles_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "text": "Kenya annual revenue performance: a revenue report for FY 2025/26 is listed in Kenya Revenue Authority’s catalogue.\n\nCatalogue entry dated 8 July 2026. The report’s publication date is not stated. Human review is required.\n\nExplore the report and original sources on AuditGava."
+  }
+]

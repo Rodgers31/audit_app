@@ -10,7 +10,7 @@ from social.models import SocialCommandReceipt, SocialPostTarget, SocialPublicat
 from social.service import SocialError, SocialService
 from test_api_admin import key, make_client
 from test_domain_support import db
-from test_domain_postgres import pg_engine
+from test_domain_postgres import current_pg_engine as pg_engine
 from test_schedule_management import command_body, scheduled_fixture
 from test_schedule_management import test_global_filters_precede_pagination_and_mixed_posts_overlap as check_global_filters
 
