@@ -38,24 +38,41 @@ def read_native_financial_record_ids(factory, *, ingestion_id, domain):
     _positive_id(ingestion_id)
     if domain not in MODELS:
         raise SourceObservationUnavailable('Verified measure-specific PDF evidence required')
-    model = MODELS[domain]
     with _session(factory) as db:
         db.execute(text('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY'))
         _read_limits(db)
-        _job(db, ingestion_id, domain)
-        if domain == 'revenue_by_source':
-            condition = model.meta.contains({'ingestion_job_id': ingestion_id})
-        elif domain == 'pending_bills':
-            condition = model.provenance.contains({'ingestion_job_id': ingestion_id})
-        else:
-            condition = model.provenance.contains([{'ingestion_job_id': ingestion_id}])
-        ids = tuple(db.scalars(select(model.id).where(condition).order_by(model.id).limit(1001)))
-        if len(ids) > 1000:
-            raise SourceObservationUnavailable('Bounded exact ingestion lineage required')
-        return ids
+        return native_financial_record_ids(db, ingestion_id=ingestion_id, domain=domain)
+
+
+def native_financial_record_ids(db, *, ingestion_id, domain):
+    """Exact current cohort, also usable under the native completion lock."""
+    _positive_id(ingestion_id)
+    if domain not in MODELS:
+        raise SourceObservationUnavailable('Verified measure-specific PDF evidence required')
+    model = MODELS[domain]
+    _job(db, ingestion_id, domain)
+    if domain == 'revenue_by_source':
+        condition = model.meta.contains({'ingestion_job_id': ingestion_id})
+    elif domain == 'pending_bills':
+        condition = model.provenance.contains({'ingestion_job_id': ingestion_id})
+    else:
+        condition = model.provenance.contains([{'ingestion_job_id': ingestion_id}])
+    ids = tuple(db.scalars(select(model.id).where(condition).order_by(model.id).limit(1001)))
+    if len(ids) > 1000:
+        raise SourceObservationUnavailable('Bounded exact ingestion lineage required')
+    return ids
 
 
 def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False):
+    return _current_native_financial(db, record_id, ingestion_id, domain=domain, lock=lock, with_witness=False)
+
+
+def current_native_financial_with_witness(db, record_id, ingestion_id, *, domain):
+    """Identity-only admission plus a private witness of locked qualified inputs."""
+    return _current_native_financial(db, record_id, ingestion_id, domain=domain, lock=True, with_witness=True)
+
+
+def _current_native_financial(db, record_id, ingestion_id, *, domain, lock, with_witness):
     _positive_id(record_id); _positive_id(ingestion_id)
     if domain not in MODELS:
         raise SourceObservationUnavailable('Verified measure-specific PDF evidence required')
@@ -86,6 +103,11 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
     if report.get('published_on') is None or report.get('evidence_kind') == 'publisher_catalogue':
         raise SourceObservationUnavailable('Publisher publication date unavailable')
     period = report['period'].replace(' ', '')
+    if with_witness:
+        from .financial_cohort_witness import lock_qualified_inputs
+        evidence_row = SimpleNamespace(provenance=[entry]) if domain == 'national_budget' else row
+        inputs = lock_qualified_inputs(db, domain=domain, row=row, source=source, report=report,
+                                      evidence_row=evidence_row)
     if domain == 'national_budget':
         entity, fiscal = db.get(Entity,row.entity_id,populate_existing=True), db.get(FiscalPeriod,row.period_id,populate_existing=True)
         if (entity is None or entity.type != EntityType.NATIONAL or entity.country_id != report['entity_id']
@@ -185,7 +207,11 @@ def current_native_financial(db, record_id, ingestion_id, *, domain, lock=False)
                        **{key:report[key] for key in ('period_start','period_end','published_on')}))
     from importlib import import_module
     contracts = import_module('backend.social.generation.contracts' if __package__.startswith('backend.') else 'social.generation.contracts')
-    return contracts.SourceObservation.model_validate(value).model_dump(mode='json')
+    observation = contracts.SourceObservation.model_validate(value).model_dump(mode='json')
+    if with_witness:
+        from .financial_cohort_witness import _qualified_witness
+        return observation, _qualified_witness(observation, inputs)
+    return observation
 
 
 def read_native_financial_observation(factory, *, record_id, ingestion_id, domain):

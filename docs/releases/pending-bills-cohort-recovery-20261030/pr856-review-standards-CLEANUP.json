@@ -1,0 +1,17 @@
+{
+  "time_utc": "2026-10-30T16:41:10.017654+00:00",
+  "owned_container": "standards-pr856-comment-pg",
+  "owned_id": "ae70de235ea9287bbe21fec3ae712ebe402e1a3de812bdd9dd43c78eb4459977",
+  "verified_label": "pr856-review-comment",
+  "network": "none",
+  "host_port_bindings": {},
+  "named_volumes": [],
+  "tmpfs_bytes": 268435456,
+  "dependent_running_containers": [],
+  "remove_exit_code": 0,
+  "absence_check_exit_code": 0,
+  "absence_check_stdout": "",
+  "credential_env_files_created": [],
+  "credential_env_files_remaining": [],
+  "other_resources_touched": []
+}

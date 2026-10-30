@@ -57,6 +57,99 @@ def _result(state, reason, *, processed=0, drafts_created=0, baselines=0, unchan
     return dict(**details, state=state, reason=reason, processed=processed, drafts_created=drafts_created, baselines=baselines, unchanged=unchanged, refused=refused)
 
 
+def _complete_financial_cohort(factory, record_ids, ingestion_id, domain, deadline, witnesses=None):
+    """Establish a source only after its entire exact cohort has committed.
+
+    The native mutex serializes this final attestation with producer completion
+    and other consumers. Re-read current lineage under that lock; a caller's
+    subset, a newer source job, or incomplete cursor coverage cannot establish it.
+    """
+    from importlib import import_module
+    from sqlalchemy import select
+    from .models import SourceCursor
+    from .service import (DETECTOR_VERSION, financial_source_marker_version,
+        financial_source_marker_fingerprint, valid_financial_state)
+    native = import_module('backend.seeding.native_financial_observations'
+        if __package__.startswith('backend.') else 'seeding.native_financial_observations')
+    proof = import_module('backend.seeding.financial_cohort_witness'
+        if __package__.startswith('backend.') else 'seeding.financial_cohort_witness')
+    from ..contracts import canonical_json
+    source_type = native.DOMAINS[domain][0]
+    prefix = f'{source_type}:financial:{domain}:'
+    identity = dict(source_type=source_type, source_key=prefix+'baseline', detector_version=DETECTOR_VERSION)
+    if (type(witnesses) not in (list, tuple) or len(witnesses) != len(record_ids)
+            or any(not proof.witness_is_intact(w) for w in witnesses)):
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Qualified cohort witnesses required.', 503)
+    values = [w.value for w in witnesses]
+    if (len({v['source_key'] for v in values}) != len(record_ids)
+            or {v['record_id'] for v in values} != set(record_ids)
+            or any(v['domain'] != domain or v['ingestion_id'] != ingestion_id
+                or v['source_type'] != source_type or not v['source_key'].startswith(prefix) for v in values)):
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Exact financial cohort witness identities required.', 503)
+    expected_inputs = {}
+    for value in values:
+        for table, entries in value['inputs'].items():
+            target = expected_inputs.setdefault(table, {})
+            for key, fingerprint in entries.items():
+                if key in target and target[key] != fingerprint:
+                    raise SocialError('SOURCE_REVIEW_REQUIRED', 'Financial inputs changed during cohort admission.', 503)
+                target[key] = fingerprint
+    db = factory()
+    if db.in_transaction() or db.new or db.dirty or db.deleted or db.identity_map:
+        raise SocialError('FRESH_SESSION_REQUIRED', 'Fresh cohort completion session required.', 503)
+    with db, db.begin():
+        _transaction_limits(db, deadline)
+        native.lock_native_domain(db, domain)
+        current = native.native_financial_record_ids(db, ingestion_id=ingestion_id, domain=domain)
+        if not current or tuple(sorted(record_ids)) != current:
+            raise SocialError('SOURCE_REVIEW_REQUIRED', 'Exact complete current financial cohort required.', 503)
+        # Revalidate each shared report once, then recheck the complete locked
+        # input snapshot without transferring large receipt metadata per row.
+        for report_id, authority in sorted({(v['report_record_id'], v['authority_fingerprint']) for v in values}):
+            report = native.current_native_report(db, report_id, ingestion_id, domain=domain, lock=True)['report']
+            if report['authority_fingerprint'] != authority:
+                raise SocialError('SOURCE_REVIEW_REQUIRED', 'Current financial report authority differs.', 503)
+        actual_inputs = proof.input_fingerprints(db,
+            {table: [int(key) for key in entries] for table, entries in expected_inputs.items()}, lock=True)
+        if actual_inputs != expected_inputs:
+            raise SocialError('SOURCE_REVIEW_REQUIRED', 'Qualified financial inputs changed before completion.', 503)
+        root = db.scalar(select(SourceCursor).filter_by(**identity).with_for_update()
+            .execution_options(populate_existing=True))
+        if root is None:
+            raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial source baseline is missing.', 503)
+        financial_source_marker_version(root, identity)
+        dates = {k: root.report_state[k] for k in ('period_start', 'period_end', 'published_on')}
+        cursors = list(db.scalars(select(SourceCursor).where(
+            SourceCursor.source_type == source_type,
+            SourceCursor.source_key.startswith(prefix, autoescape=True),
+            SourceCursor.source_key != identity['source_key'],
+            SourceCursor.detector_version == DETECTOR_VERSION,
+            SourceCursor.evidence_version == ingestion_id).with_for_update().execution_options(populate_existing=True)))
+        expected_cursors = {v['source_key']: (v['fingerprint'], v['state']) for v in values}
+        if (root.evidence_version > ingestion_id or len(cursors) != len(current)
+                or {c.source_key for c in cursors} != set(expected_cursors)
+                or any((c.fingerprint, c.report_state) != expected_cursors[c.source_key] for c in cursors)
+                or any(not valid_financial_state(c.report_state)
+                    or any(c.report_state.get(k) != v for k, v in dates.items()) for c in cursors)):
+            raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial cohort cursor coverage differs.', 503)
+        completion = dict(evidence_version=ingestion_id, **dates,
+            records=sorted((dict(record_id=v['record_id'], source_key=v['source_key']) for v in values),
+                           key=lambda r: r['record_id']))
+        expected = {'financial_baseline': 2, **dates, 'completed_count': len(current), 'completion': completion}
+        expected_bytes = canonical_json(expected)
+        expected_fingerprint = financial_source_marker_fingerprint(identity, ingestion_id, expected)
+        root.report_state, root.evidence_version, root.fingerprint = expected, ingestion_id, expected_fingerprint
+        db.flush()
+        db.refresh(root)
+        financial_source_marker_version(root, identity)
+        if (canonical_json(root.report_state) != expected_bytes or root.evidence_version != ingestion_id
+                or any(getattr(root, k) != v for k, v in identity.items())
+                or root.fingerprint != expected_fingerprint):
+            raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial cohort completion readback differs.', 503)
+        _remaining_ms(deadline)
+    _remaining_ms(deadline)
+
+
 def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapters, progress, *, reports=False, domain="counties_budget"):
     from importlib import import_module
     adapter = import_module('backend.seeding.source_observations' if __package__.startswith('backend.') else 'seeding.source_observations')
@@ -67,6 +160,7 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
     selected = capability(domain)
     read = getattr(adapter, selected.report_reader if reports else selected.financial_reader)
     current_native_financial = not reports and domain != 'counties_budget'
+    witnesses = []
     # Legacy observations use a separate snapshot; native financial evidence is
     # loaded under mutation locks. Neither borrows ETL's completed transaction.
     for offset in range(0, len(record_ids), 25):
@@ -100,6 +194,15 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
                         result = (consume_committed_native_financial(svc, record_id=record_id,
                             ingestion_id=ingestion_id, domain=domain) if current_native_financial
                             else consume_observation(svc, observation))
+                        if current_native_financial:
+                            from importlib import import_module
+                            proof = import_module('backend.seeding.financial_cohort_witness'
+                                if __package__.startswith('backend.') else 'seeding.financial_cohort_witness')
+                            witness = result.get('_cohort_witness')
+                            if (not proof.witness_is_intact(witness)
+                                    or witness.value['record_id'] != record_id or witness.value['ingestion_id'] != ingestion_id
+                                    or witness.value['domain'] != domain):
+                                raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Exact qualified financial witness required.', 503)
                         _remaining_ms(deadline)
                         phase = 'commit'
             except GenerationDeadlineExceeded:
@@ -125,12 +228,16 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
                 _remaining_ms(deadline)
                 continue
             progress['uncertain'] = False
+            if current_native_financial:
+                witnesses.append(witness)
             counts['processed'] += 1
             counts[{'draft_created': 'drafts_created', 'baseline': 'baselines', 'unchanged': 'unchanged'}[result['status']]] += 1
             _remaining_ms(deadline)
     if counts['refused']:
         logger.warning('generation_hook_evidence_unavailable', extra={'refused_count': counts['refused'], 'processed_count': counts['processed']})
         return _result('unavailable', 'SOURCE_EVIDENCE_INELIGIBLE', **counts)
+    if current_native_financial:
+        _complete_financial_cohort(factory, record_ids, ingestion_id, domain, deadline, witnesses)
     return _result('completed', 'COMMITTED_EVIDENCE_CONSUMED', **counts)
 
 

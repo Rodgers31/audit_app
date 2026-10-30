@@ -133,6 +133,58 @@ def valid_financial_state(state):
         return False
 
 
+def financial_source_marker_fingerprint(identity, evidence_version, state):
+    if state.get('financial_baseline') == 1:
+        return canonical_hash(identity)
+    return canonical_hash(dict(identity=identity, evidence_version=evidence_version,
+        completed_count=state['completed_count'], completion=state['completion']))
+
+
+def _valid_financial_completion(state, evidence_version, identity):
+    completion = state.get('completion')
+    dates = ('period_start', 'period_end', 'published_on')
+    if (type(completion) is not dict
+            or set(completion) != {'evidence_version', 'records', *dates}
+            or type(completion['evidence_version']) is not int
+            or completion['evidence_version'] != evidence_version
+            or not valid_financial_state({'financial_semantics': 2,
+                **{k: completion[k] for k in dates}})
+            or any(state[k] < completion[k] for k in dates)):
+        return False
+    records = completion['records']
+    if type(records) is not list or len(records) != state['completed_count']:
+        return False
+    prefix = identity['source_key'].removesuffix('baseline')
+    if any(type(r) is not dict or set(r) != {'record_id', 'source_key'}
+            or type(r['record_id']) is not int or not 0 < r['record_id'] <= 2147483647
+            or type(r['source_key']) is not str
+            or re.fullmatch(re.escape(prefix)+'[a-f0-9]{64}', r['source_key']) is None for r in records):
+        return False
+    ids = [r['record_id'] for r in records]
+    return (ids == sorted(set(ids))
+        and len({r['source_key'] for r in records}) == len(records))
+
+
+def financial_source_marker_version(root, identity):
+    """A source-level marker exists before its first cohort is complete."""
+    state = root.report_state
+    version = state.get('financial_baseline') if type(state) is dict else None
+    dates = {'period_start', 'period_end', 'published_on'}
+    expected = {'financial_baseline', *dates}
+    if type(version) is int and version == 2:
+        expected.update(('completed_count', 'completion'))
+    if (type(version) is not int or version not in (1, 2)
+            or set(state) != expected or root.sequence != 0
+            or type(root.evidence_version) is not int or root.evidence_version <= 0
+            or version == 2 and (type(state['completed_count']) is not int
+                                or not 1 <= state['completed_count'] <= 1000)
+            or not valid_financial_state({'financial_semantics': 2, **{k: state[k] for k in dates}})
+            or version == 2 and not _valid_financial_completion(state, root.evidence_version, identity)
+            or root.fingerprint != financial_source_marker_fingerprint(identity, root.evidence_version, state)):
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial source baseline differs.', 503)
+    return version
+
+
 def established_financial_source(db, observation, *, initialize=False):
     if observation.financial is None:
         return False
@@ -146,16 +198,14 @@ def established_financial_source(db, observation, *, initialize=False):
     root = db.scalar(select(SourceCursor).filter_by(**identity))
     if root is None:
         return False
-    if (root.sequence != 0 or type(root.report_state) is not dict or set(root.report_state) != {'financial_baseline',*current}
-            or type(root.report_state['financial_baseline']) is not int or root.report_state['financial_baseline'] != 1
-            or not valid_financial_state({'financial_semantics':2,**{k:root.report_state[k] for k in current}})
-            or root.fingerprint != canonical_hash(identity)):
-        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial source baseline differs.', 503)
+    version = financial_source_marker_version(root, identity)
     if any(current[k]<root.report_state[k] for k in current):
         raise SocialError('REPORT_RELEASE_REGRESSION','Financial source reporting scope cannot regress.',422)
     if initialize:
-        root.report_state={'financial_baseline':1,**current}
-    return root.evidence_version < observation.evidence_version
+        root.report_state = {**root.report_state, **current}
+    # A timeout or one-record backfill must not turn unseen historical rows
+    # into changes merely because the next refresh has a newer ingestion ID.
+    return version == 2 and root.evidence_version < observation.evidence_version
 
 
 def evidence_items(observation):
@@ -332,14 +382,14 @@ def consume_committed_native_financial(svc: SocialService, *, record_id, ingesti
     if domain not in module.MODELS:
         raise SocialError('SOURCE_NOT_ELIGIBLE', 'A qualified native financial source is required.', 422)
     cfg = _source_admission(svc, module.DOMAINS[domain][0])
-    current = module.current_native_financial(svc.db, record_id, ingestion_id, domain=domain, lock=True)
+    current, witness = module.current_native_financial_with_witness(svc.db, record_id, ingestion_id, domain=domain)
     observation, now = _eligible_observation(svc, current)
     if (observation.source_type != module.DOMAINS[domain][0]
             or observation.ingestion_id != str(ingestion_id) or observation.evidence_version != ingestion_id
             or observation.financial is None or observation.financial.native_domain != domain
             or observation.financial.record_id != record_id):
         raise SocialError('SOURCE_REVIEW_REQUIRED', 'Current financial evidence must match the requested source identity.', 422)
-    return _consume_current_observation(svc, observation, cfg, now, backfill=False)
+    return {**_consume_current_observation(svc, observation, cfg, now, backfill=False), '_cohort_witness': witness}
 
 
 def consume_observation(svc: SocialService, observation, *, backfill=False):

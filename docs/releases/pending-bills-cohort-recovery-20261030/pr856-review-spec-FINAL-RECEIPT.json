@@ -1,0 +1,72 @@
+{
+  "verdict": "scoped frozen4 review-comment repair accepted:no remaining finding",
+  "mapping_sha256": "d4551375c41807a1856482607ea40496da2d766788290b67be6f8f833fcbd139",
+  "files": 5806,
+  "result": {
+    "pytest_passed": 22,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 25.1,
+    "additional_typed_scenarios_within_one_case": {
+      "negative_refusals": 32,
+      "valid_positives": 2
+    }
+  },
+  "source_before": {
+    "files": 5806,
+    "all_verified": true,
+    "exact_fileset": true,
+    "mapping_sha256": "d4551375c41807a1856482607ea40496da2d766788290b67be6f8f833fcbd139",
+    "manifest_file_sha256": "9e879adf03b1aa12b99359b428480829c2ddc8c79cf6b886364f64e4312b264a"
+  },
+  "source_after": {
+    "files": 5806,
+    "all_verified": true,
+    "exact_fileset": true,
+    "mapping_sha256": "d4551375c41807a1856482607ea40496da2d766788290b67be6f8f833fcbd139"
+  },
+  "original_red_receipt_sha256": "213424d377389a5f58e7dc15ccea5572de5d7d4a2cdba963a23a3e308abfbf4a",
+  "classifications": {
+    "inline4425754541": "Valid:P3 privileged-state completion binding integrity; repaired",
+    "body_only_dates": "Valid:P2 normal-flow completed-claim drift; repaired"
+  },
+  "no_added_finalizer_db_calls": {
+    "comparison": "same AST database calls in finalizer; only completion payload/FP compute changed",
+    "same_calls": true,
+    "calls": 4
+  },
+  "cleanup": {
+    "owned_pg_absent": true,
+    "private_credentials_removed": true,
+    "parent_pg_used": false,
+    "workers_started": false,
+    "grants_added": false,
+    "product_edits": false,
+    "github_contact": false,
+    "production_actions": false
+  },
+  "artifacts_sha256": {
+    "REPORT.md": "29ce630bda817304f681deb411f7e1710d9bdb21b0df6ee3c1f1aea8a12dc1b5",
+    "case-ledger.json": "a5c70c8f1720c859d25b96894d1b4a35c272da7d033c2776738c798be5a42e5b",
+    "cleanup-owned-pg-command.json": "a3af5dbf2953eb2508c9ac117d8fd43cabb48f49dba8c1987b6049ffb20d8e92",
+    "cleanup-owned-pg-exit.json": "d7446d438bd6addebfa95eed82feadc2a9e90fc53518ff147222b30f92f78148",
+    "cleanup-owned-pg.log": "3e72e6c2020b1d11d59a12b07c4ac4f6fa0fac5f414d6b60c92a4bb0cb85d33c",
+    "completion-delta.diff": "7f675db692cb3f24e93d30a17f62edf0a362520684d2d55943c433ddb7cc217e",
+    "forged-partial.json": "73e35c1ff6c1fbc3bbd8c7bb7f44ada61da42317024c2eea6d5f8f5b7fd6be43",
+    "inrange-count.json": "72383cb428b26e2332392c9f51b20eb6aa07e1f5dfa7a24c1a27254aeb95842f",
+    "manifest-after.json": "99177b2e2d70d869efb1d431e074bce0d394fc4eeb3640b446b3a211c9abd9a8",
+    "manifest-before.json": "b23571dd90bb1717f3278cff3917c9b2df47f51d69e69632c8327a84de1cc06e",
+    "no-added-finalizer-db-calls.json": "5a43d0758cb35aa2abbc5c3924931ee8eb953a2d6ff9db25833c9e0d6a8460c6",
+    "normal-later-period.json": "8c2e34ed1269ac834858fc865bcb85371dc51625d6479a40360c81baaaca8344",
+    "repaired-marker-edges-command.json": "41ede7407d7fd396fc7ee1cd46a8cc0b62d1cf88e86e8d0118eae30c0e510d81",
+    "repaired-marker-edges-exit.json": "d432d52930f9ce19a6616e198207e4d3a83dfc624c25a68e4e4bd653320ca08d",
+    "repaired-marker-edges-source.json": "3b101fa78738612e67d52579d9054b3012203dbe3b7e59e695dff9e4302b1ca6",
+    "repaired-marker-edges.log": "6b925554982f7c6362ec9587efb945bb6e8c59c431a9bd88484bb602bb04070c",
+    "repaired-marker-edges.xml": "419b925f8f525d9b216d01edf70e13ba37378c0658dd65bb6f44f6f3469a72d2",
+    "run.py": "56b878a10856501ab8fb29a4f03268b4225f5cd828123892cc725294ac96a1bf",
+    "test_completion_edges.py": "efcc346c936691f98421cf4bbebbb01be71ec604a5cd073574fb989dd3cf07d1",
+    "test_marker_comments_fixed.py": "adb633af2af3f3bea4f9826c033f740d94cef0ec66e82d966e2de6a3dfb72e70",
+    "typed-edge-results.json": "178057b5e01839d6229ef7913760a7a87c4af110acf708d0a74873e17c64304c"
+  }
+}

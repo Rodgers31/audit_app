@@ -1,0 +1,51 @@
+{
+  "time_utc": "2026-10-30T16:42:21.518648+00:00",
+  "verdict": "scoped pass",
+  "candidate": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/recovery-review-candidate-4",
+  "mapping_sha256": "d4551375c41807a1856482607ea40496da2d766788290b67be6f8f833fcbd139",
+  "manifest_file_sha256": "9e879adf03b1aa12b99359b428480829c2ddc8c79cf6b886364f64e4312b264a",
+  "reviewed_head": "0b5c30e62f2175d238ce78904b57dace16d1dbe0",
+  "counts": {
+    "final4_passed": 29,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "deselected": 14,
+    "reviewed_head_passed": 6
+  },
+  "classification": "Publisher premise true at acquisition on reviewed HEAD; actual writer already failed closed atomically. Frozen4 refuses earlier before storage. No demonstrated qualification/publication bypass.",
+  "python_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "postgres_image": "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+  "artifacts_sha256": {
+    "REPORT.md": "3888d6f9ed655cb71e014f3b5a5a12e497ce236c7870f909fd0ee3c2ef5ffa17",
+    "case-ledger.json": "5df1be5676e57947bbe9ea1b32105ebfc43e239c96f83f4a67a889899823c01a",
+    "frozen4.txt": "43e3bd9d117bce8f8a380d333da7cae17819c8e9e8d71bce456cf9d8fed5040a",
+    "frozen4.xml": "a96de095e75f17e7937a08664bdb48e5da449527a97dacc2007c7d3e64ae36b6",
+    "publisher-path-ready.txt": "c6b11497a54f28b0bb473fd40f8a03849794c9b6c5ff8542a89dbc7e8f0884ed",
+    "publisher-path-ready.xml": "0aa5126844ef824aaafac5ff217b3a84e9b75affafc9ad07878fa2db0a51441e",
+    "publisher-path.txt": "d3fc4775cd4d14a4242d99a8f9bdfcf201816298e35d1d801b124405f531e6c1",
+    "publisher-path.xml": "63a7f00f10e24a02be060dd258d3de81e0d865e498a750595ce8469c9d3216b3",
+    "national-scope.txt": "ad22386c45ed97dab75fc0567965f6d129e6206924abff3b3d70cb1cca761a66",
+    "national-scope.xml": "55fb29a5b440b495e23db84fac88cb597b8261763d10003c250503e5865ace9e",
+    "test_publisher_path.py": "3a1dc95c352d5b93d6dd4e86e1662bc647fe4f74f8c4659a59fadb3eb942b052",
+    "reviewed-head-test-publisher-path.py": "1d08aaf3a6e2c8523b175480657ade04f8badef5a0d0104ff6b81714aa477286",
+    "test_marker_repair.py": "03c44c69e0dd581a131c983642e6c2d9b749b7737a902c014523c204011a26b3",
+    "prepare_current_pg.py": "4b6486fc24ba38ea6eabcb0322dc0654d87497309f24bb7e05d946358b9de180",
+    "source-manifest.json": "706f61ce1768ffbc34342ed12bd7bbe33868ee428e6038e75e27c9ea1dbf2611",
+    "frozen4-manifest-before.json": "994dc72a3debf4eda835b7146d9f128e37a09aaa48ddae4b065175bcfdcae2d5",
+    "frozen4-manifest-after.json": "994dc72a3debf4eda835b7146d9f128e37a09aaa48ddae4b065175bcfdcae2d5",
+    "reviewed-head-manifest-after.json": "be6436068c763ab66858d4660a8068e9359d490aa2d86af794d78be3d500e76b",
+    "backend-delta.json": "f22aa6592515676c2abb5abd12ae71b177b44263986753b55a4d453cd1ab2696",
+    "retained_report_receipts.py.diff": "4e4b6cc7e0e35cfdfb97f5101823981e1a5529cf224cb60ce043af28ed72861b",
+    "service.py.diff": "92d926a064db42c949fc607a9e8eb9114c192337ec0f9fb898987999b1806757",
+    "integration.py.diff": "c2fb1840997f7274770818ba23394f45fc0339333074c0a9bda2463dd327732a",
+    "CLEANUP.json": "a924ba60853109f0219f171c23afd5fc463a1fdfbe36fbd1049888ad1a43c33c"
+  },
+  "imported_fixtures_sha256": {
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pending-source-lane-standards-review/test_cohort_guard.py": "4f01e26063af09d22698a530a668b75d1506d9052417913e1c1a6adc2b60ee78",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pending-source-lane-standards-review/test_report_lane.py": "a0d422896814d1231b0d78ee361798d91e2f463df6c7f0ed8c784a91252802b5"
+  },
+  "child_exit_code_recorded_separately": false,
+  "execution_evidence": "Pytest complete summary and parsed JUnit: 29 passed, no failures/errors/skips; child process exit not separately persisted.",
+  "cleanup": "CLEANUP.json"
+}
