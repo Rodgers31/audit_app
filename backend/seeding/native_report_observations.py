@@ -1,6 +1,7 @@
 """Committed native report readers. No source transport, parser or social writes."""
 from datetime import date
-from sqlalchemy import select, text, func
+from sqlalchemy import select, text, func, literal
+from sqlalchemy.orm import aliased
 
 if __package__.startswith('backend.'):
     from backend.models import Extraction, SourceDocument, IngestionJob, IngestionStatus, DocumentStatus, Country
@@ -11,16 +12,28 @@ from .source_observations import SourceObservationUnavailable, _positive_id, _aw
 
 
 def _job(db, ingestion_id, domain, *, scope_key=None):
+    # One current snapshot after the caller's authority lock. Do not transfer
+    # a prior row's admission across transactions or cache a head-job result.
+    newer = literal(False)
+    if domain != 'audits' or scope_key is not None:
+        candidate = aliased(IngestionJob)
+        conditions = [candidate.domain == domain, candidate.id > ingestion_id,
+            candidate.dry_run.is_(False),
+            candidate.status.in_([IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS]),
+            candidate.meta['source_mode'].astext.in_(['live', 'partial'])]
+        if domain == 'audits':
+            conditions.append(candidate.meta['native_report_series'].has_key(scope_key))
+        newer = select(candidate.id).where(*conditions).exists()
     row = db.execute(select(IngestionJob,
         func.timezone(func.current_setting('TimeZone'), IngestionJob.started_at),
-        func.timezone(func.current_setting('TimeZone'), IngestionJob.finished_at))
+        func.timezone(func.current_setting('TimeZone'), IngestionJob.finished_at),
+        func.statement_timestamp(), newer)
         .where(IngestionJob.id == ingestion_id).execution_options(populate_existing=True)).one_or_none()
     # Validation follows any authority-lock wait. Transaction-start time can
     # predate a valid completion that became visible after acquiring the lock.
-    now = db.scalar(select(func.statement_timestamp()))
     if row is None:
         raise SourceObservationUnavailable('Exact record ingestion lineage unavailable')
-    job, started, finished = row
+    job, started, finished, now, newer = row
     if (job.domain != domain or job.dry_run is not False or job.status != IngestionStatus.COMPLETED
             or type(job.errors) is not list or job.errors or not isinstance(job.meta, dict)
             or job.meta.get('source_mode') != 'live' or started is None or finished is None
@@ -28,16 +41,8 @@ def _job(db, ingestion_id, domain, *, scope_key=None):
         raise SourceObservationUnavailable('Exact record ingestion lineage unavailable')
     # National/KRA have one report series. Rolling audit jobs cover different
     # institutions; only a newer qualified observation of this auditee supersedes.
-    if domain != 'audits' or scope_key is not None:
-        conditions = [IngestionJob.domain == domain, IngestionJob.id > ingestion_id,
-            IngestionJob.dry_run.is_(False),
-            IngestionJob.status.in_([IngestionStatus.COMPLETED, IngestionStatus.COMPLETED_WITH_ERRORS]),
-            IngestionJob.meta['source_mode'].astext.in_(['live', 'partial'])]
-        if domain == 'audits':
-            conditions.append(IngestionJob.meta['native_report_series'].has_key(scope_key))
-        newer = db.scalar(select(IngestionJob.id).where(*conditions).order_by(IngestionJob.id.desc()).limit(1))
-        if newer is not None:
-            raise SourceObservationUnavailable('Current report authority unavailable')
+    if newer:
+        raise SourceObservationUnavailable('Current report authority unavailable')
     return job, started, finished
 
 

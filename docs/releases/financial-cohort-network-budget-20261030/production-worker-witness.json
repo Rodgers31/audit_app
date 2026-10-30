@@ -1,0 +1,13 @@
+{
+  "job": 3545,
+  "record": 364,
+  "effective_role": "audit_social_worker",
+  "login": "existing dedicated worker connection",
+  "base_table_reads": false,
+  "snapshot_owner_only": true,
+  "positive": "verified",
+  "changed_fingerprint": "refused",
+  "amount": "86899380000.00",
+  "transaction": "lock-only, rolled back; no DML",
+  "sha": "305cece79b89c0e24bc6c7ac3098fd07be170302"
+}

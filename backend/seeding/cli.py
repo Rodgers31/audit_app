@@ -123,14 +123,33 @@ def _domain_timeout(seconds: int) -> Iterator[None]:
         signal.signal(signal.SIGALRM, previous)
 
 
-def _post_commit_generation(factory, *, domain, ingestion_id, dry_run):
+def _post_commit_generation(factory, *, domain, ingestion_id, dry_run, deadline=None):
     """One hard budget; keep the first phase's confirmed result on later timeout."""
-    from .generation_dispatch import dispatch_committed_generation, dispatch_committed_report_generation, record_generation_timeout
-    from .generation_limits import generation_envelope_seconds
+    from .generation_dispatch import COUNTERS, dispatch_committed_generation, dispatch_committed_report_generation, record_generation_timeout
+    from .generation_limits import bounded_generation_envelope_seconds
     include_reports = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false'
+    remaining = None
+    if deadline is not None:
+        if type(deadline) not in (int, float):
+            raise ValueError('Finite run deadline required')
+        try:
+            remaining = deadline-time.monotonic()
+        except OverflowError:
+            raise ValueError('Finite run deadline required') from None
+    budget = bounded_generation_envelope_seconds(domain, include_reports=include_reports,
+        remaining_seconds=remaining)
+    if budget == 0:
+        if dry_run is not False or os.environ.get('SOCIAL_GENERATION_HOOK_ENABLED','false') == 'false':
+            return
+        # No phase started. Preserve that known zero outcome rather than entering
+        # the zero-second alarm path (which deliberately disables SIGALRM).
+        record_generation_timeout(factory, domain=domain, ingestion_id=ingestion_id,
+            financial_outcome={'state':'unavailable', 'reason':'generation_run_budget_exhausted',
+                **dict.fromkeys(COUNTERS, 0)}, reports_started=False)
+        return
     financial_outcome, reports_started = None, False
     try:
-        with _domain_timeout(generation_envelope_seconds(domain, include_reports=include_reports)):
+        with _domain_timeout(budget):
             financial_outcome = dispatch_committed_generation(factory, domain=domain,
                 ingestion_id=ingestion_id, dry_run=dry_run, include_reports=False)
             if include_reports:
@@ -659,7 +678,8 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
                     and result is not None and not result.errors
                     and freshness.get(domain).get("mode") == freshness.LIVE
                     and os.environ.get("SOCIAL_GENERATION_HOOK_ENABLED", "false") != "false"):
-                _post_commit_generation(SessionLocal, domain=domain, ingestion_id=job_id, dry_run=dry_run)
+                _post_commit_generation(SessionLocal, domain=domain, ingestion_id=job_id, dry_run=dry_run,
+                    **({'deadline':deadline} if deadline is not None else {}))
 
             # Session closure and a coherent persisted observation are required.
             # A process exit or an expired connection/lease cannot reach this ack.

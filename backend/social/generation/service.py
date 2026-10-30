@@ -26,18 +26,30 @@ DETECTOR_VERSION = 1
 TEMPLATE_VERSION = 'factual-v1'
 
 
-def _insert(db, model, values, keys):
+def _storage_dialect(db):
     dialect = db.bind.dialect.name
     if dialect not in {'postgresql', 'sqlite'}:
         raise SocialError('GENERATION_STORAGE_UNSUPPORTED', 'Generation requires a supported transactional database.', 503)
+    return dialect
+
+
+def _insert(db, model, values, keys):
+    dialect = _storage_dialect(db)
     stmt = (pg_insert if dialect == 'postgresql' else sqlite_insert)(model).values(**values).on_conflict_do_nothing(index_elements=keys)
     db.execute(stmt)
 
 
 def controls(db, *, lock=False):
-    _insert(db, GenerationControls, dict(id=1, version=1, drafts_enabled=False, shadow_enabled=False, source_allowlist=[], targets=[]), ['id'])
+    _storage_dialect(db)
     stmt = select(GenerationControls).where(GenerationControls.id == 1)
-    return db.scalar(stmt.with_for_update().execution_options(populate_existing=True) if lock else stmt)
+    selected = stmt.with_for_update().execution_options(populate_existing=True) if lock else stmt
+    row = db.scalar(selected)
+    if row is None:
+        # Keep concurrent first initialization idempotent. Existing controls
+        # need only their current read/lock, rather than another conflict insert.
+        _insert(db, GenerationControls, dict(id=1, version=1, drafts_enabled=False, shadow_enabled=False, source_allowlist=[], targets=[]), ['id'])
+        row = db.scalar(selected)
+    return row
 
 
 def controls_dto(row):
@@ -193,9 +205,12 @@ def established_financial_source(db, observation, *, initialize=False):
         detector_version=DETECTOR_VERSION)
     current={key:getattr(observation.financial,key).isoformat() for key in ('period_start','period_end','published_on')}
     if initialize:
+        _storage_dialect(db)
+    root = db.scalar(select(SourceCursor).filter_by(**identity).execution_options(populate_existing=True))
+    if initialize and root is None:
         _insert(db, SourceCursor, dict(id=uuid4(), **identity, evidence_version=observation.evidence_version,
             sequence=0, fingerprint=canonical_hash(identity), report_state={'financial_baseline':1,**current}), list(identity))
-    root = db.scalar(select(SourceCursor).filter_by(**identity))
+        root = db.scalar(select(SourceCursor).filter_by(**identity).execution_options(populate_existing=True))
     if root is None:
         return False
     version = financial_source_marker_version(root, identity)
@@ -364,8 +379,10 @@ def _source_admission(svc, source_type):
         raise SocialError('GENERATION_DISABLED', 'Draft generation is disabled for this source.')
     # Same first delivery lock as approval/cancellation/worker permits. A new
     # source version cannot slip between source verification and authorization.
-    _insert(svc.db, SocialControls, dict(id=1, version=1, publishing_enabled=False, generation_enabled=False, auto_approve_enabled=False, auto_schedule_enabled=False, auto_publish_enabled=False, platform_controls={}, budget_controls={}), ['id'])
-    svc.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update().execution_options(populate_existing=True))
+    selected = select(SocialControls).where(SocialControls.id == 1).with_for_update().execution_options(populate_existing=True)
+    if svc.db.scalar(selected) is None:
+        _insert(svc.db, SocialControls, dict(id=1, version=1, publishing_enabled=False, generation_enabled=False, auto_approve_enabled=False, auto_schedule_enabled=False, auto_publish_enabled=False, platform_controls={}, budget_controls={}), ['id'])
+        svc.db.scalar(selected)
     return cfg
 
 

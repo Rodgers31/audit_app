@@ -98,6 +98,26 @@ def _make_handler(calls, name, *, work=0.0, raise_timeout=False, clock=None):
     return _handler
 
 
+def test_committed_hook_receives_the_original_whole_run_deadline(
+    clock, sessionmaker_factory, monkeypatch
+):
+    from seeding import freshness
+    def handler(*, session, settings, context):
+        clock.advance(80)
+        freshness.mark_live('pending_bills', detail='owned source receipt')
+        return DomainRunResult(domain='pending_bills', items_processed=1)
+    monkeypatch.setattr(seed_cli, 'REGISTRY', _FakeRegistry({'pending_bills':handler}))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    observed = []
+    monkeypatch.setattr(seed_cli, '_post_commit_generation', lambda *a, **kw:observed.append(kw))
+    assert seed_cli.run_seed_command(_args(), SeedingSettings(
+        total_timeout_seconds=100, domain_timeout_seconds=600)) == 0
+    assert len(observed) == 1
+    assert observed[0]['deadline'] == 100
+    assert clock.monotonic() == 80
+    assert _jobs_by_domain(sessionmaker_factory)['pending_bills'].status == IngestionStatus.COMPLETED
+
+
 def test_live_audit_document_does_not_erase_discovery_error_in_job(
     clock, sessionmaker_factory, monkeypatch
 ):

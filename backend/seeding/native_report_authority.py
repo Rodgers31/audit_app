@@ -268,9 +268,15 @@ def lock_native_domain(session, domain):
     if session.get_bind().dialect.name == 'postgresql':
         from sqlalchemy import text
         # Stable disjoint application namespace; no global/advisory session lock.
-        session.execute(text("SELECT set_config('lock_timeout', CASE WHEN setting::bigint=0 THEN '2000' ELSE LEAST(setting::bigint,2000)::text END, true) FROM pg_settings WHERE name='lock_timeout'"))
-        session.execute(text('SELECT pg_advisory_xact_lock(802, :domain)'),
-                        {'domain': list(DOMAINS).index(domain)+1})
+        # Materialization and the consumed configured value order the existing
+        # timeout bound before acquiring the same transaction-scoped mutex.
+        session.execute(text("""WITH bounds AS MATERIALIZED (
+            SELECT set_config('lock_timeout', CASE WHEN setting::bigint=0 THEN '2000'
+                ELSE LEAST(setting::bigint,2000)::text END, true) AS configured
+            FROM pg_settings WHERE name='lock_timeout')
+            SELECT pg_advisory_xact_lock(802, :domain)
+            FROM bounds WHERE configured IS NOT NULL"""),
+            {'domain': list(DOMAINS).index(domain)+1}).one()
 
 
 def persist_native_report(session, source, authority, *, context, domain):
