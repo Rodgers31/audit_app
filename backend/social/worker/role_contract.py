@@ -33,7 +33,7 @@ REPORT_VIEW_SHA256 = {
 # PostgreSQL replay reproduces this exact body; joins, predicates and locks are
 # unchanged. Keep this one locked-view variant explicit, never normalize SQL.
 REPORT_LOCKED_VIEW_HISTORICAL_SHA256 = 'a10869d91f9d43eb6713a33089592336a204650b25752c8c26065ec610c18de0'
-NATIVE_VIEW_SHA256 = {'social_native_source_authority': '921b807c9637ae9541cf63e74313a4816875afef3de92d42cf6fc25226b09f4a', 'social_native_source_authority_snapshot': 'f219c56c5f21622cfae0fe875e2020770859c90f2d1978625d21a40781aa6ba6'}
+NATIVE_VIEW_SHA256 = {'social_native_source_authority': '95c130e2106639dcaa3519951bfa9baa49b52c7fdd677b0dbfe1f0e744b3975a', 'social_native_source_authority_snapshot': '7549c1de87fb44bf1f00b1a9b0ca39b2859d8b1e9a3d898f9203ab4a496faf1e'}
 READ_VIEWS = frozenset({'social_report_source_authority'})
 OPTIONAL_READ_VIEWS = frozenset({'social_native_source_authority'})
 LOCK_TABLES = frozenset({'social_controls', 'social_publications', 'social_credentials', 'social_worker_runtime_ownership'})

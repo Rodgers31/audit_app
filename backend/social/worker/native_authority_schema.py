@@ -31,13 +31,25 @@ def _branch(domain, *, financial, locked):
     references = f"jsonb_path_query_array({entries}, '$[*].source_evidence[*].receipt.extraction_id')" if financial else "'[]'::jsonb"
     report_identity = _id(binding+"->>'extraction_id'")
     job_identity = _id(binding+"->>'ingestion_id'")
+    series_dependency = ",j.metadata->'native_report_series'" if domain == 'audits' else ''
+    selected_head = ''
+    if domain == 'audits':
+        scope = "r.value#>>'{extracted_json,response_receipt,observations,0,scope_key}'"
+        head = f"j.metadata->'native_report_series'->({scope})"
+        selected_head = f'''
+        AND jsonb_typeof(j.metadata->'native_report_series')='object'
+        AND jsonb_typeof(r.value#>'{{extracted_json,response_receipt,observations,0,scope_key}}')='string'
+        AND ({scope}) ~ '^[a-f0-9]{{32}}$'
+        AND jsonb_typeof({head})='number'
+        AND ({head}#>>'{{}}')=r.id::text
+        '''
     return f'''
       SELECT '{kind}'::text AS source_kind,'{domain}'::text AS native_domain,
         b.id AS record_id,j.id AS ingestion_id,
         encode(sha256(convert_to(jsonb_build_array('native-worker-witness-v1','{kind}','{domain}',
           b.value,d.value,c.value,{entity},{fiscal},r.value,
           jsonb_build_array(j.id,j.domain,j.status,j.dry_run,j.started_at,j.finished_at,j.errors,
-            j.metadata->'source_mode',j.metadata->'native_report_records'),receipts.items,origins.items)::text,'UTF8')),'hex') AS authority_fingerprint
+            j.metadata->'source_mode',j.metadata->'native_report_records'{series_dependency}),receipts.items,origins.items)::text,'UTF8')),'hex') AS authority_fingerprint
       FROM {business}
       JOIN LATERAL (SELECT s.id,s.country_id,to_jsonb(s) AS value FROM source_documents s
         WHERE s.id=b.source_document_id{source_lock}) d ON true
@@ -65,6 +77,7 @@ def _branch(domain, *, financial, locked):
       ) origins ON true
       WHERE r.value->>'extractor'='native-report-authority-v1'
         {'AND b.id=r.id' if not financial else ''}
+        {selected_head}
         AND NOT EXISTS (SELECT 1 FROM ingestion_jobs newer WHERE newer.domain=j.domain AND newer.id>j.id
           AND newer.dry_run=false AND newer.status::text IN ('COMPLETED','COMPLETED_WITH_ERRORS')
           AND newer.metadata->>'source_mode' IN ('live','partial')

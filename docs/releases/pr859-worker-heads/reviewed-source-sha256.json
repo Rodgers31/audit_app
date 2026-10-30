@@ -1,0 +1,6 @@
+{
+  "backend/social/worker/native_authority_schema.py": "5323f304c16bf60f69764bbc1b7b5004867d80bbad0a440e055e06d71b6db119",
+  "backend/social/worker/role_contract.py": "81c67876b4897d95bcdc9394238142ff848281a4583c1ab7cdac236c41d5a245",
+  "backend/tests/social/test_audit_worker_series.py": "717a5bd9ddd1316ed1930bf0aa95ea15b22ff974ad1e39eb531d364edf39d164",
+  "docs/releases/pr859-worker-heads/upgrade_native_views.py.bytes": "4c401a7d403ce4ebaccd6a85ad5d8990b45cafbb100d11f5fe0a278511916253"
+}
