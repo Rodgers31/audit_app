@@ -245,33 +245,66 @@ def render(observation):
     return '\n'.join(lines)
 
 
-def consume_observation(svc: SocialService, observation, *, backfill=False):
-    """Internal typed post-commit seam; no untrusted HTTP fact submission.
-
-    The ETL adapter must read committed records using the caller's fresh session.
-    A failed caller transaction rolls cursor, event, draft and audit back together.
-    """
+def _eligible_observation(svc, observation):
     observation = SourceObservation.model_validate(observation.model_dump(mode='json') if isinstance(observation, SourceObservation) else observation)
-    if type(backfill) is not bool:
-        raise SocialError('INVALID_REQUEST', 'Backfill must be explicit.', 422)
     if not observation.committed or observation.fixture or observation.quarantined or not observation.publishable:
         raise SocialError('SOURCE_NOT_ELIGIBLE', 'Only committed, publishable, nonfixture evidence can generate drafts.', 422)
     now = svc.now()
     if any(utc(f.verified_at) > now or utc(f.retrieved_at) > now for f in evidence_items(observation)):
         raise SocialError('SOURCE_NOT_ELIGIBLE', 'Future evidence timestamps cannot certify a draft.', 422)
+    return observation, now
+
+
+def _source_admission(svc, source_type):
     cfg = controls(svc.db, lock=True)
-    if not cfg.drafts_enabled or observation.source_type not in cfg.source_allowlist:
+    if not cfg.drafts_enabled or source_type not in cfg.source_allowlist:
         raise SocialError('GENERATION_DISABLED', 'Draft generation is disabled for this source.')
     # Same first delivery lock as approval/cancellation/worker permits. A new
     # source version cannot slip between source verification and authorization.
     _insert(svc.db, SocialControls, dict(id=1, version=1, publishing_enabled=False, generation_enabled=False, auto_approve_enabled=False, auto_schedule_enabled=False, auto_publish_enabled=False, platform_controls={}, budget_controls={}), ['id'])
     svc.db.scalar(select(SocialControls).where(SocialControls.id == 1).with_for_update().execution_options(populate_existing=True))
+    return cfg
+
+
+def consume_committed_native_financial(svc: SocialService, *, record_id, ingestion_id, domain):
+    """Load current native facts under admission/source locks exactly once.
+
+    This accepts only source identities, never a supplied observation or a flag
+    that bypasses verification. The current reader checks the committed job,
+    publisher authority, measure qualification and exact lineage in this same
+    transaction. Each record still commits independently.
+    """
+    from importlib import import_module
+    module = import_module('backend.seeding.native_financial_observations' if __package__.startswith('backend.') else 'seeding.native_financial_observations')
+    if domain not in module.MODELS:
+        raise SocialError('SOURCE_NOT_ELIGIBLE', 'A qualified native financial source is required.', 422)
+    cfg = _source_admission(svc, module.DOMAINS[domain][0])
+    current = module.current_native_financial(svc.db, record_id, ingestion_id, domain=domain, lock=True)
+    observation, now = _eligible_observation(svc, current)
+    if (observation.source_type != module.DOMAINS[domain][0]
+            or observation.ingestion_id != str(ingestion_id) or observation.evidence_version != ingestion_id
+            or observation.financial is None or observation.financial.native_domain != domain
+            or observation.financial.record_id != record_id):
+        raise SocialError('SOURCE_REVIEW_REQUIRED', 'Current financial evidence must match the requested source identity.', 422)
+    return _consume_current_observation(svc, observation, cfg, now, backfill=False)
+
+
+def consume_observation(svc: SocialService, observation, *, backfill=False):
+    """Verify a supplied typed observation before atomically consuming it."""
+    observation, now = _eligible_observation(svc, observation)
+    if type(backfill) is not bool:
+        raise SocialError('INVALID_REQUEST', 'Backfill must be explicit.', 422)
+    cfg = _source_admission(svc, observation.source_type)
     if observation.report is not None and getattr(observation.report, 'native_domain', None) is not None:
         from .authority import verify_report_authority
         verify_report_authority(svc.db, observation.model_dump(mode='json'))
     if observation.financial is not None:
         from .authority import verify_financial_authority
         verify_financial_authority(svc.db, observation.model_dump(mode='json'))
+    return _consume_current_observation(svc, observation, cfg, now, backfill=backfill)
+
+
+def _consume_current_observation(svc, observation, cfg, now, *, backfill):
     render(observation)  # Reject unresolved copy even when business values match.
     fingerprint = semantic_fingerprint(observation)
     release = report_release_state(observation)

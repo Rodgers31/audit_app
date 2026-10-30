@@ -1,5 +1,6 @@
 """Actual API -> dispatch -> native CLI -> Treasury parser/writer on PostgreSQL."""
 from contextlib import nullcontext
+import os
 from uuid import UUID, uuid4
 
 import pytest
@@ -139,8 +140,11 @@ def test_native_cob_commit_precedes_generation_and_preserves_outcomes(pg, monkey
     monkeypatch.setattr(generation_dispatch, "_invoke", hook)
     if mode == "timed_out":
         from seeding import cli
+        from seeding.generation_limits import generation_envelope_seconds
+        envelope = generation_envelope_seconds('counties_budget',
+            include_reports=os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false')
         original = cli._domain_timeout
-        monkeypatch.setattr(cli, "_domain_timeout", lambda seconds: original(1 if seconds == 30 else seconds))
+        monkeypatch.setattr(cli, "_domain_timeout", lambda seconds: original(1 if seconds == envelope else seconds))
     with factory() as db:
         worker = db.get(EtlDispatchWorker, 1)
         generation = worker.generation if worker else None

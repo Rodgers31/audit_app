@@ -13,12 +13,14 @@ from sqlalchemy.exc import DBAPIError
 
 from ..service import SocialError, SocialService
 from .models import GenerationControls
-from .service import consume_observation
+from .service import consume_observation, consume_committed_native_financial
 
 if __package__.startswith('backend.'):
     from backend.services.generation_outcome import COUNTERS, REFUSAL_REASONS
+    from backend.seeding.generation_limits import generation_phase_seconds
 else:
     from services.generation_outcome import COUNTERS, REFUSAL_REASONS
+    from seeding.generation_limits import generation_phase_seconds
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +66,14 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
         from seeding.generation_capabilities import capability
     selected = capability(domain)
     read = getattr(adapter, selected.report_reader if reports else selected.financial_reader)
-    # Reads occur before each separate mutation transaction, so one pooled
-    # connection is sufficient. ETL's completed transaction is never borrowed.
+    current_native_financial = not reports and domain != 'counties_budget'
+    # Legacy observations use a separate snapshot; native financial evidence is
+    # loaded under mutation locks. Neither borrows ETL's completed transaction.
     for offset in range(0, len(record_ids), 25):
         for record_id in record_ids[offset:offset + 25]:
             _remaining_ms(deadline)
             try:
-                observation = read(factory, record_id=record_id, ingestion_id=ingestion_id)
+                observation = None if current_native_financial else read(factory, record_id=record_id, ingestion_id=ingestion_id)
             except adapter.SourceObservationUnavailable as error:
                 code = getattr(error, 'code', 'source_evidence_ineligible')
                 if getattr(error, 'operational', False):
@@ -94,17 +97,22 @@ def _consume_records(factory, record_ids, ingestion_id, deadline, counts, adapte
                     svc.request_id = f'etl-{"report" if reports else "generation"}:{ingestion_id}:{record_id}'
                     with db.begin():
                         _transaction_limits(db, deadline)
-                        result = consume_observation(svc, observation)
+                        result = (consume_committed_native_financial(svc, record_id=record_id,
+                            ingestion_id=ingestion_id, domain=domain) if current_native_financial
+                            else consume_observation(svc, observation))
                         _remaining_ms(deadline)
                         phase = 'commit'
             except GenerationDeadlineExceeded:
                 if phase == 'body':
                     progress['uncertain'] = False
                 raise
-            except (SocialError, ValidationError) as error:
+            except (SocialError, ValidationError, adapter.SourceObservationUnavailable) as error:
                 if phase != 'body':
                     raise
-                code = error.code.lower() if isinstance(error, SocialError) else 'source_evidence_ineligible'
+                code = error.code.lower() if isinstance(error, (SocialError, adapter.SourceObservationUnavailable)) else 'source_evidence_ineligible'
+                if isinstance(error, adapter.SourceObservationUnavailable) and error.operational:
+                    progress['uncertain'] = False
+                    return _result('failed', code.upper(), **counts)
                 if code not in REFUSAL_REASONS:
                     raise
                 # The context has rolled this record's cursor/event/draft back.
@@ -173,7 +181,7 @@ def _generate_committed(factory, *, record_ids, ingestion_id, native_registratio
         return _result('unavailable', 'UNSUPPORTED_SOURCE')
     source_type = {'national_budget':'cob','revenue_by_source':'kra','audits':'oag','pending_bills':'cob','counties_budget':'cob'}[domain]
     counts = dict(processed=0, drafts_created=0, baselines=0, unchanged=0, refused=0, refusal_reasons={})
-    deadline = time.monotonic() + 30
+    deadline = time.monotonic() + generation_phase_seconds(domain, reports=reports)
     progress = {'uncertain': False}
     def failure(reason):
         if not progress['uncertain']:
