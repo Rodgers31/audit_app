@@ -2,6 +2,7 @@
 
 import GeneratedEvidence from './GeneratedEvidence';
 import { useAuth } from '@/lib/auth/AuthProvider';
+import { consumeApprovedTraversal, useUnsavedHistoryGuard } from '@/lib/navigation/historyGuard';
 import useComposerErrors from './useComposerErrors';
 import SocialArchiveControls from './SocialArchiveControls';
 
@@ -42,6 +43,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const [input, setInput] = useState(() => draftInput(initialPost));
   const [hashtagText, setHashtagText] = useState(initialPost?.document.master.hashtags.join(' ') ?? '');
   const [dirty, setDirty] = useState(false);
+  const confirmNavigationClick = useUnsavedHistoryGuard(dirty, input);
   const [activeAccount, setActiveAccount] = useState(initialPost?.document.targets[0]?.account_id ?? '');
   const [validation, setValidation] = useState<{ version: number; value: SocialValidation }>();
   const [error, setError] = useState<SocialApiError>();
@@ -119,15 +121,18 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
 
   useEffect(() => {
     if (!dirty) return;
-    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    const beforeUnload = (event: BeforeUnloadEvent) => { if (consumeApprovedTraversal()) return; event.preventDefault(); event.returnValue = ''; };
     const linkGuard = (event: MouseEvent) => {
       const link = event.target instanceof Element ? event.target.closest('a') : null;
-      if (!link || link.target === '_blank' || link.hasAttribute('download') || !link.href || event.defaultPrevented) return;
-      if (new URL(link.href).pathname !== window.location.pathname && !window.confirm('This draft has unsaved edits. Leave without saving?')) event.preventDefault();
+      if (!link || link.target === '_blank' || link.hasAttribute('download') || !link.href || event.defaultPrevented
+          || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (new URL(link.href).pathname !== window.location.pathname) {
+        if (!confirmNavigationClick(event)) event.preventDefault();
+      }
     };
     window.addEventListener('beforeunload', beforeUnload); document.addEventListener('click', linkGuard, true);
     return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', linkGuard, true); };
-  }, [dirty]);
+  }, [dirty, confirmNavigationClick]);
 
   function edit(next: SocialDraftInput) { setInput(previous => clearChangedTikTokConfirmations(previous, next)); setDirty(true); setValidation(undefined); setAcknowledged([]); setAttested(false); setDiscard(false); setError(undefined); setMessage(''); }
   function changeTarget(next: DocumentTarget) { edit({ ...input, document: { ...input.document, targets: input.document.targets.map(t => t.account_id === next.account_id ? next : t) } }); }

@@ -32,5 +32,5 @@ await mkdir(resolve(root,'app/reports/[domain]/[documentId]'),{recursive:true});
 await writeFile(resolve(root,'app/reports/[domain]/[documentId]/page.tsx'),`export {default} from ${JSON.stringify(resolve('app/reports/[domain]/[documentId]/page'))};`);
 await mkdir(resolve(root,'app/api/v1/reports/[...path]'),{recursive:true});
 await writeFile(resolve(root,'app/api/v1/reports/[...path]/route.ts'),`export {GET} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/publicReports'))};`);
-const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','0.0.0.0','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
+const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','127.0.0.1','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
 process.on('SIGTERM',()=>server.kill('SIGTERM'));process.on('SIGINT',()=>server.kill('SIGTERM'));

@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { shouldUseBackNavigation } from './trail';
+import { runHistoryTraversal } from './historyGuard';
 
 interface SmartBackLinkProps {
   href: string;
@@ -40,10 +41,10 @@ export default function SmartBackLink({
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>): void => {
     onClick?.(e);
-    if (e.defaultPrevented) return;
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     if (shouldUseBackNavigation(href)) {
       e.preventDefault();
-      router.back();
+      runHistoryTraversal(e.nativeEvent, () => router.back());
     }
   };
 

@@ -9,8 +9,11 @@
 'use client';
 
 import { useTrackNavTrail } from './trail';
+import { useEffect } from 'react';
+import { retainHistoryTracking } from './historyGuard';
 
 export default function NavTrailTracker(): null {
+  useEffect(() => retainHistoryTracking(), []);
   useTrackNavTrail();
   return null;
 }

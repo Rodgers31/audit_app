@@ -8,6 +8,7 @@
 'use client';
 
 import styles from '@/components/admin/admin.module.css';
+import AdminNav from '@/components/admin/AdminNav';
 import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { AdminGuard } from '@/lib/auth/admin';
@@ -144,6 +145,7 @@ function timeAgo(isoString: string | null | undefined): string {
 export default function StatusPage() {
   return (
     <AdminGuard>
+      <AdminNav />
       <StatusDashboard />
     </AdminGuard>
   );
