@@ -1,5 +1,5 @@
 'use client';
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import MediaPicker from '@/components/admin/social/media/MediaPicker';
 
 export default function MediaLibraryPage() {

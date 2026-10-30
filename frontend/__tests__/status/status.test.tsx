@@ -5,6 +5,7 @@ import api from '@/lib/api/axios';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ AdminGuard: ({ children }: any) => children }));
+jest.mock('next/navigation', () => ({ usePathname: () => '/status', useRouter: () => ({ back: jest.fn() }) }));
 jest.mock('@/components/layout/PageShell', () => ({ __esModule: true, default: ({ children }: any) => children }));
 
 const snapshot = (source: object = {}) => ({

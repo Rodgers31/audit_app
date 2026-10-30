@@ -1,4 +1,4 @@
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import PlatformAccounts from '@/components/admin/social/connections/PlatformAccounts';
 import MetaAccounts from '@/components/admin/social/connections/MetaAccounts';
 export default function SocialAccountsPage() {

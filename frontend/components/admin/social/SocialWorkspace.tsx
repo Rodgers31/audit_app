@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialComposer from './SocialComposer';
-import SocialDeliveryHistory from './SocialDeliveryHistory';
 import { SocialErrorBanner } from './SocialNotice';
 import { httpsUrl, platformLabels } from './socialDocument';
 import styles from './social.module.css';
+import { queueDefaults, queueQuery, readQueueSelection, type QueueSelection, type QueueView } from './socialQueue';
 
-type View = 'drafts' | 'pending' | 'scheduled' | 'history' | 'needs_attention' | 'archived';
-const viewLabels: Record<View, string> = { drafts: 'Drafts', pending: 'Pending review', scheduled: 'Scheduled', history: 'History', needs_attention: 'Needs attention', archived: 'Archived' };
+type View = QueueView;
+const viewLabels: Record<View, string> = { pending: 'Ready for review', drafts: 'Drafts in progress', needs_attention: 'Needs attention', scheduled: 'Scheduled', history: 'Delivery history', archived: 'Archived' };
+const contentLabels: Record<string, string> = { debt_update: 'Financial update', budget_update: 'Budget update', new_report: 'New report', dataset_availability: 'Report availability', audit_finding: 'Audit finding', correction: 'Correction' };
 export function SocialSystemStrip({ status, error, refresh }: { status?: SocialSystemStatus; error?: unknown; refresh: () => void }) {
   const [editingControls, setEditingControls] = useState(false);
   const [reason, setReason] = useState('');
@@ -43,10 +44,10 @@ export function SocialSystemStrip({ status, error, refresh }: { status?: SocialS
     } catch { /* Preserve the typed error and exact idempotent command. */ }
   }
   return <div className={styles.fields}>
-    <div className={styles.status} aria-label='Publishing system status'><strong>{status ? status.publishing_enabled ? 'Publishing enabled' : 'Publishing paused' : 'Publishing status unavailable'}</strong><span>{fresh && health ? `Worker: ${health}` : heartbeat ? 'Worker heartbeat stale or unavailable' : 'Worker health unavailable'}</span><button className={styles.button} type='button' onClick={refresh}>Refresh status</button><button type='button' className={styles.button} disabled={!status || controls.isPending} aria-expanded={editingControls} onClick={() => setEditingControls(!editingControls)}>{status?.publishing_enabled ? 'Pause publishing' : 'Publishing controls'}</button></div>
+    <div className={styles.status} aria-label='Publishing system status'><strong>{status ? status.publishing_enabled ? 'Publishing enabled' : 'Publishing paused' : 'Publishing status unavailable'}</strong><span className={styles.muted}>{status?.publishing_enabled === false ? 'You can edit and review drafts. New deliveries are paused; requests already in flight may complete.' : 'Every delivery requires its own approval and account checks.'}</span><details className={styles.systemDetails}><summary>System details</summary><div><span>{fresh && health ? `Worker: ${health}` : heartbeat ? 'Worker heartbeat stale or unavailable' : 'Worker health unavailable'}</span><button className={styles.button} type='button' onClick={refresh}>Refresh status</button><button type='button' className={styles.button} disabled={!status || controls.isPending} aria-expanded={editingControls} onClick={() => setEditingControls(!editingControls)}>{status?.publishing_enabled ? 'Pause publishing' : 'Publishing controls'}</button></div></details></div>
     {editingControls && status && <div className={styles.schedule}><p>{status.publishing_enabled ? 'Pausing stops new dispatches. Already accepted or in-flight requests may complete.' : 'Enabling permits approved deliveries when backend account and adapter gates pass. Automatic generation and approval remain off.'}</p><label>Reason for control change<input value={reason} disabled={controls.isPending} onChange={e => setReason(e.target.value)} /></label><button type='button' className={styles.button} disabled={controls.isPending || !reason.trim()} onClick={changeControls}>{status.publishing_enabled ? 'Confirm pause' : 'Enable publishing'}</button></div>}
     {controls.error && <SocialErrorBanner error={controls.error} context='controls' />}
-    {status && <p className={styles.muted}>Available adapters: {status.adapters_available.join(', ') || 'none'}. {Object.keys(status.queue_counts).length ? Object.entries(status.queue_counts).map(([state, count]) => `${state.replaceAll('_', ' ')}: ${count}`).join(' · ') : 'No queued destinations reported.'} Automatic publishing is off.</p>}
+    {editingControls && status && <p className={styles.muted}>Available adapters: {status.adapters_available.join(', ') || 'none'}. {Object.keys(status.queue_counts).length ? Object.entries(status.queue_counts).map(([state, count]) => `${state.replaceAll('_', ' ')}: ${count}`).join(' · ') : 'No queued destinations reported.'} Automatic publishing is off.</p>}
     {!!error && <SocialErrorBanner error={error} onRetry={refresh} />}
   </div>;
 }
@@ -68,41 +69,56 @@ function HistoryLinks({ post }: { post: SocialSummary }) {
   })}</>;
 }
 export default function SocialWorkspace() {
-  const router = useRouter();
-  const [view, setView] = useState<View>('pending');
-  const [origin, setOrigin] = useState(''), [category, setCategory] = useState('');
-  const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string>();
-  const [unsaved, setUnsaved] = useState(false);
-  const list = useSocialPosts(page, view === 'archived' ? 'archived' : view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, true, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all', origin || undefined, category || undefined);
-  const detail = useSocialPost(selected, view !== 'history');
+  const [selection, setSelection] = useState<QueueSelection>(queueDefaults);
+  const [queueReady, setQueueReady] = useState(false);
+  const {view, origin, category, page} = selection;
+  useEffect(() => {
+    const restore = () => { setSelection(readQueueSelection(window.location.search)); setQueueReady(true); };
+    restore(); window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, []);
+  function selectQueue(next: QueueSelection) {
+    setSelection(next); const query = queueQuery(next);
+    window.history.replaceState(window.history.state, '', '/admin/social' + (query ? '?' + query : ''));
+  }
+  const query = queueQuery(selection);
+  const draftHref = (id: string) => `/admin/social/${id}${query ? '?queue=' + encodeURIComponent(query) : ''}`;
+  const list = useSocialPosts(page, view === 'archived' ? 'archived' : view === 'drafts' ? 'draft' : view === 'pending' ? 'pending_review' : undefined, queueReady, view === 'scheduled' || view === 'history' || view === 'needs_attention' ? view : 'all', origin || undefined, category || undefined);
   const accounts = useSocialAccounts();
   const system = useSocialSystem();
   const posts = list.data?.posts;
-  const historicalPost = view === 'history' ? posts?.find(p => p.id === selected) : undefined;
-  function mayLeave() { return !unsaved || window.confirm('This draft has unsaved edits. Leave without saving?'); }
-  function changeView(next: View) { if (next !== view && mayLeave()) { setView(next); setPage(1); setSelected(undefined); setUnsaved(false); } }
+  function changeView(next: View) { selectQueue({...selection, view:next, page:1}); }
   return <div className={styles.workspace}>
-    <div className={styles.toolbar}><p><strong>Manual approval</strong> is the default. Review the evidence and every selected account.</p><Link href='/admin/social/new' className={`${styles.button} ${styles.primary}`}>Create manual post</Link></div>
-    <Link href='/admin/social/studio' className={styles.button}>Graphics, calendar and analytics</Link>
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
-    <nav className={styles.tabs} aria-label='Social sections'>{(Object.keys(viewLabels) as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}<Link href='/admin/social/automation' className={styles.button}>Drafts & shadow rules</Link><Link href='/admin/social/media' className={styles.button}>Media library</Link><Link href='/admin/social/accounts' className={styles.button}>Accounts</Link><Link href='/admin/social/privacy' className={styles.button}>Privacy review</Link></nav>
+    <div className={styles.queueHeading}>
+      <div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'scheduled' ? 'scheduled ' : view === 'history' ? 'history ' : ''}${list.data.total === 1 ? 'post' : 'posts'}${view === 'needs_attention' ? ' needing attention' : view === 'pending' ? ' awaiting review' : ''}` : 'Loading saved drafts…'}</p><p className={styles.muted}>Open a draft, read the post, then check its evidence.</p></div>
+      <Link href='/admin/social/new' className={styles.button}>Write a post</Link>
+    </div>
+    <div className={styles.queueControls}>
+      <nav className={styles.tabs} aria-label='Review queues'>{(['pending', 'drafts', 'needs_attention'] as View[]).map(key => <button type='button' key={key} aria-pressed={view === key} onClick={() => changeView(key)}>{viewLabels[key]}</button>)}</nav>
+      <details className={styles.filters} open={view !== 'pending' && view !== 'drafts' && view !== 'needs_attention' || !!origin || !!category}><summary>Filter & history</summary><div className={styles.actions}>
+        <label>View<select value={view} onChange={e => changeView(e.target.value as View)}>{(Object.keys(viewLabels) as View[]).map(key => <option value={key} key={key}>{viewLabels[key]}</option>)}</select></label>
+        <label>Origin<select value={origin} onChange={e => {selectQueue({...selection,origin:e.target.value,page:1});}}><option value=''>Generated & manual</option><option value='manual'>Written manually</option><option value='generated'>Generated from data</option></select></label>
+        <label>Content type<select value={category} onChange={e => {selectQueue({...selection,category:e.target.value,page:1});}}><option value=''>All topics</option>{Object.entries(contentLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+      </div></details>
+      <button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button>
+    </div>
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
-      <div className={styles.toolbar}><label>Origin<select value={origin} onChange={e => { if (mayLeave()) { setOrigin(e.target.value); setPage(1); setSelected(undefined); setUnsaved(false); } }}><option value=''>All origins</option><option value='manual'>Manual</option><option value='generated'>Generated</option></select></label><label>Content type<select value={category} onChange={e => { if (mayLeave()) { setCategory(e.target.value); setPage(1); setSelected(undefined); setUnsaved(false); } }}><option value=''>All content types</option>{['dataset_availability', 'new_report', 'debt_update', 'budget_update', 'audit_finding', 'correction'].map(c => <option key={c} value={c}>{c.replaceAll('_', ' ')}</option>)}</select></label></div>
-      <div className={styles.toolbar}><div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'drafts' ? 'drafts' : view === 'pending' ? 'posts awaiting review' : view === 'needs_attention' ? 'posts needing attention' : `${view} posts`}` : 'Loading compact post summaries…'}</p>{(view === 'scheduled' || view === 'history' || view === 'needs_attention') && <p className={styles.muted}>Global delivery results. Mixed posts can appear in several views; each account keeps its independent result.</p>}</div><button className={styles.button} type='button' disabled={list.isFetching} onClick={() => list.refetch()}>Refresh list</button></div>
-      {list.error && <SocialErrorBanner error={list.error} onRetry={() => list.refetch()} />}
-      {list.isPending && <p role='status'>Loading posts…</p>}
-      <div className={styles.reviewGrid}><aside className={styles.queue} aria-label='Post queue'>
-        {posts?.length === 0 && <div className={styles.empty}><p>No matching posts.</p><p>Create a manual draft or choose another view.</p></div>}
-        {posts?.map(p => <div key={p.id} className={styles.fields}><button className={styles.draft} type='button' aria-pressed={selected === p.id} onClick={() => { if (p.id !== selected && mayLeave()) { setSelected(p.id); setUnsaved(false); } }}><span className={styles.tag}>{p.origin_type} · {p.content_type}</span><strong>{p.title}</strong><span className={styles.muted}>{p.editorial_state.replaceAll('_', ' ')} · {p.delivery_status.replaceAll('_', ' ')}</span><DeliverySummary post={p} accounts={accounts.data ?? []} historical={view === 'history'} attention={view === 'needs_attention'} /></button>{view === 'history' && <HistoryLinks post={p} />}</div>)}
-        {list.data && <div className={styles.pagination}><button type='button' className={styles.button} disabled={page === 1 || list.isFetching} onClick={() => { if (mayLeave()) { setPage(page - 1); setSelected(undefined); setUnsaved(false); } }}>Previous page</button><span className={styles.muted}>Page {list.data.page}</span><button type='button' className={styles.button} disabled={!list.data.has_more || list.isFetching} onClick={() => { if (mayLeave()) { setPage(page + 1); setSelected(undefined); setUnsaved(false); } }}>Next page</button></div>}
-      </aside><div className={styles.fields}>
-        {view !== 'history' && detail.error && <SocialErrorBanner error={detail.error} onRetry={() => detail.refetch()} />}
-        {selected && view !== 'history' && detail.isPending && <p className={styles.empty} role='status'>Loading the selected revision…</p>}
-        {selected && view !== 'history' && detail.data && <><Link href={`/admin/social/${selected}`}>Open this post in the full composer</Link><SocialComposer key={selected} initialPost={detail.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={p => router.push(`/admin/social/${p.id}`)} onDirtyChange={setUnsaved} /></>}
-        {historicalPost && <><Link href={`/admin/social/${historicalPost.id}`}>Open this post in the full composer</Link><SocialDeliveryHistory key={historicalPost.id} postId={historicalPost.id} preview={historicalPost.historical_targets} count={historicalPost.historical_target_count} accounts={accounts.data ?? []} /></>}
-        {!selected && <div className={styles.empty}><h3>Queue and preview</h3><p>Select a post to review its sources, account versions, schedule, and delivery results.</p></div>}
-      </div></div>
+    {list.error && <SocialErrorBanner error={list.error} onRetry={() => list.refetch()} />}
+    {list.isPending && <div className={styles.empty} role='status'>Loading posts and review states…</div>}
+    {posts?.length === 0 && <div className={styles.empty}><h3>{view === 'pending' ? 'No drafts awaiting review' : 'No matching posts'}</h3><p>{view === 'pending' ? 'New eligible changes appear here after draft generation succeeds. A successful data refresh alone does not mean a draft was created.' : 'Choose another queue or clear the filters to see more posts.'}</p><Link href='/admin/ingestion'>Check data updates & draft outcomes</Link><Link href='/admin/social/automation'>Inspect draft automation</Link></div>}
+    <section className={styles.draftList} aria-label='Post queue'>
+      {posts?.map(p => <article key={p.id} className={styles.queueCard}>
+        <div className={styles.fields}><div className={styles.actions}><span className={styles.badge}>{p.origin_type === 'generated' ? 'Generated from data' : 'Written manually'}</span><span className={styles.muted}>{contentLabels[p.content_type] ?? p.content_type.replaceAll('_', ' ')}</span></div>
+          <h3><Link href={draftHref(p.id)}>{p.title}</Link></h3>
+          <p className={styles.muted}>{p.editorial_state === 'pending_review' ? 'Human review required' : p.editorial_state.replaceAll('_',' ')}{p.delivery_status !== 'not_requested' && p.delivery_status !== 'draft' ? ` · ${p.delivery_status.replaceAll('_',' ')}` : ''}</p>
+          {(view === 'history' || view === 'needs_attention' || view === 'scheduled') && <DeliverySummary post={p} accounts={accounts.data ?? []} historical={view === 'history'} attention={view === 'needs_attention'} />}
+          {view === 'history' && <HistoryLinks post={p} />}
+        </div>
+        <Link href={draftHref(p.id)} className={`${styles.button} ${styles.primary}`} aria-label={`${view === 'history' ? 'View results' : 'Open draft'}: ${p.title}`}>{view === 'history' ? 'View results' : 'Open draft'} <span aria-hidden='true'>→</span></Link>
+      </article>)}
+    </section>
+    {list.data && list.data.total > 0 && <div className={styles.pagination}><button type='button' className={styles.button} disabled={page === 1 || list.isFetching} onClick={() => selectQueue({...selection,page:page-1})}>Previous page</button><span className={styles.muted}>Page {list.data.page}</span><button type='button' className={styles.button} disabled={!list.data.has_more || list.isFetching} onClick={() => selectQueue({...selection,page:page+1})}>Next page</button></div>}
   </div>;
 }
 

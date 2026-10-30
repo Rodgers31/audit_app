@@ -61,7 +61,7 @@ test('editing the draft preserves a same-version schedule edit while disabling s
   render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={system} /></QueryClientProvider>);
   fireEvent.change(screen.getByLabelText('New local publish time'), { target: { value: '2027-01-08T10:00' } });
   fireEvent.change(screen.getByLabelText('Schedule timezone'), { target: { value: 'Europe/London' } });
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Edited draft' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Edited draft' } });
   expect(screen.getByLabelText('New local publish time')).toHaveValue('2027-01-08T10:00');
   expect(screen.getByLabelText('Schedule timezone')).toHaveValue('Europe/London');
   expect(screen.getByRole('button', { name: 'Confirm reschedule' })).toBeDisabled();
@@ -74,8 +74,8 @@ test.each(['failed', 'blocked', 'reconciling', 'outcome_unknown'] as const)('att
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } }));
   const { container } = render(<QueryClientProvider client={client()}><SocialWorkspace /></QueryClientProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
-  await screen.findByText('1 posts needing attention');
-  const row = within(screen.getByRole('complementary', { name: 'Post queue' }));
+  await screen.findByText('1 post needing attention');
+  const row = within(screen.getByRole('region', { name: 'Post queue' }));
   expect(row.getByText(new RegExp(`Current Facebook.*${state.replaceAll('_', ' ')}`))).toBeInTheDocument();
   expect(row.getByText(/Historical Facebook.*failed/)).toBeInTheDocument();
   expect(row.queryByText(/Historical Facebook.*cancelled/)).not.toBeInTheDocument();
@@ -94,7 +94,7 @@ test('attention prefers the current result and deduplicates its historical proje
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } }));
   render(<QueryClientProvider client={client()}><SocialWorkspace /></QueryClientProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
-  await screen.findByText('1 posts needing attention');
+  await screen.findByText('1 post needing attention');
   expect(screen.getByText(/Current Facebook.*blocked/)).toBeInTheDocument();
   expect(screen.queryByText(/Historical Facebook.*failed/)).not.toBeInTheDocument();
 });
@@ -106,7 +106,7 @@ test('attention keeps all unresolved past states when the current revision has n
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } }));
   render(<QueryClientProvider client={client()}><SocialWorkspace /></QueryClientProvider>);
   fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }));
-  await screen.findByText('1 posts needing attention');
+  await screen.findByText('1 post needing attention');
   for (const state of ['failed', 'blocked', 'reconciling', 'outcome unknown']) expect(screen.getByText(new RegExp(`Historical Facebook.*${state}`))).toBeInTheDocument();
   expect(screen.queryByText(/Current Facebook/)).not.toBeInTheDocument();
 });
@@ -130,3 +130,5 @@ test('schedule and historical timestamps accept exact valid calendar fields with
   expect(decoded.historical_targets[0].approved_at).toBe(instant);
   expect(() => decodeSummary({ ...p, historical_targets: [{ ...p.historical_targets[0], published_at: '2027-02-30T10:00:00Z' }] })).toThrow(SocialApiError);
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

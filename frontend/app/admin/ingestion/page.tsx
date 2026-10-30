@@ -7,7 +7,7 @@
  */
 'use client';
 
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';

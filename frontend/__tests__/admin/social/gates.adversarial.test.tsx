@@ -139,7 +139,7 @@ test.each(['VERSION_CONFLICT', 'TARGET_VALIDATION_FAILED', 'PUBLISHING_PAUSED'])
   fireEvent.click(screen.getByRole('button', { name: 'Publish now' }));
   await screen.findByText(/Authoritative publication rejection/);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save & validate' })).toBeEnabled());
-  expect(screen.getByLabelText('Master text')).toHaveValue(post().document.master.text);
+  expect(screen.getByLabelText('Post text')).toHaveValue(post().document.master.text);
   expect(screen.getByRole('checkbox', { name: /Facebook · AuditGava test Page/ })).toBeChecked();
   expect(screen.queryByText(/Publication accepted/)).not.toBeInTheDocument();
   expect({
@@ -150,21 +150,21 @@ test.each(['VERSION_CONFLICT', 'TARGET_VALIDATION_FAILED', 'PUBLISHING_PAUSED'])
 
 test('a live newer revision blocks validated commands and preserves unsaved text', async () => {
   const p = post(), qc = mount(p); await validate();
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Must preserve local text' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Must preserve local text' } });
   await act(async () => qc.setQueryData(socialKeys.detail(actorId, p.id), post({ version: 2, document: { ...p.document, master: { ...p.document.master, text: 'Changed by someone else' } } })));
   await screen.findByText(/A newer revision is available/);
-  expect(screen.getByLabelText('Master text')).toHaveValue('Must preserve local text');
+  expect(screen.getByLabelText('Post text')).toHaveValue('Must preserve local text');
   expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
   expectClosed();
 });
 
 test('stale save rejection preserves edits and does not retry with a newer version automatically', async () => {
   mount(post());
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Never discard on a conflict' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Never discard on a conflict' } });
   patch.mockRejectedValue(typedError('VERSION_CONFLICT', 'Save conflict fixture.'));
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await screen.findByText(/Save conflict fixture/);
-  expect(screen.getByLabelText('Master text')).toHaveValue('Never discard on a conflict');
+  expect(screen.getByLabelText('Post text')).toHaveValue('Never discard on a conflict');
   expect(patch).toHaveBeenCalledTimes(1);
   expect(patch.mock.calls[0][1].expected_version).toBe(1);
   expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
@@ -187,8 +187,8 @@ test('backend review attestation rejection never claims acceptance and a checked
 test('editing content clears attestation and validation rather than reusing reviewed facts', async () => {
   mount(post()); await validate();
   fireEvent.click(screen.getByRole('checkbox', { name: /I checked the facts and sources/ }));
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Different facts' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Different facts' } });
   expect(screen.getByRole('checkbox', { name: /I checked the facts and sources/ })).not.toBeChecked();
-  expect(screen.getByLabelText('Master text')).toHaveValue('Different facts');
+  expect(screen.getByLabelText('Post text')).toHaveValue('Different facts');
   expectClosed();
 });

@@ -1,6 +1,6 @@
 'use client';
 import { useSearchParams } from 'next/navigation';
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import { commandFilters, validCommandId } from '@/lib/admin/etlDispatch';
 import { useEtlAccess } from '../../useEtlAccess';
 import { CommandReceipt, etlButton } from '../../CommandReceipt';

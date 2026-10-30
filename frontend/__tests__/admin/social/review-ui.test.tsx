@@ -183,7 +183,7 @@ test('editing a pending-review post creates a new draft before it can be submitt
   patch.mockImplementation(async (_path, body) => ({ data: post({ ...body, version: 2, revision_id: '00000000-0000-4000-8000-000000000041' }) }));
   send.mockImplementation(async (_path, body) => ({ data: post({ title: 'Changed title', version: body.expected_version + 1, editorial_state: 'pending_review', revision_id: '00000000-0000-4000-8000-000000000041' }) }));
   mount(p);
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Changed title' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Changed title' } });
   expect(screen.getByRole('button', { name: 'Submit for review' })).toBeEnabled();
   fireEvent.click(screen.getByRole('button', { name: 'Submit for review' }));
   await screen.findByText('Draft submitted for human review.');
@@ -199,7 +199,7 @@ test('an unchanged approved draft cannot be saved into a new revision and revoke
 });
 test('reverting local changes to the saved content clears edits without creating a new revision', async () => {
   const p = approved(); mount(p);
-  const title = screen.getByLabelText('Internal title');
+  const title = screen.getByLabelText('Draft title');
   fireEvent.change(title, { target: { value: 'Temporary edit' } });
   fireEvent.change(title, { target: { value: p.title } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
@@ -297,3 +297,5 @@ test('a future schedule that becomes overdue during the resume command is accept
   fireEvent.click(screen.getByRole('button', { name: 'Resume unsent deliveries' }));
   await screen.findByText(/Resume accepted for 1 destination/);
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

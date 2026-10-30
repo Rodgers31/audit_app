@@ -1,5 +1,11 @@
 require('@testing-library/jest-dom');
 
+// The real root layout installs this before Next's router hydrates. Execute the
+// same bootstrap before any test mounts a navigation tracker or draft editor.
+if (typeof window !== 'undefined') {
+  window.eval(require('./lib/navigation/historyBridge').HISTORY_BRIDGE_BOOTSTRAP);
+}
+
 // Polyfill window.matchMedia — jsdom doesn't ship it, but our
 // ThemeToggle (and any future component reading prefers-color-scheme
 // or other media queries) crashes without it. Returns a benign

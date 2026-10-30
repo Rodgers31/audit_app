@@ -1,5 +1,5 @@
 'use client';
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import SocialStudio from '@/components/admin/social/SocialStudio';
 
 export default function StudioPage() {

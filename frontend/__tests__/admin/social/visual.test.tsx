@@ -1,6 +1,6 @@
 /** Optional browser artifact export; all data is explicitly isolated test data. */
-import SocialWorkspace from '@/components/admin/social/SocialWorkspace';
-import PageShell from '@/components/layout/PageShell';
+import SocialWorkspace, { SocialEditorPage } from '@/components/admin/social/SocialWorkspace';
+import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -23,9 +23,10 @@ test('renders the approved queue/editor/preview direction with ready fixture met
   (api.get as jest.Mock).mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : path.endsWith('/posts') ? { posts: [p, { ...p, id: '00000000-0000-4000-8000-000000000070', title: 'A county report needs source review' }], total: 2, page: 1, page_size: 20, has_more: false } : p }));
   (api.post as jest.Mock).mockResolvedValue({ data: result });
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const { container } = render(<QueryClientProvider client={qc}><PageShell title='Social publishing' subtitle='Review the evidence. Shape the message. Choose where it goes.'><SocialWorkspace /></PageShell></QueryClientProvider>);
-  const queueButton = await screen.findByRole('button', { name: /What does unsupported expenditure mean/ });
-  fireEvent.click(queueButton);
+  const { container, rerender } = render(<QueryClientProvider client={qc}><PageShell title='Social publishing' subtitle='Review the evidence. Shape the message. Choose where it goes.'><SocialWorkspace /></PageShell></QueryClientProvider>);
+  const queueLink = await screen.findByRole('link', { name: 'What does unsupported expenditure mean?' });
+  expect(queueLink).toHaveAttribute('href', `/admin/social/${p.id}`);
+  rerender(<QueryClientProvider client={qc}><PageShell title='Review draft'><SocialEditorPage postId={p.id} /></PageShell></QueryClientProvider>);
   await screen.findByRole('article', { name: 'Social post composer' });
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
   await screen.findByText('Server-inspected image/png · 1200 × 630 · 12345 bytes');
@@ -48,3 +49,5 @@ test('renders the approved queue/editor/preview direction with ready fixture met
   }
   window.matchMedia = originalMatchMedia;
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

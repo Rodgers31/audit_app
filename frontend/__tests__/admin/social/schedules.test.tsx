@@ -24,14 +24,14 @@ beforeEach(() => { jest.clearAllMocks(); Object.defineProperty(crypto, 'randomUU
 test('scheduled and history request global filters and paginate mixed results', async () => {
   const p = scheduled(); p.delivery_status = 'partially_published';
   get.mockImplementation(async (path, options) => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : path.endsWith('/posts') ? { posts: [p], total: 21, page: options.params.page, page_size: 20, has_more: options.params.page === 1 } : p }));
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'Scheduled' }));
+  mount(); fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'scheduled' } });
   await screen.findByText('21 scheduled posts');
   expect(get).toHaveBeenCalledWith('/admin/social/posts', expect.objectContaining({ params: expect.objectContaining({ page: 1, delivery_filter: 'scheduled' }) }));
-  expect(screen.getByRole('button', { name: /What does unsupported expenditure mean/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'What does unsupported expenditure mean?' })).toBeInTheDocument();
   expect(screen.getByText(/2027-01-05T10:00:00 · Africa\/Nairobi/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Next page' })); await screen.findByText('Page 2');
   expect(get).toHaveBeenLastCalledWith('/admin/social/posts', expect.objectContaining({ params: expect.objectContaining({ page: 2, delivery_filter: 'scheduled' }) }));
-  fireEvent.click(screen.getByRole('button', { name: 'History' })); await screen.findByText('21 history posts');
+  fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'history' } }); await screen.findByText('21 history posts');
   expect(get).toHaveBeenCalledWith('/admin/social/posts', expect.objectContaining({ params: expect.objectContaining({ page: 1, delivery_filter: 'history' }) }));
 });
 test('rescheduling keeps the reviewed revision and explicit version guards', async () => {
@@ -100,9 +100,9 @@ test('optional actual queue and schedule fixture export preserves the existing d
   p.delivery_status = 'partially_published';
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : path.endsWith('/posts') ? { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } : p }));
   const { container } = mount();
-  fireEvent.click(screen.getByRole('button', { name: 'Scheduled' }));
+  fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'scheduled' } });
   await screen.findByText('1 scheduled posts');
-  fireEvent.click(screen.getByRole('button', { name: /What does unsupported expenditure mean/ }));
+  fireEvent.click(screen.getByRole('link', { name: 'What does unsupported expenditure mean?' }));
   await screen.findByRole('region', { name: 'Schedule management' });
   const dir = resolve(process.env.SOCIAL_SCHEDULE_VISUAL_DIR!); mkdirSync(dir, { recursive: true });
   const css = readFileSync(resolve('components/admin/social/social.module.css'), 'utf8');
@@ -117,8 +117,10 @@ test('history shows independent confirmed timestamps and only verified HTTPS pub
     cancel_requested_at: null, revoked_at: null, updated_at: p.updated_at }));
   p.historical_target_count = p.historical_targets.length;
   get.mockImplementation(async path => ({ data: path.endsWith('/accounts') ? { accounts } : path.endsWith('/system/status') ? system : { posts: [p], total: 1, page: 1, page_size: 20, has_more: false } }));
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'History' }));
+  mount(); fireEvent.click(screen.getByText('Filter & history')); fireEvent.change(screen.getByLabelText('View'), { target: { value: 'history' } });
   expect(await screen.findByRole('link', { name: 'View Facebook published post' })).toHaveAttribute('href', 'https://example.org/confirmed');
   expect(screen.getByText(/confirmed 2026-10-03T12:05:00Z/)).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'View Instagram published post' })).not.toBeInTheDocument();
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

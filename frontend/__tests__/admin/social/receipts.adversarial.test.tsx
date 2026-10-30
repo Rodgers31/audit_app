@@ -49,11 +49,11 @@ test.each(['old version', 'different post'])('a successful save response contain
   const p = post();
   const response = post({ ...(attack === 'different post' ? { id: '00000000-0000-4000-8000-000000000011', version: 2 } : {}) });
   patch.mockResolvedValue({ data: response }); mount(p);
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Local facts that must survive a wrong save receipt' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Local facts that must survive a wrong save receipt' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled());
   expect(patch).toHaveBeenCalledTimes(1);
-  expect(screen.getByLabelText('Master text')).toHaveValue('Local facts that must survive a wrong save receipt');
+  expect(screen.getByLabelText('Post text')).toHaveValue('Local facts that must survive a wrong save receipt');
   expect(screen.queryByText(/Draft saved/)).not.toBeInTheDocument();
   expect(screen.getByRole('alert')).toHaveTextContent(/INVALID RESPONSE/);
 });

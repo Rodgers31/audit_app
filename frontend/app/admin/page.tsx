@@ -11,7 +11,7 @@
  */
 'use client';
 
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { useAdmin } from '@/lib/auth/admin';
 import { useAuth } from '@/lib/auth/AuthProvider';

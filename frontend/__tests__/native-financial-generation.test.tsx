@@ -51,7 +51,7 @@ test('review exposes exact financial record and publisher evidence identities',a
   (generationApi.evidence as jest.Mock).mockResolvedValue(decodeEvidence(evidence));
   mount(<GeneratedEvidence postId='p1' revisionId='r1' expectedVersion={1} />);
   expect(await screen.findByRole('article',{name:'Financial source authority'})).toHaveTextContent('Source record 12 · Publisher report evidence 23');
-  expect(screen.getByText(/561.00 billions KES/)).toBeInTheDocument();
+  expect(screen.getByText(/561.00 KES \(billions\)/)).toBeInTheDocument();
   expect(screen.getByText(/Human approval remains required/)).toBeInTheDocument();
 });
 

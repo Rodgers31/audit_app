@@ -33,8 +33,8 @@ test('empty accounts preserve first-class manual draft creation and disabled med
   expect(screen.getByText(/No connected accounts/)).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Upload media' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'Choose from library' })).toBeDisabled();
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Manual announcement' } });
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'A manual draft without destinations.' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Manual announcement' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'A manual draft without destinations.' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await screen.findByText('Draft saved. Nothing has been queued for publication.');
   expect(send).toHaveBeenCalledWith('/admin/social/posts', expect.objectContaining({ document: expect.objectContaining({ targets: [] }) }), expect.objectContaining({ headers: { 'Idempotency-Key': expect.any(String) } }));
@@ -46,7 +46,7 @@ test('account overrides isolate changes, preserve intentional empty values, and 
   savedPost = p; mount(p);
   fireEvent.click(screen.getByRole('button', { name: 'Customize text' }));
   fireEvent.change(screen.getByLabelText('Account text'), { target: { value: 'Facebook only wording' } });
-  expect(screen.getByLabelText('Master text')).toHaveValue(p.document.master.text);
+  expect(screen.getByLabelText('Post text')).toHaveValue(p.document.master.text);
   fireEvent.click(screen.getByRole('button', { name: 'Instagram · AuditGava test Instagram' }));
   expect(screen.queryByLabelText('Account text')).not.toBeInTheDocument();
   expect(within(screen.getByRole('region', { name: 'Resolved post preview' })).getByText(p.document.master.text)).toBeInTheDocument();
@@ -105,30 +105,30 @@ test('global pause gates valid posts while draft saving remains available', asyn
   fireEvent.click(screen.getByRole('button', { name: 'Save & validate' }));
   await screen.findByText(/All selected destinations passed/);
   expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'An edited draft during the publishing pause' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'An edited draft during the publishing pause' } });
   expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
   expect(screen.getByText(/Publishing is paused/)).toBeInTheDocument();
 });
 
 test('stale save preserves local text and expected version until explicit conflict resolution', async () => {
   const p = post(); mount(p);
-  fireEvent.change(screen.getByLabelText('Master text'), { target: { value: 'Preserve my local edit' } });
+  fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Preserve my local edit' } });
   patch.mockRejectedValueOnce(typedError('VERSION_CONFLICT', 'Another admin edited this post.'));
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await screen.findByText(/Another admin edited this post/);
-  expect(screen.getByLabelText('Master text')).toHaveValue('Preserve my local edit');
+  expect(screen.getByLabelText('Post text')).toHaveValue('Preserve my local edit');
   expect(patch.mock.calls[0][1].expected_version).toBe(1);
   expect(screen.getByRole('button', { name: 'Load current revision' })).toBeDisabled();
   savedPost = post({ version: 2, document: { ...p.document, master: { ...p.document.master, text: 'New server content' } } });
   fireEvent.click(screen.getByRole('checkbox', { name: /Discard my local edits/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Load current revision' }));
   await screen.findByText('Current revision loaded. Review it before saving or publishing.');
-  expect(screen.getByLabelText('Master text')).toHaveValue('New server content');
+  expect(screen.getByLabelText('Post text')).toHaveValue('New server content');
 });
 
 test('ambiguous draft save retry reuses the exact command body and Idempotency-Key', async () => {
   mount();
-  fireEvent.change(screen.getByLabelText('Internal title'), { target: { value: 'Recover this save' } });
+  fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'Recover this save' } });
   send.mockRejectedValueOnce({ isAxiosError: true });
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await screen.findByText(/response could not be confirmed/);
@@ -187,7 +187,7 @@ test('partial results retain confirmed links and retry only the explicitly faile
   const failure = { ...target('failed', 'instagram'), safe_error_message: 'The provider rejected this media.' };
   const p = post({ targets: [success, failure], delivery_status: 'partially_published' }); savedPost = p; mount(p);
   expect(screen.getByRole('link', { name: 'View Facebook post' })).toHaveAttribute('href', success.remote_url);
-  expect(screen.getByLabelText('Master text')).toBeDisabled();
+  expect(screen.getByLabelText('Post text')).toBeDisabled();
   expect(screen.queryByRole('button', { name: /retry for Facebook/ })).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Reason to retry Instagram'), { target: { value: 'Provider issue resolved after inspection' } });
   fireEvent.click(screen.getByRole('button', { name: 'Request safe retry for Instagram' }));
@@ -242,3 +242,5 @@ test('policy-authorized revision cannot enter human schedule controls', async ()
     writeFileSync(resolve(directory, 'policy.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inert policy compatibility fixture</title><style>${css}</style></head><body style="margin:0;font-family:Arial,sans-serif;padding:20px"><p>OWNED INERT FIXTURE · NO LIVE ACCOUNTS</p>${document.body.innerHTML}</body></html>`);
   }
 });
+
+beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });

@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, use } from 'react';
-import PageShell from '@/components/layout/PageShell';
+import PageShell from '@/components/admin/AdminPageShell';
 import { CommandDetail } from './CommandDetail';
 
 export default function CommandDetailPage({params}:{params:Promise<{commandId:string}>}) {
