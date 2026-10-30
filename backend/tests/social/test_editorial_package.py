@@ -14,6 +14,62 @@ from test_financial_destination import reader
 from test_report_generation import report_observation
 
 
+def test_current_dataset_caption_does_not_guess_title_number_or_rewrite_legacy_copy():
+    from test_generation import observation
+    raw = observation().model_dump(mode='json')
+    raw['title'] = 'Population projections'
+    source = SourceObservation.model_validate(raw)
+    assert render(source).startswith('Available on AuditGava: Population projections.')
+    assert render(source, template_version='factual-v2').startswith('Population projections is available on AuditGava.')
+
+
+def test_tiktok_caption_uses_the_provider_utf16_limit_for_astral_metadata():
+    from uuid import uuid4
+    from test_generation import observation
+    from test_tiktok_adapter import payload, adapter, account, rehash, Provider
+    from social.validation import resolve_fields
+    import asyncio
+    raw = observation().model_dump(mode='json')
+    raw['title'] = '🧾' * 300
+    for field in ('metric', 'comparison_basis', 'publisher'):
+        raw['facts'][0][field] = '🧾' * 300
+    source = SourceObservation.model_validate(raw)
+    profile = {'platform': 'tiktok', 'target': {'account_id': str(uuid4()), 'format': 'video', 'overrides': {}}}
+    document = document_for_revision(None, source, generator_metadata(source, editorial_profiles=[profile]))
+    resolved = resolve_fields(document, document.targets[0])
+    completed = rehash(payload().model_copy(update={'text': resolved['text'], 'link': resolved['link'], 'hashtags': tuple(resolved['hashtags'])}))
+    provider = adapter(Provider())
+    try:
+        result = provider.validate(completed, provider.capabilities(account(completed)))
+        assert result.valid, result.errors
+    finally:
+        asyncio.run(provider.close())
+
+
+@pytest.mark.parametrize('family', ['factual', 'financial', 'report', 'catalogue'])
+def test_generated_tiktok_variant_resolves_to_a_valid_caption_destination(family, tmp_path):
+    from uuid import uuid4
+    from test_generation import observation
+    from test_tiktok_adapter import payload, adapter, account, rehash, Provider
+    from social.validation import resolve_fields
+    source = (observation() if family == 'factual' else financial('national_budget')
+              if family == 'financial' else report_observation())
+    if family == 'catalogue':
+        from test_kra_catalogue import capture, report, observation as catalogue_observation
+        source = catalogue_observation(report(capture(tmp_path)[0]))
+    source = SourceObservation.model_validate(source)
+    profile = {'platform': 'tiktok', 'target': {'account_id': str(uuid4()), 'format': 'video', 'overrides': {}}}
+    document = document_for_revision(None, source, generator_metadata(source, editorial_profiles=[profile]))
+    resolved = resolve_fields(document, document.targets[0])
+    assert resolved['link'] is None
+    assert document.master.link in resolved['text']
+    assert publication_destination_problem(resolved['link'], resolved['text']) is None
+    completed = rehash(payload().model_copy(update={'text': resolved['text'], 'link': resolved['link'], 'hashtags': tuple(resolved['hashtags'])}))
+    provider = adapter(Provider())
+    validation = provider.validate(completed, provider.capabilities(account(completed)))
+    assert validation.valid, validation.errors
+
+
 @pytest.mark.parametrize('entity,expected',[('Mombasa County','#MombasaCounty'),('Garissa County','#GarissaCounty'),("Murang’a County",'#MurangaCounty')])
 def test_county_topic_and_location_come_from_the_actual_post(entity,expected):
     raw=financial().model_dump(mode='json');raw['facts'][0]['entity']=entity

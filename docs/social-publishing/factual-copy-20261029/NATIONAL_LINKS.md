@@ -1,19 +1,17 @@
 # National and report destinations
 
-Opening `/budget` from a FY2025/26 report showed the public page's default FY2026/27. That page has no supported year selector in its URL. New generated drafts now use the qualified original publisher source instead of sending readers to a different year.
+New generated posts lead to AuditGava first. Qualified source identity, reporting period and a semantic snapshot select the exact public view; original publisher links remain supporting citations on that page.
 
-| Source | New version and destination |
+| Source | Current version and destination |
 |---|---|
-| Published county/national budget, revenue, audit or pending-bills report | `report-availability-v3` → exact `report.document_url`; “Read the original report on the publisher’s website.” |
-| Catalogue entry with unknown publication date | `catalogue-availability-v3` → exact entry `document_url`; the copy names the entry and preserves the unknown publication date/human-review requirement |
-| Native national budget/revenue financial observation | `financial-v4` → exact first fact's qualified `document_url`; “Read the original source on the publisher’s website.” All facts must still have the same source identity |
-| County pending-bills observation | Unchanged `financial-v3` → actual county slug, source day and pending-bills section |
-| Other general facts | Unchanged `factual-v2` → canonical evidence destination |
+| Qualified county/national budget, revenue, audit or pending-bills report | `report-availability-v4` → AuditGava `/reports/{domain}/{document_id}` with the exact source selectors and snapshot |
+| Catalogue entry with unknown publication date | `catalogue-availability-v4` → the source-bound AuditGava view, retaining the catalogue date, unknown publication day and human-review requirement |
+| Native national budget/revenue financial observation | `financial-v5` → the exact AuditGava figure view; figures, date and qualifications remain bound to the source |
+| County pending-bills observation | `financial-v5` → the exact AuditGava county pending-bills figure view, with the real county identity and reporting day |
+| Other general facts | `factual-v3` → the supported on-site evidence destination |
 
-This applies to the source family, regardless of county name. It creates no guessed URL, new public endpoint, report extraction or inferred findings. Exact evidence, semantic event fingerprints, qualification, current worker witnesses and human-review boundaries remain intact. Stored drafts are not rewritten.
+The backend reader is supplied by #852 and the frontend report page by #853. Both must ship in the complete reviewed release tree; either child PR alone is an incomplete product package. Unchanged qualified reacquisition preserves the snapshot URL. A genuine correction gives the new evidence a new snapshot; the old exact view returns unavailable rather than substituting a new value or period.
 
-Saved report/catalogue V1/V2 and financial V1/V2/V3 copy still renders using its original version. The policy gate compares both text and link using that immutable version, and scopes remain version-specific. A V1/V2 snapshot cannot acquire V3 authority merely because the code was upgraded. Direct helper calls also revalidate Python-mode source inputs and reject unsupported or foreign template families.
+Earlier external-link report/catalogue V3 and national financial V4 revisions remain readable and render their original bytes. They are historical contracts, not current defaults or permission to publish an external destination. Publication rechecks resolved master/account caption destinations and requires AuditGava. Template and policy scopes remain version-specific; saved drafts are not rewritten by deployment.
 
-Tests execute native writers with retained source evidence, source selection, preview/detect/save, current authority checks, historical policy replay, malformed URL/schema/numeric cases and actual frontend decoding/preview. These are offline owned fixtures. They verify destination identity and year, not continued availability of an external publisher's web server or its download presentation. The local comparison examples remain clearly labelled illustrative data.
-
-See the [combined release review packet](../../releases/admin-social-20261029.md) for counts, baseline failures, deployment order and holds.
+Offline tests exercise actual qualified writers, PostgreSQL, the public HTTP reader, selectors/snapshots, same-date corrections, frontend decoding and account previews. This proves the local complete-tree contract, not provider connectivity or production adoption. See the [combined release review packet](../../releases/admin-social-20261029.md) for deployment dependencies, validation and holds.

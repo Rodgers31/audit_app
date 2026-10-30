@@ -160,6 +160,11 @@ def _fits(text, link, tags, rule):
     if rule.platform == 'x':
         from ..adapters.x_text import count_text
         return count_text(combined) <= rule.caption_limit
+    if rule.platform == 'tiktok':
+        try:
+            return len(combined.encode('utf-16-le')) // 2 <= rule.caption_limit
+        except UnicodeEncodeError:
+            return False
     return (len(combined.encode('utf-8')) if rule.platform == 'threads' else len(combined)) <= rule.caption_limit
 
 
@@ -205,6 +210,9 @@ def document_for_revision(db, source, metadata):
         text = account_caption(source, full, link, tags, profile.platform)
         target = profile.target.model_dump(mode='json')
         overrides = {}
+        if profile.platform == 'tiktok':
+            text += '\n\n' + link
+            overrides['link'] = {'mode': 'replace', 'value': None}
         if text != full:
             overrides['text'] = {'mode': 'replace', 'value': text}
         if tags != master_tags:

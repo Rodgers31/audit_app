@@ -60,7 +60,8 @@ def render_social(observation, *, version):
     else:
         lead = observation.title
         if observation.category == 'dataset_availability':
-            lead += ' is available on AuditGava'
+            lead = ('Available on AuditGava: ' + lead if version == 'factual-v3'
+                    else lead + ' is available on AuditGava')
         elif observation.category == 'audit_finding':
             lead = 'Audit finding: ' + lead
         paragraphs.append(sentence(lead))

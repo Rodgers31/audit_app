@@ -4,6 +4,8 @@ Prepared for owner PR review. The complete generated-post workflow is implemente
 
 Latest follow-up: **all 708 previously skipped cases now execute and pass** in their required isolated fixtures. The [skip audit](admin-social-20261029/skipped-test-audit.md) and [case ledger](admin-social-20261029/skipped-test-audit.json) close the earlier unverified coverage. The broad current-environment run passes 4,484 cases plus 84 subtests; its 705 guarded skips are covered by the matrix. Combined coverage is 5,189 unique social-suite cases, with zero uncovered/failing cases. Local account rows now explicitly say **preview only**; X/TikTok preview samples are not live connections.
 
+30 October review follow-up: [all review dispositions and validation limits](admin-social-20261029/review-comments-20261030.md) cover all 14 inline findings plus body-only localization. Navigation now protects exact dirty draft/history state, TikTok packages retain an on-site caption destination within the provider UTF-16 limit, current documentation/examples match the renderer, and the source-page negative-total claim is refuted by execution. Final frontend validation is 213 suites / 2,853 passes / one existing skip; final focused backend checks pass 327 in each Python mode. The broad social run before the narrow final Unicode delta passes 4,489 cases, 705 separately covered guarded skips and 84 subtests. No activation or source adoption is inferred from these results.
+
 ## Scope and merge order
 
 | PR | Scope |
