@@ -8,6 +8,8 @@ type Guard = () => boolean;
 type Approval = { epoch: number; guards: Set<Guard> };
 let tracking: { retain: () => () => void; guards: Set<Guard>; readonly epoch: number; approvedTraversal?: Approval } | undefined;
 const approvedClicks = new WeakMap<Event, Set<Guard>>();
+let segmentSequence = 0;
+const newSegment = () => `${crypto.randomUUID()}:${++segmentSequence}`;
 
 function takeApprovedGuards(): Set<Guard> {
   const approval = tracking?.approvedTraversal;
@@ -35,12 +37,18 @@ export function retainHistoryTracking(): () => void {
   if (tracking) return tracking.retain();
   const history = window.history;
   const push = history.pushState, replace = history.replaceState;
-  const document = crypto.randomUUID();
+  let document = newSegment();
   let position = 0, highestPosition = 0, epoch = 0, references = 0, restoring = false;
   let currentUrl = window.location.href, currentState = history.state;
   const guards = new Set<() => boolean>();
   const stamp = (data: unknown, point: number) => ({ ...(data && typeof data === 'object' ? data : {}), [KEY]: { document, position: point } });
   const snapshot = () => { currentUrl = window.location.href; currentState = history.state; epoch++; };
+  const restartSegment = (state: unknown, url: string, append: boolean) => {
+    // Position deltas are valid only inside a contiguous tracked segment.
+    document = newSegment(); position = 0; highestPosition = 0;
+    (append ? push : replace).call(history, stamp(state, 0), '', url);
+    snapshot();
+  };
   const point = (state: unknown): Point | undefined => {
     const value = state && typeof state === 'object' ? (state as Record<string, unknown>)[KEY] as Point | undefined : undefined;
     return value?.document === document && Number.isSafeInteger(value.position)
@@ -71,12 +79,12 @@ export function retainHistoryTracking(): () => void {
       } else {
         // An entry created before tracking has no trustworthy traversal delta.
         // Restore the editor URL rather than guessing which history entry to pop.
-        push.call(history, currentState, '', currentUrl);
+        restartSegment(currentState, currentUrl, true);
       }
       return;
     }
-    if (destination) position = destination.position;
-    snapshot();
+    if (destination) { position = destination.position; snapshot(); }
+    else restartSegment(history.state, window.location.href, false);
   };
   window.addEventListener('popstate', onPop, true);
   const owner = { guards, get epoch() { return epoch; }, approvedTraversal: undefined as Approval | undefined, retain: () => {
