@@ -18,6 +18,10 @@ def job_environment(variables, secrets):
     environment = workflow["jobs"]["seed"]["env"]
     resolved = {}
     for name, expression in environment.items():
+        assert isinstance(expression, str), (name, expression)
+        if '${{' not in expression:
+            resolved[name] = expression
+            continue
         match = re.fullmatch(
             r"\$\{\{ (vars|secrets)\.([A-Z0-9_]+)(?: \|\| '([^']*)')? \}\}", expression
         )
@@ -27,6 +31,21 @@ def job_environment(variables, secrets):
             (variables if source == "vars" else secrets).get(key, "") or fallback or ""
         )
     return workflow, resolved
+
+
+def test_job_environment_keeps_literal_tls_setting():
+    _, environment = job_environment({}, {})
+    assert environment['AUDIT_GITHUB_DATABASE_TLS'] == '1'
+
+
+def test_job_environment_still_refuses_unrecognized_expressions(tmp_path, monkeypatch):
+    workflow = yaml.safe_load(WORKFLOW.read_text())
+    workflow['jobs']['seed']['env']['UNRECOGNIZED'] = '${{ unsupported.expression }}'
+    path = tmp_path / 'workflow.yml'
+    path.write_text(yaml.safe_dump(workflow))
+    monkeypatch.setitem(globals(), 'WORKFLOW', path)
+    with pytest.raises(AssertionError, match='UNRECOGNIZED'):
+        job_environment({}, {})
 
 
 def apply_environment(monkeypatch, environment):
