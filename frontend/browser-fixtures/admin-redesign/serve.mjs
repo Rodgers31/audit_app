@@ -20,5 +20,5 @@ await writeFile(resolve(root,'app/admin/page.tsx'),`export {default} from ${JSON
 for(const route of ['social','social/new','social/[postId]']){await mkdir(resolve(root,'app/admin',route),{recursive:true});await writeFile(resolve(root,'app/admin',route,'page.tsx'),`export {default} from ${JSON.stringify(resolve('app/admin',route,'page'))};`);}
 await mkdir(resolve(root,'app/api/v1/admin/social/[...path]'),{recursive:true});
 await writeFile(resolve(root,'app/api/v1/admin/social/[...path]/route.ts'),`export {GET,POST,PATCH} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/api'))};`);
-const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','0.0.0.0','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
+const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','127.0.0.1','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
 process.on('SIGTERM',()=>server.kill('SIGTERM'));process.on('SIGINT',()=>server.kill('SIGTERM'));

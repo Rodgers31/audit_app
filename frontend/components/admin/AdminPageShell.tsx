@@ -1,6 +1,6 @@
 "use client";
 
-import Link from 'next/link';
+import SmartBackLink from '@/lib/navigation/SmartBackLink';
 import type { ReactNode } from 'react';
 import styles from './admin.module.css';
 
@@ -10,7 +10,7 @@ export default function AdminPageShell({ title, subtitle, back, children, classN
 }) {
   return <div className={styles.page}>
     <header className={styles.heading}>
-      {back && <Link href={back.href} className={styles.back}>← {back.label}</Link>}
+      {back && <SmartBackLink href={back.href} className={styles.back}>← {back.label}</SmartBackLink>}
       <h1>{title}</h1>
       {subtitle && <p>{subtitle}</p>}
     </header>
