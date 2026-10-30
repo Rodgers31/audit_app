@@ -6,7 +6,7 @@ import samples from './comparison-examples.json';
 import { fixtureAsset } from './media';
 const platforms = ['facebook','instagram','threads','x','tiktok'] as const;
 const formats = [['text','image','reel'],['image','reel'],['text','image','carousel','video'],['text','image','video'],['image','carousel','video']] as const;
-const connected: SocialAccount[]=platforms.map((platform,i)=>({...accounts[0],id:'00000000-0000-4000-8000-'+String(20+i).padStart(12,'0'),platform,display_name:'AuditGava '+platform+' · local sample',handle:'@auditgava-sample',publishing_enabled:false,draft_formats:[...formats[i]],capabilities:{...accounts[0].capabilities,eligible:false,adapter_available:false,supported_formats:[],feature_states:{publishing:'restricted'}}}));
+const connected: SocialAccount[]=platforms.map((platform,i)=>({...accounts[0],id:'00000000-0000-4000-8000-'+String(20+i).padStart(12,'0'),platform,display_name:'AuditGava '+platform+' · local sample',handle:'@auditgava-sample',connection_state:'preview only',publishing_enabled:false,draft_formats:[...formats[i]],capabilities:{...accounts[0].capabilities,eligible:false,adapter_available:false,supported_formats:[],feature_states:{publishing:'restricted'}}}));
 const posts: SocialPost[]=samples.map(s=>post({id:s.id,title:s.title,content_type:s.content_type as SocialPost['content_type'],origin_type:'generated',editorial_state:'pending_review',delivery_status:'not_requested',document:s.document as SocialPost['document'],references:s.references}));
 const respond=(data:unknown,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private,no-store'}});
 export async function GET(req:Request){
