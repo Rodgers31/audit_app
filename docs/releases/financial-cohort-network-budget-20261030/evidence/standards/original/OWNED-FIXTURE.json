@@ -1,0 +1,25 @@
+{
+  "time_utc": "2026-10-30T17:26:45.027235+00:00",
+  "container": "standards-pr856-cost-pg",
+  "id": "bd0cbe1b00741a9d516555be74e2d0ad5bd76b356a829856ba8e61e0558b3aba",
+  "retained_idle_at_parent_request": true,
+  "no_tests_or_mutations_running": true,
+  "network": "none",
+  "host_ports": {},
+  "guard": {
+    "database": "standards_pending_source_test",
+    "host": "127.0.0.1",
+    "port": 55492,
+    "data_directory": "/var/lib/postgresql/data",
+    "temporary_worker_roles": 0,
+    "authority_view_absent": true,
+    "snapshot_view_absent": true
+  },
+  "credential_files_created": [],
+  "caps": {
+    "cpus": 1,
+    "memory": 536870912,
+    "pids": 128,
+    "data_tmpfs": 268435456
+  }
+}

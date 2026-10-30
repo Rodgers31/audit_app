@@ -1,0 +1,49 @@
+"""Unknown-prefix and never-started outcomes stay distinct after phase guards."""
+from datetime import datetime,timedelta,timezone
+import time
+
+import pytest
+from models import IngestionJob,IngestionStatus
+from seeding import cli,generation_dispatch as dispatch,generation_limits as limits
+from test_b83_generation_postgres import pg,no_publication
+
+
+@pytest.mark.parametrize('case',['unknown-prefix','exhausted-global'])
+def test_fresh_pg_receipt_prefix_and_unstarted_boundary(pg,monkeypatch,case):
+    factory,_=pg;now=datetime.now(timezone.utc)
+    with factory.begin() as db:
+        row=IngestionJob(domain='pending_bills',status=IngestionStatus.COMPLETED,dry_run=False,
+            started_at=now-timedelta(seconds=2),finished_at=now-timedelta(seconds=1),
+            items_processed=46,items_created=0,items_updated=46,errors=[],meta={'source_mode':'live','owned_source_receipt':'preserved'})
+        db.add(row);db.flush();db.refresh(row);identity=row.id
+        before=(row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))
+    monkeypatch.setattr(limits,'PENDING_BILLS_FINANCIAL_SECONDS',1)
+    monkeypatch.setattr(limits,'DEFAULT_PHASE_SECONDS',1)
+    monkeypatch.setattr(limits,'SOURCE_AND_RECEIPT_SECONDS',3)
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    prefix={'processed':2,'baselines':1,'unchanged':1,'drafts_created':0,'refused':0}
+    uncertain={'state':'failed','reason':'generation_execution_unverified','execution_unverified':True,
+        'confirmed':prefix,**dict.fromkeys(dispatch.COUNTERS,None)}
+    def forbidden(*a,**kw):raise AssertionError('Unstarted phase or alarm executed')
+    if case=='unknown-prefix':
+        monkeypatch.setattr(dispatch,'dispatch_committed_generation',lambda *a,**kw:uncertain)
+        monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',lambda *a,**kw:time.sleep(1.5))
+    else:
+        monkeypatch.setattr(dispatch,'dispatch_committed_generation',forbidden)
+        monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',forbidden)
+        monkeypatch.setattr(cli,'_domain_timeout',forbidden)
+    cli._post_commit_generation(factory,domain='pending_bills',ingestion_id=identity,dry_run=False,
+        deadline=time.monotonic()+.1 if case=='exhausted-global' else None)
+    with factory() as db:
+        row=db.get(IngestionJob,identity)
+        assert (row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))==before
+        assert row.meta['owned_source_receipt']=='preserved' and row.meta['source_mode']=='live'
+        financial=row.meta['post_commit_generation'];reports=row.meta['post_commit_report_generation']
+        if case=='unknown-prefix':
+            assert financial==uncertain and financial['confirmed']==prefix
+            assert reports['execution_unverified'] is True and all(reports[k] is None for k in dispatch.COUNTERS)
+        else:
+            assert financial=={'state':'unavailable','reason':'generation_run_budget_exhausted',**dict.fromkeys(dispatch.COUNTERS,0)}
+            assert reports=={'state':'unavailable','reason':'report_generation_not_started',**dict.fromkeys(dispatch.COUNTERS,0)}
+    no_publication(factory)

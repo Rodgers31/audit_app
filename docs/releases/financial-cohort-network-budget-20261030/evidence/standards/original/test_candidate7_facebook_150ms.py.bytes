@@ -1,0 +1,103 @@
+"""Observe real current-source calls; no latency injection or product bypass."""
+from collections import Counter
+import json, sys, time
+from pathlib import Path
+import pytest
+from sqlalchemy import event, select, func
+from models import Extraction, SourceDocument
+from social.models import SocialPost, SocialPublication, SocialPostTarget, SocialAccount, SocialPostRevision
+import re
+from social.generation.models import GenerationControls
+from uuid import uuid4
+from social.generation import worker_authority
+from test_automatic_cohort_timeout_postgres import ingest_cohort, automatic
+from test_cohort_guard import cohort
+from native_worker_fixture import restricted
+
+
+@pytest.fixture
+def pg(cohort):
+    return cohort
+
+
+def callsite():
+    frame = sys._getframe(1)
+    while frame:
+        name = frame.f_code.co_filename
+        if name.startswith('/work/backend/') and '/tests/' not in name:
+            return name.removeprefix('/work/backend/') + ':' + frame.f_code.co_name
+        frame = frame.f_back
+    return 'framework'
+
+
+@pytest.mark.parametrize('account_count', [1])
+def test_candidate7_facebook_retained_baseline_and_all46_changed_with_actual_worker_ports(request, cohort, tmp_path, monkeypatch, account_count):
+    worker_ports = True
+    factory, engine = request.getfixturevalue('restricted')[:2]
+    if account_count:
+        with factory.begin() as db:
+            account = SocialAccount(id=uuid4(), platform='facebook', api_product='facebook_graph', connection_method='oauth2',
+                external_account_id='standards-inert-facebook', display_name='Owned inert profile', connection_state='disconnected', publishing_enabled=False)
+            db.add(account); db.flush()
+            db.get(GenerationControls, 1).targets = [{'account_id': str(account.id), 'format': 'text', 'overrides': {}}]
+    capture = worker_authority.capture_worker_authority
+    worker_calls = []
+    def observed_capture(*args, **kwargs):
+        worker_calls.append(1)
+        return capture(*args, **kwargs)
+    monkeypatch.setattr(worker_authority, 'capture_worker_authority', observed_capture)
+    profiles = []
+    def measured_run(label, job):
+        statements = Counter(); sites = Counter(); duration = Counter(); starts = []
+        before_workers = len(worker_calls)
+        def before(conn, cursor, statement, params, context, many):
+            site = callsite(); key = ' '.join(statement.split())
+            starts.append((time.perf_counter(), site, key))
+        def after(conn, cursor, statement, params, context, many):
+            start, site, key = starts.pop()
+            statements[(site, key)] += 1; sites[site] += 1; duration[site] += time.perf_counter() - start
+            if label == 'retained_all_46_changed':
+                time.sleep(.150)
+                total = sum(sites.values())
+                if total % 250 == 0: print('REAL_150MS_PROGRESS ' + str(total) + ' cursor executions', flush=True)
+        event.listen(engine, 'before_cursor_execute', before)
+        event.listen(engine, 'after_cursor_execute', after)
+        started = time.perf_counter()
+        try:
+            result = automatic(factory, job)
+        finally:
+            elapsed = time.perf_counter() - started
+            event.remove(engine, 'before_cursor_execute', before)
+            event.remove(engine, 'after_cursor_execute', after)
+        assert result['state'] == 'completed' and result['processed'] == 46 and result['refused'] == 0, result
+        record = dict(label=label, worker_ports=worker_ports, draft_account_count=account_count, draft_platform='facebook', latency_per_call_seconds=.150 if label == 'retained_all_46_changed' else 0, elapsed_seconds=elapsed,
+                      driver_calls=sum(sites.values()), calls_by_site=dict(sites),
+                      driver_seconds_by_site=dict(duration), worker_capture_calls=len(worker_calls)-before_workers,
+                      result=result, statements=[dict(site=site, count=count, sql=sql) for (site, sql), count in statements.most_common()])
+        profiles.append(record)
+        print('INDEPENDENT_PROFILE ' + json.dumps({k:v for k,v in record.items() if k!='statements'}, sort_keys=True))
+        return record
+    first = ingest_cohort(factory, tmp_path)
+    second = ingest_cohort(factory, tmp_path, retained=True)
+    a = measured_run('retained_baseline', second)
+    assert a['result']['baselines'] == 46 and a['result']['drafts_created'] == 0 and a['worker_capture_calls'] == 0
+    b = measured_run('retained_unchanged', second)
+    assert b['result']['unchanged'] == 46 and b['result']['drafts_created'] == 0 and b['worker_capture_calls'] == 0
+    third = ingest_cohort(factory, tmp_path, retained=True, correction='all')
+    c = measured_run('retained_all_46_changed', third)
+    assert c['result']['unchanged'] == 0 and c['result']['drafts_created'] == 46 and c['worker_capture_calls'] == 46
+    with factory() as db:
+        assert db.scalar(select(func.count()).select_from(SocialPost)) == 46
+        assert all(post.editorial_state == 'pending_review' for post in db.scalars(select(SocialPost)))
+        revisions = list(db.scalars(select(SocialPostRevision)))
+        assert len(revisions) == 46
+        witnesses = [revision.evidence_snapshot['worker_authority'] for revision in revisions]
+        assert all(w['kind'] == 'financial' and w['domain'] == 'pending_bills' and re.fullmatch('[a-f0-9]{64}', w['fingerprint']) for w in witnesses)
+        assert len({w['record_id'] for w in witnesses}) == 46
+        assert all(revision.evidence_snapshot['source']['facts'][0]['value'] == '12000000.00' for revision in revisions)
+        assert all(len(revision.document['targets']) == 1 for revision in revisions)
+        assert db.scalar(select(func.count()).select_from(SocialPublication)) == 0
+        assert db.scalar(select(func.count()).select_from(SocialPostTarget)) == 0
+        payloads = dict(source_meta_bytes=[len(json.dumps(x)) for x in db.scalars(select(SourceDocument.meta))],
+                        extraction_payload_bytes=[len(json.dumps(x)) for x in db.scalars(select(Extraction.extracted_json))])
+    Path('/review/profile-candidate7-facebook-accounts-' + str(account_count) + '.json').write_text(json.dumps(dict(profiles=profiles,payloads=payloads), indent=2) + '\n')

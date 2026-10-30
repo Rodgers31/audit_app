@@ -1,0 +1,381 @@
+{
+  "source_manifest_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "junit_sha256": {
+    "candidate7-bounds.xml": "16e8b5d5088ee0f586b198128b87065960ea9e8b71f03d24665f370afc21950b",
+    "candidate7-storage.xml": "6f9057d91127fd1d492011229c877098aa09d3d8537e2f35166ed64d628d47d7",
+    "candidate7-source-guards.xml": "48eb35339d10f627a6581c4f9aa807f401c63049931ad99d5446429faf2c9af8",
+    "candidate7-real150ms.xml": "92b4920c1219f2f47e739d9c5273afe3e4e0f5dfa0acd2543ddb44017c9f7cc1"
+  },
+  "cases": [
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[False]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[True]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[2400_0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[2400_1]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad4]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad5]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad6]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[(10+0j)]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[nan]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[inf]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[-inf]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_invalid_absolute_deadline_refuses_before_every_side_effect[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False--1000000.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False--1.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-0.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-1.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-9.999999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10.9999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-11.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-11.999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-100.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-639.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-650.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-2400.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10000000000.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True--1000000.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True--1.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-0.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-1.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-9.999999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10.9999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-11.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-11.999]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-100.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-639.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-650.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-2400.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10000000000.0]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[0-True-true]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[0-False-false]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[0-False-None]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[10.99-True-true]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[10.99-False-false]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[10.99-False-None]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[1000-True-true]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[1000-False-false]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_disabled_and_dry_paths_never_open_factory[1000-False-None]",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_real_one_second_alarm_preserves_confirmed_financial_and_unknown_report",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_real_one_second_alarm_before_financial_return_never_certifies_zero",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_bounds::test_actual_cli_source_finishes_near_global_end_records_known_not_started",
+      "outcome": "passed",
+      "junit": "candidate7-bounds.xml"
+    },
+    {
+      "id": "test_final7_storage::test_existing_first_path_keeps_unsupported_storage_refusal_before_reads[controls]",
+      "outcome": "passed",
+      "junit": "candidate7-storage.xml"
+    },
+    {
+      "id": "test_final7_storage::test_existing_first_path_keeps_unsupported_storage_refusal_before_reads[existing_marker]",
+      "outcome": "passed",
+      "junit": "candidate7-storage.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_newer_job_binding_survives_fused_query[partial-pending_bills-True]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_newer_job_binding_survives_fused_query[live-pending_bills-True]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_newer_job_binding_survives_fused_query[fixture-pending_bills-False]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_newer_job_binding_survives_fused_query[live-revenue_by_source-False]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_audits_retains_separate_scope_admission_with_one_statement_per_check[False]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_audits_retains_separate_scope_admission_with_one_statement_per_check[True]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_materialized_timeout_executes_before_lock_wait_and_keeps_stricter_cap[0]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_source_guards::test_materialized_timeout_executes_before_lock_wait_and_keeps_stricter_cap[75]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "review.test_final7_global_prefix::test_actual_clamped_hook_keeps_committed_prefix_and_records_unknown_not_zero",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_late_source_inputs_refuse_completion_and_restore_silent_replay[source_withdrawal]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_late_source_inputs_refuse_completion_and_restore_silent_replay[row_value]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_late_source_inputs_refuse_completion_and_restore_silent_replay[qualification_receipt]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof[plain]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof[mutated]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof[mixed_record]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof[instance_override]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_completion_witness::test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof[subclass_override]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_witness_contexts::test_shared_witness_actual_source_context_baseline_change_and_replay[national_budget]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "prior.test_witness_contexts::test_shared_witness_actual_source_context_baseline_change_and_replay[revenue_by_source]",
+      "outcome": "passed",
+      "junit": "candidate7-source-guards.xml"
+    },
+    {
+      "id": "test_candidate7_facebook_150ms::test_candidate7_facebook_retained_baseline_and_all46_changed_with_actual_worker_ports[1]",
+      "outcome": "passed",
+      "junit": "candidate7-real150ms.xml"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "finished": false,
+  "timeout_receipts": [
+    {
+      "domain": "pending_bills",
+      "ingestion_id": 1,
+      "financial_outcome": null,
+      "reports_started": false
+    }
+  ],
+  "elapsed_seconds": 4.004721794000943
+}

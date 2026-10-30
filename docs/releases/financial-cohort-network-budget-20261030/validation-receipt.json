@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-30T17:57:02.462624+00:00",
+  "candidate": {
+    "files": 5814,
+    "mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+    "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/cohort-query-candidate-7"
+  },
+  "backend_files_matched": 1451,
+  "results": {
+    "normal": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "846",
+      "time": "557.341",
+      "timestamp": "2026-10-30T17:37:15.231520+00:00",
+      "hostname": "72e0925f7430"
+    },
+    "optimized": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "846",
+      "time": "574.560",
+      "timestamp": "2026-10-30T17:46:36.534443+00:00",
+      "hostname": "72e0925f7430"
+    }
+  },
+  "artifacts_sha256": {
+    "cohort-query-final-normal.xml": "2accadd200c8f2211f4a3561aae6c6d9a28671cd862bf3274557d6aa2d768ff1",
+    "cohort-query-final-normal.log": "80b448c8da94446a91397ff57509ed308f3ac0072e12f5d11d9ae8922517bd9f",
+    "cohort-query-final-normal-command.json": "b2d8f682d77563f034f276d496a11dcb87b4610a8d8042236b76a1f5a48c82fd",
+    "cohort-query-final-normal-exit.json": "1561034631aadc032b3f0cdf635a8b50ad5c7a7d1e623fdef91b0f15961c8ba3",
+    "cohort-query-final-optimized.xml": "8275dcca730a816442d3edc275f46ee4fcad3313b25cc85ae2e7bde045844476",
+    "cohort-query-final-optimized.log": "5442092d4c7cf5ccc1aeb626492a8ed75b9b8343b901345c28b7e112d16dafb4",
+    "cohort-query-final-optimized-command.json": "4ad1ed01456debd4e05bd018bdbcfda29e4921f613b91ff9949eef388bd2e15d",
+    "cohort-query-final-optimized-exit.json": "1cb98ed5a3f0dd93e1fa47cdf29cdcc0a390444844da423232f5d964a299be54"
+  },
+  "notes": "Normal and optimized are separate executions of the same frozen source. Counts overlap previous selections and independent reviews. Product files remain byte-identical; release evidence is appended after execution."
+}

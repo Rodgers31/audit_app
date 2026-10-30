@@ -1,0 +1,63 @@
+from datetime import datetime, timezone
+import time
+import pytest
+from sqlalchemy import select, text, event
+from sqlalchemy.exc import DBAPIError
+from models import IngestionJob, IngestionStatus, Loan
+from seeding.native_report_observations import _job
+from seeding.native_financial_observations import current_native_financial
+from seeding.native_report_authority import lock_native_domain
+from seeding.source_observations import SourceObservationUnavailable
+from test_cohort_guard import cohort
+from test_automatic_cohort_timeout_postgres import ingest_cohort
+
+
+@pytest.mark.parametrize('mode,domain,refuses', [('partial','pending_bills',True),('live','pending_bills',True),('fixture','pending_bills',False),('live','revenue_by_source',False)])
+def test_newer_job_binding_survives_fused_query(cohort,tmp_path,mode,domain,refuses):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path)
+    with factory.begin() as db:
+        record=db.scalar(select(Loan.id).order_by(Loan.id));now=datetime.now(timezone.utc)
+        db.add(IngestionJob(domain=domain,status=IngestionStatus.COMPLETED_WITH_ERRORS,dry_run=False,
+            started_at=now,finished_at=now,errors=[],meta={'source_mode':mode}))
+    with factory.begin() as db:
+        if refuses:
+            with pytest.raises(SourceObservationUnavailable,match='Current report authority unavailable'):
+                current_native_financial(db,record,job,domain='pending_bills',lock=True)
+        else:
+            result=current_native_financial(db,record,job,domain='pending_bills',lock=True)
+            assert result['evidence_version']==job and result['financial']['record_id']==record
+
+
+@pytest.mark.parametrize('matching_scope',[False,True])
+def test_audits_retains_separate_scope_admission_with_one_statement_per_check(cohort,matching_scope):
+    factory,engine=cohort;now=datetime.now(timezone.utc)
+    with factory.begin() as db:
+        original=IngestionJob(domain='audits',status=IngestionStatus.COMPLETED,dry_run=False,started_at=now,finished_at=now,errors=[],meta={'source_mode':'live'})
+        db.add(original);db.flush();identity=original.id
+        db.add(IngestionJob(domain='audits',status=IngestionStatus.COMPLETED_WITH_ERRORS,dry_run=False,started_at=now,finished_at=now,errors=[],meta={'source_mode':'partial','native_report_series':{'institution-a' if matching_scope else 'institution-b':[]}}))
+    statements=[]
+    def observed(*args):statements.append(args[2])
+    event.listen(engine,'before_cursor_execute',observed)
+    try:
+        with factory() as db:
+            assert _job(db,identity,'audits')[0].id==identity
+            if matching_scope:
+                with pytest.raises(SourceObservationUnavailable,match='Current report authority unavailable'):_job(db,identity,'audits',scope_key='institution-a')
+            else:assert _job(db,identity,'audits',scope_key='institution-a')[0].id==identity
+    finally:event.remove(engine,'before_cursor_execute',observed)
+    assert len(statements)==2
+
+
+@pytest.mark.parametrize('inherited_ms',[0,75])
+def test_materialized_timeout_executes_before_lock_wait_and_keeps_stricter_cap(cohort,inherited_ms):
+    factory,engine=cohort
+    with factory.begin() as holder:
+        lock_native_domain(holder,'pending_bills')
+        with factory() as waiting:
+            waiting.execute(text("SELECT set_config('lock_timeout',:setting,true)"),{'setting':str(inherited_ms)})
+            waiting.execute(text("SET LOCAL statement_timeout='3000ms'"))
+            start=time.monotonic()
+            with pytest.raises(DBAPIError) as error:lock_native_domain(waiting,'pending_bills')
+            elapsed=time.monotonic()-start
+            assert error.value.orig.pgcode=='55P03' # lock cap, not later statement timeout
+            assert (.05 <= elapsed < 1) if inherited_ms else (1.8 <= elapsed < 2.9)

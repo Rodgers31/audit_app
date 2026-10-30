@@ -1,0 +1,48 @@
+from pathlib import Path
+import json,hashlib,os,secrets,subprocess,sys,time
+own=Path(__file__).resolve().parent
+source=Path('/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pr858-review-candidate-8')
+name='rollout-spec-phase-pg'
+private=own.parent/'.private'
+def run(args,label):
+ p=own/(label+'.log')
+ if p.exists():raise RuntimeError('Fresh labels required')
+ (own/(label+'-command.json')).write_text(json.dumps(args,indent=2)+'\n')
+ started=time.monotonic();r=subprocess.run(args,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+ secret=(private/'password').read_text() if (private/'password').exists() else ''
+ p.write_text(r.stdout.replace(secret,'[PRIVATE]') if secret else r.stdout)
+ (own/(label+'-exit.json')).write_text(json.dumps({'exit_code':r.returncode,'seconds':time.monotonic()-started})+'\n')
+ print(label,'exit',r.returncode)
+ return r.returncode
+base=['docker','run','--rm','--pull=never','--network','container:'+name,'--cpus','1','--memory','2g','--pids-limit','256','--env-file',str(private/'runner.env'),'-v',str(source)+':/work:ro','-v',str(own)+':/evidence','-w','/work/backend']
+mode=sys.argv[1]
+if mode=='prepare':
+ private.mkdir(mode=0o700);os.chmod(private,0o700)
+ pw=secrets.token_hex(24)
+ for n,v in {'password':pw,'pg.env':f'POSTGRES_DB=b83_social_test\nPOSTGRES_USER=lineage_spec\nPOSTGRES_PASSWORD={pw}\n','runner.env':f'DATABASE_URL=postgresql+psycopg2://lineage_spec:{pw}@127.0.0.1:55412/b83_social_test\nB83_SOCIAL_TEST_DB_URL=postgresql+psycopg2://lineage_spec:{pw}@127.0.0.1:55412/b83_social_test\nPENDING_BILLS_TEST_POSTGRES_URL=postgresql+psycopg2://lineage_spec:{pw}@127.0.0.1:55412/b83_social_test\nPYTHONDONTWRITEBYTECODE=1\nPYTHONPATH=/work/backend:/work/backend/tests:/work/backend/tests/social:/evidence\nSUPABASE_URL=http://127.0.0.1:9\nSUPABASE_SERVICE_ROLE_KEY=owned-offline-fixture\n'}.items():
+  f=private/n;f.write_text(v);os.chmod(f,0o600)
+ rc=run(['docker','run','-d','--pull=never','--name',name,'--network','none','--cpus','0.5','--memory','512m','--pids-limit','128','--tmpfs','/var/lib/postgresql/data:rw,nosuid,noexec,size=256m','--env-file',str(private/'pg.env'),'postgres:17','-c','port=55412'],'prepare-pg')
+ if rc:raise RuntimeError('Owned PG start failed')
+ for _ in range(100):
+  r=subprocess.run(['docker','exec',name,'pg_isready','-h','127.0.0.1','-p','55412','-U','lineage_spec','-d','b83_social_test'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+  if r.returncode==0:break
+  time.sleep(.2)
+ else:raise RuntimeError('Owned PG never ready')
+ if run(base+['admin-redesign-python-runtime:local','alembic','upgrade','a756b20a0001'],'prepare-alembic'):raise RuntimeError('Migration failed')
+elif mode in {'old','new','v2'}:
+ label=sys.argv[2];paths=sys.argv[3:]
+ if not paths:raise RuntimeError('Explicit cases required')
+ files=['backend/seeding/financial_cohort_witness.py','backend/seeding/native_financial_observations.py','backend/seeding/native_report_observations.py','backend/social/generation/service.py','backend/social/generation/integration.py','backend/seeding/domains/pending_bills/writer.py','backend/seeding/domains/counties_budget/writer.py','backend/tests/social/test_pending_bills_source_identity_postgres.py','backend/tests/social/test_automatic_cohort_timeout_postgres.py','backend/services/response_receipts.py','backend/seeding/native_financial_authority.py','backend/seeding/cli.py','backend/seeding/generation_limits.py']
+ def hashes():return {f:hashlib.sha256((source/f).read_bytes()).hexdigest() for f in files if (source/f).exists()}
+ before=hashes();args=base.copy()
+ if mode in {'old','v2'}:args+=['-v',str(own/('accepted-writer-v2.py' if mode=='v2' else 'old-writer.py'))+':/work/backend/seeding/domains/pending_bills/writer.py:ro']
+ args+=['admin-redesign-python-runtime:local','python','-O','-m','pytest','-p','no:cacheprovider','-q','--tb=short',*paths,'--junitxml=/evidence/'+label+'.xml']
+ rc=run(args,label);after=hashes()
+ (own/(label+'-source.json')).write_text(json.dumps({'source_before':before,'source_after':after,'stable':before==after,'effective_old_writer':hashlib.sha256((own/('accepted-writer-v2.py' if mode=='v2' else 'old-writer.py')).read_bytes()).hexdigest() if mode in {'old','v2'} else None},indent=2)+'\n')
+ if before!=after:raise RuntimeError('Source changed during run')
+ sys.exit(rc)
+elif mode=='cleanup':
+ if run(['docker','rm','-f',name],'cleanup-owned-pg'):raise RuntimeError('Own container cleanup failed')
+ for f in private.iterdir():f.unlink()
+ private.rmdir()
+else:raise ValueError('mode')

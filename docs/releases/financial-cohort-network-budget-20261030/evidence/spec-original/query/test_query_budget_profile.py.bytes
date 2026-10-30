@@ -1,0 +1,67 @@
+"""Independent owned-PG SQL profile; no source implementation substitutions."""
+from collections import Counter
+import hashlib
+import inspect
+import json
+from pathlib import Path
+import re
+import time
+
+import pytest
+from sqlalchemy import event, text
+from test_b83_generation_postgres import pg, no_publication
+from test_automatic_cohort_timeout_postgres import ingest_cohort, enabled, automatic
+
+
+@pytest.mark.parametrize('latency', [0, .130], ids=['driver-native', '130ms-per-call'])
+def test_retained_baseline_query_budget(pg, tmp_path, monkeypatch, latency):
+    import social.generation.integration as integration
+    factory, engine = pg
+    enabled(factory, monkeypatch)
+    ingest_cohort(factory, tmp_path)
+    job = ingest_cohort(factory, tmp_path, retained=True)
+    statements, rows = [], []
+    def before(conn, cursor, statement, params, context, many):
+        frames=inspect.stack(context=0)
+        frame=next((f for f in frames if '/work/backend/' in f.filename and '/tests/' not in f.filename), None)
+        context._independent_profile=(time.monotonic(), (frame.filename.removeprefix('/work/backend/')+':'+str(frame.lineno)) if frame else 'unattributed')
+    def after(conn, cursor, statement, params, context, many):
+        start, caller=context._independent_profile
+        normalized=re.sub(r'\s+', ' ', statement).strip()
+        statements.append(dict(caller=caller, sql=normalized, sha256=hashlib.sha256(normalized.encode()).hexdigest(), seconds=time.monotonic()-start))
+        if latency:
+            time.sleep(latency)
+    consume=integration.consume_committed_native_financial
+    def measured(*args, **kwargs):
+        start=len(statements); started=time.monotonic()
+        try:
+            result=consume(*args, **kwargs)
+            rows.append(dict(record_id=kwargs['record_id'], status=result['status'], calls=len(statements)-start, seconds=time.monotonic()-started, start=start, end=len(statements)))
+            return result
+        except Exception as exc:
+            rows.append(dict(record_id=kwargs['record_id'], exception=type(exc).__name__, calls=len(statements)-start, seconds=time.monotonic()-started, start=start, end=len(statements)))
+            raise
+    monkeypatch.setattr(integration, 'consume_committed_native_financial', measured)
+    event.listen(engine, 'before_cursor_execute', before)
+    event.listen(engine, 'after_cursor_execute', after)
+    started=time.monotonic()
+    try:
+        outcome=automatic(factory, job)
+    finally:
+        elapsed=time.monotonic()-started
+        event.remove(engine, 'before_cursor_execute', before)
+        event.remove(engine, 'after_cursor_execute', after)
+    with engine.connect() as db:
+        sizes=[dict(row) for row in db.execute(text("SELECT id,extractor,octet_length(extracted_json::text) AS full_bytes,octet_length(((extracted_json->'response_receipt')-'observations')::text) AS receipt_metadata_bytes,jsonb_array_length(extracted_json->'response_receipt'->'observations') AS observations FROM extractions ORDER BY id")).mappings()]
+    report=dict(latency_per_driver_call=latency, elapsed_seconds=elapsed, outcome=outcome, driver_calls=len(statements), calls_by_caller=dict(Counter(s['caller'] for s in statements)), rows=rows, statements=statements, extraction_sizes=sizes)
+    label='native' if not latency else '130ms'
+    Path('/evidence/profile-'+label+'.json').write_text(json.dumps(report, indent=2)+'\n')
+    print('INDEPENDENT_QUERY_PROFILE '+json.dumps({k:v for k,v in report.items() if k not in {'statements','extraction_sizes'}}))
+    no_publication(factory)
+    if not latency:
+        assert outcome['state']=='completed' and outcome['processed']==46 and outcome['baselines']==46 and outcome['drafts_created']==0, outcome
+    else:
+        # Desired RED is retained as a passing diagnostic assertion, not falsely
+        # credited as a successful complete-cohort performance run.
+        assert outcome['state']=='failed' and outcome['processed']<46 and outcome['reason']=='GENERATION_DEADLINE_EXCEEDED', outcome
+        assert outcome['drafts_created']==0 and outcome['refused']==0, outcome

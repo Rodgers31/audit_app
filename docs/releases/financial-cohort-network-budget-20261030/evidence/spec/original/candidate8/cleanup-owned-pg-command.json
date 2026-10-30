@@ -1,0 +1,6 @@
+[
+  "docker",
+  "rm",
+  "-f",
+  "rollout-spec-phase-pg"
+]

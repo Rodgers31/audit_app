@@ -1,0 +1,29 @@
+"""Actual committed-prefix and hard global clamp, in the owned DB only."""
+import time
+from sqlalchemy import select,func,event
+from models import IngestionJob,IngestionStatus
+from social.generation.models import SourceCursor
+from social.models import SocialPost,SocialPublication,SocialPostTarget
+from seeding.cli import _post_commit_generation
+from test_cohort_guard import cohort
+from test_automatic_cohort_timeout_postgres import ingest_cohort
+
+def test_actual_clamped_hook_keeps_committed_prefix_and_records_unknown_not_zero(cohort,tmp_path):
+    factory,engine=cohort;job=ingest_cohort(factory,tmp_path)
+    def delay(*args):time.sleep(.100)
+    event.listen(engine,'after_cursor_execute',delay)
+    started=time.monotonic()
+    try:_post_commit_generation(factory,domain='pending_bills',ingestion_id=job,dry_run=False,deadline=started+16.5)
+    finally:event.remove(engine,'after_cursor_execute',delay)
+    elapsed=time.monotonic()-started
+    with factory() as db:
+        source=db.get(IngestionJob,job);outcome=source.meta['post_commit_generation']
+        marker=db.scalar(select(SourceCursor).where(SourceCursor.source_key=='cob:financial:pending_bills:baseline'))
+        count=db.scalar(select(func.count()).select_from(SourceCursor))-1
+        assert source.status==IngestionStatus.COMPLETED and source.errors==[]
+        assert outcome['state']=='failed' and outcome['execution_unverified'] is True
+        assert all(outcome[k] is None for k in ('processed','baselines','unchanged','refused','drafts_created'))
+        assert marker.report_state['financial_baseline']==1 and 0<count<46
+        assert all(db.scalar(select(func.count()).select_from(model))==0 for model in (SocialPost,SocialPublication,SocialPostTarget))
+        print('ACTUAL_GLOBAL_PREFIX',dict(elapsed_seconds=elapsed,committed_prefix=count,outcome=outcome),flush=True)
+    assert 5.5<=elapsed<16.5

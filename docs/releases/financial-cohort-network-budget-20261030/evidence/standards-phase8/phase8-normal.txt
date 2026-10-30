@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+rootdir: /review
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.0-None-expected_caps0-completed] PASSED [ 14%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[600.1-None-expected_caps1-not_started] PASSED [ 28%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[39.2-50.0-expected_caps2-not_started] PASSED [ 42%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.8-626.0-expected_caps3-unknown] PASSED [ 57%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[selector] PASSED [ 71%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[financial_postwork] PASSED [ 85%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[report_postwork] PASSED [100%]
+
+=============================== warnings summary ===============================
+database.py:79
+  /work/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /work/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+---------------- generated xml file: /review/phase8-normal.xml -----------------
+======================== 7 passed, 3 warnings in 3.29s =========================

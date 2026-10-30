@@ -1,0 +1,294 @@
+{
+  "verdict": "scoped pass",
+  "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "current_candidate_cases": {
+    "deadline-independent": {
+      "passed": 22,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "actual-130ms": {
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "real-alarm-receipts": {
+      "passed": 2,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  },
+  "new_passed": 25,
+  "carried_query_invariant_cases": 34,
+  "carry_input_mapping_sha256": "c7ac48ad2c46cd68646cebf525df7895666d5984b43ecc2070e2c0516ed62a4b",
+  "carry_receipt_sha256": "7a8e5e7961613cc087fd52f2cb8e7f75cfc871ad9151e0901e089347c934c07a",
+  "carry_scope": "Query invariants in three identical product files; all source hashes are not claimed equal. New CLI/deadline/cohort timing and replay re-executed on candidate7.",
+  "combined_scope_controls": 59,
+  "new_ledger": [
+    {
+      "class": "test_deadline_edges",
+      "name": "test_cleanup_reserve_floors_inside_global_cap[640.99-630]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_cleanup_reserve_floors_inside_global_cap[10.99-0]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_cleanup_reserve_floors_inside_global_cap[11.99-1]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_cleanup_reserve_floors_inside_global_cap[-0.1-0]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_cleanup_reserve_floors_inside_global_cap[601-591]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[False]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[100.0]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[-inf]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[value3]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[value4]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_bad_global_deadline_never_reaches_factory_or_alarm[100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_dry_and_default_off_do_not_open_factory[False-false-None]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_dry_and_default_off_do_not_open_factory[False-false-100]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_dry_and_default_off_do_not_open_factory[True-true-None]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_dry_and_default_off_do_not_open_factory[True-true-100]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_dry_and_default_off_do_not_open_factory[None-true-100]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_subsecond_remaining_never_arms_zero_alarm_or_dispatches[False]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_subsecond_remaining_never_arms_zero_alarm_or_dispatches[True]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_outer_timeout_retains_started_vs_confirmed_distinction[financial]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_outer_timeout_retains_started_vs_confirmed_distinction[reports]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_actual_cli_carries_original_deadline_and_preserves_committed_source[80-10]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_deadline_edges",
+      "name": "test_actual_cli_carries_original_deadline_and_preserves_committed_source[95-None]",
+      "outcome": "passed",
+      "junit": "deadline-independent.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_actual_130ms",
+      "name": "test_retained_baseline_query_budget[130ms-per-call]",
+      "outcome": "passed",
+      "junit": "actual-130ms.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_actual_alarm_receipts",
+      "name": "test_actual_outer_alarm_preserves_confirmed_or_unknown_and_source[financial]",
+      "outcome": "passed",
+      "junit": "real-alarm-receipts.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    },
+    {
+      "class": "test_actual_alarm_receipts",
+      "name": "test_actual_outer_alarm_preserves_confirmed_or_unknown_and_source[report]",
+      "outcome": "passed",
+      "junit": "real-alarm-receipts.xml",
+      "input_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+      "execution": "new on candidate7"
+    }
+  ],
+  "high_latency": {
+    "latency_per_driver_call": 0.13,
+    "elapsed_seconds": 186.50844637800037,
+    "driver_calls": 1366,
+    "outcome": {
+      "state": "completed",
+      "reason": "COMMITTED_EVIDENCE_CONSUMED",
+      "refused": 0,
+      "baselines": 46,
+      "processed": 46,
+      "unchanged": 0,
+      "drafts_created": 0
+    }
+  },
+  "new_job_replay": {
+    "state": "completed",
+    "reason": "COMMITTED_EVIDENCE_CONSUMED",
+    "refused": 0,
+    "baselines": 0,
+    "processed": 46,
+    "unchanged": 46,
+    "drafts_created": 0
+  },
+  "cleanup": {
+    "owned_container": "rollout-spec-query5-pg",
+    "result": {
+      "exit_code": 0,
+      "seconds": 0.08990970799999999
+    },
+    "private_credentials_directory_absent": true
+  },
+  "findings": [],
+  "limits": [
+    "No production/provider/worker operation",
+    "150ms worst changed-account execution is separate Standards scope",
+    "Driver events omit transaction/connection protocol messages"
+  ],
+  "artifact_sha256": {
+    "REPORT.md": "252cba531998d7e3a3cef76b39cde95cfaf84b600bdaacc1a01e27181d9f40a9",
+    "manifest-verified.json": "c1d230491b595f5c1b71c86d97265ebf60420d0d653624d78fb2d7926fb719da",
+    "manifest-verified-after.json": "7b032148ba9ae05ad4c4bb363444bb6354bc02359566d2e1ebb2aef46ebedd7c",
+    "delta.json": "625b80f55eda943529fd53ae25bb3f5aaa661392a0ce2b6545b18b546c39504d",
+    "test_deadline_edges.py": "5d09f4125565f65ccd5c960da55b8497dccce6c35fcfa54b6f0cf4c0dd93847d",
+    "test_actual_130ms.py": "8a1f842b3a6984b6af13a78d652e17b17df7ebb804530c321a82ce646b945f9e",
+    "test_actual_alarm_receipts.py": "e511b6d265c4357292a9d9b9b4c1012da25c0e8a07f0c68b9b4f5dbd9047d1b1",
+    "profile-130ms.json": "774d364ef73f701cd24c000faa7f6718b3995dd0c6ce1fb4bfbb6d872da1e9b9",
+    "new-job-replay.json": "8086505cc7d2702537485be7aed33954b43b2367fa78fc6e2b5329fc401e3072",
+    "run.py": "b12238866a2b252bc88ebe44565a83665ea98983f3d363621b977bf450c33d4c",
+    "cleanup-owned-pg-exit.json": "c4632e14118b1cdb92969c8f4ef6f6f52a72e7d83594dc7ca91ef682312ec811",
+    "deadline-independent.xml": "d67a7c382c09dc733a5588c10a14e1c2210d64771766e8c3beadfe2b2b4a4dcb",
+    "deadline-independent-command.json": "0eaf8d16a9be8de5566bbddfdd2b90531c75c5edacf78912777696688b15d3f5",
+    "deadline-independent-source.json": "139d843bc8eb549dbc365283d2ef9917f7f6a940eaaf9483dc623077a8f590e1",
+    "deadline-independent-exit.json": "3b73ae00f6cfcf94c442122ee469d501ff119fddae137516dc97b4b06b6a3583",
+    "actual-130ms.xml": "6075ac0d14a664827aacf2ea1546fe0f236ec28d93a32ee98ed6d8153056f113",
+    "actual-130ms-command.json": "0edbb3bd87fc72f89c3f3b2b0e2a7ad3edaaff8e4244a417cd95e651c469ed44",
+    "actual-130ms-source.json": "139d843bc8eb549dbc365283d2ef9917f7f6a940eaaf9483dc623077a8f590e1",
+    "actual-130ms-exit.json": "a41ce2e84dda656df94e2e8b60edeeea381da31b13f21e3b44de13d25ebbec87",
+    "real-alarm-receipts.xml": "766abbd625c0215e7e3c148d7d319e1520b77ef95a7d5bb3ca54ce5d33818f64",
+    "real-alarm-receipts-command.json": "b8cfbf1d6967e0b52094ca6ed57329e0c3edd9fc7cd32a8119ec4159cca0d6de",
+    "real-alarm-receipts-source.json": "139d843bc8eb549dbc365283d2ef9917f7f6a940eaaf9483dc623077a8f590e1",
+    "real-alarm-receipts-exit.json": "7c340cf37d1da4e64ce4564e89d89d2dae7e3b343944d682c40a75076a5f820c"
+  }
+}

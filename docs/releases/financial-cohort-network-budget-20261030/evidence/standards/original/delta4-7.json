@@ -1,0 +1,34 @@
+{
+  "backend/seeding/cli.py": {
+    "old": "703359aa9cac7e8f12b2852b7ee463bd0e79718434a4090f0f23e4c212c1aebf",
+    "new": "56166d6156ef23bec8b176154c3295292d18ade3485724eb93a084cecafc51c1"
+  },
+  "backend/seeding/generation_limits.py": {
+    "old": "d521b3f0ad218ff416e9ee552ee15c121522107b8c3fac0ee499c26f0d204370",
+    "new": "6d3c61ba2ada221be8e8519ef8e447e9fcb383f1e25591901a44e3aac8f153f4"
+  },
+  "backend/seeding/native_report_authority.py": {
+    "old": "39268dce9512be41f7c5dd16760acd04330ea252d3f8941f334366789a593fa8",
+    "new": "7a79806e4b57f3d3eb1c148ef99781af72df7b52cab6f6b16c3b74ff559705da"
+  },
+  "backend/seeding/native_report_observations.py": {
+    "old": "ee9b2a57b0f8f46dfc3190660211f06d1017e15315e23eb5678ce32fc768c722",
+    "new": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8"
+  },
+  "backend/social/generation/service.py": {
+    "old": "ae111ebbc22bde85597fd0ebbf0f30f368eef66cc6ec9d0d439de84508524034",
+    "new": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173"
+  },
+  "backend/tests/social/test_financial_cohort_network_budget_postgres.py": {
+    "old": null,
+    "new": "578010db38ef5df004ea8e273b30d61c515ae37ec35af1cd06ad27f02ca7f5da"
+  },
+  "backend/tests/social/test_generation_cohort_budget.py": {
+    "old": "1ffc5b721442cff4efa3ebfe88bf8596ad6da6941fc1e0ce766372d7b6f0df39",
+    "new": "da506aef423aa7ad9ed828ee07940ef34b1e8028d7318f7694a097794a682f32"
+  },
+  "backend/tests/test_seeding_cli_budget.py": {
+    "old": "b93febbb3478b2fede78c5b2e5eb5a118784e7b560beaaa389e520d888ef5fe9",
+    "new": "95c34464976b1646ab6711fec9144abf7865cfc2abe0eccf9e3920dc316df682"
+  }
+}

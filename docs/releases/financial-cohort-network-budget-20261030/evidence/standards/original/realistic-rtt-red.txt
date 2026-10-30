@@ -1,0 +1,81 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+rootdir: /review
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+../../review/test_realistic_rtt_red.py::test_retained_baseline_realistic_130ms_completes_46_desired_red REALISTIC_RTT_RED {"calls_by_site": {"framework": 1, "seeding/financial_cohort_witness.py:input_fingerprints": 24, "seeding/financial_cohort_witness.py:lock_qualified_inputs": 24, "seeding/generation_dispatch.py:_record_outcome": 4, "seeding/native_financial_observations.py:_current_native_financial": 120, "seeding/native_financial_observations.py:native_financial_record_ids": 1, "seeding/native_financial_observations.py:read_native_financial_record_ids": 1, "seeding/native_report_authority.py:lock_native_domain": 96, "seeding/native_report_observations.py:_job": 147, "seeding/native_report_observations.py:current_native_report": 96, "seeding/retained_report_receipts.py:validate_retained_pdf": 48, "seeding/source_observations.py:_read_limits": 2, "services/figure_qualification.py:qualify_rows": 96, "social/generation/integration.py:_consume_records": 3, "social/generation/integration.py:_generate_committed": 1, "social/generation/integration.py:_transaction_limits": 25, "social/generation/service.py:_consume_current_observation": 45, "social/generation/service.py:_insert": 96, "social/generation/service.py:_source_admission": 24, "social/generation/service.py:controls": 24, "social/generation/service.py:established_financial_source": 24, "social/service.py:now": 24}, "driver_calls": 926, "elapsed_seconds": 125.77359839100245, "latency_per_driver_call_seconds": 0.13, "result": {"baselines": 20, "drafts_created": 0, "processed": 23, "reason": "GENERATION_DEADLINE_EXCEEDED", "refused": 0, "state": "failed", "unchanged": 3}, "stored": {"post_count": 0, "publication_count": 0, "source_baseline": 1, "target_count": 0}, "worker_ports_installed": true}
+FAILED
+
+=================================== FAILURES ===================================
+_______ test_retained_baseline_realistic_130ms_completes_46_desired_red ________
+
+restricted = (sessionmaker(class_='Session', bind=Engine(postgresql://postgres@127.0.0.1:55492/standards_pending_source_test), auto...11d8578905e92a47401:***@127.0.0.1:55492/standards_pending_source_test), 'b118_worker_7235ba6ccc81411d8578905e92a47401')
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_retained_baseline_realist0')
+
+    def test_retained_baseline_realistic_130ms_completes_46_desired_red(restricted, tmp_path):
+        factory, engine, _, _ = restricted
+        first = ingest_cohort(factory, tmp_path)
+        ids = read_native_financial_record_ids(factory, ingestion_id=first, domain='pending_bills')
+        partial = integration.maybe_generate_committed(factory, record_ids=ids[:3], ingestion_id=first, domain='pending_bills')
+        assert partial['processed'] == 3 and partial['baselines'] == 3 and partial['drafts_created'] == 0
+        job = ingest_cohort(factory, tmp_path, retained=True)
+        sites = Counter()
+        def measured(conn, cursor, statement, params, context, many):
+            sites[callsite()] += 1
+            time.sleep(.130)
+        event.listen(engine, 'after_cursor_execute', measured)
+        start = time.monotonic()
+        try:
+            outcome = automatic(factory, job)
+        finally:
+            elapsed = time.monotonic() - start
+            event.remove(engine, 'after_cursor_execute', measured)
+        with factory() as db:
+            root = db.scalar(select(SourceCursor).where(SourceCursor.source_key == 'cob:financial:pending_bills:baseline'))
+            stored = dict(source_baseline=root.report_state['financial_baseline'],
+                          post_count=db.scalar(select(func.count()).select_from(SocialPost)),
+                          publication_count=db.scalar(select(func.count()).select_from(SocialPublication)),
+                          target_count=db.scalar(select(func.count()).select_from(SocialPostTarget)))
+        observed = dict(latency_per_driver_call_seconds=.130, elapsed_seconds=elapsed, driver_calls=sum(sites.values()),
+                        calls_by_site=dict(sites), result=outcome, stored=stored, worker_ports_installed=True)
+        Path('/review/realistic-rtt-red.json').write_text(json.dumps(observed, indent=2) + '\n')
+        print('REALISTIC_RTT_RED ' + json.dumps(observed, sort_keys=True))
+        assert stored == dict(source_baseline=1, post_count=0, publication_count=0, target_count=0)
+        assert outcome['state'] == 'failed' and outcome['reason'] == 'GENERATION_DEADLINE_EXCEEDED'
+        assert 0 < outcome['processed'] < 46 and outcome['drafts_created'] == 0
+        # Requirement under review: a whole eligible cohort within the existing bound.
+>       assert outcome['state'] == 'completed' and outcome['processed'] == 46, observed
+E       AssertionError: {'latency_per_driver_call_seconds': 0.13, 'elapsed_seconds': 125.77359839100245, 'driver_calls': 926, 'calls_by_site': {'seeding/native_financial_observations.py:read_native_financial_record_ids': 1, 'seeding/source_observations.py:_read_limits': 2, 'seeding/native_report_observations.py:_job': 147, 'seeding/native_financial_observations.py:native_financial_record_ids': 1, ...}, ...}
+E       assert ('failed' == 'completed'
+E         
+E         - completed
+E         + failed)
+
+/review/test_realistic_rtt_red.py:51: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    social.generation.integration:integration.py:354 generation_hook_refused
+ERROR    social.generation.integration:integration.py:347 generation_hook_deadline_exceeded
+=============================== warnings summary ===============================
+models.py:29
+  /work/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+database.py:79
+  /work/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+test_realistic_rtt_red.py::test_retained_baseline_realistic_130ms_completes_46_desired_red
+  /usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+-------------- generated xml file: /review/realistic-rtt-red.xml ---------------
+=========================== short test summary info ============================
+FAILED ../../review/test_realistic_rtt_red.py::test_retained_baseline_realistic_130ms_completes_46_desired_red
+================== 1 failed, 4 warnings in 127.78s (0:02:07) ===================

@@ -1,0 +1,16 @@
+{
+  "time_utc": "2026-10-30T17:21:01.125972+00:00",
+  "container": "standards-pr856-cost-pg",
+  "id": "809356e3fed58a7bd330f83b40ab1522351174e97f89eb2cb081bbee37f751d8",
+  "verified_label": "pr856-metadata-cost",
+  "remove_exit_code": 0,
+  "absence_check_exit_code": 0,
+  "absence_check_stdout": "",
+  "network": "none",
+  "host_ports": [],
+  "named_volumes": [],
+  "credential_files_created": [],
+  "other_resources_touched": [],
+  "python_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "postgres_image": "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
+}

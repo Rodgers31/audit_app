@@ -1,0 +1,54 @@
+from contextlib import contextmanager
+import time
+import pytest
+from seeding import cli,generation_dispatch as dispatch,source_observations as source,generation_limits as limits
+
+def outcome():return dict(state='completed',reason='COMMITTED_EVIDENCE_CONSUMED',processed=1,baselines=1,unchanged=0,refused=0,drafts_created=0)
+
+@pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+    clock=[0.];caps=[];recorded=[]
+    monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    @contextmanager
+    def hard(seconds):
+        caps.append(seconds);start=clock[0];yield
+        if clock[0]-start>=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+    def financial(*a,**kw):clock[0]+=work;return outcome()
+    def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+    monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+    monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+    cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+    assert caps==expected_caps
+    if expected_report=='completed':assert recorded==[]
+    else:
+        financial_result=recorded[0][1];report_result=recorded[1][1]
+        if work>600:assert financial_result['execution_unverified'] is True
+        else:assert financial_result==outcome()
+        if expected_report=='not_started':assert report_result['reason']=='report_generation_not_started' and all(report_result[k]==0 for k in dispatch.COUNTERS)
+        else:assert report_result['execution_unverified'] is True and all(report_result[k] is None for k in dispatch.COUNTERS)
+
+@pytest.mark.parametrize('blocked',['selector','financial_postwork','report_postwork'])
+def test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase(blocked,monkeypatch):
+    recorded=[];trigger=[True]
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    monkeypatch.setattr(limits,'generation_phase_seconds',lambda domain,reports=False:1)
+    def ids(*a,**kw):
+        if blocked=='selector':time.sleep(3)
+        return (1,)
+    monkeypatch.setattr(source,'read_native_financial_record_ids',ids);monkeypatch.setattr(source,'read_native_report_record_ids',lambda *a,**kw:(1,))
+    monkeypatch.setattr(dispatch,'_invoke',lambda *a,**kw:outcome());monkeypatch.setattr(dispatch,'_invoke_reports',lambda *a,**kw:outcome())
+    def persist(factory,domain,job,value,**kw):
+        key=kw.get('key','post_commit_generation')
+        target='post_commit_report_generation' if blocked=='report_postwork' else 'post_commit_generation'
+        if blocked!='selector' and trigger[0] and key==target:trigger[0]=False;time.sleep(3)
+        recorded.append((key,value))
+    monkeypatch.setattr(dispatch,'_record_outcome',persist)
+    started=time.monotonic();cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+    elapsed=time.monotonic()-started
+    assert .8<=elapsed<2.5
+    financial=next(value for key,value in reversed(recorded) if key=='post_commit_generation')
+    report=next(value for key,value in reversed(recorded) if key=='post_commit_report_generation')
+    if blocked=='report_postwork':assert financial==outcome() and report['execution_unverified'] is True
+    else:assert financial['execution_unverified'] is True and report['reason']=='report_generation_not_started'
+    assert not any(value.get('state')=='completed' and value.get('processed')==0 for _,value in recorded)

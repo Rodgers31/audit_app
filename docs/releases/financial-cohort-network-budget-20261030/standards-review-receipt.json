@@ -1,0 +1,62 @@
+{
+  "verdict": "scoped pass",
+  "cases": 74,
+  "failed": 0,
+  "errors": 0,
+  "skipped": 0,
+  "manifest_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "manifest_file_sha256": "3d81145311fa441607b551328263914d3ae36e208bd59f8df4e3f69e3d01a760",
+  "real_sleeping150ms": {
+    "automatic_call_seconds": 450.0077674549975,
+    "whole_pytest_seconds": 452.928,
+    "driver_executions": 2880,
+    "held_drafts": 46,
+    "unique_worker_witnesses": 46,
+    "publications": 0,
+    "dispatch_targets": 0
+  },
+  "real_global_clamp": {
+    "elapsed_seconds": 6.51056004500424,
+    "committed_prefix": 1,
+    "marker_version": 1,
+    "telemetry": "execution_unverified/null counters"
+  },
+  "python_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "postgres_image": "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+  "artifacts_sha256": {
+    "FINAL7-CLEANUP.json": "9881b0a852195d4d391ab9d71334e1803df4e1fbd2d4e2ab3ebd464bf1f80f4b",
+    "FINAL7-REPORT.md": "9009fbf183b4bc1ba479086451101c0749468f05abb7b9e402778032e47ca311",
+    "FINAL7-case-ledger.json": "cb8428994af5e0099ca06a31abd95d3b92f040f2cc52621d176709769ea3f83c",
+    "FINAL7-commands.json": "c0d09bf0a55b7550858273d84e618c0f6e368a173ebe42a29aec07cf515555a2",
+    "candidate7-after.json": "35a935c2d1bef32cf55e86bfe345c1b8c1c4e0d15e1f63a488974a413d7f6749",
+    "candidate7-before.json": "b538a0891d684d5c7ce6303d87c2432f780e9eadb01a52e38f95e3bdc79c4356",
+    "candidate7-bounds-initial.txt": "55216fd80fb44bd8cded66e8b1a396ae27aec09920c195843a5ed9f7d54695fb",
+    "candidate7-bounds-initial.xml": "675963d094820ed7be7bea213f7eb38518613f68fc5df6460c5224718246c4cf",
+    "candidate7-bounds.txt": "fe1bbaf213c7ddd39a4cc29c6e0d59b37a69d9ccc2072a245d1e6fd189768f89",
+    "candidate7-bounds.xml": "16e8b5d5088ee0f586b198128b87065960ea9e8b71f03d24665f370afc21950b",
+    "candidate7-real150ms.txt": "f9068c49664b4f54b12c2494cb1d714fce55a111758b43ccf07d40d8bae3b5da",
+    "candidate7-real150ms.xml": "92b4920c1219f2f47e739d9c5273afe3e4e0f5dfa0acd2543ddb44017c9f7cc1",
+    "candidate7-source-guards.txt": "0fa44f3745fe498d6ec6bb22dd302f2d57684b69c6371b713cb5af58557d0081",
+    "candidate7-source-guards.xml": "48eb35339d10f627a6581c4f9aa807f401c63049931ad99d5446429faf2c9af8",
+    "candidate7-storage.txt": "3f925b66debc45c2adfcb837054e444025493ddef4a08bbaca9b82f13785ba65",
+    "candidate7-storage.xml": "6f9057d91127fd1d492011229c877098aa09d3d8537e2f35166ed64d628d47d7",
+    "cli.py.5-7.diff": "94ef3bf0033f38d70222c6de8cb2d94c9023454ef95c6a149b99227e454c9a97",
+    "delta4-7.json": "473181ce6655663b6a65fc46fdb4e283cb6fce95d6be3646ef677d79207ea639",
+    "generation_limits.py.5-7.diff": "80a23fa9c4073a719cfed444fbec0ff7342cb802deabe65e9474076d6e5e3542",
+    "prepare_current_pg.py": "4b6486fc24ba38ea6eabcb0322dc0654d87497309f24bb7e05d946358b9de180",
+    "profile-candidate7-facebook-accounts-1.json": "56df503ab35cc80d5ec28508418c8a3f833b7939dbf1539a2a20548ccd3a1cc3",
+    "test_candidate7_facebook_150ms.py": "8ac10760683796920c3efe0f0fb457b7c4d7370561fdf033d66fa64baf2102e6",
+    "test_final7_bounds-initial.py": "9c1cffb92c6fb32c66b0f7a49d128096f304f2a2bb88e0cde1fe9ac7677cf4be",
+    "test_final7_bounds.py": "5b39b8edcdc4d71723639199814bbbd1392f7887d226c1d01ad0d59d74f0f922",
+    "test_final7_global_prefix.py": "ff88e5e33124dd1891c9bedb512e357195717e31dde65cfbe4a961fd14b96927",
+    "test_final7_source_guards.py": "03628eb5ea113cbb0dbd65e83b9cef06a0e9e88954f30150fa2ffdb3d9d8a461",
+    "test_final7_storage.py": "af4e1ac3e671a1b9788edecd90a6238770d2ddb92bed688dd9dc9d3d819ed5dc"
+  },
+  "imported_independent_fixtures_sha256": {
+    "test_cohort_guard.py": "4f01e26063af09d22698a530a668b75d1506d9052417913e1c1a6adc2b60ee78",
+    "test_completion_witness.py": "8e7f961c431004ccf0acf0ac8f44b64c880a5d77f6cb5b5e41528c6d84f53b06",
+    "test_witness_contexts.py": "f6c8f6628c3a577ff0e8e695a0cfb44bcc46f97044a856570a10475f63fe986d"
+  },
+  "cleanup": "FINAL7-CLEANUP.json",
+  "prior_diagnostic_receipt": "RECEIPT.json"
+}

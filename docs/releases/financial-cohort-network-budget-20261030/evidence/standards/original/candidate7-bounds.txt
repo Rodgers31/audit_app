@@ -1,0 +1,76 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+rootdir: /review
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 52 items
+
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[False] PASSED [  1%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[True] PASSED [  3%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[2400_0] PASSED [  5%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[2400_1] PASSED [  7%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad4] PASSED [  9%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad5] PASSED [ 11%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[bad6] PASSED [ 13%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[(10+0j)] PASSED [ 15%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[nan] PASSED [ 17%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[inf] PASSED [ 19%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[-inf] PASSED [ 21%]
+../../review/test_final7_bounds.py::test_invalid_absolute_deadline_refuses_before_every_side_effect[10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000] PASSED [ 23%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False--1000000.0] PASSED [ 25%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False--1.0] PASSED [ 26%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-0.0] PASSED [ 28%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-1.0] PASSED [ 30%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-9.999999] PASSED [ 32%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10.0] PASSED [ 34%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10.9999] PASSED [ 36%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-11.0] PASSED [ 38%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-11.999] PASSED [ 40%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-100.0] PASSED [ 42%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-639.0] PASSED [ 44%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-650.0] PASSED [ 46%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-2400.0] PASSED [ 48%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[False-10000000000.0] PASSED [ 50%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True--1000000.0] PASSED [ 51%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True--1.0] PASSED [ 53%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-0.0] PASSED [ 55%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-1.0] PASSED [ 57%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-9.999999] PASSED [ 59%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10.0] PASSED [ 61%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10.9999] PASSED [ 63%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-11.0] PASSED [ 65%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-11.999] PASSED [ 67%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-100.0] PASSED [ 69%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-639.0] PASSED [ 71%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-650.0] PASSED [ 73%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-2400.0] PASSED [ 75%]
+../../review/test_final7_bounds.py::test_remaining_bound_never_spends_cleanup_or_grows_the_phase[True-10000000000.0] PASSED [ 76%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[0-True-true] PASSED [ 78%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[0-False-false] PASSED [ 80%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[0-False-None] PASSED [ 82%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[10.99-True-true] PASSED [ 84%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[10.99-False-false] PASSED [ 86%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[10.99-False-None] PASSED [ 88%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[1000-True-true] PASSED [ 90%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[1000-False-false] PASSED [ 92%]
+../../review/test_final7_bounds.py::test_disabled_and_dry_paths_never_open_factory[1000-False-None] PASSED [ 94%]
+../../review/test_final7_bounds.py::test_real_one_second_alarm_preserves_confirmed_financial_and_unknown_report PASSED [ 96%]
+../../review/test_final7_bounds.py::test_real_one_second_alarm_before_financial_return_never_certifies_zero PASSED [ 98%]
+../../review/test_final7_bounds.py::test_actual_cli_source_finishes_near_global_end_records_known_not_started PASSED [100%]
+
+=============================== warnings summary ===============================
+database.py:79
+  /work/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /work/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+-------------- generated xml file: /review/candidate7-bounds.xml ---------------
+======================== 52 passed, 3 warnings in 2.48s ========================

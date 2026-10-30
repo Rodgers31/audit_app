@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="7" time="3.311" timestamp="2026-10-30T18:56:47.593787+00:00" hostname="7b5c62d3cb83"><testcase classname="test_phase8_independent" name="test_literal_phase_caps_and_one_shared_deadline[599.0-None-expected_caps0-completed]" time="0.000" /><testcase classname="test_phase8_independent" name="test_literal_phase_caps_and_one_shared_deadline[600.1-None-expected_caps1-not_started]" time="0.000"><failure message="KeyError: 'execution_unverified'">work = 600.1, remaining = None, expected_caps = [600]
+expected_report = 'not_started'
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffffa79fedb0&gt;
+
+    @pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+    def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+        clock=[0.];caps=[];recorded=[]
+        monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        @contextmanager
+        def hard(seconds):
+            caps.append(seconds);start=clock[0];yield
+            if clock[0]-start&gt;=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+        def financial(*a,**kw):clock[0]+=work;return outcome()
+        def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+        monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+        monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+        cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+        assert caps==expected_caps
+        if expected_report=='completed':assert recorded==[]
+        else:
+            financial_result=recorded[0][1];report_result=recorded[1][1]
+&gt;           if work&gt;600:assert financial_result['execution_unverified'] is True
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'execution_unverified'
+
+/review/test_phase8_independent.py:26: KeyError</failure></testcase><testcase classname="test_phase8_independent" name="test_literal_phase_caps_and_one_shared_deadline[39.2-50.0-expected_caps2-not_started]" time="0.000" /><testcase classname="test_phase8_independent" name="test_literal_phase_caps_and_one_shared_deadline[599.8-626.0-expected_caps3-unknown]" time="0.000" /><testcase classname="test_phase8_independent" name="test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[selector]" time="1.006" /><testcase classname="test_phase8_independent" name="test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[financial_postwork]" time="1.009" /><testcase classname="test_phase8_independent" name="test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[report_postwork]" time="1.010" /></testsuite></testsuites>

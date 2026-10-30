@@ -1,0 +1,14 @@
+{
+  "mapping_sha256": "f8d4806e68dfbbe08980baa273264fed1850697f147cdd34a416284429ceb2f5",
+  "files": 5815,
+  "mismatches": [],
+  "unchanged_from7": {
+    "backend/seeding/native_report_authority.py": "7a79806e4b57f3d3eb1c148ef99781af72df7b52cab6f6b16c3b74ff559705da",
+    "backend/seeding/native_report_observations.py": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8",
+    "backend/social/generation/service.py": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+    "backend/seeding/generation_limits.py": "6d3c61ba2ada221be8e8519ef8e447e9fcb383f1e25591901a44e3aac8f153f4",
+    "backend/social/generation/integration.py": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+    "backend/seeding/native_financial_observations.py": "0c3962244f74c9d364dd22fe741e1af20d00c6835a4b2b29c9e359b9670e2941",
+    "backend/seeding/financial_cohort_witness.py": "0b21e9adf0226501e4695bfa831707718c0155d05878291c02a64bda920043e6"
+  }
+}

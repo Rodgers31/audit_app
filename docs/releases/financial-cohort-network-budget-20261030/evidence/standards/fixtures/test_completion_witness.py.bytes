@@ -1,0 +1,53 @@
+from copy import deepcopy
+import pytest
+from sqlalchemy import select,update
+from models import SourceDocument,DocumentStatus,Loan,Extraction
+from seeding.financial_cohort_witness import FinancialCohortWitness
+from services.figure_qualification import qualify_rows
+from social.generation import integration
+from test_cohort_guard import cohort,root,posts,consume
+from test_automatic_cohort_timeout_postgres import ingest_cohort
+
+@pytest.mark.parametrize('kind',['source_withdrawal','row_value','qualification_receipt'])
+def test_actual_hook_late_source_inputs_refuse_completion_and_restore_silent_replay(cohort,tmp_path,monkeypatch,kind):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path);original=integration._complete_financial_cohort;restore={}
+    def change_then_complete(*args,**kwargs):
+        with factory.begin() as db:
+            if kind=='source_withdrawal':
+                source=db.scalar(select(SourceDocument));restore.update(id=source.id,value=source.status);source.status=DocumentStatus.ARCHIVED
+            elif kind=='row_value':
+                row=db.scalar(select(Loan).order_by(Loan.id));restore.update(id=row.id,value=row.outstanding);row.outstanding+=1
+            else:
+                row=db.scalar(select(Loan).order_by(Loan.id));q=qualify_rows(db,'loans',[row])[row.id]['outstanding'];receipt=db.get(Extraction,q['receipt_id']);assert receipt is not None
+                restore.update(id=receipt.id,value=deepcopy(receipt.extracted_json));receipt.extracted_json={**receipt.extracted_json,'standards_fault':'after last consumption'}
+        return original(*args,**kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(integration,'_complete_financial_cohort',change_then_complete);outcome=consume(factory,job)
+    assert restore and outcome['state']!='completed' and outcome['drafts_created']==0,outcome
+    assert root(factory)[1]['financial_baseline']==1 and posts(factory)==0
+    with factory.begin() as db:
+        if kind=='source_withdrawal':db.get(SourceDocument,restore['id']).status=restore['value']
+        elif kind=='row_value':db.get(Loan,restore['id']).outstanding=restore['value']
+        else:db.get(Extraction,restore['id']).extracted_json=restore['value']
+    replay=consume(factory,job);assert replay['state']=='completed' and replay['unchanged']==46 and replay['drafts_created']==0,replay
+
+@pytest.mark.parametrize('kind',['plain','mutated','mixed_record','instance_override','subclass_override'])
+def test_actual_hook_rejects_mutated_reconstructed_or_virtual_issuer_proof(cohort,tmp_path,monkeypatch,kind):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path);original=integration.consume_committed_native_financial;seen=[]
+    class Forged(FinancialCohortWitness):
+        def intact(self):return True
+    def replace(*args,**kwargs):
+        result=original(*args,**kwargs);genuine=result['_cohort_witness'];assert FinancialCohortWitness.intact(genuine)
+        seen.append(genuine)
+        if kind=='mutated':genuine.value['domain']='national_budget';replacement=genuine
+        elif kind=='mixed_record':replacement=seen[0]
+        else:
+            replacement=object.__new__(Forged if kind=='subclass_override' else FinancialCohortWitness)
+            replacement.value=deepcopy(genuine.value)
+            if kind=='instance_override':replacement.intact=lambda:True
+            assert not FinancialCohortWitness.intact(replacement)
+        return {**result,'_cohort_witness':replacement}
+    with monkeypatch.context() as patch:
+        patch.setattr(integration,'consume_committed_native_financial',replace);outcome=consume(factory,job)
+    assert outcome['state']!='completed',{'kind':kind,'outcome':outcome,'marker':root(factory) if posts(factory) else None}
+    assert posts(factory)==0

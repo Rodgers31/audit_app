@@ -1,0 +1,9 @@
+{
+  "state": "completed",
+  "reason": "COMMITTED_EVIDENCE_CONSUMED",
+  "refused": 0,
+  "baselines": 0,
+  "processed": 46,
+  "unchanged": 46,
+  "drafts_created": 0
+}

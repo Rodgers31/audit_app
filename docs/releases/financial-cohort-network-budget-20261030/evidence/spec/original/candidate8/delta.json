@@ -1,0 +1,10 @@
+{
+  "changed": [
+    "backend/seeding/cli.py",
+    "backend/tests/social/test_generation_cohort_budget.py"
+  ],
+  "added": [
+    "backend/tests/test_generation_hard_phase_limits.py"
+  ],
+  "removed": []
+}

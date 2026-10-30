@@ -1,0 +1,32 @@
+from pathlib import Path
+import json,hashlib,shutil,xml.etree.ElementTree as ET
+SRC=Path('/review');SNAP=Path('/source');DEST=Path('/evidence/standards-phase8');DEST.mkdir(exist_ok=False)
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+manifest=json.loads((SRC/'candidate8-manifest.json').read_text());bad=[n for n,h in manifest.items() if sha(SNAP/n)!=h]
+if bad:raise ValueError(bad)
+identity=dict(files=len(manifest),mapping_sha256=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()).hexdigest(),mismatches=bad)
+(SRC/'candidate8-after.json').write_text(json.dumps(identity,indent=2)+'\n')
+files=['test_phase8_independent.py','phase8-normal.xml','phase8-normal.txt','phase8-optimized.xml','phase8-optimized.txt','phase7-desired-red.xml','phase7-desired-red.txt','candidate8-before.json','candidate8-after.json','phase7-8.diff','test_phase8_independent-initial.py','phase8-normal-initial.xml','phase8-normal-initial.txt','phase8-optimized-setup-failure.txt']
+for name in files:shutil.copyfile(SRC/name,DEST/(name+('.bytes' if name.endswith('.py') else '')))
+shutil.copyfile(Path(__file__),DEST/'seal_phase_review.py.bytes')
+cases=[]
+for label in ['normal','optimized']:
+ root=ET.parse(SRC/('phase8-'+label+'.xml')).getroot();items=list(root.iter('testcase'))
+ if len(items)!=7 or any(any(c.find(k) is not None for k in ['failure','error','skipped']) for c in items):raise ValueError('Current phase evidence differs')
+ cases += [dict(run=label,id=c.attrib['classname']+'::'+c.attrib['name'],outcome='passed',junit='phase8-'+label+'.xml') for c in items]
+reds=list(ET.parse(SRC/'phase7-desired-red.xml').getroot().iter('testcase'))
+if len(reds)!=7 or any(c.find('failure') is None for c in reds):raise ValueError('Original desired RED differs')
+report='''Scoped phase-repair PASS on frozen candidate 8: **7 distinct cases passed in normal and optimized Python (14 executions), no failures/errors/skips**. The unchanged independent harness produces **7 desired failures on original candidate 7**. No blocker remains in this scope.
+
+Four literal/virtual controls verify separate 600/30-second caps, the original shared deadline, truncated report allowance and reports not starting with less than one whole second left. Three actual dispatch controls use real SIGALRM with phase lengths scaled to one second and block selectors, financial receipt postwork and report receipt postwork with real sleep. Each interrupts within its own phase; confirmed financial results survive report interruption, unknown financial work stays unknown, and unstarted reports retain zero counters. These are timer/dispatch controls with controlled source/persistence ports, not new database or production acceptance.
+
+All 5,815 files matched before/after; mapping SHA256 f8d4806e68dfbbe08980baa273264fed1850697f147cdd34a416284429ceb2f5. Product delta from candidate 7 is only backend/seeding/cli.py. The earlier 74-case/450-second evidence remains historical and was not rerun or relabeled. Spec's separate actual PostgreSQL controls are bundled under evidence/spec.
+
+An initial virtual harness assertion incorrectly expected an already-returned financial result to be unknown; its original source/log/XML are preserved. A first optimized invocation omitted the source mount and failed setup; its log is retained. Neither attempt is counted as acceptance. Final normal/optimized runs use the same corrected harness bytes. No product edits, production/GitHub/provider actions, PG fixture or paid resources were used. Capped offline containers were --rm. The receipt hashes every artifact and records the generator. Run `sha256sum -c SHA256SUMS` in this folder to reject missing/changed files. This packet is byte archival plus the stated fresh phase tests, not a broad rerun.
+'''
+(DEST/'REPORT.md').write_text(report);(DEST/'CASE-LEDGER.json').write_text(json.dumps(cases,indent=2)+'\n')
+receipt=dict(verdict='scoped phase pass',input=identity,distinct_cases=7,normal_passed=7,optimized_passed=7,original_desired_red_failures=7,generated_by='seal_phase_review.py.bytes',generator_sha256=sha(Path(__file__)),test_generator_sha256=sha(SRC/'test_phase8_independent.py'),runtime='admin-redesign-python-runtime:local',cleanup='Only capped offline --rm containers; no PG created',artifacts_sha256={p.name:sha(p) for p in sorted(DEST.iterdir()) if p.is_file()})
+(DEST/'RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n')
+if json.loads((DEST/'RECEIPT.json').read_text())['generator_sha256']!=sha(Path(__file__)):raise ValueError('Receipt readback differs')
+(DEST/'SHA256SUMS').write_text(''.join(sha(p)+'  '+p.name+'\n' for p in sorted(DEST.iterdir()) if p.is_file()))
+print(json.dumps(dict(status='sealed_phase_review',normal=7,optimized=7,desired_red=7,input=identity)))
