@@ -19,6 +19,8 @@ from test_queue_postgres import repository
 
 def test_pg_post_intent_rotation_blocks_send_then_recovery_loads_fresh_material(pg_engine, config, monkeypatch):
     upgrade(pg_engine, current=True)
+    from current_social_schema import add_current_worker_policy
+    add_current_worker_policy(pg_engine)
 
     graph = Graph()
     storage, target_id = prepare(pg_engine, config, graph, monkeypatch)
@@ -74,6 +76,10 @@ def test_pg_post_intent_rotation_blocks_send_then_recovery_loads_fresh_material(
         with pg_engine.begin() as conn:
             conn.execute(text("UPDATE social_post_targets SET next_action_at=clock_timestamp()-interval '1 second' WHERE id=:id"),
                 {'id': target_id})
+        # Closing the first worker deliberately retires its repository. A new
+        # worker must use a fresh admission event under the same durable owner.
+        assert repo.admission_stopped.is_set()
+        repo = repository(pg_engine)
 
         adapter = reg.adapters[('facebook', 'facebook_pages')]
         original_reconcile = adapter.reconcile

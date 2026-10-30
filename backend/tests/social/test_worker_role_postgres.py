@@ -18,6 +18,7 @@ from test_domain_postgres import migration
 from test_native_meta_adapters import Graph
 from test_native_worker_postgres import prepare, step, due
 from test_queue_postgres import repository
+from current_social_schema import add_current_worker_policy
 
 
 @pytest.fixture
@@ -39,6 +40,7 @@ def role_database():
             with Operations.context(MigrationContext.configure(conn)):
                 migration().upgrade()
         upgrade(owner, current=True)
+        add_current_worker_policy(owner)
         with Session(owner) as db:
             db.add(SocialControls(id=1, publishing_enabled=False)); db.commit()
         yield owner, worker, schema, role

@@ -14,7 +14,7 @@ from social.models import SocialPostTarget, SocialPublication, SocialPublishAtte
 from social.service import SocialService, utc
 from social.worker.config import WorkerConfig
 from social.worker.repository import QueueRepository
-from test_domain_postgres import pg_engine
+from test_domain_postgres import current_pg_engine as pg_engine
 from test_queue_postgres import repository
 from test_schedule_management import scheduled_fixture, command_body
 

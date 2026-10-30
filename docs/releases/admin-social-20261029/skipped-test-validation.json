@@ -1,0 +1,91 @@
+{
+  "original_skips": 708,
+  "groups": {
+    "worker": 390,
+    "source": 108,
+    "media": 104,
+    "root": 106
+  },
+  "broad_native_primary": {
+    "passed": 4484,
+    "skipped": 705,
+    "failures": 0,
+    "errors": 0,
+    "passing_subtests": 84,
+    "pytest_seconds": 487.34
+  },
+  "broad_orchestration": {
+    "exit": 0,
+    "seconds": 494.808555458
+  },
+  "original93_rechecked_passed": 93,
+  "test_repairs_sha256": {
+    "backend/tests/social/test_admin_social_runtime_postgres.py": "d0ee34ec93cefd2b4ac1d731adcc1b31219f4abddd44571714b0edf396bf4135",
+    "backend/tests/social/test_automation_postgres.py": "7419149b2b49da32485d28840fcfa79106fd304555d54cc800c89cd1990dae30",
+    "backend/tests/social/test_batch3_schedule_review.py": "241bba6fc658bd18449f620b153443429c1d8d3ab1ddbf1829739a71b253dafd",
+    "backend/tests/social/test_connections_readiness_roles.py": "19a23f8721d55a11a89f6f0bdc4ee981947cadcb76402944eb0f25120c5be16f",
+    "backend/tests/social/test_delivery_history.py": "37719c98d5eb96b147cfb2d11fc09869ab115a2487f499e08abda51427df51e5",
+    "backend/tests/social/test_domain_postgres.py": "a6e8eaa27fbfaf9dcda4a774c74c084eebd739a2d9b4d3c5efbac42b3e52cdd3",
+    "backend/tests/social/test_generation_postgres.py": "abb401bf2b405457a6552fd8d0052113eb9e3e16ebc61ef5c34e95cde3f76e0a",
+    "backend/tests/social/test_integration_pipeline.py": "dc1e7b3f41729e4ec43b09bfb317ffb2ea9700e97df32a909e44431478684d27",
+    "backend/tests/social/test_native_capability_admission_postgres.py": "f7cdf48d81face62747b0c7ff76b19c49880bd404d81fe3a825421291ea11ab0",
+    "backend/tests/social/test_native_credential_race_postgres.py": "9b208a2620652e2baf9d127424d32dc38044b909c85d1ec6b453ec02e1de8405",
+    "backend/tests/social/test_native_shared_review.py": "4ca422885c2ee8fb68a5cc151268ae81c3aa01e29ff40d215ca29119694d1c0d",
+    "backend/tests/social/test_native_startup_postgres.py": "7b67b21c8b9a2b40293359e978d4b337c34ef331231efe12b1e68aa6cd3d4548",
+    "backend/tests/social/test_native_worker_postgres.py": "1c71e0da294eed3b6ee13f7f21729ac3ebf64cc4e8adc7e155b454b16fc9b1be",
+    "backend/tests/social/test_platforms_postgres.py": "b5f6122dd01f4a850d815909f056b81b25c5562cf2ad588b82c1a8aa68266127",
+    "backend/tests/social/test_queue_postgres.py": "8582ac4b4668ef3c01422e426d9e53ce58abff757af8849081236a692d8929e8",
+    "backend/tests/social/test_resume_clock_postgres.py": "e0bf021f8afd017be855e78278c6065a231f4329c2f519d9bfb2e4d9661e4aed",
+    "backend/tests/social/test_schedule_postgres.py": "75b6c8d29657016d934af4946491793151062658ba1326107c9ccfa3ab2f7572",
+    "backend/tests/social/test_worker_role_postgres.py": "b4dd4e6e17dc43f5cda86e657a65c99d947c6a3babfdb7f53d0cc30250391929",
+    "backend/tests/social/worker_ownership_support.py": "838f65e750acb4e32f6f80d50390b6a1eca3cf5e511efc431b1879175b0492d7",
+    "backend/tests/social/current_social_schema.py": "d5e5a05bb7c8862dc627339dfd4454629cabc21c38373248d017a55cdf5f1865",
+    "backend/tests/social/current_source_workflow_fixture.py": "b421c2fadd069bfe8cbbfa29027b750fdfb37815203ad37a2160aa2d67c7458a",
+    "backend/tests/social/test_current_source_workflow_fixture.py": "71f2edf2094d07b6624d1732dfdf20cb2af912366541f88a6b9ff3c78454955f"
+  },
+  "local_preview_files_sha256": {
+    "frontend/browser-fixtures/admin-redesign/Harness.tsx": "c2716c69fdb8f01e306558b2ec12250f90284694e9decec21a6d900d65a915ee",
+    "frontend/browser-fixtures/admin-redesign/api.ts": "450a1b7ea227a4073496809ec23e51a1075582e0ae6fd2f871bd3c42a18eedcf"
+  },
+  "production_code_changes": [],
+  "frontend_checks": {
+    "typescript": "passed",
+    "scoped_lint": "passed",
+    "browser_preview_only_labels": "verified"
+  },
+  "final_input_manifest_sha256": "d0082001e74f6018c846b6921b173ae2f8b36bc3a33433ee4fa8399af8525981",
+  "runtime_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "publishing": "OFF",
+  "production_workers": "OFF",
+  "deployed": false,
+  "scope": "Fixture matrix results and full union coverage are reconciled by skipped-test-audit.json; source input versions and failures are retained honestly.",
+  "original708_final": {
+    "passed": 708,
+    "skipped": 0,
+    "missing": 0,
+    "failed": 0,
+    "errors": 0
+  },
+  "social_case_coverage": {
+    "added_controls": 8,
+    "all_broad_skips_have_primary_execution": true,
+    "broad_passed": 4484,
+    "broad_skipped": 705,
+    "normalization": "UUID parameter values only in six explicitly named pre-existing test functions; raw execution IDs retained. Original708 uses exact raw IDs.",
+    "original_repository_cases": 5181,
+    "status": "complete",
+    "uncovered": 0,
+    "unique_repository_cases": 5189
+  },
+  "aggregation_script_sha256": "9d4402b423e1e867ee43272c04eb3f95ac4724338c75d1b2b870e67c38ae9a04",
+  "aggregation_independent_controls": {
+    "total": 82,
+    "valid_positive": 8,
+    "invalid_refused": 74,
+    "remaining_findings": 0
+  },
+  "independent_source_readiness_controls_passed": 47,
+  "independent_schema_controls_passed": 4,
+  "independent_recovery_tool_controls_passed": 13,
+  "case_ledger_sha256": "64f9bb02036205a73d61bab75a88861c6cdf6ae19913ed531c5e9b404ee9a81c"
+}

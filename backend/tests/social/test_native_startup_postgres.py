@@ -16,6 +16,16 @@ def test_explicit_native_cli_scans_once_stops_and_closes_on_postgresql(role_data
     install_worker_role(owner, role, schema)
     module = ready(monkeypatch)
     media = module.load_media_runtime({})
+    for key, value in {
+        'SOCIAL_NATIVE_ENABLED': 'true',
+        'SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED': 'true',
+        'SOCIAL_WORKER_MEDIA_READS_ENABLED': 'true',
+        'SOCIAL_MEDIA_R2_ENDPOINT': 'https://' + 'a' * 32 + '.r2.cloudflarestorage.com',
+        'SOCIAL_MEDIA_BUCKET': 'media-test',
+        'SOCIAL_MEDIA_ACCESS_KEY': 'inert-fixture',
+        'SOCIAL_MEDIA_SECRET_KEY': 'inert-fixture',
+    }.items():
+        monkeypatch.setenv(key, value)
     closed = []
     class Transport(httpx.AsyncBaseTransport):
         async def handle_async_request(self, request):

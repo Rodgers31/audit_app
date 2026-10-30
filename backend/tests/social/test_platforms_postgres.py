@@ -71,6 +71,8 @@ def platform_pg():
         with engine.begin() as connection, Operations.context(MigrationContext.configure(connection)):
             migration().upgrade()
         upgrade(engine, current=True)
+        from current_social_schema import add_current_worker_policy
+        add_current_worker_policy(engine)
         with engine.begin() as connection, Operations.context(MigrationContext.configure(connection)):
             _migration('a703b15a0001_platform_connections.py').upgrade()
         yield engine
@@ -165,6 +167,12 @@ def prepare(engine, *, platforms=('threads',), mode='direct'):
             target = {'account_id': str(account.id), 'format': 'image' if account.platform == 'tiktok' else 'text',
                 'overrides': {'media': {'mode': 'replace', 'value': []}} if account.platform == 'threads' and asset else {}}
             if account.platform == 'tiktok':
+                # TikTok carries the AuditGava destination in its caption;
+                # the provider contract rejects a separate link field.
+                target['overrides'] = {
+                    'link': {'mode': 'replace', 'value': None},
+                    'text': {'mode': 'replace', 'value': 'Verified announcement\nhttps://www.auditgava.com/'},
+                }
                 target['tiktok_options'] = TikTokPostOptions(mode=mode, privacy_level='PUBLIC_TO_EVERYONE',
                     upload_consent=True, music_usage_confirmed=True, creator_settings_checked_at=now,
                     creator_settings_hash=TikTokCreatorSettings(**providers.tiktok.settings).bound_hash(account.external_account_id)).model_dump(mode='json')
@@ -215,7 +223,7 @@ def rows(engine, fixture):
 
 def test_platform_migration_full_social_chain_from_accepted_base(platform_pg):
     module = _migration('a703b15a0001_platform_connections.py')
-    assert module.down_revision == 'a545b14a0001'
+    assert module.down_revision == 'a708b15a0001'
     with platform_pg.begin() as connection:
         tables = {name for name in inspect(connection).get_table_names()}
         assert set(module.TABLES) <= tables
@@ -448,9 +456,9 @@ def test_x_positive_worker_publish_and_public_author_read_reserve_each_cost(plat
         assert (target.state, target.visibility_state, target.primary_remote_id, target.submit_count) == ('published', 'public', '777', 1)
         attempts = list(db.scalars(select(SocialPublishAttempt).order_by(SocialPublishAttempt.sequence)))
         assert [row.operation for row in attempts] == ['publish', 'poll']
-        assert [row.estimated_cost_microusd for row in attempts] == [15000, 15000]
+        assert [row.estimated_cost_microusd for row in attempts] == [200000, 15000]
         assert all(row.cost_reservation_state == 'reserved' and row.completed_at is not None for row in attempts)
-        assert budget.reserved_microusd == 30000 and budget.spent_microusd == 0
+        assert budget.reserved_microusd == 215000 and budget.spent_microusd == 0
         assert len({row.operation_id for row in attempts}) == 2
     assert [(method, path) for method, path, _, _ in fixture.providers.x.calls] == [('POST', '/2/tweets'), ('GET', '/2/tweets/777')]
     query = fixture.providers.x.calls[-1][2].decode()
@@ -461,7 +469,7 @@ def test_x_budget_exactly_exhausted_after_send_retains_unknown_and_does_not_read
     fixture = prepare(platform_pg, platforms=('x',))
     with Session(platform_pg) as db:
         target = db.get(SocialPostTarget, fixture.targets[0])
-        db.get(SocialPlatformBudget, target.account_id).limit_microusd = 15000
+        db.get(SocialPlatformBudget, target.account_id).limit_microusd = 200000
         db.commit()
     due(platform_pg, fixture.targets)
     step(platform_pg, fixture)
@@ -479,7 +487,7 @@ def test_x_budget_exactly_exhausted_after_send_retains_unknown_and_does_not_read
         assert target.checkpoint == checkpoint and target.submit_count == 1
         assert len(list(db.scalars(select(SocialPublishAttempt)))) == 1
         budget = db.get(SocialPlatformBudget, target.account_id)
-        assert budget.reserved_microusd == budget.limit_microusd == 15000
+        assert budget.reserved_microusd == budget.limit_microusd == 200000
     assert [(method, path) for method, path, _, _ in fixture.providers.x.calls] == [('POST', '/2/tweets')]
 
 
@@ -556,12 +564,12 @@ def test_full_alembic_revision_chain_from_empty_assigned_database(monkeypatch):
         config=Config()
         config.set_main_option('script_location',str(Path(__file__).resolve().parents[2]/'alembic'))
         script=ScriptDirectory.from_config(config)
-        assert script.get_heads()==['a703b15a0001']
+        assert script.get_heads()==['a756b20a0001']
         with engine.begin() as connection:
             with EnvironmentContext(config,script,fn=lambda rev,ctx:script._upgrade_revs('head',rev)) as context:
                 context.configure(connection=connection)
                 context.run_migrations()
-            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='a703b15a0001'
+            assert connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one()=='a756b20a0001'
             assert set(_migration('a703b15a0001_platform_connections.py').TABLES)<=set(inspect(connection).get_table_names())
     finally:
         engine.dispose()
@@ -653,16 +661,17 @@ def test_x_lost_receipt_waits_then_confirms_unique_post_without_resend(platform_
     dispatched=datetime.now(timezone.utc)-timedelta(minutes=10)
     with platform_pg.begin() as connection:
         connection.execute(text("UPDATE social_publish_attempts SET dispatch_started_at=:when WHERE target_id=:id AND operation='publish'"),{'id':fixture.targets[0],'when':dispatched})
-    fixture.providers.x.overrides[('GET','/2/users/901/tweets')]=x_fixture.own_posts(payload,posts=[{'id':'777','author_id':'901','text':payload.text,'created_at':(dispatched+timedelta(seconds=1)).isoformat()}])
+    from social.adapters.x_text import render_text
+    fixture.providers.x.overrides[('GET','/2/users/901/tweets')]=x_fixture.own_posts(payload,posts=[{'id':'777','author_id':'901','text':render_text(payload),'created_at':(dispatched+timedelta(seconds=1)).isoformat()}])
     due(platform_pg,fixture.targets)
     step(platform_pg,fixture)
     with Session(platform_pg) as db:
         target=db.get(SocialPostTarget,fixture.targets[0])
         budget=db.get(SocialPlatformBudget,target.account_id)
         assert (target.state,target.visibility_state,target.primary_remote_id,target.submit_count)==('published','public','777',1)
-        assert budget.reserved_microusd==85000
+        assert budget.reserved_microusd==270000
         attempts=list(db.scalars(select(SocialPublishAttempt).order_by(SocialPublishAttempt.sequence)))
-        assert [row.estimated_cost_microusd for row in attempts]==[15000,35000,35000]
+        assert [row.estimated_cost_microusd for row in attempts]==[200000,35000,35000]
         assert all(row.cost_reservation_state=='reserved' for row in attempts)
     assert [(method,path) for method,path,*_ in fixture.providers.x.calls]==[('POST','/2/tweets'),('GET','/2/users/901/tweets')]
 

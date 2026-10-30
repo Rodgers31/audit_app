@@ -1,5 +1,7 @@
 # Release failure audit — 29 October 2026
 
+Follow-up: all 708 cases skipped in this audit have since executed and passed in their explicitly assigned fixtures. See the [skip audit and latest combined validation](skipped-test-audit.md). This document and its 93-case receipt retain the earlier execution history.
+
 The earlier 60 failures and 33 errors required diagnosis even though the same IDs failed on accepted main. Baseline parity established that the UI/social changes did not introduce those failures; it did not establish release readiness. This audit re-executes the original cases and preserves the source, approval and publication safeguards.
 
 **Final full native social run: 4,473 passed, zero failures/errors, 708 explicit historical-fixture skips and 84 passing subtests in 472.26 seconds. All 93 original cases executed exactly once and passed, with zero skipped or missing.** See the [case ledger and skip reasons](failure-audit.json), [runtime/input receipt](failure-audit-validation.json) and [production status](production-status.json). The unchanged frontend's 2,792 passing tests, types, lint and production build remain valid; those product bytes did not change in this audit.

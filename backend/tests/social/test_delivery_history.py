@@ -10,7 +10,7 @@ from social.models import SocialPostRevision, SocialPostTarget, SocialPublicatio
 from social.service import SocialError, SocialService
 from test_api_admin import key, make_client
 from test_domain_support import ACTOR, db
-from test_domain_postgres import pg_engine
+from test_domain_postgres import current_pg_engine as pg_engine
 from test_schedule_management import command_body, scheduled_fixture
 
 
