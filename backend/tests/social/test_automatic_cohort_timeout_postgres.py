@@ -118,6 +118,7 @@ def test_automatic_full_cohort_completes_with_bounded_query_latency(pg,tmp_path,
         baselines=db.scalar(select(func.count()).select_from(SourceCursor).where(SourceCursor.sequence==0))
         posts=db.scalar(select(func.count()).select_from(SocialPost))
     print('COHORT_PROFILE '+json.dumps({'mode':mode,'worker_authority_installed':worker_authority_installed,'retained_current_job':retained,'latency_per_call_seconds':latency,'elapsed_seconds':elapsed,'driver_calls':dict(calls),'outcome':outcome,'stored_baselines_including_source_marker':baselines,'stored_posts':posts},sort_keys=True))
+    assert elapsed < 120, {'elapsed_seconds': elapsed, 'driver_calls': dict(calls)}
     changed=mode=='changed_cohort'
     assert outcome['state']=='completed' and outcome['processed']==46 and outcome['refused']==0,outcome
     assert outcome['baselines']==(0 if changed else 46) and outcome['drafts_created']==(46 if changed else 0)
