@@ -183,7 +183,8 @@ def _write_pending_bills(
 
     # Get or create the source document
     source_doc = _get_or_create_source_document(
-        session, source_url, source_title, publisher=publisher
+        session, source_url, source_title, publisher=publisher,
+        native_report_authority=native_report_authority,
     )
     previous_meta = dict(source_doc.meta) if source_doc and isinstance(source_doc.meta, dict) else {}
     stock_observations = []
@@ -635,6 +636,8 @@ def _get_or_create_source_document(
     source_url: str | None,
     source_title: str | None,
     publisher: str | None = None,
+    *,
+    native_report_authority=None,
 ) -> SourceDocument | None:
     """Get or create the source document a pending-bills payload came from.
 
@@ -649,7 +652,44 @@ def _get_or_create_source_document(
     # revenue_by_source).
     declared = publisher
 
-    doc = (
+    if native_report_authority is not None:
+        from ...native_report_authority import NativeReportAuthority, DOMAINS, digest
+        from services.response_receipts import receipt_is_sealed
+
+        authority = native_report_authority
+        if (not isinstance(authority, NativeReportAuthority)
+                or not isinstance(authority.value, dict)
+                or getattr(authority, '_snapshot', None) != digest(authority.value)
+                or authority.value.get('domain') != 'pending_bills'
+                or authority.value.get('document_url') != source_url
+                or declared not in (None, DOMAINS['pending_bills'][2])
+                or not receipt_is_sealed(authority.receipt)
+                or authority.receipt.get('observations') != [authority.value]):
+            raise ValueError('Intact native pending bills source required')
+        # The preceding budget domain refreshes this shared PDF's display
+        # title. A native acquisition identifies its exact URL; retained proof
+        # additionally identifies the existing row. Never create a second row
+        # to compensate for that title refresh or rewrite a conflicting source.
+        matches = (session.query(SourceDocument).populate_existing()
+            .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
+            .join(Country).filter(Country.iso_code == 'KEN', SourceDocument.url == source_url)
+            .limit(2).all())
+        if len(matches) > 1:
+            raise ValueError('Ambiguous native pending bills source identity')
+        doc = matches[0] if matches else None
+        proof = authority.receipt.get('retained_pdf_validation')
+        if proof is not None and (type(proof) is not dict
+                or type(proof.get('source_document_id')) is not int
+                or doc is None or proof['source_document_id'] != doc.id):
+            raise ValueError('Exact retained PDF lineage required')
+        if doc is not None:
+            if (doc.publisher != DOMAINS['pending_bills'][2]
+                    or doc.meta is not None and not isinstance(doc.meta, dict)):
+                raise ValueError('Current native pending bills source identity required')
+            return doc
+
+    # Legacy unqualified writes retain their established title/edition behavior.
+    doc = None if native_report_authority is not None else (
         session.query(SourceDocument)
         .populate_existing()
         .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
