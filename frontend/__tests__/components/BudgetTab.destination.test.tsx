@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import BudgetTab from '@/app/counties/[id]/tabs/BudgetTab';
 import type { CountyComprehensive } from '@/types';
+import { LangProvider } from '@/lib/i18n/LangProvider';
 let mockDate = '2026-06-30';
 let mockResult: any;
 const mockRead = jest.fn();
@@ -13,6 +14,15 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/counties/nairobi-county?tab=budget&as_at=2026-06-30#pending-bills');
 });
 afterEach(() => window.history.replaceState({}, '', '/'));
+test('date-specific pending-bills states follow the selected public language', () => {
+  localStorage.setItem('auditgava-lang', 'sw');
+  mockResult = { data: undefined, isPending: true, refetch: jest.fn() };
+  try {
+    render(<LangProvider><BudgetTab data={data} /></LangProvider>);
+    expect(screen.getByRole('status')).toHaveTextContent('Inapakia kipindi hiki cha ripoti');
+    expect(screen.getByText(/Ankara zilizokwama zilizoripotiwa kufikia 2026-06-30/)).toBeInTheDocument();
+  } finally { localStorage.removeItem('auditgava-lang'); }
+});
 test('the linked date is passed to the reader and lazy-mounted section receives the focus', () => {
   render(<BudgetTab data={data} />);
   expect(mockRead).toHaveBeenCalledWith('71', {enabled: true}, '2026-06-30');

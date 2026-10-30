@@ -215,12 +215,12 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
               {fmtKES(requestedDate ? totalPending : totalPending ?? debt.pending_bills)}
             </span>
           </div>
-          {requestedDate && <p className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>Reported pending bills as at {requestedDate} · {data.name}</p>}
-          {!validDate && <p role='alert'>This link contains an invalid reporting date. Open the county page again to choose a reporting period.</p>}
-          {validDate && requestedDate && isPending && <p role='status'>Loading this reporting period…</p>}
-          {validDate && error && <p role='alert'>Pending bills could not be loaded. <button type='button' onClick={() => refetch()}>Try again</button></p>}
-          {validDate && requestedDate && !isPending && !error && totalPending === null && <p role='status'>No published pending-bills figure is available for this county on {requestedDate}. The latest figure has not been substituted.</p>}
-          {countyPendingBills?.pending_bills_source && <p className='text-xs text-gray-600 dark:text-neutral-muted mb-3'>Source: {countyPendingBills.pending_bills_source.publisher}. {countyPendingBills.pending_bills_source.url?.startsWith('https://') && <a className='underline' href={countyPendingBills.pending_bills_source.url} target='_blank' rel='noopener noreferrer'>Read the original report</a>}</p>}
+          {requestedDate && <p className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>{t('county.budget.pending_as_at').replace('{date}', requestedDate).replace('{county}', data.name)}</p>}
+          {!validDate && <p role='alert'>{t('county.budget.pending_invalid_date')}</p>}
+          {validDate && requestedDate && isPending && <p role='status'>{t('county.budget.pending_loading_period')}</p>}
+          {validDate && error && <p role='alert'>{t('county.budget.pending_load_error')} <button type='button' onClick={() => refetch()}>{t('county.budget.pending_retry')}</button></p>}
+          {validDate && requestedDate && !isPending && !error && totalPending === null && <p role='status'>{t('county.budget.pending_date_unavailable').replace('{date}', requestedDate)}</p>}
+          {countyPendingBills?.pending_bills_source && <p className='text-xs text-gray-600 dark:text-neutral-muted mb-3'>{t('county.budget.pending_source').replace('{publisher}', countyPendingBills.pending_bills_source.publisher ?? t('county.budget.pending_publisher_unknown'))} {countyPendingBills.pending_bills_source.url?.startsWith('https://') && <a className='underline' href={countyPendingBills.pending_bills_source.url} target='_blank' rel='noopener noreferrer'>{t('county.budget.pending_original_report')}</a>}</p>}
           {pendingBillsNoteLines(countyPendingBills?.pending_bills_notes, t, fmtKES).map(note => <p key={note} className='text-xs text-gray-600 dark:text-neutral-muted mb-2'>{note}</p>)}
 
           {/* Breakdown by type.

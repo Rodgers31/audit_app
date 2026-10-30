@@ -1367,6 +1367,15 @@ export const MESSAGES = {
 
   // Pending bills (budget tab)
   'county.budget.pending_bills_title': { en: 'Pending Bills', sw: 'Ankara Zilizokwama', plain: 'Unpaid Bills' },
+  'county.budget.pending_as_at': { en: 'Reported pending bills as at {date} · {county}', sw: 'Ankara zilizokwama zilizoripotiwa kufikia {date} · {county}', plain: 'Unpaid bills reported for {date} · {county}' },
+  'county.budget.pending_invalid_date': { en: 'This link contains an invalid reporting date. Open the county page again to choose a reporting period.', sw: 'Kiungo hiki kina tarehe batili ya ripoti. Fungua tena ukurasa wa kaunti uchague kipindi cha ripoti.', plain: 'This link has an invalid date. Open the county page again to choose a reporting period.' },
+  'county.budget.pending_loading_period': { en: 'Loading this reporting period…', sw: 'Inapakia kipindi hiki cha ripoti…', plain: 'Loading figures for this date…' },
+  'county.budget.pending_load_error': { en: 'Pending bills could not be loaded.', sw: 'Ankara zilizokwama hazikuweza kupakiwa.', plain: 'Unpaid bills could not be loaded.' },
+  'county.budget.pending_retry': { en: 'Try again', sw: 'Jaribu tena', plain: 'Try again' },
+  'county.budget.pending_date_unavailable': { en: 'No published pending-bills figure is available for this county on {date}. The latest figure has not been substituted.', sw: 'Hakuna kiasi kilichochapishwa cha ankara zilizokwama kwa kaunti hii tarehe {date}. Kiasi cha hivi karibuni hakijatumika badala yake.', plain: 'No published unpaid-bills figure is available for this county on {date}. A newer figure has not been used in its place.' },
+  'county.budget.pending_source': { en: 'Source: {publisher}.', sw: 'Chanzo: {publisher}.', plain: 'Source: {publisher}.' },
+  'county.budget.pending_publisher_unknown': { en: 'Publisher unavailable', sw: 'Mchapishaji hapatikani', plain: 'Publisher unavailable' },
+  'county.budget.pending_original_report': { en: 'Read the original report', sw: 'Soma ripoti asili', plain: 'Read the original report' },
   'county.budget.pending_by_type': { en: 'By Type', sw: 'Kwa Aina', plain: 'By Type' },
   'county.budget.pending_aging': { en: 'Aging', sw: 'Umri wa Deni', plain: 'How old' },
   'county.budget.pending_fallback': { en: 'This county has {amount} in pending bills. Detailed breakdown data will be available once the county reports are processed.', sw: 'Kaunti hii ina {amount} katika ankara zilizokwama. Maelezo zaidi yatapatikana mara tu ripoti zitakapochakatwa.', plain: 'This county has {amount} in unpaid bills. More details will show once the reports are processed.' },
