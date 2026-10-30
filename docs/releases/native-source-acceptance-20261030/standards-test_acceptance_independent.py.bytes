@@ -1,0 +1,137 @@
+"""Independent acceptance boundaries; primary bytes and constructed controls labelled.
+
+The KRA Publisher uses hash-pinned actual retained bytes. The national helper
+creates a source-shaped PDF and is only a wiring/adversarial control, never
+proof that an official national PDF was accepted.
+"""
+from pathlib import Path
+from copy import deepcopy
+from decimal import Decimal
+import httpx
+import pytest
+from sqlalchemy import select, func
+
+from models import RevenueBySource, BudgetLine, SourceDocument, Extraction
+from social.models import SocialPost, SocialPostRevision, SocialPostTarget, SocialPublication
+from social.generation.models import SourceCursor, SourceEvent
+from seeding.generation_dispatch import dispatch_committed_generation
+from seeding.native_financial_observations import read_native_financial_observation
+from seeding.source_observations import SourceObservationUnavailable
+from test_b83_generation_postgres import pg
+from test_native_financial_changes_postgres import enable
+from test_kra_catalogue_postgres import ingest as genuine_kra_catalogue
+from test_financial_copy_postgres import national_ingestion
+
+
+def no_delivery(factory):
+    with factory() as db:
+        for model in (SocialPostTarget,SocialPublication):
+            assert db.scalar(select(func.count()).select_from(model))==0
+
+
+def test_genuine_retained_kra_catalogue_never_admits_numeric_claims(pg,tmp_path,monkeypatch):
+    factory,_=pg; enable(factory,monkeypatch)
+    job,report_id=genuine_kra_catalogue(factory,tmp_path)
+    from seeding.source_observations import read_revenue_report_observation
+    report=read_revenue_report_observation(factory,record_id=report_id,ingestion_id=job)['report']
+    assert report['evidence_kind']=='publisher_catalogue'
+    assert report['published_on'] is None and report['catalogued_on']=='2026-07-08'
+    with factory() as db:
+        ids=list(db.scalars(select(RevenueBySource.id)))
+        assert len(ids)>=5
+    for record in ids:
+        with pytest.raises(SourceObservationUnavailable):
+            read_native_financial_observation(factory,record_id=record,ingestion_id=job,domain='revenue_by_source')
+    outcome=dispatch_committed_generation(factory,domain='revenue_by_source',ingestion_id=job,dry_run=False,include_reports=False)
+    assert outcome['drafts_created']==outcome['baselines']==0,outcome
+    assert outcome['refused']==len(ids),outcome
+    with factory() as db:
+        for model in (SocialPost,SourceCursor,SourceEvent):
+            assert db.scalar(select(func.count()).select_from(model))==0
+    no_delivery(factory)
+
+
+def test_constructed_national_wiring_baseline_changed_held_then_replay(pg,tmp_path,monkeypatch):
+    factory,_=pg; enable(factory,monkeypatch)
+    first=national_ingestion(factory,tmp_path,actual='1200000000.00')
+    initial=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=first,dry_run=False,include_reports=False)
+    assert initial['baselines']==1 and initial['drafts_created']==0,initial
+    same=national_ingestion(factory,tmp_path,actual='1200000000.00')
+    same_result=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=same,dry_run=False,include_reports=False)
+    assert same_result['unchanged']==1 and same_result['drafts_created']==0,same_result
+    changed=national_ingestion(factory,tmp_path,actual='1200000000.01')
+    result=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=changed,dry_run=False,include_reports=False)
+    assert result['drafts_created']==1,result
+    replay=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=changed,dry_run=False,include_reports=False)
+    assert replay['drafts_created']==0 and replay['unchanged']==1,replay
+    with factory() as db:
+        posts=list(db.scalars(select(SocialPost)));assert len(posts)==1
+        post=posts[0];assert post.editorial_state=='pending_review'
+        revision=db.get(SocialPostRevision,post.current_revision_id)
+        facts=revision.evidence_snapshot['source']['facts']
+        assert {f['value'] for f in facts}=={'1500000000.00','1200000000.01'}
+        assert all(f['unit']=='KES' and f['scale']=='units' for f in facts)
+        assert len({(f['source_document_id'],f['document_checksum'],f['published_on']) for f in facts})==1
+        assert revision.document['master']['link'].startswith('https://www.auditgava.com/reports/national_budget/')
+    no_delivery(factory)
+
+
+@pytest.mark.parametrize('change',['source_unavailable','source_wrong_publisher','row_quarantine','missing_receipt','missing_date','wrong_fiscal'])
+def test_constructed_national_current_evidence_refuses(pg,tmp_path,monkeypatch,change):
+    from models import DocumentStatus, FiscalPeriod
+    factory,_=pg;enable(factory,monkeypatch)
+    job=national_ingestion(factory,tmp_path)
+    with factory.begin() as db:
+        row=db.scalar(select(BudgetLine)); record=row.id
+        source=db.get(SourceDocument,row.source_document_id)
+        if change=='source_unavailable':source.status=DocumentStatus.ARCHIVED
+        elif change=='source_wrong_publisher':source.publisher='National Treasury'
+        elif change=='row_quarantine':row.quarantine_reason='operator_hold'
+        elif change=='wrong_fiscal':db.get(FiscalPeriod,row.period_id).label='FY2024/25'
+        elif change=='missing_receipt':
+            ext_id=row.provenance[-1]['source_evidence'][0]['receipt']['extraction_id']
+            db.get(Extraction,ext_id).extracted_json={}
+        else:
+            from seeding.native_report_authority import KEY
+            binding=source.meta[KEY]['national_budget']
+            ext=db.get(Extraction,binding['extraction_id'])
+            value=deepcopy(ext.extracted_json)
+            value['response_receipt']['observations'][0]['published_on']=None
+            ext.extracted_json=value
+    with pytest.raises((SourceObservationUnavailable,ValueError)):
+        read_native_financial_observation(factory,record_id=record,ingestion_id=job,domain='national_budget')
+    result=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=job,dry_run=False,include_reports=False)
+    assert result['drafts_created']==result['baselines']==0,result
+    with factory() as db:
+        assert db.scalar(select(func.count()).select_from(SocialPost))==0
+    no_delivery(factory)
+
+
+def test_genuine_press_text_does_not_gain_missing_publication_metadata(tmp_path):
+    from services.receipt_store import LocalReceiptStore
+    from seeding.domains.revenue_by_source.fetcher import _read_release
+    body=(Path('/work/backend/tests/fixtures/kra/fy2024_25_press_release.txt')).read_bytes()
+    url='https://www.kra.go.ke/news-center/press-release/2235-kra-grows-revenue-by-6-8-despite-tough-economic-environment-4'
+    class Client:
+        receipt_store=LocalReceiptStore(tmp_path/'receipts')
+        def get(self,url,**kw):
+            return httpx.Response(200,content=body,headers={'content-type':'text/html'},request=httpx.Request('GET',url))
+    release=_read_release(Client(),url,None)
+    assert release is not None
+    assert release.heads['PAYE'].amount_bn==Decimal('560.963')
+    assert release.native_report_authority is None
+    assert all(head.raw_amount is None for head in release.heads.values())
+
+
+def test_constructed_national_default_off_no_cursor_or_post(pg,tmp_path,monkeypatch):
+    factory,_=pg; enable(factory,monkeypatch)
+    monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
+    job=national_ingestion(factory,tmp_path)
+    with factory() as db:
+        assert db.scalar(select(BudgetLine)).publishable is False
+    outcome=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=job,dry_run=False,include_reports=False)
+    assert outcome['state']=='disabled' and outcome['reason']=='financial_environment_disabled',outcome
+    with factory() as db:
+        for model in (SocialPost,SourceCursor,SourceEvent):
+            assert db.scalar(select(func.count()).select_from(model))==0
+    no_delivery(factory)

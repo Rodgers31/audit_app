@@ -1,0 +1,99 @@
+"""Independent malformed selected-head and current binding attack controls."""
+from copy import deepcopy
+import json
+
+import pytest
+from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
+from models import DocumentStatus,IngestionJob,SourceDocument
+from seeding.native_report_authority import KEY
+from seeding.native_report_observations import read_native_report_record_ids,read_native_report_observation
+from seeding.source_observations import SourceObservationUnavailable
+from test_b83_generation_postgres import pg,no_publication
+from test_audit_editions import direct
+from test_audit_producer_flow import document,install,run_cli
+from test_b86_native_postgres import enable
+
+
+STRUCTURAL=['missing-series','empty-series','list-series','bool-series','number-series',
+    'short-key','uppercase-key','null-head','bool-head','float-head','string-head',
+    'zero-head','negative-head','absent-head','duplicate-head',
+    'empty-records','duplicate-records','bool-record','string-record','bad-record-container']
+
+
+@pytest.mark.parametrize('case',STRUCTURAL)
+def test_malformed_series_inventory_never_certifies_current_report(pg,tmp_path,case):
+    factory,_=pg
+    job,record,source=direct(factory,tmp_path,name='TEST MINISTRY',year=2025,day='2025-07-10')
+    with factory.begin() as db:
+        row=db.get(IngestionJob,job);meta=deepcopy(row.meta);scope=next(iter(meta['native_report_series']))
+        if case=='missing-series':meta.pop('native_report_series')
+        elif case in {'empty-series','list-series','bool-series','number-series'}:
+            meta['native_report_series']={'empty-series':{},'list-series':[],'bool-series':True,'number-series':1}[case]
+        elif case=='short-key':meta['native_report_series']={'a':record}
+        elif case=='uppercase-key':meta['native_report_series']={scope.upper():record}
+        elif case=='duplicate-head':meta['native_report_series'][('f'*32 if scope!='f'*32 else 'e'*32)]=record
+        elif case in {'empty-records','duplicate-records','bool-record','string-record','bad-record-container'}:
+            meta['native_report_records']={'bad-record-container':[]}.get(case,{'audits':{'empty-records':[],'duplicate-records':[record,record],'bool-record':[True],'string-record':[str(record)]}.get(case)})
+        else:
+            meta['native_report_series'][scope]={'null-head':None,'bool-head':True,'float-head':float(record),'string-head':str(record),'zero-head':0,'negative-head':-1,'absent-head':record+1000}[case]
+        row.meta=meta
+        flag_modified(row,'meta')
+        db.flush();db.refresh(row)
+        assert json.dumps(row.meta,sort_keys=True)==json.dumps(meta,sort_keys=True)
+    with pytest.raises(SourceObservationUnavailable):read_native_report_record_ids(factory,ingestion_id=job,domain='audits')
+    with pytest.raises(SourceObservationUnavailable):read_native_report_observation(factory,record_id=record,ingestion_id=job,domain='audits')
+    no_publication(factory)
+
+
+@pytest.mark.parametrize('case',['wrong-scope','bool-binding-record','wrong-binding-job','bool-country','md5','url','archived','no-binding'])
+def test_semantic_scope_and_source_binding_never_revive_report(pg,tmp_path,case):
+    factory,_=pg
+    job,record,source=direct(factory,tmp_path,name='TEST MINISTRY',year=2025,day='2025-07-10')
+    with factory.begin() as db:
+        if case=='wrong-scope':
+            row=db.get(IngestionJob,job);row.meta={**row.meta,'native_report_series':{'f'*32:record}}
+            flag_modified(row,'meta')
+        else:
+            row=db.get(SourceDocument,source);meta=deepcopy(row.meta)
+            if case=='bool-binding-record':meta[KEY]['audits']['extraction_id']=True
+            if case=='wrong-binding-job':meta[KEY]['audits']['ingestion_id']=job+1
+            if case=='bool-country':meta[KEY]['audits']['country_id']=True
+            if case=='md5':row.md5='b'*32
+            if case=='url':row.url='https://hostile.example/renamed.pdf'
+            if case=='archived':row.status=DocumentStatus.ARCHIVED
+            if case=='no-binding':meta[KEY].pop('audits')
+            row.meta=meta
+            flag_modified(row,'meta')
+            db.flush();db.refresh(row)
+            assert json.dumps(row.meta,sort_keys=True)==json.dumps(meta,sort_keys=True)
+    # A selector is not qualification: a structurally valid but wrongly scoped
+    # pointer may be returned as an ID; the actual current reader must refuse.
+    with pytest.raises(SourceObservationUnavailable):read_native_report_observation(factory,record_id=record,ingestion_id=job,domain='audits')
+    no_publication(factory)
+
+
+def test_unselected_valid_historical_receipt_is_not_current(pg,tmp_path,monkeypatch):
+    factory,_=pg;enable(factory,monkeypatch)
+    install(monkeypatch,tmp_path,dict([document(year=2025,day='2025-07-10'),document(year=2026,day='2026-07-10')]))
+    _,job,meta,_,_=run_cli(factory,monkeypatch,tmp_path)
+    selected=read_native_report_record_ids(factory,ingestion_id=job,domain='audits')
+    historical=set(meta['native_report_records']['audits'])-set(selected)
+    assert len(selected)==1 and len(historical)==1
+    for record in historical:
+        with pytest.raises(SourceObservationUnavailable):read_native_report_observation(factory,record_id=record,ingestion_id=job,domain='audits')
+    assert read_native_report_observation(factory,record_id=selected[0],ingestion_id=job,domain='audits')['report']['period']=='FY 2025/26'
+    no_publication(factory)
+
+
+def test_swapped_auditee_heads_cannot_authorize_each_other(pg,tmp_path,monkeypatch):
+    factory,_=pg;enable(factory,monkeypatch)
+    install(monkeypatch,tmp_path,dict([document(name='TEST MINISTRY'),document(name='OTHER MINISTRY')]))
+    _,job,meta,_,_=run_cli(factory,monkeypatch,tmp_path)
+    heads=meta['native_report_series'];assert len(heads)==2
+    keys=list(heads)
+    with factory.begin() as db:
+        row=db.get(IngestionJob,job);row.meta={**row.meta,'native_report_series':{keys[0]:heads[keys[1]],keys[1]:heads[keys[0]]}}
+    for record in heads.values():
+        with pytest.raises(SourceObservationUnavailable):read_native_report_observation(factory,record_id=record,ingestion_id=job,domain='audits')
+    no_publication(factory)

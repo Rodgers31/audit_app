@@ -1,0 +1,29 @@
+{
+  "scope": "Genuine historical PDF/post contents; local acquisition/job clocks; no actual source execution",
+  "source_sha256": "f99ec2997f13400d2fc1fb340154c9b91640591c6d1351415fc075b259a7c4b1",
+  "first_job": 1,
+  "reacquisition_job": 2,
+  "baselines": {
+    "state": "completed",
+    "reason": "COMMITTED_EVIDENCE_CONSUMED",
+    "processed": 10,
+    "drafts_created": 0,
+    "baselines": 10,
+    "unchanged": 0,
+    "refused": 0
+  },
+  "retained_replay": {
+    "state": "completed",
+    "reason": "COMMITTED_EVIDENCE_CONSUMED",
+    "processed": 10,
+    "drafts_created": 0,
+    "baselines": 0,
+    "unchanged": 10,
+    "refused": 0
+  },
+  "local_mock_requests": [
+    "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+    "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/",
+    "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/"
+  ]
+}

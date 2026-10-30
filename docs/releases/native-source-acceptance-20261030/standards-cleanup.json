@@ -1,0 +1,12 @@
+{
+  "owned_container": "standards-native-source-pg",
+  "owned_id": "cdb2e76447d633c07121ffc6b656546968609431f04db747396109278c0fda25",
+  "container_absent": true,
+  "removed_credential_files": [
+    "pg.env",
+    "runtime.env"
+  ],
+  "credential_files_absent": true,
+  "root_pg_or_node_targeted": false,
+  "data_was_tmpfs": true
+}

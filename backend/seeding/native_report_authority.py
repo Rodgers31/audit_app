@@ -279,6 +279,50 @@ def lock_native_domain(session, domain):
             {'domain': list(DOMAINS).index(domain)+1}).one()
 
 
+def _audit_series_head(session, previous_id, candidate, value):
+    """One current edition per auditee; preserve the full receipt inventory."""
+    if previous_id is None:
+        return candidate.id
+    if type(previous_id) is not int or not 0 < previous_id <= 2147483647:
+        raise ValueError('Exact audit series head required')
+    if previous_id == candidate.id:
+        return candidate.id
+    from sqlalchemy import select
+    if __package__.startswith('backend.'):
+        from backend.models import Extraction
+    else:
+        from models import Extraction
+    previous = session.execute(select(Extraction.extractor, Extraction.source_document_id,
+        Extraction.extracted_json['response_receipt']['observations'])
+        .where(Extraction.id == previous_id)).one_or_none()
+    if (previous is None or previous[0] != VERSION or type(previous[2]) is not list
+            or len(previous[2]) != 1 or type(previous[2][0]) is not dict):
+        raise ValueError('Intact audit series receipt required')
+    old = previous[2][0]
+    if (old.get('domain') != 'audits' or old.get('scope_key') != value['scope_key']
+            or not isinstance(old.get('document_checksum'), str)
+            or re.fullmatch('[a-f0-9]{64}', old['document_checksum']) is None):
+        raise ValueError('Exact audit series scope required')
+    try:
+        before = tuple(date.fromisoformat(old[k]) for k in ('period_start','period_end','published_on'))
+        after = tuple(date.fromisoformat(value[k]) for k in ('period_start','period_end','published_on'))
+    except (KeyError, TypeError, ValueError):
+        raise ValueError('Full audit edition chronology required') from None
+    if not before[0] <= before[1] <= before[2]:
+        raise ValueError('Full audit edition chronology required')
+    if before == after:
+        if old['document_checksum'] != value['document_checksum']:
+            raise ValueError('Conflicting same-release audit editions')
+        return candidate.id if previous[1] == candidate.source_document_id else previous_id
+    if all(a <= b for a,b in zip(before, after)):
+        return candidate.id
+    if all(a >= b for a,b in zip(before, after)) and previous[1] != candidate.source_document_id:
+        return previous_id
+    # Reusing a URL cannot replace the source binding of the chosen newer
+    # edition with an older body. The caller's transaction must roll back.
+    raise ValueError('Conflicting audit edition chronology')
+
+
 def persist_native_report(session, source, authority, *, context, domain):
     """Bind proof to the native transaction/job. No commit or silent promotion.
 
@@ -371,7 +415,14 @@ def persist_native_report(session, source, authority, *, context, domain):
         raise ValueError('Native report cohort limit exceeded')
     records[domain] = ids
     series = dict(meta.get('native_report_series') or {})
-    series[authority.value['scope_key']] = ext.id
+    scope = authority.value['scope_key']
+    if domain == 'audits':
+        previous = series.get(scope)
+        if previous is not None and previous not in ids:
+            raise ValueError('Audit series head is outside this job')
+        series[scope] = _audit_series_head(session, previous, ext, authority.value)
+    else:
+        series[scope] = ext.id
     job.meta = {**meta, 'native_report_records': records, 'native_report_series': series}
     expected_meta = digest(job.meta)
     session.flush()

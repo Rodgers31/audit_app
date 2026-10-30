@@ -1,0 +1,42 @@
+"""Host-only orchestration, no source imports or network access."""
+from pathlib import Path
+import subprocess,json,sys,time
+
+BASE=Path(__file__).resolve().parent
+SOURCE=BASE.parent/'candidate-3'
+mode=sys.argv[1]
+assert mode in ('normal','optimized','reader-normal','reader-optimized','reader-fixed-normal','reader-fixed-optimized')
+national=False
+reader=mode.startswith('reader-')
+label='final3-'+mode
+assert not (BASE/(label+'.xml')).exists() and not (BASE/(label+'.txt')).exists()
+command=['docker','run','--pull','never','--rm','--name','standards-native-'+label,
+    '--network','container:standards-native-source-pg','--cpus','1','--memory','4g' if national else '2g',
+    '--pids-limit','256','--env-file',str(BASE/'runtime.env'),
+    '-v',str(SOURCE)+':/work:ro','-v',str(BASE)+':/evidence','-v',str(BASE.parent)+':/primary:ro',
+    '-w','/work/backend','admin-redesign-python-runtime:local','python']
+if mode.endswith('optimized'):command.append('-O')
+command+=['-m','pytest','-q','-p','no:cacheprovider']
+command+=(['/evidence/test_retained_national_reader.py'] if reader else [
+    'tests/social/test_kra_press_source_acceptance.py','/evidence/test_genuine_kra.py',
+    '/evidence/test_press_hostile.py','/evidence/test_acceptance_independent.py',
+    '/evidence/test_scope_abbreviations.py','/evidence/test_adjacent_scope.py'])
+command+=['--junitxml=/evidence/'+label+'.xml']
+(BASE/(label+'-command.json')).write_text(json.dumps(command,indent=2)+'\n')
+started=time.monotonic();samples=[]
+with (BASE/(label+'.txt')).open('w') as output:
+    proc=subprocess.Popen(command,stdout=output,stderr=subprocess.STDOUT)
+    while proc.poll() is None:
+        if time.monotonic()-started>900:
+            subprocess.run(['docker','stop','--timeout','5','standards-native-'+label],capture_output=True)
+            raise TimeoutError(label)
+        if national:
+            result=subprocess.run(['docker','stats','--no-stream','--format','{{json .}}','standards-native-'+label],capture_output=True,text=True,timeout=15)
+            if result.returncode==0 and result.stdout.strip():
+                samples.append({'elapsed_seconds':round(time.monotonic()-started,3),'stats':json.loads(result.stdout)})
+        time.sleep(.2 if not national else 3)
+elapsed=time.monotonic()-started
+(BASE/(label+'-execution.json')).write_text(json.dumps({'command_file':label+'-command.json',
+    'child_exit_code':proc.returncode,'elapsed_seconds':elapsed,'samples':samples},indent=2)+'\n')
+print(json.dumps({'label':label,'child_exit_code':proc.returncode,'elapsed_seconds':elapsed}))
+sys.exit(proc.returncode)

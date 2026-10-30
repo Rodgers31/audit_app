@@ -1,0 +1,24 @@
+"""Visible unknown prose in several DOM shapes must stop inherited scope."""
+import pytest
+from test_kra_press_source_acceptance import article,Publisher,URL
+from seeding.domains.revenue_by_source.fetcher import _read_release
+
+MARKER=b'<p style="text-align: justify;">Pay As You Earn'
+
+@pytest.mark.parametrize('prose',[
+    b'<p>These collections cover Q1.</p>',
+    b'These collections cover Q1.',
+    b'<h3>These collections cover Q1.</h3>',
+    b'<div>These collections cover Q1.</div>',
+])
+def test_unknown_visible_adjacent_prose_stops_claim_scope(tmp_path,prose):
+    body=article();assert body.count(MARKER)==1
+    body=body.replace(MARKER,prose+MARKER)
+    release=_read_release(Publisher(tmp_path,body),URL,None)
+    assert release is None or release.heads.get('PAYE') is None or release.heads['PAYE'].raw_amount is None
+
+@pytest.mark.parametrize('inert',[b'\n \t ',b'<!-- inert, non-visible comment -->'])
+def test_ignored_markup_does_not_defeat_positive_control(tmp_path,inert):
+    body=article();assert body.count(MARKER)==1
+    release=_read_release(Publisher(tmp_path,body.replace(MARKER,inert+MARKER)),URL,None)
+    assert release is not None and release.heads['PAYE'].raw_amount is not None

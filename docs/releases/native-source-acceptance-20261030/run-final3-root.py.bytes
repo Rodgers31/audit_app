@@ -1,0 +1,12 @@
+import pathlib,subprocess,json,sys
+base=pathlib.Path(__file__).parent
+selection=(base/'root-selection.txt').read_text().splitlines()
+common=['docker','run','--rm','--pull','never','--network','container:admin-redesign-pg','--cpus','1','--memory','2g','--pids-limit','256','--env-file',str(base.parent/'release-rollout-20261030/lineage-runtime.env'),'-e','PYTHONPATH=/work/backend:/work/backend/tests:/work/backend/tests/social','-v',str(base/'candidate-3')+':/work:ro','-v',str(base)+':/evidence','-w','/work/backend','admin-redesign-python-runtime:local','python']
+for mode in ['normal','optimized']:
+ cmd=common+(['-O'] if mode=='optimized' else [])+['-m','pytest','-p','no:cacheprovider','-q','--tb=short']+selection+['--junitxml=/evidence/final3-root-'+mode+'.xml']
+ (base/('final3-root-'+mode+'-command.json')).write_text(json.dumps(cmd,indent=2)+'\n')
+ with (base/('final3-root-'+mode+'.log')).open('w') as f:
+  result=subprocess.run(cmd,stdout=f,stderr=subprocess.STDOUT)
+ (base/('final3-root-'+mode+'-exit.json')).write_text(json.dumps({'exit_code':result.returncode})+'\n')
+ print(mode,result.returncode,flush=True)
+ if result.returncode:sys.exit(result.returncode)

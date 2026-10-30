@@ -1,0 +1,12 @@
+"""Compact publisher reporting-period suffixes, after a recognized sentence."""
+import pytest
+from test_kra_press_source_acceptance import article,Publisher,URL
+from seeding.domains.revenue_by_source.fetcher import _read_release
+
+@pytest.mark.parametrize('period',['Q1','H1'])
+def test_claim_short_period_is_not_whole_year(tmp_path,period):
+    body=article().replace(b'Despite the slow growth,',
+        ('These collections cover '+period+'. Despite the slow growth,').encode())
+    assert body!=article()
+    release=_read_release(Publisher(tmp_path,body),URL,None)
+    assert release is None or release.heads.get('PAYE') is None or release.heads['PAYE'].raw_amount is None

@@ -1,0 +1,85 @@
+"""Stdlib evidence reconciliation only; this does not rerun acceptance."""
+from pathlib import Path
+import hashlib,json,xml.etree.ElementTree as ET
+
+BASE=Path(__file__).resolve().parent
+PARENT=BASE.parent
+SOURCE=PARENT/'candidate-3'
+manifest=json.loads((PARENT/'candidate-3-manifest.json').read_text())
+for path,sha in manifest.items():
+    assert hashlib.sha256((SOURCE/path).read_bytes()).hexdigest()==sha,path
+mapping=hashlib.sha256(json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+assert mapping=='dbbe7eb21d4b35c90165ee11ca7ae1749cc71e4e48c95bee67368f46aeebd82a'
+after={'files':len(manifest),'mapping_sha256':mapping,'all_entries_match':True}
+(BASE/'final3-manifest-after.json').write_text(json.dumps(after,indent=2)+'\n')
+
+def cases(label):
+    execution=json.loads((BASE/(label+'-execution.json')).read_text())
+    assert type(execution['child_exit_code']) is int and execution['child_exit_code']==0
+    rows=list(ET.parse(BASE/(label+'.xml')).iter('testcase'))
+    assert rows and not any(row.find(kind) is not None for row in rows for kind in ('failure','error','skipped'))
+    return [row.attrib['classname']+'::'+row.attrib['name'] for row in rows]
+
+normal=cases('final3-normal');optimized=cases('final3-optimized')
+assert len(normal)==79 and sorted(normal)==sorted(optimized)
+reader=cases('final3-reader-fixed-normal')
+assert len(reader)==1 and reader==cases('final3-reader-fixed-optimized')
+full_pdf=cases('final2-national-normal');assert len(full_pdf)==1
+assert len(set(normal+reader+full_pdf))==81
+ledger={'final3_normal':[{'id':i,'outcome':'passed','junit':'final3-normal.xml'} for i in normal],
+        'final3_optimized':[{'id':i,'outcome':'passed','junit':'final3-optimized.xml'} for i in optimized],
+        'final3_retained_national_reader_normal':[{'id':i,'outcome':'passed','junit':'final3-reader-fixed-normal.xml'} for i in reader],
+        'final3_retained_national_reader_optimized':[{'id':i,'outcome':'passed','junit':'final3-reader-fixed-optimized.xml'} for i in reader],
+        'carried_unchanged_national_full_pdf_normal':[{'id':i,'outcome':'passed','junit':'final2-national-normal.xml'} for i in full_pdf]}
+(BASE/'CASE-LEDGER.json').write_text(json.dumps(ledger,indent=2)+'\n')
+assert json.loads((BASE/'CLEANUP.json').read_text())['credential_files_absent'] is True
+pins=json.loads((BASE/'national-primary-pins.json').read_text())
+pins['kra-annual-release.html']={'sha256':'ad35dcb5175af4dd26a8707dede239a879c8af0c885f325d3b6cf1cdbc47dce3','bytes':119603}
+for name,record in pins.items():
+    body=(PARENT/name).read_bytes()
+    assert len(body)==record['bytes'] and hashlib.sha256(body).hexdigest()==record['sha256']
+receipt={'verdict':'scoped_pass','source':'candidate-3','source_files':len(manifest),'source_mapping_sha256':mapping,
+    'source_verified_before_after':True,'distinct_final3_cases':80,'normal_passes':80,'optimized_passes':80,
+    'carried_national_full_pdf_cases':1,'carried_scope':'Actual PDF fresh producer on candidate2; all backend inputs except unrelated revenue press grammar/test are byte-identical to3; fresh final3 reader verifies preserved20cells normal/O.',
+    'primary_inputs':pins,'full_pdf_wall_seconds':97.002075417,'full_pdf_sampled_peak_gib':3.557,
+    'genuine_scope':['FY2024/25 historical KRA full HTML through selected real producer/writer and current PG qualification; silent baseline and fresh-job unchanged replay.',
+        'FY2025/26 national original PDF plus exact publication post; two actual fresh parses,20verifiedcells,10silentbaselines then10unchanged; final3 current reader confirms.',
+        'Retained FY2025/26 KRA wrapper/dashboard/catalogue correctly refuses financial claims with publication day unknown.'],
+    'synthetic_scope':['Owned HTTP/acquisition/job clocks and DB only; source contents genuine where stated.',
+        'Permanent reconstructed selected-paragraph fixture and explicit changed-value controls: one held synthetic correction then unchanged/replay, no new official facts.'],
+    'closed_findings':['Real styled/later multi-figure KRA paragraphs lacked financial cell authority (P2 acceptance gap; fail-closed).',
+        'Claim-local other periods, month or Q1/H1 could inherit annual scope (P2 source-accuracy defect); closed whole-claim/tail and section grammar.',
+        'Unsupported C0 style byte normalized away (P3 grammar boundary); explicit CSS whitespace now refuses.'],
+    'limits':['No production acceptance/activation; no agent network/provider/production calls. All generation toggles used only inside isolated tests; fresh final3 reader verifies external environment flags false.',
+        'Historical KRA financial acceptance does not grant a missing FY2025/26 publication day; current catalogue-only financial refusal is required.',
+        'Full-PDF proof used one CPU/4GiB/PID256 after authorized resource increase;2GiB interrupted attempt retained without test credit. No deployment-capacity claim.',
+        'No new product changes by reviewer; only requested permanent tests. No commits/pushes.'],
+    'cleanup':'CLEANUP.json','case_ledger':'CASE-LEDGER.json'}
+report='''# Independent Standards review — #802
+
+Scoped **PASS** on frozen `candidate-3`: 6,037 files, mapping SHA256 `dbbe7eb21d4b35c90165ee11ca7ae1749cc71e4e48c95bee67368f46aeebd82a`. Every manifest entry matched before and after.
+
+- **80 distinct current-source controls passed in normal and optimized Python**, with no failures, errors or skips: 79 financial/source/HTML controls plus one preserved-national-data reader check per mode. `CASE-LEDGER.json` reconciles the actual XML and zero child exits.
+- The exact historical KRA HTML (119,603 bytes, SHA256 `ad35dcb5175af4dd26a8707dede239a879c8af0c885f325d3b6cf1cdbc47dce3`) reaches real producer/writer/PG qualification, a silent baseline, then unchanged fresh-job replay. Selected-text fixtures separately prove an explicitly synthetic correction creates one `pending_review` draft and no duplicate.
+- The genuine national PDF (15,609,728 bytes, SHA256 `f99ec2997f13400d2fc1fb340154c9b91640591c6d1351415fc075b259a7c4b1`) plus exact publication post (93,880 bytes, SHA256 `6f5d2afc27cbd98250453490e7e2ced6d7d17e663e4bf28d4d166538aafb2e9d`) passes actual `_fetch_annual_sector_expenditure` twice: **20 verified cells, ten silent baselines, then ten unchanged records, zero drafts/delivery effects**. This candidate2 proof carries through an exact source graph comparison; the final3 reader rechecks every cell in both modes before fixture truncation.
+- Retained current KRA dashboard/catalogue data remains availability-only with an unknown publication day. Financial admission refuses it. No day was invented and no official correction was claimed.
+
+The reviewed repairs close three observed classes: missing cell authority on the genuine styled KRA layout (fail-closed acceptance gap); wrong-period/month/Q1/H1 claims inheriting annual scope; unsupported C0 CSS normalization. Original red logs and permanent regressions remain. Unknown visible adjacent paragraphs, bare text, tags and lists refuse; comment/whitespace positive controls remain live. No actionable finding remains within this scope.
+
+The national test took **97.00 seconds**, including two full fresh parses and qualification/dispatch/readback, at one CPU with a sampled peak **3.557 GiB** under the authorized 4 GiB cap. The prior 2 GiB attempt was interrupted (exit137) and receives no acceptance credit. This is a local ingestion resource observation, not a production capacity or latency guarantee.
+
+All HTTP transport, acquisition/job clocks and DBs were owned offline fixtures. Genuine bodies are historical retained publisher contents; changed values are synthetic controls. This reviewer made no production/provider/network call. Generation flags were enabled only inside fixture tests; the fresh final3 reader checks all external generation/publishing/worker/upload flags false. Root production holds were not independently re-probed here. No product edits, deployment, uploads, publication, commit or push occurred.
+
+`CLEANUP.json` verifies the recorded owned tmpfs PostgreSQL container and both credential env files are absent; root PG/node were untouched. Exact commands, child exits, JUnit, input pins and source comparison are retained alongside `RECEIPT.json`. Full official articles/PDFs remain external; they are not copied into the repository.
+
+Replay requires the pinned candidate2/3 trees, listed primary inputs and the cached Python/PG images. Use a fresh sibling evidence directory: copy the `test_*.py`, `prepare.py`, `run_final.py`, `run_final3.py`, `cleanup.py` and `national-primary-pins.json`; link its `accepted-source` to the retained migration source. Run `prepare.py`, then `run_final.py national-normal`, `run_final3.py reader-fixed-normal`, `reader-fixed-optimized`, `normal`, `optimized`, and `cleanup.py`. The launchers refuse overwriting original outputs and use capped offline Docker throughout. The XML/receipt checks in `seal.py` are evidence reconciliation, not an acceptance rerun.
+'''
+(BASE/'REPORT.md').write_text(report)
+excluded={'pg.env','runtime.env','RECEIPT.json','SHA256SUMS'}
+receipt['artifacts']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(BASE.iterdir()) if p.is_file() and p.name not in excluded}
+(BASE/'RECEIPT.json').write_text(json.dumps(receipt,indent=2)+'\n')
+checks={**receipt['artifacts'],'RECEIPT.json':hashlib.sha256((BASE/'RECEIPT.json').read_bytes()).hexdigest()}
+(BASE/'SHA256SUMS').write_text(''.join(sha+'  '+name+'\n' for name,sha in sorted(checks.items())))
+readback=json.loads((BASE/'RECEIPT.json').read_text())
+assert readback==receipt
+print(json.dumps({'verdict':'scoped_pass','current_source_normal':80,'current_source_optimized':80,'carried_full_pdf':1,'source_mapping_sha256':mapping}))

@@ -1,0 +1,817 @@
+{
+  "final3_normal": [
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_retained_article_shape_binds_annual_cells_not_targets_or_halfyears",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_shape_current_pg_baseline_reacquire_correction_and_replay",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:display:none]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:visibility:hidden]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:text-align: justify; display:none]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:color:white]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:background:red]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[hidden]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[aria_hidden]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[unknown_class]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:text-align: justify\\x1f]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[duplicate]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[half_year]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[month]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[target]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[missing_heading]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_old_fy]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_month]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_q1]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_h1]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[missing_date]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[future_date]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[duplicate_date]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[wrong_period]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[quarterly_lead]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-VAT]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-VAT]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-VAT]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-VAT]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_list_cannot_reopen_an_annual_section",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_section_whitespace_and_comments_preserve_qualified_cells",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_claim_local_period_refuses_committed_financial_fact[claim_old_fy]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_claim_local_period_refuses_committed_financial_fact[claim_month]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_exact_genuine_html_has_dated_report_and_measure_evidence",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_genuine_producer_pg_financial_baseline_then_exact_reacquisition",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_synthetic_supported_simple_press_declared_rounding_is_preserved",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in FY 2023/2024]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in the first half of Financial Year 2024/2025]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in July 2024]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify;\\x00display:none]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify\\x1f]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align:\\njustify;display:none]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify !important]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_wrong_claim_scope_cannot_reach_committed_financial_fact[ in FY 2023/2024]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_wrong_claim_scope_cannot_reach_committed_financial_fact[ in July 2024]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_genuine_retained_kra_catalogue_never_admits_numeric_claims",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_wiring_baseline_changed_held_then_replay",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[source_unavailable]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[source_wrong_publisher]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[row_quarantine]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[missing_receipt]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[missing_date]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[wrong_fiscal]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_genuine_press_text_does_not_gain_missing_publication_metadata",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_constructed_national_default_off_no_cursor_or_post",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_claim_short_period_is_not_whole_year[Q1]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_claim_short_period_is_not_whole_year[H1]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<p>These collections cover Q1.</p>]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[These collections cover Q1.]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<h3>These collections cover Q1.</h3>]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<div>These collections cover Q1.</div>]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_ignored_markup_does_not_defeat_positive_control[\\n \\t ]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    },
+    {
+      "id": "::test_ignored_markup_does_not_defeat_positive_control[<!-- inert, non-visible comment -->]",
+      "outcome": "passed",
+      "junit": "final3-normal.xml"
+    }
+  ],
+  "final3_optimized": [
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_retained_article_shape_binds_annual_cells_not_targets_or_halfyears",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_shape_current_pg_baseline_reacquire_correction_and_replay",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:display:none]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:visibility:hidden]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:text-align: justify; display:none]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:color:white]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:background:red]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[hidden]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[aria_hidden]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[unknown_class]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[style:text-align: justify\\x1f]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[duplicate]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[half_year]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[month]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[target]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[missing_heading]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_old_fy]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_month]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_q1]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_head_ambiguity_hidden_css_and_nonannual_scope_refuse[claim_h1]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[missing_date]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[future_date]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[duplicate_date]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[wrong_period]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_missing_or_ambiguous_publication_and_period_never_admit_cells[quarterly_lead]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-VAT]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[claim-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-VAT]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_every_article_head_refuses_another_period[tail-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-VAT]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[paragraph-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-PAYE]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Corporation Tax]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-VAT]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Excise Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_section_qualification_cannot_lend_annual_scope[bare_text-Customs & Import Duty]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_unknown_list_cannot_reopen_an_annual_section",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_section_whitespace_and_comments_preserve_qualified_cells",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_claim_local_period_refuses_committed_financial_fact[claim_old_fy]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "tests.social.test_kra_press_source_acceptance::test_article_claim_local_period_refuses_committed_financial_fact[claim_month]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_exact_genuine_html_has_dated_report_and_measure_evidence",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_genuine_producer_pg_financial_baseline_then_exact_reacquisition",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_synthetic_supported_simple_press_declared_rounding_is_preserved",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in FY 2023/2024]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in the first half of Financial Year 2024/2025]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_explicit_claim_local_period_cannot_inherit_other_annual_scope[ in July 2024]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify;\\x00display:none]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify\\x1f]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align:\\njustify;display:none]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_control_or_arbitrary_css_not_promoted[text-align: justify !important]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_wrong_claim_scope_cannot_reach_committed_financial_fact[ in FY 2023/2024]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_wrong_claim_scope_cannot_reach_committed_financial_fact[ in July 2024]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_genuine_retained_kra_catalogue_never_admits_numeric_claims",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_wiring_baseline_changed_held_then_replay",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[source_unavailable]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[source_wrong_publisher]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[row_quarantine]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[missing_receipt]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[missing_date]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_current_evidence_refuses[wrong_fiscal]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_genuine_press_text_does_not_gain_missing_publication_metadata",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_constructed_national_default_off_no_cursor_or_post",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_claim_short_period_is_not_whole_year[Q1]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_claim_short_period_is_not_whole_year[H1]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<p>These collections cover Q1.</p>]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[These collections cover Q1.]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<h3>These collections cover Q1.</h3>]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_unknown_visible_adjacent_prose_stops_claim_scope[<div>These collections cover Q1.</div>]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_ignored_markup_does_not_defeat_positive_control[\\n \\t ]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    },
+    {
+      "id": "::test_ignored_markup_does_not_defeat_positive_control[<!-- inert, non-visible comment -->]",
+      "outcome": "passed",
+      "junit": "final3-optimized.xml"
+    }
+  ],
+  "final3_retained_national_reader_normal": [
+    {
+      "id": "test_retained_national_reader::test_final_reader_rechecks_genuine_national_cells_without_generation",
+      "outcome": "passed",
+      "junit": "final3-reader-fixed-normal.xml"
+    }
+  ],
+  "final3_retained_national_reader_optimized": [
+    {
+      "id": "test_retained_national_reader::test_final_reader_rechecks_genuine_national_cells_without_generation",
+      "outcome": "passed",
+      "junit": "final3-reader-fixed-optimized.xml"
+    }
+  ],
+  "carried_unchanged_national_full_pdf_normal": [
+    {
+      "id": "test_genuine_national::test_exact_national_pdf_fresh_parse_pg_baseline_then_retained_replay",
+      "outcome": "passed",
+      "junit": "final2-national-normal.xml"
+    }
+  ]
+}

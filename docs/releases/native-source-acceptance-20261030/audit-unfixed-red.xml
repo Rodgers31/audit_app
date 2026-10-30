@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="10" time="1.231" timestamp="2026-10-30T21:07:01.375478+00:00" hostname="72e0925f7430"><testcase classname="tests.social.test_audit_report_editions" name="test_audit_job_selects_latest_edition_independent_of_order[older-first]" time="0.188"><failure message="assert 2 == 1&#10; +  where 2 = len((2, 4))">tests/social/test_audit_report_editions.py:121: in test_audit_job_selects_latest_edition_independent_of_order
+    assert len(ids)==1
+E   assert 2 == 1
+E    +  where 2 = len((2, 4))</failure></testcase><testcase classname="tests.social.test_audit_report_editions" name="test_audit_job_selects_latest_edition_independent_of_order[newer-first]" time="0.104"><failure message="assert 2 == 1&#10; +  where 2 = len((2, 4))">tests/social/test_audit_report_editions.py:121: in test_audit_job_selects_latest_edition_independent_of_order
+    assert len(ids)==1
+E   assert 2 == 1
+E    +  where 2 = len((2, 4))</failure></testcase><testcase classname="tests.social.test_audit_report_editions" name="test_audit_qualified_and_unsupported_source_scopes[disjoint]" time="0.116" /><testcase classname="tests.social.test_audit_report_editions" name="test_audit_qualified_and_unsupported_source_scopes[mixed]" time="0.100" /><testcase classname="tests.social.test_audit_report_editions" name="test_audit_qualified_and_unsupported_source_scopes[missing-day]" time="0.072" /><testcase classname="tests.social.test_audit_report_editions" name="test_audit_qualified_and_unsupported_source_scopes[combined-scope]" time="0.073" /><testcase classname="tests.social.test_audit_report_editions" name="test_same_source_url_cannot_leave_an_inaccessible_selected_head[False]" time="0.057"><failure message="assert 2 == 1&#10; +  where 2 = len((1, 2))">tests/social/test_audit_report_editions.py:192: in test_same_source_url_cannot_leave_an_inaccessible_selected_head
+    assert len(ids)==1
+E   assert 2 == 1
+E    +  where 2 = len((1, 2))</failure></testcase><testcase classname="tests.social.test_audit_report_editions" name="test_same_source_url_cannot_leave_an_inaccessible_selected_head[True]" time="0.057"><failure message="assert 2 == 1&#10; +  where 2 = len((1, 2))">tests/social/test_audit_report_editions.py:192: in test_same_source_url_cannot_leave_an_inaccessible_selected_head
+    assert len(ids)==1
+E   assert 2 == 1
+E    +  where 2 = len((1, 2))</failure></testcase><testcase classname="tests.social.test_audit_report_editions" name="test_ambiguous_audit_editions_refuse_current_scope[same-release-conflict]" time="0.054"><failure message="Failed: DID NOT RAISE SourceObservationUnavailable">tests/social/test_audit_report_editions.py:209: in test_ambiguous_audit_editions_refuse_current_scope
+    with pytest.raises(SourceObservationUnavailable):read_native_report_record_ids(audit_pg,ingestion_id=job,domain='audits')
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SourceObservationUnavailable</failure></testcase><testcase classname="tests.social.test_audit_report_editions" name="test_ambiguous_audit_editions_refuse_current_scope[crossed-chronology]" time="0.052"><failure message="Failed: DID NOT RAISE SourceObservationUnavailable">tests/social/test_audit_report_editions.py:209: in test_ambiguous_audit_editions_refuse_current_scope
+    with pytest.raises(SourceObservationUnavailable):read_native_report_record_ids(audit_pg,ingestion_id=job,domain='audits')
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SourceObservationUnavailable</failure></testcase></testsuite></testsuites>
