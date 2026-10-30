@@ -1,0 +1,16 @@
+{
+  "time_utc": "2026-10-30T17:32:13.610276+00:00",
+  "id": "bd0cbe1b00741a9d516555be74e2d0ad5bd76b356a829856ba8e61e0558b3aba",
+  "container": "standards-pr856-cost-pg",
+  "retained_idle_at_parent_request": true,
+  "no_tests_running": true,
+  "guard": {
+    "database": "standards_pending_source_test",
+    "host": "127.0.0.1",
+    "port": 55492,
+    "temporary_worker_roles": 0,
+    "authority_view_absent": true,
+    "snapshot_view_absent": true
+  },
+  "credential_files_created": []
+}

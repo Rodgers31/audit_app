@@ -1,0 +1,7 @@
+{
+  "unchanged_desired_tests": [
+    "test_hard_phase.py",
+    "test_phase_pg.py"
+  ],
+  "previous_deadline_control_adaptation": "One alarm-list assertion now expects separate financial/report alarm entries; all receipt/source assertions unchanged."
+}

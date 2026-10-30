@@ -1,0 +1,10 @@
+{
+  "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/cohort-query-candidate-7",
+  "mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "sha256": {
+    "backend/seeding/cli.py": "56166d6156ef23bec8b176154c3295292d18ade3485724eb93a084cecafc51c1",
+    "backend/seeding/generation_limits.py": "6d3c61ba2ada221be8e8519ef8e447e9fcb383f1e25591901a44e3aac8f153f4",
+    "backend/social/generation/integration.py": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0"
+  },
+  "matching_commit": "d0da4996327213049614cd8f09b373bcaa856a23"
+}

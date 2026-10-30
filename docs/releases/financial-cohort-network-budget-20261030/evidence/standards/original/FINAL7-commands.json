@@ -1,0 +1,118 @@
+{
+  "guard": "Fresh exclusively owned standards-pr856-cost-pg only; never parent/production PG. Docker --network none namespace, 1CPU/512MiB/128PIDs/256MiBdata tmpfs; loopback55492/standards_pending_source_test, unchanged Alembic a756b20a0001 via prepare_current_pg.py. --pull never; no installs/builds/downloads.",
+  "source_mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "pg_runtime_prefix": [
+    "docker",
+    "run",
+    "--pull",
+    "never",
+    "--rm",
+    "--network",
+    "container:standards-pr856-cost-pg",
+    "--cpus",
+    "1",
+    "--memory",
+    "2g",
+    "--pids-limit",
+    "256",
+    "-e",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "-e",
+    "PYTHON_DOTENV_DISABLED=1",
+    "-e",
+    "PYTHONPATH=/work/backend:/work/backend/tests:/work/backend/tests/social:/review:/prior",
+    "-e",
+    "STANDARDS_PG_URL=postgresql://postgres@127.0.0.1:55492/standards_pending_source_test",
+    "-e",
+    "DATABASE_URL=postgresql://postgres@127.0.0.1:55492/standards_pending_source_test",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/cohort-query-candidate-7:/work:ro",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pending-source-lane-standards-review:/prior:ro",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pr856-metadata-cost-standards:/review",
+    "-w",
+    "/work/backend",
+    "admin-redesign-python-runtime:local",
+    "python",
+    "-m",
+    "pytest",
+    "-p",
+    "no:cacheprovider",
+    "-v",
+    "-s"
+  ],
+  "isolated_runtime_prefix": [
+    "docker",
+    "run",
+    "--pull",
+    "never",
+    "--rm",
+    "--network",
+    "none",
+    "--cpus",
+    "1",
+    "--memory",
+    "2g",
+    "--pids-limit",
+    "256",
+    "-e",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "-e",
+    "PYTHON_DOTENV_DISABLED=1",
+    "-e",
+    "PYTHONPATH=/work/backend:/work/backend/tests:/work/backend/tests/social:/review",
+    "-e",
+    "DATABASE_URL=sqlite:////tmp/standards-final7-units.db",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/cohort-query-candidate-7:/work:ro",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pr856-metadata-cost-standards:/review",
+    "-w",
+    "/work/backend",
+    "admin-redesign-python-runtime:local",
+    "python",
+    "-m",
+    "pytest",
+    "-p",
+    "no:cacheprovider",
+    "-v"
+  ],
+  "runs": [
+    {
+      "prefix": "pg",
+      "args": [
+        "/review/test_candidate7_facebook_150ms.py",
+        "--junitxml=/review/candidate7-real150ms.xml"
+      ],
+      "child_exit_code": 0
+    },
+    {
+      "prefix": "isolated",
+      "args": [
+        "/review/test_final7_bounds.py",
+        "--junitxml=/review/candidate7-bounds.xml"
+      ],
+      "child_exit_code": 0
+    },
+    {
+      "prefix": "isolated",
+      "args": [
+        "/review/test_final7_storage.py",
+        "--junitxml=/review/candidate7-storage.xml"
+      ],
+      "child_exit_code": 0
+    },
+    {
+      "prefix": "pg",
+      "args": [
+        "/review/test_final7_source_guards.py",
+        "/review/test_final7_global_prefix.py",
+        "/prior/test_completion_witness.py",
+        "/prior/test_witness_contexts.py::test_shared_witness_actual_source_context_baseline_change_and_replay",
+        "--junitxml=/review/candidate7-source-guards.xml"
+      ],
+      "child_exit_code": 0
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+--- 
++++ 
+@@ -124,9 +124,9 @@
+ 
+ 
+ def _post_commit_generation(factory, *, domain, ingestion_id, dry_run, deadline=None):
+-    """One hard budget; keep the first phase's confirmed result on later timeout."""
++    """Hard phase caps share one deadline; later timeout preserves financial work."""
+     from .generation_dispatch import COUNTERS, dispatch_committed_generation, dispatch_committed_report_generation, record_generation_timeout
+-    from .generation_limits import bounded_generation_envelope_seconds
++    from .generation_limits import bounded_generation_envelope_seconds, generation_phase_seconds
+     include_reports = os.environ.get('SOCIAL_REPORT_GENERATION_ENABLED','false') != 'false'
+     remaining = None
+     if deadline is not None:
+@@ -148,12 +148,20 @@
+                 **dict.fromkeys(COUNTERS, 0)}, reports_started=False)
+         return
+     financial_outcome, reports_started = None, False
++    generation_deadline = time.monotonic()+budget
+     try:
+-        with _domain_timeout(budget):
++        # Source selection and outcome persistence are inside each dispatch.
++        # Neither may borrow the other phase's allowance or the cleanup reserve.
++        with _domain_timeout(min(budget, generation_phase_seconds(domain))):
+             financial_outcome = dispatch_committed_generation(factory, domain=domain,
+                 ingestion_id=ingestion_id, dry_run=dry_run, include_reports=False)
+-            if include_reports:
+-                reports_started = True
++        if include_reports:
++            report_budget = min(generation_phase_seconds(domain, reports=True),
++                max(0, int(generation_deadline-time.monotonic())))
++            if report_budget == 0:
++                raise DomainTimeoutError('Generation run budget exhausted before reports')
++            reports_started = True
++            with _domain_timeout(report_budget):
+                 dispatch_committed_report_generation(factory, domain=domain, ingestion_id=ingestion_id, dry_run=dry_run)
+     except DomainTimeoutError:
+         record_generation_timeout(factory, domain=domain, ingestion_id=ingestion_id,

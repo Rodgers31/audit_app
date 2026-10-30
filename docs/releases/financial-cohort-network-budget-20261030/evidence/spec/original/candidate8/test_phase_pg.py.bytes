@@ -1,0 +1,66 @@
+"""Real phase alarms and exact persisted telemetry on an owned guarded PG."""
+from datetime import datetime,timedelta,timezone
+import hashlib
+import json
+from pathlib import Path
+import time
+
+import pytest
+from models import IngestionJob,IngestionStatus
+from seeding import cli,generation_dispatch as dispatch,generation_limits as limits
+from test_b83_generation_postgres import pg,no_publication
+
+
+@pytest.mark.parametrize('phase',['financial','report','subsecond-common'])
+def test_phase_alarm_and_current_job_receipt(pg,monkeypatch,phase):
+    factory,_=pg;now=datetime.now(timezone.utc)
+    with factory.begin() as db:
+        row=IngestionJob(domain='pending_bills',status=IngestionStatus.COMPLETED,dry_run=False,
+            started_at=now-timedelta(seconds=2),finished_at=now-timedelta(seconds=1),
+            items_processed=46,items_created=0,items_updated=46,errors=[],meta={'source_mode':'live','owned_source_receipt':'preserved'})
+        db.add(row);db.flush();db.refresh(row);identity=row.id
+        before=(row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))
+    monkeypatch.setattr(limits,'PENDING_BILLS_FINANCIAL_SECONDS',2 if phase=='subsecond-common' else 1)
+    monkeypatch.setattr(limits,'DEFAULT_PHASE_SECONDS',2 if phase=='subsecond-common' else 1)
+    monkeypatch.setattr(limits,'SOURCE_AND_RECEIPT_SECONDS',3)
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    confirmed={'state':'failed','reason':'GENERATION_DEADLINE_EXCEEDED','processed':3,'baselines':1,'unchanged':2,'drafts_created':0,'refused':0}
+    observed={'financial_finished':False,'report_started':False,'report_finished':False}
+    def financial(*a,**kw):
+        if phase=='financial':time.sleep(1.5)
+        if phase=='subsecond-common':time.sleep(1.4)
+        observed['financial_finished']=True
+        return confirmed
+    def reports(*a,**kw):
+        observed['report_started']=True
+        if phase in {'report','subsecond-common'}:time.sleep(1.5)
+        observed['report_finished']=True
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial)
+    monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',reports)
+    started=time.monotonic()
+    cli._post_commit_generation(factory,domain='pending_bills',ingestion_id=identity,dry_run=False,
+        deadline=started+5.8 if phase=='subsecond-common' else None)
+    observed['elapsed_seconds']=time.monotonic()-started
+    source_hash=hashlib.sha256(Path(cli.__file__).read_bytes()).hexdigest()
+    Path('/evidence/phase-'+source_hash[:12]+'-'+phase+'.json').write_text(json.dumps(observed,indent=2)+'\n')
+    if phase=='financial':
+        assert observed['financial_finished'] is False,observed
+        assert observed['report_started'] is False,observed
+    elif phase=='report':
+        assert observed['financial_finished'] is True and observed['report_finished'] is False,observed
+    else:
+        assert observed['financial_finished'] is True and observed['report_started'] is False,observed
+    with factory() as db:
+        row=db.get(IngestionJob,identity)
+        assert (row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))==before
+        assert row.meta['source_mode']=='live' and row.meta['owned_source_receipt']=='preserved'
+        financial=row.meta['post_commit_generation'];reports=row.meta['post_commit_report_generation']
+        if phase=='financial':
+            assert financial['execution_unverified'] is True and all(financial[k] is None for k in dispatch.COUNTERS)
+        else:assert financial==confirmed
+        if phase=='report':
+            assert reports['execution_unverified'] is True and all(reports[k] is None for k in dispatch.COUNTERS)
+        else:
+            assert reports=={'state':'unavailable','reason':'report_generation_not_started',**dict.fromkeys(dispatch.COUNTERS,0)}
+    no_publication(factory)

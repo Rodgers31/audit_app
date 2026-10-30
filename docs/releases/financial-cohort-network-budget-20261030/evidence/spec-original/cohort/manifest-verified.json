@@ -1,0 +1,10 @@
+{
+  "mapping_sha256": "8438067e9b6b05b6efb47556a1e1da21445a9c9937be4f1d06a4dac782942860",
+  "files": 5814,
+  "mismatches": [],
+  "candidate5_product_carry_sha256": {
+    "backend/seeding/native_report_authority.py": "7a79806e4b57f3d3eb1c148ef99781af72df7b52cab6f6b16c3b74ff559705da",
+    "backend/seeding/native_report_observations.py": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8",
+    "backend/social/generation/service.py": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173"
+  }
+}

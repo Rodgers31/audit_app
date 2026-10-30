@@ -1,0 +1,45 @@
+{
+  "latency_per_driver_call_seconds": 0.13,
+  "elapsed_seconds": 125.77359839100245,
+  "driver_calls": 926,
+  "calls_by_site": {
+    "seeding/native_financial_observations.py:read_native_financial_record_ids": 1,
+    "seeding/source_observations.py:_read_limits": 2,
+    "seeding/native_report_observations.py:_job": 147,
+    "seeding/native_financial_observations.py:native_financial_record_ids": 1,
+    "social/generation/integration.py:_transaction_limits": 25,
+    "social/generation/integration.py:_generate_committed": 1,
+    "social/generation/service.py:_insert": 96,
+    "social/generation/service.py:controls": 24,
+    "social/generation/service.py:_source_admission": 24,
+    "seeding/native_financial_observations.py:_current_native_financial": 120,
+    "seeding/native_report_authority.py:lock_native_domain": 96,
+    "seeding/native_report_observations.py:current_native_report": 96,
+    "seeding/retained_report_receipts.py:validate_retained_pdf": 48,
+    "seeding/financial_cohort_witness.py:lock_qualified_inputs": 24,
+    "seeding/financial_cohort_witness.py:input_fingerprints": 24,
+    "services/figure_qualification.py:qualify_rows": 96,
+    "social/service.py:now": 24,
+    "social/generation/service.py:_consume_current_observation": 45,
+    "social/generation/service.py:established_financial_source": 24,
+    "social/generation/integration.py:_consume_records": 3,
+    "seeding/generation_dispatch.py:_record_outcome": 4,
+    "framework": 1
+  },
+  "result": {
+    "state": "failed",
+    "reason": "GENERATION_DEADLINE_EXCEEDED",
+    "refused": 0,
+    "baselines": 20,
+    "processed": 23,
+    "unchanged": 3,
+    "drafts_created": 0
+  },
+  "stored": {
+    "source_baseline": 1,
+    "post_count": 0,
+    "publication_count": 0,
+    "target_count": 0
+  },
+  "worker_ports_installed": true
+}

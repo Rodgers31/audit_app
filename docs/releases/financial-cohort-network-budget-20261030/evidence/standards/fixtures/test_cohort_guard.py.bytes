@@ -1,0 +1,136 @@
+"""Independent real-source completion/fault controls in the owned migrated DB."""
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
+from datetime import datetime,timezone
+from hashlib import sha256
+from types import SimpleNamespace
+from uuid import uuid4
+import json,os,time
+import pytest
+from sqlalchemy import create_engine,text,select,func,event
+from sqlalchemy.orm import sessionmaker
+from models import Country,IngestionJob,Loan,Entity
+from social.generation.models import SourceCursor
+from social.generation.service import DETECTOR_VERSION,financial_source_marker_version
+from social.generation import integration
+from social.contracts import canonical_hash
+from social.models import SocialPost,SocialPublication,SocialPostTarget
+from social.service import SocialError
+from seeding.source_observations import read_native_financial_record_ids
+from seeding.source_observations import SourceObservationUnavailable
+from test_automatic_cohort_timeout_postgres import ingest_cohort,enabled
+
+IDENTITY=dict(source_type='cob',source_key='cob:financial:pending_bills:baseline',detector_version=DETECTOR_VERSION)
+DATES=dict(period_start='2025-07-01',period_end='2026-06-30',published_on='2026-09-04')
+
+def guard(conn):
+    row=conn.execute(text("SELECT current_database(),host(inet_server_addr()),inet_server_port(),current_setting('data_directory')")).one()
+    assert row==('standards_pending_source_test','127.0.0.1',55492,'/var/lib/postgresql/data'),row
+    assert conn.scalar(text('SELECT version_num FROM alembic_version'))=='a756b20a0001'
+
+@pytest.fixture
+def cohort(monkeypatch):
+    engine=create_engine(os.environ['STANDARDS_PG_URL'],pool_size=4,max_overflow=0)
+    with engine.begin() as conn:
+        guard(conn)
+        tables=conn.scalars(text("SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'social_%'")).all()
+        conn.execute(text('TRUNCATE '+','.join('"'+name+'"' for name in tables)+' CASCADE'))
+        conn.execute(text('TRUNCATE etl_dispatch_worker,etl_dispatch_commands,etl_dispatch_domains,seeding_domain_claims,ingestion_jobs RESTART IDENTITY CASCADE'))
+        if conn.scalar(text("SELECT to_regclass('b15_generation_effects')")) is not None:conn.execute(text('TRUNCATE b15_generation_effects'))
+        conn.execute(text('TRUNCATE countries RESTART IDENTITY CASCADE'))
+    factory=sessionmaker(bind=engine,expire_on_commit=False)
+    with factory.begin() as db:db.add(Country(iso_code='KEN',name='Kenya',currency='KES',timezone='Africa/Nairobi',default_locale='en'))
+    enabled(factory,monkeypatch)
+    yield factory,engine
+    with factory() as db:
+        assert db.scalar(select(func.count()).select_from(SocialPublication))==0
+        assert db.scalar(select(func.count()).select_from(SocialPostTarget))==0
+    engine.dispose()
+
+def ids(factory,job):return read_native_financial_record_ids(factory,ingestion_id=job,domain='pending_bills')
+def consume(factory,job,selected=None):return integration.maybe_generate_committed(factory,record_ids=tuple(reversed(ids(factory,job))) if selected is None else selected,ingestion_id=job,domain='pending_bills')
+def root(factory):
+    with factory() as db:
+        row=db.scalar(select(SourceCursor).filter_by(**IDENTITY));return row.evidence_version,deepcopy(row.report_state)
+def posts(factory):
+    with factory() as db:return db.scalar(select(func.count()).select_from(SocialPost))
+
+def test_partial_refresh_order_replay_concurrent_completion_and_new_fact_preserved(cohort,tmp_path):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path);selected=ids(factory,job)
+    partial=consume(factory,job,selected[:3]);assert partial['state']=='unavailable' and partial['baselines']==3 and posts(factory)==0
+    assert root(factory)[1]['financial_baseline']==1
+    newer=ingest_cohort(factory,tmp_path,retained=True)
+    complete=consume(factory,newer);assert complete['state']=='completed' and complete['baselines']==43 and complete['unchanged']==3 and complete['drafts_created']==0
+    assert root(factory)==(newer,{'financial_baseline':2,**DATES,'completed_count':46})
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        repeated=list(pool.map(lambda _:consume(factory,newer),range(2)))
+    assert all(value['state']=='completed' and value['unchanged']==46 for value in repeated)
+    assert posts(factory)==0 and consume(factory,newer)['unchanged']==46
+    assert consume(factory,job,selected)['state']!='completed'
+    assert root(factory)[0]==newer
+    changed=ingest_cohort(factory,tmp_path,retained=True,include_nandi=True,correction='Nairobi')
+    result=consume(factory,changed);assert result['state']=='completed' and result['drafts_created']==2 and result['unchanged']==45,result
+    assert posts(factory)==2 and consume(factory,changed)['unchanged']==47
+
+def test_deadline_after_real_v2_flush_rolls_back_attestation_and_replays_silently(cohort,tmp_path,monkeypatch):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path);expired={'value':False};original=integration._remaining_ms
+    def expired_after_flush(mapper,connection,target):
+        if target.source_key==IDENTITY['source_key'] and target.report_state.get('financial_baseline')==2:expired['value']=True
+    def budget(deadline):
+        if expired['value']:raise integration.GenerationDeadlineExceeded('Owned deadline after v2 UPDATE before commit')
+        return original(deadline)
+    event.listen(SourceCursor,'after_update',expired_after_flush)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(integration,'_remaining_ms',budget);outcome=consume(factory,job)
+    finally:event.remove(SourceCursor,'after_update',expired_after_flush)
+    assert expired['value'] and outcome['state']=='failed' and outcome['processed']==46 and outcome['drafts_created']==0
+    assert root(factory)[1]['financial_baseline']==1 and posts(factory)==0
+    newer=ingest_cohort(factory,tmp_path,retained=True);again=consume(factory,newer)
+    assert again['state']=='completed' and again['drafts_created']==0 and again['unchanged']==46
+    assert root(factory)[1]['financial_baseline']==2
+
+def test_database_rewrite_of_valid_typed_count_fails_completion_readback_atomically(cohort,tmp_path):
+    factory,engine=cohort;job=ingest_cohort(factory,tmp_path)
+    with engine.begin() as conn:
+        guard(conn)
+        conn.execute(text("""CREATE FUNCTION standards_marker_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+          IF right(NEW.source_key,9)=chr(58)||'baseline' AND NEW.report_state->>'financial_baseline'='2' THEN
+            NEW.report_state=jsonb_set(NEW.report_state,'{completed_count}','45'::jsonb); END IF;
+          RETURN NEW; END $$"""))
+        conn.execute(text('CREATE TRIGGER standards_marker_fault BEFORE UPDATE ON social_source_cursors FOR EACH ROW EXECUTE FUNCTION standards_marker_fault()'))
+    try:outcome=consume(factory,job)
+    finally:
+        with engine.begin() as conn:
+            guard(conn);conn.execute(text('DROP TRIGGER standards_marker_fault ON social_source_cursors'));conn.execute(text('DROP FUNCTION standards_marker_fault()'))
+    assert outcome['state']=='unavailable' and outcome['reason']=='EVIDENCE_INTEGRITY_FAILED' and outcome['processed']==46
+    assert root(factory)[1]['financial_baseline']==1 and posts(factory)==0
+    assert consume(factory,job)['state']=='completed' and root(factory)[1]['completed_count']==46
+
+@pytest.mark.parametrize('change',[
+    {'report_state':{'financial_baseline':True,**DATES}},
+    {'report_state':{'financial_baseline':2,**DATES,'completed_count':True}},
+    {'report_state':{'financial_baseline':2,**DATES,'completed_count':46.0}},
+    {'report_state':{'financial_baseline':2,**DATES,'completed_count':0}},
+    {'report_state':{'financial_baseline':2,**DATES,'completed_count':1001}},
+    {'report_state':{'financial_baseline':2,**DATES,'completed_count':46,'unknown':1}},
+    {'sequence':1},{'evidence_version':0},{'fingerprint':'f'*64},
+])
+def test_marker_decoder_refuses_typed_false_greens(change):
+    value=dict(report_state={'financial_baseline':2,**DATES,'completed_count':46},sequence=0,evidence_version=3539,fingerprint=canonical_hash(IDENTITY));value.update(change)
+    with pytest.raises(SocialError):financial_source_marker_version(SimpleNamespace(**value),IDENTITY)
+
+def test_unrelated_cursor_coverage_cannot_establish_an_incomplete_current_cohort(cohort,tmp_path):
+    factory,_=cohort;job=ingest_cohort(factory,tmp_path);selected=ids(factory,job)
+    assert consume(factory,job,selected[:3])['baselines']==3
+    state={'financial_semantics':2,**DATES}
+    # Hostile persisted state, not fabricated source authority: only three
+    # genuine current records were consumed. Fill coverage with unrelated keys.
+    with factory.begin() as db:
+        for n in range(43):db.add(SourceCursor(id=uuid4(),source_type='cob',source_key='cob:financial:pending_bills:'+sha256(f'unrelated-{n}'.encode()).hexdigest(),detector_version=DETECTOR_VERSION,evidence_version=job,sequence=0,fingerprint='0'*64,report_state=state))
+    try:
+        integration._complete_financial_cohort(factory,selected,job,'pending_bills',time.monotonic()+30)
+    except SocialError:
+        assert root(factory)[1]['financial_baseline']==1;return
+    newer=ingest_cohort(factory,tmp_path,retained=True);outcome=consume(factory,newer)
+    assert outcome['drafts_created']==0,{'claim':'unrelated cursor count certified unconsumed historical records','marker':root(factory),'outcome':outcome}

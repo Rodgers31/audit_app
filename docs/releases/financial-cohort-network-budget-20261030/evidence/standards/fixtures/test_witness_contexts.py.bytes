@@ -1,0 +1,57 @@
+import pytest
+from sqlalchemy import select,event
+from social.generation.models import SourceCursor
+from social.generation import integration
+from seeding.source_observations import read_native_financial_record_ids,SourceObservationUnavailable
+from seeding.financial_cohort_witness import input_fingerprints
+from test_native_financial_changes_postgres import ingest_revenue
+from test_financial_copy_postgres import national_ingestion
+from test_cohort_guard import cohort,posts
+
+@pytest.mark.parametrize('domain',['national_budget','revenue_by_source'])
+def test_shared_witness_actual_source_context_baseline_change_and_replay(cohort,tmp_path,monkeypatch,domain):
+    factory,_=cohort
+    def ingest(changed=False):
+        return (national_ingestion(factory,tmp_path,actual='1250000000.00' if changed else '1200000000.00') if domain=='national_budget' else ingest_revenue(factory,tmp_path,monkeypatch,paye='561' if changed else '560')[0])
+    def run(job):
+        selected=read_native_financial_record_ids(factory,ingestion_id=job,domain=domain)
+        return selected,integration.maybe_generate_committed(factory,record_ids=tuple(reversed(selected)),ingestion_id=job,domain=domain)
+    first=ingest();selected,result=run(first)
+    assert result['state']=='completed' and result['baselines']==len(selected) and result['drafts_created']==0,result
+    with factory() as db:
+        root=db.scalar(select(SourceCursor).where(SourceCursor.source_key==f'{"cob" if domain=="national_budget" else "kra"}:financial:{domain}:baseline'))
+        assert root.report_state['financial_baseline']==2 and root.report_state['completed_count']==len(selected)
+    assert run(first)[1]['unchanged']==len(selected)
+    newer=ingest(True);_,changed=run(newer)
+    assert changed['state']=='completed' and changed['drafts_created']==1 and posts(factory)==1,changed
+    replay=run(newer)[1];assert replay['state']=='completed' and replay['drafts_created']==0 and replay['unchanged']==len(selected)
+
+@pytest.mark.parametrize('selections,lock',[
+    ({},True),({'source_documents; DROP TABLE countries':[1]},True),({'loans':[True]},True),
+    ({'loans':[0]},True),({'loans':[float('nan')]},True),({'loans':[]},True),
+    ({'loans':'1'},True),({'loans':list(range(1,4002))},True),({'countries':[1]},'true'),
+])
+def test_snapshot_identifier_bounds_and_types_refuse_before_sql(cohort,selections,lock):
+    factory,engine=cohort;statements=[]
+    def record(c,cu,s,p,ctx,many):statements.append(s)
+    event.listen(engine,'before_cursor_execute',record)
+    try:
+        with factory() as db:
+            with pytest.raises(SourceObservationUnavailable):input_fingerprints(db,selections,lock=lock)
+    finally:event.remove(engine,'before_cursor_execute',record)
+    assert statements==[]
+
+def test_missing_input_row_never_certifies_an_empty_snapshot(cohort):
+    factory,_=cohort
+    with factory() as db:
+        with pytest.raises(SourceObservationUnavailable,match='Complete financial input snapshot'):input_fingerprints(db,{'loans':[1]},lock=True)
+
+def test_snapshot_positive_contains_only_exact_hashes_and_detects_context_change(cohort):
+    from models import Country
+    factory,_=cohort
+    with factory.begin() as db:
+        before=input_fingerprints(db,{'countries':[1]},lock=True)
+        assert set(before)=={'countries'} and set(before['countries'])=={'1'} and len(before['countries']['1'])==64
+        db.get(Country,1).name='Changed owned context';db.flush()
+        after=input_fingerprints(db,{'countries':[1]},lock=True)
+        assert after['countries']['1']!=before['countries']['1']

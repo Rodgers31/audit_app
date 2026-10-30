@@ -1,0 +1,234 @@
+"""Independent query consolidation edge controls on real owned PostgreSQL."""
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
+from threading import Barrier, Event
+import time
+
+import pytest
+from sqlalchemy import event, func, select, text
+from sqlalchemy.exc import DBAPIError
+
+from models import IngestionJob, IngestionStatus
+from seeding.native_report_authority import lock_native_domain
+from seeding.native_report_observations import _job
+from seeding.source_observations import SourceObservationUnavailable
+from social.generation.service import controls, _source_admission
+from social.generation.models import GenerationControls
+from social.models import SocialControls
+from social.service import SocialService
+from test_b83_generation_postgres import pg
+
+
+CASES = ['valid','missing','wrong-domain','dry','running','errors','errors-shape',
+    'meta-shape','not-live','no-finish','future-finish','reversed',
+    'new-completed','new-partial','new-dry','new-failed','new-fixture',
+    'audit-same-scope','audit-other-scope','audit-first-unscoped']
+
+
+@pytest.mark.parametrize('case', CASES)
+def test_single_job_snapshot_and_scoping(pg, case):
+    factory, engine=pg
+    domain='audits' if case.startswith('audit-') else 'pending_bills'
+    now=datetime.now(timezone.utc)
+    values=dict(domain=domain, status=IngestionStatus.COMPLETED, dry_run=False,
+        started_at=now-timedelta(seconds=2), finished_at=now-timedelta(seconds=1),
+        errors=[], meta={'source_mode':'live'})
+    modifications={
+        'wrong-domain':{'domain':'other'}, 'dry':{'dry_run':True},
+        'running':{'status':IngestionStatus.RUNNING}, 'errors':{'errors':['owned']},
+        'errors-shape':{'errors':{}}, 'meta-shape':{'meta':[]},
+        'not-live':{'meta':{'source_mode':'partial'}}, 'no-finish':{'finished_at':None},
+        'future-finish':{'finished_at':now+timedelta(hours=1)},
+        'reversed':{'started_at':now,'finished_at':now-timedelta(seconds=1)}}
+    values.update(modifications.get(case,{}))
+    with factory.begin() as db:
+        row=IngestionJob(**values);db.add(row);db.flush();identity=row.id
+        if case.startswith('new-') or case.startswith('audit-'):
+            new=dict(domain=domain,status=IngestionStatus.COMPLETED,dry_run=False,
+                started_at=now-timedelta(seconds=1),finished_at=now,
+                errors=[],meta={'source_mode':'live'})
+            if case=='new-partial':new.update(status=IngestionStatus.COMPLETED_WITH_ERRORS,meta={'source_mode':'partial'})
+            if case=='new-dry':new['dry_run']=True
+            if case=='new-failed':new['status']=IngestionStatus.FAILED
+            if case=='new-fixture':new['meta']={'source_mode':'fixture'}
+            if case.startswith('audit-'):new['meta']={'source_mode':'live','native_report_series':{'other' if case=='audit-other-scope' else 'auditee':{}}}
+            db.add(IngestionJob(**new))
+    calls=[]
+    def count(conn,cursor,statement,params,context,many):calls.append(statement)
+    event.listen(engine,'after_cursor_execute',count)
+    scope=None if case=='audit-first-unscoped' else ('auditee' if domain=='audits' else None)
+    succeeds=case in {'valid','new-dry','new-failed','new-fixture','audit-other-scope','audit-first-unscoped'}
+    try:
+        with factory() as db:
+            if succeeds:
+                assert _job(db, identity, domain, scope_key=scope)[0].id==identity
+            else:
+                with pytest.raises(SourceObservationUnavailable):
+                    _job(db, identity+999 if case=='missing' else identity, domain, scope_key=scope)
+    finally:event.remove(engine,'after_cursor_execute',count)
+    assert len(calls)==1, calls
+    if case=='audit-first-unscoped':
+        with factory() as db:
+            with pytest.raises(SourceObservationUnavailable):_job(db,identity,domain,scope_key='auditee')
+
+
+@pytest.mark.parametrize('inherited, expected',[('0','2s'),('80','80ms'),('7000','2s')])
+def test_bound_setting_is_transaction_local(pg,inherited,expected):
+    factory,_=pg
+    with factory() as db:
+        db.execute(text("SELECT set_config('lock_timeout',:value,false)"),{'value':inherited});db.commit()
+        lock_native_domain(db,'pending_bills')
+        assert db.scalar(text('SHOW lock_timeout'))==expected
+        db.commit()
+        actual=db.scalar(text("SELECT setting FROM pg_settings WHERE name='lock_timeout'"))
+        assert actual==inherited
+
+
+@pytest.mark.parametrize('inherited,minimum,maximum',[('65',.040,.8),('0',1.8,3.2)])
+def test_materialized_bound_precedes_real_contended_lock(pg,inherited,minimum,maximum):
+    factory,_=pg
+    with factory() as holder:
+        lock_native_domain(holder,'pending_bills')
+        with factory() as contender:
+            contender.execute(text("SELECT set_config('lock_timeout',:value,true)"),{'value':inherited})
+            contender.execute(text("SET LOCAL statement_timeout='5s'"))
+            started=time.monotonic()
+            with pytest.raises(DBAPIError) as exc:lock_native_domain(contender,'pending_bills')
+            elapsed=time.monotonic()-started
+            assert exc.value.orig.pgcode=='55P03'
+            assert minimum<=elapsed<maximum,elapsed
+
+
+@pytest.mark.parametrize('existing',[False,True])
+def test_generation_controls_first_read_and_missing_race(pg,existing):
+    factory,engine=pg
+    if existing:
+        with factory.begin() as db:controls(db,lock=True)
+    start=Barrier(2)
+    def invoke():
+        with factory.begin() as db:
+            start.wait(timeout=5)
+            row=controls(db,lock=True)
+            return row.id,row.drafts_enabled,row.version
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(lambda _:invoke(),range(2)))==[(1,False,1)]*2
+    with factory() as db:assert db.scalar(select(func.count()).select_from(GenerationControls))==1
+    calls=[]
+    def count(conn,cursor,statement,params,context,many):calls.append(statement)
+    event.listen(engine,'after_cursor_execute',count)
+    try:
+        with factory.begin() as db:assert controls(db,lock=True).drafts_enabled is False
+    finally:event.remove(engine,'after_cursor_execute',count)
+    assert len(calls)==1 and calls[0].startswith('SELECT')
+
+
+@pytest.mark.parametrize('existing',[False,True])
+def test_delivery_admission_preserves_off_defaults_and_lock_order(pg,existing):
+    factory,engine=pg
+    with factory.begin() as db:
+        row=controls(db,lock=True);row.drafts_enabled=True;row.source_allowlist=['cob']
+        if existing:db.add(SocialControls(id=1,publishing_enabled=False,generation_enabled=False,
+            auto_approve_enabled=False,auto_schedule_enabled=False,auto_publish_enabled=False,
+            platform_controls={},budget_controls={},version=1))
+    start=Barrier(2)
+    def invoke():
+        with factory.begin() as db:
+            start.wait(timeout=5)
+            svc=SocialService(db,available_adapters={})
+            assert _source_admission(svc,'cob').drafts_enabled is True
+    with ThreadPoolExecutor(max_workers=2) as pool:list(pool.map(lambda _:invoke(),range(2)))
+    with factory() as db:
+        assert db.scalar(select(func.count()).select_from(SocialControls))==1
+        row=db.get(SocialControls,1)
+        assert not any((row.publishing_enabled,row.generation_enabled,row.auto_approve_enabled,row.auto_schedule_enabled,row.auto_publish_enabled))
+    calls=[]
+    def count(conn,cursor,statement,params,context,many):calls.append(statement)
+    event.listen(engine,'after_cursor_execute',count)
+    try:
+        with factory.begin() as db:_source_admission(SocialService(db,available_adapters={}), 'cob')
+    finally:event.remove(engine,'after_cursor_execute',count)
+    assert len(calls)==2 and all(x.startswith('SELECT') and 'FOR UPDATE' in x for x in calls)
+
+
+def test_job_clock_follows_real_lock_wait(pg):
+    factory,_=pg;ready=Event()
+    with factory.begin() as db:
+        row=IngestionJob(domain='pending_bills',status=IngestionStatus.RUNNING,dry_run=False,
+            started_at=datetime.now(timezone.utc)-timedelta(seconds=2),errors=[],meta={'source_mode':'live'})
+        db.add(row);db.flush();identity=row.id
+    holder=factory();lock_native_domain(holder,'pending_bills')
+    def wait_and_read():
+        with factory.begin() as db:
+            old=db.scalar(text('SELECT transaction_timestamp()'))
+            ready.set();lock_native_domain(db,'pending_bills')
+            job,started,finished=_job(db,identity,'pending_bills')
+            assert finished>old
+            return job.id
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future=pool.submit(wait_and_read);assert ready.wait(5);time.sleep(.05)
+            row=holder.get(IngestionJob,identity);row.status=IngestionStatus.COMPLETED
+            row.finished_at=datetime.now(timezone.utc);holder.commit()
+            assert future.result(timeout=5)==identity
+    finally:holder.close()
+
+
+@pytest.mark.parametrize('existing',[False,True])
+def test_real_qualified_marker_initialization_missing_race_and_existing_read(pg,tmp_path,monkeypatch,existing):
+    from seeding.native_financial_observations import read_native_financial_observation
+    from social.generation.contracts import SourceObservation
+    from social.generation.service import established_financial_source
+    from social.generation.models import SourceCursor
+    from test_automatic_cohort_timeout_postgres import ingest_cohort,enabled
+    from models import Loan
+    factory,engine=pg;enabled(factory,monkeypatch)
+    identity=ingest_cohort(factory,tmp_path)
+    with factory() as db:record=db.scalar(select(Loan.id).order_by(Loan.id))
+    observation=SourceObservation.model_validate(read_native_financial_observation(factory,record_id=record,ingestion_id=identity,domain='pending_bills'))
+    if existing:
+        with factory.begin() as db:assert established_financial_source(db,observation,initialize=True) is False
+    start=Barrier(2)
+    def invoke():
+        with factory.begin() as db:
+            start.wait(timeout=5)
+            assert established_financial_source(db,observation,initialize=True) is False
+    with ThreadPoolExecutor(max_workers=2) as pool:list(pool.map(lambda _:invoke(),range(2)))
+    with factory() as db:
+        assert db.scalar(select(func.count()).select_from(SourceCursor))==1
+        root=db.scalar(select(SourceCursor))
+        assert root.evidence_version==identity and root.sequence==0 and root.report_state['financial_baseline']==1
+        assert set(root.report_state)=={'financial_baseline','period_start','period_end','published_on'}
+        before=(root.fingerprint,root.evidence_version,dict(root.report_state))
+    calls=[]
+    def count(conn,cursor,statement,params,context,many):calls.append(statement)
+    event.listen(engine,'after_cursor_execute',count)
+    try:
+        with factory.begin() as db:assert established_financial_source(db,observation,initialize=True) is False
+    finally:event.remove(engine,'after_cursor_execute',count)
+    assert len(calls)==1 and calls[0].startswith('SELECT')
+    with factory() as db:
+        root=db.scalar(select(SourceCursor))
+        assert (root.fingerprint,root.evidence_version,dict(root.report_state))==before
+
+
+def test_full_completion_claim_survives_existing_marker_initialization_and_replay(pg,tmp_path,monkeypatch):
+    from social.generation.models import SourceCursor
+    from test_automatic_cohort_timeout_postgres import ingest_cohort,enabled,automatic
+    factory,_=pg;enabled(factory,monkeypatch)
+    identity=ingest_cohort(factory,tmp_path)
+    first=automatic(factory,identity)
+    assert first['baselines']==46 and first['state']=='completed'
+    with factory() as db:
+        root=db.scalar(select(SourceCursor).where(SourceCursor.source_key.endswith(':baseline')))
+        before=(root.evidence_version,root.fingerprint,dict(root.report_state))
+        assert before[2]['financial_baseline']==2 and before[2]['completed_count']==46
+    newer=ingest_cohort(factory,tmp_path,retained=True)
+    replay=automatic(factory,newer)
+    assert replay['state']=='completed' and replay['unchanged']==46 and replay['drafts_created']==0
+    with factory() as db:
+        root=db.scalar(select(SourceCursor).where(SourceCursor.source_key.endswith(':baseline')))
+        # The finalizer may replace the completed job after a full replay. Its
+        # membership and dates remain exact and no per-row initialization can
+        # reset this to a v1 partial marker.
+        assert root.report_state['financial_baseline']==2 and root.report_state['completed_count']==46
+        assert root.report_state['completion']['records']==before[2]['completion']['records']

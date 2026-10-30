@@ -1,0 +1,20 @@
+{
+  "files": 5812,
+  "mapping_sha256": "c7ac48ad2c46cd68646cebf525df7895666d5984b43ecc2070e2c0516ed62a4b",
+  "manifest_file_sha256": "dae0c0e4c686028c9aa8de5ac590d85f5c7f049204743f79f10549ed999576e1",
+  "mismatches": [],
+  "changed_backend": {
+    "backend/seeding/native_report_authority.py": {
+      "old": "39268dce9512be41f7c5dd16760acd04330ea252d3f8941f334366789a593fa8",
+      "new": "7a79806e4b57f3d3eb1c148ef99781af72df7b52cab6f6b16c3b74ff559705da"
+    },
+    "backend/seeding/native_report_observations.py": {
+      "old": "ee9b2a57b0f8f46dfc3190660211f06d1017e15315e23eb5678ce32fc768c722",
+      "new": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8"
+    },
+    "backend/social/generation/service.py": {
+      "old": "ae111ebbc22bde85597fd0ebbf0f30f368eef66cc6ec9d0d439de84508524034",
+      "new": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173"
+    }
+  }
+}

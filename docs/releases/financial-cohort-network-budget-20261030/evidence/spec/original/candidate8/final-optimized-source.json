@@ -1,0 +1,32 @@
+{
+  "source_before": {
+    "backend/seeding/financial_cohort_witness.py": "0b21e9adf0226501e4695bfa831707718c0155d05878291c02a64bda920043e6",
+    "backend/seeding/native_financial_observations.py": "0c3962244f74c9d364dd22fe741e1af20d00c6835a4b2b29c9e359b9670e2941",
+    "backend/seeding/native_report_observations.py": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8",
+    "backend/social/generation/service.py": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+    "backend/social/generation/integration.py": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+    "backend/seeding/domains/pending_bills/writer.py": "1ef221781dc5646088f5a083cc3212fb9bed7409209baa277e452c0ea325ab4a",
+    "backend/seeding/domains/counties_budget/writer.py": "ec758d8a1d7eabcf947cc93bf99dc75d6a8c20780ba9b1cc627ad7960bcc63d0",
+    "backend/tests/social/test_pending_bills_source_identity_postgres.py": "f666d6d5e5ec986157506907c043d66e4bb227446d79c22f1bfe6c40d4c1594e",
+    "backend/tests/social/test_automatic_cohort_timeout_postgres.py": "12df28ee371bbc67a4c05143bb05c8d5a8118c9317217903f38f38faaf9b8e13",
+    "backend/services/response_receipts.py": "153255e175d8e31cc13944ebfbae3bac380aab98a98135e433007dabb157d7b8",
+    "backend/seeding/cli.py": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+    "backend/seeding/generation_limits.py": "6d3c61ba2ada221be8e8519ef8e447e9fcb383f1e25591901a44e3aac8f153f4"
+  },
+  "source_after": {
+    "backend/seeding/financial_cohort_witness.py": "0b21e9adf0226501e4695bfa831707718c0155d05878291c02a64bda920043e6",
+    "backend/seeding/native_financial_observations.py": "0c3962244f74c9d364dd22fe741e1af20d00c6835a4b2b29c9e359b9670e2941",
+    "backend/seeding/native_report_observations.py": "d6e007251d146b83937cf4786b08fb407917fff6757113e8d262271e0aaaeac8",
+    "backend/social/generation/service.py": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+    "backend/social/generation/integration.py": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+    "backend/seeding/domains/pending_bills/writer.py": "1ef221781dc5646088f5a083cc3212fb9bed7409209baa277e452c0ea325ab4a",
+    "backend/seeding/domains/counties_budget/writer.py": "ec758d8a1d7eabcf947cc93bf99dc75d6a8c20780ba9b1cc627ad7960bcc63d0",
+    "backend/tests/social/test_pending_bills_source_identity_postgres.py": "f666d6d5e5ec986157506907c043d66e4bb227446d79c22f1bfe6c40d4c1594e",
+    "backend/tests/social/test_automatic_cohort_timeout_postgres.py": "12df28ee371bbc67a4c05143bb05c8d5a8118c9317217903f38f38faaf9b8e13",
+    "backend/services/response_receipts.py": "153255e175d8e31cc13944ebfbae3bac380aab98a98135e433007dabb157d7b8",
+    "backend/seeding/cli.py": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+    "backend/seeding/generation_limits.py": "6d3c61ba2ada221be8e8519ef8e447e9fcb383f1e25591901a44e3aac8f153f4"
+  },
+  "stable": true,
+  "effective_old_writer": null
+}

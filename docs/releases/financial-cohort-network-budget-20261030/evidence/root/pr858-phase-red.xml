@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="4.654" timestamp="2026-10-30T18:39:52.806633+00:00" hostname="72e0925f7430"><testcase classname="tests.test_generation_hard_phase_limits" name="test_financial_dispatch_cannot_borrow_the_receipt_or_report_allowance[False]" time="1.523"><failure message="AssertionError: {'completed': ['financial'], 'elapsed': 1.501866834005341}&#10;assert ['financial'] == []&#10;  &#10;  Left contains one more item: 'financial'&#10;  Use -v to get more diff">tests/test_generation_hard_phase_limits.py:27: in test_financial_dispatch_cannot_borrow_the_receipt_or_report_allowance
+    assert completed == [], {'completed':completed,'elapsed':elapsed}
+E   AssertionError: {'completed': ['financial'], 'elapsed': 1.501866834005341}
+E   assert ['financial'] == []
+E     
+E     Left contains one more item: 'financial'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_generation_hard_phase_limits" name="test_financial_dispatch_cannot_borrow_the_receipt_or_report_allowance[True]" time="1.507"><failure message="AssertionError: {'completed': ['financial', 'report'], 'elapsed': 1.5053248750045896}&#10;assert ['financial', 'report'] == []&#10;  &#10;  Left contains 2 more items, first extra item: 'financial'&#10;  Use -v to get more diff">tests/test_generation_hard_phase_limits.py:27: in test_financial_dispatch_cannot_borrow_the_receipt_or_report_allowance
+    assert completed == [], {'completed':completed,'elapsed':elapsed}
+E   AssertionError: {'completed': ['financial', 'report'], 'elapsed': 1.5053248750045896}
+E   assert ['financial', 'report'] == []
+E     
+E     Left contains 2 more items, first extra item: 'financial'
+E     Use -v to get more diff</failure></testcase><testcase classname="tests.test_generation_hard_phase_limits" name="test_report_dispatch_has_its_own_hard_cap_and_preserves_financial_result" time="1.507"><failure message="AssertionError: assert ['report'] == []&#10;  &#10;  Left contains one more item: 'report'&#10;  Use -v to get more diff">tests/test_generation_hard_phase_limits.py:52: in test_report_dispatch_has_its_own_hard_cap_and_preserves_financial_result
+    assert finished == []
+E   AssertionError: assert ['report'] == []
+E     
+E     Left contains one more item: 'report'
+E     Use -v to get more diff</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,34 @@
+--- candidate5/backend/seeding/generation_limits.py
++++ candidate7/backend/seeding/generation_limits.py
+@@ -1,7 +1,11 @@
+ """Shared finite budgets for post-commit generation and its CLI envelope."""
++import math
+ 
+ DEFAULT_PHASE_SECONDS = 30
+-PENDING_BILLS_FINANCIAL_SECONDS = 120
++# Reviewed 46-row changed cohort with installed authority/account ports:
++# 2,880 driver calls at a conservative 150 ms account for 432 seconds.
++# Retain finite room for connection/commit protocol, CPU and receipt writes.
++PENDING_BILLS_FINANCIAL_SECONDS = 600
+ SOURCE_AND_RECEIPT_SECONDS = 10
+ 
+ 
+@@ -18,3 +22,18 @@
+     return (generation_phase_seconds(domain)
+             + (generation_phase_seconds(domain, reports=True) if include_reports else 0)
+             + SOURCE_AND_RECEIPT_SECONDS)
++
++
++def bounded_generation_envelope_seconds(domain, *, include_reports, remaining_seconds=None):
++    envelope = generation_envelope_seconds(domain, include_reports=include_reports)
++    if remaining_seconds is None:
++        return envelope
++    try:
++        valid = type(remaining_seconds) in (int, float) and math.isfinite(remaining_seconds)
++    except OverflowError:
++        valid = False
++    if not valid:
++        raise ValueError('Finite remaining run budget required')
++    # Timeout telemetry runs after the alarm is cancelled. Reserve that existing
++    # cleanup allowance inside the remaining whole-run limit too.
++    return min(envelope, max(0, int(remaining_seconds - SOURCE_AND_RECEIPT_SECONDS)))

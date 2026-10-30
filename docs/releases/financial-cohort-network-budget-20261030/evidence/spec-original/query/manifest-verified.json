@@ -1,0 +1,10 @@
+{
+  "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/cohort-query-candidate-5",
+  "files": 5812,
+  "mapping_sha256": "c7ac48ad2c46cd68646cebf525df7895666d5984b43ecc2070e2c0516ed62a4b",
+  "actual_forms": {
+    "compact": "c7ac48ad2c46cd68646cebf525df7895666d5984b43ecc2070e2c0516ed62a4b",
+    "default": "76680e9ba10c67871f1d885fddb9e685b8700ab3a1552e065affb591e1fa0828"
+  },
+  "mismatches": []
+}

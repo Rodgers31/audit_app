@@ -1,0 +1,99 @@
+"""Independent public-boundary/global-cap execution; no PostgreSQL access."""
+from contextlib import contextmanager
+from decimal import Decimal
+import math, os, signal, time
+import pytest
+from seeding import cli, generation_dispatch as dispatch
+from seeding.generation_limits import bounded_generation_envelope_seconds as bounded
+from test_seeding_cli_budget import sessionmaker_factory, clock, _FakeRegistry, _args, _jobs_by_domain
+from seeding.config import SeedingSettings
+from seeding.types import DomainRunResult
+from models import IngestionStatus
+
+
+class ForbiddenFactory:
+    def __call__(self, *a, **kw):
+        raise AssertionError('No factory may open')
+    def begin(self, *a, **kw):
+        raise AssertionError('No factory transaction may open')
+
+
+@pytest.mark.parametrize('bad', [False, True, '2400', b'2400', [], {}, Decimal('10'), complex(10),
+                                float('nan'), float('inf'), -float('inf'), 10**1000])
+def test_invalid_absolute_deadline_refuses_before_every_side_effect(bad, monkeypatch):
+    def forbidden(*a, **kw): raise AssertionError('No alarm or telemetry')
+    monkeypatch.setattr(cli, '_domain_timeout', forbidden)
+    monkeypatch.setattr(dispatch, 'record_generation_timeout', forbidden)
+    with pytest.raises(ValueError):
+        cli._post_commit_generation(ForbiddenFactory(), domain='pending_bills', ingestion_id=1, dry_run=False, deadline=bad)
+
+
+@pytest.mark.parametrize('remaining', [-1e6, -1., 0., 1., 9.999999, 10., 10.9999, 11., 11.999, 100., 639., 650., 2400., 1e10])
+@pytest.mark.parametrize('reports', [False, True])
+def test_remaining_bound_never_spends_cleanup_or_grows_the_phase(remaining, reports):
+    value = bounded('pending_bills', include_reports=reports, remaining_seconds=remaining)
+    assert type(value) is int
+    assert 0 <= value <= (640 if reports else 610)
+    assert value <= max(0, math.floor(remaining - 10))
+
+
+@pytest.mark.parametrize('dry,flag', [(True,'true'), (False,'false'), (False,None)])
+@pytest.mark.parametrize('remaining', [0, 10.99, 1000])
+def test_disabled_and_dry_paths_never_open_factory(dry, flag, remaining, monkeypatch):
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED', 'true')
+    if flag is None: monkeypatch.delenv('SOCIAL_GENERATION_HOOK_ENABLED', raising=False)
+    else: monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED', flag)
+    monkeypatch.setattr(cli.time, 'monotonic', lambda:100.)
+    cli._post_commit_generation(ForbiddenFactory(), domain='pending_bills', ingestion_id=1, dry_run=dry, deadline=100.+remaining)
+
+
+def test_real_one_second_alarm_preserves_confirmed_financial_and_unknown_report(monkeypatch):
+    confirmed=dict(state='completed', reason='COMMITTED_EVIDENCE_CONSUMED', processed=3, baselines=3, unchanged=0, refused=0, drafts_created=0)
+    recorded=[]
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    monkeypatch.setattr(dispatch, 'dispatch_committed_generation', lambda *a,**kw:confirmed)
+    monkeypatch.setattr(dispatch, 'dispatch_committed_report_generation', lambda *a,**kw:time.sleep(3))
+    monkeypatch.setattr(dispatch, '_record_outcome', lambda factory,domain,job,outcome,**kw:recorded.append((kw.get('key','post_commit_generation'),outcome)))
+    previous=signal.getsignal(signal.SIGALRM);start=time.monotonic()
+    cli._post_commit_generation(ForbiddenFactory(), domain='pending_bills', ingestion_id=1, dry_run=False, deadline=start+11.5)
+    assert 0.8 <= time.monotonic()-start < 2.5
+    assert recorded[0]==('post_commit_generation',confirmed)
+    assert recorded[1][0]=='post_commit_report_generation'
+    assert recorded[1][1]['execution_unverified'] is True
+    assert all(recorded[1][1][k] is None for k in dispatch.COUNTERS)
+    assert signal.getsignal(signal.SIGALRM)==previous and signal.alarm(0)==0
+
+
+def test_real_one_second_alarm_before_financial_return_never_certifies_zero(monkeypatch):
+    recorded=[]
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    monkeypatch.setattr(dispatch, 'dispatch_committed_generation', lambda *a,**kw:time.sleep(3))
+    monkeypatch.setattr(dispatch, '_record_outcome', lambda factory,domain,job,outcome,**kw:recorded.append((kw.get('key','post_commit_generation'),outcome)))
+    cli._post_commit_generation(ForbiddenFactory(), domain='pending_bills', ingestion_id=1, dry_run=False, deadline=time.monotonic()+11.5)
+    financial=recorded[0][1];report=recorded[1][1]
+    assert financial['execution_unverified'] is True and all(financial[k] is None for k in dispatch.COUNTERS)
+    assert report['state']=='unavailable' and report['reason']=='report_generation_not_started'
+    assert all(report[k]==0 for k in dispatch.COUNTERS)
+
+
+def test_actual_cli_source_finishes_near_global_end_records_known_not_started(clock, sessionmaker_factory, monkeypatch):
+    from seeding import freshness
+    def source(*, session, settings, context):
+        clock.advance(93)
+        freshness.mark_live('pending_bills', detail='Owned simulated source completion')
+        return DomainRunResult(domain='pending_bills',items_processed=1)
+    monkeypatch.setattr(cli, 'REGISTRY', _FakeRegistry({'pending_bills':source}))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    def forbidden(*a, **kw):raise AssertionError('No generation phase may start with seven seconds left')
+    monkeypatch.setattr(dispatch, 'dispatch_committed_generation', forbidden)
+    monkeypatch.setattr(dispatch, 'dispatch_committed_report_generation', forbidden)
+    assert cli.run_seed_command(_args(),SeedingSettings(total_timeout_seconds=100,domain_timeout_seconds=600))==0
+    row=_jobs_by_domain(sessionmaker_factory)['pending_bills']
+    assert row.status==IngestionStatus.COMPLETED and row.errors==[]
+    financial=row.meta['post_commit_generation'];report=row.meta['post_commit_report_generation']
+    assert financial['state']=='unavailable' and financial['reason']=='generation_run_budget_exhausted'
+    assert report['state']=='unavailable' and report['reason']=='report_generation_not_started'
+    assert all(financial[k]==report[k]==0 for k in dispatch.COUNTERS)

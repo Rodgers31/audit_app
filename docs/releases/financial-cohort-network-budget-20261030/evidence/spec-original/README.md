@@ -1,0 +1,5 @@
+# Historical Spec evidence
+
+These byte-exact original candidate5 query and candidate7 cohort artifacts complement the final phase-review archive. The receipts remain unchanged. `index.json` maps original declared filenames to stored names; Python inputs use `.py.bytes` to avoid test discovery. All declared hashes were matched before copying. These are historical acceptance records, not fresh runs on the later CLI hard-phase repair. Original workstation command paths are provenance, not replay inputs. No private environment file or credential value is bundled. The backend source for candidate7 is pinned by the Standards archive to d0da4996327213049614cd8f09b373bcaa856a23; candidate5 differs only in the documented deadline/CLI delta.
+
+From each subdirectory, `sha256sum -c SHA256SUMS` verifies every original declared byte hash and the receipt itself. This verifies archive integrity only; it does not rerun functional acceptance. Current repaired-phase validation and its source identity are recorded separately.

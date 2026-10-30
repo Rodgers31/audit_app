@@ -1,0 +1,18 @@
+{
+  "time_utc": "2026-10-30T17:49:13.597283+00:00",
+  "owned_container": "standards-pr856-cost-pg",
+  "owned_id": "bd0cbe1b00741a9d516555be74e2d0ad5bd76b356a829856ba8e61e0558b3aba",
+  "label": "pr856-metadata-cost-rtt",
+  "network": "none",
+  "host_ports": {},
+  "temporary_role_and_views_absent_before_removal": "standards_pending_source_test|55492|0|t|t",
+  "dependent_containers": [],
+  "tmpfs_bytes": 268435456,
+  "named_volumes": [],
+  "remove_exit_code": 0,
+  "absence_check_exit_code": 0,
+  "absence_check_stdout": "",
+  "credential_files_created": [],
+  "credential_files_remaining": [],
+  "other_resources_touched": []
+}

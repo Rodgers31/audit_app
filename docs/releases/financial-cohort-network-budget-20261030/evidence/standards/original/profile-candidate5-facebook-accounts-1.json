@@ -1,0 +1,849 @@
+{
+  "profiles": [
+    {
+      "label": "retained_baseline",
+      "worker_ports": true,
+      "draft_account_count": 1,
+      "draft_platform": "facebook",
+      "elapsed_seconds": 0.39586899999994785,
+      "driver_calls": 1364,
+      "calls_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 1,
+        "seeding/source_observations.py:_read_limits": 2,
+        "seeding/native_report_observations.py:_job": 95,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 2,
+        "social/generation/integration.py:_transaction_limits": 48,
+        "social/generation/integration.py:_generate_committed": 1,
+        "social/generation/service.py:controls": 46,
+        "social/generation/service.py:_source_admission": 46,
+        "seeding/native_financial_observations.py:_current_native_financial": 230,
+        "seeding/native_report_authority.py:lock_native_domain": 94,
+        "seeding/native_report_observations.py:current_native_report": 188,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 93,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 46,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 47,
+        "services/figure_qualification.py:qualify_rows": 184,
+        "social/service.py:now": 46,
+        "social/generation/service.py:_insert": 47,
+        "social/generation/service.py:_consume_current_observation": 92,
+        "social/generation/service.py:established_financial_source": 47,
+        "social/generation/integration.py:_complete_financial_cohort": 4,
+        "seeding/generation_dispatch.py:_record_outcome": 4,
+        "framework": 1
+      },
+      "driver_seconds_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 0.00011145800090162084,
+        "seeding/source_observations.py:_read_limits": 0.0008170419969246723,
+        "seeding/native_report_observations.py:_job": 0.010220834010397084,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 0.00020783299987670034,
+        "social/generation/integration.py:_transaction_limits": 0.018091498990543187,
+        "social/generation/integration.py:_generate_committed": 7.562500104540959e-05,
+        "social/generation/service.py:controls": 0.0029883350362069905,
+        "social/generation/service.py:_source_admission": 0.003081585993641056,
+        "seeding/native_financial_observations.py:_current_native_financial": 0.017671037028776482,
+        "seeding/native_report_authority.py:lock_native_domain": 0.030250957039243076,
+        "seeding/native_report_observations.py:current_native_report": 0.011897343028977048,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 0.006370164985128213,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 0.0037639170113834552,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 0.014467000990407541,
+        "services/figure_qualification.py:qualify_rows": 0.014502922022074927,
+        "social/service.py:now": 0.00235637700825464,
+        "social/generation/service.py:_insert": 0.004333293029048946,
+        "social/generation/service.py:_consume_current_observation": 0.007212796983367298,
+        "social/generation/service.py:established_financial_source": 0.0033020010305335745,
+        "social/generation/integration.py:_complete_financial_cohort": 0.0006219580027391203,
+        "seeding/generation_dispatch.py:_record_outcome": 0.0002577500054030679,
+        "framework": 0.00010875000589294359
+      },
+      "worker_capture_calls": 0,
+      "result": {
+        "state": "completed",
+        "reason": "COMMITTED_EVIDENCE_CONSUMED",
+        "refused": 0,
+        "baselines": 46,
+        "processed": 46,
+        "unchanged": 0,
+        "drafts_created": 0
+      },
+      "statements": [
+        {
+          "site": "seeding/native_report_observations.py:_job",
+          "count": 95,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at, timezone(current_setting(%(current_setting_1)s), ingestion_jobs.started_at) AS timezone_1, timezone(current_setting(%(current_setting_2)s), ingestion_jobs.finished_at) AS timezone_2, statement_timestamp() AS statement_timestamp_1, EXISTS (SELECT ingestion_jobs_1.id FROM ingestion_jobs AS ingestion_jobs_1 WHERE ingestion_jobs_1.domain = %(domain_1)s AND ingestion_jobs_1.id > %(id_1)s AND ingestion_jobs_1.dry_run IS false AND ingestion_jobs_1.status IN (%(status_1_1)s, %(status_1_2)s) AND (ingestion_jobs_1.metadata ->> %(metadata_1)s) IN (%(param_1_1)s, %(param_1_2)s)) AS anon_1 FROM ingestion_jobs WHERE ingestion_jobs.id = %(id_2)s"
+        },
+        {
+          "site": "seeding/native_report_authority.py:lock_native_domain",
+          "count": 94,
+          "sql": "WITH bounds AS MATERIALIZED ( SELECT set_config('lock_timeout', CASE WHEN setting::bigint=0 THEN '2000' ELSE LEAST(setting::bigint,2000)::text END, true) AS configured FROM pg_settings WHERE name='lock_timeout') SELECT pg_advisory_xact_lock(802, %(domain)s) FROM bounds WHERE configured IS NOT NULL"
+        },
+        {
+          "site": "seeding/retained_report_receipts.py:validate_retained_pdf",
+          "count": 93,
+          "sql": "SELECT extractions.source_document_id, extractions.extractor, extractions.extracted_json[%(extracted_json_1)s] - %(param_1)s AS anon_1 FROM extractions WHERE extractions.id = %(id_1)s"
+        },
+        {
+          "site": "social/generation/integration.py:_transaction_limits",
+          "count": 48,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text, true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN %(lock)s ELSE %(statement)s END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT source_documents.id, source_documents.country_id, source_documents.publisher, source_documents.title, source_documents.url, source_documents.file_path, source_documents.fetch_date, source_documents.md5, source_documents.doc_type, source_documents.status, source_documents.content_type, source_documents.http_status, source_documents.last_verified_at, source_documents.last_seen_at, source_documents.metadata, source_documents.created_at FROM source_documents WHERE source_documents.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:input_fingerprints",
+          "count": 47,
+          "sql": "SELECT 'countries' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM countries WHERE id=ANY(%(countries)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'entities' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM entities WHERE id=ANY(%(entities)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'extractions' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM extractions WHERE id=ANY(%(extractions)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'loans' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM loans WHERE id=ANY(%(loans)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'source_documents' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM source_documents WHERE id=ANY(%(source_documents)s) ORDER BY id FOR SHARE) AS r"
+        },
+        {
+          "site": "social/generation/service.py:_insert",
+          "count": 47,
+          "sql": "INSERT INTO social_source_cursors (id, source_type, source_key, detector_version, evidence_version, sequence, fingerprint, report_state, observed_at) VALUES (%(id)s::UUID, %(source_type)s, %(source_key)s, %(detector_version)s, %(evidence_version)s, %(sequence)s, %(fingerprint)s, %(report_state)s::JSONB, %(observed_at)s) ON CONFLICT (source_type, source_key, detector_version) DO NOTHING"
+        },
+        {
+          "site": "social/generation/service.py:established_financial_source",
+          "count": 47,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s"
+        },
+        {
+          "site": "social/generation/service.py:controls",
+          "count": 46,
+          "sql": "SELECT social_generation_controls.id, social_generation_controls.version, social_generation_controls.drafts_enabled, social_generation_controls.shadow_enabled, social_generation_controls.source_allowlist, social_generation_controls.targets FROM social_generation_controls WHERE social_generation_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:_source_admission",
+          "count": 46,
+          "sql": "SELECT social_controls.id, social_controls.publishing_enabled, social_controls.generation_enabled, social_controls.auto_approve_enabled, social_controls.auto_schedule_enabled, social_controls.auto_publish_enabled, social_controls.platform_controls, social_controls.budget_controls, social_controls.version, social_controls.updated_by, social_controls.updated_at FROM social_controls WHERE social_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT loans.id, loans.entity_id, loans.lender, loans.debt_category, loans.principal, loans.outstanding, loans.interest_rate, loans.issue_date, loans.maturity_date, loans.currency, loans.source_document_id, loans.provenance, loans.created_at, loans.updated_at, loans.extraction_id, loans.page_ref, loans.source_hash, loans.confidence_score, loans.basis, loans.publishable, loans.quarantine_reason FROM loans WHERE loans.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:lock_qualified_inputs",
+          "count": 46,
+          "sql": "SELECT extracted_json->'response_receipt'->'retained_pdf_validation'->'origin_extraction_id' FROM extractions WHERE id=ANY(%(ids)s) ORDER BY id FOR SHARE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id = %(pk_1)s"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "social/service.py:now",
+          "count": 46,
+          "sql": "SELECT clock_timestamp() AS clock_timestamp_1"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "INSERT INTO social_audit_events (id, post_id, target_id, account_id, actor_id, actor_kind, action, previous_state, new_state, reason, details, request_id, created_at) VALUES (%(id)s::UUID, %(post_id)s::UUID, %(target_id)s::UUID, %(account_id)s::UUID, %(actor_id)s::UUID, %(actor_kind)s, %(action)s, %(previous_state)s, %(new_state)s, %(reason)s, %(details)s::JSONB, %(request_id)s, %(created_at)s)"
+        },
+        {
+          "site": "seeding/source_observations.py:_read_limits",
+          "count": 2,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text,true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN 2000 ELSE 5000 END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:native_financial_record_ids",
+          "count": 2,
+          "sql": "SELECT loans.id FROM loans WHERE loans.provenance @> %(provenance_1)s::JSONB ORDER BY loans.id LIMIT %(param_1)s"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:read_native_financial_record_ids",
+          "count": 1,
+          "sql": "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+        },
+        {
+          "site": "social/generation/integration.py:_generate_committed",
+          "count": 1,
+          "sql": "SELECT social_generation_controls.id AS social_generation_controls_id, social_generation_controls.version AS social_generation_controls_version, social_generation_controls.drafts_enabled AS social_generation_controls_drafts_enabled, social_generation_controls.shadow_enabled AS social_generation_controls_shadow_enabled, social_generation_controls.source_allowlist AS social_generation_controls_source_allowlist, social_generation_controls.targets AS social_generation_controls_targets FROM social_generation_controls WHERE social_generation_controls.id = %(pk_1)s"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND (social_source_cursors.source_key LIKE %(source_key_1)s || '%%' ESCAPE '/') AND social_source_cursors.source_key != %(source_key_2)s AND social_source_cursors.detector_version = %(detector_version_1)s AND social_source_cursors.evidence_version = %(evidence_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "UPDATE social_source_cursors SET fingerprint=%(fingerprint)s, report_state=%(report_state)s::JSONB WHERE social_source_cursors.id = %(social_source_cursors_id)s::UUID"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.id = %(pk_1)s::UUID"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "UPDATE ingestion_jobs SET metadata=%(metadata)s::JSONB WHERE ingestion_jobs.id = %(ingestion_jobs_id)s"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SET CONSTRAINTS ALL IMMEDIATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        },
+        {
+          "site": "framework",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        }
+      ]
+    },
+    {
+      "label": "retained_unchanged",
+      "worker_ports": true,
+      "draft_account_count": 1,
+      "draft_platform": "facebook",
+      "elapsed_seconds": 0.3888392910012044,
+      "driver_calls": 1315,
+      "calls_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 1,
+        "seeding/source_observations.py:_read_limits": 2,
+        "seeding/native_report_observations.py:_job": 95,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 2,
+        "social/generation/integration.py:_transaction_limits": 48,
+        "social/generation/integration.py:_generate_committed": 1,
+        "social/generation/service.py:controls": 46,
+        "social/generation/service.py:_source_admission": 46,
+        "seeding/native_financial_observations.py:_current_native_financial": 230,
+        "seeding/native_report_authority.py:lock_native_domain": 94,
+        "seeding/native_report_observations.py:current_native_report": 188,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 93,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 46,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 47,
+        "services/figure_qualification.py:qualify_rows": 184,
+        "social/service.py:now": 46,
+        "social/generation/service.py:_insert": 46,
+        "social/generation/service.py:_consume_current_observation": 46,
+        "social/generation/service.py:established_financial_source": 46,
+        "social/generation/integration.py:_complete_financial_cohort": 3,
+        "seeding/generation_dispatch.py:_record_outcome": 4,
+        "framework": 1
+      },
+      "driver_seconds_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 8.520800474798307e-05,
+        "seeding/source_observations.py:_read_limits": 0.000724083001841791,
+        "seeding/native_report_observations.py:_job": 0.010244002973195165,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 0.00019729199266294017,
+        "social/generation/integration.py:_transaction_limits": 0.018139872037863825,
+        "social/generation/integration.py:_generate_committed": 6.770899926777929e-05,
+        "social/generation/service.py:controls": 0.002969334032968618,
+        "social/generation/service.py:_source_admission": 0.003145082991977688,
+        "seeding/native_financial_observations.py:_current_native_financial": 0.017880238046927843,
+        "seeding/native_report_authority.py:lock_native_domain": 0.03028787102084607,
+        "seeding/native_report_observations.py:current_native_report": 0.012038120978104416,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 0.006393632029357832,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 0.0036438370443647727,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 0.014443707987084053,
+        "services/figure_qualification.py:qualify_rows": 0.014722325860930141,
+        "social/service.py:now": 0.002393495014985092,
+        "social/generation/service.py:_insert": 0.004040961001010146,
+        "social/generation/service.py:_consume_current_observation": 0.0036232100464985706,
+        "social/generation/service.py:established_financial_source": 0.004112248978344724,
+        "social/generation/integration.py:_complete_financial_cohort": 0.00034045700886053964,
+        "seeding/generation_dispatch.py:_record_outcome": 0.0002639579979586415,
+        "framework": 0.00010504200326977298
+      },
+      "worker_capture_calls": 0,
+      "result": {
+        "state": "completed",
+        "reason": "COMMITTED_EVIDENCE_CONSUMED",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 46,
+        "unchanged": 46,
+        "drafts_created": 0
+      },
+      "statements": [
+        {
+          "site": "seeding/native_report_observations.py:_job",
+          "count": 95,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at, timezone(current_setting(%(current_setting_1)s), ingestion_jobs.started_at) AS timezone_1, timezone(current_setting(%(current_setting_2)s), ingestion_jobs.finished_at) AS timezone_2, statement_timestamp() AS statement_timestamp_1, EXISTS (SELECT ingestion_jobs_1.id FROM ingestion_jobs AS ingestion_jobs_1 WHERE ingestion_jobs_1.domain = %(domain_1)s AND ingestion_jobs_1.id > %(id_1)s AND ingestion_jobs_1.dry_run IS false AND ingestion_jobs_1.status IN (%(status_1_1)s, %(status_1_2)s) AND (ingestion_jobs_1.metadata ->> %(metadata_1)s) IN (%(param_1_1)s, %(param_1_2)s)) AS anon_1 FROM ingestion_jobs WHERE ingestion_jobs.id = %(id_2)s"
+        },
+        {
+          "site": "seeding/native_report_authority.py:lock_native_domain",
+          "count": 94,
+          "sql": "WITH bounds AS MATERIALIZED ( SELECT set_config('lock_timeout', CASE WHEN setting::bigint=0 THEN '2000' ELSE LEAST(setting::bigint,2000)::text END, true) AS configured FROM pg_settings WHERE name='lock_timeout') SELECT pg_advisory_xact_lock(802, %(domain)s) FROM bounds WHERE configured IS NOT NULL"
+        },
+        {
+          "site": "seeding/retained_report_receipts.py:validate_retained_pdf",
+          "count": 93,
+          "sql": "SELECT extractions.source_document_id, extractions.extractor, extractions.extracted_json[%(extracted_json_1)s] - %(param_1)s AS anon_1 FROM extractions WHERE extractions.id = %(id_1)s"
+        },
+        {
+          "site": "social/generation/integration.py:_transaction_limits",
+          "count": 48,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text, true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN %(lock)s ELSE %(statement)s END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT source_documents.id, source_documents.country_id, source_documents.publisher, source_documents.title, source_documents.url, source_documents.file_path, source_documents.fetch_date, source_documents.md5, source_documents.doc_type, source_documents.status, source_documents.content_type, source_documents.http_status, source_documents.last_verified_at, source_documents.last_seen_at, source_documents.metadata, source_documents.created_at FROM source_documents WHERE source_documents.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 47,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:input_fingerprints",
+          "count": 47,
+          "sql": "SELECT 'countries' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM countries WHERE id=ANY(%(countries)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'entities' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM entities WHERE id=ANY(%(entities)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'extractions' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM extractions WHERE id=ANY(%(extractions)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'loans' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM loans WHERE id=ANY(%(loans)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'source_documents' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM source_documents WHERE id=ANY(%(source_documents)s) ORDER BY id FOR SHARE) AS r"
+        },
+        {
+          "site": "social/generation/service.py:controls",
+          "count": 46,
+          "sql": "SELECT social_generation_controls.id, social_generation_controls.version, social_generation_controls.drafts_enabled, social_generation_controls.shadow_enabled, social_generation_controls.source_allowlist, social_generation_controls.targets FROM social_generation_controls WHERE social_generation_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:_source_admission",
+          "count": 46,
+          "sql": "SELECT social_controls.id, social_controls.publishing_enabled, social_controls.generation_enabled, social_controls.auto_approve_enabled, social_controls.auto_schedule_enabled, social_controls.auto_publish_enabled, social_controls.platform_controls, social_controls.budget_controls, social_controls.version, social_controls.updated_by, social_controls.updated_at FROM social_controls WHERE social_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT loans.id, loans.entity_id, loans.lender, loans.debt_category, loans.principal, loans.outstanding, loans.interest_rate, loans.issue_date, loans.maturity_date, loans.currency, loans.source_document_id, loans.provenance, loans.created_at, loans.updated_at, loans.extraction_id, loans.page_ref, loans.source_hash, loans.confidence_score, loans.basis, loans.publishable, loans.quarantine_reason FROM loans WHERE loans.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:lock_qualified_inputs",
+          "count": 46,
+          "sql": "SELECT extracted_json->'response_receipt'->'retained_pdf_validation'->'origin_extraction_id' FROM extractions WHERE id=ANY(%(ids)s) ORDER BY id FOR SHARE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id = %(pk_1)s"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 46,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 46,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "social/service.py:now",
+          "count": 46,
+          "sql": "SELECT clock_timestamp() AS clock_timestamp_1"
+        },
+        {
+          "site": "social/generation/service.py:_insert",
+          "count": 46,
+          "sql": "INSERT INTO social_source_cursors (id, source_type, source_key, detector_version, evidence_version, sequence, fingerprint, report_state, observed_at) VALUES (%(id)s::UUID, %(source_type)s, %(source_key)s, %(detector_version)s, %(evidence_version)s, %(sequence)s, %(fingerprint)s, %(report_state)s::JSONB, %(observed_at)s) ON CONFLICT (source_type, source_key, detector_version) DO NOTHING"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:established_financial_source",
+          "count": 46,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s"
+        },
+        {
+          "site": "seeding/source_observations.py:_read_limits",
+          "count": 2,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text,true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN 2000 ELSE 5000 END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:native_financial_record_ids",
+          "count": 2,
+          "sql": "SELECT loans.id FROM loans WHERE loans.provenance @> %(provenance_1)s::JSONB ORDER BY loans.id LIMIT %(param_1)s"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:read_native_financial_record_ids",
+          "count": 1,
+          "sql": "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+        },
+        {
+          "site": "social/generation/integration.py:_generate_committed",
+          "count": 1,
+          "sql": "SELECT social_generation_controls.id AS social_generation_controls_id, social_generation_controls.version AS social_generation_controls_version, social_generation_controls.drafts_enabled AS social_generation_controls_drafts_enabled, social_generation_controls.shadow_enabled AS social_generation_controls_shadow_enabled, social_generation_controls.source_allowlist AS social_generation_controls_source_allowlist, social_generation_controls.targets AS social_generation_controls_targets FROM social_generation_controls WHERE social_generation_controls.id = %(pk_1)s"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND (social_source_cursors.source_key LIKE %(source_key_1)s || '%%' ESCAPE '/') AND social_source_cursors.source_key != %(source_key_2)s AND social_source_cursors.detector_version = %(detector_version_1)s AND social_source_cursors.evidence_version = %(evidence_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.id = %(pk_1)s::UUID"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "UPDATE ingestion_jobs SET metadata=%(metadata)s::JSONB WHERE ingestion_jobs.id = %(ingestion_jobs_id)s"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SET CONSTRAINTS ALL IMMEDIATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        },
+        {
+          "site": "framework",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        }
+      ]
+    },
+    {
+      "label": "retained_all_46_changed",
+      "worker_ports": true,
+      "draft_account_count": 1,
+      "draft_platform": "facebook",
+      "elapsed_seconds": 1.181431832999806,
+      "driver_calls": 2880,
+      "calls_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 1,
+        "seeding/source_observations.py:_read_limits": 2,
+        "seeding/native_report_observations.py:_job": 187,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 2,
+        "social/generation/integration.py:_transaction_limits": 48,
+        "social/generation/integration.py:_generate_committed": 1,
+        "social/generation/service.py:controls": 46,
+        "social/generation/service.py:_source_admission": 46,
+        "seeding/native_financial_observations.py:_current_native_financial": 460,
+        "seeding/native_report_authority.py:lock_native_domain": 232,
+        "seeding/native_report_observations.py:current_native_report": 372,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 185,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 46,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 47,
+        "services/figure_qualification.py:qualify_rows": 368,
+        "social/service.py:now": 46,
+        "social/generation/service.py:_insert": 46,
+        "social/generation/service.py:_consume_current_observation": 276,
+        "social/generation/service.py:established_financial_source": 46,
+        "social/generation/editorial.py:capture_profiles": 46,
+        "social/generation/worker_authority.py:capture_worker_authority": 46,
+        "social/generation/worker_authority.py:_fingerprint": 276,
+        "social/service.py:_new_revision": 46,
+        "social/generation/integration.py:_complete_financial_cohort": 4,
+        "seeding/generation_dispatch.py:_record_outcome": 4,
+        "framework": 1
+      },
+      "driver_seconds_by_site": {
+        "seeding/native_financial_observations.py:read_native_financial_record_ids": 8.837500354275107e-05,
+        "seeding/source_observations.py:_read_limits": 0.0007493339944630861,
+        "seeding/native_report_observations.py:_job": 0.02034278905193787,
+        "seeding/native_financial_observations.py:native_financial_record_ids": 0.0001904579985421151,
+        "social/generation/integration.py:_transaction_limits": 0.018899122005677782,
+        "social/generation/integration.py:_generate_committed": 6.645899702562019e-05,
+        "social/generation/service.py:controls": 0.0030167929871822707,
+        "social/generation/service.py:_source_admission": 0.0031408350041601807,
+        "seeding/native_financial_observations.py:_current_native_financial": 0.035701200053154025,
+        "seeding/native_report_authority.py:lock_native_domain": 0.07791650194121758,
+        "seeding/native_report_observations.py:current_native_report": 0.02389387400035048,
+        "seeding/retained_report_receipts.py:validate_retained_pdf": 0.012936675993842073,
+        "seeding/financial_cohort_witness.py:lock_qualified_inputs": 0.0037820400029886514,
+        "seeding/financial_cohort_witness.py:input_fingerprints": 0.014777620031964034,
+        "services/figure_qualification.py:qualify_rows": 0.029416669029160403,
+        "social/service.py:now": 0.002346088003832847,
+        "social/generation/service.py:_insert": 0.004135411021707114,
+        "social/generation/service.py:_consume_current_observation": 0.024782004024018534,
+        "social/generation/service.py:established_financial_source": 0.004130331995838787,
+        "social/generation/editorial.py:capture_profiles": 0.003976538995630108,
+        "social/generation/worker_authority.py:capture_worker_authority": 0.0025972059956984594,
+        "social/generation/worker_authority.py:_fingerprint": 0.38795542896696134,
+        "social/service.py:_new_revision": 0.006611084987525828,
+        "social/generation/integration.py:_complete_financial_cohort": 0.0005247509907349013,
+        "seeding/generation_dispatch.py:_record_outcome": 0.0002514160005375743,
+        "framework": 0.00010054199810838327
+      },
+      "worker_capture_calls": 46,
+      "result": {
+        "state": "completed",
+        "reason": "COMMITTED_EVIDENCE_CONSUMED",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 46,
+        "unchanged": 0,
+        "drafts_created": 46
+      },
+      "statements": [
+        {
+          "site": "seeding/native_report_authority.py:lock_native_domain",
+          "count": 232,
+          "sql": "WITH bounds AS MATERIALIZED ( SELECT set_config('lock_timeout', CASE WHEN setting::bigint=0 THEN '2000' ELSE LEAST(setting::bigint,2000)::text END, true) AS configured FROM pg_settings WHERE name='lock_timeout') SELECT pg_advisory_xact_lock(802, %(domain)s) FROM bounds WHERE configured IS NOT NULL"
+        },
+        {
+          "site": "seeding/native_report_observations.py:_job",
+          "count": 187,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at, timezone(current_setting(%(current_setting_1)s), ingestion_jobs.started_at) AS timezone_1, timezone(current_setting(%(current_setting_2)s), ingestion_jobs.finished_at) AS timezone_2, statement_timestamp() AS statement_timestamp_1, EXISTS (SELECT ingestion_jobs_1.id FROM ingestion_jobs AS ingestion_jobs_1 WHERE ingestion_jobs_1.domain = %(domain_1)s AND ingestion_jobs_1.id > %(id_1)s AND ingestion_jobs_1.dry_run IS false AND ingestion_jobs_1.status IN (%(status_1_1)s, %(status_1_2)s) AND (ingestion_jobs_1.metadata ->> %(metadata_1)s) IN (%(param_1_1)s, %(param_1_2)s)) AS anon_1 FROM ingestion_jobs WHERE ingestion_jobs.id = %(id_2)s"
+        },
+        {
+          "site": "seeding/retained_report_receipts.py:validate_retained_pdf",
+          "count": 185,
+          "sql": "SELECT extractions.source_document_id, extractions.extractor, extractions.extracted_json[%(extracted_json_1)s] - %(param_1)s AS anon_1 FROM extractions WHERE extractions.id = %(id_1)s"
+        },
+        {
+          "site": "social/generation/worker_authority.py:_fingerprint",
+          "count": 184,
+          "sql": "SELECT authority_fingerprint FROM public.social_native_source_authority WHERE source_kind=%(kind)s AND native_domain=%(domain)s AND record_id=%(record_id)s AND ingestion_id=%(ingestion_id)s LIMIT 2"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 93,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 93,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 93,
+          "sql": "SELECT source_documents.id, source_documents.country_id, source_documents.publisher, source_documents.title, source_documents.url, source_documents.file_path, source_documents.fetch_date, source_documents.md5, source_documents.doc_type, source_documents.status, source_documents.content_type, source_documents.http_status, source_documents.last_verified_at, source_documents.last_seen_at, source_documents.metadata, source_documents.created_at FROM source_documents WHERE source_documents.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_report_observations.py:current_native_report",
+          "count": 93,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 92,
+          "sql": "SHOW transaction_isolation"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 92,
+          "sql": "SELECT loans.id, loans.entity_id, loans.lender, loans.debt_category, loans.principal, loans.outstanding, loans.interest_rate, loans.issue_date, loans.maturity_date, loans.currency, loans.source_document_id, loans.provenance, loans.created_at, loans.updated_at, loans.extraction_id, loans.page_ref, loans.source_hash, loans.confidence_score, loans.basis, loans.publishable, loans.quarantine_reason FROM loans WHERE loans.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 92,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id = %(pk_1)s"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 92,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id = %(pk_1)s"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 92,
+          "sql": "SELECT source_documents.id AS source_documents_id, source_documents.country_id AS source_documents_country_id, source_documents.publisher AS source_documents_publisher, source_documents.title AS source_documents_title, source_documents.url AS source_documents_url, source_documents.file_path AS source_documents_file_path, source_documents.fetch_date AS source_documents_fetch_date, source_documents.md5 AS source_documents_md5, source_documents.doc_type AS source_documents_doc_type, source_documents.status AS source_documents_status, source_documents.content_type AS source_documents_content_type, source_documents.http_status AS source_documents_http_status, source_documents.last_verified_at AS source_documents_last_verified_at, source_documents.last_seen_at AS source_documents_last_seen_at, source_documents.metadata AS source_documents_metadata, source_documents.created_at AS source_documents_created_at FROM source_documents WHERE source_documents.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 92,
+          "sql": "SELECT entities.id AS entities_id, entities.country_id AS entities_country_id, entities.type AS entities_type, entities.canonical_name AS entities_canonical_name, entities.slug AS entities_slug, entities.alt_names AS entities_alt_names, entities.metadata AS entities_metadata, entities.created_at AS entities_created_at FROM entities WHERE entities.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 92,
+          "sql": "SELECT countries.id AS countries_id, countries.iso_code AS countries_iso_code, countries.name AS countries_name, countries.currency AS countries_currency, countries.timezone AS countries_timezone, countries.default_locale AS countries_default_locale, countries.metadata AS countries_metadata, countries.created_at AS countries_created_at FROM countries WHERE countries.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "services/figure_qualification.py:qualify_rows",
+          "count": 92,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id IN (%(id_1_1)s)"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:_current_native_financial",
+          "count": 92,
+          "sql": "SELECT extractions.id AS extractions_id, extractions.source_document_id AS extractions_source_document_id, extractions.page_number AS extractions_page_number, extractions.extracted_json AS extractions_extracted_json, extractions.extractor AS extractions_extractor, extractions.confidence AS extractions_confidence, extractions.created_at AS extractions_created_at FROM extractions WHERE extractions.id = %(pk_1)s"
+        },
+        {
+          "site": "social/generation/worker_authority.py:_fingerprint",
+          "count": 92,
+          "sql": "SELECT CASE WHEN to_regclass(%(relation)s) IS NULL THEN false ELSE has_table_privilege(current_user,to_regclass(%(relation)s),'SELECT') END"
+        },
+        {
+          "site": "social/generation/integration.py:_transaction_limits",
+          "count": 48,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text, true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN %(lock)s ELSE %(statement)s END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:input_fingerprints",
+          "count": 47,
+          "sql": "SELECT 'countries' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM countries WHERE id=ANY(%(countries)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'entities' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM entities WHERE id=ANY(%(entities)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'extractions' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM extractions WHERE id=ANY(%(extractions)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'loans' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM loans WHERE id=ANY(%(loans)s) ORDER BY id FOR SHARE) AS r UNION ALL SELECT 'source_documents' AS kind,r.id,encode(sha256(convert_to(r::text,'UTF8')),'hex') AS fingerprint FROM (SELECT * FROM source_documents WHERE id=ANY(%(source_documents)s) ORDER BY id FOR SHARE) AS r"
+        },
+        {
+          "site": "social/generation/service.py:controls",
+          "count": 46,
+          "sql": "SELECT social_generation_controls.id, social_generation_controls.version, social_generation_controls.drafts_enabled, social_generation_controls.shadow_enabled, social_generation_controls.source_allowlist, social_generation_controls.targets FROM social_generation_controls WHERE social_generation_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:_source_admission",
+          "count": 46,
+          "sql": "SELECT social_controls.id, social_controls.publishing_enabled, social_controls.generation_enabled, social_controls.auto_approve_enabled, social_controls.auto_schedule_enabled, social_controls.auto_publish_enabled, social_controls.platform_controls, social_controls.budget_controls, social_controls.version, social_controls.updated_by, social_controls.updated_at FROM social_controls WHERE social_controls.id = %(id_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/financial_cohort_witness.py:lock_qualified_inputs",
+          "count": 46,
+          "sql": "SELECT extracted_json->'response_receipt'->'retained_pdf_validation'->'origin_extraction_id' FROM extractions WHERE id=ANY(%(ids)s) ORDER BY id FOR SHARE"
+        },
+        {
+          "site": "social/service.py:now",
+          "count": 46,
+          "sql": "SELECT clock_timestamp() AS clock_timestamp_1"
+        },
+        {
+          "site": "social/generation/service.py:_insert",
+          "count": 46,
+          "sql": "INSERT INTO social_source_cursors (id, source_type, source_key, detector_version, evidence_version, sequence, fingerprint, report_state, observed_at) VALUES (%(id)s::UUID, %(source_type)s, %(source_key)s, %(detector_version)s, %(evidence_version)s, %(sequence)s, %(fingerprint)s, %(report_state)s::JSONB, %(observed_at)s) ON CONFLICT (source_type, source_key, detector_version) DO NOTHING"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/service.py:established_financial_source",
+          "count": 46,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "UPDATE social_source_cursors SET evidence_version=%(evidence_version)s, sequence=%(sequence)s, fingerprint=%(fingerprint)s, observed_at=%(observed_at)s WHERE social_source_cursors.id = %(social_source_cursors_id)s::UUID"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "INSERT INTO social_source_events (id, cursor_id, sequence, evidence_version, fingerprint, observation, created_at) VALUES (%(id)s::UUID, %(cursor_id)s::UUID, %(sequence)s, %(evidence_version)s, %(fingerprint)s, %(observation)s::JSONB, %(created_at)s)"
+        },
+        {
+          "site": "social/generation/editorial.py:capture_profiles",
+          "count": 46,
+          "sql": "SELECT social_accounts.id AS social_accounts_id, social_accounts.platform AS social_accounts_platform, social_accounts.api_product AS social_accounts_api_product, social_accounts.connection_method AS social_accounts_connection_method, social_accounts.external_account_id AS social_accounts_external_account_id, social_accounts.display_name AS social_accounts_display_name, social_accounts.handle AS social_accounts_handle, social_accounts.profile_url AS social_accounts_profile_url, social_accounts.credential_id AS social_accounts_credential_id, social_accounts.connection_state AS social_accounts_connection_state, social_accounts.granted_scopes AS social_accounts_granted_scopes, social_accounts.capability_snapshot AS social_accounts_capability_snapshot, social_accounts.capabilities_checked_at AS social_accounts_capabilities_checked_at, social_accounts.last_api_success_at AS social_accounts_last_api_success_at, social_accounts.publishing_enabled AS social_accounts_publishing_enabled, social_accounts.hold_reason AS social_accounts_hold_reason, social_accounts.rate_state AS social_accounts_rate_state, social_accounts.publish_lease_target_id AS social_accounts_publish_lease_target_id, social_accounts.publish_lease_token AS social_accounts_publish_lease_token, social_accounts.publish_lease_expires_at AS social_accounts_publish_lease_expires_at, social_accounts.created_at AS social_accounts_created_at, social_accounts.updated_at AS social_accounts_updated_at FROM social_accounts WHERE social_accounts.id = %(pk_1)s::UUID"
+        },
+        {
+          "site": "social/generation/worker_authority.py:capture_worker_authority",
+          "count": 46,
+          "sql": "SELECT to_regclass(%(relation)s)"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "INSERT INTO social_posts (id, origin_type, creation_method, title, content_type, editorial_state, current_revision_id, source_event_id, duplicated_from_id, replaces_post_id, created_by, row_version, created_at, updated_at, archived_at) VALUES (%(id)s::UUID, %(origin_type)s, %(creation_method)s, %(title)s, %(content_type)s, %(editorial_state)s, %(current_revision_id)s::UUID, %(source_event_id)s::UUID, %(duplicated_from_id)s::UUID, %(replaces_post_id)s::UUID, %(created_by)s::UUID, %(row_version)s, %(created_at)s, %(updated_at)s, %(archived_at)s)"
+        },
+        {
+          "site": "social/service.py:_new_revision",
+          "count": 46,
+          "sql": "INSERT INTO social_post_revisions (id, post_id, revision_no, document, content_hash, evidence_snapshot, generator_metadata, created_by, created_at) VALUES (%(id)s::UUID, %(post_id)s::UUID, %(revision_no)s, %(document)s::JSONB, %(content_hash)s, %(evidence_snapshot)s::JSONB, %(generator_metadata)s::JSONB, %(created_by)s::UUID, %(created_at)s)"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "INSERT INTO social_audit_events (id, post_id, target_id, account_id, actor_id, actor_kind, action, previous_state, new_state, reason, details, request_id, created_at) VALUES (%(id)s::UUID, %(post_id)s::UUID, %(target_id)s::UUID, %(account_id)s::UUID, %(actor_id)s::UUID, %(actor_kind)s, %(action)s, %(previous_state)s, %(new_state)s, %(reason)s, %(details)s::JSONB, %(request_id)s, %(created_at)s)"
+        },
+        {
+          "site": "social/generation/service.py:_consume_current_observation",
+          "count": 46,
+          "sql": "UPDATE social_posts SET current_revision_id=%(current_revision_id)s::UUID WHERE social_posts.id = %(social_posts_id)s::UUID AND social_posts.row_version = %(social_posts_row_version)s RETURNING social_posts.row_version"
+        },
+        {
+          "site": "seeding/source_observations.py:_read_limits",
+          "count": 2,
+          "sql": "SELECT name, set_config(name, CASE WHEN setting::bigint=0 THEN bounds.ms ELSE LEAST(setting::bigint,bounds.ms) END::text,true) FROM pg_settings CROSS JOIN LATERAL ( SELECT CASE WHEN name='lock_timeout' THEN 2000 ELSE 5000 END AS ms ) bounds WHERE name IN ('statement_timeout','lock_timeout')"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:native_financial_record_ids",
+          "count": 2,
+          "sql": "SELECT loans.id FROM loans WHERE loans.provenance @> %(provenance_1)s::JSONB ORDER BY loans.id LIMIT %(param_1)s"
+        },
+        {
+          "site": "seeding/native_financial_observations.py:read_native_financial_record_ids",
+          "count": 1,
+          "sql": "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+        },
+        {
+          "site": "social/generation/integration.py:_generate_committed",
+          "count": 1,
+          "sql": "SELECT social_generation_controls.id AS social_generation_controls_id, social_generation_controls.version AS social_generation_controls_version, social_generation_controls.drafts_enabled AS social_generation_controls_drafts_enabled, social_generation_controls.shadow_enabled AS social_generation_controls_shadow_enabled, social_generation_controls.source_allowlist AS social_generation_controls_source_allowlist, social_generation_controls.targets AS social_generation_controls_targets FROM social_generation_controls WHERE social_generation_controls.id = %(pk_1)s"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND social_source_cursors.source_key = %(source_key_1)s AND social_source_cursors.detector_version = %(detector_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.source_type = %(source_type_1)s AND (social_source_cursors.source_key LIKE %(source_key_1)s || '%%' ESCAPE '/') AND social_source_cursors.source_key != %(source_key_2)s AND social_source_cursors.detector_version = %(detector_version_1)s AND social_source_cursors.evidence_version = %(evidence_version_1)s FOR UPDATE"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "UPDATE social_source_cursors SET evidence_version=%(evidence_version)s, fingerprint=%(fingerprint)s, report_state=%(report_state)s::JSONB WHERE social_source_cursors.id = %(social_source_cursors_id)s::UUID"
+        },
+        {
+          "site": "social/generation/integration.py:_complete_financial_cohort",
+          "count": 1,
+          "sql": "SELECT social_source_cursors.id, social_source_cursors.source_type, social_source_cursors.source_key, social_source_cursors.detector_version, social_source_cursors.evidence_version, social_source_cursors.sequence, social_source_cursors.fingerprint, social_source_cursors.report_state, social_source_cursors.observed_at FROM social_source_cursors WHERE social_source_cursors.id = %(pk_1)s::UUID"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s FOR UPDATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "UPDATE ingestion_jobs SET metadata=%(metadata)s::JSONB WHERE ingestion_jobs.id = %(ingestion_jobs_id)s"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SET CONSTRAINTS ALL IMMEDIATE"
+        },
+        {
+          "site": "seeding/generation_dispatch.py:_record_outcome",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id, ingestion_jobs.domain, ingestion_jobs.status, ingestion_jobs.dry_run, ingestion_jobs.started_at, ingestion_jobs.finished_at, ingestion_jobs.items_processed, ingestion_jobs.items_created, ingestion_jobs.items_updated, ingestion_jobs.errors, ingestion_jobs.metadata, ingestion_jobs.created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        },
+        {
+          "site": "framework",
+          "count": 1,
+          "sql": "SELECT ingestion_jobs.id AS ingestion_jobs_id, ingestion_jobs.domain AS ingestion_jobs_domain, ingestion_jobs.status AS ingestion_jobs_status, ingestion_jobs.dry_run AS ingestion_jobs_dry_run, ingestion_jobs.started_at AS ingestion_jobs_started_at, ingestion_jobs.finished_at AS ingestion_jobs_finished_at, ingestion_jobs.items_processed AS ingestion_jobs_items_processed, ingestion_jobs.items_created AS ingestion_jobs_items_created, ingestion_jobs.items_updated AS ingestion_jobs_items_updated, ingestion_jobs.errors AS ingestion_jobs_errors, ingestion_jobs.metadata AS ingestion_jobs_metadata, ingestion_jobs.created_at AS ingestion_jobs_created_at FROM ingestion_jobs WHERE ingestion_jobs.id = %(pk_1)s"
+        }
+      ]
+    }
+  ],
+  "payloads": {
+    "source_meta_bytes": [
+      743
+    ],
+    "extraction_payload_bytes": [
+      24876,
+      4194,
+      25137,
+      4455,
+      25137,
+      4455
+    ]
+  }
+}

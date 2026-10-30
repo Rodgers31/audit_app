@@ -1,0 +1,45 @@
+"""Real short SIGALRM with guarded PG outcome write/readback; commands are inert."""
+from datetime import datetime,timedelta,timezone
+import time
+
+import pytest
+from models import IngestionJob,IngestionStatus
+from seeding import cli,generation_dispatch as dispatch
+from test_b83_generation_postgres import pg,no_publication
+
+
+@pytest.mark.parametrize('phase',['financial','report'])
+def test_actual_outer_alarm_preserves_confirmed_or_unknown_and_source(pg,monkeypatch,phase):
+    factory,_=pg;now=datetime.now(timezone.utc)
+    with factory.begin() as db:
+        row=IngestionJob(domain='pending_bills',status=IngestionStatus.COMPLETED,dry_run=False,
+            started_at=now-timedelta(seconds=2),finished_at=now-timedelta(seconds=1),
+            items_processed=46,items_created=0,items_updated=46,errors=[],meta={'source_mode':'live','owned_source_receipt':'unchanged'})
+        db.add(row);db.flush();db.refresh(row);identity=row.id
+        before=(row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    confirmed={'state':'failed','reason':'GENERATION_DEADLINE_EXCEEDED','processed':3,'baselines':2,'unchanged':1,'drafts_created':0,'refused':0}
+    def financial(*a,**kw):
+        if phase=='financial':time.sleep(4)
+        return confirmed
+    def report(*a,**kw):time.sleep(4)
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial)
+    monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+    started=time.monotonic()
+    cli._post_commit_generation(factory,domain='pending_bills',ingestion_id=identity,dry_run=False,deadline=started+11.9)
+    assert .8<time.monotonic()-started<3
+    with factory() as db:
+        row=db.get(IngestionJob,identity)
+        assert (row.domain,row.status,row.started_at,row.finished_at,row.items_processed,row.items_created,row.items_updated,list(row.errors))==before
+        assert row.meta['source_mode']=='live' and row.meta['owned_source_receipt']=='unchanged'
+        financial=row.meta['post_commit_generation'];reports=row.meta['post_commit_report_generation']
+        if phase=='financial':
+            assert financial['state']=='failed' and financial['execution_unverified'] is True
+            assert all(financial[k] is None for k in dispatch.COUNTERS)
+            assert reports=={'state':'unavailable','reason':'report_generation_not_started',**dict.fromkeys(dispatch.COUNTERS,0)}
+        else:
+            assert financial==confirmed
+            assert reports['state']=='failed' and reports['execution_unverified'] is True
+            assert all(reports[k] is None for k in dispatch.COUNTERS)
+    no_publication(factory)

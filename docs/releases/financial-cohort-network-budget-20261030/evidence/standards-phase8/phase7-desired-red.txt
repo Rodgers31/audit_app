@@ -1,0 +1,254 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.7.0 -- /usr/local/bin/python
+rootdir: /review
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 7 items
+
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.0-None-expected_caps0-completed] FAILED [ 14%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[600.1-None-expected_caps1-not_started] FAILED [ 28%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[39.2-50.0-expected_caps2-not_started] FAILED [ 42%]
+../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.8-626.0-expected_caps3-unknown] FAILED [ 57%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[selector] FAILED [ 71%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[financial_postwork] FAILED [ 85%]
+../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[report_postwork] FAILED [100%]
+
+=================================== FAILURES ===================================
+_ test_literal_phase_caps_and_one_shared_deadline[599.0-None-expected_caps0-completed] _
+
+work = 599.0, remaining = None, expected_caps = [600, 30]
+expected_report = 'completed'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab76ee70>
+
+    @pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+    def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+        clock=[0.];caps=[];recorded=[]
+        monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        @contextmanager
+        def hard(seconds):
+            caps.append(seconds);start=clock[0];yield
+            if clock[0]-start>=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+        def financial(*a,**kw):clock[0]+=work;return outcome()
+        def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+        monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+        monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+        cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+>       assert caps==expected_caps
+E       AssertionError: assert [640] == [600, 30]
+E         
+E         At index 0 diff: 640 != 600
+E         Right contains one more item: 30
+E         
+E         Full diff:
+E           [
+E         -     600,...
+E         
+E         ...Full output truncated (5 lines hidden), use '-vv' to show
+
+/review/test_phase8_independent.py:22: AssertionError
+_ test_literal_phase_caps_and_one_shared_deadline[600.1-None-expected_caps1-not_started] _
+
+work = 600.1, remaining = None, expected_caps = [600]
+expected_report = 'not_started'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab76f800>
+
+    @pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+    def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+        clock=[0.];caps=[];recorded=[]
+        monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        @contextmanager
+        def hard(seconds):
+            caps.append(seconds);start=clock[0];yield
+            if clock[0]-start>=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+        def financial(*a,**kw):clock[0]+=work;return outcome()
+        def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+        monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+        monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+        cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+>       assert caps==expected_caps
+E       AssertionError: assert [640] == [600]
+E         
+E         At index 0 diff: 640 != 600
+E         
+E         Full diff:
+E           [
+E         -     600,
+E         ?      ^...
+E         
+E         ...Full output truncated (3 lines hidden), use '-vv' to show
+
+/review/test_phase8_independent.py:22: AssertionError
+_ test_literal_phase_caps_and_one_shared_deadline[39.2-50.0-expected_caps2-not_started] _
+
+work = 39.2, remaining = 50.0, expected_caps = [40]
+expected_report = 'not_started'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab76f4d0>
+
+    @pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+    def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+        clock=[0.];caps=[];recorded=[]
+        monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        @contextmanager
+        def hard(seconds):
+            caps.append(seconds);start=clock[0];yield
+            if clock[0]-start>=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+        def financial(*a,**kw):clock[0]+=work;return outcome()
+        def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+        monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+        monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+        cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+        assert caps==expected_caps
+        if expected_report=='completed':assert recorded==[]
+        else:
+            financial_result=recorded[0][1];report_result=recorded[1][1]
+            # Virtual context exit occurs after the fake dispatcher returned.
+            assert financial_result==outcome()
+>           if expected_report=='not_started':assert report_result['reason']=='report_generation_not_started' and all(report_result[k]==0 for k in dispatch.COUNTERS)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: assert ('report_gener...on_unverified' == 'report_gener...n_not_started'
+E             
+E             - report_generation_not_started
+E             + report_generation_timeout_execution_unverified)
+
+/review/test_phase8_independent.py:28: AssertionError
+_ test_literal_phase_caps_and_one_shared_deadline[599.8-626.0-expected_caps3-unknown] _
+
+work = 599.8, remaining = 626.0, expected_caps = [600, 16]
+expected_report = 'unknown'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab790050>
+
+    @pytest.mark.parametrize('work,remaining,expected_caps,expected_report',[(599.,None,[600,30],'completed'),(600.1,None,[600],'not_started'),(39.2,50.,[40],'not_started'),(599.8,626.,[600,16],'unknown')])
+    def test_literal_phase_caps_and_one_shared_deadline(work,remaining,expected_caps,expected_report,monkeypatch):
+        clock=[0.];caps=[];recorded=[]
+        monkeypatch.setattr(cli.time,'monotonic',lambda:clock[0])
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        @contextmanager
+        def hard(seconds):
+            caps.append(seconds);start=clock[0];yield
+            if clock[0]-start>=seconds:raise cli.DomainTimeoutError('Owned measured phase deadline')
+        def financial(*a,**kw):clock[0]+=work;return outcome()
+        def report(*a,**kw):clock[0]+=16.1 if remaining==626. else 20.;return outcome()
+        monkeypatch.setattr(cli,'_domain_timeout',hard);monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial);monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',report)
+        monkeypatch.setattr(dispatch,'_record_outcome',lambda factory,domain,job,value,**kw:recorded.append((kw.get('key','financial'),value)))
+        cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=remaining)
+>       assert caps==expected_caps
+E       AssertionError: assert [616] == [600, 16]
+E         
+E         At index 0 diff: 616 != 600
+E         Right contains one more item: 16
+E         
+E         Full diff:
+E           [
+E         -     600,...
+E         
+E         ...Full output truncated (4 lines hidden), use '-vv' to show
+
+/review/test_phase8_independent.py:22: AssertionError
+_ test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[selector] _
+
+blocked = 'selector'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab7900e0>
+
+    @pytest.mark.parametrize('blocked',['selector','financial_postwork','report_postwork'])
+    def test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase(blocked,monkeypatch):
+        recorded=[];trigger=[True]
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        monkeypatch.setattr(limits,'generation_phase_seconds',lambda domain,reports=False:1)
+        def ids(*a,**kw):
+            if blocked=='selector':time.sleep(3)
+            return (1,)
+        monkeypatch.setattr(source,'read_native_financial_record_ids',ids);monkeypatch.setattr(source,'read_native_report_record_ids',lambda *a,**kw:(1,))
+        monkeypatch.setattr(dispatch,'_invoke',lambda *a,**kw:outcome());monkeypatch.setattr(dispatch,'_invoke_reports',lambda *a,**kw:outcome())
+        def persist(factory,domain,job,value,**kw):
+            key=kw.get('key','post_commit_generation')
+            target='post_commit_report_generation' if blocked=='report_postwork' else 'post_commit_generation'
+            if blocked!='selector' and trigger[0] and key==target:trigger[0]=False;time.sleep(3)
+            recorded.append((key,value))
+        monkeypatch.setattr(dispatch,'_record_outcome',persist)
+        started=time.monotonic();cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+        elapsed=time.monotonic()-started
+>       assert .8<=elapsed<2.5
+E       assert 3.0067378349995124 < 2.5
+
+/review/test_phase8_independent.py:49: AssertionError
+_ test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[financial_postwork] _
+
+blocked = 'financial_postwork'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab791580>
+
+    @pytest.mark.parametrize('blocked',['selector','financial_postwork','report_postwork'])
+    def test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase(blocked,monkeypatch):
+        recorded=[];trigger=[True]
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        monkeypatch.setattr(limits,'generation_phase_seconds',lambda domain,reports=False:1)
+        def ids(*a,**kw):
+            if blocked=='selector':time.sleep(3)
+            return (1,)
+        monkeypatch.setattr(source,'read_native_financial_record_ids',ids);monkeypatch.setattr(source,'read_native_report_record_ids',lambda *a,**kw:(1,))
+        monkeypatch.setattr(dispatch,'_invoke',lambda *a,**kw:outcome());monkeypatch.setattr(dispatch,'_invoke_reports',lambda *a,**kw:outcome())
+        def persist(factory,domain,job,value,**kw):
+            key=kw.get('key','post_commit_generation')
+            target='post_commit_report_generation' if blocked=='report_postwork' else 'post_commit_generation'
+            if blocked!='selector' and trigger[0] and key==target:trigger[0]=False;time.sleep(3)
+            recorded.append((key,value))
+        monkeypatch.setattr(dispatch,'_record_outcome',persist)
+        started=time.monotonic();cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+        elapsed=time.monotonic()-started
+>       assert .8<=elapsed<2.5
+E       assert 3.0085014599972055 < 2.5
+
+/review/test_phase8_independent.py:49: AssertionError
+_ test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[report_postwork] _
+
+blocked = 'report_postwork'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffab792210>
+
+    @pytest.mark.parametrize('blocked',['selector','financial_postwork','report_postwork'])
+    def test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase(blocked,monkeypatch):
+        recorded=[];trigger=[True]
+        monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true');monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true');monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+        monkeypatch.setattr(limits,'generation_phase_seconds',lambda domain,reports=False:1)
+        def ids(*a,**kw):
+            if blocked=='selector':time.sleep(3)
+            return (1,)
+        monkeypatch.setattr(source,'read_native_financial_record_ids',ids);monkeypatch.setattr(source,'read_native_report_record_ids',lambda *a,**kw:(1,))
+        monkeypatch.setattr(dispatch,'_invoke',lambda *a,**kw:outcome());monkeypatch.setattr(dispatch,'_invoke_reports',lambda *a,**kw:outcome())
+        def persist(factory,domain,job,value,**kw):
+            key=kw.get('key','post_commit_generation')
+            target='post_commit_report_generation' if blocked=='report_postwork' else 'post_commit_generation'
+            if blocked!='selector' and trigger[0] and key==target:trigger[0]=False;time.sleep(3)
+            recorded.append((key,value))
+        monkeypatch.setattr(dispatch,'_record_outcome',persist)
+        started=time.monotonic();cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+        elapsed=time.monotonic()-started
+>       assert .8<=elapsed<2.5
+E       assert 3.010079751999001 < 2.5
+
+/review/test_phase8_independent.py:49: AssertionError
+=============================== warnings summary ===============================
+database.py:79
+  /work/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /work/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11
+  /usr/local/lib/python3.12/site-packages/pythonjsonlogger/jsonlogger.py:11: DeprecationWarning: pythonjsonlogger.jsonlogger has been moved to pythonjsonlogger.json
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+-------------- generated xml file: /review/phase7-desired-red.xml --------------
+=========================== short test summary info ============================
+FAILED ../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.0-None-expected_caps0-completed]
+FAILED ../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[600.1-None-expected_caps1-not_started]
+FAILED ../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[39.2-50.0-expected_caps2-not_started]
+FAILED ../../review/test_phase8_independent.py::test_literal_phase_caps_and_one_shared_deadline[599.8-626.0-expected_caps3-unknown]
+FAILED ../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[selector]
+FAILED ../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[financial_postwork]
+FAILED ../../review/test_phase8_independent.py::test_real_dispatch_selector_and_receipt_postwork_cannot_borrow_other_phase[report_postwork]
+======================== 7 failed, 3 warnings in 9.36s =========================

@@ -1,0 +1,110 @@
+"""Independent global/phase deadline boundary controls, no provider calls."""
+from contextlib import contextmanager
+from types import SimpleNamespace
+
+import pytest
+
+from seeding import cli, generation_dispatch as dispatch
+from seeding.generation_limits import bounded_generation_envelope_seconds
+
+
+@pytest.mark.parametrize('remaining, expected',[(640.99,630),(10.99,0),(11.99,1),(-.1,0),(601,591)])
+def test_cleanup_reserve_floors_inside_global_cap(remaining,expected):
+    actual=bounded_generation_envelope_seconds('pending_bills',include_reports=True,remaining_seconds=remaining)
+    assert actual==expected
+    assert actual+10<=remaining or actual==0
+
+
+class HostileFloat(float):pass
+
+
+@pytest.mark.parametrize('value',[False,HostileFloat(100),float('-inf'),{},(),10**1001])
+def test_bad_global_deadline_never_reaches_factory_or_alarm(monkeypatch,value):
+    def forbidden(*a,**kw):raise AssertionError('No work on malformed deadline')
+    monkeypatch.setattr(cli,'_domain_timeout',forbidden)
+    with pytest.raises(ValueError):cli._post_commit_generation(forbidden,domain='pending_bills',ingestion_id=1,dry_run=False,deadline=value)
+
+
+@pytest.mark.parametrize('dry,flag,deadline',[(False,'false',None),(False,'false',100),(True,'true',None),(True,'true',100),(None,'true',100)])
+def test_dry_and_default_off_do_not_open_factory(monkeypatch,dry,flag,deadline):
+    monkeypatch.setattr(cli,'time',SimpleNamespace(monotonic=lambda:100))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED',flag)
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    def forbidden(*a,**kw):raise AssertionError('Dry/OFF hook opened factory')
+    cli._post_commit_generation(forbidden,domain='pending_bills',ingestion_id=1,dry_run=dry,deadline=deadline)
+
+
+@pytest.mark.parametrize('reports',[False,True])
+def test_subsecond_remaining_never_arms_zero_alarm_or_dispatches(monkeypatch,reports):
+    monkeypatch.setattr(cli,'time',SimpleNamespace(monotonic=lambda:100))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true' if reports else 'false')
+    def forbidden(*a,**kw):raise AssertionError('Known unstarted phase may not execute')
+    monkeypatch.setattr(cli,'_domain_timeout',forbidden)
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',forbidden)
+    monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',forbidden)
+    recorded=[]
+    monkeypatch.setattr(dispatch,'record_generation_timeout',lambda *a,**kw:recorded.append(kw))
+    cli._post_commit_generation(forbidden,domain='pending_bills',ingestion_id=17,dry_run=False,deadline=110.999)
+    assert len(recorded)==1 and recorded[0]['reports_started'] is False
+    outcome=recorded[0]['financial_outcome']
+    assert outcome=={'state':'unavailable','reason':'generation_run_budget_exhausted',**dict.fromkeys(dispatch.COUNTERS,0)}
+
+
+@pytest.mark.parametrize('phase',['financial','reports'])
+def test_outer_timeout_retains_started_vs_confirmed_distinction(monkeypatch,phase):
+    monkeypatch.setattr(cli,'time',SimpleNamespace(monotonic=lambda:100))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','true')
+    budgets=[]
+    @contextmanager
+    def alarm(seconds):budgets.append(seconds);yield
+    monkeypatch.setattr(cli,'_domain_timeout',alarm)
+    outcome={'state':'failed','reason':'GENERATION_DEADLINE_EXCEEDED','processed':3,'baselines':2,'unchanged':1,'drafts_created':0,'refused':0}
+    def financial(*a,**kw):
+        if phase=='financial':raise cli.DomainTimeoutError('owned started interruption')
+        return outcome
+    def reports(*a,**kw):raise cli.DomainTimeoutError('owned report interruption')
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial)
+    monkeypatch.setattr(dispatch,'dispatch_committed_report_generation',reports)
+    recorded=[]
+    monkeypatch.setattr(dispatch,'record_generation_timeout',lambda *a,**kw:recorded.append(kw))
+    cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False,deadline=123.99)
+    assert budgets==([13,13] if phase=='reports' else [13])
+    assert recorded[0]['reports_started'] is (phase=='reports')
+    assert recorded[0]['financial_outcome']==(outcome if phase=='reports' else None)
+
+
+from test_seeding_cli_budget import clock, sessionmaker_factory, _FakeRegistry, _args, _jobs_by_domain
+
+
+@pytest.mark.parametrize('work,expected_alarm',[(80,10),(95,None)])
+def test_actual_cli_carries_original_deadline_and_preserves_committed_source(clock,sessionmaker_factory,monkeypatch,work,expected_alarm):
+    from seeding import freshness
+    from seeding.config import SeedingSettings
+    from seeding.types import DomainRunResult
+    from models import IngestionStatus
+    def handler(*,session,settings,context):
+        clock.advance(work);freshness.mark_live('pending_bills',detail='owned source-only CLI fixture')
+        return DomainRunResult(domain='pending_bills',items_processed=1)
+    monkeypatch.setattr(cli,'REGISTRY',_FakeRegistry({'pending_bills':handler}))
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
+    observed=[]
+    @contextmanager
+    def alarm(seconds):observed.append(('alarm',seconds));yield
+    monkeypatch.setattr(cli,'_domain_timeout',alarm)
+    def financial(*a,**kw):
+        observed.append(('financial',kw));return None
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial)
+    assert cli.run_seed_command(_args(),SeedingSettings(total_timeout_seconds=100,domain_timeout_seconds=600))==0
+    source=_jobs_by_domain(sessionmaker_factory)['pending_bills']
+    assert source.status==IngestionStatus.COMPLETED and source.items_processed==1 and source.errors==[]
+    # First alarm is the globally capped source budget, then optional hook.
+    assert observed[0]==('alarm',100)
+    if expected_alarm is None:
+        assert observed==[('alarm',100)]
+        assert source.meta['post_commit_generation']=={'state':'unavailable','reason':'generation_run_budget_exhausted',**dict.fromkeys(dispatch.COUNTERS,0)}
+    else:
+        assert observed[1]==('alarm',expected_alarm)
+        assert observed[2][0]=='financial'

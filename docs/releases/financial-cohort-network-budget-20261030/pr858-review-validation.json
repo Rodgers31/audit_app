@@ -1,0 +1,41 @@
+{
+  "candidate": {
+    "files": 5815,
+    "mapping_sha256": "f8d4806e68dfbbe08980baa273264fed1850697f147cdd34a416284429ceb2f5",
+    "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/pr858-review-candidate-8"
+  },
+  "backend_files_matched": 1452,
+  "scope": "CLI phase-hard-limit review repair; affected selection rerun. The prior846-case selections remain historical candidate7 evidence, not claimed rerun on8. OnlyCLI production bytes differ.",
+  "results": {
+    "normal": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "225",
+      "time": "242.846",
+      "timestamp": "2026-10-30T18:45:36.541099+00:00",
+      "hostname": "72e0925f7430"
+    },
+    "optimized": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "225",
+      "time": "263.378",
+      "timestamp": "2026-10-30T18:49:42.655575+00:00",
+      "hostname": "72e0925f7430"
+    }
+  },
+  "artifacts_sha256": {
+    "pr858-review-final-normal.xml": "7bc0840a29d996c573a0d3852a6c1bbf969f020579e3bda4a8c28495ff8b9f7f",
+    "pr858-review-final-normal.log": "32e7c5ab92f3c0f3922e4dff4b2f63bccc6879e70ece8d751372a08bb6bd9761",
+    "pr858-review-final-normal-command.json": "c4de2b2b1777faf1d3de3b507deb9419ed9a656cf100aed69116d686bd1a4bd1",
+    "pr858-review-final-normal-exit.json": "68e12b09e8856324371aca663ece171052cb570b29b1dd2eb8a89917be335a2a",
+    "pr858-review-final-optimized.xml": "b31066515af230ff6283803bc40eb958819bbaa09bba37c8739b6942478ea290",
+    "pr858-review-final-optimized.log": "271b02c8b6a6013f386ad69b6e0ed7911ff8ee3088fecfda9518a7d25cebf3e9",
+    "pr858-review-final-optimized-command.json": "e934801021f22080c0ac910d7079789c845a49f87488d6c2604e75330f24248d",
+    "pr858-review-final-optimized-exit.json": "bae61c79d0dbee48122784d56715ee94d9a11c682a13246ab900147e37af2a99"
+  }
+}

@@ -8,7 +8,7 @@ from seeding.generation_limits import (generation_phase_seconds, generation_enve
 
 @pytest.mark.parametrize('domain', ['counties_budget', 'national_budget', 'revenue_by_source', 'audits', 'pending_bills'])
 @pytest.mark.parametrize('reports', [False, True])
-def test_cli_envelope_contains_exact_phase_budgets_and_receipt_reserve(domain, reports, monkeypatch):
+def test_cli_enforces_separate_phase_limits_inside_the_envelope(domain, reports, monkeypatch):
     import seeding.cli as cli
     import seeding.generation_dispatch as dispatch
     observed = []
@@ -25,7 +25,7 @@ def test_cli_envelope_contains_exact_phase_budgets_and_receipt_reserve(domain, r
     cli._post_commit_generation(object(), domain=domain, ingestion_id=1, dry_run=False)
     expected_phase = 600 if domain == 'pending_bills' else 30
     expected = expected_phase + (30 if reports else 0) + 10
-    assert observed == [expected, 'financial', *(['reports'] if reports else [])]
+    assert observed == [expected_phase, 'financial', *([30, 'reports'] if reports else [])]
     assert expected == generation_envelope_seconds(domain, include_reports=reports)
     assert generation_phase_seconds(domain) == expected_phase
     assert 40 <= expected <= 640
@@ -80,7 +80,7 @@ def test_cli_clamps_generation_to_remaining_run_time(monkeypatch):
     monkeypatch.setattr(dispatch, 'dispatch_committed_generation', lambda *a, **kw:observed.append('financial'))
     monkeypatch.setattr(dispatch, 'dispatch_committed_report_generation', lambda *a, **kw:observed.append('reports'))
     cli._post_commit_generation(object(), domain='pending_bills', ingestion_id=1, dry_run=False, deadline=150)
-    assert observed == [40, 'financial', 'reports']
+    assert observed == [40, 'financial', 30, 'reports']
 
 
 def test_exhausted_run_never_enters_an_unbounded_zero_second_alarm(monkeypatch):

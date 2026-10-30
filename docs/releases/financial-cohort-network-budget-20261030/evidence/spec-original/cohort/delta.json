@@ -1,0 +1,13 @@
+{
+  "changed": [
+    "backend/seeding/cli.py",
+    "backend/seeding/generation_limits.py",
+    "backend/tests/social/test_generation_cohort_budget.py",
+    "backend/tests/test_seeding_cli_budget.py"
+  ],
+  "added": [
+    "backend/tests/social/test_financial_cohort_network_budget_postgres.py",
+    "docs/releases/financial-cohort-network-budget-20261030.md"
+  ],
+  "removed": []
+}

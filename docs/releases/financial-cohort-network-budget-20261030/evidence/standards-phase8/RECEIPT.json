@@ -1,0 +1,36 @@
+{
+  "verdict": "scoped phase pass",
+  "input": {
+    "files": 5815,
+    "mapping_sha256": "f8d4806e68dfbbe08980baa273264fed1850697f147cdd34a416284429ceb2f5",
+    "mismatches": []
+  },
+  "distinct_cases": 7,
+  "normal_passed": 7,
+  "optimized_passed": 7,
+  "original_desired_red_failures": 7,
+  "generated_by": "seal_phase_review.py.bytes",
+  "generator_sha256": "5f292cbfe5fb1b1f2ca7d706575ad3c0fe4dcc8180887b1f2baa63f9718f4ec1",
+  "test_generator_sha256": "ab8c4f10cbe1b76f23dd14191ee9d1e6eec8cda453c3b20ff3b7c35b78691d88",
+  "runtime": "admin-redesign-python-runtime:local",
+  "cleanup": "Only capped offline --rm containers; no PG created",
+  "artifacts_sha256": {
+    "CASE-LEDGER.json": "31e60fa241657cf4aecd3268d266c665581edb2c28e67a79f7ff715f67d69573",
+    "REPORT.md": "dfd24e570ccfb9409572643899e280eb0ddb7f6c03cea78101e50386bc2de9a4",
+    "candidate8-after.json": "a7eb49962dc793d75eaaaf2258fe75c043a85dee8dfc10bdcd7215a9c00d81a2",
+    "candidate8-before.json": "a7eb49962dc793d75eaaaf2258fe75c043a85dee8dfc10bdcd7215a9c00d81a2",
+    "phase7-8.diff": "4cc848113022d83f993ec312bbda8918203a7cc514d460507b95c50504f6e3d6",
+    "phase7-desired-red.txt": "0ab384c3641f6ee32c3fd7a3b527f2279ef216c6b228eb118b8afac2c6fa86a2",
+    "phase7-desired-red.xml": "bf0deb8a313c8cc22d4813b853e63bb35ba78b523a189113e4890d5f099e52ad",
+    "phase8-normal-initial.txt": "31656c5cfd34592aebef45a9f5420efdc7ee427ac196e675d858cf2ba53a6253",
+    "phase8-normal-initial.xml": "adb88ff76732f3fa0e18f0b3ce154de061b0703c166d11a72e4aa773f5e000fc",
+    "phase8-normal.txt": "7d3179c378bb1b07425677c648ed302737fb434fa82bf5db1d98bd7316351cc5",
+    "phase8-normal.xml": "83dc55ea42a16baf4da8d55fb350242c940d7890e1e0396925625a5970328ec1",
+    "phase8-optimized-setup-failure.txt": "38fad671f74b9e1b05cd03b31230ce20a65f221bb3f48827d0b1f2934bdecc58",
+    "phase8-optimized.txt": "6c4942cf0725b3caa6322612980c91418da2c2ce87bddd65658d59da45b85ab5",
+    "phase8-optimized.xml": "3f789c7a80a2709b500c8c03084ba4f71e36d8fc3c5a7e8abb206d26b556aa33",
+    "seal_phase_review.py.bytes": "5f292cbfe5fb1b1f2ca7d706575ad3c0fe4dcc8180887b1f2baa63f9718f4ec1",
+    "test_phase8_independent-initial.py.bytes": "958702958474c90fb654d32c206d31c72ac0803ab90b6c7e0f7921d4f3bd4fd2",
+    "test_phase8_independent.py.bytes": "ab8c4f10cbe1b76f23dd14191ee9d1e6eec8cda453c3b20ff3b7c35b78691d88"
+  }
+}

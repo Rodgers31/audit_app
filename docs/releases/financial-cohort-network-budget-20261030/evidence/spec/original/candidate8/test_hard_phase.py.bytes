@@ -1,0 +1,48 @@
+"""Real SIGALRM desired regression; inert dispatch, no database or provider."""
+import json
+from pathlib import Path
+import time
+
+import pytest
+from seeding import cli,generation_dispatch as dispatch,generation_limits as limits
+
+
+def setup(monkeypatch,seconds):
+    # Scale the actual configured phase/reserve, not the timeout implementation.
+    monkeypatch.setattr(limits,'PENDING_BILLS_FINANCIAL_SECONDS',1)
+    monkeypatch.setattr(limits,'SOURCE_AND_RECEIPT_SECONDS',3)
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
+    observed={'finished':False,'timeout_receipts':[]}
+    def financial(*a,**kw):
+        time.sleep(seconds);observed['finished']=True
+        return {'state':'completed','reason':'OWNED_INERT_DISPATCH','processed':0,'baselines':0,'unchanged':0,'drafts_created':0,'refused':0}
+    monkeypatch.setattr(dispatch,'dispatch_committed_generation',financial)
+    monkeypatch.setattr(dispatch,'record_generation_timeout',lambda *a,**kw:observed['timeout_receipts'].append(kw))
+    return observed
+
+
+def test_desired_financial_hard_phase_cap_interrupts_before_common_envelope(monkeypatch):
+    observed=setup(monkeypatch,1.5)
+    started=time.monotonic()
+    cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+    observed['elapsed_seconds']=time.monotonic()-started
+    observed['phase_seconds']=limits.generation_phase_seconds('pending_bills')
+    observed['envelope_seconds']=limits.generation_envelope_seconds('pending_bills',include_reports=False)
+    Path('/evidence/desired-phase-result.json').write_text(json.dumps(observed,indent=2)+'\n')
+    assert observed['finished'] is False, observed
+    assert len(observed['timeout_receipts'])==1,observed
+    assert observed['timeout_receipts'][0]['financial_outcome'] is None
+
+
+def test_real_common_envelope_alarm_positive_control(monkeypatch):
+    observed=setup(monkeypatch,5)
+    started=time.monotonic()
+    cli._post_commit_generation(object(),domain='pending_bills',ingestion_id=1,dry_run=False)
+    observed['elapsed_seconds']=time.monotonic()-started
+    Path('/evidence/envelope-control-result.json').write_text(json.dumps(observed,indent=2)+'\n')
+    assert observed['finished'] is False
+    assert len(observed['timeout_receipts'])==1
+    # Original uses the 4-second envelope. The repaired phase guard will fire
+    # sooner; both prove an actual alarm, rather than an inert test callback.
+    assert .8<observed['elapsed_seconds']<4.8,observed

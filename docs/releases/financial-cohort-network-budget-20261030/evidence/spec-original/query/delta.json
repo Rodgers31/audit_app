@@ -1,0 +1,17 @@
+{
+  "changed": [
+    "backend/seeding/native_report_authority.py",
+    "backend/seeding/native_report_observations.py",
+    "backend/social/generation/service.py",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review.md"
+  ],
+  "added": [
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-spec-FINAL-RECEIPT.json",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-spec-REPORT.md",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-standards-CLEANUP.json",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-standards-FINAL-RECEIPT.json",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-standards-REPORT.md",
+    "docs/releases/pending-bills-cohort-recovery-20261030/pr856-review-validation.json"
+  ],
+  "removed": []
+}
