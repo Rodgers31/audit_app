@@ -1,9 +1,13 @@
 import api from '@/lib/api/axios';
-import { generationApi } from '@/lib/api/socialGeneration';
+import { decodeSourceRecords, generationApi } from '@/lib/api/socialGeneration';
 import { parseGenerationOutcome } from '@/lib/admin/ingestion';
 jest.mock('@/lib/api/axios',()=>({__esModule:true,default:{post:jest.fn()}}));
 const body={domain:'counties_budget',record_ids:[1,2],ingestion_id:42,reports:true,backfill:false};
 const item=(record_id:number)=>({record_id,status:'baseline',reason:'first_observation',source_document_id:1});
+
+test.each([-1, -25, -1000])('negative source total %s cannot certify an empty source page', total => {
+  expect(() => decodeSourceRecords({ domain: 'pending_bills', ingestion_id: 42, reports: false, page: 1, page_size: 25, total, record_ids: [], has_more: false })).toThrow();
+});
 
 test.each([{results:[item(999)]},{results:[item(1)]},{results:[item(2),item(1)]}])('preview refuses mismatched, missing or reordered cohorts',async ({results})=>{
   (api.post as jest.Mock).mockResolvedValue({data:{drafts_enabled:false,results}});

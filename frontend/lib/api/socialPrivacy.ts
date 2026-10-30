@@ -27,9 +27,9 @@ export function decodePrivacyPlan(v: unknown): PrivacyPlan {
   return {id:string(o.id),receipt_id:string(o.receipt_id),proposed_by:string(o.proposed_by),policy_key:string(o.policy_key),policy_hash:string(o.policy_hash),plan_hash:string(o.plan_hash),evidence:string(o.evidence),scope:{credentials,flows,media_assets},decision:decision as PrivacyPlan['decision'],approved_by:o.approved_by==null?null:string(o.approved_by),execution};
 }
 export function decodePrivacyQueue(v: unknown): PrivacyQueue { const o=object(v), policies=object(o.policies); for(const value of Object.values(policies)) string(value); return {requests:array(o.requests).map(request),total:number(o.total),page:number(o.page),page_size:number(o.page_size),has_more:bool(o.has_more),workflow_enabled:bool(o.workflow_enabled),execution_enabled:bool(o.execution_enabled),policies:policies as Record<string,string>}; }
-async function read<T>(url: string, decode:(v:unknown)=>T): Promise<T> { try { return decode((await api.get('/admin/social/privacy'+url)).data); } catch(e) { throw toSocialError(e); } }
+async function read<T>(url: string, decode:(v:unknown)=>T,signal?:AbortSignal): Promise<T> { try { return decode((await api.get('/admin/social/privacy'+url,{signal})).data); } catch(e) { throw toSocialError(e); } }
 export const privacyApi={
-  queue:(page:number)=>read(`/requests?page=${page}&page_size=20`,decodePrivacyQueue),
-  detail:(id:string)=>read(`/requests/${encodeURIComponent(id)}`,v=>{ const o=object(v), r=request(v); if(r.id!==id) invalid(); return {...r,credentials:array(o.credentials).map(string),flows:array(o.flows).map(string),plans:array(o.plans).map(decodePrivacyPlan)}; }),
+  queue:(page:number,signal?:AbortSignal)=>read(`/requests?page=${page}&page_size=20`,decodePrivacyQueue,signal),
+  detail:(id:string,signal?:AbortSignal)=>read(`/requests/${encodeURIComponent(id)}`,v=>{ const o=object(v), r=request(v); if(r.id!==id) invalid(); return {...r,credentials:array(o.credentials).map(string),flows:array(o.flows).map(string),plans:array(o.plans).map(decodePrivacyPlan)}; },signal),
   command:async(path:string, body:object, key:string):Promise<PrivacyPlan>=>{ try{return decodePrivacyPlan((await api.post('/admin/social/privacy'+path,body,{headers:{'Idempotency-Key':key}})).data);}catch(e){throw toSocialError(e);} },
 };

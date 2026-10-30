@@ -1,7 +1,7 @@
 import { DocumentTarget, SocialAccount, SocialContent, SocialDocument, SocialDraftInput, SocialPlatform } from '@/lib/api/social';
 
 export const platformLabels: Record<SocialPlatform, string> = { facebook: 'Facebook', instagram: 'Instagram', threads: 'Threads', x: 'X', tiktok: 'TikTok' };
-export const emptyDocument = (): SocialDocument => ({ schema_version: 1, master: { text: '', link: null, hashtags: [], media: [] }, targets: [] });
+export const emptyDocument = (): SocialDocument => ({ schema_version: 1, master: { text: '', link: 'https://www.auditgava.com', hashtags: [], media: [] }, targets: [] });
 /** Response correlation preserves exactly what the admin submitted, including empty overrides. */
 export function draftFingerprint(draft: SocialDraftInput): string {
   const normalizedMedia = (value: SocialContent['media']) => value.map(a => ({ ...a, alt_text: a.alt_text ?? null }));
@@ -25,6 +25,25 @@ export function supportedFormats(account: SocialAccount | undefined): string[] {
   const value = account?.capabilities.supported_formats;
   return Array.isArray(value) ? value : [];
 }
+
+export function auditgavaUrl(value: string | null | undefined): string | null {
+  if (typeof value !== 'string' || !/^https:\/\/(?:www\.)?auditgava\.com(?::443)?(?:[/?#]|$)/i.test(value) || /[\s\\]/.test(value)) return null;
+  return httpsUrl(value) ?? null;
+}
+
+export function postDestinationIssue(content: SocialContent): string | null {
+  const starts = Array.from(content.text.matchAll(/https?:\/\/|www\./gi)).filter(match => !(match[0].toLowerCase() === 'www.' && content.text.slice(Math.max(0, match.index!-3), match.index) === '://')).map(match => match.index!);
+  const urls: string[] = [], masked = content.text.split('');
+  starts.forEach((start, index) => {
+    const token = content.text.slice(start, starts[index+1] ?? content.text.length).split(/[\s<>\x00-\x20]/, 1)[0];
+    urls.push(token); masked.splice(start, token.length, ...Array.from(' '.repeat(token.length)));
+  });
+  urls.push(...(masked.join('').match(/(?<![\w@])(?:[a-z0-9][a-z0-9-]{0,62}\.){1,10}[a-z]{2,63}(?::[0-9]+)?(?:[/?:#][^\s<>]*)?/gi) ?? []));
+  const safe = urls.map(url => url.replace(/[.,;!?)]+$/, '')).map(url => url.includes('://') ? url : 'https://'+url);
+  if (content.link !== null && !auditgavaUrl(content.link) || safe.some(url => !auditgavaUrl(url))) return 'Post links must lead to AuditGava. Original publisher links belong in source references.';
+  if (content.link === null && !safe.length) return 'An AuditGava destination is required for this post.';
+  return null;
+}
 export function targetHints(master: SocialContent, target: DocumentTarget, account?: SocialAccount): string[] {
   if (!account) return ['Account is unavailable. Explicitly remove it or refresh the connected accounts.'];
   const hints: string[] = [];
@@ -33,7 +52,7 @@ export function targetHints(master: SocialContent, target: DocumentTarget, accou
   if (!formats.length) hints.push('Supported formats are unknown. Backend validation is required.');
   else if (!formats.includes(target.format)) hints.push(`This account does not support the ${target.format} format.`);
   const content = resolveContent(master, target);
-  if (target.format !== 'text' && !content.media.length) hints.push('This format needs media. Uploads are unavailable in this batch.');
+  if (target.format !== 'text' && !content.media.length) hints.push('This format needs media. Add an image or video before posting.');
   if (target.format === 'text' && content.media.length) hints.push('Media references are selected with a text format. Check backend validation.');
   if (!account.capabilities.eligible) hints.push('Publishing eligibility has not been verified.');
   if (!account.capabilities.adapter_available) hints.push('This platform adapter is unavailable.');

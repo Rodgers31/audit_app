@@ -1,6 +1,7 @@
 'use client';
 
 import GeneratedEvidence from './GeneratedEvidence';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { consumeApprovedTraversal, useUnsavedHistoryGuard } from '@/lib/navigation/historyGuard';
 import useComposerErrors from './useComposerErrors';
 import SocialArchiveControls from './SocialArchiveControls';
@@ -9,8 +10,10 @@ import { decodePost, decodePublication, DocumentTarget, PublishInput, SocialAcco
 import { useSocialDeliveryStatus, useSocialMutation, useSocialPost } from '@/lib/hooks/useSocial';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { draftFingerprint, emptyDocument, httpsUrl, platformLabels, resolveCivilTime, resolveContent, supportedFormats, targetHints } from './socialDocument';
+import { draftFingerprint, emptyDocument, httpsUrl, postDestinationIssue, platformLabels, resolveCivilTime, resolveContent, supportedFormats, targetHints } from './socialDocument';
 import SocialMedia from './SocialMedia';
+import { automaticMediaFormats } from './automaticMediaFormat';
+import type { MediaAsset } from '@/lib/api/socialMedia';
 import SocialScheduleControls from './SocialScheduleControls';
 import { SocialErrorBanner } from './SocialNotice';
 import TikTokControls from './TikTokControls';
@@ -29,6 +32,13 @@ function dispatchStarted(post?: SocialPost) {
 }
 
 export default function SocialComposer({ initialPost, accounts, accountsAvailable = true, system, onSaved, onDirtyChange }: { initialPost?: SocialPost; accounts: SocialAccount[]; accountsAvailable?: boolean; system?: SocialSystemStatus; onSaved?: (post: SocialPost) => void; onDirtyChange?: (dirty: boolean) => void }) {
+  const { user } = useAuth();
+  const actor = user?.id;
+  const currentActor = useRef(actor);
+  currentActor.current = actor;
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const contextIsCurrent = () => mounted.current && currentActor.current === actor;
   const [post, setPost] = useState(initialPost);
   const [input, setInput] = useState(() => draftInput(initialPost));
   const [hashtagText, setHashtagText] = useState(initialPost?.document.master.hashtags.join(' ') ?? '');
@@ -60,7 +70,9 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const [localTime, setLocalTime] = useState('');
   const [timezone, setTimezone] = useState('Africa/Nairobi');
   const [offsetChoice, setOffsetChoice] = useState('');
-  const [mobilePanel, setMobilePanel] = useState<'editor' | 'preview'>('editor');
+  const [mobilePanel, setMobilePanel] = useState<'editor' | 'preview'>(initialPost?.origin_type === 'generated' ? 'preview' : 'editor');
+  const autoAttempt = useRef('');
+  const mediaMimeTypes = useRef(new Map<string, string>());
   const [isMobile, setIsMobile] = useState(false);
   const {editorRef,errorId,fieldIssueProps,fieldLinks,selectField}=useComposerErrors(error,input.document.targets,activeAccount,setActiveAccount,mobilePanel,setMobilePanel);
   const mutation = useSocialMutation();
@@ -86,7 +98,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const allValid = !!valid?.valid && distinctSelection && input.document.targets.length > 0 && valid.errors.length === 0 && valid.targets.length === input.document.targets.length && input.document.targets.every(t => {
     const connected = accounts.find(a => a.id === t.account_id);
     const content = resolveContent(input.document.master, t);
-    return !!connected && connected.publishing_enabled && connected.connection_state === 'connected' && valid.targets.filter(v => {
+    return !postDestinationIssue(content) && !!connected && connected.publishing_enabled && connected.connection_state === 'connected' && valid.targets.filter(v => {
       const preview = v.resolved_preview;
       return v.account_id === t.account_id && v.platform === connected.platform && v.valid && v.errors.length === 0 && preview && preview.account_id === t.account_id && preview.platform === connected.platform && preview.format === t.format && preview.text === content.text && preview.link === content.link && JSON.stringify(preview.hashtags) === JSON.stringify(content.hashtags) && preview.assets.length === content.media.length && preview.assets.every((asset, i) => asset.asset_id === content.media[i].asset_id && asset.caption_asset_id === content.media[i].caption_asset_id && (content.media[i].alt_text == null || asset.alt_text === content.media[i].alt_text));
     }).length === 1;
@@ -135,6 +147,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
     if (!saved.document.targets.some(t => t.account_id === activeAccount)) setActiveAccount(saved.document.targets[0]?.account_id ?? '');
   }
   async function save(): Promise<SocialPost> {
+    if (!contextIsCurrent()) throw new SocialApiError('ACCESS_DENIED', 'The review session changed. Refresh the current draft.');
     if (post && !hasContentChanges) { if (dirty) adopt(post); return post; }
     const submitted = { ...input, title: input.title.trim() || Array.from(input.document.master.text.trim().split(/\r?\n/)[0]).slice(0, 180).join('') || 'Untitled draft' };
     const saved = await mutation.run(post ? `/posts/${encodeURIComponent(post.id)}` : '/posts', post ? { ...submitted, expected_version: post.version } : submitted, value => {
@@ -144,27 +157,69 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       if (!post && (result.origin_type !== 'manual' || result.editorial_state !== 'draft' || result.publication || result.targets.length)) throw new SocialApiError('INVALID_RESPONSE', 'The create response did not confirm an unpublished manual draft. Refresh before continuing.');
       return result;
     }, { method: post ? 'patch' : 'post', postId: post?.id });
+    if (!contextIsCurrent()) throw new SocialApiError('ACCESS_DENIED', 'The review session changed. Refresh the current draft.');
     adopt(saved); return saved;
   }
   async function perform(action: () => Promise<void>) {
     if (running.current || archiveRunning.current || mediaOperations.current.size > 0) return;
     running.current = true; setBusy(true); setError(undefined); setMessage('');
     try { await action(); } catch (e) {
+      if (!contextIsCurrent()) return;
       const failure = toSocialError(e);
       setError(failure);
       if (['VERSION_CONFLICT', 'TARGET_VALIDATION_FAILED', 'PUBLISHING_PAUSED', 'ACCOUNT_UNAVAILABLE', 'INVALID_RESPONSE'].includes(failure.code)) {
         setValidation(undefined); setAcknowledged([]);
       }
-    } finally { running.current = false; setBusy(false); }
+    } finally { running.current = false; if (contextIsCurrent()) setBusy(false); }
   }
   async function validate() {
     await perform(async () => {
       const saved = !post || dirty ? await save() : post;
+      if (!contextIsCurrent()) return;
       const result = await socialApi.validate(saved.id, saved.version);
+      if (!contextIsCurrent()) return;
       setValidation({ version: saved.version, value: result }); setAcknowledged([]);
       setMessage(result.valid ? 'Saved revision validated. Review every destination and any warnings before publishing.' : 'Saved draft. Selected destinations need attention before publication.');
     });
   }
+  // Validation reads the exact saved revision. Generated edits/media are saved
+  // after a short idle window; this never approves, schedules or publishes.
+  const autoFingerprint = draftFingerprint(input);
+  useEffect(() => {
+    if (post?.origin_type !== 'generated' || locked || stale || commandBusy || !accountsAvailable) return;
+    if (!dirty && validation?.version === post.version) return;
+    const attempt = `${post.id}:${post.version}:${autoFingerprint}`;
+    if (autoAttempt.current === attempt) return;
+    const timer = setTimeout(() => {
+      if (running.current || archiveRunning.current || mediaOperations.current.size) return;
+      autoAttempt.current = attempt;
+      void validate();
+    }, dirty ? 750 : 0);
+    return () => clearTimeout(timer);
+    // validate captures this exact document/revision. Busy/attempt guards prevent loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id, post?.version, post?.origin_type, autoFingerprint, dirty, validation?.version, locked, stale, commandBusy, accountsAvailable]);
+
+  function changeMasterMedia(media: SocialDraftInput['document']['master']['media'], selectedAsset?: MediaAsset) {
+    if (selectedAsset?.mime_type) mediaMimeTypes.current.set(selectedAsset.id, selectedAsset.mime_type);
+    const document = automaticMediaFormats({ ...input.document, master: { ...input.document.master, media } }, accounts, mediaMimeTypes.current);
+    edit({ ...input, document });
+  }
+
+  async function prepareCopy() {
+    if (!post || dirty) return;
+    await perform(async () => {
+      const result = await mutation.run(`/posts/${encodeURIComponent(post.id)}/prepare`, {
+        expected_version: post.version, revision_id: post.revision_id, reason: 'Prepare current verified source copy, contextual hashtags and AuditGava destination.'
+      }, value => {
+        const prepared = decodePost(value);
+        if (prepared.id !== post.id || prepared.version <= post.version || prepared.revision_id === post.revision_id || prepared.origin_type !== 'generated') throw new SocialApiError('INVALID_RESPONSE', 'The prepared draft response did not confirm a new revision. Refresh before continuing.');
+        return prepared;
+      }, { postId: post.id });
+      adopt(result); setMessage('Copy, hashtags and website destination refreshed from the current verified source. Media is retained; review the new revision.');
+    });
+  }
+
   async function publish(scheduled: boolean) {
     if (!post || !canPublish) return;
     await perform(async () => {
@@ -233,6 +288,12 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       {currentPublication?.scheduled_for && <p className={styles.notice}>Scheduled for {currentPublication.scheduled_for} (UTC). Editing unsent content creates a new revision and requires approval again.</p>}
       <div className={`${styles.tabs} ${styles.mobileSwitch}`} aria-label='Mobile workspace view'><button type='button' aria-pressed={mobilePanel === 'editor'} onClick={() => setMobilePanel('editor')}>Editor</button><button type='button' aria-pressed={mobilePanel === 'preview'} onClick={() => setMobilePanel('preview')}>Preview</button></div>
       <fieldset disabled={busy || archivePending} className={styles.destinations}>
+        {post?.origin_type === 'generated' && <section className={styles.fields} aria-label='Prepared post and optional media'>
+          <p className={styles.muted}>Caption, relevant hashtags, website destination and source references are prepared. Add optional media, review each account preview and post when publishing is enabled. Changes save and validate automatically.</p>
+          <section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post.id}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section>
+          <button type='button' className={styles.button} disabled={commandBusy || dirty || stale || locked} onClick={prepareCopy}>Refresh caption &amp; hashtags</button>
+          <p className={styles.muted} role='status'>{busy ? 'Saving or checking this revision…' : dirty ? 'Waiting to save your changes…' : validation?.version === post.version ? 'This saved revision has been checked. Review any account holds or warnings below.' : 'Checking the saved revision…'}</p>
+        </section>}
         <div className={styles.composerGrid}>
           <fieldset data-composer-panel='editor' disabled={locked} className={`${styles.destinations} ${styles.fields} ${mobilePanel === 'preview' ? styles.mobileHidden : ''}`}>
             <label>Post text<textarea rows={7} value={input.document.master.text} {...fieldIssueProps('document.master.text')} onChange={e => edit({ ...input, document: { ...input.document, master: { ...input.document.master, text: e.target.value } } })} /></label>
@@ -240,10 +301,10 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
             <label>Website URL<input type='url' value={input.document.master.link ?? ''} {...fieldIssueProps('document.master.link')} onChange={e => edit({ ...input, document: { ...input.document, master: { ...input.document.master, link: e.target.value || null } } })} /></label>
             <details className={styles.evidence}><summary>Post settings & hashtags</summary><div>
             <div className={styles.twoFields}><label>Draft title<input value={input.title} {...fieldIssueProps('title')} onChange={e => edit({ ...input, title: e.target.value })} /></label><label>Content type<input value={input.content_type} {...fieldIssueProps('content_type')} onChange={e => edit({ ...input, content_type: e.target.value })} /></label></div>
-            <label>Master hashtags<input value={hashtagText} {...fieldIssueProps('document.master.hashtags')} onChange={e => { setHashtagText(e.target.value); edit({ ...input, document: { ...input.document, master: { ...input.document.master, hashtags: e.target.value.split(/\s+/).filter(Boolean) } } }); }} /><span className={styles.muted}>Separate hashtags with spaces. Content is never shortened automatically.</span></label>
+            <label>Master hashtags<input value={hashtagText} {...fieldIssueProps('document.master.hashtags')} onChange={e => { setHashtagText(e.target.value); edit({ ...input, document: { ...input.document, master: { ...input.document.master, hashtags: e.target.value.split(/\s+/).filter(Boolean) } } }); }} /><span className={styles.muted}>Separate hashtags with spaces. Prepared captions use the verified facts and the selected account’s limits.</span></label>
             </div></details>
-            {post?.origin_type === 'generated' && <GeneratedEvidence key={post.revision_id} postId={post.id} revisionId={post.revision_id} expectedVersion={post.version} />}<details className={styles.evidence}><summary>Source references</summary><div><p className={styles.muted}>Manual content is first class. Sources are reference links; they are not automatically fetched or verified.</p>{input.references.map((reference, index) => <div className={styles.fields} key={index}><label>Source URL {index + 1}<input type='url' value={reference.url} {...fieldIssueProps(`references.${index}.url`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, url: e.target.value } : r) })} /></label><label>Source label {index + 1}<input value={reference.label ?? ''} {...fieldIssueProps(`references.${index}.label`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, label: e.target.value } : r) })} /></label>{httpsUrl(reference.url) && <a href={httpsUrl(reference.url)} target='_blank' rel='noopener noreferrer'>Open source {index + 1}</a>}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: input.references.filter((_, i) => i !== index) })}>Remove source {index + 1}</button></div>)}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: [...input.references, { url: '' }] })}>Add source reference</button></div></details>
-            <details className={styles.evidence}><summary>Images & video</summary><div><section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post?.id ?? composerContext}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={media => edit({ ...input, document: { ...input.document, master: { ...input.document.master, media } } })} /></section></div></details>
+            {post?.origin_type === 'generated' && <GeneratedEvidence key={post.revision_id} postId={post.id} revisionId={post.revision_id} expectedVersion={post.version} />}<details className={styles.evidence}><summary>Source references</summary><div><p className={styles.muted}>Original publisher references support this post. Readers can find them on its AuditGava destination.</p>{input.references.map((reference, index) => <div className={styles.fields} key={index}><label>Source URL {index + 1}<input type='url' value={reference.url} {...fieldIssueProps(`references.${index}.url`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, url: e.target.value } : r) })} /></label><label>Source label {index + 1}<input value={reference.label ?? ''} {...fieldIssueProps(`references.${index}.label`)} onChange={e => edit({ ...input, references: input.references.map((r, i) => i === index ? { ...r, label: e.target.value } : r) })} /></label>{httpsUrl(reference.url) && <a href={httpsUrl(reference.url)} target='_blank' rel='noopener noreferrer'>Open source {index + 1}</a>}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: input.references.filter((_, i) => i !== index) })}>Remove source {index + 1}</button></div>)}<button type='button' className={styles.button} onClick={() => edit({ ...input, references: [...input.references, { url: '' }] })}>Add source reference</button></div></details>
+            {post?.origin_type !== 'generated' && <details className={styles.evidence}><summary>Images & video</summary><div><section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post?.id ?? composerContext}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section></div></details>}
             <fieldset className={styles.destinations}><legend>Destinations</legend>
               {!accountsAvailable ? <p className={styles.notice}>Connected accounts could not be loaded. Saved selections are preserved; publishing is unavailable until accounts can be verified.</p> : !accounts.length && <p className={styles.empty}>No connected accounts. You can save a manual draft.</p>}
               <div className={styles.accounts}>{accounts.map(a => <label className={styles.account} key={a.id}><input type='checkbox' checked={input.document.targets.some(t => t.account_id === a.id)} onChange={e => select(a.id, e.target.checked)} /><span>{platformLabels[a.platform]} · {a.display_name}<small>{a.handle ?? 'Handle unavailable'} · {a.connection_state}{!a.publishing_enabled ? ' · publishing disabled' : ''}</small></span></label>)}</div>
@@ -267,7 +328,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       <p className={styles.muted}>{system ? system.publishing_enabled ? 'Publishing enabled. Backend gates are checked again for every command.' : 'Publishing is paused. Draft saving and review remain available.' : 'Publishing status unavailable. Draft saving remains available.'}</p>
       {mediaPending && <p role='status'>A media upload is pending. Text edits remain available; save, validation and publication resume after inspection finishes.</p>}
       {!locked && <><label className={styles.reviewCheck}><input type='checkbox' checked={attested} disabled={commandBusy} onChange={e => setAttested(e.target.checked)} />I checked the facts and sources. This attestation is required when the server identifies sensitive content.</label><div className={styles.actions}><button type='button' className={`${styles.button} ${!dirty && !allValid ? styles.primary : ''}`} disabled={commandBusy || stale} onClick={validate}>Save & validate</button><button type='button' className={`${styles.button} ${!dirty && allValid ? styles.primary : ''}`} disabled={!canSubmit} onClick={() => editorial('submit')}>Submit for review</button></div>
-        {!allValid && <p className={styles.muted}>Save & validate the current revision to enable publication. No invalid destination will be silently omitted.</p>}
+        {!allValid && <p className={styles.muted}>The saved revision must pass every selected account’s checks before publication.</p>}
         {post?.editorial_state === 'pending_review' && <button type='button' className={`${styles.button} ${!dirty && allValid ? styles.primary : ''}`} disabled={commandBusy || !allValid} onClick={() => editorial('approve')}>Approve revision</button>}
         <details className={styles.evidence}><summary>Delivery & scheduling</summary><div><p className={styles.muted}>Publishing is a separate action after review. The current system and account gates must permit delivery.</p><button type='button' className={styles.button} disabled={!canPublish} onClick={() => publish(false)}>Publish now</button></div>
         <div className={styles.actions}><button type='button' className={styles.button} disabled={commandBusy || (!!currentPublication && !readyAuthorization)} aria-expanded={scheduleOpen} onClick={() => setScheduleOpen(!scheduleOpen)}>Schedule</button></div>

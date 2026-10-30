@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { activeCommand, COMMAND_LABELS, COMMAND_STATUSES, DISPATCH_SOURCES, commandFilters, commandProgress, parseCommandList, type EtlCommand } from '@/lib/admin/etlDispatch';
 import type { EtlAccess } from './useEtlAccess';
+import styles from '@/components/admin/admin.module.css';
+import { sourceLabel } from '@/lib/admin/sourceLabels';
 import { etlButton } from './CommandReceipt';
 
 export function CommandHistory({access}: {access:EtlAccess}) {
@@ -44,13 +46,13 @@ export function CommandHistory({access}: {access:EtlAccess}) {
   });
   const data=access.enabled && !history.isError ? history.data : undefined;
   const returnTo='/admin/etl'+(canonicalQuery?'?'+canonicalQuery:'');
-  return <section aria-labelledby='history-heading' className='rounded-2xl border border-neutral-border bg-white p-5 shadow-surface dark:bg-surface-base'>
+  return <section aria-labelledby='history-heading' className={styles.workspace}>
     <div className='flex flex-wrap items-center justify-between gap-3'><h2 id='history-heading' className='font-display text-lg text-neutral-text'>Command history</h2>
       <button className={etlButton} disabled={!access.enabled || history.isFetching} onClick={()=>{if(access.current()) void history.refetch();}}>Refresh command history</button>
     </div>
     <p className='my-3 text-sm text-neutral-muted'>Durable acceptance and recorded execution are separate. Active receipts update every five seconds while this page is visible.</p>
     <div className='mb-4 flex flex-wrap gap-3'>
-      <label className='text-sm text-neutral-text'>Command source<select aria-label='Command source' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.source} onChange={e=>setQuery({source:e.target.value})}><option value=''>All sources</option>{DISPATCH_SOURCES.map(s=><option key={s}>{s}</option>)}</select></label>
+      <label className='text-sm text-neutral-text'>Command source<select aria-label='Command source' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.source} onChange={e=>setQuery({source:e.target.value})}><option value=''>All sources</option>{DISPATCH_SOURCES.map(s=><option key={s} value={s}>{sourceLabel(s)}</option>)}</select></label>
       <label className='text-sm text-neutral-text'>Command status<select aria-label='Command status' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.status} onChange={e=>setQuery({status:e.target.value})}><option value=''>All statuses</option>{COMMAND_STATUSES.map(s=><option key={s}>{s}</option>)}</select></label>
       <label className='text-sm text-neutral-text'>Commands per page<select aria-label='Commands per page' className={etlButton+' ml-2 bg-white dark:bg-surface-base'} value={filters.page_size} onChange={e=>setQuery({page_size:e.target.value})}>{Array.from(new Set([10,20,50,filters.page_size])).sort((a,b)=>a-b).map(n=><option key={n}>{n}</option>)}</select></label>
       {(filters.source || filters.status || filters.page_size!==20) && <button className={etlButton} onClick={()=>{pendingQuery.current='';router.push('/admin/etl');}}>Clear command filters</button>}
@@ -61,8 +63,8 @@ export function CommandHistory({access}: {access:EtlAccess}) {
       <><p className='mb-3 text-sm'>{data.entries.length} on this page · {data.total} commands matching</p>
         {data.entries.length===0 ? <p className='text-sm'>No commands match this page.</p> : <ul className='divide-y divide-neutral-border'>
           {data.entries.map(command=><li key={command.id} className='space-y-1 py-3 text-sm text-neutral-text'>
-            <Link className='inline-flex min-h-11 max-w-full items-center break-all font-mono underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gov-sage' href={'/admin/etl/commands/'+command.id+'?returnTo='+encodeURIComponent(returnTo)} aria-label={'View command '+command.id}>{command.source} · {command.id}</Link>
-            <p>{COMMAND_LABELS[command.status]}</p><p>{command.dry_run?'Dry Run — no publication':'Run Now'} · accepted {new Date(command.created_at).toLocaleString()}</p>
+            <Link className='inline-flex min-h-11 max-w-full items-center break-all font-mono underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-gov-sage' href={'/admin/etl/commands/'+command.id+'?returnTo='+encodeURIComponent(returnTo)} aria-label={sourceLabel(command.source)+' · '+(command.dry_run?'Dry Run':'Run Now')+' · view command '+command.id}>{sourceLabel(command.source)} · {command.dry_run?'Dry Run':'Run Now'}</Link>
+            <p>{COMMAND_LABELS[command.status]}</p><details><summary>Command reference</summary><p className={styles.raw}>{command.id}</p></details><p>{command.dry_run?'Dry Run — no publication':'Run Now'} · accepted {new Date(command.created_at).toLocaleString()}</p>
           </li>)}
         </ul>}
         <nav aria-label='Command history pages' className='mt-4 flex flex-wrap items-center gap-3'>

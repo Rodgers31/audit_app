@@ -104,7 +104,7 @@ test('completed ingestion detail shows uncertain generation without invented zer
     ...outcome, reason: 'PRIVATE_DIAGNOSTIC', secret: 'PRIVATE_DIAGNOSTIC',
   } } } });
   await mountDetail('1');
-  await screen.findByRole('heading', { name: 'Metadata' });
+  fireEvent.click(await screen.findByText('Timing and safe technical details'));
   const metadata = screen.getByText(/post_commit_generation/);
   expect(metadata).toHaveTextContent('"execution_unverified": true');
   expect(metadata).toHaveTextContent('"processed": null');
@@ -149,7 +149,7 @@ test('nonadmins and auth-loading observers make no operational reads', async () 
 
 test('an admin revocation removes visible data and cached operational responses', async () => {
   get.mockResolvedValue({ data: list }); const mounted = mount(<Ingestion />);
-  await screen.findAllByText('audits');
+  await screen.findAllByRole('link',{name:'Audit reports'});
   expect(mounted.qc.getQueryCache().getAll()).toHaveLength(1);
   mockAdmin = false; mounted.rerenderNode(<Ingestion />);
   expect(screen.getByText('Admin access required.')).toBeInTheDocument();
@@ -167,10 +167,10 @@ test('actor changes abort the old read and a late old response cannot replace ne
   const mounted = mount(<Ingestion />);
   await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
   mockActor = 'inert-second-admin'; mounted.rerenderNode(<Ingestion />);
-  await screen.findAllByText('new_actor_data');
+  await screen.findAllByRole('link',{name:'new actor data'});
   expect(oldSignal.aborted).toBe(true);
   await act(async () => resolveOld({ data: { ...list, jobs: [{ ...job, domain: 'OLD_ACTOR_PRIVATE' }] } }));
-  expect(screen.queryByText('OLD_ACTOR_PRIVATE')).not.toBeInTheDocument();
+  expect(screen.queryByText('OLD ACTOR PRIVATE')).not.toBeInTheDocument();
   expect(mounted.qc.getQueriesData({ queryKey: ['admin', 'ingestion-jobs', 'inert-adversarial-admin'] })).toHaveLength(0);
 });
 
@@ -187,8 +187,8 @@ test('visibility changes abort an in-flight read and unmount removes cached resp
 });
 
 test('hidden list observers cannot bypass the disabled query through Refresh', async () => {
-  get.mockResolvedValue({ data: list }); mount(<Ingestion />); await screen.findAllByText('audits');
-  visibility('hidden'); fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  get.mockResolvedValue({ data: list }); mount(<Ingestion />); await screen.findAllByRole('link',{name:'Audit reports'});
+  visibility('hidden'); fireEvent.click(screen.getByRole('button', { name: /^Refresh(?: updates| outcome)?$/ }));
   await act(async () => {});
   expect(get).toHaveBeenCalledTimes(1);
 });
@@ -203,9 +203,9 @@ test('a valid empty first page has no table and no next-page action', async () =
 test('detail response identity conflicts fail closed and can recover through Retry', async () => {
   get.mockResolvedValueOnce({ data: { ...job, id: 2 } }).mockResolvedValue({ data: job });
   await mountDetail('1'); await screen.findByText('Could not load job.');
-  expect(screen.queryByText('Ingestion job #2')).not.toBeInTheDocument();
+  expect(screen.queryByText('Data update · job #2')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-  await screen.findByText('Ingestion job #1');
+  await screen.findByText('Data update · job #1');
 });
 
 test('invalid detail route IDs make no API calls', async () => {
@@ -219,24 +219,24 @@ test('invalid detail route IDs make no API calls', async () => {
 
 test('detail diagnostic metric preserves the real count after payload redaction', async () => {
   get.mockResolvedValue({ data: { ...job, status: 'failed', error_count: 7, errors: ['PRIVATE_ERROR'] } });
-  await mountDetail('1'); await screen.findByRole('heading', { name: 'Errors (7)' });
-  const metric = screen.getByText('Errors', { exact: true }).parentElement!;
+  await mountDetail('1'); await screen.findByText('Recorded errors');
+  const metric = screen.getByText('Recorded errors', { exact: true }).parentElement!;
   expect(within(metric).getByText('7', { exact: true })).toBeInTheDocument();
   expect(screen.queryByText('PRIVATE_ERROR')).not.toBeInTheDocument();
 });
 
 test('detail refresh failures hide old counts and raw error details', async () => {
   get.mockResolvedValueOnce({ data: job }).mockRejectedValue({ response: { status: 500, data: { detail: 'PRIVATE_ERROR' } } });
-  await mountDetail('1'); await screen.findByText('Ingestion job #1');
-  fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  await mountDetail('1'); await screen.findByText('Data update · job #1');
+  fireEvent.click(screen.getByRole('button', { name: /^Refresh(?: updates| outcome)?$/ }));
   await screen.findByText('Could not load job.');
-  expect(screen.queryByText('Items processed')).not.toBeInTheDocument();
+  expect(screen.queryByText('Data items processed')).not.toBeInTheDocument();
   expect(screen.queryByText('PRIVATE_ERROR')).not.toBeInTheDocument();
 });
 
 test('hidden detail observers cannot bypass the disabled query through Refresh', async () => {
-  get.mockResolvedValue({ data: job }); await mountDetail('1'); await screen.findByText('Ingestion job #1');
-  visibility('hidden'); fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  get.mockResolvedValue({ data: job }); await mountDetail('1'); await screen.findByText('Data update · job #1');
+  visibility('hidden'); fireEvent.click(screen.getByRole('button', { name: /^Refresh(?: updates| outcome)?$/ }));
   await act(async () => {});
   expect(get).toHaveBeenCalledTimes(1);
 });
@@ -252,7 +252,7 @@ test('hidden detail error observers cannot bypass the disabled query through Ret
 
 test('hidden list error observers cannot bypass the disabled query through Retry', async () => {
   get.mockRejectedValue({ response: { status: 403, data: { detail: 'PRIVATE_ERROR' } } });
-  mount(<Ingestion />); await screen.findByText('Could not load jobs.');
+  mount(<Ingestion />); await screen.findByText('Could not load data updates. Their outcomes are unknown.');
   visibility('hidden'); fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
   await act(async () => {});
   expect(get).toHaveBeenCalledTimes(1);
@@ -264,7 +264,7 @@ test('failed active-job polling does not keep polling or display stale successfu
     .mockRejectedValue({ response: { status: 401, data: { detail: 'PRIVATE_ERROR' } } });
   mount(<Ingestion />); await screen.findAllByText('running');
   await act(async () => { jest.advanceTimersByTime(15_001); });
-  await screen.findByText('Could not load jobs.');
+  await screen.findByText('Could not load data updates. Their outcomes are unknown.');
   expect(screen.queryByText(/1 job in the last/)).not.toBeInTheDocument();
   expect(screen.queryByText('PRIVATE_ERROR')).not.toBeInTheDocument();
   await act(async () => { jest.advanceTimersByTime(60_000); });
@@ -293,7 +293,7 @@ test('malformed calendar responses recover through the rendered Refresh action',
   get.mockImplementation(async path => ({ data: malformed ? {} : path.endsWith('/health') ? health : plan }));
   mount(<Etl />); await screen.findByText('Could not load schedule.');
   expect(screen.getByText('Could not load execution evidence.')).toBeInTheDocument();
-  malformed = false; fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  malformed = false; fireEvent.click(screen.getByRole('button', { name: /^Refresh(?: updates| outcome)?$/ }));
   await screen.findByText('Synthetic plan');
   expect(screen.queryByText('Could not load execution evidence.')).not.toBeInTheDocument();
   expect(screen.getAllByRole('button', { name: 'Trigger' })).toHaveLength(6);
@@ -310,7 +310,7 @@ test('calendar refresh failures hide old planned counts and never acknowledge ex
     return { data: path.endsWith('/health') ? health : plan };
   });
   mount(<Etl />); await screen.findByText('Synthetic plan');
-  failed = true; fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+  failed = true; fireEvent.click(screen.getByRole('button', { name: /^Refresh(?: updates| outcome)?$/ }));
   await screen.findByText('Could not load schedule.');
   expect(screen.queryByText('Synthetic plan')).not.toBeInTheDocument();
   expect(screen.queryByText('1/6')).not.toBeInTheDocument();

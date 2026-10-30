@@ -10,7 +10,7 @@ jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-
 const get=api.get as jest.Mock,send=api.post as jest.Mock,patch=api.patch as jest.Mock;
 let clients:QueryClient[]=[];
 function mount(p:ReturnType<typeof post>){const qc=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});clients.push(qc);qc.setQueryData(socialKeys.detail(actorId,p.id),p);return render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={{...system,publishing_enabled:false}}/></QueryClientProvider>);}
-function two(){const p=post();return post({...p,document:{...p.document,targets:[{account_id:facebookId,format:'text',overrides:{link:{mode:'replace',value:'https://example.org/fb'}}},{account_id:instagramId,format:'image',overrides:{link:{mode:'replace',value:'https://example.org/ig'}}}]}});}
+function two(){const p=post();return post({...p,document:{...p.document,targets:[{account_id:facebookId,format:'text',overrides:{link:{mode:'replace',value:'https://www.auditgava.com/budget'}}},{account_id:instagramId,format:'image',overrides:{link:{mode:'replace',value:'https://www.auditgava.com/debt'}}}]}});}
 const error=(field:string,message:string)=>({isAxiosError:true,response:{status:422,data:{detail:{code:'INVALID_REQUEST',message:'Correct the saved draft inputs.',field_errors:[{code:'INVALID_FIELD',field,message}],target_errors:[],retryable:false}}}});
 beforeEach(()=>{jest.clearAllMocks();Object.defineProperty(crypto,'randomUUID',{configurable:true,value:()=> '00000000-0000-4000-8000-000000000123'});});
 afterEach(()=>{cleanup();clients.forEach(q=>q.clear());clients=[];});

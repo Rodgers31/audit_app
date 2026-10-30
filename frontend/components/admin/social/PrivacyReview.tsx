@@ -1,19 +1,35 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { privacyApi, PrivacyPlan } from '@/lib/api/socialPrivacy';
 import { SocialErrorBanner } from './SocialNotice';
 import styles from './social.module.css';
 
-export default function PrivacyReview() {
+export default function PrivacyReview(){
+  const {user}=useAuth();
+  return <PrivacyWorkspace key={user?.id??'signed-out'}/>;
+}
+
+function PrivacyWorkspace() {
   const {user}=useAuth(); const qc=useQueryClient();
+  const alive=useRef(true);useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
   const [page,setPage]=useState(1),[selected,setSelected]=useState(''),[policy,setPolicy]=useState('');
   const [evidence,setEvidence]=useState(''),[reason,setReason]=useState(''),[credentials,setCredentials]=useState<string[]>([]),[flows,setFlows]=useState<string[]>([]);
   const [pending,setPending]=useState(false),[error,setError]=useState<unknown>(),[confirm,setConfirm]=useState(false),[mediaIds,setMediaIds]=useState('');
-  const queue=useQuery({queryKey:['admin','social','privacy',user?.id,page],queryFn:()=>privacyApi.queue(page),enabled:!!user,retry:false,refetchOnWindowFocus:false});
-  const detail=useQuery({queryKey:['admin','social','privacy',user?.id,selected],queryFn:()=>privacyApi.detail(selected),enabled:!!user&&!!selected,retry:false,refetchOnWindowFocus:false});
-  async function run(path:string,body:object){setPending(true);setError(undefined);try{await privacyApi.command(path,body,crypto.randomUUID());setConfirm(false);await qc.invalidateQueries({queryKey:['admin','social','privacy',user?.id]});}catch(e){setError(e);}finally{setPending(false);}}
+  const queue=useQuery({queryKey:['admin','social',user?.id,'privacy',page],queryFn:({signal})=>privacyApi.queue(page,signal),enabled:!!user,gcTime:0,retry:false,refetchOnWindowFocus:false});
+  const detail=useQuery({queryKey:['admin','social',user?.id,'privacy',selected],queryFn:({signal})=>privacyApi.detail(selected,signal),enabled:!!user&&!!selected,gcTime:0,retry:false,refetchOnWindowFocus:false});
+  const evidenceReady=!!user&&!!queue.data&&!queue.error&&!queue.isFetching&&!!detail.data&&!detail.error&&!detail.isFetching&&detail.data.id===selected;
+  const workflowReady=evidenceReady&&queue.data?.workflow_enabled===true;
+  const policyCurrent=(plan:PrivacyPlan)=>!!queue.data&&Object.hasOwn(queue.data.policies,plan.policy_key)&&queue.data.policies[plan.policy_key]===plan.policy_hash;
+  const decisionReady=(plan:PrivacyPlan)=>workflowReady&&plan.receipt_id===selected&&policyCurrent(plan)&&plan.proposed_by!==user?.id;
+  const executionReady=(plan:PrivacyPlan)=>evidenceReady&&queue.data?.execution_enabled===true&&plan.receipt_id===selected&&policyCurrent(plan)&&plan.decision==='approved'&&!!plan.approved_by;
+  async function run(path:string,body:object){
+    if(pending||!alive.current)return;
+    const plan=detail.data?.plans.find(p=>path.startsWith(`/plans/${p.id}/`));
+    const allowed=path==='/plans'?workflowReady:path.endsWith('/decision')?!!plan&&decisionReady(plan):!!plan&&executionReady(plan);
+    if(!allowed)return;
+setPending(true);setError(undefined);try{await privacyApi.command(path,body,crypto.randomUUID());if(!alive.current)return;setConfirm(false);await qc.invalidateQueries({queryKey:['admin','social',user?.id,'privacy']});}catch(e){if(alive.current)setError(e);}finally{if(alive.current)setPending(false);}}
   function choose(id:string){setSelected(id);setCredentials([]);setFlows([]);setMediaIds('');setEvidence('');setReason('');setError(undefined);setConfirm(false);}
   function toggle(value:string,items:string[],set:(v:string[])=>void){set(items.includes(value)?items.filter(i=>i!==value):[...items,value]);}
   function planActions(plan:PrivacyPlan){const execution=plan.execution;return <article className={styles.schedule} key={plan.id}>
@@ -21,12 +37,12 @@ export default function PrivacyReview() {
     <p>{plan.scope.credentials.length} credential envelopes · {plan.scope.flows.length} pending flows · {plan.scope.media_assets.length} media assets</p>
     <details><summary>Exact approved identities and hashes</summary><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{JSON.stringify({scope:plan.scope,plan_hash:plan.plan_hash,policy_hash:plan.policy_hash},null,2)}</pre></details>
     {plan.decision==='pending_review'&&<><label>Independent review reason<textarea value={reason} onChange={e=>setReason(e.target.value)} maxLength={2000}/></label><div className={styles.toolbar}>
-      <button type='button' className={styles.button} disabled={pending||reason.trim().length<10||plan.proposed_by===user?.id} onClick={()=>run(`/plans/${plan.id}/decision`,{plan_hash:plan.plan_hash,decision:'approved',reason})}>Approve exact scope</button>
-      <button type='button' className={styles.button} disabled={pending||reason.trim().length<10||plan.proposed_by===user?.id} onClick={()=>run(`/plans/${plan.id}/decision`,{plan_hash:plan.plan_hash,decision:'rejected',reason})}>Reject scope</button></div><p className={styles.muted}>An operator-configured approver other than the proposer must review this scope.</p></>}
-    {execution&&<><p>Execution: {execution.state.replaceAll('_',' ')}</p>{execution.state==='completed'?<p>Approved scope completed. The overall request remains open for retained history, provider copies and backup review.</p>:<><label><input type='checkbox' checked={confirm} onChange={e=>setConfirm(e.target.checked)}/> I reviewed this exact scope and the retained-history limits.</label><button type='button' className={styles.button} disabled={pending||!confirm||!queue.data?.execution_enabled} onClick={()=>run(`/plans/${plan.id}/${execution.state==='prepared'?'execute':'reconcile'}`,{expected_version:execution.version})}>{execution.state==='prepared'?'Execute approved scope':'Reconcile existing operation'}</button></>}</>}
+      <button type='button' className={styles.button} disabled={pending||!decisionReady(plan)||reason.trim().length<10} onClick={()=>run(`/plans/${plan.id}/decision`,{plan_hash:plan.plan_hash,decision:'approved',reason})}>Approve exact scope</button>
+      <button type='button' className={styles.button} disabled={pending||!decisionReady(plan)||reason.trim().length<10} onClick={()=>run(`/plans/${plan.id}/decision`,{plan_hash:plan.plan_hash,decision:'rejected',reason})}>Reject scope</button></div><p className={styles.muted}>An operator-configured approver other than the proposer must review this scope. Current request, policy and workflow evidence are required.</p></>}
+    {execution&&<><p>Execution: {execution.state.replaceAll('_',' ')}</p>{execution.state==='completed'?<p>Approved scope completed. The overall request remains open for retained history, provider copies and backup review.</p>:<><label><input type='checkbox' checked={confirm} onChange={e=>setConfirm(e.target.checked)}/> I reviewed this exact scope and the retained-history limits.</label><button type='button' className={styles.button} disabled={pending||!confirm||!executionReady(plan)} onClick={()=>run(`/plans/${plan.id}/${execution.state==='prepared'?'execute':'reconcile'}`,{expected_version:execution.version})}>{execution.state==='prepared'?'Execute approved scope':'Reconcile existing operation'}</button></>}</>}
   </article>;}
   return <div className={styles.workspace}>
-    <p>Requests identify the person asking for review. Deletion requires an approved policy, a separate human approver and verified execution. Audit, delivery and financial provenance remain retained.</p>
+    <section className={styles.status}><strong>Review a request → propose scope → independent approval → verify execution</strong><span>Each step requires its own evidence. Requests identify the person asking for review. Deletion requires an approved policy, a separate human approver and verified execution. Audit, delivery and financial provenance remain retained.</span></section>
     {queue.data&&!queue.data.workflow_enabled&&<p role='status'>Privacy approval is disabled until an operator installs the policy and eligible approvers. Publishing and uploads remain off.</p>}
     {queue.data&&!queue.data.execution_enabled&&<p>Execution is disabled pending policy and backup custody approval.</p>}
     {!!(queue.error||detail.error||error)&&<SocialErrorBanner error={error||detail.error||queue.error} onRetry={()=>{queue.refetch();if(selected)detail.refetch();}}/>}
@@ -36,14 +52,14 @@ export default function PrivacyReview() {
     <div className={styles.fields}>{queue.data?.requests.map(r=><button type='button' key={r.id} className={styles.button} aria-pressed={selected===r.id} onClick={()=>choose(r.id)}>{r.kind.replaceAll('_',' ')} · {r.state.replaceAll('_',' ')} · {r.id}</button>)}</div>
     {queue.data&&<div className={styles.toolbar}><button type='button' className={styles.button} disabled={page===1||pending} onClick={()=>setPage(page-1)}>Previous page</button><span>Page {page} · {queue.data.total} requests</span><button type='button' className={styles.button} disabled={!queue.data.has_more||pending} onClick={()=>setPage(page+1)}>Next page</button></div>}
     {detail.data&&<section className={styles.fields}><h2>Request review</h2><p>Ownership resolution: {detail.data.resolution.replaceAll('_',' ')}</p>{detail.data.plans.map(planActions)}
-      {queue.data?.workflow_enabled&&detail.data.kind==='data_deletion'&&<form className={styles.schedule} onSubmit={e=>{e.preventDefault();run('/plans',{receipt_id:selected,policy_key:policy,policy_hash:queue.data!.policies[policy],evidence,erase_credentials:credentials,erase_flows:flows,media_assets:mediaIds.split(/[\s,]+/).filter(Boolean)});}}>
+      {queue.data?.workflow_enabled&&detail.data.kind==='data_deletion'&&<details className={styles.details}><summary>Propose a new scope for independent review</summary><div><form className={styles.schedule} onSubmit={e=>{e.preventDefault();run('/plans',{receipt_id:selected,policy_key:policy,policy_hash:queue.data!.policies[policy],evidence,erase_credentials:credentials,erase_flows:flows,media_assets:mediaIds.split(/[\s,]+/).filter(Boolean)});}}>
         <h3>Propose a bounded scope</h3><label>Approved retention policy<select required value={policy} onChange={e=>setPolicy(e.target.value)}><option value=''>Choose an operator-approved policy</option>{Object.keys(queue.data.policies).map(key=><option key={key}>{key}</option>)}</select></label>
         <fieldset><legend>Credential envelopes to erase</legend>{detail.data.credentials.map(id=><label key={id}><input type='checkbox' checked={credentials.includes(id)} onChange={()=>toggle(id,credentials,setCredentials)}/>{id}</label>)}</fieldset>
         <fieldset><legend>Pending flows to erase</legend>{detail.data.flows.map(id=><label key={id}><input type='checkbox' checked={flows.includes(id)} onChange={()=>toggle(id,flows,setFlows)}/>{id}</label>)}</fieldset>
         <label>Media asset UUIDs, separated by commas or new lines<textarea value={mediaIds} maxLength={4000} onChange={e=>setMediaIds(e.target.value)}/></label><label>Policy and ownership evidence<textarea required minLength={10} maxLength={2000} value={evidence} onChange={e=>setEvidence(e.target.value)}/></label>
         <p>Media scopes are inspected and frozen by the separately configured media authority port before approval. Referenced originals remain protected.</p>
-        <button type='submit' className={styles.button} disabled={pending||!policy||(!credentials.length&&!flows.length&&!mediaIds.trim())||evidence.trim().length<10}>Submit scope for independent review</button>
-      </form>}
+        <button type='submit' className={styles.button} disabled={pending||!workflowReady||!policy||(!credentials.length&&!flows.length&&!mediaIds.trim())||evidence.trim().length<10}>Submit scope for independent review</button>
+      </form></div></details>}
     </section>}
   </div>;
 }

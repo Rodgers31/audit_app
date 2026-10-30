@@ -12,13 +12,15 @@ import styles from '../../CountyExperience.module.css';
  */
 import { useLang } from '@/lib/i18n/LangProvider';
 import { useCountyPendingBills } from '@/lib/react-query/useDebt';
+import { pendingBillsNoteLines } from '@/lib/counties/pendingBillsNotes';
 import {
   agingDistributionSupport,
   agingUnsupportedNote,
   declaresBillLevelDetail,
   normalizeAgingBuckets,
 } from '@/lib/debt/pendingBillsAging';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CountyComprehensive } from '@/types';
 import { FileWarning } from 'lucide-react';
 import ModelledDataNote from '@/components/ModelledDataNote';
@@ -37,7 +39,17 @@ const AGING_COLORS: Record<string, string> = {
 export default function BudgetTab({ data }: { data: CountyComprehensive }) {
   const { t } = useLang();
   const { budget, debt } = data;
-  const { data: countyPendingBills } = useCountyPendingBills(data.id.toString());
+  const search = useSearchParams();
+  const requestedDate = search?.get('as_at') || undefined;
+  const validDate = !requestedDate || /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(Date.parse(requestedDate)) && new Date(requestedDate).toISOString().slice(0, 10) === requestedDate;
+  const { data: countyPendingBills, isPending, error, refetch } = useCountyPendingBills(data.id.toString(), { enabled: validDate }, requestedDate);
+  const pendingRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (window.location.hash === '#pending-bills') {
+      pendingRef.current?.scrollIntoView?.({ block: 'start' });
+      pendingRef.current?.focus({ preventScroll: true });
+    }
+  }, [requestedDate, countyPendingBills, error]);
 
   // `/pending-bills/counties/{id}` returns `aging_buckets` and
   // `breakdown_by_type` as OBJECTS, while the response type declares arrays.
@@ -192,17 +204,24 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
       )}
 
       {/* County Pending Bills Breakdown */}
-      {(countyPendingBills || (debt.pending_bills != null && debt.pending_bills > 0)) && (
-        <div className={styles.section}>
+      {(requestedDate || countyPendingBills || (debt.pending_bills != null && debt.pending_bills > 0)) && (
+        <div id='pending-bills' ref={pendingRef} tabIndex={-1} className={styles.section} style={{ scrollMarginTop: '6rem' }}>
           <div className='flex items-center gap-2 mb-4'>
             <FileWarning size={16} className='text-red-600' />
             <h3 className='text-sm font-semibold text-gray-800 dark:text-neutral-text'>
               {t('county.budget.pending_bills_title')}
             </h3>
             <span className='text-sm font-bold text-red-700 ml-auto'>
-              {fmtKES(totalPending ?? debt.pending_bills)}
+              {fmtKES(requestedDate ? totalPending : totalPending ?? debt.pending_bills)}
             </span>
           </div>
+          {requestedDate && <p className='text-sm text-gray-600 dark:text-neutral-muted mb-3'>{t('county.budget.pending_as_at').replace('{date}', requestedDate).replace('{county}', data.name)}</p>}
+          {!validDate && <p role='alert'>{t('county.budget.pending_invalid_date')}</p>}
+          {validDate && requestedDate && isPending && <p role='status'>{t('county.budget.pending_loading_period')}</p>}
+          {validDate && error && <p role='alert'>{t('county.budget.pending_load_error')} <button type='button' onClick={() => refetch()}>{t('county.budget.pending_retry')}</button></p>}
+          {validDate && requestedDate && !isPending && !error && totalPending === null && <p role='status'>{t('county.budget.pending_date_unavailable').replace('{date}', requestedDate)}</p>}
+          {countyPendingBills?.pending_bills_source && <p className='text-xs text-gray-600 dark:text-neutral-muted mb-3'>{t('county.budget.pending_source').replace('{publisher}', countyPendingBills.pending_bills_source.publisher ?? t('county.budget.pending_publisher_unknown'))} {countyPendingBills.pending_bills_source.url?.startsWith('https://') && <a className='underline' href={countyPendingBills.pending_bills_source.url} target='_blank' rel='noopener noreferrer'>{t('county.budget.pending_original_report')}</a>}</p>}
+          {pendingBillsNoteLines(countyPendingBills?.pending_bills_notes, t, fmtKES).map(note => <p key={note} className='text-xs text-gray-600 dark:text-neutral-muted mb-2'>{note}</p>)}
 
           {/* Breakdown by type.
               Only drawn when the payload declares a source that records a bill
@@ -306,7 +325,7 @@ export default function BudgetTab({ data }: { data: CountyComprehensive }) {
             )
           )}
 
-          {!countyPendingBills && debt.pending_bills != null && debt.pending_bills > 0 && (
+          {!requestedDate && !countyPendingBills && debt.pending_bills != null && debt.pending_bills > 0 && (
             <p className='text-xs text-gray-500 dark:text-neutral-muted/80'>
               {t('county.budget.pending_fallback').replace('{amount}', fmtKES(debt.pending_bills))}
             </p>

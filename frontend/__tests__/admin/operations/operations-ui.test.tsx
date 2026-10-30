@@ -44,7 +44,7 @@ test('hostile URL parameters never reach the API and are replaced with bounded d
   query='days=NaN&page=-12&domain='+ 'x'.repeat(101)+'&status=unrecognized';
   get.mockResolvedValue({ data:list });
   mount(<Ingestion />);
-  await screen.findAllByText('audits');
+  await screen.findAllByRole('link',{name:'Audit reports'});
   expect(get.mock.calls[0][1].params).toEqual({page:1,page_size:20,days:7});
   expect(replace).toHaveBeenCalledWith('/admin/ingestion');
 });
@@ -52,7 +52,7 @@ test('hostile URL parameters never reach the API and are replaced with bounded d
 test('filter labels are usable and filter changes use navigable history', async () => {
   query='page=3'; get.mockResolvedValue({data:{...list,jobs:[],page:3,total:41}});
   mount(<Ingestion />);
-  fireEvent.change(await screen.findByLabelText('Status'), { target:{value:'failed'} });
+  fireEvent.change(await screen.findByLabelText('Outcome'), { target:{value:'failed'} });
   expect(push).toHaveBeenCalledWith('/admin/ingestion?status=failed');
 });
 
@@ -66,23 +66,23 @@ test('an empty later page retains a way back to earlier jobs', async () => {
 
 test.each([null, {}, {...list,total:-1}, {...list,jobs:[{...job,status:'mystery'}]}, {...list,jobs:[{...job,items_processed:true}]}])('malformed lists are an error state, never no jobs or a table', async raw => {
   get.mockResolvedValue({data:raw}); mount(<Ingestion />);
-  await screen.findByText('Could not load jobs.');
+  await screen.findByText('Could not load data updates. Their outcomes are unknown.');
   expect(screen.queryByText('No jobs match these filters.')).not.toBeInTheDocument();
   expect(screen.queryByRole('table')).not.toBeInTheDocument();
 });
 
 test('desktop jobs have keyboard-accessible detail links and dry-run remains visible', async () => {
   get.mockResolvedValue({data:list}); mount(<Ingestion />);
-  const link = await screen.findByRole('link', {name:'View job #1'});
+  const link = await screen.findByRole('link', {name:'Inspect outcome → Audit reports job #1'});
   expect(link).toHaveAttribute('href','/admin/ingestion/1');
-  expect(screen.getAllByText('dry-run')).toHaveLength(2);
+  expect(screen.getByText(/Dry run/)).toBeInTheDocument();
 });
 
 test('a failed refresh stops showing old successful counts', async () => {
   get.mockResolvedValueOnce({data:list}).mockRejectedValue({ response:{status:403,data:{detail:'PRIVATE_ERROR'}} });
-  mount(<Ingestion />); await screen.findAllByText('audits');
-  fireEvent.click(screen.getByRole('button', {name:'Refresh'}));
-  await screen.findByText('Could not load jobs.');
+  mount(<Ingestion />); await screen.findAllByRole('link',{name:'Audit reports'});
+  fireEvent.click(screen.getByRole('button', {name:/^Refresh(?: updates| outcome)?$/}));
+  await screen.findByText('Could not load data updates. Their outcomes are unknown.');
   expect(screen.queryByText(/1 job in the last/)).not.toBeInTheDocument();
   expect(screen.queryByText(/PRIVATE_ERROR/)).not.toBeInTheDocument();
 });
@@ -117,7 +117,7 @@ test('calendar planning never renders running or healthy worker claims and unava
   expect(screen.getAllByRole('button',{name:'Dry-run'})).toHaveLength(6);
   screen.getAllByRole('button',{name:'Trigger'}).forEach(button=>expect(button).toBeDisabled());
   screen.getAllByRole('button',{name:'Dry-run'}).forEach(button=>expect(button).toBeDisabled());
-  expect(screen.getByText(/The calendar controls below are not connected to worker dispatch/)).toBeInTheDocument();
+  expect(screen.getByText(/This calendar predicts source checks/)).toBeInTheDocument();
   expect(post).not.toHaveBeenCalled();
 });
 

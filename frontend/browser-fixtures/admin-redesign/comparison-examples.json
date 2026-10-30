@@ -1,0 +1,1088 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000010",
+    "label": "Nairobi County",
+    "title": "Nairobi County pending bills data",
+    "content_type": "debt_update",
+    "text": "Nairobi County: about KSh 86.9 billion in reported pending bills as at 30 June 2026.\n\nThis is the report\u2019s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget (OCOB), FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "link": "https://www.auditgava.com/reports/pending_bills/2549?view=financial&record=364&snapshot=69d30650bc92d7b7a6b5c28925c62162c795b7cfda3873d07fe1d8934ab0c87b",
+    "document": {
+      "schema_version": 1,
+      "master": {
+        "text": "Nairobi County: about KSh 86.9 billion in reported pending bills as at 30 June 2026.\n\nThis is the report\u2019s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget (OCOB), FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+        "link": "https://www.auditgava.com/reports/pending_bills/2549?view=financial&record=364&snapshot=69d30650bc92d7b7a6b5c28925c62162c795b7cfda3873d07fe1d8934ab0c87b",
+        "hashtags": [
+          "#PendingBills",
+          "#NairobiCounty",
+          "#AuditGava"
+        ],
+        "media": []
+      },
+      "targets": [
+        {
+          "account_id": "00000000-0000-4000-8000-000000000020",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills",
+                "#NairobiCounty"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000021",
+          "format": "image",
+          "overrides": {}
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000022",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000023",
+          "format": "text",
+          "overrides": {
+            "text": {
+              "mode": "replace",
+              "value": "Nairobi County: explore the pending bills figures for FY 2025/26 on AuditGava.\n\nSource: Office of the Controller of Budget (OCOB)."
+            },
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills",
+                "#NairobiCounty"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000024",
+          "format": "video",
+          "overrides": {}
+        }
+      ]
+    },
+    "generator_metadata": {
+      "template_version": "financial-v5",
+      "detector_version": 1,
+      "fact_ids": [
+        "cob:financial:pending_bills:48588f85cf9dffa4b03d14a06eced9d385ceeaae31d87ca308c76eba7070cef4:outstanding"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [
+        {
+          "platform": "facebook",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000020",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "instagram",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000021",
+            "format": "image",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "threads",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000022",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "x",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000023",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "tiktok",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000024",
+            "format": "video",
+            "overrides": {}
+          }
+        }
+      ],
+      "editorial_profiles_hash": "46fcf4e3e9b8731f7976ffd1c3c084ac5ac1d42e429d928eb46e3854fdd9a641"
+    },
+    "source": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:pending_bills:48588f85cf9dffa4b03d14a06eced9d385ceeaae31d87ca308c76eba7070cef4",
+      "evidence_version": 3516,
+      "ingestion_id": "3516",
+      "category": "debt_update",
+      "title": "Nairobi County pending bills data",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "cob:financial:pending_bills:48588f85cf9dffa4b03d14a06eced9d385ceeaae31d87ca308c76eba7070cef4:outstanding",
+          "entity": "Nairobi County",
+          "metric": "Reported pending bills: county",
+          "period": "FY 2025/26",
+          "comparison_basis": "publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed",
+          "value": "86899380000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 2549,
+          "document_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+          "locator": "{'cell': 'Nairobi / Grand Total', 'page': 52, 'table': 'Table 2.10'}",
+          "document_checksum": "919930622bc9fbc0c0b5cdcb566219e4f1432e7c9a3329dfd5bb23616cd33c20",
+          "publisher": "Office of the Controller of Budget (OCOB)",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-29T13:25:38.735446Z",
+          "verified_at": "2026-10-29T15:33:51.826904Z",
+          "canonical_url": "https://www.auditgava.com/debt"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "pending_bills",
+        "record_id": 364,
+        "report_record_id": 11073,
+        "authority_fingerprint": "a380dd6d7e7677e3bc6e2e85ee36687e53dcc1555faef4f24a6aea57eb6292f7",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "public_report": {
+      "schema_version": 1,
+      "domain": "pending_bills",
+      "view": "financial",
+      "snapshot": "69d30650bc92d7b7a6b5c28925c62162c795b7cfda3873d07fe1d8934ab0c87b",
+      "title": "Reported figures",
+      "entity": "Nairobi County",
+      "period": "FY 2025/26",
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "publisher": "Office of the Controller of Budget (OCOB)",
+      "published_on": "2026-09-25",
+      "catalogued_on": null,
+      "availability": "published",
+      "figures": [
+        {
+          "entity": "Nairobi County",
+          "metric": "Reported pending bills: county",
+          "period": "FY 2025/26",
+          "value": "86899380000.00",
+          "display_value": "about KSh 86.9 billion",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "comparison_basis": "publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed",
+          "locator": "{'cell': 'Nairobi / Grand Total', 'page': 52, 'table': 'Table 2.10'}"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+          "publisher": "Office of the Controller of Budget (OCOB)",
+          "locator": "{'cell': 'Nairobi / Grand Total', 'page': 52, 'table': 'Table 2.10'}"
+        }
+      ]
+    },
+    "references": [
+      {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "label": "Office of the Controller of Budget (OCOB)"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000011",
+    "label": "Mombasa County",
+    "title": "Mombasa County pending bills \u00b7 illustrative",
+    "content_type": "debt_update",
+    "text": "Mombasa County: about KSh 36.8 million in reported pending bills as at 30 June 2026.\n\nThis is the report\u2019s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "link": "https://www.auditgava.com/reports/pending_bills/1?view=financial&record=1&snapshot=ae893cfa3a1d087481caf55ba0953e08b98e1e9c2e1874e73b7e13f64bfabb6c",
+    "document": {
+      "schema_version": 1,
+      "master": {
+        "text": "Mombasa County: about KSh 36.8 million in reported pending bills as at 30 June 2026.\n\nThis is the report\u2019s Grand Total. Completeness is not established by this figure.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+        "link": "https://www.auditgava.com/reports/pending_bills/1?view=financial&record=1&snapshot=ae893cfa3a1d087481caf55ba0953e08b98e1e9c2e1874e73b7e13f64bfabb6c",
+        "hashtags": [
+          "#PendingBills",
+          "#MombasaCounty",
+          "#AuditGava"
+        ],
+        "media": []
+      },
+      "targets": [
+        {
+          "account_id": "00000000-0000-4000-8000-000000000020",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills",
+                "#MombasaCounty"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000021",
+          "format": "image",
+          "overrides": {}
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000022",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000023",
+          "format": "text",
+          "overrides": {
+            "text": {
+              "mode": "replace",
+              "value": "Mombasa County: explore the pending bills figures for FY 2025/26 on AuditGava.\n\nSource: Office of the Controller of Budget."
+            },
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PendingBills",
+                "#MombasaCounty"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000024",
+          "format": "video",
+          "overrides": {}
+        }
+      ]
+    },
+    "generator_metadata": {
+      "template_version": "financial-v5",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:outstanding"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [
+        {
+          "platform": "facebook",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000020",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "instagram",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000021",
+            "format": "image",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "threads",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000022",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "x",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000023",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "tiktok",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000024",
+            "format": "video",
+            "overrides": {}
+          }
+        }
+      ],
+      "editorial_profiles_hash": "46fcf4e3e9b8731f7976ffd1c3c084ac5ac1d42e429d928eb46e3854fdd9a641"
+    },
+    "source": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:pending_bills:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "debt_update",
+      "title": "Mombasa County pending bills \u00b7 illustrative",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:outstanding",
+          "entity": "Mombasa County",
+          "metric": "Reported pending bills: county",
+          "period": "FY 2025/26",
+          "comparison_basis": "publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed",
+          "value": "36789000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-30T00:24:33.534512Z",
+          "verified_at": "2026-10-30T00:24:33.534512Z",
+          "canonical_url": "https://www.auditgava.com/debt"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "pending_bills",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "public_report": {
+      "schema_version": 1,
+      "domain": "pending_bills",
+      "view": "financial",
+      "snapshot": "ae893cfa3a1d087481caf55ba0953e08b98e1e9c2e1874e73b7e13f64bfabb6c",
+      "title": "Reported figures",
+      "entity": "Mombasa County",
+      "period": "FY 2025/26",
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "publisher": "Office of the Controller of Budget",
+      "published_on": "2026-09-25",
+      "catalogued_on": null,
+      "availability": "published",
+      "figures": [
+        {
+          "entity": "Mombasa County",
+          "metric": "Reported pending bills: county",
+          "period": "FY 2025/26",
+          "value": "36789000.00",
+          "display_value": "about KSh 36.8 million",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "comparison_basis": "publisher-reported Grand Total stock as at 2026-06-30; completeness is not assumed",
+          "locator": "page 12, table 4"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+          "publisher": "Office of the Controller of Budget",
+          "locator": "page 12, table 4"
+        }
+      ]
+    },
+    "references": [
+      {
+        "url": "https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482",
+        "label": "Office of the Controller of Budget"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000012",
+    "label": "National budget report",
+    "title": "National government budget report \u00b7 illustrative",
+    "content_type": "dataset_availability",
+    "text": "Kenya national government: explore the national budget report for FY2025/26.\n\nPublished by Controller of Budget on 4 September 2026.\n\nExplore the report and original sources on AuditGava.",
+    "link": "https://www.auditgava.com/reports/national_budget/1?view=report&entity=1&snapshot=64fecb7ee916625ff7d6ebd44553c25ee4e233c47fe2dfb80d71a9a4a0e099b0",
+    "document": {
+      "schema_version": 1,
+      "master": {
+        "text": "Kenya national government: explore the national budget report for FY2025/26.\n\nPublished by Controller of Budget on 4 September 2026.\n\nExplore the report and original sources on AuditGava.",
+        "link": "https://www.auditgava.com/reports/national_budget/1?view=report&entity=1&snapshot=64fecb7ee916625ff7d6ebd44553c25ee4e233c47fe2dfb80d71a9a4a0e099b0",
+        "hashtags": [
+          "#KenyaBudget",
+          "#Kenya",
+          "#AuditGava"
+        ],
+        "media": []
+      },
+      "targets": [
+        {
+          "account_id": "00000000-0000-4000-8000-000000000020",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#KenyaBudget",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000021",
+          "format": "image",
+          "overrides": {}
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000022",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#KenyaBudget"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000023",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#KenyaBudget",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000024",
+          "format": "video",
+          "overrides": {}
+        }
+      ]
+    },
+    "generator_metadata": {
+      "template_version": "report-availability-v4",
+      "detector_version": 1,
+      "fact_ids": [],
+      "report_source_document_id": 1,
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [
+        {
+          "platform": "facebook",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000020",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "instagram",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000021",
+            "format": "image",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "threads",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000022",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "x",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000023",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "tiktok",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000024",
+            "format": "video",
+            "overrides": {}
+          }
+        }
+      ],
+      "editorial_profiles_hash": "46fcf4e3e9b8731f7976ffd1c3c084ac5ac1d42e429d928eb46e3854fdd9a641"
+    },
+    "source": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:native:national_budget:1:sample-national",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "dataset_availability",
+      "title": "National government budget report \u00b7 illustrative",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [],
+      "report": {
+        "entity_id": 1,
+        "source_record_id": 1,
+        "authority_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "entity": "Kenya national government",
+        "period": "FY2025/26",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "source_document_id": 1,
+        "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+        "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "publisher": "Controller of Budget",
+        "published_on": "2026-09-04",
+        "retrieved_at": "2026-10-15T00:00:00Z",
+        "verified_at": "2026-10-15T00:00:01Z",
+        "canonical_url": "https://www.auditgava.com/budget",
+        "locator": "PDF page 1; Publication date: 2026-07-01",
+        "publication_extraction_id": 1,
+        "qualification_extraction_id": 1,
+        "native_domain": "national_budget",
+        "scope_key": "sample-national"
+      }
+    },
+    "public_report": {
+      "schema_version": 1,
+      "domain": "national_budget",
+      "view": "report",
+      "snapshot": "64fecb7ee916625ff7d6ebd44553c25ee4e233c47fe2dfb80d71a9a4a0e099b0",
+      "title": "Budget report",
+      "entity": "Kenya national government",
+      "period": "FY2025/26",
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "publisher": "Controller of Budget",
+      "published_on": "2026-09-04",
+      "catalogued_on": null,
+      "availability": "published",
+      "figures": [],
+      "sources": [
+        {
+          "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "publisher": "Controller of Budget",
+          "locator": "PDF page 1; Publication date: 2026-07-01"
+        }
+      ]
+    },
+    "references": [
+      {
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+        "label": "Controller of Budget"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000013",
+    "label": "PAYE revenue",
+    "title": "Kenya PAYE revenue \u00b7 illustrative",
+    "content_type": "budget_update",
+    "text": "Kenya, FY 2025/26: about KSh 800.3 billion reported for PAYE.\n\nSource: Kenya Revenue Authority, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "link": "https://www.auditgava.com/reports/revenue_by_source/1?view=financial&record=1&snapshot=5d160a41077b5563d8f053ba8c387f7b004d498f95a3f7836a4b0eb514ce443a",
+    "document": {
+      "schema_version": 1,
+      "master": {
+        "text": "Kenya, FY 2025/26: about KSh 800.3 billion reported for PAYE.\n\nSource: Kenya Revenue Authority, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+        "link": "https://www.auditgava.com/reports/revenue_by_source/1?view=financial&record=1&snapshot=5d160a41077b5563d8f053ba8c387f7b004d498f95a3f7836a4b0eb514ce443a",
+        "hashtags": [
+          "#PAYE",
+          "#Kenya",
+          "#AuditGava"
+        ],
+        "media": []
+      },
+      "targets": [
+        {
+          "account_id": "00000000-0000-4000-8000-000000000020",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PAYE",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000021",
+          "format": "image",
+          "overrides": {}
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000022",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PAYE"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000023",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#PAYE",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000024",
+          "format": "video",
+          "overrides": {}
+        }
+      ]
+    },
+    "generator_metadata": {
+      "template_version": "financial-v5",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:outstanding"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [
+        {
+          "platform": "facebook",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000020",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "instagram",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000021",
+            "format": "image",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "threads",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000022",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "x",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000023",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "tiktok",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000024",
+            "format": "video",
+            "overrides": {}
+          }
+        }
+      ],
+      "editorial_profiles_hash": "46fcf4e3e9b8731f7976ffd1c3c084ac5ac1d42e429d928eb46e3854fdd9a641"
+    },
+    "source": {
+      "schema_version": 1,
+      "source_type": "kra",
+      "source_key": "kra:financial:revenue_by_source:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "budget_update",
+      "title": "Kenya PAYE revenue \u00b7 illustrative",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:outstanding",
+          "entity": "Kenya",
+          "metric": "Revenue collected: PAYE",
+          "period": "FY 2025/26",
+          "comparison_basis": "published collections on the same revenue-head basis and annual reporting period",
+          "value": "800.25",
+          "unit": "KES",
+          "scale": "billions",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://www.kra.go.ke/news-center/press-release/2235-result",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Kenya Revenue Authority",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-30T00:24:33.534745Z",
+          "verified_at": "2026-10-30T00:24:33.534745Z",
+          "canonical_url": "https://www.auditgava.com/revenue"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "revenue_by_source",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "public_report": {
+      "schema_version": 1,
+      "domain": "revenue_by_source",
+      "view": "financial",
+      "snapshot": "5d160a41077b5563d8f053ba8c387f7b004d498f95a3f7836a4b0eb514ce443a",
+      "title": "Reported figures",
+      "entity": "Kenya",
+      "period": "FY 2025/26",
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "publisher": "Kenya Revenue Authority",
+      "published_on": "2026-09-25",
+      "catalogued_on": null,
+      "availability": "published",
+      "figures": [
+        {
+          "entity": "Kenya",
+          "metric": "Revenue collected: PAYE",
+          "period": "FY 2025/26",
+          "value": "800.25",
+          "display_value": "about KSh 800.3 billion",
+          "unit": "KES",
+          "scale": "billions",
+          "classification": "actual",
+          "comparison_basis": "published collections on the same revenue-head basis and annual reporting period",
+          "locator": "page 12, table 4"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.kra.go.ke/news-center/press-release/2235-result",
+          "publisher": "Kenya Revenue Authority",
+          "locator": "page 12, table 4"
+        }
+      ]
+    },
+    "references": [
+      {
+        "url": "https://www.kra.go.ke/news-center/press-release/2235-result",
+        "label": "Kenya Revenue Authority"
+      }
+    ]
+  },
+  {
+    "id": "00000000-0000-4000-8000-000000000014",
+    "label": "Health budget",
+    "title": "National health budget figures \u00b7 illustrative",
+    "content_type": "budget_update",
+    "text": "Kenya: KSh 1.2 billion in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1.5 billion.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+    "link": "https://www.auditgava.com/reports/national_budget/1?view=financial&record=1&snapshot=55e0589a8315f8020a77a0d340f43631977c891a69440debf7eed9998558c5a5",
+    "document": {
+      "schema_version": 1,
+      "master": {
+        "text": "Kenya: KSh 1.2 billion in actual expenditure for Health in FY 2025/26.\n\nThe revised gross budget for the same sector and reporting year was KSh 1.5 billion.\n\nSource: Office of the Controller of Budget, FY 2025/26.\n\nExplore the figures and original source on AuditGava.",
+        "link": "https://www.auditgava.com/reports/national_budget/1?view=financial&record=1&snapshot=55e0589a8315f8020a77a0d340f43631977c891a69440debf7eed9998558c5a5",
+        "hashtags": [
+          "#HealthBudget",
+          "#Kenya",
+          "#AuditGava"
+        ],
+        "media": []
+      },
+      "targets": [
+        {
+          "account_id": "00000000-0000-4000-8000-000000000020",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#HealthBudget",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000021",
+          "format": "image",
+          "overrides": {}
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000022",
+          "format": "text",
+          "overrides": {
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#HealthBudget"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000023",
+          "format": "text",
+          "overrides": {
+            "text": {
+              "mode": "replace",
+              "value": "Kenya: explore the health budget figures for FY 2025/26 on AuditGava.\n\nSource: Office of the Controller of Budget."
+            },
+            "hashtags": {
+              "mode": "replace",
+              "value": [
+                "#HealthBudget",
+                "#Kenya"
+              ]
+            }
+          }
+        },
+        {
+          "account_id": "00000000-0000-4000-8000-000000000024",
+          "format": "video",
+          "overrides": {}
+        }
+      ]
+    },
+    "generator_metadata": {
+      "template_version": "financial-v5",
+      "detector_version": 1,
+      "fact_ids": [
+        "owned:allocated_amount",
+        "owned:actual_spent"
+      ],
+      "editorial_policy": "auditgava-editorial-v1",
+      "editorial_policy_hash": "f6b1e9ae1acb20e5c1052b62d187901c725a114e3b6c074a644acc910bf77a65",
+      "editorial_profiles": [
+        {
+          "platform": "facebook",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000020",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "instagram",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000021",
+            "format": "image",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "threads",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000022",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "x",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000023",
+            "format": "text",
+            "overrides": {}
+          }
+        },
+        {
+          "platform": "tiktok",
+          "target": {
+            "account_id": "00000000-0000-4000-8000-000000000024",
+            "format": "video",
+            "overrides": {}
+          }
+        }
+      ],
+      "editorial_profiles_hash": "46fcf4e3e9b8731f7976ffd1c3c084ac5ac1d42e429d928eb46e3854fdd9a641"
+    },
+    "source": {
+      "schema_version": 1,
+      "source_type": "cob",
+      "source_key": "cob:financial:national_budget:owned",
+      "evidence_version": 1,
+      "ingestion_id": "1",
+      "category": "budget_update",
+      "title": "National health budget figures \u00b7 illustrative",
+      "committed": false,
+      "fixture": true,
+      "quarantined": false,
+      "publishable": false,
+      "correction_pending": false,
+      "facts": [
+        {
+          "fact_id": "owned:allocated_amount",
+          "entity": "Kenya",
+          "metric": "Revised gross budget: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "revised gross budget, same sector and annual reporting period",
+          "value": "1500000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-30T00:24:33.534805Z",
+          "verified_at": "2026-10-30T00:24:33.534805Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        },
+        {
+          "fact_id": "owned:actual_spent",
+          "entity": "Kenya",
+          "metric": "Actual expenditure: Health",
+          "period": "FY 2025/26",
+          "comparison_basis": "actual expenditure, same sector and annual reporting period",
+          "value": "1200000000.00",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "source_document_id": 1,
+          "document_url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "locator": "page 12, table 4",
+          "document_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "publisher": "Office of the Controller of Budget",
+          "published_on": "2026-09-25",
+          "retrieved_at": "2026-10-30T00:24:33.534805Z",
+          "verified_at": "2026-10-30T00:24:33.534805Z",
+          "canonical_url": "https://www.auditgava.com/budget"
+        }
+      ],
+      "report": null,
+      "financial": {
+        "native_domain": "national_budget",
+        "record_id": 1,
+        "report_record_id": 1,
+        "authority_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "period_start": "2025-07-01",
+        "period_end": "2026-06-30",
+        "published_on": "2026-09-25"
+      }
+    },
+    "public_report": {
+      "schema_version": 1,
+      "domain": "national_budget",
+      "view": "financial",
+      "snapshot": "55e0589a8315f8020a77a0d340f43631977c891a69440debf7eed9998558c5a5",
+      "title": "Reported figures",
+      "entity": "Kenya",
+      "period": "FY 2025/26",
+      "period_start": "2025-07-01",
+      "period_end": "2026-06-30",
+      "publisher": "Office of the Controller of Budget",
+      "published_on": "2026-09-25",
+      "catalogued_on": null,
+      "availability": "published",
+      "figures": [
+        {
+          "entity": "Kenya",
+          "metric": "Revised gross budget: Health",
+          "period": "FY 2025/26",
+          "value": "1500000000.00",
+          "display_value": "KSh 1.5 billion",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "comparison_basis": "revised gross budget, same sector and annual reporting period",
+          "locator": "page 12, table 4"
+        },
+        {
+          "entity": "Kenya",
+          "metric": "Actual expenditure: Health",
+          "period": "FY 2025/26",
+          "value": "1200000000.00",
+          "display_value": "KSh 1.2 billion",
+          "unit": "KES",
+          "scale": "units",
+          "classification": "actual",
+          "comparison_basis": "actual expenditure, same sector and annual reporting period",
+          "locator": "page 12, table 4"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "publisher": "Office of the Controller of Budget",
+          "locator": "page 12, table 4"
+        },
+        {
+          "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+          "publisher": "Office of the Controller of Budget",
+          "locator": "page 12, table 4"
+        }
+      ]
+    },
+    "references": [
+      {
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+        "label": "Office of the Controller of Budget"
+      },
+      {
+        "url": "https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/?wpdmdl=16454",
+        "label": "Office of the Controller of Budget"
+      }
+    ]
+  }
+]

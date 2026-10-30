@@ -37,7 +37,7 @@ function expectPainted(element: Element | null) {
 test('overview working cards are visible at their first frame after access is verified', () => {
   const document = firstFrame('/admin', <Overview />);
   const cards = Array.from(document.querySelectorAll('.page-shell-content a'))
-    .filter(element => element.querySelector('h3'));
+    .filter(element => element.querySelector('strong'));
   expect(cards.length).toBeGreaterThanOrEqual(5);
   cards.forEach(expectPainted);
 });

@@ -7,6 +7,7 @@
  */
 'use client';
 
+import styles from '@/components/admin/admin.module.css';
 import PageShell from '@/components/admin/AdminPageShell';
 import api from '@/lib/api/axios';
 import { useAuth } from '@/lib/auth/AuthProvider';
@@ -17,11 +18,9 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronRight,
   Loader2,
   Pause,
   RefreshCcw,
-  Search,
   Shield,
   User,
   XCircle,
@@ -45,7 +44,7 @@ export default function UsersListPage() {
   return (
     <Suspense
       fallback={
-        <PageShell title='Users' subtitle='Loading…'>
+        <PageShell title='People & access' subtitle='Loading…'>
           <div className='py-16 flex justify-center'>
             <Loader2 className='w-6 h-6 text-gov-sage animate-spin' />
           </div>
@@ -116,27 +115,26 @@ function UsersListInner() {
     staleTime: 15_000,
   });
 
-  if (!allowed) return <PageShell title='Users'><p>Administrator access required.</p></PageShell>;
+  if (!allowed) return <PageShell title='People & access'><p>Administrator access required.</p></PageShell>;
 
   return (
     <PageShell
-      title='Users'
-      subtitle='Manage roles, send password resets, and remove accounts.'
+      title='People & access'
+      subtitle='Find a person, inspect their access, then choose an account action.'
       back={{ href: '/admin', label: 'Back to overview' }}
     >
-      <div className='space-y-5'>
+      <div className={styles.workspace}>
         {/* Search + refresh */}
-        <div className='flex flex-wrap items-center gap-3'>
-          <div className='relative flex-1 min-w-[16rem]'>
-            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-muted/60' />
+        <section className={styles.panel} aria-label='Find a person'><div className={styles.toolbar}>
+          <label className='relative flex-1 min-w-0'><span className='block mb-2 text-sm font-semibold'>Email address</span>
+
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              aria-label='Search users by email'
               placeholder='Search by email…'
-              className='w-full pl-10 pr-3 py-2.5 text-sm rounded-xl border border-neutral-border bg-white dark:bg-surface-base focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 transition-all shadow-surface'
+              className='w-full px-3 py-2.5 text-sm rounded-xl border border-neutral-border bg-white dark:bg-surface-base focus:outline-none focus:ring-2 focus:ring-gov-sage/40 focus:border-gov-sage/40 transition-all shadow-surface'
             />
-          </div>
+          </label>
           <button
             onClick={() => { if (allowed) refetch(); }}
             disabled={isFetching}
@@ -145,7 +143,7 @@ function UsersListInner() {
             <RefreshCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-        </div>
+        </div><p className={styles.quiet}>Search matches part of an email address. Results update as you type.</p></section>
 
         <p aria-live='polite' className='text-xs text-neutral-muted -mt-2'>
           {data && !error
@@ -170,7 +168,7 @@ function UsersListInner() {
           </BodyState>
         ) : (
           <>
-            <ul className='bg-white dark:bg-surface-base border border-neutral-border rounded-2xl divide-y divide-neutral-border/60 shadow-surface overflow-hidden'>
+            <ul className={styles.peopleList}>
               {data.users.map((u, i) => (
                 <motion.li key={u.id} variants={fadeUp} initial='hidden' animate='show' custom={i}>
                   <Link
@@ -210,7 +208,7 @@ function UsersListInner() {
                       <p>Created {formatShort(u.created_at)}</p>
                       <p className='mt-0.5'>Last sign-in {formatShort(u.last_sign_in_at)}</p>
                     </div>
-                    <ChevronRight className='w-4 h-4 text-neutral-muted/40 shrink-0 group-hover:text-gov-sage group-hover:translate-x-0.5 transition-all' />
+                    <span className={styles.taskAction}>Manage access →</span>
                   </Link>
                 </motion.li>
               ))}

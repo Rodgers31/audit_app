@@ -52,6 +52,8 @@ export interface SocialAccount {
   id: string; platform: SocialPlatform; display_name: string; handle: string | null;
   profile_url: string | null; connection_state: string; publishing_enabled: boolean;
   capabilities: SocialCapabilities;
+  /** Implemented draft formats; does not grant publishing eligibility. */
+  draft_formats?: SocialFormat[];
 }
 export interface SocialCapabilities {
   rules_version: string; provider_api_version: string; eligible: boolean;
@@ -273,7 +275,7 @@ export const socialApi = {
   post: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}`, v => { const post = decodePost(v); if (post.id !== id) throw contractError(); return post; }, signal),
   postStatus: (id: string, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/status`, v => { const post = decodeSummary(v); if (post.id !== id) throw contractError(); return post; }, signal),
   history: (id: string, page: number, signal?: AbortSignal) => read(`/posts/${encodeURIComponent(id)}/history`, v => { const result = decodeHistory(v); if (result.post_id !== id || result.page !== page || result.page_size !== 20) throw contractError(); return result; }, signal, { page, page_size: 20 }),
-  accounts: (signal?: AbortSignal) => read('/accounts', v => arr(obj(v).accounts).map(item => { const o = obj(item); return { id: str(o.id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), display_name: str(o.display_name), handle: nullable(o.handle), profile_url: nullable(o.profile_url), connection_state: str(o.connection_state), publishing_enabled: bool(o.publishing_enabled), capabilities: decodeCapabilities(o.capabilities) }; }), signal),
+  accounts: (signal?: AbortSignal) => read('/accounts', v => arr(obj(v).accounts).map(item => { const o = obj(item); return { id: str(o.id), platform: oneOf(o.platform, SOCIAL_PLATFORMS), display_name: str(o.display_name), handle: nullable(o.handle), profile_url: nullable(o.profile_url), connection_state: str(o.connection_state), publishing_enabled: bool(o.publishing_enabled), capabilities: decodeCapabilities(o.capabilities), ...(o.draft_formats === undefined ? {} : { draft_formats: arr(o.draft_formats).map(f => oneOf(f, formats)) }) }; }), signal),
   platforms: (signal?: AbortSignal) => read('/platforms', v => arr(obj(v).platforms).map(item => { const o = obj(item); return { platform: oneOf(o.platform, SOCIAL_PLATFORMS), capabilities: decodeCapabilities(o.capabilities) }; }), signal),
   status: (signal?: AbortSignal) => read('/system/status', decodeSystem, signal),
   validate: async (id: string, expected_version: number): Promise<SocialValidation> => {

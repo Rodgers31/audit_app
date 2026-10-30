@@ -7,6 +7,7 @@
  */
 'use client';
 
+import styles from '@/components/admin/admin.module.css';
 import PageShell from '@/components/admin/AdminPageShell';
 import { useAuth } from '@/lib/auth/AuthProvider';
 import { useAdmin } from '@/lib/auth/admin';
@@ -194,14 +195,14 @@ function UserDetailInner({ userId }: { userId: string }) {
       subtitle={data.email ?? 'No email on record'}
       back={{ href: backHref, label: 'Back to users' }}
     >
-      <div className='space-y-6'>
+      <div className={styles.workspace}>
         {/* ── Identity card ── */}
         <motion.section
           variants={fadeUp}
           initial='hidden'
           animate='show'
           custom={0}
-          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'
+          className={styles.panel}
         >
           <div className='flex items-start gap-4'>
             <div
@@ -217,9 +218,9 @@ function UserDetailInner({ userId }: { userId: string }) {
             </div>
             <div className='flex-1 min-w-0'>
               <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold'>
-                User ID
+                Account identity
               </p>
-              <p className='text-xs font-mono text-neutral-text break-all mt-0.5'>{data.id}</p>
+              <p className='text-base font-semibold text-neutral-text break-all mt-0.5'>{data.display_name??data.email??'Name unavailable'}</p>
               {isSelf && (
                 <span className='inline-flex items-center gap-1 mt-3 text-[11px] uppercase tracking-wider font-semibold bg-gov-gold/20 text-gov-forest dark:text-emerald-200 ring-1 ring-inset ring-gov-gold/40 px-2 py-0.5 rounded-full'>
                   This is you
@@ -250,7 +251,7 @@ function UserDetailInner({ userId }: { userId: string }) {
           initial='hidden'
           animate='show'
           custom={1}
-          className='bg-white dark:bg-surface-base rounded-2xl p-6 border border-neutral-border shadow-surface'
+          className={styles.panel}
         >
           <header className='flex flex-wrap gap-3 items-center justify-between mb-4'>
             <div className='flex items-center gap-2'>
@@ -331,6 +332,7 @@ function UserDetailInner({ userId }: { userId: string }) {
         </motion.section>
 
         {/* ── Actions ── */}
+        <details className={styles.disclosure}><summary>Password recovery and account removal</summary><div>
         <motion.section
           variants={fadeUp}
           initial='hidden'
@@ -346,7 +348,7 @@ function UserDetailInner({ userId }: { userId: string }) {
           <ActionRow
             icon={Mail}
             title='Send password-reset email'
-            description="Triggers Supabase's recovery email so the user can set a new password themselves."
+            description="Sends a recovery email so this person can choose a new password. Acceptance does not confirm email delivery."
             button={
               <button
                 onClick={() => runMutation(() => sendReset.mutate())}
@@ -391,6 +393,7 @@ function UserDetailInner({ userId }: { userId: string }) {
             onConfirm={() => runMutation(() => deleteUser.mutate())}
           />
         </motion.section>
+        </div></details>
 
         {/* ── Raw metadata (collapsed) ── */}
         <motion.details
@@ -401,11 +404,12 @@ function UserDetailInner({ userId }: { userId: string }) {
           className='bg-white dark:bg-surface-base rounded-2xl border border-neutral-border shadow-surface group'
         >
           <summary className='cursor-pointer px-6 py-4 text-sm font-semibold text-neutral-text flex items-center justify-between'>
-            Raw Supabase metadata
+            Identity reference and technical metadata
             <span className='text-xs text-neutral-muted group-open:rotate-180 transition-transform'>
               ▾
             </span>
           </summary>
+          <p className='px-6 pb-4 text-sm break-all'>User ID: {data.id}</p>
           <div className='px-6 pb-5 grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div>
               <p className='text-[11px] uppercase tracking-wider text-neutral-muted font-semibold mb-1'>

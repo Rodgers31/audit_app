@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SocialComposer from './SocialComposer';
+import SocialPreview from './SocialPreview';
+import { useAuth } from '@/lib/auth/AuthProvider';
 import { SocialErrorBanner } from './SocialNotice';
 import { httpsUrl, platformLabels } from './socialDocument';
 import styles from './social.module.css';
@@ -68,7 +70,29 @@ function HistoryLinks({ post }: { post: SocialSummary }) {
     return url ? <a key={t.id} href={url} target='_blank' rel='noopener noreferrer'>View {platformLabels[t.platform]} published post</a> : null;
   })}</>;
 }
+export function QueuePostPreview({ summary, accounts, refreshQueue }: { summary: SocialSummary; accounts: SocialAccount[]; refreshQueue: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState('');
+  const post = useSocialPost(summary.id, open);
+  const saved = post.data?.revision_id === summary.revision_id ? post.data : undefined;
+  const target = saved?.document.targets.find(t => t.account_id === selected) ?? saved?.document.targets[0];
+  return <div className={styles.queuePreview}>
+    <button type='button' className={styles.button} aria-label={`${open ? 'Hide preview' : 'Preview post'}: ${summary.title}`} aria-expanded={open} aria-controls={`preview-${summary.id}`} onClick={() => setOpen(!open)}>{open ? 'Hide preview' : 'Preview post'}</button>
+    {open && <div id={`preview-${summary.id}`} className={styles.fields}>
+      <h4>Post preview</h4>
+      {post.isFetching && <p role='status'>Loading saved post…</p>}
+      {post.error && <SocialErrorBanner error={post.error} onRetry={() => post.refetch()} />}
+      {!post.isFetching && !post.error && !saved && <p role='status'>The saved revision changed. <button type='button' onClick={() => { post.refetch(); refreshQueue(); }}>Refresh drafts</button></p>}
+      {saved && <>
+        <p className={styles.muted}>Saved revision · Open the draft to edit or check its evidence.</p>
+        {saved.document.targets.length > 1 && <label>Preview account<select value={target?.account_id ?? ''} onChange={event => setSelected(event.target.value)}>{saved.document.targets.map(t => <option key={t.account_id} value={t.account_id}>{accounts.find(a => a.id === t.account_id)?.display_name ?? 'Account unavailable'}</option>)}</select></label>}
+        <SocialPreview master={saved.document.master} target={target} account={accounts.find(a => a.id === target?.account_id)} />
+      </>}
+    </div>}
+  </div>;
+}
 export default function SocialWorkspace() {
+  const { user } = useAuth();
   const [selection, setSelection] = useState<QueueSelection>(queueDefaults);
   const [queueReady, setQueueReady] = useState(false);
   const {view, origin, category, page} = selection;
@@ -91,7 +115,7 @@ export default function SocialWorkspace() {
   return <div className={styles.workspace}>
     <SocialSystemStrip status={system.data} error={system.error} refresh={() => system.refetch()} />
     <div className={styles.queueHeading}>
-      <div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'scheduled' ? 'scheduled ' : view === 'history' ? 'history ' : ''}${list.data.total === 1 ? 'post' : 'posts'}${view === 'needs_attention' ? ' needing attention' : view === 'pending' ? ' awaiting review' : ''}` : 'Loading saved drafts…'}</p><p className={styles.muted}>Open a draft, read the post, then check its evidence.</p></div>
+      <div><h2>{viewLabels[view]}</h2><p className={styles.muted}>{list.data ? `${list.data.total} ${view === 'scheduled' ? 'scheduled ' : view === 'history' ? 'history ' : ''}${list.data.total === 1 ? 'post' : 'posts'}${view === 'needs_attention' ? ' needing attention' : view === 'pending' ? ' awaiting review' : ''}` : 'Loading saved drafts…'}</p><p className={styles.muted}>Preview the post here, or open the draft to edit and check its evidence.</p></div>
       <Link href='/admin/social/new' className={styles.button}>Write a post</Link>
     </div>
     <div className={styles.queueControls}>
@@ -116,6 +140,7 @@ export default function SocialWorkspace() {
           {view === 'history' && <HistoryLinks post={p} />}
         </div>
         <Link href={draftHref(p.id)} className={`${styles.button} ${styles.primary}`} aria-label={`${view === 'history' ? 'View results' : 'Open draft'}: ${p.title}`}>{view === 'history' ? 'View results' : 'Open draft'} <span aria-hidden='true'>→</span></Link>
+        <QueuePostPreview key={`${user?.id}:${p.id}:${p.revision_id}`} summary={p} accounts={accounts.data ?? []} refreshQueue={() => list.refetch()} />
       </article>)}
     </section>
     {list.data && list.data.total > 0 && <div className={styles.pagination}><button type='button' className={styles.button} disabled={page === 1 || list.isFetching} onClick={() => selectQueue({...selection,page:page-1})}>Previous page</button><span className={styles.muted}>Page {list.data.page}</span><button type='button' className={styles.button} disabled={!list.data.has_more || list.isFetching} onClick={() => selectQueue({...selection,page:page+1})}>Next page</button></div>}
@@ -123,6 +148,7 @@ export default function SocialWorkspace() {
 }
 
 export function SocialEditorPage({ postId }: { postId?: string }) {
+  const { user } = useAuth();
   const router = useRouter();
   const post = useSocialPost(postId);
   const accounts = useSocialAccounts();
@@ -133,6 +159,6 @@ export function SocialEditorPage({ postId }: { postId?: string }) {
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
     {postId && post.error && <SocialErrorBanner error={post.error} onRetry={() => post.refetch()} />}
     {postId && post.isPending && <p role='status' className={styles.empty}>Loading draft…</p>}
-    {(!postId || post.data) && <SocialComposer key={postId ?? 'new'} initialPost={post.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={saved} />}
+    {(!postId || post.data) && <SocialComposer key={`${user?.id}:${postId ?? 'new'}`} initialPost={post.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={saved} />}
   </div>;
 }

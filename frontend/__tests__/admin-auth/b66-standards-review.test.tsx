@@ -65,8 +65,8 @@ test('incomplete inventory cannot certify ETL working content as all visible', (
 
 test('loaded actual ETL rows are opaque and inert worker controls remain unavailable', async () => {
   renderRoute('/admin/etl'); await advance(200); await advance(50); await advance(10);
-  for (const label of ['treasury', 'cob', 'oag', 'knbs', 'opendata', 'cra']) {
-    const text = Array.from(document.querySelectorAll('li')).find(element => element.textContent?.toLowerCase().includes(label));
+  for (const label of ['National Treasury','Controller of Budget','Auditor-General','Kenya National Bureau of Statistics','OpenData','Revenue allocation']) {
+    const text = Array.from(document.querySelectorAll('li')).find(element => element.textContent?.toLowerCase().includes(label.toLowerCase()));
     expect(text).toBeDefined();
     for (let element: Element | null = text!; element; element = element.parentElement) expect((element as HTMLElement).style.opacity).not.toBe('0');
   }
@@ -100,6 +100,6 @@ test('SPA navigation starts a new required inventory and clears previous success
   const view = render(<Harness>{content}</Harness>); tick();
   expect(measurements().allVisible).toBe(true); expect(measurements().firstAllVisibleMs).not.toBeNull();
   frames = []; mockPathname = '/admin'; view.rerender(<Harness>{content}</Harness>); tick();
-  expect(measurements().route).toBe('/admin'); expect(measurements().missing.length).toBe(6);
+  expect(measurements().route).toBe('/admin'); expect(measurements().missing.length).toBe(5);
   expect(measurements().allVisible).toBe(false); expect(measurements().firstAllVisibleMs).toBeNull();
 });

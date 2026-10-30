@@ -124,3 +124,7 @@ frontend/legacy-report/
 
 frontend/acceptance-results/
 frontend/acceptance-report/
+
+# Public application routes are source, not generated test reports.
+!frontend/app/reports/
+!frontend/app/reports/**

@@ -118,6 +118,9 @@
 .draftList { display: grid; }
 .queueCard { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 8px; border-bottom: 1px solid var(--line); }
 .queueCard > .fields { flex: 1 1 260px; gap: 8px; }
+.queuePreview { flex: 1 0 100%; min-width: 0; }
+.queuePreview > .fields { max-width: 640px; margin-top: 20px; }
+.destination { margin-top: 18px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 6px; overflow-wrap: anywhere; }
 .queueCard h3 a { text-decoration: none; }
 .queueCard h3 a:hover { text-decoration: underline; }
 .status { align-items: center; margin-bottom: 0; }
@@ -142,4 +145,9 @@
 
 .workspace [role='alert']:focus { outline: 3px solid var(--forest); outline-offset: 3px; }
 :global(.dark) .workspace { --forest: #b2d2b8; --paper: #17281e; --line: #526449; --soft: #273b2d; --ink: #e7efe5; --muted: #bbc7b6; --alert: #ffb4a4; --action-bg: #a7d5b4; --action-ink: #10271a; --action-hover: #b8dfc2; --action-hover-ink: #10271a; --preview-paper: #1c3023; }
+.workspace [hidden] { display: none !important; }
 :global(.dark) .workspace :is(button, a, input, textarea, select, summary):focus-visible { outline-color: #e4bd68; }
+
+.sourceCheck { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: clamp(16px, 3vw, 24px); }
+.sourceCheck > p { max-width: 86ch; }
+.sourceCheck > fieldset { margin: 0; padding: 0; border: 0; }

@@ -44,7 +44,7 @@ const QUERY_KEYS = {
   annualReports: ['debt', 'annual-reports'] as const,
   pendingBills: ['debt', 'pending-bills'] as const,
   pendingBillsSummary: ['debt', 'pending-bills-summary'] as const,
-  countyPendingBills: (countyId: string) => ['debt', 'pending-bills', 'county', countyId] as const,
+  countyPendingBills: (countyId: string, asAt?: string) => ['debt', 'pending-bills', 'county', countyId, asAt] as const,
   sustainability: (countyId?: string) => ['debt', 'sustainability', countyId] as const,
   debtSustainability: ['debt', 'debt-sustainability'] as const,
   riskAssessment: ['debt', 'risk-assessment'] as const,
@@ -223,11 +223,12 @@ export const usePendingBillsSummary = (
 // County-level pending bills breakdown
 export const useCountyPendingBills = (
   countyId: string,
-  options?: Omit<UseQueryOptions<CountyPendingBillsResponse>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<CountyPendingBillsResponse>, 'queryKey' | 'queryFn'>,
+  asAt?: string
 ) => {
   return useQuery({
-    queryKey: QUERY_KEYS.countyPendingBills(countyId),
-    queryFn: ({ signal }) => getCountyPendingBills(countyId, signal),
+    queryKey: QUERY_KEYS.countyPendingBills(countyId, asAt),
+    queryFn: ({ signal }) => getCountyPendingBills(countyId, signal, asAt),
     enabled: !!countyId,
     staleTime: 30 * 60 * 1000,
     ...options,

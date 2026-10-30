@@ -14,3 +14,27 @@ test('completed scope leaves overall request pending',async()=>{(privacyApi.queu
 test('untrusted response shapes cannot enable controls',()=>{for(const bad of [null,[],{}, {...queue,workflow_enabled:'true'}, {...queue,total:true}])expect(()=>decodePrivacyQueue(bad)).toThrow();expect(()=>decodePrivacyPlan({...plan,execution:{id:'operation',state:'complete',version:1,result:{}}})).toThrow();});
 
 test('exact authority generations remain visible to the independent reviewer',()=>{const decoded=decodePrivacyPlan({...plan,scope:{credentials:[{id:'credential',version:2}],flows:[{id:'flow',content_hash:'c'.repeat(64),identity_hash:'d'.repeat(64)}],media_assets:[]}});expect(decoded.scope.credentials[0].version).toBe(2);expect(decoded.scope.flows[0].content_hash).toBe('c'.repeat(64));expect(()=>decodePrivacyPlan({...plan,scope:{...plan.scope,credentials:[{id:'credential',version:true}]}})).toThrow();});
+
+test('closed workflow disables decisions on a retained independent pending plan',async()=>{
+ (privacyApi.queue as jest.Mock).mockResolvedValue(queue);
+ (privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:[],flows:[],plans:[{...plan,proposed_by:'another-human'}]});
+ mount();fireEvent.click(await screen.findByRole('button',{name:/data deletion/}));
+ fireEvent.change(await screen.findByLabelText('Independent review reason'),{target:{value:'Checked independent evidence.'}});
+ expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeDisabled();
+ expect(screen.getByRole('button',{name:'Reject scope'})).toBeDisabled();
+ expect(privacyApi.command).not.toHaveBeenCalled();
+});
+
+test('fresh current policy permits independent review, then a failed refresh holds decisions',async()=>{
+ (privacyApi.queue as jest.Mock).mockResolvedValue({...queue,workflow_enabled:true,policies:{reviewed:plan.policy_hash}});
+ (privacyApi.detail as jest.Mock).mockResolvedValue({...queue.requests[0],credentials:[],flows:[],plans:[{...plan,proposed_by:'another-human'}]});
+ mount();fireEvent.click(await screen.findByRole('button',{name:/data deletion/}));
+ fireEvent.change(await screen.findByLabelText('Independent review reason'),{target:{value:'Checked independent evidence.'}});
+ await waitFor(()=>expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeEnabled());
+ (privacyApi.queue as jest.Mock).mockRejectedValue(new Error('PRIVATE_FAILURE'));
+ fireEvent.click(screen.getByRole('button',{name:'Refresh requests'}));
+ await screen.findByRole('alert');
+ expect(screen.getByRole('button',{name:'Approve exact scope'})).toBeDisabled();
+ expect(screen.getByRole('button',{name:'Reject scope'})).toBeDisabled();
+ expect(privacyApi.command).not.toHaveBeenCalled();
+});
