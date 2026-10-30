@@ -133,6 +133,38 @@ def valid_financial_state(state):
         return False
 
 
+def financial_source_marker_fingerprint(identity, evidence_version, state):
+    if state.get('financial_baseline') == 1:
+        return canonical_hash(identity)
+    return canonical_hash(dict(identity=identity, evidence_version=evidence_version,
+        completed_count=state['completed_count'], completion=state['completion']))
+
+
+def _valid_financial_completion(state, evidence_version, identity):
+    completion = state.get('completion')
+    dates = ('period_start', 'period_end', 'published_on')
+    if (type(completion) is not dict
+            or set(completion) != {'evidence_version', 'records', *dates}
+            or type(completion['evidence_version']) is not int
+            or completion['evidence_version'] != evidence_version
+            or not valid_financial_state({'financial_semantics': 2,
+                **{k: completion[k] for k in dates}})
+            or any(state[k] < completion[k] for k in dates)):
+        return False
+    records = completion['records']
+    if type(records) is not list or len(records) != state['completed_count']:
+        return False
+    prefix = identity['source_key'].removesuffix('baseline')
+    if any(type(r) is not dict or set(r) != {'record_id', 'source_key'}
+            or type(r['record_id']) is not int or not 0 < r['record_id'] <= 2147483647
+            or type(r['source_key']) is not str
+            or re.fullmatch(re.escape(prefix)+'[a-f0-9]{64}', r['source_key']) is None for r in records):
+        return False
+    ids = [r['record_id'] for r in records]
+    return (ids == sorted(set(ids))
+        and len({r['source_key'] for r in records}) == len(records))
+
+
 def financial_source_marker_version(root, identity):
     """A source-level marker exists before its first cohort is complete."""
     state = root.report_state
@@ -140,14 +172,15 @@ def financial_source_marker_version(root, identity):
     dates = {'period_start', 'period_end', 'published_on'}
     expected = {'financial_baseline', *dates}
     if type(version) is int and version == 2:
-        expected.add('completed_count')
+        expected.update(('completed_count', 'completion'))
     if (type(version) is not int or version not in (1, 2)
             or set(state) != expected or root.sequence != 0
             or type(root.evidence_version) is not int or root.evidence_version <= 0
             or version == 2 and (type(state['completed_count']) is not int
                                 or not 1 <= state['completed_count'] <= 1000)
             or not valid_financial_state({'financial_semantics': 2, **{k: state[k] for k in dates}})
-            or root.fingerprint != canonical_hash(identity)):
+            or version == 2 and not _valid_financial_completion(state, root.evidence_version, identity)
+            or root.fingerprint != financial_source_marker_fingerprint(identity, root.evidence_version, state)):
         raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial source baseline differs.', 503)
     return version
 

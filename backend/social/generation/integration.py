@@ -67,12 +67,13 @@ def _complete_financial_cohort(factory, record_ids, ingestion_id, domain, deadli
     from importlib import import_module
     from sqlalchemy import select
     from .models import SourceCursor
-    from .service import DETECTOR_VERSION, financial_source_marker_version, valid_financial_state
+    from .service import (DETECTOR_VERSION, financial_source_marker_version,
+        financial_source_marker_fingerprint, valid_financial_state)
     native = import_module('backend.seeding.native_financial_observations'
         if __package__.startswith('backend.') else 'seeding.native_financial_observations')
     proof = import_module('backend.seeding.financial_cohort_witness'
         if __package__.startswith('backend.') else 'seeding.financial_cohort_witness')
-    from ..contracts import canonical_hash, canonical_json
+    from ..contracts import canonical_json
     source_type = native.DOMAINS[domain][0]
     prefix = f'{source_type}:financial:{domain}:'
     identity = dict(source_type=source_type, source_key=prefix+'baseline', detector_version=DETECTOR_VERSION)
@@ -131,15 +132,19 @@ def _complete_financial_cohort(factory, record_ids, ingestion_id, domain, deadli
                 or any(not valid_financial_state(c.report_state)
                     or any(c.report_state.get(k) != v for k, v in dates.items()) for c in cursors)):
             raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial cohort cursor coverage differs.', 503)
-        expected = {'financial_baseline': 2, **dates, 'completed_count': len(current)}
+        completion = dict(evidence_version=ingestion_id, **dates,
+            records=sorted((dict(record_id=v['record_id'], source_key=v['source_key']) for v in values),
+                           key=lambda r: r['record_id']))
+        expected = {'financial_baseline': 2, **dates, 'completed_count': len(current), 'completion': completion}
         expected_bytes = canonical_json(expected)
-        root.report_state, root.evidence_version = expected, ingestion_id
+        expected_fingerprint = financial_source_marker_fingerprint(identity, ingestion_id, expected)
+        root.report_state, root.evidence_version, root.fingerprint = expected, ingestion_id, expected_fingerprint
         db.flush()
         db.refresh(root)
         financial_source_marker_version(root, identity)
         if (canonical_json(root.report_state) != expected_bytes or root.evidence_version != ingestion_id
                 or any(getattr(root, k) != v for k, v in identity.items())
-                or root.fingerprint != canonical_hash(identity)):
+                or root.fingerprint != expected_fingerprint):
             raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Financial cohort completion readback differs.', 503)
         _remaining_ms(deadline)
     _remaining_ms(deadline)

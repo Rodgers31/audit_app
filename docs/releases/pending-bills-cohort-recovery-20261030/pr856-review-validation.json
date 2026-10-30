@@ -1,0 +1,128 @@
+{
+  "candidate": {
+    "files": 5806,
+    "mapping_sha256": "d4551375c41807a1856482607ea40496da2d766788290b67be6f8f833fcbd139",
+    "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/release-rollout-20261030/recovery-review-candidate-4"
+  },
+  "backend_files_matched": 1450,
+  "results": {
+    "normal": {
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "198",
+        "time": "317.035",
+        "timestamp": "2026-10-30T16:32:00.286669+00:00",
+        "hostname": "72e0925f7430"
+      },
+      "stress": [
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[fresh_baseline]",
+          "time": "41.915"
+        },
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[retained_baseline]",
+          "time": "44.210"
+        },
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[changed_cohort]",
+          "time": "54.526"
+        },
+        {
+          "name": "test_full_changed_cohort_revalidates_installed_worker_authority",
+          "time": "99.427"
+        },
+        {
+          "name": "test_automatic_cohort_replay_retained_refresh_and_one_meaningful_change",
+          "time": "2.962"
+        },
+        {
+          "name": "test_automatic_partial_body_timeout_preserves_confirmed_baselines_and_silent_replay",
+          "time": "0.599"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[evidence]",
+          "time": "0.609"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[deadline]",
+          "time": "0.741"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[database]",
+          "time": "0.649"
+        },
+        {
+          "name": "test_automatic_retained_cohort_refuses_changed_original_acquisition",
+          "time": "0.515"
+        }
+      ]
+    },
+    "optimized": {
+      "counts": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "198",
+        "time": "306.574",
+        "timestamp": "2026-10-30T16:37:20.867709+00:00",
+        "hostname": "72e0925f7430"
+      },
+      "stress": [
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[fresh_baseline]",
+          "time": "39.927"
+        },
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[retained_baseline]",
+          "time": "51.210"
+        },
+        {
+          "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[changed_cohort]",
+          "time": "59.531"
+        },
+        {
+          "name": "test_full_changed_cohort_revalidates_installed_worker_authority",
+          "time": "103.078"
+        },
+        {
+          "name": "test_automatic_cohort_replay_retained_refresh_and_one_meaningful_change",
+          "time": "2.710"
+        },
+        {
+          "name": "test_automatic_partial_body_timeout_preserves_confirmed_baselines_and_silent_replay",
+          "time": "0.631"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[evidence]",
+          "time": "0.714"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[deadline]",
+          "time": "0.555"
+        },
+        {
+          "name": "test_automatic_lost_commit_acknowledgement_retains_unknown_progress[database]",
+          "time": "0.561"
+        },
+        {
+          "name": "test_automatic_retained_cohort_refuses_changed_original_acquisition",
+          "time": "0.496"
+        }
+      ]
+    }
+  },
+  "artifacts": {
+    "pr856-review-final-normal.xml": "da2613b140955a99a7483424237281a3c8d6462fb88ec80dc4da20ac35846b78",
+    "pr856-review-final-normal.log": "4e7ae549eee00f558c01dc77528abe2ee093aff59be25f6c2c71686ff3e00a61",
+    "pr856-review-final-normal-command.json": "404e0e4ef7148e1e5010589875b53ca261264973aeb615af3799fe0f5e753c60",
+    "pr856-review-final-normal-exit.json": "e43ab9048c66fff7ae30610e5375cb45434dfd175fb5c6343bafb205157cb28b",
+    "pr856-review-final-optimized.xml": "cd5f710296a18970f8569ac7622816aeda555ce4b8e7513ba9d31ceee06a8ac8",
+    "pr856-review-final-optimized.log": "88966da96cc13461cd02fa9a9b70611c7e5bd6d59f55d5cf2ebe09e774f23ae1",
+    "pr856-review-final-optimized-command.json": "1fbacc76f80e2453a50075ffdcc3aba38918a99007a435eb64246dcd1941a5a5",
+    "pr856-review-final-optimized-exit.json": "50d5e65b357a65dc634d7755359c23e317fc5d4f75678965b3cacc8f35e2fdda"
+  }
+}
