@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+import { historyBridge } from './historyBridge';
 
 const KEY = '__auditgavaHistory';
 type Point = { document: string; position: number };
@@ -35,6 +36,7 @@ export function runHistoryTraversal(event: Event, navigate: () => void): void {
 /** Track same-document entries without replacing Next's history state. */
 export function retainHistoryTracking(): () => void {
   if (tracking) return tracking.retain();
+  const bridge = historyBridge();
   const history = window.history;
   const push = history.pushState, replace = history.replaceState;
   let document = newSegment();
@@ -72,7 +74,8 @@ export function retainHistoryTracking(): () => void {
     }
     const approved = takeApprovedGuards();
     if (!Array.from(guards).every(leave => approved.has(leave) || leave())) {
-      // Capture runs before Next's listener, so the dirty editor stays mounted.
+      // The beforeInteractive relay runs before Next's listener. Capture alone
+      // does not establish listener order when popstate targets Window itself.
       event.stopImmediatePropagation();
       if (destination && destination.position !== position) {
         restoring = true; history.go(position - destination.position);
@@ -86,12 +89,12 @@ export function retainHistoryTracking(): () => void {
     if (destination) { position = destination.position; snapshot(); }
     else restartSegment(history.state, window.location.href, false);
   };
-  window.addEventListener('popstate', onPop, true);
+  const unsubscribe = bridge.subscribe(onPop);
   const owner = { guards, get epoch() { return epoch; }, approvedTraversal: undefined as Approval | undefined, retain: () => {
     references++;
     return () => {
       if (--references) return;
-      window.removeEventListener('popstate', onPop, true);
+      unsubscribe();
       if (history.pushState === trackedPush) history.pushState = push;
       if (history.replaceState === trackedReplace) history.replaceState = replace;
       if (tracking === owner) tracking = undefined;
