@@ -22,9 +22,11 @@ def test_cli_envelope_contains_exact_phase_budgets_and_receipt_reserve(domain, r
     monkeypatch.setattr(dispatch, 'dispatch_committed_generation', lambda *a, **kw: observed.append('financial'))
     monkeypatch.setattr(dispatch, 'dispatch_committed_report_generation', lambda *a, **kw: observed.append('reports'))
     cli._post_commit_generation(object(), domain=domain, ingestion_id=1, dry_run=False)
-    expected = generation_phase_seconds(domain) + (generation_phase_seconds(domain, reports=True) if reports else 0) + 10
+    expected_phase = 120 if domain == 'pending_bills' else 30
+    expected = expected_phase + (30 if reports else 0) + 10
     assert observed == [expected, 'financial', *(['reports'] if reports else [])]
     assert expected == generation_envelope_seconds(domain, include_reports=reports)
+    assert generation_phase_seconds(domain) == expected_phase
     assert 40 <= expected <= 160
     assert generation_phase_seconds(domain, reports=True) == 30
 
