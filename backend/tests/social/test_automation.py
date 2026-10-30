@@ -27,6 +27,9 @@ def test_policy_entry_exists_and_defaults_closed(db):
 
 def accepted_snapshot(db, a, monkeypatch, *, enable=True):
     """Synthetic operating outcomes ONLY; never a production acceptance receipt."""
+    from unit_source_authority_fixture import install_unit_source_authority
+    if db.get_bind().dialect.name == 'sqlite':
+        install_unit_source_authority(monkeypatch, db)
     from social.automation.contracts import OperatingEvidenceCommand, SnapshotCommand, PolicyControlsCommand
     from social.automation.service import AutomationService
     from social.contracts import ApproveCommand

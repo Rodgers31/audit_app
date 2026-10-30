@@ -51,7 +51,8 @@ def policy_source_fixture(db, monkeypatch):
     monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
     source = ModuleType('seeding.source_observations')
     source.SourceObservationUnavailable = type('Unavailable',(Exception,),{})
-    source.read_county_budget_observation = lambda factory, **kwargs: observation(2,'250').model_dump(mode='json')
+    from unit_source_authority_fixture import unit_observation_payload
+    source.read_county_budget_observation = lambda factory, **kwargs: unit_observation_payload(db, observation(2,'250'))
     monkeypatch.setitem(sys.modules, source.__name__, source)
     db.rollback()
     return a, sessionmaker(bind=db.bind, expire_on_commit=False), registry
@@ -139,7 +140,8 @@ def test_unavailable_validation_preserves_cursor_and_cancels_prior_policy(db, mo
     _, factory, registry = policy_source_fixture(db, monkeypatch)
     assert maybe_generate_committed(factory, record_ids=[1], ingestion_id=2)['state']=='completed'
     prior_id = policy_publication(factory).id
-    sys.modules['seeding.source_observations'].read_county_budget_observation = lambda factory, **kwargs: observation(3,'350').model_dump(mode='json')
+    from unit_source_authority_fixture import unit_observation_payload
+    sys.modules['seeding.source_observations'].read_county_budget_observation = lambda factory, **kwargs: unit_observation_payload(db, observation(3,'350'))
     if mode=='disabled': monkeypatch.setenv('SOCIAL_NATIVE_ENABLED','false')
     elif mode=='invalid': monkeypatch.setenv('META_GRAPH_VERSION','v27.0')
     else:

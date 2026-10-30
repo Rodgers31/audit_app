@@ -107,6 +107,7 @@ def test_actual_crash_child_uses_the_validated_parent_endpoint(monkeypatch, tmp_
     import ast
     import os
     import subprocess
+    from contextlib import nullcontext
     from types import SimpleNamespace
     from unittest.mock import patch
 
@@ -127,6 +128,7 @@ def test_actual_crash_child_uses_the_validated_parent_endpoint(monkeypatch, tmp_
                                     for target in node.targets))
         prefix = ast.Module(body=script.body[:engine_index + 1], type_ignores=[])
         def intercept_engine(config):
+            assert config.database_schema == 'owned_endpoint_fixture'
             captured.append(PGDialect_psycopg2().create_connect_args(make_url(config.database_url))[1])
             raise EngineIntercepted
         # Execute the actual child configuration prefix, stopping at its engine
@@ -135,9 +137,13 @@ def test_actual_crash_child_uses_the_validated_parent_endpoint(monkeypatch, tmp_
             exec(compile(prefix, '<intercepted crash-test child>', 'exec'), {})
 
     monkeypatch.setattr(subprocess, 'Popen', intercept_child)
-    parent = SimpleNamespace(url=local_postgres_url(raw_dsn, 'social_worker_test'))
+    def fixture_schema(statement):
+        assert str(statement) == "SELECT n.nspname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE c.oid='social_post_targets'::regclass"
+        return SimpleNamespace(scalar_one=lambda: 'owned_endpoint_fixture')
+    parent = SimpleNamespace(url=local_postgres_url(raw_dsn, 'social_worker_test'),
+        connect=lambda: nullcontext(SimpleNamespace(execute=fixture_schema)))
     with pytest.raises(EngineIntercepted):
-        queue.test_actual_process_kill_after_fake_remote_acceptance_recovers_without_republish(parent, tmp_path)
+        queue.test_actual_process_kill_after_fake_remote_acceptance_retains_global_owner_without_republish(parent, tmp_path)
     assert captured[0]['host'] == captured[0].get('hostaddr') == '127.0.0.1'
     assert captured[0]['port'] == 62124
     assert captured[0]['dbname'] == 'social_worker_test'

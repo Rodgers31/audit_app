@@ -211,7 +211,9 @@ def test_preexisting_command_receipt_remains_replayable_without_archive_metadata
     assert replay.status_code == 201 and replay.json() == old
 
 
-def test_new_source_version_survives_archived_cancelled_predecessor(db):
+def test_new_source_version_survives_archived_cancelled_predecessor(db, monkeypatch):
+    from unit_source_authority_fixture import install_unit_source_authority
+    install_unit_source_authority(monkeypatch, db)
     from test_generation import configure, consume, observation
     a = account(db)
     configure(db, [a])

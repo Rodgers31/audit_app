@@ -29,6 +29,8 @@ def configure(db, accounts=(), *, drafts=True, shadow=True):
 
 
 def consume(db, value, *, backfill=False):
+    from unit_source_authority_fixture import register_unit_observation
+    register_unit_observation(db, value)
     return call(db, value, lambda svc: consume_observation(svc, value, backfill=backfill))[1]
 
 
@@ -106,7 +108,9 @@ def test_fingerprint_ignores_observation_timing_but_not_classification():
     assert semantic_fingerprint(first) != semantic_fingerprint(SourceObservation.model_validate(raw))
 
 
-def test_generated_edit_preserves_factual_provenance_and_requires_attestation(db):
+def test_generated_edit_preserves_factual_provenance_and_requires_attestation(db, monkeypatch):
+    from unit_source_authority_fixture import install_unit_source_authority
+    install_unit_source_authority(monkeypatch, db)
     a = account(db)
     configure(db, [a])
     created = consume(db, observation(), backfill=True)
@@ -198,7 +202,9 @@ def test_explicit_backfill_after_baseline_creates_once(db):
     assert consume(db, observation(), backfill=True)['status'] == 'unchanged'
 
 
-def test_target_placeholder_cannot_be_human_authorized(db):
+def test_target_placeholder_cannot_be_human_authorized(db, monkeypatch):
+    from unit_source_authority_fixture import install_unit_source_authority
+    install_unit_source_authority(monkeypatch, db)
     a = account(db)
     configure(db, [a])
     created = consume(db, observation(), backfill=True)
