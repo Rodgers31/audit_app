@@ -148,6 +148,7 @@ export default function SocialWorkspace() {
 }
 
 export function SocialEditorPage({ postId }: { postId?: string }) {
+  const { user } = useAuth();
   const router = useRouter();
   const post = useSocialPost(postId);
   const accounts = useSocialAccounts();
@@ -158,6 +159,6 @@ export function SocialEditorPage({ postId }: { postId?: string }) {
     {accounts.error && <SocialErrorBanner error={accounts.error} onRetry={() => accounts.refetch()} />}
     {postId && post.error && <SocialErrorBanner error={post.error} onRetry={() => post.refetch()} />}
     {postId && post.isPending && <p role='status' className={styles.empty}>Loading draft…</p>}
-    {(!postId || post.data) && <SocialComposer key={postId ?? 'new'} initialPost={post.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={saved} />}
+    {(!postId || post.data) && <SocialComposer key={`${user?.id}:${postId ?? 'new'}`} initialPost={post.data} accounts={accounts.data ?? []} accountsAvailable={!!accounts.data && !accounts.error} system={system.data} onSaved={saved} />}
   </div>;
 }

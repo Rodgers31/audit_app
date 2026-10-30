@@ -8,6 +8,8 @@ await symlink(resolve('node_modules'),resolve(root,'node_modules')).catch(e=>{if
 await writeFile(resolve(root,'package.json'),'{"private":true}');
 await writeFile(resolve(root,'tsconfig.json'),JSON.stringify({compilerOptions:{strict:true,jsx:'preserve',target:'es2017',module:'esnext',moduleResolution:'bundler',esModuleInterop:true,baseUrl:source,paths:{'@/*':['./*']}}}));
 const auth=resolve('tests/socialRuntimeAuth.ts');
+await mkdir(resolve(root,'public'),{recursive:true});
+await writeFile(resolve(root,'public/fixture-media.png'),await readFile(resolve('public/logo-original.png')));
 await writeFile(resolve(root,'next.config.js'),`module.exports={experimental:{externalDir:true,cpus:1},webpack(c,{webpack:w}){c.plugins.push(new w.NormalModuleReplacementPlugin(/(?:lib\\/auth\\/AuthProvider|lib\\/supabase\\/client)$/,${JSON.stringify(auth)}));c.resolve.alias['@/lib/auth/AuthProvider']=${JSON.stringify(auth)};c.resolve.alias['@/lib/supabase/client']=${JSON.stringify(auth)};return c;}};`);
 await mkdir(resolve(root,'app'),{recursive:true});
 await writeFile(resolve(root,'app/globals.css'),(await readFile(resolve('app/globals.css'),'utf8')).split('\n').filter(line=>!line.startsWith('@import url(')).join('\n'));
@@ -26,5 +28,9 @@ for(const gateway of ['admin','system']) {await mkdir(resolve(root,'app/api/v1',
 await mkdir(resolve(root,'app/counties/[id]'),{recursive:true});
 await writeFile(resolve(root,'app/counties/[id]/page.tsx'),`export {default} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/CountyLanding'))};`);
 for(const gateway of ['counties','pending-bills','auth']) {await mkdir(resolve(root,'app/api/v1',gateway,'[...path]'),{recursive:true});await writeFile(resolve(root,'app/api/v1',gateway,'[...path]/route.ts'),`export {GET} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/county'))};`);}
+await mkdir(resolve(root,'app/reports/[domain]/[documentId]'),{recursive:true});
+await writeFile(resolve(root,'app/reports/[domain]/[documentId]/page.tsx'),`export {default} from ${JSON.stringify(resolve('app/reports/[domain]/[documentId]/page'))};`);
+await mkdir(resolve(root,'app/api/v1/reports/[...path]'),{recursive:true});
+await writeFile(resolve(root,'app/api/v1/reports/[...path]/route.ts'),`export {GET} from ${JSON.stringify(resolve('browser-fixtures/admin-redesign/publicReports'))};`);
 const server=spawn(process.execPath,[resolve('node_modules/next/dist/bin/next'),'dev',root,'--hostname','0.0.0.0','--port',String(port)],{env:{PATH:process.env.PATH,NEXT_TELEMETRY_DISABLED:'1',NEXT_PUBLIC_API_URL:'http://127.0.0.1:'+port,NODE_ENV:'development'},stdio:'inherit'});
 process.on('SIGTERM',()=>server.kill('SIGTERM'));process.on('SIGINT',()=>server.kill('SIGTERM'));

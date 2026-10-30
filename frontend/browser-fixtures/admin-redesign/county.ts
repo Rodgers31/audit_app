@@ -12,15 +12,18 @@ const county = {
  financial_summary:{health_score:null,grade:null,budget_execution_rate:null,pending_bills_ratio:null,debt_sustainability:null},
  data_sources:{budget:null,audit:null,debt:'Local review example',population:null},
 };
+const comparisonCounty={...county,id:'72',name:'Mombasa',slug:'mombasa-county',coordinates:[39.67,-4.04],debt:{...county.debt,pending_bills:36789000}};
 export async function GET(req: Request) {
  const url=new URL(req.url), path=url.pathname;
  const respond=(value:unknown,status=200)=>Response.json(value,{status,headers:{'Cache-Control':'no-store'}});
  if(path.endsWith('/comprehensive') && path.includes('/nairobi-county/')) return respond(county);
+ if(path.endsWith('/comprehensive') && path.includes('/mombasa-county/')) return respond(comparisonCounty);
  if(path.endsWith('/fiscal-years')) return respond({years:[],latest_reported:null});
  if(path==='/api/v1/auth/watchlist') return respond([]);
- if(path.includes('/pending-bills/counties/') && /\/(71|nairobi-county)$/.test(path)) {
+ if(path.includes('/pending-bills/counties/') && /\/(71|nairobi-county|72|mombasa-county)$/.test(path)) {
+  const selected=/\/(72|mombasa-county)$/.test(path)?comparisonCounty:county;
   const day=url.searchParams.get('as_at'), available=!day||day==='2026-06-30';
-  return respond({county:'Nairobi County',county_id:'71',status:available?'success':'no_data',total_pending:available?86899380000:null,pending_bills_as_at:available?'2026-06-30':null,selection:{as_at:day||'2026-06-30'},
+  return respond({county:selected.name+' County',county_id:selected.id,status:available?'success':'no_data',total_pending:available?selected.debt.pending_bills:null,pending_bills_as_at:available?'2026-06-30':null,selection:{as_at:day||'2026-06-30'},
    pending_bills_source:available?{publisher:'Office of the Controller of Budget',url:'https://cob.go.ke/download/county-governments-budget-implementation-review-report-for-the-financial-year-2025-26/?wpdmdl=16482'}:null,
    pending_bills_notes:[],
    breakdown_by_type:{},breakdown_by_type_absent_reason:'loans_table_carries_no_bill_type',aging_buckets:null,aging_buckets_absent_reason:'loans_table_carries_no_aging_data'});

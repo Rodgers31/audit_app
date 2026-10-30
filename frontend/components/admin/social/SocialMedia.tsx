@@ -8,7 +8,7 @@ import MediaUpload from './media/MediaUpload';
 import AssetPreview from './media/AssetPreview';
 import styles from './social.module.css';
 
-export default function SocialMedia({ media, onChange, label, contextKey = label, onBusyChange }: { media: MediaReference[]; onChange: (media: MediaReference[]) => void; label: string; contextKey?: string; onBusyChange?: (busy: boolean) => void }) {
+export default function SocialMedia({ media, onChange, label, contextKey = label, onBusyChange }: { media: MediaReference[]; onChange: (media: MediaReference[], selectedAsset?: MediaAsset) => void; label: string; contextKey?: string; onBusyChange?: (busy: boolean) => void }) {
   const descriptionId = useId();
   const capabilities = useMediaCapabilities();
   const [mode, setMode] = useState<'upload' | 'library'>();
@@ -20,7 +20,7 @@ export default function SocialMedia({ media, onChange, label, contextKey = label
   function select(asset: MediaAsset) {
     if (asset.state !== 'ready') return;
     const latest = current.current;
-    if (!latest.media.some(item => item.asset_id === asset.id)) latest.onChange([...latest.media, { asset_id: asset.id, alt_text: asset.default_alt_text, caption_asset_id: null }]);
+    if (!latest.media.some(item => item.asset_id === asset.id)) latest.onChange([...latest.media, { asset_id: asset.id, alt_text: asset.default_alt_text, caption_asset_id: null }], asset);
     setMode(undefined); setBusy(false);
   }
   function move(index: number, delta: number) {
