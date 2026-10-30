@@ -8,6 +8,8 @@ import { QueryProvider } from '@/lib/react-query/QueryProvider';
 import { Suspense } from 'react';
 import PrivacyCollectors from '@/components/PrivacyCollectors';
 import type { Metadata } from 'next';
+import Script from 'next/script';
+import { HISTORY_BRIDGE_BOOTSTRAP } from '@/lib/navigation/historyBridge';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -67,6 +69,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
+        <Script id='auditgava-history-bridge' strategy='beforeInteractive'>
+          {HISTORY_BRIDGE_BOOTSTRAP}
+        </Script>
         {/* No-flash dark-mode bootstrap.
             Runs synchronously BEFORE the body paints so the right
             ``dark`` class is on <html> from the very first frame —

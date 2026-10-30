@@ -20,9 +20,12 @@ test.each([-1, 1])('dirty browser traversal %s can be cancelled without losing t
   if (direction === 1) {
     window.history.pushState({}, '', '/admin/social/accounts');
     await act(async () => { window.history.back(); await new Promise(resolve => setTimeout(resolve, 30)); });
+    await waitFor(() => expect(window.location.pathname).toBe('/admin/social/review'));
   }
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={queryClient}><SocialComposer initialPost={post()} accounts={accounts} system={system} /></QueryClientProvider>);
+  // A manual draft stays dirty until explicitly saved. Generated drafts
+  // autosave after 750ms and cannot establish an unsaved-navigation fixture.
+  render(<QueryClientProvider client={queryClient}><SocialComposer accounts={accounts} system={system} /></QueryClientProvider>);
   fireEvent.change(screen.getByLabelText('Post text'), { target: { value: 'Unsaved review wording' } });
   const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false);
   const reached = jest.fn(); window.addEventListener('popstate', reached);
