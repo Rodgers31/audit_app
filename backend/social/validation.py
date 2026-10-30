@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from .contracts import (CapabilitySet, InspectedAsset, PostDocument, ResolvedPostPayload, ScheduleTime, TargetValidation, ValidationIssue, ValidationResult, canonical_hash)
 from .models import SocialAccount, SocialMediaAsset
 from .native_admission import native_capability_matches
+from .destinations import publication_destination_problem, valid_hashtag
 
 
 def issue(code, field, message):
@@ -106,6 +107,12 @@ def validate_document(db: Session, document: PostDocument, evidence, available_a
             errors.append(issue("UNSUPPORTED_FORMAT", "format", "Choose a format explicitly supported by this account."))
         fields = resolve_fields(document, target)
         media = fields["media"]
+        destination_problem = publication_destination_problem(fields['link'], fields['text'])
+        if destination_problem:
+            errors.append(issue(destination_problem, 'text' if destination_problem == 'EXTERNAL_CAPTION_LINK' else 'link',
+                'Post links must lead to AuditGava. Keep publisher references on the matching AuditGava page.'))
+        if any(not valid_hashtag(tag) for tag in fields['hashtags']):
+            errors.append(issue('INVALID_HASHTAG', 'hashtags', 'Use letters/numbers without spaces or punctuation in each hashtag.'))
         if not fields["text"].strip() and not fields["link"] and not media:
             errors.append(issue("EMPTY_CONTENT", "text", "Add text, a link or ready media before publishing."))
         if target.format == "text" and media:

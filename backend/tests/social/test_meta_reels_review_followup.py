@@ -129,7 +129,10 @@ def test_explicitly_removed_meta_reel_alt_does_not_restore_library_default(db,pl
     asset.default_alt_text='Library default video description'
     value=reel(platform,account_id=account.id);provider=adapter(value,native.Graph())
     account.publishing_enabled=True;account.hold_reason=None;account.capability_snapshot=native.capabilities(provider,value).model_dump(mode='json');db.commit()
+    # A newly prepared candidate supplies its required on-site destination;
+    # the retained legacy revision remains unchanged as recovery history.
     document=PostDocument.model_validate(revision.document)
+    document=document.model_copy(update={'master':document.master.model_copy(update={'link':'https://www.auditgava.com/audits'})})
     assert document.master.media[0].alt_text is None
     result=validate_document(db,document,revision.evidence_snapshot,{(account.platform,account.api_product):provider})
     assert result.valid,result
@@ -148,7 +151,7 @@ def test_image_library_default_and_intentional_empty_alt_are_preserved(db,platfo
     asset=SocialMediaAsset(id=item.asset_id,storage_provider='fixture',bucket='private',storage_key=str(uuid4()),original_filename='image.jpg',state='ready',mime_type=item.mime_type,sha256=item.sha256,byte_size=item.byte_size,width=item.width,height=item.height,default_alt_text='Library image description',codec_metadata={},created_by=FIRST)
     db.add(asset)
     provider=adapter(value,native.Graph());account.publishing_enabled=True;account.hold_reason=None;account.capability_snapshot=native.capabilities(provider,value).model_dump(mode='json');db.commit()
-    document=PostDocument.model_validate({'master':{'text':'Image caption','media':[{'asset_id':str(asset.id),'alt_text':reference_alt}]},'targets':[{'account_id':str(account.id),'format':'image'}]})
+    document=PostDocument.model_validate({'master':{'text':'Image caption','link':'https://www.auditgava.com/audits','media':[{'asset_id':str(asset.id),'alt_text':reference_alt}]},'targets':[{'account_id':str(account.id),'format':'image'}]})
     result=validate_document(db,document,{'references':[]},{(account.platform,account.api_product):provider})
     assert result.valid,result
     assert result.targets[0].resolved_preview.assets[0].alt_text==expected

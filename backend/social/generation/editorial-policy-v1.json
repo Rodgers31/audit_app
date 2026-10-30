@@ -1,0 +1,185 @@
+{
+  "version": "auditgava-editorial-v1",
+  "reviewed_on": "2026-10-29",
+  "review_due": "2027-01-27",
+  "brand_tag": "AuditGava",
+  "platforms": [
+    {
+      "platform": "facebook",
+      "tag_limit": 2,
+      "caption_limit": 1500,
+      "limit_kind": "editorial_choice",
+      "reference": "https://www.facebook.com/help/587836257914341",
+      "reference_status": "primary_access_limited"
+    },
+    {
+      "platform": "instagram",
+      "tag_limit": 3,
+      "caption_limit": 2200,
+      "limit_kind": "conservative_editorial_choice",
+      "reference": "https://developers.facebook.com/docs/instagram-platform/content-publishing/",
+      "reference_status": "primary_access_limited"
+    },
+    {
+      "platform": "x",
+      "tag_limit": 2,
+      "caption_limit": 280,
+      "limit_kind": "documented_recommendation",
+      "reference": "https://help.x.com/en/using-x/how-to-use-hashtags",
+      "reference_status": "primary_verified"
+    },
+    {
+      "platform": "threads",
+      "tag_limit": 1,
+      "caption_limit": 500,
+      "limit_kind": "one_native_topic",
+      "reference": "https://www.postman.com/meta/threads/documentation/dht3nzz/threads-api",
+      "reference_status": "primary_verified"
+    },
+    {
+      "platform": "tiktok",
+      "tag_limit": 3,
+      "caption_limit": 2200,
+      "limit_kind": "conservative_editorial_choice",
+      "reference": "https://developers.tiktok.com/docs/en/content-sharing-guidelines",
+      "reference_status": "primary_verified"
+    }
+  ],
+  "topics": [
+    {
+      "terms": [
+        "pending bills"
+      ],
+      "tag": "PendingBills",
+      "label": "pending bills"
+    },
+    {
+      "terms": [
+        "paye"
+      ],
+      "tag": "PAYE",
+      "label": "PAYE revenue"
+    },
+    {
+      "terms": [
+        "customs"
+      ],
+      "tag": "CustomsRevenue",
+      "label": "customs revenue"
+    },
+    {
+      "terms": [
+        "vat",
+        "value added tax"
+      ],
+      "tag": "VAT",
+      "label": "VAT revenue"
+    },
+    {
+      "terms": [
+        "corporation tax",
+        "corporate income tax"
+      ],
+      "tag": "CorporationTax",
+      "label": "corporation tax"
+    },
+    {
+      "terms": [
+        "health"
+      ],
+      "tag": "HealthBudget",
+      "label": "health budget"
+    },
+    {
+      "terms": [
+        "education"
+      ],
+      "tag": "EducationBudget",
+      "label": "education budget"
+    },
+    {
+      "terms": [
+        "water"
+      ],
+      "tag": "WaterBudget",
+      "label": "water budget"
+    },
+    {
+      "terms": [
+        "agriculture"
+      ],
+      "tag": "AgricultureBudget",
+      "label": "agriculture budget"
+    },
+    {
+      "terms": [
+        "transport",
+        "roads"
+      ],
+      "tag": "TransportBudget",
+      "label": "transport budget"
+    },
+    {
+      "terms": [
+        "gdp",
+        "gross domestic product"
+      ],
+      "tag": "GDP",
+      "label": "GDP"
+    },
+    {
+      "terms": [
+        "inflation"
+      ],
+      "tag": "InflationData",
+      "label": "inflation"
+    },
+    {
+      "terms": [
+        "population"
+      ],
+      "tag": "PopulationData",
+      "label": "population"
+    },
+    {
+      "terms": [
+        "poverty"
+      ],
+      "tag": "PovertyData",
+      "label": "poverty"
+    },
+    {
+      "terms": [
+        "budget",
+        "expenditure",
+        "spending"
+      ],
+      "tag": "PublicBudget",
+      "label": "budget"
+    },
+    {
+      "terms": [
+        "debt",
+        "borrowing",
+        "loans"
+      ],
+      "tag": "PublicDebt",
+      "label": "public debt"
+    },
+    {
+      "terms": [
+        "revenue",
+        "collections"
+      ],
+      "tag": "RevenueData",
+      "label": "revenue"
+    },
+    {
+      "terms": [
+        "audit"
+      ],
+      "tag": "PublicAudit",
+      "label": "public audit"
+    }
+  ]
+}

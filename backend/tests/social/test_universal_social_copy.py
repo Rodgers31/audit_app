@@ -27,7 +27,7 @@ def test_every_existing_fact_family_uses_the_same_rules_without_a_nairobi_depend
     assert 'Nairobi' not in text and 'units KES' not in text
     assert 'County total' in text and 'Controller of Budget' in text
     assert typed.model_dump(mode='json')==before and semantic_fingerprint(typed)==fingerprint
-    assert generator_metadata(typed)['template_version']=='factual-v2'
+    assert generator_metadata(typed)['template_version']=='factual-v3'
     if category=='correction':assert text.startswith('Correction awaiting human review.')
 
 

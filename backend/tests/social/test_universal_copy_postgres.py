@@ -27,10 +27,10 @@ def test_actual_national_report_writer_backfill_keeps_the_qualified_document_lin
     with factory() as db:
         result=call(db,source,lambda svc:consume_observation(svc,source,backfill=True))[1]
         post=db.get(SocialPost,UUID(result['post_id']));revision=db.get(SocialPostRevision,post.current_revision_id)
-        assert revision.generator_metadata['template_version']=='report-availability-v3'
-        assert revision.document['master']['link']==source.report.document_url
+        assert revision.generator_metadata['template_version']=='report-availability-v4'
+        assert revision.document['master']['link'].startswith('https://www.auditgava.com/reports/national_budget/')
         assert 'FY 2025/26' in revision.document['master']['text']
-        assert 'publisher’s website' in revision.document['master']['text']
+        assert 'on AuditGava' in revision.document['master']['text']
         verify_generated_revision(db,post,revision)
     no_publication(factory)
 
@@ -41,11 +41,11 @@ def test_new_report_copy_has_real_reviewed_policy_scope_and_current_worker_autho
         pub=db.get(SocialPublication,publication_id);rev=db.get(SocialPostRevision,pub.revision_id)
         source=SourceObservation.model_validate(rev.evidence_snapshot['source'])
         snapshot=db.get(AuthorizedPolicySnapshot,pub.policy_id)
-        assert rev.generator_metadata['template_version']=='report-availability-v3'
+        assert rev.generator_metadata['template_version']=='report-availability-v4'
         assert source_scope(source) in snapshot.snapshot['source_scopes']
         assert source_scope(source,template_version='report-availability-v1') not in snapshot.snapshot['source_scopes']
         assert 'explore the budget implementation report' in rev.document['master']['text']
-        assert rev.document['master']['link']==source.report.document_url
+        assert rev.document['master']['link'].startswith('https://www.auditgava.com/reports/counties_budget/')
         assert worker_gate(db.connection(),publication_id,account_id,'facebook',datetime.now(timezone.utc),public=True) is None
         assert repository_gate(db,engine,publication_id,account_id) is None
 

@@ -17,6 +17,7 @@ from ..models import SocialAccount, SocialControls, SocialPost, SocialPostRevisi
 from ..service import SocialError, SocialService, utc, iso
 from ..validation import validate_document
 from .contracts import SourceObservation, RuleCommand, GenerationControlsCommand, EvaluateCommand, CataloguedNativeReportEvidence
+from . import editorial
 from .models import GenerationControls, SourceCursor, SourceEvent, AutomationRuleVersion, ShadowDecision
 from .financial_copy import VERSION as FINANCIAL_TEMPLATE_VERSION, render_financial
 from .social_copy import FACT_VERSION, REPORT_VERSION, CATALOGUE_VERSION, VERSIONS as SOCIAL_TEMPLATE_VERSIONS, render_social
@@ -215,35 +216,42 @@ def report_release_state(observation):
     return state
 
 
-def generator_metadata(observation, *, template_version=None):
-    default = ('financial-v4' if observation.financial is not None and observation.financial.native_domain in ('national_budget', 'revenue_by_source')
-               else FINANCIAL_TEMPLATE_VERSION if observation.financial is not None
-               else REPORT_VERSION if observation.report else FACT_VERSION)
-    if isinstance(observation.report, CataloguedNativeReportEvidence):
-        default = CATALOGUE_VERSION
+def generator_metadata(observation, *, template_version=None, editorial_profiles=None):
+    default = ('financial-v5' if observation.financial is not None
+               else 'catalogue-availability-v4' if isinstance(observation.report, CataloguedNativeReportEvidence)
+               else 'report-availability-v4' if observation.report else 'factual-v3')
     selected = default if template_version is None else template_version
-    legacy = ({'catalogue-availability-v1', 'catalogue-availability-v2'} if isinstance(observation.report, CataloguedNativeReportEvidence)
-              else {'report-availability-v1', 'report-availability-v2'} if observation.report else
-              {TEMPLATE_VERSION, 'financial-v2', 'financial-v3'} if observation.financial is not None else {TEMPLATE_VERSION})
+    legacy = ({'catalogue-availability-v1', 'catalogue-availability-v2', 'catalogue-availability-v3'} if isinstance(observation.report, CataloguedNativeReportEvidence)
+              else {'report-availability-v1', 'report-availability-v2', 'report-availability-v3'} if observation.report else
+              {TEMPLATE_VERSION, 'financial-v2', 'financial-v3', 'financial-v4'} if observation.financial is not None else {TEMPLATE_VERSION, 'factual-v2'})
     if selected != default and selected not in legacy:
         raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     value = {'template_version': selected, 'detector_version': DETECTOR_VERSION, 'fact_ids': [f.fact_id for f in observation.facts]}
     if observation.report:
         value['report_source_document_id'] = observation.report.source_document_id
+    if selected in editorial.TEMPLATES:
+        rules = editorial.policy()
+        selected_profiles = [profile.model_dump(mode='json') for profile in editorial.profiles(
+            [] if editorial_profiles is None else editorial_profiles)]
+        value.update(editorial_policy=rules.version,
+            editorial_policy_hash=canonical_hash(rules.model_dump(mode='json')),
+            editorial_profiles=selected_profiles, editorial_profiles_hash=canonical_hash(selected_profiles))
+    elif editorial_profiles is not None:
+        raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Legacy copy has no editorial account profile.', 503)
     return value
 
 
 def render(observation, *, template_version=None):
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     selected = generator_metadata(observation, template_version=template_version)['template_version']
-    if selected in (FINANCIAL_TEMPLATE_VERSION, 'financial-v2', 'financial-v4'):
+    if selected in (FINANCIAL_TEMPLATE_VERSION, 'financial-v2', 'financial-v4', 'financial-v5'):
         if unresolved_placeholders([observation.title, [f.model_dump(mode='json') for f in observation.facts]]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         copy = render_financial(observation, version=selected)
         if unresolved_placeholders(copy):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         return copy
-    if selected in SOCIAL_TEMPLATE_VERSIONS:
+    if selected in SOCIAL_TEMPLATE_VERSIONS or selected in ('factual-v3', 'report-availability-v4', 'catalogue-availability-v4'):
         if unresolved_placeholders([observation.title, observation.model_dump(mode='json')]):
             raise SocialError('UNRESOLVED_TEMPLATE', 'Supply complete factual evidence before creating a draft.', 422)
         copy = render_social(observation, version=selected)
@@ -256,7 +264,8 @@ def render(observation, *, template_version=None):
 def render_for_revision(observation, metadata):
     if type(metadata) is not dict or type(metadata.get('template_version')) is not str:
         raise SocialError('EVIDENCE_INTEGRITY_FAILED', 'Saved generator metadata differs from its source evidence.', 503)
-    expected = generator_metadata(observation, template_version=metadata['template_version'])
+    expected = (generator_metadata(observation, template_version=metadata['template_version'], editorial_profiles=metadata.get('editorial_profiles'))
+        if metadata['template_version'] in editorial.TEMPLATES else generator_metadata(observation, template_version=metadata['template_version']))
     try:
         matches = canonical_json(metadata) == canonical_json(expected)
     except (TypeError, ValueError):
@@ -415,7 +424,13 @@ def _consume_current_observation(svc, observation, cfg, now, *, backfill):
     svc.db.add(event)
     svc.db.flush()
     from .destination import draft_destination
-    document = PostDocument.model_validate({'master': {'text': render(observation), 'link': draft_destination(svc.db, observation)}, 'targets': cfg.targets})
+    metadata = generator_metadata(observation)
+    if metadata['template_version'] in editorial.TEMPLATES:
+        selected_profiles = editorial.capture_profiles(svc.db, cfg.targets, now)
+        metadata = generator_metadata(observation, editorial_profiles=selected_profiles)
+        document = editorial.document_for_revision(svc.db, observation, metadata)
+    else:
+        document = PostDocument.model_validate({'master': {'text': render(observation), 'link': draft_destination(svc.db, observation)}, 'targets': cfg.targets})
     references = [{'url': f.document_url, 'label': f'{f.publisher} · {f.locator}'} for f in evidence_items(observation)]
     evidence = {'references': references, 'source_event_id': str(event.id), 'evidence_version': event.evidence_version, 'source': event.observation, 'fingerprint': fingerprint}
     from .worker_authority import capture_worker_authority
@@ -425,7 +440,7 @@ def _consume_current_observation(svc, observation, cfg, now, *, backfill):
     post = SocialPost(id=uuid4(), origin_type='generated', creation_method='pipeline', title=observation.title, content_type=observation.category, editorial_state='pending_review', source_event_id=event.id, created_by=svc.actor)
     svc.db.add(post)
     svc.db.flush()
-    revision = svc._new_revision(post, document, references, 1, evidence_snapshot=evidence, generator_metadata=generator_metadata(observation))
+    revision = svc._new_revision(post, document, references, 1, evidence_snapshot=evidence, generator_metadata=metadata)
     svc.audit('generation.draft_created', post=post, new='pending_review', details={'event_id': str(event.id), 'sequence': event.sequence, 'revision_id': str(revision.id), 'content_hash': revision.content_hash, 'backfill': backfill})
     svc.db.flush()
     from ..automation.service import maybe_automate_generated
@@ -436,6 +451,35 @@ def _consume_current_observation(svc, observation, cfg, now, *, backfill):
 class GenerationService:
     def __init__(self, svc):
         self.svc, self.db = svc, svc.db
+
+    def prepare(self, post_id, body):
+        """Explicit copy refresh for a current generated draft; never delivery."""
+        from ..contracts import PatchPost, SparseOverrides
+        from .contracts import PrepareDraftCommand
+        body = PrepareDraftCommand.model_validate(body.model_dump(mode='python'))
+        post, revision, _ = self.svc._locked(post_id, body.expected_version)
+        if post.origin_type != 'generated' or post.editorial_state == 'archived':
+            raise SocialError('GENERATED_DRAFT_REQUIRED', 'Choose an editable generated draft.', 422)
+        if revision.id != body.revision_id:
+            raise SocialError('VERSION_CONFLICT', 'The draft revision changed. Refresh before preparing it again.')
+        verify_generated_revision(self.db, post, revision)
+        source = SourceObservation.model_validate(revision.evidence_snapshot['source'])
+        old = PostDocument.model_validate(revision.document)
+        defaults = [target.model_copy(update={'overrides': SparseOverrides()}).model_dump(mode='json') for target in old.targets]
+        metadata = generator_metadata(source, editorial_profiles=editorial.capture_profiles(self.db, defaults, self.svc.now()))
+        document = editorial.document_for_revision(self.db, source, metadata).model_dump(mode='json')
+        document['master']['media'] = [asset.model_dump(mode='json') for asset in old.master.media]
+        old_targets = {str(target.account_id): target for target in old.targets}
+        for target in document['targets']:
+            media = old_targets[target['account_id']].overrides.media
+            if media is not None:
+                target['overrides']['media'] = media.model_dump(mode='json')
+        references = [{'url': item.document_url, 'label': f'{item.publisher} · {item.locator}'} for item in evidence_items(source)]
+        prepared = self.svc.patch(post_id, PatchPost(expected_version=body.expected_version,
+            document=PostDocument.model_validate(document), references=references), _prepared_metadata=metadata)
+        self.svc.audit('generation.draft_prepared', post=post, reason=body.reason,
+            details={'previous_revision_id': str(revision.id), 'template': metadata['template_version'], 'editorial_policy': metadata['editorial_policy']})
+        return prepared
 
     def set_controls(self, body):
         body = GenerationControlsCommand.model_validate(body.model_dump(mode='json'))
@@ -518,7 +562,14 @@ class GenerationService:
         if canonical_hash({'document': revision.document, 'evidence_snapshot': revision.evidence_snapshot}) != revision.content_hash:
             reasons.append('REVISION_INTEGRITY_FAILED')
         document = PostDocument.model_validate(revision.document)
-        if any(t.overrides.model_fields_set for t in document.targets):
+        if revision.generator_metadata and revision.generator_metadata.get('template_version') in editorial.TEMPLATES:
+            try:
+                expected_document = editorial.document_for_revision(self.db, observation, revision.generator_metadata)
+                if canonical_json(document.model_dump(mode='json')) != canonical_json(expected_document.model_dump(mode='json')):
+                    reasons.append('CUSTOMIZATION_REQUIRES_REVIEW')
+            except (SocialError, ValueError):
+                reasons.append('EVIDENCE_INTEGRITY_FAILED')
+        elif any(t.overrides.model_fields_set for t in document.targets):
             reasons.append('CUSTOMIZATION_REQUIRES_REVIEW')
         accounts = sorted(str(t.account_id) for t in document.targets)
         if not accounts or not set(accounts) <= {str(a) for a in definition.account_allowlist}:

@@ -75,7 +75,7 @@ def test_report_baseline_release_replay_and_artifact_refresh(db):
     assert consume(db, newer)['status'] == 'unchanged'
     assert db.scalar(select(func.count()).select_from(SocialPost)) == 2
     revision = db.get(SocialPostRevision, db.get(SocialPost, UUID(created['post_id'])).current_revision_id)
-    assert revision.generator_metadata['template_version'] == 'report-availability-v3'
+    assert revision.generator_metadata['template_version'] == 'report-availability-v4'
     assert revision.evidence_snapshot['source']['facts'] == []
 
 
@@ -99,12 +99,12 @@ def test_report_row_anchors_deduplicate_and_authority_backfill_requires_fresh_ev
     assert semantic_fingerprint(SourceObservation.model_validate(first)) == semantic_fingerprint(SourceObservation.model_validate(other))
     assert run(first)['status'] == 'baseline'
     assert run(other)['status'] == 'unchanged'
-    current = report_observation(2, published='2027-07-01', period='FY2026/27', end='2027-06-30', document=2)
-    current['report']['retrieved_at'] = current['report']['verified_at'] = '2027-07-02T00:00:00Z'
+    current = report_observation(2, published='2026-11-01', period='FY2026/27', end='2027-06-30', document=2)
+    current['report']['retrieved_at'] = current['report']['verified_at'] = '2026-11-02T00:00:00Z'
     # Keep fixture chronology inside the deterministic service clock.
     from unittest.mock import patch
     from datetime import datetime, timezone
-    with patch('social.service.SocialService.now', return_value=datetime(2027,7,3,tzinfo=timezone.utc)):
+    with patch('social.service.SocialService.now', return_value=datetime(2026,11,3,tzinfo=timezone.utc)):
         assert run(current)['status'] == 'draft_created'
         alternate = deepcopy(current)
         alternate['report'].update(source_record_id=2, authority_fingerprint='b'*64)

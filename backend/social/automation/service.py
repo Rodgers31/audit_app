@@ -10,13 +10,14 @@ from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 from pydantic import ValidationError
 from sqlalchemy import select, func
-from ..contracts import PostDocument, canonical_hash
+from ..contracts import canonical_json, PostDocument, canonical_hash
 from ..models import SocialControls, SocialAccount, SocialPost, SocialPostRevision, SocialPublication, SocialPostTarget
 from ..service import SocialError, utc, iso
 from ..validation import validate_document, capability_for
 from ..generation.models import AutomationRuleVersion, ShadowDecision, SourceEvent, SourceCursor
 from ..generation.contracts import RuleCommand, SourceObservation
 from ..generation.destination import draft_destination
+from ..generation import editorial
 from ..generation.service import _insert, semantic_fingerprint, verify_generated_revision, generator_metadata, evidence_items, TEMPLATE_VERSION, render_for_revision
 from .contracts import OperatingEvidenceCommand, SnapshotCommand, PolicyControlsCommand, AuthorizePolicyCommand, SchedulePolicyCommand
 from .models import OperatingEvidence, AuthorizedPolicySnapshot, PolicyDecision, PolicySelection
@@ -44,13 +45,15 @@ def source_scope(observation, *, template_version=None):
     # Initial rollout is one deterministic, actual dataset announcement. Approved
     # source/entity/metric/period/comparison semantics cannot drift with new values.
     require(observation.category == 'dataset_availability', 'HUMAN_REVIEW_REQUIRED')
-    selected = generator_metadata(observation, template_version=template_version)['template_version']
+    metadata = generator_metadata(observation, template_version=template_version)
+    selected = metadata['template_version']
+    editorial_scope = {'editorial_policy_hash': metadata['editorial_policy_hash']} if selected in editorial.TEMPLATES else {}
     if observation.report:
         report = observation.report
         require(report.published_on is not None, 'CATALOGUE_HUMAN_REVIEW_REQUIRED')
         return canonical_hash({'source_type': observation.source_type, 'source_key': observation.source_key,
             'template': selected, 'entity_id': report.entity_id, 'entity': report.entity,
-            'publisher': report.publisher, 'canonical_url': report.canonical_url})
+            'publisher': report.publisher, 'canonical_url': report.canonical_url, **editorial_scope})
     require(len(observation.facts) == 1, 'HUMAN_REVIEW_REQUIRED')
     fact = observation.facts[0]
     require(fact.classification == 'actual', 'HUMAN_REVIEW_REQUIRED')
@@ -60,7 +63,7 @@ def source_scope(observation, *, template_version=None):
     # operating evidence and snapshot rather than inheriting old copy authority.
     if selected != TEMPLATE_VERSION:
         scope['template'] = selected
-    return canonical_hash(scope)
+    return canonical_hash({**scope, **editorial_scope})
 
 
 def current_rule(db, rule_id, version, digest):
@@ -143,7 +146,11 @@ def candidate_gates(svc, post, revision, snapshot, definition, now, *, selected_
         require(abs(Decimal(observation.facts[0].value) - Decimal(prior_observation.facts[0].value)) >= Decimal(threshold), 'BELOW_MATERIALITY')
     require(semantic_fingerprint(observation) == event.fingerprint == revision.evidence_snapshot.get('fingerprint'))
     document = PostDocument.model_validate(revision.document)
-    require(document.master.text == expected_text and document.master.link == draft_destination(svc.db, observation, template_version=selected_template) and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
+    if selected_template in editorial.TEMPLATES:
+        expected_document = editorial.document_for_revision(svc.db, observation, revision.generator_metadata)
+        require(canonical_json(document.model_dump(mode='json')) == canonical_json(expected_document.model_dump(mode='json')), 'GENERATED_COPY_EDITED')
+    else:
+        require(document.master.text == expected_text and document.master.link == draft_destination(svc.db, observation, template_version=selected_template) and not document.master.media and not document.master.hashtags and all(not t.overrides.model_fields_set for t in document.targets), 'GENERATED_COPY_EDITED')
     expiry = min(utc(f.verified_at) + timedelta(hours=definition.freshness_hours) for f in evidence_items(observation))
     require(now < expiry and all(utc(f.verified_at) <= now and utc(f.retrieved_at) <= now for f in evidence_items(observation)), 'EVIDENCE_STALE')
     accounts = sorted(str(t.account_id) for t in document.targets)

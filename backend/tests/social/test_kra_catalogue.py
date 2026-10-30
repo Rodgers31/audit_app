@@ -113,7 +113,7 @@ def test_typed_catalogue_and_copy_preserve_unknown_day(tmp_path):
     assert 'Catalogue entry dated 8 July 2026.' in text
     assert 'The report’s publication date is not stated. Human review is required.' in text
     assert '2.8' not in text and 'Publisher publication date' not in text
-    assert generator_metadata(parsed)['template_version'] == 'catalogue-availability-v3'
+    assert generator_metadata(parsed)['template_version'] == 'catalogue-availability-v4'
     state = report_release_state(parsed)
     assert state['catalogued_on'] == '2026-07-08' and 'published_on' not in state
     assert valid_report_release_state(state)

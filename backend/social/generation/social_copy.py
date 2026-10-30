@@ -32,8 +32,8 @@ def sentence(value):
 def render_social(observation, *, version):
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     supported = (set() if observation.financial is not None
-                 else {CATALOGUE_VERSION, 'catalogue-availability-v2'} if isinstance(observation.report, CataloguedNativeReportEvidence)
-                 else {REPORT_VERSION, 'report-availability-v2'} if observation.report else {FACT_VERSION})
+                 else {CATALOGUE_VERSION, 'catalogue-availability-v2', 'catalogue-availability-v4'} if isinstance(observation.report, CataloguedNativeReportEvidence)
+                 else {REPORT_VERSION, 'report-availability-v2', 'report-availability-v4'} if observation.report else {FACT_VERSION, 'factual-v3'})
     if type(version) is not str or version not in supported:
         raise SocialError('UNRESOLVED_TEMPLATE', 'Choose a supported source copy version before review.', 422)
     paragraphs = []
@@ -50,7 +50,9 @@ def render_social(observation, *, version):
         else:
             paragraphs.append(f'{report.entity}: explore the {label} report for {report.period}.')
             paragraphs.append(f'Published by {report.publisher} on {day(report.published_on)}.')
-        if version in (REPORT_VERSION, CATALOGUE_VERSION):
+        if version in ('report-availability-v4', 'catalogue-availability-v4'):
+            paragraphs.append('Explore the report and original sources on AuditGava.')
+        elif version in (REPORT_VERSION, CATALOGUE_VERSION):
             paragraphs.append('Read the original report entry on the publisher’s website.' if isinstance(report, CataloguedNativeReportEvidence)
                               else 'Read the original report on the publisher’s website.')
         else:

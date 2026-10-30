@@ -41,7 +41,7 @@ def day(value):
 
 
 def render_financial(observation, *, version=VERSION):
-    if version not in ('financial-v2', VERSION, 'financial-v4'):
+    if version not in ('financial-v2', VERSION, 'financial-v4', 'financial-v5'):
         unavailable()
     observation = SourceObservation.model_validate(observation.model_dump(mode='python'))
     if observation.financial is None or not observation.facts:

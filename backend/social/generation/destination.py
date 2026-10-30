@@ -12,6 +12,15 @@ def draft_destination(db, observation, *, template_version=None):
     # points at its qualified document rather than an unrelated default year.
     from .service import generator_metadata
     selected = generator_metadata(observation, template_version=template_version)['template_version']
+    if selected in ('report-availability-v4', 'catalogue-availability-v4'):
+        module = import_module(('backend.' if __package__.startswith('backend.') else '') + 'services.public_report_view')
+        return module.report_view_url(observation)
+    if selected == 'financial-v5':
+        module = import_module(('backend.' if __package__.startswith('backend.') else '') + 'services.public_report_view')
+        return module.report_view_url(observation)
+    if selected == 'factual-v3' and observation.source_type == 'cob' and observation.source_key.startswith('budget_lines:'):
+        module = import_module(('backend.' if __package__.startswith('backend.') else '') + 'services.public_report_view')
+        return module.report_view_url(observation)
     if selected in ('report-availability-v3', 'catalogue-availability-v3'):
         return observation.report.document_url
     if selected == 'financial-v4':

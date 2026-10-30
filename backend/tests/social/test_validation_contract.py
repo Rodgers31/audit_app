@@ -57,6 +57,7 @@ def test_no_selected_account_invalid_for_publication(db):
 def test_invalid_selected_account_is_not_silently_removed(db):
     good = account(db)
     doc = draft_body((good,)).document.model_dump(mode="json")
+    doc["master"]["link"] = "https://www.auditgava.com/audits"
     doc["targets"].append({"account_id": str(uuid4()), "format": "text", "overrides": {}})
     result = validate_document(db, PostDocument.model_validate(doc), {}, {"facebook"})
     assert not result.valid
@@ -98,7 +99,7 @@ def test_media_order_accessibility_account_and_overrides_change_hash(db):
     db.commit()
     media = [{"asset_id": str(a.id), "alt_text": "Accessible description"} for a in assets]
     def payload_hash(media_values, identity, overrides):
-        doc = PostDocument.model_validate({"master": {"text": "Master", "media": media_values}, "targets": [{"account_id": str(identity.id), "format": "carousel", "overrides": overrides}]})
+        doc = PostDocument.model_validate({"master": {"text": "Master", "link": "https://www.auditgava.com/audits", "media": media_values}, "targets": [{"account_id": str(identity.id), "format": "carousel", "overrides": overrides}]})
         result = validate_document(db, doc, {}, {"facebook"})
         assert result.valid
         return result.targets[0].resolved_preview.content_hash

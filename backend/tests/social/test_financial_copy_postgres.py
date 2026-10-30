@@ -16,7 +16,7 @@ from native_worker_fixture import restricted
 from test_native_financial_changes_postgres import enable, ingest_revenue
 
 
-def test_real_pending_writer_creates_a_county_and_date_specific_destination(restricted,tmp_path,monkeypatch):
+def test_real_pending_writer_creates_a_county_date_and_figure_bound_destination(restricted,tmp_path,monkeypatch):
     from test_automatic_cohort_timeout_postgres import ingest_cohort, enabled
     from models import Entity
     factory,_,_,_=restricted
@@ -30,11 +30,26 @@ def test_real_pending_writer_creates_a_county_and_date_specific_destination(rest
     with factory() as db:
         post=db.scalar(select(SocialPost));revision=db.get(SocialPostRevision,post.current_revision_id)
         entity=db.scalar(select(Entity).where(Entity.canonical_name=='Nairobi County'))
-        assert revision.document['master']['link']==f'https://www.auditgava.com/counties/{entity.slug}?tab=budget&as_at=2026-06-30#pending-bills'
+        source=SourceObservation.model_validate(revision.evidence_snapshot['source'])
+        from services.public_report_view import report_view_url
+        assert revision.document['master']['link']==report_view_url(source)
+        assert source.facts[0].entity==entity.canonical_name
+        from test_editorial_ready_postgres import public_client,get_view
+        url=revision.document['master']['link'];client=public_client(factory)
+        response=get_view(client,url)
+        assert response.status_code==200,response.text
+        assert response.json()['entity']==entity.canonical_name
+        assert response.json()['figures'][0]['value']=='12000000.00'
         assert 'KSh 12 million in reported pending bills' in revision.document['master']['text']
         assert revision.evidence_snapshot['source']['facts'][0]['value']=='12000000.00'
         assert revision.evidence_snapshot['source']['facts'][0]['canonical_url']=='https://www.auditgava.com/debt'
         verify_generated_revision(db,post,revision)
+    # A correction for the same county/date cannot silently replace the amount
+    # behind a previously saved public link.
+    from models import Loan
+    from decimal import Decimal
+    with factory.begin() as db:db.get(Loan,source.financial.record_id).outstanding=Decimal('13000000')
+    assert get_view(client,url).status_code==410
     no_publication(factory)
 
 
@@ -63,7 +78,7 @@ def test_current_financial_draft_has_current_witness_and_still_requires_human_re
     with factory.begin() as db:
         post=db.get(SocialPost,post_id);revision=db.get(SocialPostRevision,post.current_revision_id)
         source=SourceObservation.model_validate(revision.evidence_snapshot['source'])
-        assert revision.generator_metadata['template_version']=='financial-v4'
+        assert revision.generator_metadata['template_version']=='financial-v5'
         assert revision.document['master']['text']==render(source)
         assert 'KSh 561 billion reported for PAYE.' in revision.document['master']['text']
         verify_generated_revision(db,post,revision)  # Alive current-source control.
@@ -154,9 +169,9 @@ def test_real_national_writer_qualified_two_measure_change_links_original_report
     assert result['drafts_created']==1,result
     with factory() as db:
         post=db.scalar(select(SocialPost));revision=db.get(SocialPostRevision,post.current_revision_id)
-        assert post.editorial_state=='pending_review' and revision.generator_metadata['template_version']=='financial-v4'
-        assert revision.document['master']['link']==revision.evidence_snapshot['source']['facts'][0]['document_url']
-        assert revision.document['master']['text'].endswith('Read the original source on the publisher’s website.')
+        assert post.editorial_state=='pending_review' and revision.generator_metadata['template_version']=='financial-v5'
+        assert revision.document['master']['link'].startswith('https://www.auditgava.com/reports/national_budget/')
+        assert revision.document['master']['text'].endswith('Explore the figures and original source on AuditGava.')
         assert len(revision.evidence_snapshot['source']['facts'])==2
         assert 'about KSh 1.3 billion in actual expenditure for Health' in revision.document['master']['text']
         assert 'revised gross budget for the same sector and reporting year was KSh 1.5 billion' in revision.document['master']['text']

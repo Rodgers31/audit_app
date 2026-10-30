@@ -416,6 +416,10 @@ class QueueRepository:
             bounded_json(target["checkpoint"])
         except (ValueError, TypeError):
             return "TARGET_DATA_INVALID"
+        from ..destinations import publication_destination_problem
+        destination_problem = publication_destination_problem(payload.link, payload.text)
+        if destination_problem:
+            return destination_problem
         if str(payload.account_id) != str(account["id"]) or payload.platform != account["platform"] or payload.api_product != account["api_product"] or payload.external_account_id != account["external_account_id"]:
             return "PAYLOAD_ACCOUNT_MISMATCH"
         if canonical_hash(payload.model_dump(mode="json", exclude={"content_hash"})) != payload.content_hash:

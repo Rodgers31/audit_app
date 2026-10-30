@@ -117,7 +117,7 @@ def test_registry_approval_validation_remains_closed(admitted, db, change):
         asset.height = 1000
     db.add(asset)
     db.commit()
-    master = {"text": "Authorized caption", "media": [{"asset_id": str(asset.id), "alt_text": "A fixture"}], "hashtags": []}
+    master = {"text": "Authorized caption", "link": "https://www.auditgava.com/audits", "media": [{"asset_id": str(asset.id), "alt_text": "A fixture"}], "hashtags": []}
     if change == "caption":
         master["text"] = "a" * 2190
         master["hashtags"] = ["LongHashtag"]

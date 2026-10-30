@@ -47,7 +47,7 @@ def test_persisted_publishing_restriction_survives_registry(admitted, db, change
     try:
         account.capability_snapshot = registered_capability(account, registration.adapters).model_dump(mode="json")
         db.commit()
-        document = PostDocument.model_validate({"master": {"text": "Authorized publication"},
+        document = PostDocument.model_validate({"master": {"text": "Authorized publication", "link": "https://www.auditgava.com/audits"},
             "targets": [{"account_id": str(account.id), "format": "text"}]})
         assert validate_document(db, document, {}, registration.adapters).valid
         snapshot = account.capability_snapshot

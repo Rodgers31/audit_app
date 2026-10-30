@@ -67,16 +67,23 @@ class ThreadsCheckpoint(StrictModel):
         return tuple(remote_id(item) for item in value)
 
 
+def threads_caption(payload):
+    # Topic tags are sent through the documented native field, not duplicated
+    # as an unrelated block of hashtags in the caption.
+    return caption(payload.model_copy(update={'hashtags': ()}))
+
+
 class ThreadsAdapter:
     platform = 'threads'
     product = 'threads'
+    formats = ('text', 'image', 'carousel', 'video')
     scopes = ('threads_basic', 'threads_content_publish')
     source_links = ('https://developers.facebook.com/documentation/threads/create-posts',
         'https://developers.facebook.com/documentation/threads/posts',
         'https://www.postman.com/meta/threads/request/ohuldvi/check-container-s-publishing-status',
         'https://www.postman.com/meta/threads/request/7evieur/retrieve-publishing-quota-limit')
     limits = {'max_text_length': 500, 'max_media_count': 20, 'max_publications_24h': 250,
-              'max_image_bytes': 8000000, 'max_alt_text_length': 1000}
+              'max_image_bytes': 8000000, 'max_alt_text_length': 1000, 'max_hashtags': 1}
 
     def __init__(self, config, *, transport, now=None):
         if not isinstance(config, ThreadsAdapterConfig) or not isinstance(transport, httpx.AsyncBaseTransport):
@@ -97,7 +104,7 @@ class ThreadsAdapter:
             and account.get('platform') == self.platform and account.get('api_product') == self.product
             and account.get('connection_state') == 'connected' and set(self.scopes) <= set(scopes))
         return CapabilitySet(provider_api_version=self.config.api_version, eligible=eligible,
-            adapter_available=self.config.ready, supported_formats=('text', 'image', 'carousel', 'video'),
+            adapter_available=self.config.ready, supported_formats=self.formats,
             feature_states={'publishing': 'supported' if self.config.ready and eligible else 'restricted',
                 'media_upload': 'supported' if self.config.media_uploads_enabled else 'restricted'},
             required_scopes=self.scopes, granted_scopes=tuple(sorted(set(scopes))),
@@ -118,12 +125,14 @@ class ThreadsAdapter:
             errors.append(issue('UNSUPPORTED_FORMAT', 'format', 'Select a supported Threads format.'))
         # The current official contract counts emoji UTF-8 bytes. A bounded
         # UTF-8 ceiling is conservative for other non-ASCII text as well.
-        if len(caption(payload).encode('utf-8')) > 500:
+        if len(payload.hashtags) > 1:
+            errors.append(issue('HASHTAG_LIMIT', 'hashtags', 'Threads supports one selected topic per post.'))
+        if len(threads_caption(payload).encode('utf-8')) > 500:
             errors.append(issue('TEXT_TOO_LONG', 'text', 'The full Threads text exceeds the 500-byte application ceiling.'))
-        links = set(re.findall(r'(?:https?://|www\.)[^\s]+', caption(payload)))
+        links = set(re.findall(r'(?:https?://|www\.)[^\s]+', threads_caption(payload)))
         if len(links) > 5:
             errors.append(issue('TOO_MANY_LINKS', 'text', 'Threads permits at most five unique links.'))
-        if payload.format == 'text' and (payload.assets or not caption(payload).strip()) or payload.format in {'image','video'} and len(payload.assets) != 1 or payload.format == 'carousel' and not 2 <= len(payload.assets) <= 20:
+        if payload.format == 'text' and (payload.assets or not threads_caption(payload).strip()) or payload.format in {'image','video'} and len(payload.assets) != 1 or payload.format == 'carousel' and not 2 <= len(payload.assets) <= 20:
             errors.append(issue('FORMAT_MEDIA_MISMATCH', 'assets', 'Select the required inspected media.'))
         if payload.assets and not self.config.media_uploads_enabled:
             errors.append(issue('MEDIA_UPLOADS_DISABLED', 'assets', 'Provider media transfer is disabled.'))
@@ -293,10 +302,10 @@ class ThreadsAdapter:
                 if post_id == state.container_id:
                     raise ValueError('Container is not a published identity')
                 return self._continued(self._state(payload,'post_created',state,post_id=post_id,poll_count=0))
-            data = {'text':caption(payload), 'media_type':'TEXT', 'auto_publish_text':'false'}
+            data = {'text':threads_caption(payload), 'media_type':'TEXT', 'auto_publish_text':'false'}
             child = payload.format == 'carousel' and len(state.children) < len(payload.assets)
             if payload.format == 'carousel' and not child:
-                data = {'media_type':'CAROUSEL','text':caption(payload),'children':','.join(state.children)}
+                data = {'media_type':'CAROUSEL','text':threads_caption(payload),'children':','.join(state.children)}
             elif payload.assets:
                 asset = payload.assets[len(state.children) if child else 0]
                 if media_access is None:
@@ -312,7 +321,9 @@ class ThreadsAdapter:
                 if child:
                     data['is_carousel_item'] = 'true'
                 else:
-                    data['text'] = caption(payload)
+                    data['text'] = threads_caption(payload)
+            if payload.hashtags and not child:
+                data['topic_tag'] = payload.hashtags[0].removeprefix('#')
             value = await self._request('POST',payload.external_account_id,material,edge='threads',data=data)
             container = remote_id(value.get('id'))
             if child:
@@ -346,7 +357,7 @@ class ThreadsAdapter:
         value=await self._request('GET',state.post_id,material,fields='id,owner,username,text,media_type,media_product_type,permalink,shortcode,is_quote_post')
         owner=value.get('owner')
         expected_type={'text':'TEXT_POST','image':'IMAGE','video':'VIDEO','carousel':'CAROUSEL_ALBUM'}[payload.format]
-        if value.get('id') != state.post_id or not isinstance(owner,dict) or owner.get('id') != payload.external_account_id or value.get('text','') != caption(payload) or value.get('media_type') != expected_type or value.get('media_product_type') != 'THREADS' or value.get('is_quote_post') is not False:
+        if value.get('id') != state.post_id or not isinstance(owner,dict) or owner.get('id') != payload.external_account_id or value.get('text','') != threads_caption(payload) or value.get('media_type') != expected_type or value.get('media_product_type') != 'THREADS' or value.get('is_quote_post') is not False:
             raise ValueError('Publication identity or content differs')
         username,shortcode,url=value.get('username'),value.get('shortcode'),value.get('permalink')
         if not isinstance(username,str) or not re.fullmatch(r'[A-Za-z0-9_.]{1,64}',username) or not isinstance(shortcode,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}',shortcode) or not isinstance(url,str):

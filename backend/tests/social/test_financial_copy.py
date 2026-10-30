@@ -50,7 +50,7 @@ def test_nairobi_copy_leads_with_compact_approximation_and_retains_exact_evidenc
         'Source: Office of the Controller of Budget, FY 2025/26.\n\n'
         'Explore the figures and original source on AuditGava.')
     assert source.model_dump(mode='json')==before
-    assert generator_metadata(source)['template_version']=='financial-v3'
+    assert generator_metadata(source)['template_version']=='financial-v5'
 
 
 def test_pending_bills_reader_notes_are_explicit_in_the_post():
