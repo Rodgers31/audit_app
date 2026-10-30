@@ -1,0 +1,79 @@
+{
+  "verdict": "scoped frozen3 accepted:no remaining finding",
+  "mapping_sha256": "6a1bcb7aac9b1fd4b2c44843aa8d40852a9d9bea43b25a4446c7585e86faf8fc",
+  "executions": {
+    "frozen3-issuer-positive": {
+      "passed": 29,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "manifest_after": {
+    "files": 5799,
+    "all_entries_verified": true,
+    "exact_fileset": true,
+    "mapping_sha256": "6a1bcb7aac9b1fd4b2c44843aa8d40852a9d9bea43b25a4446c7585e86faf8fc"
+  },
+  "cleanup": {
+    "owned_pg_absent": true,
+    "private_credentials_removed": true,
+    "parent_pg_used": false,
+    "worker_role_grants": false,
+    "workers_started": false,
+    "product_files_edited": false
+  },
+  "artifacts_sha256": {
+    "REPORT.md": "5ebe04f3690bb2c4a3fccef9fe90720897e4cef1418c06f8362a6cae57e00364",
+    "case-ledger.json": "d37b9d7b84cea88cfad1055b86e7c69e85cf4038ba3168997a46702a1a7c5336",
+    "cleanup-owned-pg-command.json": "ee84abdf2da91ed58fc30894516bfdfc7172dc738fd31e35be1a7f9c4815a36d",
+    "cleanup-owned-pg-exit.json": "e07364d8a205ebf55864ce285d1f9aae0b1f1598412841d5f92f86595fb57486",
+    "cleanup-owned-pg.log": "13d8cfeb768fe0401fb1cbb5e7af730bd7b985ce81c0b1977b1c36c69223c144",
+    "delta-2-to-3.diff": "b5859d72835d9e8b6fd0a57824d31666cd6ba3327e68e4d308ffa7e2b38e9152",
+    "execution-summary.json": "e91540b9789936bfe5fd1e6bbe7247a1bb96eff83ce59d30b014439ab3b55797",
+    "frozen3-issuer-positive-command.json": "49756c563946d829568c3d590c0859c02552fbf60234067c6934ac60bbb2af5b",
+    "frozen3-issuer-positive-exit.json": "13e60e0f384deb32d7e04ed83fd9eeee3d3962c9acb906ffec3cf0ddd5c33144",
+    "frozen3-issuer-positive-source.json": "05f2f975b5ec67b2755075b74eba9f372bf4f3ed42bd89bc019ced93ead6f660",
+    "frozen3-issuer-positive.log": "14aeea528981acb7cf4e005334d2bf94611eab720174bc50aabd1c947dfd9fee",
+    "frozen3-issuer-positive.xml": "075cff32d6fc6ae120da722c94004ef6bc43b474337180e87eec47f2c316d024",
+    "known_change-result.json": "995eb53b8fbcd244028c231555e98d896b6f3fa353beb0aa1317faa518137807",
+    "lock-receipt-probe.json": "0964f61244a50047d0d5c703e0ea3f79f48617a201698b76ea69bb3e0999c0b3",
+    "lock-receipt.json": "085033749397865a6261fe795a0a72387608cd3868ffe3a03d39a245ac8d8179",
+    "manifest-after.json": "a7d3c78b7a717b9f11919a79aa93c6b7bd99149f00ab688f3a7d743d6e446eaa",
+    "manifest-delta.json": "fd41ad54ced4de4449529928b34a1b8dc531e3fe36665bf80ca0c50102815f69",
+    "qualification-count.json": "bb3a4b2dcf22e2a2e1908b8216cea5b5815024c584f8164272ef6eec52ed54ed",
+    "run.py": "a003b6d45899f3ed5ea93763e7877eb4c77d84b9342e505747e35e3c6b23a743",
+    "test_cross_ingestion.py": "a289f96112f2fc7a71b5427cb5bd85140886b1784a339eb00614fcff97e123ee",
+    "test_issuer_independent.py": "5081521f991af71ce28c838325bcb17da7664b727f2489422bb734bbe32ca38b",
+    "test_witness_independent_final.py": "79e0d0389e7c67abd702edbe822a2846e44bf4fcb4e2e1d8aff2f18bad06f82c",
+    "unchanged-result.json": "18c14e3c51a204623b39d6ad638701604447a7f6ed34eceff15702d39a15985c",
+    "unchanged_with_backfill-result.json": "2ed26d2b3c923447932e5251c44ce5bf66b10923d6bb76f052106bfa2485c573"
+  },
+  "carry_proof": {
+    "files": 5799,
+    "all_verified": true,
+    "exact_fileset": true,
+    "mapping_sha256": "6a1bcb7aac9b1fd4b2c44843aa8d40852a9d9bea43b25a4446c7585e86faf8fc",
+    "changed": [
+      "backend/seeding/financial_cohort_witness.py",
+      "backend/social/generation/integration.py",
+      "backend/tests/social/test_first_cohort_recovery_postgres.py",
+      "backend/tests/test_financial_cohort_witness_boundaries.py",
+      "docs/releases/pending-bills-cohort-recovery-20261030.md"
+    ],
+    "unchanged_input_hash_lock_mint_functions": true,
+    "all_other_files_byte_identical": true
+  },
+  "frozen2_receipt_sha256": "64c95f7b4044a208b14ba2d6dbdbd339a06fb5a89168a4ef7804ed77ec193691",
+  "qualification_counts": {
+    "qualification": 46,
+    "report": 47
+  },
+  "receipt_lock_proof": {
+    "exact_dependency_id": 1,
+    "wait": [
+      "Lock"
+    ],
+    "writer_done": false
+  }
+}

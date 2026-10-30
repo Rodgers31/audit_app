@@ -1,0 +1,26 @@
+{
+  "verdict": "scoped pass",
+  "unique_cases": 50,
+  "executed_frozen3": 34,
+  "unchanged_source_lane_carry": 16,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "final_mapping_sha256": "6a1bcb7aac9b1fd4b2c44843aa8d40852a9d9bea43b25a4446c7585e86faf8fc",
+  "report_sha256": "1e502e537b62bd917ef252847e95b23e24c86752cacecf2d907dd360a792766a",
+  "provenance_sha256": "bfabb973b8053437b58b6373f9cce81e479b24731c97659b876643a6c85ebf68",
+  "cleanup_sha256": "49764dac0e048689fe147eae5f567b5fe9c9854cf77a77addf83add8d2e921be",
+  "after_manifest_sha256": "da6634c560456d3b63c9eb3a0f69bdfe2098d4e2a46fbc523970bbbb622ef80e",
+  "final_junit_sha256": "61c3ae01373ef7ccc16b0d4df03d49f29a68fe1eb49b772e7e92471823a87613",
+  "source_carry_junit_sha256": "6cbb269a72f1622980b4b2ce7361d5af0985affd97edc6ef1f1a778e1d09b33c",
+  "replay_sha256": "7dcf7ee2eb7058f61be5b0fa3f45457a662c8d55b8d2aebb3bf5be827b44d8fd",
+  "owned_fixture_absent": true,
+  "test_sha256": {
+    "test_report_lane.py": "a0d422896814d1231b0d78ee361798d91e2f463df6c7f0ed8c784a91252802b5",
+    "test_cohort_guard.py": "4f01e26063af09d22698a530a668b75d1506d9052417913e1c1a6adc2b60ee78",
+    "test_completion_witness.py": "8e7f961c431004ccf0acf0ac8f44b64c880a5d77f6cb5b5e41528c6d84f53b06",
+    "test_witness_contexts.py": "f6c8f6628c3a577ff0e8e695a0cfb44bcc46f97044a856570a10475f63fe986d"
+  },
+  "runtime_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "postgres_image": "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3"
+}

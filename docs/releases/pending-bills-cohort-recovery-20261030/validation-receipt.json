@@ -1,0 +1,77 @@
+{
+  "recovery-normal": {
+    "tests": "669",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "612.797",
+    "xml_sha256": "c3b0cde1a8f513ce303dcb1a5225ec69dec350663c7ff8340596d16c43d8203d"
+  },
+  "recovery-optimized": {
+    "tests": "669",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "635.948",
+    "xml_sha256": "a50d4d43e50a6e3884381be9c06feb9f5f668be100a03887b79ea71340f7ad88"
+  },
+  "recovery-final-normal": {
+    "tests": "180",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "305.154",
+    "xml_sha256": "ee1f08de036b874f6d21b9fccdbdadbfaeed54cb269d865db2bbe38722d4239a"
+  },
+  "recovery-final-optimized": {
+    "tests": "180",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "296.680",
+    "xml_sha256": "46b612d0d519f978767001d23aa0dc70f3a3608f441b28427cddf9d625e47e28"
+  },
+  "recovery-final3-normal": {
+    "tests": "180",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "34.729",
+    "xml_sha256": "3d06f8178eb49c683d20c9171e145da816079ce120462549b9314510d6f5defe"
+  },
+  "recovery-final3-optimized": {
+    "tests": "180",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0",
+    "time": "35.664",
+    "xml_sha256": "4e0d0a86260d5f0df794a102177f725fe35aad8460dbba5358c0bf30ade81259"
+  },
+  "scope_notes": {
+    "counts_overlap": true,
+    "frozen3_mapping_sha256": "6a1bcb7aac9b1fd4b2c44843aa8d40852a9d9bea43b25a4446c7585e86faf8fc",
+    "latest_selected_delta_cases_each_mode": 180,
+    "deselected_unchanged_stress_cases": 4,
+    "carry": "four stress cases run in both modes on frozen2; frozen3 SQL/hash/lock/mint bodies AST-identical, only issuer predicate changes",
+    "driver_delay_seconds": 0.02,
+    "production_acceptance": false
+  },
+  "optimized_profile_total_seconds": [
+    {
+      "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[fresh_baseline]",
+      "test_total_seconds_including_fixture": 42.499
+    },
+    {
+      "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[retained_baseline]",
+      "test_total_seconds_including_fixture": 46.135
+    },
+    {
+      "name": "test_automatic_full_cohort_completes_with_bounded_query_latency[changed_cohort]",
+      "test_total_seconds_including_fixture": 51.742
+    },
+    {
+      "name": "test_full_changed_cohort_revalidates_installed_worker_authority",
+      "test_total_seconds_including_fixture": 95.899
+    }
+  ]
+}

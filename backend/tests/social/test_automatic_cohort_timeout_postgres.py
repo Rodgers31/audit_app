@@ -32,7 +32,7 @@ from test_native_publisher_metadata import inputs, acquisition, listing, COUNTY_
 from native_worker_fixture import restricted
 
 
-def ingest_cohort(factory, tmp_path, *, correction=None, retained=False):
+def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include_nandi=False):
     """Real atomic writer with sealed source-shaped test extraction facts."""
     with factory.begin() as db:
         if db.scalar(select(func.count()).select_from(Loan)) == 0:
@@ -60,11 +60,11 @@ def ingest_cohort(factory, tmp_path, *, correction=None, retained=False):
         authority,reason=capture_pdf_report(path,receipt,domain='pending_bills',publisher_receipt=publisher)
         assert authority is not None,reason
         parsed=parse_with_cache(path,cache_dir=tmp_path/'parse',kind='owned-cohort-extraction',
-            parse_fn=lambda:[{'county':n,'raw_millions':'11.00'} for n in KENYAN_COUNTIES if n!='Nandi'],enabled=False)
+            parse_fn=lambda:[{'county':n,'raw_millions':'11.00'} for n in KENYAN_COUNTIES if include_nandi or n!='Nandi'],enabled=False)
         receipt=bind_parse_receipt(receipt,parsed)
         records,cells=[],[]
         for name in KENYAN_COUNTIES:
-            if name=='Nandi':continue
+            if name=='Nandi' and not include_nandi:continue
             raw='12.00' if correction in (name,'all') else '11.00'
             amount=Decimal(raw)*1000000
             record=PendingBillRecord(entity_name=f'{name} County',entity_type='county',category='county',
@@ -79,11 +79,12 @@ def ingest_cohort(factory, tmp_path, *, correction=None, retained=False):
         stats=write_pending_bills(db,records,source_url=authority.value['document_url'],source_title='Owned synthetic cohort report',
             publisher='Office of the Controller of Budget (OCOB)',publication=COUNTY_PENDING_BILLS_PUBLICATION,
             native_report_authority=authority,context=DomainRunContext(None,False,identity))
-        assert sum(stats)==46,stats
+        expected_count = 47 if include_nandi else 46
+        assert sum(stats)==expected_count,stats
         from services.figure_qualification import qualify_rows
         rows=list(db.scalars(select(Loan)))
         q=qualify_rows(db,'loans',rows)
-        assert db.scalar(select(func.count()).select_from(Loan).where(Loan.publishable.is_(True)))==46, [(row.id,q[row.id]['outstanding']['reason']) for row in rows if not row.publishable]
+        assert db.scalar(select(func.count()).select_from(Loan).where(Loan.publishable.is_(True)))==expected_count, [(row.id,q[row.id]['outstanding']['reason']) for row in rows if not row.publishable]
         job.status=IngestionStatus.COMPLETED;job.finished_at=datetime.now(timezone.utc)
     return identity
 

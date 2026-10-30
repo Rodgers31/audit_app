@@ -11,9 +11,9 @@ from types import SimpleNamespace
 from sqlalchemy import select, text
 
 if __package__.startswith('backend.'):
-    from backend.models import Country, DocumentStatus, Extraction, IngestionJob, IngestionStatus, SourceDocument
+    from backend.models import Country, DocumentStatus, DocumentType, Extraction, IngestionJob, IngestionStatus, SourceDocument
 else:
-    from models import Country, DocumentStatus, Extraction, IngestionJob, IngestionStatus, SourceDocument
+    from models import Country, DocumentStatus, DocumentType, Extraction, IngestionJob, IngestionStatus, SourceDocument
 from .native_report_authority import DOMAINS, VERSION, digest, official_url
 
 KEY = 'retained_pdf_validation'
@@ -97,11 +97,16 @@ def verified_retained_pdf(session, context, store, *, domain, url, body):
     if (job is None or job.domain != domain or job.status != IngestionStatus.RUNNING
             or job.dry_run is not context.dry_run or not aware(job.started_at) <= now):
         raise ValueError('Exact running native job required')
+    source_scope = [SourceDocument.url == url, SourceDocument.publisher == DOMAINS[domain][2],
+                    Country.iso_code == 'KEN']
+    if domain == 'pending_bills':
+        # Use the same explicit REPORT lane as the pending-bills writer.
+        # A budget row may independently describe these same PDF bytes.
+        source_scope.append(SourceDocument.doc_type == DocumentType.REPORT)
     sources = list(session.execute(select(SourceDocument.id, SourceDocument.country_id,
         SourceDocument.publisher, SourceDocument.url, SourceDocument.md5, SourceDocument.status,
         SourceDocument.meta['pdf_artifact_v1'].label('artifact')).join(Country).where(
-        SourceDocument.url == url, SourceDocument.publisher == DOMAINS[domain][2],
-        Country.iso_code == 'KEN').limit(2)).mappings())
+        *source_scope).limit(2)).mappings())
     if len(sources) != 1:
         raise ValueError('One retained native source required')
     source = SimpleNamespace(**sources[0])

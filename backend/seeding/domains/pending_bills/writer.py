@@ -667,12 +667,14 @@ def _get_or_create_source_document(
                 or authority.receipt.get('observations') != [authority.value]):
             raise ValueError('Intact native pending bills source required')
         # The preceding budget domain refreshes this shared PDF's display
-        # title. A native acquisition identifies its exact URL; retained proof
-        # additionally identifies the existing row. Never create a second row
-        # to compensate for that title refresh or rewrite a conflicting source.
+        # title. Pending-bills native sources use the REPORT model lane; the
+        # budget lane can have its own BUDGET row for these same PDF bytes.
+        # Within REPORT, exact URL must be unique and retained proof must name
+        # that row. Never pick among competing reports or rewrite a conflict.
         matches = (session.query(SourceDocument).populate_existing()
             .options(joinedload(SourceDocument.country).load_only(Country.id, Country.iso_code))
-            .join(Country).filter(Country.iso_code == 'KEN', SourceDocument.url == source_url)
+            .join(Country).filter(Country.iso_code == 'KEN', SourceDocument.url == source_url,
+                                  SourceDocument.doc_type == DocumentType.REPORT)
             .limit(2).all())
         if len(matches) > 1:
             raise ValueError('Ambiguous native pending bills source identity')
