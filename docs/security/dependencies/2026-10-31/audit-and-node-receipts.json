@@ -1,0 +1,350 @@
+[
+  {
+    "label": "baseline/new-node-regressions",
+    "start": "2026-10-31T20:48:00.298549+00:00",
+    "end": "2026-10-31T20:48:00.518233+00:00",
+    "command": [
+      "node",
+      "--test",
+      "scripts/redirect-credential-boundary.test.cjs",
+      "scripts/modern-glob-boundary.test.cjs"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "605271be6acb18f332596cd2202b809d7b804f07766b9c754dafa6388af05955",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "e8f33f9868cf5eb6ac9e653a1b0c81dc0e499806734809aa76387181113e6404",
+    "runner_sha256": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297"
+  },
+  {
+    "label": "baseline/npm-audit-full",
+    "start": "2026-10-31T20:44:50.396222+00:00",
+    "end": "2026-10-31T20:44:57.407705+00:00",
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "a04623c4492416e22e7718b755dc5a9ea716c0b7318f4f9c7104ff478860d1ad",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "b7839b00d17b2a42357b7b9f375bbe094d76971a9129d92d3df00bcf35d780a0",
+    "runner_sha256": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297"
+  },
+  {
+    "label": "baseline/npm-audit-production",
+    "start": "2026-10-31T20:45:11.453206+00:00",
+    "end": "2026-10-31T20:45:11.867564+00:00",
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "7edf7c8a681e23a75be2dc90c75b9eb485f71811e897dce6403615a4515a70df",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "b7839b00d17b2a42357b7b9f375bbe094d76971a9129d92d3df00bcf35d780a0",
+    "runner_sha256": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297"
+  },
+  {
+    "label": "baseline/npm-ci",
+    "start": "2026-10-31T20:43:58.115300+00:00",
+    "end": "2026-10-31T20:44:26.159407+00:00",
+    "command": [
+      "npm",
+      "ci",
+      "--include=dev",
+      "--include=optional",
+      "--no-fund"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "a795c0422d16c7766da3b7bd94ab1c3aaf997c8e2c6fe398bb5f0d4510c9bf1f",
+      "stderr": "7c430a949f37b8d1bac7ba15a2c128107028d1dd4d431d4df55bd97c0c524baa"
+    },
+    "source_manifest_sha256": "b7839b00d17b2a42357b7b9f375bbe094d76971a9129d92d3df00bcf35d780a0",
+    "runner_sha256": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297"
+  },
+  {
+    "label": "final/admin-shell",
+    "start": "2026-10-31T21:01:01.020879+00:00",
+    "end": "2026-10-31T21:01:22.580013+00:00",
+    "command": [
+      "npm",
+      "run",
+      "test:admin-shell",
+      "--",
+      "--output=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/final/admin-browser-results"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "a157dc62948c94a20be8be19531809bddd7838721e1b926d47d6a51f60b71743",
+      "stderr": "ef00da570f50b3f30dc5064d0b881a6650c931b180aadc35ca089278cede8ffa"
+    },
+    "source_manifest_sha256": "0575b00279cbacc61794221d1c9127501c49b78d744b26918f3519da464d01c4",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/build",
+    "start": "2026-10-31T20:53:57.415355+00:00",
+    "end": "2026-10-31T20:54:20.164907+00:00",
+    "command": [
+      "env",
+      "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:9",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY=dependency-fixture-anon-key",
+      "CIRCLE_NODE_TOTAL=3",
+      "npm",
+      "run",
+      "build"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [
+      "etl/tests/test_pdf_xref_termination.py",
+      "frontend/scripts/modern-glob-boundary.test.cjs"
+    ],
+    "outputs": {
+      "stdout": "06b2f398d726dec9d8e5e4c6eab6ddb4c68a3948f38884d84469af2e7e80e259",
+      "stderr": "2fbb88e884ef802fc95f8c74242df1cab9458420d46f0385205b262376c0705e"
+    },
+    "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/dependency-boundaries",
+    "start": "2026-10-31T20:50:34.610224+00:00",
+    "end": "2026-10-31T20:51:02.458327+00:00",
+    "command": [
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "011eb6314b8822cccb5673bfa9b9050be5b15863a9ef3aad23d787215116a3cd",
+      "stderr": "8cb0c3de1bffbc1e9182d8db26a285e5e20b58c1d6cdae39c491515767d7c8a7"
+    },
+    "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/dependency-boundaries-tap",
+    "start": "2026-10-31T20:52:53.196578+00:00",
+    "end": "2026-10-31T20:53:18.164990+00:00",
+    "command": [
+      "npm",
+      "run",
+      "test:dependency-boundaries"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "370a2fa39c2877cb577981de50f515f51cca56f27cd410839441799ada128852",
+      "stderr": "554f50ced28a50d5fb14f2bde32bfc4ddbea3a599428b5614a0d5e13d692d837"
+    },
+    "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/jest",
+    "start": "2026-10-31T20:51:07.301613+00:00",
+    "end": "2026-10-31T20:52:05.401508+00:00",
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--runInBand",
+      "--no-cache",
+      "--json",
+      "--outputFile=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/final/jest-results.json"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "fee67c1458aefc81a0586382845bc3ecbc22df1c15a063c956c3f7bdfd6ecf9d",
+      "stderr": "b9574e2ed9a599d67f1abe5deecad03f1e6067a877d562a8feda19540f78c4a2"
+    },
+    "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/lint",
+    "start": "2026-10-31T20:51:03.682055+00:00",
+    "end": "2026-10-31T20:51:06.554170+00:00",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "08dd3b9a3011b6ef75b20ce9002b0757e1b93785536beaaf164b2f6cf6ea7025",
+      "stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2"
+    },
+    "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/native",
+    "start": "2026-10-31T20:53:53.254862+00:00",
+    "end": "2026-10-31T20:53:56.699966+00:00",
+    "command": [
+      "env",
+      "NATIVE_VERIFY_CACHE_DIR=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/model",
+      "npm",
+      "run",
+      "verify:native"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "b8556ef2e2008f55cace4eaa9a0d30e9a1556c873bc51089a4556a60da2104d1",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/node-regressions",
+    "start": "2026-10-31T20:49:05.021164+00:00",
+    "end": "2026-10-31T20:49:05.295282+00:00",
+    "command": [
+      "node",
+      "--test",
+      "scripts/redirect-credential-boundary.test.cjs",
+      "scripts/modern-glob-boundary.test.cjs"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "90374ac716b81155d02c7e2e3ce573737b2b4c2edb7be626d9a9f74857ae8104",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/npm-audit-full",
+    "start": "2026-10-31T20:49:05.990827+00:00",
+    "end": "2026-10-31T20:49:07.143340+00:00",
+    "command": [
+      "npm",
+      "audit",
+      "--json"
+    ],
+    "exit": 1,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/npm-audit-production",
+    "start": "2026-10-31T20:49:07.828538+00:00",
+    "end": "2026-10-31T20:49:08.218606+00:00",
+    "command": [
+      "npm",
+      "audit",
+      "--omit=dev",
+      "--json"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/npm-ci",
+    "start": "2026-10-31T20:48:21.340596+00:00",
+    "end": "2026-10-31T20:48:29.369003+00:00",
+    "command": [
+      "npm",
+      "ci",
+      "--include=dev",
+      "--include=optional",
+      "--no-fund"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "c71ee583029d61545c8f87ee4d72938990d21096d2d25f7a05a066b09561433c",
+      "stderr": "d4533965c2a7a161f71b1e5324f5be0c8560efe84068c85ed6bfefc8759035dc"
+    },
+    "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/tooling",
+    "start": "2026-10-31T20:53:19.371018+00:00",
+    "end": "2026-10-31T20:53:20.198323+00:00",
+    "command": [
+      "npm",
+      "run",
+      "verify:dependency-tooling"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  {
+    "label": "final/typescript",
+    "start": "2026-10-31T20:50:11.513267+00:00",
+    "end": "2026-10-31T20:50:16.990314+00:00",
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit",
+      "--incremental",
+      "false"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "source_changes": [],
+    "outputs": {
+      "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+    "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  }
+]

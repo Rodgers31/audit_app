@@ -1,0 +1,692 @@
+{
+  "attachment_size": 21087,
+  "attachment_sha256": "139a6023037c9fe196cc1362b012335928f0bb2d5732527a83057a03ef5511d9",
+  "reported_package_entries": 53,
+  "current_baseline_package_entries": 37,
+  "unique_attachment_advisories": 85,
+  "advisories": [
+    {
+      "id": "GHSA-2464-fhr4-w9xw",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-2883-xcg3-v3hh",
+      "reported_packages": [
+        "js-yaml"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-28wg-ghj8-5hjv",
+      "reported_packages": [
+        "nanoid"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-2jg2-4ch7-h545",
+      "reported_packages": [
+        "sharp"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-2v37-7h3g-55p8",
+      "reported_packages": [
+        "nanoid"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-2xp9-vwfh-vxw4",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-333x-w4r6-6crp",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-3jxr-9vmj-r5cp",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-3pq3-5fj3-cg6v",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-42h9-826w-cgv3",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-44g4-m2mj-wpvx",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-4633-3j49-mh5q",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-4c39-4ccg-62r3",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-4c8g-83qw-93j6",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-4hqw-qxg8-jxx2",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-4jqv-mc3x-m676",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-542g-h47m-68v8",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-5p4m-2wfm-xmqj",
+      "reported_packages": [
+        "js-yaml"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-68fv-2mgg-jv7q",
+      "reported_packages": [
+        "source-map-js"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-68g3-v927-f742",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-6g55-p6wh-862q",
+      "reported_packages": [
+        "postcss"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-6j4f-fj2g-mc7p",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-73wf-gq98-2v4g",
+      "reported_packages": [
+        "browserslist"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-7p8r-x3mc-p8w7",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-7q85-xj36-vmfc",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-7q8q-rj6j-mhjq",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-8238-w5pm-2374",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-89xv-2m56-2m9x",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-8r9p-f939-6h3c",
+      "reported_packages": [
+        "follow-redirects"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-955p-x3mx-jcvp",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-9fr6-4gfg-395g",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-c29m-xwm3-cm6r",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-c6fg-446q-cg94",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-c83g-rgw3-j3cx",
+      "reported_packages": [
+        "browserslist"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-f4gw-2p7v-4548",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-f65p-4m7j-42xc",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-f88m-g3jw-g9cj",
+      "reported_packages": [
+        "sharp"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-fph4-wmhf-6fwf",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-fxqj-rqcc-2cmp",
+      "reported_packages": [
+        "postcss"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-g3hv-75wg-m249",
+      "reported_packages": [
+        "minimatch"
+      ],
+      "in_clean_baseline_audit": true,
+      "in_candidate_audit": true
+    },
+    {
+      "id": "GHSA-g89c-p67h-r497",
+      "reported_packages": [
+        "sharp"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-gcfj-64vw-6mp9",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-gcqx-w48m-w2h4",
+      "reported_packages": [
+        "deepmerge"
+      ],
+      "in_clean_baseline_audit": true,
+      "in_candidate_audit": true
+    },
+    {
+      "id": "GHSA-hcpx-6fm6-wx23",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-hrr3-gc8f-f4qj",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-j3f2-48v5-ccww",
+      "reported_packages": [
+        "protobufjs"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-j5f4-cc29-5x44",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-j8rh-479h-cp32",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-jqff-g426-hqxp",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-jqh4-m9w3-8hp9",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-m8m8-qj5v-23w3",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-m99w-x7hq-7vfj",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mcj8-r9mp-w47p",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mghh-pgcx-3jjj",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mh99-v99m-4gvg",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mmx7-hfxf-jppx",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mrwp-f3q8-3g9p",
+      "reported_packages": [
+        "follow-redirects"
+      ],
+      "in_clean_baseline_audit": true,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-mwf2-3pr3-8698",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-p293-qw3h-jr36",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-p3m5-59mp-jv5r",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-p634-w6r4-rjp2",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-p9j2-gv94-2wf4",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-pmv8-rq9r-6j72",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-q2hr-2g5m-vwhr",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-q3jh-wrc6-jgq8",
+      "reported_packages": [
+        "follow-redirects"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-q8wf-6r8g-63ch",
+      "reported_packages": [
+        "next"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-qhr7-859c-m2p7",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-qw65-cvwx-89v3",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-r28c-9q8g-f849",
+      "reported_packages": [
+        "postcss"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-r4gj-5m52-g5wh",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-rcw4-f5rp-g42v",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-rgj7-g3m4-5g8c",
+      "reported_packages": [
+        "sharp"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-rgw5-rvv9-x895",
+      "reported_packages": [
+        "brace-expansion"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-rj75-hqrm-r3gf",
+      "reported_packages": [
+        "postcss-selector-parser"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-v2hh-gcrm-f6hx",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-vh66-26gq-q6x8",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-vwc7-r8mq-g2x9",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-w5vr-8v7q-w6rv",
+      "reported_packages": [
+        "baseline-browser-mapping"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-w74x-v6f9-j3xg",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-w9m9-85wc-3x92",
+      "reported_packages": [
+        "postcss-selector-parser"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-wq5f-xc86-pv6w",
+      "reported_packages": [
+        "sharp"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-x97p-jq2g-jp4f",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-xcpc-8h2w-3j85",
+      "reported_packages": [
+        "adm-zip"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-xhq7-xmqj-769h",
+      "reported_packages": [
+        "fast-uri"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    },
+    {
+      "id": "GHSA-xj6q-8x83-jv6g",
+      "reported_packages": [
+        "axios"
+      ],
+      "in_clean_baseline_audit": false,
+      "in_candidate_audit": false
+    }
+  ],
+  "new_baseline_advisories_not_in_attachment": [
+    "GHSA-3g3m-2fjr-6pw4"
+  ]
+}

@@ -1,0 +1,482 @@
+{
+  "baseline-backend-runtime": {
+    "observed_at": "2026-10-31T20:45:08.123890+00:00",
+    "query_count": 87,
+    "input_sha256": "d5eceed6432ef606e56797a28e0e5b9f6767aef2f12bf645a48a2fe3d3837fb8",
+    "matches": []
+  },
+  "baseline-backend-dev": {
+    "observed_at": "2026-10-31T20:45:16.007749+00:00",
+    "query_count": 129,
+    "input_sha256": "6dde792c594884c71b0e9ee21b350238ee9ffbcc9c1c4e59ebea24c118c7acf0",
+    "matches": []
+  },
+  "baseline-etl": {
+    "observed_at": "2026-10-31T20:45:32.254889+00:00",
+    "query_count": 52,
+    "input_sha256": "7324529f995efb8d9ed86c0402a6094ea70904d85372ed3b13d3d555eb468932",
+    "matches": [
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-42gh-23hr-vphw"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-4vqv-7265-gm2w"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-5849-834g-hvw5"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-62m5-6wh8-28x7"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-cggf-277g-3q54"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-mfr5-77xh-9j7h"
+      },
+      {
+        "package": "pypdf",
+        "version": "6.21.2",
+        "id": "GHSA-x3rh-gjgm-fmqc"
+      }
+    ]
+  },
+  "final-runtime": {
+    "observed_at": "2026-10-31T20:55:01.133464+00:00",
+    "query_count": 87,
+    "input_sha256": "8eb431066d44aa0bec5e1d434d6325a1c57c6ab317a772d091bc9a31e62330a4",
+    "matches": []
+  },
+  "final-dev": {
+    "observed_at": "2026-10-31T20:54:59.918835+00:00",
+    "query_count": 130,
+    "input_sha256": "5fd7f3dd68383e46c030c7e6a1454e0bc982af020ee1971c1a9dceff705c24e5",
+    "matches": []
+  },
+  "final-etl-with-test-tools": {
+    "observed_at": "2026-10-31T20:55:00.756947+00:00",
+    "query_count": 57,
+    "input_sha256": "de7aedf134beb5b3478477dd4734a0fc590464ef29e6efdd8d896ac79eba48fe",
+    "matches": []
+  },
+  "final-worker": {
+    "observed_at": "2026-10-31T20:55:00.287368+00:00",
+    "query_count": 93,
+    "input_sha256": "30c219c9fd9df02205a84123fdb04e182a22129d21cb61e66cd4765a6c88e717",
+    "matches": []
+  },
+  "baseline-worker-pins": {
+    "observed_at": "2026-10-31T20:49:18.989060+00:00",
+    "query_count": 90,
+    "input_sha256": "bf3889bfeb6a66c25cce6ae9603fee813a06c07aed9ff4ecb8fcfe9708ba36ae",
+    "matches": [
+      {
+        "package": "ecdsa",
+        "version": "0.19.2",
+        "id": "GHSA-wj6h-64fc-37mp"
+      },
+      {
+        "package": "ecdsa",
+        "version": "0.19.2",
+        "id": "PYSEC-2026-1325"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-22hg-r758-rrw9"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-24rc-8hj2-v98c"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-254f-3936-288h"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-27h8-gf7j-v5hc"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-332p-7hrc-92wf"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-3j72-p6qg-6xp7"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-4558-3h8r-v8xp"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-462x-pgg6-55fp"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-4rm8-3hmm-39fg"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-4rr5-89j8-mwwm"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-58r4-6rv3-gfh8"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-5x8w-8jj5-q52h"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-5xm2-6676-qcp9"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-654x-cwwv-5j9c"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-65qm-jvmh-6pqg"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-74r2-7ff9-mjj2"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-78g4-xqwv-q3g8"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-7mwm-ghpf-9vrm"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-8g5g-8vmr-9782"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-9v9v-9qvf-h2hj"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-c6hw-5grf-ff96"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-cp9v-662q-vvx9"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-f2g6-542v-9j58"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-fc9g-5qg7-mf45"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-g4qv-2jxx-769h"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-g7cr-3p24-7wf7"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-g842-9rc4-69pw"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-gg2r-wvfm-q9rx"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-j4m9-6w36-pw47"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-jg86-v3jv-hrpm"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-mrfp-p49p-3hf2"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-p4wg-p73j-c528"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-p8hx-v2p6-rp84"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-pchr-8j38-3x4p"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-q45j-58j2-45rg"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-rfgq-q3w2-pmv2"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-v9pv-5gc8-w2m6"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-vx6w-vv9f-6gvg"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-w889-685w-c8fh"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-xgh8-jp6q-p5x8"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "GHSA-xvh5-g6gv-559v"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4326"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4327"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4328"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4329"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4330"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4331"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4332"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4333"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4334"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4335"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4336"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4337"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4338"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4339"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4340"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4341"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4342"
+      },
+      {
+        "package": "pillow",
+        "version": "12.3.0",
+        "id": "PYSEC-2026-4343"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-4xh5-x5gv-qwph"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-58qw-9mgm-455v"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-6vgw-5pg2-w6jp"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-jp4c-xjxw-mgf9"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-qwm4-qh6w-59xr"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "GHSA-wf93-45jw-7689"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-1795"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-1796"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-196"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-2875"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-2876"
+      },
+      {
+        "package": "pip",
+        "version": "25.0.1",
+        "id": "PYSEC-2026-3721"
+      },
+      {
+        "package": "pyasn1",
+        "version": "0.6.4",
+        "id": "GHSA-2qm8-x737-gmw5"
+      },
+      {
+        "package": "pyasn1",
+        "version": "0.6.4",
+        "id": "GHSA-9m75-vc3g-4x39"
+      },
+      {
+        "package": "pyasn1",
+        "version": "0.6.4",
+        "id": "GHSA-fm9c-5rcf-2q5p"
+      },
+      {
+        "package": "pyasn1",
+        "version": "0.6.4",
+        "id": "GHSA-mm57-4v3p-rchx"
+      },
+      {
+        "package": "python-jose",
+        "version": "3.5.0",
+        "id": "GHSA-3qf3-8w2g-rqmx"
+      },
+      {
+        "package": "python-jose",
+        "version": "3.5.0",
+        "id": "PYSEC-2026-4298"
+      }
+    ]
+  }
+}

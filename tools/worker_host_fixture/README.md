@@ -140,3 +140,24 @@ Check accepted source, live/ready200, all12 effectiveOFF flags, unchanged retain
 data, private media tables and both connected accounts with publishingfalse before
 ending. If the candidate refuses or a guard fails, restore these settings without
 relaxing policy or leaving a maintenance image unattended.
+
+## Dependency maintenance — 31 October 2026
+
+`requirements.txt` is the authoritative complete exact package profile. It replaces
+the historical `requirements.lock` filename so native Dependabot can discover it;
+the image still copies it to the installer's fixed `/input/requirements.lock` path.
+The profile is refreshed from a fresh backend runtime plus the existing fixture
+test tools. Obsolete python-jose/ecdsa/rsa/pyasn1 are absent; current application
+JWT verification uses PyJWT. The installer validates the complete file before any child, then upgrades its
+declared pip pin first and retains the other pins' order. The exact install and
+pip check must pass before any
+image rebuild is accepted. A package audit is not restricted-host qualification.
+
+Every update PR must retain exact pins, pass `install_locked.py` in a fresh owned
+environment, compare its complete installed distribution census, and repeat the
+normal/optimized host boundary tests. Changes to Python, native libraries, framework
+or resource behavior additionally need the unchanged native x86 host workload and
+capacity/confinement acceptance before use. That workload was not run or activated
+by this dependency refresh. The pinned 3.12.15 fixture base remains historical and
+needs a separately verified 3.12.16+ base/image refresh before renewed qualification.
+No historical fixture acceptance carries forward to the new package graph.

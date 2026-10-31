@@ -1,0 +1,13 @@
+{
+  "final-npm-full.json": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+  "baseline-npm-production.json": "7edf7c8a681e23a75be2dc90c75b9eb485f71811e897dce6403615a4515a70df",
+  "owner-audit-reconciliation.json": "5e894a78e45e99cdacecb6b78b33c0a94deda5e7b2fd4d5ddd9b88f8f0233745",
+  "candidate-inputs.json": "4d8a42665fba99588327637eefffa6f05624e826caee900f0ca4a307f839bb46",
+  "baseline-npm-full.json": "a04623c4492416e22e7718b755dc5a9ea716c0b7318f4f9c7104ff478860d1ad",
+  "lock-delta.json": "7eae1eb536c203a2c928e1d54ae48e816e19e3882b65c34c5ad131cb80b0339d",
+  "python-resolutions.json": "525cd9143d6102bc20ba93cbe144ed5cace1790d8d0a6ea3972988a72cd23c15",
+  "native-runtime.json": "29dae29fafafa181d3012b61015fc57bf09f5beb045b2324c5627e94fc4b41ad",
+  "osv-results.json": "b80328d2b34925a78911e928d78fe36e4bdb787ba2afde3e3b682d332f225fe8",
+  "audit-and-node-receipts.json": "70e9052548c2b9c6337c2d95cf8e8f647faf7b4c97ced12bfaf4876e4d535ca3",
+  "final-npm-production.json": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b"
+}

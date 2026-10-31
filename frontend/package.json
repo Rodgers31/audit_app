@@ -23,7 +23,7 @@
     "verify:tooling-inputs": "node scripts/verify-tooling-inputs.cjs",
     "verify:runtime-dependencies": "node scripts/verify-runtime-dependencies.cjs",
     "verify:dependency-browser": "node tests/batch7DependencyBrowser.cjs",
-    "test:dependency-boundaries": "node --test scripts/node-runtime.test.cjs scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
+    "test:dependency-boundaries": "node --test scripts/node-runtime.test.cjs scripts/embedding-builder.test.cjs scripts/embedding-model.test.cjs scripts/tooling-repair-behavior.test.cjs scripts/yaml-cli-compatibility.test.cjs scripts/tooling-repair-install.test.cjs scripts/jest-dependency-boundary.test.cjs scripts/tooling-input-boundary.test.cjs scripts/dependency-browser-boundary.test.cjs scripts/evidence-control-boundary.test.cjs scripts/redirect-credential-boundary.test.cjs scripts/modern-glob-boundary.test.cjs && node scripts/test-runtime-dependencies.cjs",
     "postinstall": "node scripts/apply-tooling-repairs.cjs",
     "pretest": "node scripts/verify-node-runtime.cjs && node scripts/apply-tooling-repairs.cjs --check",
     "verify:tooling-repairs": "node scripts/apply-tooling-repairs.cjs --check",
@@ -84,7 +84,7 @@
     "node": ">=24.22.1 <25"
   },
   "overrides": {
-    "follow-redirects": "1.16.1",
+    "follow-redirects": "1.16.2",
     "d3-color": "^3.1.0",
     "fast-uri": "^3.1.8",
     "path-to-regexp": "^8.0.0",
@@ -94,6 +94,8 @@
       "sharp": "0.35.5"
     },
     "postcss-selector-parser": "7.1.6",
-    "argparse": "2.0.1"
+    "argparse": "2.0.1",
+    "glob@>=9 <14.0.2": "14.0.3",
+    "minimatch@>=9 <11.0.1": "11.0.3"
   }
 }

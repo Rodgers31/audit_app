@@ -1,0 +1,20 @@
+import json,sys,urllib.request,hashlib,datetime,pathlib,re
+path=pathlib.Path(sys.argv[1]); dest=pathlib.Path(sys.argv[2]);dest.mkdir(exist_ok=False,parents=True)
+rows=json.loads(path.read_text()); rows=sorted(rows,key=lambda r:r['name'].lower());queries=[{'package':{'ecosystem':'PyPI','name':r['name']},'version':r['version']} for r in rows]
+result=[]
+for i in range(0,len(queries),100):
+ payload=json.dumps({'queries':queries[i:i+100]}).encode();(dest/f'request-{i}.json').write_bytes(payload)
+ req=urllib.request.Request('https://api.osv.dev/v1/querybatch',payload,{'Content-Type':'application/json'})
+ raw=urllib.request.urlopen(req,timeout=60).read();(dest/f'response-{i}.json').write_bytes(raw); batch=json.loads(raw)
+ if not isinstance(batch,dict) or not isinstance(batch.get('results'),list) or len(batch['results'])!=len(queries[i:i+100]):raise ValueError('Incomplete OSV result')
+ for q,res in zip(queries[i:i+100],batch['results']):
+  if not isinstance(res,dict) or any(k!='vulns' for k in res): raise ValueError('Unexpected OSV result')
+  matches=res.get('vulns',[])
+  if not isinstance(matches,list):raise ValueError('Bad vulnerability array')
+  for v in matches:
+   if not isinstance(v,dict) or not isinstance(v.get('id'),str):raise ValueError('Missing vulnerability identity')
+   result.append({'package':q['package']['name'],'version':q['version'],'id':v['id']})
+for vid in sorted({r['id'] for r in result}):
+ raw=urllib.request.urlopen('https://api.osv.dev/v1/vulns/'+vid,timeout=60).read();(dest/(vid+'.json')).write_bytes(raw)
+summary={'observed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'query_count':len(queries),'input_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'matches':result}
+(dest/'summary.json').write_text(json.dumps(summary,indent=2));print(json.dumps(summary))

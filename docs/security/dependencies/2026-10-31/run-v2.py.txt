@@ -1,0 +1,30 @@
+import sys,os,json,hashlib,subprocess,datetime,time,pathlib,signal
+ROOT=pathlib.Path('/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app')
+E=pathlib.Path(__file__).resolve().parent
+label,cwd,seconds,*cmd=sys.argv[1:]; out=E/label;out.mkdir(parents=True,exist_ok=False)
+def stamp(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def inventory():
+ p=subprocess.check_output(['git','ls-files','-z'],cwd=ROOT).split(b'\0'); data={}
+ for raw in p:
+  if not raw:continue
+  f=ROOT/os.fsdecode(raw)
+  if f.is_file():data[os.fsdecode(raw)]=hashlib.sha256(f.read_bytes()).hexdigest()
+  else:data[os.fsdecode(raw)]=None
+ return data
+before=inventory(); (out/'source.json').write_text(json.dumps(before,sort_keys=True))
+env={'PATH':str(E/'runtime/node-v24.22.1-darwin-arm64/bin')+':/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin','HOME':str(E/'home'),'TMPDIR':str(E/'tmp'),'LANG':'en_US.UTF-8','PIP_CONFIG_FILE':'/dev/null','PIP_DISABLE_PIP_VERSION_CHECK':'1','PYTHONDONTWRITEBYTECODE':'1','NEXT_TELEMETRY_DISABLED':'1','ONNXRUNTIME_NODE_INSTALL':'skip','ENVIRONMENT':'test','SECRET_BACKEND':'env','DATABASE_URL':'sqlite:///:memory:','REDIS_URL':'','AUTO_SEED_ENABLED':'false','SOCIAL_NATIVE_ENABLED':'false','SOCIAL_PUBLISHING_ENABLED':'false','SOCIAL_MEDIA_ENABLED':'false','SOCIAL_WORKER_SUPERVISOR_ENABLED':'false','SEED_NATIVE_FINANCIAL_GENERATION_ENABLED':'false','SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED':'false','NEXT_PUBLIC_API_URL':'http://127.0.0.1:9','NODE_OPTIONS':'--max-old-space-size=3072'}
+for p in ['home','tmp']:(E/p).mkdir(exist_ok=True)
+extra=E/'env.json'
+if extra.exists():env.update(json.loads(extra.read_text()))
+r={'start':stamp(),'command':cmd,'cwd':cwd,'environment':env,'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'tree':subprocess.check_output(['git','rev-parse','HEAD^{tree}'],cwd=ROOT,text=True).strip(),'source_sha256':hashlib.sha256((out/'source.json').read_bytes()).hexdigest(),'runner_sha256':hashlib.sha256(pathlib.Path(__file__).read_bytes()).hexdigest()}
+start=time.monotonic()
+with (out/'stdout').open('wb') as a,(out/'stderr').open('wb') as b:
+ p=subprocess.Popen(cmd,cwd=cwd,env=env,stdout=a,stderr=b,start_new_session=True)
+ try:r['exit']=p.wait(timeout=float(seconds));r['timeout']=False
+ except subprocess.TimeoutExpired:
+  os.killpg(p.pid,signal.SIGKILL);r['exit']=p.wait();r['timeout']=True
+r['end']=stamp();r['seconds']=time.monotonic()-start
+after=inventory();r['source_changes']=[x for x in sorted(set(before)|set(after)) if before.get(x)!=after.get(x)]
+r['outputs']={x:hashlib.sha256((out/x).read_bytes()).hexdigest() for x in ['stdout','stderr']}
+(out/'receipt.json').write_text(json.dumps(r,indent=2));print(json.dumps({k:r[k] for k in ['command','exit','timeout','seconds','source_changes']}))
+print((out/'stdout').read_text(errors='replace')[-1800:]); print((out/'stderr').read_text(errors='replace')[-1800:])

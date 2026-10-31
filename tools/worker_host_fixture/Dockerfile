@@ -6,7 +6,7 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 ffmpeg postgresql-17 postgresql-contrib-17 libnss-wrapper \
     && rm -rf /var/lib/apt/lists/*
-COPY tools/worker_host_fixture/requirements.lock /input/requirements.lock
+COPY tools/worker_host_fixture/requirements.txt /input/requirements.lock
 COPY tools/worker_host_fixture/install_locked.py /input/install_locked.py
 RUN python -I -B /input/install_locked.py /input/requirements.lock
 COPY backend /input/backend

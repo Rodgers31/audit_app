@@ -1,0 +1,12 @@
+{
+  "base_commit": "178ff97d8a593ed8a152366cfdb446a29b434a45",
+  "files": {
+    "frontend/package.json": "4fb8357ff7b601daf70302fe1d4e27c523a0f93988311f8f507a52c7ad79bc7f",
+    "frontend/package-lock.json": "c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc",
+    "backend/requirements.txt": "bdae2d75e7f322723670e0c9ed54b8ed971d8dc9b30591b06002c6553856515d",
+    "backend/requirements-dev.txt": "31d93df9239fcadb3038fa34804ecb81e4d29ae33943173752846022d3d439e7",
+    "backend/security-constraints.txt": "22a48a5d28facb3eb2f47148090ce81f7ea5a7fe483a8db4ab7839dc356bc9f3",
+    "etl/requirements.txt": "a1791572e899465c1ff8b77de8ae590ba04b9843e2a6a78c4e4e151dfb686e42",
+    "tools/worker_host_fixture/requirements.txt": "0605b0ebab819c76248399b798099b6e127add019d0dcfba1409d2d56a7be5f9"
+  }
+}

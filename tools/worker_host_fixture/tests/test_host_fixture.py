@@ -674,6 +674,23 @@ class HostFixtureTests(unittest.TestCase):
                 prep.prepared(address,fake.Endpoint)
             opened.assert_not_called()
 
+    def test_locked_installer_upgrades_its_declared_pip_before_other_distributions(self):
+        installer = module('install_locked')
+        with tempfile.TemporaryDirectory() as folder:
+            lock = Path(folder)/'requirements.txt'
+            lock.write_text('a==1\npip==26.2.2\nb==2\n')
+            with patch.object(installer.subprocess, 'run') as run, \
+                    patch.object(installer.importlib.metadata, 'version',
+                                 side_effect=lambda name: {'pip':'26.2.2', 'a':'1', 'b':'2'}[name]):
+                installer.install(lock)
+                self.assertEqual([c.args[0][-1] for c in run.call_args_list],
+                                 ['pip==26.2.2', 'a==1', 'b==2', 'check'])
+            # A malformed later row still refuses before even the pip bootstrap.
+            lock.write_text('pip==26.2.2\na>=1\n')
+            with patch.object(installer.subprocess, 'run') as run, self.assertRaises(ValueError):
+                installer.install(lock)
+            run.assert_not_called()
+
     def test_serial_build_install_requires_exact_complete_lock_and_success(self):
         import subprocess
         installer = module('install_locked')

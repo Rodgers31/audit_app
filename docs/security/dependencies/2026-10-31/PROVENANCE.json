@@ -1,0 +1,37 @@
+{
+  "generated_at": "2026-10-31T21:10:40.356219+00:00",
+  "artifact_scope": "immutable diagnostic snapshots, not a portable acceptance runner",
+  "generators": {
+    "audit_osv.py.txt": "92bcb2d985b9f595a9e871d619ef821970aeb57aaf2d8edf3afe7c36df75d764",
+    "publish_evidence.py.txt": "c96339c49cdac92be461f743c10fd63389fb08cd1c0bbf1aa0f012078121a74c",
+    "run-v1.py.txt": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297",
+    "run-v2.py.txt": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f"
+  },
+  "files": {
+    "final-npm-full.json": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+    "baseline-npm-production.json": "7edf7c8a681e23a75be2dc90c75b9eb485f71811e897dce6403615a4515a70df",
+    "artifact-hashes.json": "1d41a0a942a27058299416a94c7de27badaf0648a177176bdde267b45328b930",
+    "publish_evidence.py.txt": "c96339c49cdac92be461f743c10fd63389fb08cd1c0bbf1aa0f012078121a74c",
+    "run-v2.py.txt": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f",
+    "owner-audit-reconciliation.json": "5e894a78e45e99cdacecb6b78b33c0a94deda5e7b2fd4d5ddd9b88f8f0233745",
+    "candidate-inputs.json": "4d8a42665fba99588327637eefffa6f05624e826caee900f0ca4a307f839bb46",
+    "baseline-npm-full.json": "a04623c4492416e22e7718b755dc5a9ea716c0b7318f4f9c7104ff478860d1ad",
+    "lock-delta.json": "7eae1eb536c203a2c928e1d54ae48e816e19e3882b65c34c5ad131cb80b0339d",
+    "python-resolutions.json": "525cd9143d6102bc20ba93cbe144ed5cace1790d8d0a6ea3972988a72cd23c15",
+    "run-v1.py.txt": "aa0d989f6f666808a45b6f2ce57efb0bf7f9155f034519265cfb0c185b8ec297",
+    "native-runtime.json": "29dae29fafafa181d3012b61015fc57bf09f5beb045b2324c5627e94fc4b41ad",
+    "osv-results.json": "b80328d2b34925a78911e928d78fe36e4bdb787ba2afde3e3b682d332f225fe8",
+    "audit_osv.py.txt": "92bcb2d985b9f595a9e871d619ef821970aeb57aaf2d8edf3afe7c36df75d764",
+    "audit-and-node-receipts.json": "70e9052548c2b9c6337c2d95cf8e8f647faf7b4c97ced12bfaf4876e4d535ca3",
+    "final-npm-production.json": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b"
+  },
+  "historical_runner_note": "v1 retains exact originally measured bytes. v2 removes irrelevant public auth settings from unit commands and fixes quadratic post-command inventory comparison. Audits use identical npm commands. Original outputs remain unchanged.",
+  "superseded_runs": {
+    "final/lock-update": "npm completed output retained; original recorder hung in postprocessing and was terminated; no acceptance exit receipt. Subsequent clean npm ci supplies lock/install integrity.",
+    "final/build": "child exited 0 but two newly staged test files entered the complete source inventory; diagnostic only. Stable admin-shell-cached-browser rebuilt and passed.",
+    "final/dependency-boundaries": "observed existing Node24 reporter failure; fixed explicit TAP selection and rerun passed.",
+    "python/backend-compat and python/backend-optimized": "native wheel load blocked by owned noexec scratch storage; setup failures.",
+    "python/backend-compat-exec and python/backend-optimized-exec": "in-memory SQLite URL incompatible with unchanged PostgreSQL pool options; setup failures.",
+    "final/admin-shell": "all 12 failed browser launch before execution because isolated HOME lacked browser cache; explicit read-only browser cache rerun passed all 12."
+  }
+}
