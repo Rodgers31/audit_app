@@ -1,6 +1,8 @@
 import { DocumentTarget, SocialAccount, SocialContent, SocialDocument, SocialDraftInput, SocialPlatform } from '@/lib/api/social';
 
 export const platformLabels: Record<SocialPlatform, string> = { facebook: 'Facebook', instagram: 'Instagram', threads: 'Threads', x: 'X', tiktok: 'TikTok' };
+const hashtagShape = new RegExp('^#?[\\p{L}\\p{N}_]+$', 'u');
+const hashtagLetter = new RegExp('\\p{L}', 'u');
 export const emptyDocument = (): SocialDocument => ({ schema_version: 1, master: { text: '', link: 'https://www.auditgava.com', hashtags: [], media: [] }, targets: [] });
 /** Response correlation preserves exactly what the admin submitted, including empty overrides. */
 export function draftFingerprint(draft: SocialDraftInput): string {
@@ -43,6 +45,25 @@ export function postDestinationIssue(content: SocialContent): string | null {
   if (content.link !== null && !auditgavaUrl(content.link) || safe.some(url => !auditgavaUrl(url))) return 'Post links must lead to AuditGava. Original publisher links belong in source references.';
   if (content.link === null && !safe.length) return 'An AuditGava destination is required for this post.';
   return null;
+}
+
+/** Presence checks only. Source authority and publication eligibility are validated separately. */
+export function copyPreparationIssues(draft: SocialDraftInput, accounts: SocialAccount[]): string[] {
+  const issues: string[] = [];
+  if (!draft.references.some(reference => httpsUrl(reference.url))) issues.push('Add supporting source references.');
+  if (!draft.document.targets.length) issues.push('Choose a destination account.');
+  for (const target of draft.document.targets) {
+    const account = accounts.find(value => value.id === target.account_id);
+    if (!account) { issues.push('A destination account is unavailable. Refresh connected accounts.'); continue; }
+    const siblings = draft.document.targets.map(value => accounts.find(item => item.id === value.account_id)).filter(value => value?.platform === account.platform);
+    const repeatedName = siblings.some(value => value?.id !== account.id && value?.display_name === account.display_name);
+    const label = platformLabels[account.platform] + (siblings.length > 1 ? ` · ${account.display_name}${repeatedName ? ` (${account.id})` : ''}` : '');
+    const content = resolveContent(draft.document.master, target);
+    if (!content.text.trim()) issues.push(`${label}: add a caption.`);
+    if (postDestinationIssue(content)) issues.push(`${label}: add a valid AuditGava destination.`);
+    if (!content.hashtags.some(tag => hashtagShape.test(tag) && hashtagLetter.test(tag))) issues.push(`${label}: add relevant hashtags or a topic.`);
+  }
+  return Array.from(new Set(issues));
 }
 export function targetHints(master: SocialContent, target: DocumentTarget, account?: SocialAccount): string[] {
   if (!account) return ['Account is unavailable. Explicitly remove it or refresh the connected accounts.'];

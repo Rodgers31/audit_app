@@ -32,6 +32,29 @@ export async function reachable(page: Page, selector: string) {
   }), `${selector} must receive pointer input without another header covering it`).toBe(true);
 }
 
+for (const width of [1728, 375]) {
+  test(`generated copy preparation remains truthful at ${width}px`, async ({ page, context }, testInfo) => {
+    await page.setViewportSize({ width, height: 960 });
+    await authenticate(context);
+    const id = '00000000-0000-4000-8000-000000000011';
+    await page.route(`**/api/v1/admin/social/posts/${id}`, async route => {
+      if (route.request().method() !== 'GET') return route.fulfill({ status: 403, json: { detail: 'All writes held' } });
+      const response = await social(new Request(route.request().url()));
+      const draft = await response.json();
+      draft.document.master.hashtags = [];
+      draft.document.targets = [{ ...draft.document.targets[0], overrides: {} }];
+      await route.fulfill({ status: 200, json: draft, headers: { 'Access-Control-Allow-Origin': '*' } });
+    });
+    await page.goto(`/admin/social/${id}`);
+    await expect(page.getByText('Copy needs preparation', { exact: true })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Copy preparation checklist' })).toContainText('add relevant hashtags or a topic');
+    await expect(page.getByText(/source references are prepared/)).toHaveCount(0);
+    await expect(page.getByText('Publishing paused', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('copy-needs-preparation.png') });
+  });
+}
+
 test.beforeEach(async ({ page }) => { await inertReads(page); });
 
 test('reachability refuses transparent controls and covering headers', async ({ page }) => {
