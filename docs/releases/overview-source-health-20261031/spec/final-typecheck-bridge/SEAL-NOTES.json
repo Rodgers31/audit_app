@@ -1,0 +1,1 @@
+{"initial_seal_attempt":"Refused duplicate formatted titles, not an application test failure","cause":"Jest pretty-format sorts two distinct case-alias key-order inputs into the same fullName","correction":"Use source-bound occurrence ordinal in case identity; no project code or test result changed"}

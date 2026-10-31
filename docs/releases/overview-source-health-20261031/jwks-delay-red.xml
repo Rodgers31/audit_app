@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.083" timestamp="2026-10-31T16:06:45.389029+00:00" hostname="534c537b63e7"><testcase classname="tests.test_auth_retry_after" name="test_slow_provider_failure_advertises_the_remaining_attempt_cooldown" time="0.009"><failure message="AssertionError: assert '30' == '26'&#10;  &#10;  - 26&#10;  + 30">cold = None
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffffa5420dd0&gt;
+
+    def test_slow_provider_failure_advertises_the_remaining_attempt_cooldown(cold, monkeypatch):
+        clock = [100.0]
+        monkeypatch.setattr(auth, '_jwks_clock', lambda: clock[0])
+    
+        def fail():
+            clock[0] += 4.25
+            raise ValueError('Inert delayed issuer refusal')
+    
+        monkeypatch.setattr(auth, '_read_jwks', fail)
+        with pytest.raises(HTTPException) as leader:
+            auth._fetch_jwks()
+        with pytest.raises(HTTPException) as follower:
+            auth._fetch_jwks()
+&gt;       assert leader.value.headers['Retry-After'] == follower.value.headers['Retry-After'] == '26'
+E       AssertionError: assert '30' == '26'
+E         
+E         - 26
+E         + 30
+
+tests/test_auth_retry_after.py:78: AssertionError</failure></testcase></testsuite></testsuites>

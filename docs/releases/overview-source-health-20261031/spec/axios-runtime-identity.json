@@ -1,0 +1,11 @@
+{
+  "axios_installed": "1.20.0",
+  "axios_locked": "1.20.0",
+  "dependency_files": {
+    "axios/package.json": "cc221510be6315b0ebf648d7e4346680e47a828fafcbb9cc141922d2d219761e",
+    "axios/lib/helpers/sanitizeHeaderValue.js": "14d8ae78fc865b3f383dbcbdfec6eb7be8324bde55881f7e7a913f7fe0910764",
+    "axios/lib/core/AxiosHeaders.js": "95686cd10e46a01e41a23c76b3db7f81e3f0fc09a501293c9d143631b4107196",
+    "axios/lib/core/transformData.js": "f1fd720e64e5813aca4d362a0ba7b761c243876ce11aa80a78c9e195fd33caaa",
+    "axios/lib/core/dispatchRequest.js": "1297f79f14a9ede1952e572ee0eb50bbbff98beda6342b6b8a37efebe25b6d0b"
+  }
+}

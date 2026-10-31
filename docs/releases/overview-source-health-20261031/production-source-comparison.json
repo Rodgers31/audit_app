@@ -1,0 +1,126 @@
+{
+  "at": "2026-10-31T16:09:48.908571+00:00",
+  "installed_sha": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+  "candidate_module_sha256": "0b6cb695ab9c201809d8d82cad591f44fee909a5b82907d6e0a39612d584a2ef",
+  "not_installed": true,
+  "database_or_generation_work": false,
+  "before": {
+    "sources": {
+      "knbs": {
+        "key": "knbs",
+        "name": "Kenya National Bureau of Statistics",
+        "url": "https://www.knbs.or.ke",
+        "freshness": "fresh",
+        "outcome": "certificate_error",
+        "reachable": false,
+        "status_code": null,
+        "observed_at": "2026-10-31T16:09:46.982398+00:00"
+      },
+      "cob": {
+        "key": "cob",
+        "name": "Controller of Budget",
+        "url": "https://www.cob.go.ke",
+        "freshness": "fresh",
+        "outcome": "timeout",
+        "reachable": false,
+        "status_code": null,
+        "observed_at": "2026-10-31T16:09:46.982398+00:00"
+      },
+      "treasury": {
+        "key": "treasury",
+        "name": "National Treasury",
+        "url": "https://www.treasury.go.ke",
+        "freshness": "fresh",
+        "outcome": "certificate_error",
+        "reachable": false,
+        "status_code": null,
+        "observed_at": "2026-10-31T16:09:46.982398+00:00"
+      },
+      "cbk": {
+        "key": "cbk",
+        "name": "Central Bank of Kenya",
+        "url": "https://www.centralbank.go.ke",
+        "freshness": "fresh",
+        "outcome": "http_response",
+        "reachable": true,
+        "status_code": 200,
+        "observed_at": "2026-10-31T16:09:46.982398+00:00"
+      },
+      "oag": {
+        "key": "oag",
+        "name": "Office of the Auditor General",
+        "url": "https://www.oagkenya.go.ke",
+        "freshness": "fresh",
+        "outcome": "http_response",
+        "reachable": true,
+        "status_code": 200,
+        "observed_at": "2026-10-31T16:09:46.982398+00:00"
+      }
+    },
+    "running": false,
+    "configured_batch_seconds": 3,
+    "configured_refresh_seconds": 300
+  },
+  "after": {
+    "sources": {
+      "knbs": {
+        "key": "knbs",
+        "name": "Kenya National Bureau of Statistics",
+        "url": "https://www.knbs.or.ke",
+        "freshness": "fresh",
+        "outcome": "certificate_error",
+        "reachable": false,
+        "status_code": null,
+        "observed_at": "2026-10-31T16:09:48.908479+00:00",
+        "failure_reason": "certificate_chain_unverified"
+      },
+      "cob": {
+        "key": "cob",
+        "name": "Controller of Budget",
+        "url": "https://cob.go.ke",
+        "freshness": "fresh",
+        "outcome": "http_response",
+        "reachable": true,
+        "status_code": 200,
+        "observed_at": "2026-10-31T16:09:48.908479+00:00",
+        "failure_reason": null
+      },
+      "treasury": {
+        "key": "treasury",
+        "name": "National Treasury",
+        "url": "https://www.treasury.go.ke",
+        "freshness": "fresh",
+        "outcome": "certificate_error",
+        "reachable": false,
+        "status_code": null,
+        "observed_at": "2026-10-31T16:09:48.908479+00:00",
+        "failure_reason": "certificate_expired"
+      },
+      "cbk": {
+        "key": "cbk",
+        "name": "Central Bank of Kenya",
+        "url": "https://www.centralbank.go.ke",
+        "freshness": "fresh",
+        "outcome": "http_response",
+        "reachable": true,
+        "status_code": 200,
+        "observed_at": "2026-10-31T16:09:48.908479+00:00",
+        "failure_reason": null
+      },
+      "oag": {
+        "key": "oag",
+        "name": "Office of the Auditor General",
+        "url": "https://www.oagkenya.go.ke",
+        "freshness": "fresh",
+        "outcome": "http_response",
+        "reachable": true,
+        "status_code": 200,
+        "observed_at": "2026-10-31T16:09:48.908479+00:00",
+        "failure_reason": null
+      }
+    },
+    "running": false,
+    "configured_batch_seconds": 3,
+    "configured_refresh_seconds": 300
+  }
+}

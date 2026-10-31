@@ -1,0 +1,1 @@
+{"extends":"/work/frontend/tsconfig.json","compilerOptions":{"incremental":false,"noEmit":true,"strict":true,"types":["jest","node"],"typeRoots":["/work/frontend/node_modules/@types"]},"files":["/work/frontend/lib/api/axios.ts","/work/frontend/__tests__/lib/api/retryAfter.test.ts"],"include":[],"exclude":["/work/frontend/node_modules"]}

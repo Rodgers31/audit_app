@@ -1,0 +1,384 @@
+{
+  "id": "001",
+  "name": "Nairobi",
+  "slug": "nairobi",
+  "coordinates": [
+    36.8219,
+    -1.2921
+  ],
+  "demographics": {
+    "population": null,
+    "population_year": null,
+    "male_population": null,
+    "female_population": null,
+    "urban_population": null,
+    "rural_population": null,
+    "population_density": null
+  },
+  "governor": null,
+  "deputy_governor": null,
+  "officials_source": {
+    "governor": null,
+    "deputy_governor": null
+  },
+  "economic_profile": {
+    "latest_gcp": null,
+    "latest_poverty": null,
+    "economic_base": null,
+    "major_issues": [],
+    "major_issues_source": null
+  },
+  "budget": {
+    "figure_qualifications": {
+      "3": {
+        "allocated_amount": {
+          "status": "qualified",
+          "reason": "historical_source_not_value_checked",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "allocated_amount",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://example.invalid/synthetic-account.pdf",
+          "publisher": "Synthetic County Treasury",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        },
+        "actual_spent": {
+          "status": "qualified",
+          "reason": "historical_source_not_value_checked",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "actual_spent",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://example.invalid/synthetic-account.pdf",
+          "publisher": "Synthetic County Treasury",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        },
+        "committed_amount": {
+          "status": "unavailable",
+          "reason": "value_not_reported",
+          "source_kind": "unknown",
+          "identity": {
+            "measure": "committed_amount",
+            "entity_id": 1,
+            "geography": "Nairobi",
+            "period": "FY2024/25",
+            "unit": "KES",
+            "basis": "actual",
+            "dimensions": {
+              "category": "Total",
+              "subcategory": null,
+              "line_type": null
+            }
+          },
+          "source_document_id": 1,
+          "source_url": "https://example.invalid/synthetic-account.pdf",
+          "publisher": "Synthetic County Treasury",
+          "receipt_id": null,
+          "digest": null,
+          "locator": null,
+          "document_bytes_checked": false,
+          "value_checked": false
+        }
+      }
+    },
+    "total_allocated": 100.0,
+    "total_spent": 50.0,
+    "utilization_rate": 50.0,
+    "development_budget": 0.0,
+    "recurrent_budget": 0.0,
+    "per_capita_budget": null,
+    "sector_breakdown": {},
+    "fiscal_year": "FY2024/25",
+    "source": null,
+    "fiscal_period": {
+      "id": 1,
+      "label": "FY2024/25",
+      "start_date": "2024-07-01T00:00:00",
+      "end_date": "2025-06-30T00:00:00"
+    },
+    "sources": [
+      {
+        "id": 1,
+        "title": "Synthetic debt and budget source-shaped control",
+        "publisher": "Synthetic County Treasury",
+        "url": "https://example.invalid/synthetic-account.pdf",
+        "page_refs": [
+          "p.42"
+        ]
+      }
+    ],
+    "accounting_basis": "reported_total",
+    "absent_reasons": {}
+  },
+  "revenue": {
+    "total_revenue": null,
+    "total_revenue_target": null,
+    "equitable_share": null,
+    "equitable_share_target": null,
+    "additional_allocations": null,
+    "local_revenue": null,
+    "local_revenue_basis": null,
+    "summary_table_own_source_revenue": null,
+    "summary_table_own_source_target": null,
+    "summary_table_basis": null,
+    "total_revenue_basis": null,
+    "own_source_target": null,
+    "streams": [],
+    "fiscal_year": null,
+    "source": null,
+    "total_revenue_absent_reason": "no_reconciled_cbirr_revenue_table",
+    "own_source_disagreement": null,
+    "total_revenue_absence_source": null,
+    "sources": []
+  },
+  "debt": {
+    "total_debt": null,
+    "total_debt_absent_reason": "unsupported_currency",
+    "debt_currency": null,
+    "debt_accounting_basis": "selected_instrument_outstanding",
+    "debt_as_at": "2025-06-30",
+    "debt_basis": "actual",
+    "debt_coverage": "selected_eligible_instruments_only",
+    "debt_source_coverage": {
+      "status": "withheld_or_conflicting",
+      "sources": [],
+      "complete_liability_coverage": false
+    },
+    "pending_bills": null,
+    "pending_bills_selection": {
+      "amount": null,
+      "as_at": null,
+      "absent_reason": "not_reported_at_latest_date",
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false
+    },
+    "pending_bills_as_at": null,
+    "pending_bills_source": null,
+    "pending_bills_notes": [],
+    "pending_bills_absence": null,
+    "debt_to_budget_ratio": null,
+    "debt_to_budget_ratio_absent_reason": "unsupported_currency",
+    "per_capita_debt": null,
+    "breakdown": [
+      {
+        "lender": "Synthetic Bank",
+        "category": "other",
+        "principal": null,
+        "outstanding": null,
+        "absent_reasons": {
+          "principal": "unsupported_unit",
+          "outstanding": "unsupported_unit",
+          "interest_rate": "not_reported"
+        },
+        "interest_rate": null,
+        "currency": "USD",
+        "source_document_id": 1,
+        "page_ref": "p.42",
+        "basis": "actual",
+        "provenance": {
+          "as_at": "2025-06-30"
+        }
+      }
+    ],
+    "withheld": null
+  },
+  "audit": {
+    "status": "pending",
+    "signal": {
+      "status": "pending",
+      "severity": null,
+      "source_period": null,
+      "period_end": null,
+      "source_url": null,
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false,
+      "institution": null,
+      "measurement_basis": "finding_severity",
+      "official_opinion": false,
+      "selection_policy": "latest_executive_fiscal_year_maximum_severity",
+      "excluded": {},
+      "absent_reason": "no_publishable_audit_signal"
+    },
+    "grade": null,
+    "health_score": null,
+    "findings_count": 0,
+    "total_amount_involved": null,
+    "total_amount_involved_reason": "awaiting_sourced_data",
+    "by_severity": {
+      "info": 0,
+      "warning": 0,
+      "critical": 0
+    },
+    "findings": []
+  },
+  "health_history": [],
+  "health_history_absent_reason": "dated_health_components_unavailable",
+  "budget_execution_history": [
+    {
+      "fiscal_period": {
+        "id": 1,
+        "label": "FY2024/25",
+        "start_date": "2024-07-01T00:00:00",
+        "end_date": "2025-06-30T00:00:00"
+      },
+      "total_allocation": 100.0,
+      "total_spent": 50.0,
+      "execution_rate": 50.0,
+      "accounting_basis": "reported_total",
+      "currency": "KES",
+      "sources": [
+        {
+          "id": 1,
+          "title": "Synthetic debt and budget source-shaped control",
+          "publisher": "Synthetic County Treasury",
+          "url": "https://example.invalid/synthetic-account.pdf",
+          "page_refs": [
+            "p.42"
+          ]
+        }
+      ],
+      "absent_reasons": {},
+      "budget_lines_count": 1
+    }
+  ],
+  "missing_funds": {
+    "basis": "oag_finding_title",
+    "total_amount": null,
+    "total_amount_reason": "no_amount_extracted",
+    "cases_count": 0,
+    "cases": [],
+    "reason": "no_matching_findings",
+    "withheld": {
+      "count": 0,
+      "by_reason": {}
+    }
+  },
+  "stalled_projects": {
+    "count": null,
+    "total_contracted_value": null,
+    "total_contracted_value_rows": 0,
+    "total_amount_paid": null,
+    "total_amount_paid_rows": 0,
+    "projects": [],
+    "reason": "no_evidence_backed_source",
+    "source": null,
+    "cob_statements": null,
+    "reconciliation": null,
+    "withheld_fields": [],
+    "oag_findings": [],
+    "withheld": {
+      "count": 0,
+      "by_reason": {}
+    },
+    "narratives": {
+      "schema_version": 1,
+      "observations": [],
+      "sources": {},
+      "evidence": {},
+      "historical_identity_candidates": [],
+      "historical_candidate_reason": "annual_narrative_unavailable",
+      "qualification": "Source observations only; no combined count, financial total or current audit verification.",
+      "status": "absent",
+      "reason": "not_ingested",
+      "historical_observations": [],
+      "historical_sources": {},
+      "historical_evidence": {},
+      "historical_evidence_status": "unavailable",
+      "historical_refusals": []
+    }
+  },
+  "financial_summary": {
+    "health_score": null,
+    "grade": null,
+    "budget_execution_rate": 50.0,
+    "pending_bills_ratio": null,
+    "debt_sustainability": null
+  },
+  "financial_health": {
+    "score": null,
+    "grade": null,
+    "audit_signal": {
+      "status": "pending",
+      "severity": null,
+      "source_period": null,
+      "period_end": null,
+      "source_url": null,
+      "sources": [],
+      "source_count": 0,
+      "sources_truncated": false,
+      "institution": null,
+      "measurement_basis": "finding_severity",
+      "official_opinion": false,
+      "selection_policy": "latest_executive_fiscal_year_maximum_severity",
+      "excluded": {},
+      "absent_reason": "no_publishable_audit_signal"
+    },
+    "selection_policy": "latest_common_pending_date_and_latest_executive_audit_period",
+    "weighting": "audit_opinion_weighted",
+    "weights": {
+      "audit_opinion": 3,
+      "budget_absorption": 1,
+      "own_source_revenue": 1,
+      "pending_bills": 1
+    },
+    "effective_weight": 0,
+    "components": [],
+    "available_inputs": [
+      "budget_absorption"
+    ],
+    "unavailable_inputs": [
+      {
+        "name": "audit_opinion",
+        "reason": "no_publishable_audit_signal"
+      },
+      {
+        "name": "own_source_revenue",
+        "reason": "target_not_reported"
+      },
+      {
+        "name": "pending_bills",
+        "reason": "not_reported_at_latest_date"
+      }
+    ],
+    "minimum_components": 2,
+    "absent_reason": "fewer_than_two_components"
+  },
+  "data_sources": {
+    "budget": "Synthetic County Treasury \u2014 Synthetic debt and budget source-shaped control",
+    "audit": "Office of the Auditor General - County Government Audit Reports",
+    "debt": "Pending bills: no Controller of Budget year-end figure is published for this county. County debt: selected outstanding balances are unavailable or incomplete.",
+    "population": "Kenya National Bureau of Statistics (KNBS) Census 2019"
+  }
+}

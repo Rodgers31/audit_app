@@ -1,0 +1,11 @@
+PASS ../../evidence/retry-adversarial.test.tsx
+PASS __tests__/lib/api/retryBudget.test.ts
+PASS __tests__/lib/api/retryAfter.test.ts
+PASS __tests__/lib/api/retryBudgetServer.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       108 passed, 108 total
+Snapshots:   0 total
+Time:        2.41 s
+Ran all test suites within paths "/evidence/retry-adversarial.test.tsx", "/work/frontend/__tests__/lib/api/retryAfter.test.ts", "/work/frontend/__tests__/lib/api/retryBudget.test.ts", "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts".
+Test results written to: ../../evidence/controls.json

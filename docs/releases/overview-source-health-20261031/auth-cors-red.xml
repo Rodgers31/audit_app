@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.106" timestamp="2026-10-31T15:52:15.535423+00:00" hostname="ee13a87a3c0c"><testcase classname="tests.test_auth_retry_after" name="test_cold_followers_get_retry_advice_without_duplicate_key_fetch" time="0.010"><failure message="AssertionError: assert None == '1'&#10; +  where None = &lt;built-in method get of dict object at 0xffff98331bc0&gt;('Retry-After')&#10; +    where &lt;built-in method get of dict object at 0xffff98331bc0&gt; = (None or {}).get&#10; +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers&#10; +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = &lt;ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2&gt;.value">cold = None
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffff98267350&gt;
+
+    def test_cold_followers_get_retry_advice_without_duplicate_key_fetch(cold, monkeypatch):
+        entered, release = threading.Event(), threading.Event()
+        calls = []
+    
+        def read():
+            calls.append(True)
+            entered.set()
+            if not release.wait(2):
+                raise RuntimeError("Owned leader was not released")
+            return {"keys": []}
+    
+        monkeypatch.setattr(auth, "_read_jwks", read)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            leader = pool.submit(auth._fetch_jwks)
+            try:
+                assert entered.wait(1)
+                for _ in range(7):
+                    with pytest.raises(HTTPException) as caught:
+                        auth._fetch_jwks()
+                    assert caught.value.status_code == 503
+&gt;                   assert (caught.value.headers or {}).get("Retry-After") == "1"
+E                   AssertionError: assert None == '1'
+E                    +  where None = &lt;built-in method get of dict object at 0xffff98331bc0&gt;('Retry-After')
+E                    +    where &lt;built-in method get of dict object at 0xffff98331bc0&gt; = (None or {}).get
+E                    +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers
+E                    +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = &lt;ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2&gt;.value
+
+tests/test_auth_retry_after.py:40: AssertionError</failure></testcase><testcase classname="tests.test_auth_retry_after" name="test_provider_failure_cooldown_does_not_invite_an_immediate_retry" time="0.000"><failure message="AssertionError: assert None == '30'&#10; +  where None = &lt;built-in method get of dict object at 0xffff9817c040&gt;('Retry-After')&#10; +    where &lt;built-in method get of dict object at 0xffff9817c040&gt; = (None or {}).get&#10; +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers&#10; +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = &lt;ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2&gt;.value">cold = None
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffff982384d0&gt;
+
+    def test_provider_failure_cooldown_does_not_invite_an_immediate_retry(cold, monkeypatch):
+        def fail():
+            raise ValueError("Inert private issuer detail")
+    
+        monkeypatch.setattr(auth, "_read_jwks", fail)
+        with pytest.raises(HTTPException) as caught:
+            auth._fetch_jwks()
+        assert caught.value.status_code == 503
+&gt;       assert (caught.value.headers or {}).get("Retry-After") == "30"
+E       AssertionError: assert None == '30'
+E        +  where None = &lt;built-in method get of dict object at 0xffff9817c040&gt;('Retry-After')
+E        +    where &lt;built-in method get of dict object at 0xffff9817c040&gt; = (None or {}).get
+E        +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers
+E        +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = &lt;ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2&gt;.value
+
+tests/test_auth_retry_after.py:57: AssertionError</failure></testcase><testcase classname="tests.test_auth_retry_after" name="test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser" time="0.001"><failure message="AttributeError: 'AppSettings' object has no attribute 'CORS_ORIGINS'">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffff98238ce0&gt;
+
+    @pytest.mark.asyncio
+    async def test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser(monkeypatch):
+        import main
+    
+        def unavailable():
+            raise HTTPException(503, "Authentication keys temporarily unavailable", headers={"Retry-After": "1"})
+    
+        monkeypatch.setattr(main.app, "dependency_overrides", {**main.app.dependency_overrides, auth.get_current_user: unavailable})
+&gt;       origin = main.settings.CORS_ORIGINS[0]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_auth_retry_after.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = AppSettings(smtp_host=None, smtp_port=587, smtp_user=None, smtp_password=None, notify_email_to=None, environment='development', aws_bucket=None, aws_region='us-east-1')
+item = 'CORS_ORIGINS'
+
+    def __getattr__(self, item: str) -&gt; Any:
+        private_attributes = object.__getattribute__(self, '__private_attributes__')
+        if item in private_attributes:
+            attribute = private_attributes[item]
+            if hasattr(attribute, '__get__'):
+                return attribute.__get__(self, type(self))  # type: ignore
+    
+            try:
+                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
+                return self.__pydantic_private__[item]  # type: ignore
+            except KeyError as exc:
+                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
+        else:
+            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
+            # See `BaseModel.__repr_args__` for more details
+            try:
+                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
+            except AttributeError:
+                pydantic_extra = None
+    
+            if pydantic_extra and item in pydantic_extra:
+                return pydantic_extra[item]
+            else:
+                if hasattr(self.__class__, item):
+                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
+                else:
+                    # this is the current error
+&gt;                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
+E                   AttributeError: 'AppSettings' object has no attribute 'CORS_ORIGINS'
+
+/usr/local/lib/python3.12/site-packages/pydantic/main.py:1105: AttributeError</failure></testcase></testsuite></testsuites>

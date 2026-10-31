@@ -12,7 +12,7 @@
  */
 import { createClient } from '@/lib/supabase/client';
 import { getApiBase } from './base';
-import axios, { AxiosError, CanceledError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosHeaders, CanceledError, type InternalAxiosRequestConfig } from 'axios';
 
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
 
@@ -25,8 +25,28 @@ const baseURL = `${API_BASE}/api/${API_VERSION}`;
 const MAX_RETRIES = 2;
 /** Base delay between retries in ms (doubles each attempt: 1.5s → 3s) */
 const RETRY_BASE_DELAY = 1500;
+// Serving capacity refusals use delta-seconds. Longer or unknown instructions
+// remain visible failures; they cannot extend this client's existing backoff ceiling.
+const MAX_RETRY_AFTER_DELAY = RETRY_BASE_DELAY * 2;
 
 type RetryConfig = InternalAxiosRequestConfig & { __retryCount?: number };
+
+function capacityRetryDelay(error: AxiosError): number | undefined {
+  if (error.response?.status !== 503) return undefined;
+  const headers = error.response.headers;
+  let header: unknown;
+  if (headers instanceof AxiosHeaders) {
+    header = headers.get('Retry-After');
+  } else {
+    const matches = Object.entries(headers).filter(([name]) => name.toLowerCase() === 'retry-after');
+    if (matches.length !== 1) return undefined;
+    header = matches[0][1];
+  }
+  if (typeof header !== 'string' || /[\r\n]/.test(header)
+      || !/^[ \t]*[0-9]{1,3}[ \t]*$/.test(header)) return undefined;
+  const delay = Number(header) * 1000;
+  return delay <= MAX_RETRY_AFTER_DELAY ? delay : undefined;
+}
 
 /** Only safe reads get automatic retries. Mutations need caller-level decisions. */
 function isRetryable(error: AxiosError, config: RetryConfig): boolean {
@@ -48,10 +68,10 @@ function isRetryable(error: AxiosError, config: RetryConfig): boolean {
       'EAI_AGAIN',
     ].includes(error.code ?? '');
   }
-  // 502/504 — backend is booting or overloaded (worth retrying)
-  // 503 means "data not seeded/available" in this app.
+  // An explicit short Retry-After distinguishes temporary admission from
+  // unavailable data. A bare 503 remains a visible failure.
   const status = error.response.status;
-  return status === 502 || status === 504;
+  return status === 502 || status === 504 || capacityRetryDelay(error) !== undefined;
 }
 
 /** Abort a pending backoff immediately when its logical request is cancelled. */
@@ -143,7 +163,10 @@ apiClient.interceptors.response.use(
 
     if (isRetryable(error, config) && config.__retryCount < MAX_RETRIES) {
       config.__retryCount += 1;
-      const delay = RETRY_BASE_DELAY * Math.pow(2, config.__retryCount - 1);
+      const delay = Math.max(
+        RETRY_BASE_DELAY * Math.pow(2, config.__retryCount - 1),
+        capacityRetryDelay(error) ?? 0
+      );
 
       if (process.env.NODE_ENV === 'development') {
         console.log(

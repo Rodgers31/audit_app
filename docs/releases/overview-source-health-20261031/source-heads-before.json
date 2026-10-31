@@ -1,0 +1,143 @@
+{
+  "at": "2026-10-31T15:42:11.776836+00:00",
+  "httpx": "0.28.1",
+  "results": [
+    {
+      "url": "https://www.knbs.or.ke",
+      "seconds": 1.341,
+      "error_chain": [
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "SSLCertVerificationError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1010)",
+          "verify_code": 20,
+          "verify_message": "unable to get local issuer certificate"
+        }
+      ],
+      "tls_verification": true
+    },
+    {
+      "url": "https://www.treasury.go.ke",
+      "seconds": 1.421,
+      "error_chain": [
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "SSLCertVerificationError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": 10,
+          "verify_message": "certificate has expired"
+        }
+      ],
+      "tls_verification": true
+    },
+    {
+      "url": "https://www.cob.go.ke",
+      "seconds": 2.028,
+      "error_chain": [
+        {
+          "type": "ConnectTimeout",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectTimeout",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "TimeoutError",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "CancelledError",
+          "message": "Cancelled via cancel scope ffff9874bc50; reason: deadline exceeded",
+          "verify_code": null,
+          "verify_message": null
+        }
+      ],
+      "tls_verification": true
+    },
+    {
+      "url": "https://treasury.go.ke",
+      "seconds": 1.05,
+      "error_chain": [
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "SSLCertVerificationError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1010)",
+          "verify_code": 10,
+          "verify_message": "certificate has expired"
+        }
+      ],
+      "tls_verification": true
+    },
+    {
+      "url": "https://cob.go.ke",
+      "seconds": 2.016,
+      "error_chain": [
+        {
+          "type": "ConnectTimeout",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectTimeout",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "TimeoutError",
+          "message": "",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "CancelledError",
+          "message": "Cancelled via cancel scope ffff9874a850; reason: deadline exceeded",
+          "verify_code": null,
+          "verify_message": null
+        }
+      ],
+      "tls_verification": true
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+
+> audit-app-frontend@1.0.0 test:admin-shell
+> node scripts/verify-node-runtime.cjs && playwright test --config playwright.admin-shell.config.ts
+
+{"check":"node-runtime","node":"v24.22.1","supported":true}
+[2m[WebServer] [22mtooling repair: real owned node_modules required
+[2m[WebServer] [22m(node:73699) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+Error: Process from config.webServer was not able to start. Exit code: 1
+

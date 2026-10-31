@@ -1,0 +1,4 @@
+{
+  "exit": 1,
+  "reason": "Conservative freeze refused tracked environment template by .env prefix; no environment values were read or printed. Partial copy unexecuted. Final freeze excludes only active environment files, retains tracked template."
+}

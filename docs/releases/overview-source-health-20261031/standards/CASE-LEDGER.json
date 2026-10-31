@@ -1,0 +1,2744 @@
+{
+  "final_source_mapping_sha256": "99fbeb3939df0756ff07860fa29bb8628aa07f779c55a97dcb7ba1e1ac420568",
+  "independent_cases_per_mode": 31,
+  "affected_corroborations_per_mode": 140,
+  "cases": [
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[0.0]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[0.01]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[1.001]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[29.00001]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[29.999999]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_leader_failure_advertises_remaining_attempt_cooldown",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_exact_cooldown_boundary_recovers_once",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[signature]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[audience]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[kid]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_warm_cache_serves_verified_readers_during_one_forced_fetch",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_expired_cold_followers_refuse_immediately_while_single_fetch_runs",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_real_admin_cors_refusal_exposes_retry_only_for_allowed_origin[https://allowed.owned]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_real_admin_cors_refusal_exposes_retry_only_for_allowed_origin[https://unknown.owned]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_origin_preflight_cannot_read_private_endpoint",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[True]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[False]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[10]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[10.0]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[None]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[code5]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[code6]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[100000000000000000000000000000000000000000000000000]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cyclic_wrapped_failure_is_bounded_and_safe[False]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cyclic_wrapped_failure_is_bounded_and_safe[True]",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_clock_state_and_stale_diagnostics_never_claim_fresh_health",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_reason_and_model_reject_raw_diagnostic_text",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_one_batch_survives_legacy_caller_cancellation_and_keeps_legacy_shape",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_batch_deadline_retains_slot_until_all_client_cleanup_finishes",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_failed_client_entry_is_complete_safe_refusal",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_successful_next_batch_clears_previous_reason_at_exact_ttl",
+      "mode": "normal",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-normal.xml",
+      "command": "candidate-2-normal-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_cold_followers_get_retry_advice_without_duplicate_key_fetch",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_provider_failure_cooldown_does_not_invite_an_immediate_retry",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_slow_provider_failure_advertises_the_remaining_attempt_cooldown",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser[True]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser[False]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_random_key_ids_share_one_refresh_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header0]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header2]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header3]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header4]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header5]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_valid_signature_and_rotation_still_work",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_provider_failure_has_a_retry_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_concurrent_cold_requests_share_a_fetch",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document2]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document3]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document4]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document5]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_expired_keys_do_not_authorize_during_provider_failure",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_oversized_token_does_not_fetch_keys",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_refresh_followers_finish_before_the_provider_is_released[False]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_refresh_followers_finish_before_the_provider_is_released[True]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_chunked_oversized_document_stops_before_it_is_buffered",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_small_healthy_document_is_accepted",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[65537]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[-1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[1,1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[NaN]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_encoded_response_is_refused_before_decompression[headers0]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_encoded_response_is_refused_before_decompression[headers1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_exact_limit_document_is_accepted_and_closed",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_late_body_cannot_publish_and_refresh_can_recover",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed0]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed1]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed2]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed3]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_failed_forced_refresh_preserves_last_valid_document",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_healthy_cached_key_needs_no_provider_request",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_wrapped_certificate_failure_retains_its_classification",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error0-certificate_expired-expired]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error1-certificate_chain_unverified-chain]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error2-certificate_chain_unverified-chain]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error3-certificate_hostname_mismatch-hostname]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error4-certificate_untrusted-certificate]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error5-connect_timeout-connection]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error6-response_timeout-response]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_cob_uses_verified_direct_homepage_within_existing_batch_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_status_returns_while_source_probe_is_still_pending",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_cold_unknown_coalesces_and_warm_reads_do_not_probe",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_stale_success_and_clock_reversal_are_not_fresh",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_deadline_closes_batch_and_retains_timeout_as_an_observation",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc0-timeout]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc1-certificate_error]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc2-certificate_error]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc3-request_error]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc4-request_error]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_legacy_waits_for_a_real_boolean_then_reuses_same_batch",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_cancelled_legacy_waiter_does_not_cancel_shared_probe",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_no_observations_or_database_cannot_be_healthy",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_v2_is_admin_gated_before_database_or_source_work",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_v2_does_not_inspect_retired_web_module",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_authenticated_wire_shape_and_private_headers",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cold_database_work_allows_unrelated_async_progress",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_identical_cold_misses_and_warm_hits_do_one_snapshot",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cancelled_loader_retains_slot_until_session_closed",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_new_generation_is_bounded_and_late_fill_is_unreachable[distinct_stripes]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_new_generation_is_bounded_and_late_fill_is_unreachable[same_stripe]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[empty]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[query_failure]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[creation_failure]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[partial_failure]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[close_failure]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_positive_ttl_and_failure_ttl_recovery",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_executor_refusal_releases_slot_without_session",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_real_sql_session_closes_before_async_heads",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[404]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[500]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cancelled_request_observes_eventual_worker_exception",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[127.0.0.1-RateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[127.0.0.1-RedisRateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[::1-RateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[::1-RedisRateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[None-RateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[None-RedisRateLimitMiddleware]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rotating_ips_cannot_bypass_aggregate_process_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_redis_slow_operation_releases_to_bounded_visible_local_mode",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_optional_redis_initialization_is_bounded_and_does_not_reset_local_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs0-413]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs1-414]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs2-400]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs3-400]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs4-400]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs5-415]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_chunked_bound_and_exact_signed_bytes_are_preserved",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_slow_body_deadline_and_cancellation_release_admission",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_cancelled_downstream_request_releases_all_admission_state",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_parallel_bodies_share_one_process_byte_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_inflight_saturation_refuses_without_queue_and_health_stays_available",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_largest_declared_social_document_fits_wire_body_budget",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_large_admin_json_has_same_predecode_ceiling_without_verified_auth[None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_large_admin_json_has_same_predecode_ceiling_without_verified_auth[Bearer invalid-local-token]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-application/problem+json]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-text/plain]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-application/problem+json]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-text/plain]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-application/problem+json]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-text/plain]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_string_delimiters_and_chunk_split_escapes_preserve_exact_bytes",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-16-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-16-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-32-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-32-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-16-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-16-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-32-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-32-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-16-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-16-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-32-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-32-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-16-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-16-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-32-le]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-32-be]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_utf8_bom_and_escaped_nul_are_preserved",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_complex_admin_json_is_refused_before_auth_dependency_or_decode[None]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_complex_admin_json_is_refused_before_auth_dependency_or_decode[Bearer invalid-local-token]",
+      "mode": "normal",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-normal.xml",
+      "command": "canonical-affected-normal-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[0.0]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[0.01]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[1.001]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[29.00001]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cold_cooldown_advice_uses_ceil_remaining_without_fetch[29.999999]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_leader_failure_advertises_remaining_attempt_cooldown",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_exact_cooldown_boundary_recovers_once",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[signature]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[audience]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_retry_changes_never_accept_invalid_signed_claims[kid]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_warm_cache_serves_verified_readers_during_one_forced_fetch",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_expired_cold_followers_refuse_immediately_while_single_fetch_runs",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_real_admin_cors_refusal_exposes_retry_only_for_allowed_origin[https://allowed.owned]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_real_admin_cors_refusal_exposes_retry_only_for_allowed_origin[https://unknown.owned]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_origin_preflight_cannot_read_private_endpoint",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[True]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[False]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[10]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[10.0]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[None]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[code5]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[code6]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_malformed_certificate_code_does_not_invent_specific_diagnosis[100000000000000000000000000000000000000000000000000]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cyclic_wrapped_failure_is_bounded_and_safe[False]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_cyclic_wrapped_failure_is_bounded_and_safe[True]",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_clock_state_and_stale_diagnostics_never_claim_fresh_health",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_unknown_reason_and_model_reject_raw_diagnostic_text",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_one_batch_survives_legacy_caller_cancellation_and_keeps_legacy_shape",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_batch_deadline_retains_slot_until_all_client_cleanup_finishes",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_failed_client_entry_is_complete_safe_refusal",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "test_backend_independent::test_successful_next_batch_clears_previous_reason_at_exact_ttl",
+      "mode": "optimized",
+      "kind": "independent",
+      "outcome": "passed",
+      "junit": "candidate-2-optimized.xml",
+      "command": "candidate-2-optimized-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_cold_followers_get_retry_advice_without_duplicate_key_fetch",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_provider_failure_cooldown_does_not_invite_an_immediate_retry",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_slow_provider_failure_advertises_the_remaining_attempt_cooldown",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser[True]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_auth_retry_after::test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser[False]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_random_key_ids_share_one_refresh_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header0]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header2]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header3]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header4]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_invalid_header_never_fetches_keys[header5]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_valid_signature_and_rotation_still_work",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_provider_failure_has_a_retry_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_concurrent_cold_requests_share_a_fetch",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document2]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document3]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document4]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_malformed_provider_response_refuses_and_backs_off[document5]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_expired_keys_do_not_authorize_during_provider_failure",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_request_budget::test_oversized_token_does_not_fetch_keys",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_refresh_followers_finish_before_the_provider_is_released[False]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_refresh_followers_finish_before_the_provider_is_released[True]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_chunked_oversized_document_stops_before_it_is_buffered",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_small_healthy_document_is_accepted",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[65537]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[-1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[1,1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_invalid_declared_length_is_refused_before_body_read[NaN]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_encoded_response_is_refused_before_decompression[headers0]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_encoded_response_is_refused_before_decompression[headers1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_exact_limit_document_is_accepted_and_closed",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_transport_bounds::test_late_body_cannot_publish_and_refresh_can_recover",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed0]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed1]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed2]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_provider_recovery_does_not_wait_for_poisoned_cache_ttl[malformed3]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_failed_forced_refresh_preserves_last_valid_document",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_jwks_cache_recovery::test_healthy_cached_key_needs_no_provider_request",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_wrapped_certificate_failure_retains_its_classification",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error0-certificate_expired-expired]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error1-certificate_chain_unverified-chain]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error2-certificate_chain_unverified-chain]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error3-certificate_hostname_mismatch-hostname]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error4-certificate_untrusted-certificate]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error5-connect_timeout-connection]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_unavailable_source_reason_survives_without_exposing_library_text[error6-response_timeout-response]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_source_failure_diagnostics::test_cob_uses_verified_direct_homepage_within_existing_batch_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_status_returns_while_source_probe_is_still_pending",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_cold_unknown_coalesces_and_warm_reads_do_not_probe",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_stale_success_and_clock_reversal_are_not_fresh",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_deadline_closes_batch_and_retains_timeout_as_an_observation",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc0-timeout]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc1-certificate_error]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc2-certificate_error]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc3-request_error]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_error_classification_without_exception_text[exc4-request_error]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_legacy_waits_for_a_real_boolean_then_reuses_same_batch",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_cancelled_legacy_waiter_does_not_cancel_shared_probe",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_no_observations_or_database_cannot_be_healthy",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_v2_is_admin_gated_before_database_or_source_work",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_v2_does_not_inspect_retired_web_module",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_status_v2::test_authenticated_wire_shape_and_private_headers",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cold_database_work_allows_unrelated_async_progress",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_identical_cold_misses_and_warm_hits_do_one_snapshot",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cancelled_loader_retains_slot_until_session_closed",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_new_generation_is_bounded_and_late_fill_is_unreachable[distinct_stripes]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_new_generation_is_bounded_and_late_fill_is_unreachable[same_stripe]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[empty]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[query_failure]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[creation_failure]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[partial_failure]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_database_absence_and_failures_are_truthful[close_failure]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_positive_ttl_and_failure_ttl_recovery",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_executor_refusal_releases_slot_without_session",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_real_sql_session_closes_before_async_heads",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[404]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[500]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_source_checks_remain_async_and_report_failures[None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_pipeline_health_worker::test_cancelled_request_observes_eventual_worker_exception",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[127.0.0.1-RateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[127.0.0.1-RedisRateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[::1-RateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[::1-RedisRateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[None-RateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_loopback_and_missing_peer_share_enforced_budgets[None-RedisRateLimitMiddleware]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rotating_ips_cannot_bypass_aggregate_process_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_redis_slow_operation_releases_to_bounded_visible_local_mode",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_optional_redis_initialization_is_bounded_and_does_not_reset_local_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs0-413]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs1-414]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs2-400]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs3-400]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs4-400]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_rejects_large_or_ambiguous_input_before_handler[kwargs5-415]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_chunked_bound_and_exact_signed_bytes_are_preserved",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_slow_body_deadline_and_cancellation_release_admission",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_cancelled_downstream_request_releases_all_admission_state",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_parallel_bodies_share_one_process_byte_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_inflight_saturation_refuses_without_queue_and_health_stays_available",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_largest_declared_social_document_fits_wire_body_budget",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_large_admin_json_has_same_predecode_ceiling_without_verified_auth[None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_large_admin_json_has_same_predecode_ceiling_without_verified_auth[Bearer invalid-local-token]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-application/problem+json]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[containers-[{},{},{},{}]-text/plain]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-application/problem+json]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[depth-[[[[0]]]]-text/plain]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-application/problem+json]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_geometry_is_refused_before_framework_decode[separators-{\"a\":1,\"b\":2,\"c\":3}-text/plain]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_string_delimiters_and_chunk_split_escapes_preserve_exact_bytes",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-16-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_json_alternate_encodings_cannot_bypass_byte_geometry[utf-32-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-16-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-16-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-32-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-text/plain-utf-32-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-16-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-16-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-32-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[two-whitespace-application/octet-stream-utf-32-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-16-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-16-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-32-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-text/plain-utf-32-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-16-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-16-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-32-le]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_whitespace_prefixed_alternate_json_cannot_bypass_manual_mime_geometry[multiple-decoder-chunks-application/octet-stream-utf-32-be]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_utf8_bom_and_escaped_nul_are_preserved",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_complex_admin_json_is_refused_before_auth_dependency_or_decode[None]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    },
+    {
+      "id": "tests.test_request_resource_bounds::test_complex_admin_json_is_refused_before_auth_dependency_or_decode[Bearer invalid-local-token]",
+      "mode": "optimized",
+      "kind": "author affected-selection corroboration",
+      "outcome": "passed",
+      "junit": "canonical-affected-optimized.xml",
+      "command": "canonical-affected-optimized-command.json"
+    }
+  ],
+  "red_not_counted": "candidate-1-normal.xml:30pass/1failure before leader remaining-delay fix"
+}

@@ -1,0 +1,14 @@
+{
+  "query": [
+    "docker",
+    "ps",
+    "-a",
+    "--filter",
+    "name=overview-spec-",
+    "--format",
+    "{{.Names}}"
+  ],
+  "exit_code": 0,
+  "remaining_owned": [],
+  "shared_touched": false
+}

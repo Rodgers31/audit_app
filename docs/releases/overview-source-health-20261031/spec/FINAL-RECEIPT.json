@@ -1,0 +1,138 @@
+{
+  "verdict": "SCOPED FRONTEND ACCEPTANCE; no remaining confirmed finding",
+  "source": {
+    "head": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+    "files": 838,
+    "mapping_sha256": "898853c53c560452bc03f44b63e7ff4241536f52abf220a29900fbc10e7f2bf8",
+    "axios_sha256": "8bf17d9e1ab78965a9f904cd77a4d598faca49114334c25b0786cdf6f8df3fa4",
+    "author_test_sha256": "7d021f0c15f6b2dbdd7bf18c26b0a3f9aa30f75024dabc9d79e26713ade3b768",
+    "independent_fixture_sha256": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+    "classification_update": "Raw invalid headers normalized to valid numeric values by locked Axios are now positive bounded controls; values remaining malformed after normalization are refusal controls. Old failed expectations retained."
+  },
+  "execution": {
+    "total": 105,
+    "independent": 60,
+    "repository": 45,
+    "passed": 105,
+    "failed": 0,
+    "skipped": 0,
+    "exit_code": 0,
+    "wall_seconds": 3.6799979209899902,
+    "suite_counts": {
+      "/evidence/retry-adversarial.test.tsx": 60,
+      "/work/frontend/__tests__/lib/api/retryBudget.test.ts": 19,
+      "/work/frontend/__tests__/lib/api/retryAfter.test.ts": 25,
+      "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts": 1
+    },
+    "overview_integration_cases": [
+      {
+        "suite": "/evidence/retry-adversarial.test.tsx",
+        "title": "actual Overview + QueryClient + actual Axios adapter all seven concurrent real queries recover temporary503 automatically without refresh",
+        "outcome": "passed",
+        "duration_ms": 190
+      },
+      {
+        "suite": "/evidence/retry-adversarial.test.tsx",
+        "title": "actual Overview + QueryClient + actual Axios adapter permanent503, malformed instruction and malformed recovered payload stay unavailable",
+        "outcome": "passed",
+        "duration_ms": 76
+      },
+      {
+        "suite": "/evidence/retry-adversarial.test.tsx",
+        "title": "actual Overview + QueryClient + actual Axios adapter actor switch cancels every old503 backoff and isolates new actor data/token",
+        "outcome": "passed",
+        "duration_ms": 90
+      },
+      {
+        "suite": "/evidence/retry-adversarial.test.tsx",
+        "title": "actual Overview + QueryClient + actual Axios adapter auth revocation aborts all old503 work and never retries after session disappears",
+        "outcome": "passed",
+        "duration_ms": 35
+      },
+      {
+        "suite": "/evidence/retry-adversarial.test.tsx",
+        "title": "actual Overview + QueryClient + actual Axios adapter unmount aborts pending503 work without any replay",
+        "outcome": "passed",
+        "duration_ms": 25
+      }
+    ]
+  },
+  "runtime": {
+    "node": "v24.22.1",
+    "arch": "x64",
+    "platform": "linux",
+    "axios": "1.20.0"
+  },
+  "docker_image": "sha256:e1582112fb9f152ed38eefcd712efc93fee1becb519fdfa57574d5e07eaa5e7d",
+  "caps": {
+    "cpus": 1,
+    "memory": "1g",
+    "pids": 256,
+    "network": "none",
+    "source": "readonly",
+    "dependencies": "readonly"
+  },
+  "findings": {
+    "S1": {
+      "final_classification": "REFUTED as an application strict-input defect under locked Axios1.20.0",
+      "initial_observation": "Raw LF/CRLF adapter response objects caused bounded retries, contradicting an incorrect raw-byte refusal expectation",
+      "executed_causal_result": "Axios sanitizes response headers before the application interceptor; both raw object and mutated AxiosHeaders variants normalize to valid numeric1",
+      "preserved_rejected_hypotheses": [
+        "run-3:2failed/98passed",
+        "final:4failed/98passed",
+        "sanitizer-probe:2failed/2passed (class-instance raw refusal expectation also wrong)"
+      ],
+      "final_contract": "Normalized-valid1 recovers in2bounded attempts; values remaining malformed after normalization are refused. Defensive CR/LF check retained without raw-byte acceptance claim."
+    }
+  },
+  "source_after": {
+    "files": 838,
+    "frozen_mismatches": [],
+    "checkout_mismatches": []
+  },
+  "cleanup": {
+    "owned_prefix": "overview-spec-",
+    "remaining_owned_container_names": [],
+    "query_exit_code": 0,
+    "shared_containers_touched": false
+  },
+  "scope_limits": [
+    "Actual Axios custom adapter and controlled Supabase session ports; no real HTTP transport/provider",
+    "Actual Overview, QueryClient and decoders in JSDOM; no browser layout claim",
+    "Backend fixes, source-monitor results and production recovery not certified",
+    "No project source/test edits, shared-container changes, provider/prod calls or activation"
+  ],
+  "artifact_sha256": {
+    "CASE-LEDGER.json": "8ca1b9eaec0e695682a5aa32c22eef09e45c31e810f63a317a861c97436344b8",
+    "SOURCE-AFTER.json": "864093fb1707bb75776b11ab15e046d3429dd79516d24bbc5a74134f04d50bd4",
+    "FINDINGS.json": "248ff0a0620d710b2cd0c5803601c3bf93cc8eff8656492374fe678eecaf4d89",
+    "final-2-source-identity.json": "b883210e56dd111f7dfd9032fcdb310f41faf61c4dc4161a40af979338c2a475",
+    "final-2-source-manifest.json": "6bb32758de67d388cdec62fd4a206d20589872204d84b6924b1a68e1028ba6cc",
+    "final-2.command.json": "b6fa9b2775b7b3068d3dc9265465db932673a693b716625a26c4ab5dd75dee5c",
+    "final-2.exit.json": "875e2aefa9082ead99ce6f42745e7158a3322727980a3f03bdd9bb8b1343144c",
+    "final-2.json": "5d9256bc8808809693e860d3954f9aa75fa7bd4e8b0d29b5f74053cc56bce997",
+    "final-2.txt": "315b170a21269189e5d6a3be75aad70dac6520bb3294533d8a0237731bd38499",
+    "retry-adversarial.test.tsx": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+    "jest.config.cjs": "eec66a56a23a5f1bf933d3800a08c018886ae0c8d5437e20fa4b3421755df258",
+    "axios-runtime-identity.json": "e63d417cb4c8e23ecd124c7f00d9dabdd5438f77f1f8cb7b9f24530a706cb796",
+    "runtime.json": "12a59364294b88d22060df40e5eb53e0d48f97bbbff3ee790fc618c3b6f6f3dd",
+    "cleanup.json": "8c423594043274c4f96974665c59b989399f26c5856c33c4a6b9b17101f450ac",
+    "run-1.command.json": "e1dfaca3778437a9b2f207f88f3d0e2e5cfe6218a6e8893f033f43ccc7e10ea1",
+    "run-1.exit.json": "62e3b5f4b306928ba168cdfd7704c9d0a3351101f8b549288a792275844d54c6",
+    "run-1.txt": "9988d3ac87aa5de4259be3c735454c8fd03bca67cdbff3ee9b439c94b9c3c6a4",
+    "run-2.json": "13296b6da4087d91b42e289e21d35894653a1400b37e87dc844df57efbe71943",
+    "run-2.txt": "56f93898671506181c5db32d7b6e0c5d25a530670897c73085a27b063d6f4471",
+    "run-3.json": "e1beaa4d87bd033265710ac0bc05776ea31682cf3ffbed5afb10dce15932e557",
+    "run-3.txt": "6585ceb036b0ebffeb2c3ed7642febd296c673e9df5361e38bf6a787996666f4",
+    "initial-findings.json": "a724acf03046e65c2b36b69aff073191ce57917bcd9842a9488542e9bc0652fa",
+    "header-probes.jsonl": "db530e91824c3937b1b952b943d7e3b36bfcb219ba90219cd7485185e190452a",
+    "final.json": "90d2cc6f53fe44e56cce7370723f444b83c8ae692b49ca9266eba556e0bafd29",
+    "final.txt": "1a818102144fb7f8ab1f336964fe938486bdc57882ff351c284eb362e5680b4a",
+    "final-header-probes.jsonl": "db530e91824c3937b1b952b943d7e3b36bfcb219ba90219cd7485185e190452a",
+    "sanitizer-probe.test.ts": "43678cfb56c3642caeb02429d8bc7a367b9fc67fb58fc04446601e028b31cf1e",
+    "sanitizer-probe.json": "0a10af9a2230e4926cbf3c81e35962881059ec7ffe60c7f66de2b9240fcff8a0",
+    "sanitizer-probe-values.json": "13937165f7aca963606aaa63a7ce3d1953fdf1a7abfc191883d62ae57b5b852a",
+    "final-2-header-probes.jsonl": "6f4b503c997aebda90386ffee8e5261e113230f21f085fc3b62f43f65d0408d7",
+    "retry-adversarial.raw-refusal-hypothesis.tsx.bytes": "9ce642bc488881352f2387e0416d513e96a01730ef28e0340fce3c6d5f8f5b8a"
+  }
+}

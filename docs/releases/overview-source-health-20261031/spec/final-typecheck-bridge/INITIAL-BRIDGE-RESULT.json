@@ -1,0 +1,22 @@
+{
+  "scope": "Final typed header bridge, b7502d686612a7a83ea0160c6a6388f9f442bf81e1b4165dbe365e834f24b594 / b1ee1a91ba6476f166b2a35f80af960fe3f9e0abd9588dd9143fa5bb5c0c68d0",
+  "controls105": {
+    "passed": 105,
+    "exit": 0
+  },
+  "raw_path_delta": {
+    "passed": 7,
+    "failed": 1,
+    "limits": "Direct invocation of actual registered interceptor; normal Axios transport canonicalizes headers before interceptor",
+    "finding": "P3 S2: first-match plain-object fallback accepts an ambiguous pair of case-variant Retry-After keys and reissues; old accepted callback refuses that ordering"
+  },
+  "focused_strict_typescript": {
+    "exit_code": 0,
+    "seconds": 2.8560330867767334
+  },
+  "source_after": {
+    "frozen": [],
+    "current": []
+  },
+  "old_case_control": "old-case.json: selected one before-fix negative passes; seven intentionally unselected tests not credited"
+}

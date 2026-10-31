@@ -13,13 +13,30 @@ from pydantic import BaseModel
 
 SOURCES = {
     "knbs": ("Kenya National Bureau of Statistics", "https://www.knbs.or.ke"),
-    "cob": ("Controller of Budget", "https://www.cob.go.ke"),
+    "cob": ("Controller of Budget", "https://cob.go.ke"),
     "treasury": ("National Treasury", "https://www.treasury.go.ke"),
     "cbk": ("Central Bank of Kenya", "https://www.centralbank.go.ke"),
     "oag": ("Office of the Auditor General", "https://www.oagkenya.go.ke"),
 }
 REFRESH_SECONDS = 300
 BATCH_SECONDS = 3
+
+FailureReason = Literal[
+    "certificate_expired", "certificate_chain_unverified", "certificate_hostname_mismatch",
+    "certificate_untrusted", "connect_timeout", "response_timeout", "request_timeout",
+    "redirect_limit", "request_failed",
+]
+FAILURE_MESSAGES = {
+    "certificate_expired": "The publisher's HTTPS certificate has expired. A renewed certificate is required.",
+    "certificate_chain_unverified": "The publisher's HTTPS certificate chain could not be verified. A complete trusted chain is required.",
+    "certificate_hostname_mismatch": "The HTTPS certificate does not match the publisher hostname.",
+    "certificate_untrusted": "The publisher's HTTPS certificate could not be verified.",
+    "connect_timeout": "The homepage connection exceeded the check budget; source availability is unconfirmed.",
+    "response_timeout": "The homepage response exceeded the check budget; source availability is unconfirmed.",
+    "request_timeout": "The homepage check exceeded its time budget; source availability is unconfirmed.",
+    "redirect_limit": "The homepage exceeded the permitted redirect limit.",
+    "request_failed": "The homepage request failed; source availability is unconfirmed.",
+}
 
 
 class SourceObservation(BaseModel):
@@ -31,6 +48,7 @@ class SourceObservation(BaseModel):
     reachable: bool | None
     status_code: int | None = None
     observed_at: str | None = None
+    failure_reason: FailureReason | None = None
 
 
 class PipelineHealthV2(BaseModel):
@@ -48,16 +66,44 @@ class PipelineHealthV2(BaseModel):
 
 def exception_outcome(exc: Exception) -> str:
     """Classify without returning remote/library error text or internal paths."""
+    return failure_detail(exc)[0]
+
+
+def failure_detail(exc: Exception) -> tuple[str, FailureReason]:
+    """Keep verification failures distinct without disclosing exception text."""
+    if isinstance(exc, httpx.ConnectTimeout):
+        return "timeout", "connect_timeout"
+    if isinstance(exc, httpx.ReadTimeout):
+        return "timeout", "response_timeout"
     if isinstance(exc, (httpx.TimeoutException, TimeoutError)):
-        return "timeout"
+        return "timeout", "request_timeout"
     cause = exc
+    certificate_seen = False
     for _ in range(8):
-        if isinstance(cause, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(cause):
-            return "certificate_error"
+        if isinstance(cause, ssl.SSLCertVerificationError):
+            code = getattr(cause, "verify_code", None)
+            reasons = {10: "certificate_expired", 20: "certificate_chain_unverified",
+                       21: "certificate_chain_unverified", 62: "certificate_hostname_mismatch"}
+            return "certificate_error", reasons.get(code, "certificate_untrusted") if type(code) is int else "certificate_untrusted"
+        certificate_seen = certificate_seen or "CERTIFICATE_VERIFY_FAILED" in str(cause)
         cause = cause.__cause__ or cause.__context__
         if cause is None:
             break
-    return "request_error"
+    if certificate_seen:
+        return "certificate_error", "certificate_untrusted"
+    if isinstance(exc, httpx.TooManyRedirects):
+        return "request_error", "redirect_limit"
+    return "request_error", "request_failed"
+
+
+def observation_error(source: dict) -> str:
+    reason = source.get("failure_reason")
+    if isinstance(reason, str) and reason in FAILURE_MESSAGES:
+        return FAILURE_MESSAGES[reason]
+    return {"timeout": "Homepage check timed out.",
+            "certificate_error": "Certificate verification failed.",
+            "request_error": "Homepage request failed."}.get(
+                source["outcome"], f"Homepage returned HTTP {source['status_code']}.")
 
 
 class SourceReachability:
@@ -96,11 +142,11 @@ class SourceReachability:
                 record = copy.deepcopy(self._records.get(key, {}))
                 sources[key] = dict(key=key, name=name, url=url, freshness=freshness,
                                     outcome="not_observed", reachable=None,
-                                    status_code=None, observed_at=None) | record
+                                    status_code=None, observed_at=None, failure_reason=None) | record
                 sources[key]["freshness"] = freshness
                 if freshness == "unknown":
                     sources[key].update(outcome="not_observed", reachable=None,
-                                        status_code=None, observed_at=None)
+                                        status_code=None, observed_at=None, failure_reason=None)
             return sources, self._running
 
     async def legacy(self) -> dict:
@@ -124,9 +170,7 @@ class SourceReachability:
             if source["status_code"] is not None:
                 row["status_code"] = source["status_code"]
             else:
-                row["error"] = {"timeout": "Homepage check timed out.",
-                                "certificate_error": "Certificate verification failed.",
-                                "request_error": "Homepage request failed."}[source["outcome"]]
+                row["error"] = observation_error(source)
             result[key] = row
         return result
 
@@ -137,9 +181,10 @@ class SourceReachability:
             try:
                 response = await client.head(url)
                 result = dict(outcome="http_response", reachable=response.status_code < 500,
-                              status_code=response.status_code)
+                              status_code=response.status_code, failure_reason=None)
             except Exception as exc:
-                result = dict(outcome=exception_outcome(exc), reachable=False, status_code=None)
+                outcome, reason = failure_detail(exc)
+                result = dict(outcome=outcome, reachable=False, status_code=None, failure_reason=reason)
             results[key] = result
 
         async def batch():
@@ -154,10 +199,12 @@ class SourceReachability:
                 await asyncio.wait_for(batch(), timeout=BATCH_SECONDS)
             except TimeoutError:
                 for key in SOURCES:
-                    results.setdefault(key, dict(outcome="timeout", reachable=False, status_code=None))
+                    results.setdefault(key, dict(outcome="timeout", reachable=False, status_code=None,
+                                                 failure_reason="request_timeout"))
             except Exception:
                 for key in SOURCES:
-                    results.setdefault(key, dict(outcome="request_error", reachable=False, status_code=None))
+                    results.setdefault(key, dict(outcome="request_error", reachable=False, status_code=None,
+                                                 failure_reason="request_failed"))
             observed = datetime.now(timezone.utc).isoformat()
             with self._lock:
                 self._records = {key: value | {"observed_at": observed} for key, value in results.items()}
@@ -171,11 +218,7 @@ def assemble_health(snapshot: dict, sources: dict, in_progress: bool) -> dict:
     alerts = copy.deepcopy(snapshot["alerts"])
     for key, source in sources.items():
         if source["freshness"] == "fresh" and source["reachable"] is False:
-            detail = {
-                "certificate_error": "Certificate verification failed.",
-                "timeout": "Homepage check timed out.",
-                "request_error": "Homepage request failed.",
-            }.get(source["outcome"], f"Homepage returned HTTP {source['status_code']}.")
+            detail = observation_error(source)
             alerts.append(dict(level="warning", source=key, message=detail))
     errors = sum(a["level"] == "error" for a in alerts)
     warnings = sum(a["level"] == "warning" for a in alerts)

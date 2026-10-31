@@ -1,0 +1,59 @@
+{
+  "at": "2026-10-31T15:52:17.410993+00:00",
+  "results": [
+    {
+      "host": "www.knbs.or.ke",
+      "exit": 1,
+      "served_chain": [
+        {
+          "subject": "CN=knbs.or.ke",
+          "issuer": "CN=YE2,O=Let's Encrypt,C=US",
+          "not_before": "2026-10-21T10:51:03+00:00",
+          "not_after": "2027-01-19T10:51:02+00:00",
+          "sha256": "49e2e1ac290cda2bf21d7b33c74e9070e1162b2616767ed6eeb1a5306297aaab"
+        }
+      ],
+      "verification_diagnostics": [
+        "depth=0 CN=knbs.or.ke",
+        "verify error:num=20:unable to get local issuer certificate",
+        "20800F8AFFFF0000:error:0A000086:SSL routines:tls_post_process_server_certificate:certificate verify failed:../ssl/statem/statem_clnt.c:2124:"
+      ]
+    },
+    {
+      "host": "www.treasury.go.ke",
+      "exit": 1,
+      "served_chain": [
+        {
+          "subject": "CN=*.treasury.go.ke",
+          "issuer": "CN=emSign SSL CA - G1,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN",
+          "not_before": "2025-10-06T11:16:02+00:00",
+          "not_after": "2026-10-31T11:16:02+00:00",
+          "sha256": "f113b7ca7314908c5c42d529e0a2e30d83b420fce14dc978dcf6c1687c892f2b"
+        },
+        {
+          "subject": "CN=emSign SSL CA - G1,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN",
+          "issuer": "CN=emSign Root CA - G1,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN",
+          "not_before": "2018-02-18T18:30:00+00:00",
+          "not_after": "2033-02-18T18:30:00+00:00",
+          "sha256": "47b2efbc3670e7db4b41f22c51fc02ee84fb2dbf3082a49f2c2688122e9210a1"
+        },
+        {
+          "subject": "CN=emSign Root CA - G1,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN",
+          "issuer": "CN=emSign Root CA - G1,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN",
+          "not_before": "2018-02-18T18:30:00+00:00",
+          "not_after": "2043-02-18T18:30:00+00:00",
+          "sha256": "40f6af0346a99aa1cd1d555a4e9cce62c7f9634603ee406615833dc8c8d00367"
+        }
+      ],
+      "verification_diagnostics": [
+        "depth=2 C=IN, OU=emSign PKI, O=eMudhra Technologies Limited, CN=emSign Root CA - G1",
+        "verify return:1",
+        "depth=1 C=IN, OU=emSign PKI, O=eMudhra Technologies Limited, CN=emSign SSL CA - G1",
+        "verify return:1",
+        "depth=0 CN=*.treasury.go.ke",
+        "verify error:num=10:certificate has expired",
+        "20009A9CFFFF0000:error:0A000086:SSL routines:tls_post_process_server_certificate:certificate verify failed:../ssl/statem/statem_clnt.c:2124:"
+      ]
+    }
+  ]
+}

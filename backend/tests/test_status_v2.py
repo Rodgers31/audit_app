@@ -7,7 +7,7 @@ import httpx
 import pytest
 import database
 import main
-from test_pipeline_health_worker import SessionProbe, health_runtime
+from .test_pipeline_health_worker import SessionProbe, health_runtime
 from services import source_reachability as sr
 
 REAL_CLIENT = httpx.AsyncClient

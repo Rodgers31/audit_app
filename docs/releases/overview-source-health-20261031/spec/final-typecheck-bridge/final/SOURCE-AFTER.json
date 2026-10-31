@@ -1,0 +1,27 @@
+{
+  "verified_files": 838,
+  "frozen_mismatches": [],
+  "checkout_mismatches": [],
+  "exact_original105_ids_preserved": true,
+  "added_repository_cases": 3,
+  "source_pins": {
+    "files": 838,
+    "mapping_sha256": "cd582ddfd7d74e7bc8944b7a363b7083d812cab50ea6ff31b03064d9e6659c9e",
+    "delta": {
+      "frontend/__tests__/lib/api/retryAfter.test.ts": {
+        "before": "b1ee1a91ba6476f166b2a35f80af960fe3f9e0abd9588dd9143fa5bb5c0c68d0",
+        "after": "68c4a714a5574490f16c2f5c4b6dbcafd84bfd813c59314cc9e825905d575aa9"
+      },
+      "frontend/lib/api/axios.ts": {
+        "before": "b7502d686612a7a83ea0160c6a6388f9f442bf81e1b4165dbe365e834f24b594",
+        "after": "52fc764319c621878c9adea225ec9cca58e7980850ff37735209d6074400fb5a"
+      }
+    },
+    "fixtures": {
+      "retry-adversarial.test.tsx": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+      "raw-header-path.test.ts": "2dab8e86f045778e520525ba150de78917923cf835d8cd1fcdd287092f0c4a5a",
+      "jest.config.cjs": "eec66a56a23a5f1bf933d3800a08c018886ae0c8d5437e20fa4b3421755df258",
+      "tsconfig.focused.json": "1fa4a3d441db75fcc2c5fcebc65f09191f6496cbaa03a4d4755e1a50b6fec6ee"
+    }
+  }
+}
