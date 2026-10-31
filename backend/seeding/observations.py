@@ -28,7 +28,8 @@ def worldbank_observations(response, client, *, indicator: str, measure: str,
     if not isinstance(payload, list) or len(payload) != 2 or not isinstance(payload[0], dict) or not isinstance(payload[1], list):
         raise ValueError("Unexpected World Bank response")
     meta, rows = payload
-    if meta.get("pages") != 1 or meta.get("page") != 1 or meta.get("total") != len(rows):
+    if (any(type(meta.get(key)) is not int for key in ("page", "pages", "total"))
+            or meta["pages"] != 1 or meta["page"] != 1 or meta["total"] != len(rows)):
         raise ValueError("World Bank response is partial or missing completeness metadata")
     receipt = copy_receipt(receipt, parser_version="worldbank-observation-v1")
     out = ObservedSeries()

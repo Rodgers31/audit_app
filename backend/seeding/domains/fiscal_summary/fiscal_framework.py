@@ -82,8 +82,9 @@ Anchors were read from the real editions on 2026-09-26, not from any
 description of them: FY 2026/27 (1,390,375 bytes, sha256 1e24992d...550b,
 annex PDF p.63, narrative pp.12-13) and FY 2023/24 (1,963,493 bytes, annex
 PDF p.62, narrative p.10). The FY 2023/24 edition prints no "Tax Revenue" row,
-so its tax split is withheld rather than assembled. The FY 2022/23 edition's
-annex is a scanned image with no text layer and is refused as such.
+so its tax split is withheld rather than assembled. Image annexes with a
+readable title use bounded local OCR; their cells must pass the same edition,
+column, sign and reconciliation gates as text-layer tables.
 """
 
 from __future__ import annotations
@@ -361,6 +362,15 @@ def gate_column(
     missing = [k for k in REQUIRED_ROWS if k not in col]
     if missing:
         raise FiscalFrameworkError("column_incomplete", ", ".join(missing))
+    if any(not isinstance(value, Decimal) or not value.is_finite() for value in col.values()):
+        raise FiscalFrameworkError("invalid_financial_cell")
+    nonnegative = ("total_revenue", "ordinary_revenue", "ministerial_aia", "expenditure",
+                   "recurrent", "development", "county_transfers", "contingency", "grants",
+                   "interest", "equitable_share", "nominal_gdp")
+    if any(col[key] < 0 for key in nonnegative if key in col):
+        raise FiscalFrameworkError("implausible_sign", "negative revenue or expenditure component")
+    if "interest" in col and col["interest"] > col["recurrent"] + _tolerance(2):
+        raise FiscalFrameworkError("implausible_sign", "interest exceeds recurrent expenditure")
     checks: List[str] = []
     _check(
         "ordinary + ministerial AiA = total revenue",
@@ -410,6 +420,8 @@ def gate_column(
         tax_ok, tax_reason = False, "edition_prints_no_tax_or_non_tax_row"
     else:
         try:
+            if any(col[key] < 0 for key in ("tax_revenue", "non_tax_revenue", *TAX_HEADS) if key in col):
+                raise FiscalFrameworkError("implausible_tax_sign")
             _check(
                 "tax + non-tax = ordinary revenue",
                 col["ordinary_revenue"],
@@ -472,8 +484,14 @@ class Edition:
 
 
 def _normalise_fy(label: str) -> Optional[str]:
-    m = re.search(r"(20\d{2})\s*[/_-]\s*(\d{2})(?!\d)", label or "")
-    return f"FY {m.group(1)}/{m.group(2)}" if m else None
+    m = re.search(r"(20\d{2})\s*[/_-]\s*(20\d{2}|\d{2})(?!\d)", label or "")
+    if not m:
+        return None
+    start, end = int(m.group(1)), m.group(2)
+    if (len(end) == 4 and int(end) != start + 1
+            or len(end) == 2 and int(end) != (start + 1) % 100):
+        return None
+    return f"FY {start}/{str(start + 1)[-2:]}"
 
 
 def edition_fiscal_year(pages: Sequence[str], *, fiscal_year: Optional[str]) -> str:
@@ -484,14 +502,17 @@ def edition_fiscal_year(pages: Sequence[str], *, fiscal_year: Optional[str]) -> 
     exactly the state it exists to report.
     """
     cover = " ".join(pages[:3])
-    cover_fy = None
-    m = re.search(
-        r"budget\s+summary\s+for\s+the\s+(?:fy|fiscal\s+year)\s*(20\d{2}\s*/\s*\d{2})",
+    matches = re.findall(
+        r"budget\s+summary\s+for\s+the\s+(?:fy|fiscal\s+year)\s*(20\d{2}\s*/\s*(?:20\d{2}|\d{2}))(?!\d)",
         cover,
         re.I,
     )
-    if m:
-        cover_fy = _normalise_fy(m.group(1))
+    years = {_normalise_fy(label) for label in matches}
+    if None in years or len(years) > 1:
+        raise FiscalFrameworkError("ambiguous_cover_year")
+    cover_fy = next(iter(years), None)
+    if fiscal_year and _normalise_fy(fiscal_year) != fiscal_year:
+        raise FiscalFrameworkError("invalid_link_year")
     if fiscal_year and cover_fy and cover_fy != fiscal_year:
         raise FiscalFrameworkError(
             "cover_disagrees_with_link",
@@ -515,10 +536,80 @@ def extract_page_texts(pdf_path) -> List[dict]:
     import pdfplumber
 
     with pdfplumber.open(pdf_path) as pdf:
-        return [
+        records = [
             {"page": i + 1, "text": page.extract_text() or ""}
             for i, page in enumerate(pdf.pages)
         ]
+        candidates = [i for i, record in enumerate(records)
+                      if _ANNEX_MARKER in _squash(record["text"])
+                      and "annextable2a" in _squash(record["text"])
+                      and pdf.pages[i].images]
+        for index in candidates:
+            record = records[index]
+            try:
+                parse_annex_lines(record["text"].splitlines(), page=index + 1)
+                continue
+            except FiscalFrameworkError as exc:
+                if exc.reason not in ("annex_has_no_rows", "rows_not_found"):
+                    continue
+            if len(candidates) != 1:
+                record.update(ocr_status="unavailable", ocr_reason="ambiguous_image_annex")
+                continue
+            try:
+                recovered = _read_image_annex(pdf.pages[index])
+                headings = []
+                for line in record["text"].splitlines():
+                    tokens = line.split()
+                    while tokens and _NUM_RE.fullmatch(tokens[-1]):
+                        tokens.pop()
+                    label = " ".join(tokens).lower()
+                    if not any(re.fullmatch(pattern, label) for _, pattern in _ROW_PATTERNS):
+                        headings.append(line)
+                # Keep known title/column qualifications, but never mix old
+                # partial numeric cells into the complete OCR table.
+                record["text"] = "\n".join([*headings, recovered])
+                record["ocr_status"] = "read"
+            except Exception as exc:
+                record.update(ocr_status="unavailable",
+                              ocr_reason=exc.reason if isinstance(exc, FiscalFrameworkError)
+                              else type(exc).__name__)
+        return records
+
+
+def _read_image_annex(page) -> str:
+    """One image table at 300dpi; OCR cannot bypass any financial gate."""
+    import math
+    import numpy as np
+    import pytesseract
+    from PIL import Image
+
+    width, height = page.width, page.height
+    if (any(isinstance(v, bool) or not isinstance(v, (int, float))
+            or not math.isfinite(v) or v <= 0 for v in (width, height))
+            or width * height * (300 / 72) ** 2 > 12_000_000):
+        raise FiscalFrameworkError("ocr_page_bounds")
+    if not any((image["x1"] - image["x0"]) * (image["bottom"] - image["top"])
+               >= .4 * width * height for image in page.images):
+        raise FiscalFrameworkError("ocr_table_image_unavailable")
+    rendered = page.to_image(resolution=300, antialias=True).original
+    if rendered.width * rendered.height > 12_000_000:
+        raise FiscalFrameworkError("ocr_page_bounds")
+    image = rendered.convert("L")
+    pixels = np.array(image)
+    # Grid rules span most of a page axis; glyph strokes do not. Removing
+    # only those rules avoids treating a cell border as a digit or minus.
+    vertical = (pixels < 200).mean(axis=0) > .60
+    horizontal = (pixels < 200).mean(axis=1) > .60
+    pixels[:, vertical] = 255
+    pixels[horizontal, :] = 255
+    text = pytesseract.image_to_string(
+        Image.fromarray(pixels), config="--psm 6 -c preserve_interword_spaces=1", timeout=20,
+    )
+    if not isinstance(text, str) or not 1 <= len(text) <= 100_000:
+        raise FiscalFrameworkError("ocr_text_bounds")
+    text = text.replace('|', ' ').replace('"', '')
+    parse_annex_lines(text.splitlines(), page=page.page_number)
+    return text
 
 
 def read_edition(pages: Sequence[str], *, fiscal_year: Optional[str]) -> Edition:
@@ -531,12 +622,13 @@ def read_edition(pages: Sequence[str], *, fiscal_year: Optional[str]) -> Edition
     """
     fy = edition_fiscal_year(pages, fiscal_year=fiscal_year)
 
-    annex_page = next(
-        (i for i, t in enumerate(pages) if _ANNEX_MARKER in _squash(t) and "annextable2a" in _squash(t)),
-        None,
-    )
-    if annex_page is None:
+    candidates = [i for i, t in enumerate(pages)
+                  if _ANNEX_MARKER in _squash(t) and "annextable2a" in _squash(t)]
+    if not candidates:
         raise FiscalFrameworkError("annex_table_2a_not_found")
+    if len(candidates) != 1:
+        raise FiscalFrameworkError("ambiguous_annex_table_2a")
+    annex_page = candidates[0]
     table = parse_annex_lines(pages[annex_page].splitlines(), page=annex_page + 1)
 
     # The narrative lives before the annexes. Only prose amounts ("KSh N

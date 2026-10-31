@@ -12,7 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     curl \
     ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     && /usr/bin/ffprobe -version >/dev/null \
+    && audit_ocr_languages="$(/usr/bin/tesseract --list-langs)" \
+    && printf '%s\n' "$audit_ocr_languages" | grep -qx eng \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies

@@ -231,7 +231,9 @@ class TestTheStepItself:
         assert result.returncode == 0, (
             f"a fully live night was reported as a failure.\n{out}"
         )
-        assert "All domains completed successfully." in out
+        assert "Refresh completed with source gaps or ingestion warnings" in out
+        # The two declared fixture-only jobs complete with warnings even on
+        # this healthy historical night; execution success must name those.
         assert "[FAIL]" not in out
 
     def test_a_failed_domain_still_fails(self, tmp_path):

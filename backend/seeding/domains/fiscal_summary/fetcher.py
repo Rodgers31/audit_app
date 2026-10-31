@@ -1,15 +1,15 @@
 """Fetcher for fiscal summary data.
 
-Strategy (in order):
-1. Try World Bank Indicators API for government expenditure, external debt,
-   and debt service data — merge into the existing fixture payload.
-2. Fall back to the static fixture / configured URL.
+Load the configured baseline, then apply source-specific CoB original-gross
+and Treasury budget/revenue/framework observations. A failed or partial
+refresh retains the baseline and records the missing coverage explicitly.
 """
 
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+import math
+from typing import Any, Dict, Optional
 
 from ...config import SeedingSettings
 from ...http_client import SeedingHttpClient
@@ -63,7 +63,7 @@ _WB_INDICATORS: Dict[str, str] = {
 def fetch_fiscal_summary_payload(
     client: SeedingHttpClient, settings: SeedingSettings
 ) -> dict[str, Any]:
-    """Fetch fiscal summary data, enriching fixture with World Bank API data."""
+    """Refresh fiscal estimates only from matching financial source contracts."""
     # Always load the fixture as baseline
     payload = load_json_resource(
         url=settings.fiscal_summary_dataset_url,
@@ -72,34 +72,22 @@ def fetch_fiscal_summary_payload(
         label="fiscal_summary",
     )
 
-    wb_applied = False
-    wb_years = 0
     cob_status = "not_attempted"
     cob_promoted = False
     estimates_status = "not_attempted"
     estimates_applied = False
     revenue_status = "not_attempted"
     revenue_applied = False
+    refreshed_revenue_years: set[str] = set()
     framework_status = "not_attempted"
     framework_applied = False
+    estimates = None
+    listing_facts = {}
 
-    # Try World Bank enrichment
-    if settings.enrich_with_worldbank and settings.live_pdf_fetch_enabled:
-        try:
-            wb_data = _fetch_worldbank_fiscal_data(client, settings)
-            if wb_data:
-                payload = _merge_worldbank_data(payload, wb_data)
-                wb_applied = True
-                wb_years = len(wb_data)
-                logger.info(
-                    "Enriched fiscal summary with World Bank data",
-                    extra={"wb_years": list(wb_data.keys())},
-                )
-        except Exception as exc:
-            logger.warning(
-                "World Bank enrichment failed, using fixture only: %s", exc
-            )
-
+    # World Bank calendar-year expenditure/receipts are actuals with different
+    # periods and bases from original gross appropriations and Treasury annual
+    # ordinary-revenue estimates. Their own observation domains ingest them;
+    # do not spend four requests manufacturing unqualified fiscal-year stubs.
     # Live COB NG-BIRR headline overlay (recommendation #3): refine the
     # latest-year appropriated_budget from the authoritative Controller-of-
     # Budget report — but only through the plausibility + reconciliation
@@ -184,7 +172,9 @@ def fetch_fiscal_summary_payload(
                     known_prior_ordinary_billion=(prior_row or {}).get("total_revenue"),
                 )
                 if revenue_est:
-                    payload, rev_apply = _apply_revenue_estimates(payload, revenue_est)
+                    payload, rev_apply = _apply_revenue_estimates(
+                        payload, revenue_est, refreshed_years=refreshed_revenue_years
+                    )
                     revenue_applied = rev_apply.startswith("applied=")
                     revenue_status = rev_apply
             else:
@@ -203,35 +193,61 @@ def fetch_fiscal_summary_payload(
         try:
             editions, listing_facts = _fetch_budget_summary_editions(client, settings)
             payload["_run_facts"] = listing_facts
-            payload, framework_status = _apply_fiscal_framework(payload, editions)
+            payload, framework_status = _apply_fiscal_framework(
+                payload, editions, refreshed_revenue_years=refreshed_revenue_years
+            )
             framework_applied = framework_status.startswith("applied=")
             logger.info("fiscal_summary Treasury fiscal framework: %s", framework_status)
         except Exception as exc:
             framework_status = f"error({type(exc).__name__})"
             logger.warning("Treasury fiscal framework step skipped: %s", exc)
 
-    # Provenance, graded by WHAT actually moved. "live" is reserved for a run
-    # in which a publisher replaced the headline budget; a World-Bank-only run
-    # is still live data but says so precisely, because a mode of "live" on
-    # its own would overstate what was refreshed.
-    from ...freshness import mark_fixture, mark_live
+    # A successful budget overlay alone cannot establish complete revenue,
+    # framework and historical-edition coverage for the whole domain.
+    from ...freshness import mark_fixture, mark_live, mark_partial
+
+    listed = listing_facts.get(LISTING_EDITIONS_FACT) or {}
+    unreadable = {url: entry.get("status", "unrecorded") for url, entry in listed.items()
+                  if entry.get("status") != "read"}
+    row_gaps = {str(row.get("fiscal_year")): row.get("fiscal_framework_absent_reason")
+                or row.get("tax_split_absent_reason") or "no_current_edition_framework"
+                for row in payload.get("fiscal_years", [])
+                if not row.get("fiscal_framework") or row.get("fiscal_framework_absent_reason")
+                or row.get("tax_split_absent_reason")
+                or (row["fiscal_framework"].get("source") or {}).get("url") not in listed}
+    framework_complete = bool(framework_applied and listed and not unreadable and not row_gaps
+                              and " refused=" not in framework_status)
+    expected_revenue_years = {str(row["fiscal_year"]) for row in payload.get("fiscal_years", [])
+                              if row.get("fiscal_year")}
+    missing_revenue_years = expected_revenue_years - refreshed_revenue_years
+    revenue_applied = bool(refreshed_revenue_years)
+    revenue_complete = revenue_applied and not missing_revenue_years
+    budget_applied = estimates_applied or cob_promoted
+    components = {
+        "budget": {"state": "live" if budget_applied else "unavailable", "detail": estimates_status,
+                   "cob_detail": cob_status},
+        "revenue": {"state": "live" if revenue_complete else "partial" if revenue_applied
+                   else "unavailable", "detail": revenue_status,
+                    "refreshed_years": sorted(refreshed_revenue_years),
+                    "missing_years": sorted(missing_revenue_years)},
+        "framework": {"state": ("live" if framework_complete else "partial" if framework_applied
+                                 else "unavailable"), "detail": framework_status,
+                      "unreadable_editions": unreadable, "unconfirmed_years": row_gaps},
+        "worldbank": {"state": "not_applicable", "reason": "financial_measure_or_period_not_established"},
+    }
+    payload.setdefault("_run_facts", {}).update(refresh_components=components)
 
     detail = (
         f"COB overlay: {cob_status}; Treasury estimates: {estimates_status}; "
         f"Treasury revenue: {revenue_status}; "
-        f"Treasury fiscal framework: {framework_status}; World Bank: {wb_years} year(s)"
+        f"Treasury fiscal framework: {framework_status}; World Bank fiscal promotion: not applicable"
     )
-    if estimates_applied or cob_promoted or revenue_applied or framework_applied:
-        # A headline budget figure was actually replaced from a publisher.
+    if budget_applied and revenue_complete and framework_complete:
         mark_live("fiscal_summary", detail=detail)
-    elif wb_applied:
-        # World Bank enrichment is genuinely live and does move rows, but it
-        # never touches the headline budget — so the DETAIL says plainly that
-        # the budget is still the fixture's. "live" on its own would
-        # overstate what was refreshed.
-        mark_live(
+    elif budget_applied or revenue_applied or framework_applied:
+        mark_partial(
             "fiscal_summary",
-            detail=f"World Bank indicators only; headline budget unchanged. {detail}",
+            reason="fiscal_components_incomplete", detail=detail,
         )
     else:
         mark_fixture(
@@ -398,7 +414,7 @@ def _fetch_revenue_estimates(
         return None, f"parse_failed({type(exc).__name__})"
 
 
-def _apply_revenue_estimates(payload, series):
+def _apply_revenue_estimates(payload, series, *, refreshed_years=None):
     """Write every gated revenue estimate onto its fiscal year.
 
     Unlike ``_overlay_live_revenue_headline`` this may CREATE a year, which is
@@ -452,6 +468,8 @@ def _apply_revenue_estimates(payload, series):
             "checks": list(estimates.checks),
         }
         row["_revenue_source"] = "treasury_budget_summary_live"
+        if refreshed_years is not None:
+            refreshed_years.add(fiscal_year)
         applied.append(fiscal_year)
 
     if not applied:
@@ -463,6 +481,21 @@ def _apply_revenue_estimates(payload, series):
 #: ``seeding/staleness.py`` imports these rather than spelling them again.
 LISTING_NEWEST_FY_FACT = "budget_summary_listing_newest_fy"
 LISTING_EDITIONS_FACT = "budget_summary_editions"
+
+
+class _UncacheableOCRResults(Exception):
+    def __init__(self, records):
+        super().__init__("OCR unavailable; retain refusal details but retry next invocation")
+        self.records = records
+
+
+def _extract_budget_summary_pages(path):
+    from .fiscal_framework import extract_page_texts
+
+    records = extract_page_texts(path)
+    if any(record.get("ocr_status") == "unavailable" for record in records):
+        raise _UncacheableOCRResults(records)
+    return records
 
 
 def _fetch_budget_summary_editions(client, settings):
@@ -486,9 +519,8 @@ def _fetch_budget_summary_editions(client, settings):
     from pathlib import Path
 
     from ...discovery import find_pdf_links, parse_fiscal_year
-    from ...parse_cache import parse_with_cache
+    from ...parse_cache import parse_with_cache, parser_digest
     from ...pdf_download import get_or_download_pdf
-    from ..counties_budget.fetcher import _pdf_stack_versions
     from .fiscal_framework import (
         FiscalFrameworkError,
         edition_fiscal_year,
@@ -508,6 +540,22 @@ def _fetch_budget_summary_editions(client, settings):
         facts["budget_summary_listing_status"] = f"unreachable({type(exc).__name__})"
         return [], facts
     facts["budget_summary_listing_status"] = "read"
+    extractor_hash = parser_digest(extract_page_texts)
+    cache_dependencies = None
+    try:
+        from importlib.metadata import version
+        import json
+        import pytesseract
+        ocr_version = str(pytesseract.get_tesseract_version())
+        languages = pytesseract.get_languages(config="")
+        packages = {name: version(name) for name in
+                    ("pdfplumber", "pdfminer.six", "pytesseract", "numpy", "Pillow", "pypdfium2")}
+        if (extractor_hash and ocr_version.strip() and "eng" in languages
+                and all(isinstance(v, str) and v.strip() for v in packages.values())):
+            cache_dependencies = json.dumps({"extractor": extractor_hash, "ocr": ocr_version,
+                                             "languages": sorted(languages), "packages": packages}, sort_keys=True)
+    except Exception:
+        logger.info("Fiscal extractor fingerprint unavailable; bypassing parse cache")
 
     links = []
     for absolute, _href in find_pdf_links(response.text, page_url):
@@ -534,18 +582,25 @@ def _fetch_budget_summary_editions(client, settings):
                 max_seconds=settings.pdf_download_timeout_seconds,
                 max_bytes=settings.pdf_download_max_bytes,
             )
-            records = parse_with_cache(
-                pdf_path,
-                cache_dir=Path(settings.cache_path) / "pdfs",
-                kind="budget_summary_pages",
-                parse_fn=lambda p=pdf_path: extract_page_texts(p),
-                enabled=settings.parse_cache_enabled,
-                key_extra=_pdf_stack_versions(),
-            )
+            try:
+                records = parse_with_cache(
+                    pdf_path,
+                    cache_dir=Path(settings.cache_path) / "pdfs",
+                    kind="budget_summary_pages",
+                    parse_fn=lambda p=pdf_path: _extract_budget_summary_pages(p),
+                    enabled=settings.parse_cache_enabled and cache_dependencies is not None,
+                    key_extra=cache_dependencies or "",
+                )
+            except _UncacheableOCRResults as exc:
+                records = exc.records
         except Exception as exc:
             entry["status"] = f"unreadable({type(exc).__name__})"
             continue
         pages = [r.get("text") or "" for r in sorted(records, key=lambda r: r["page"])]
+        ocr = [{k: r[k] for k in ("page", "ocr_status", "ocr_reason") if k in r}
+               for r in records if "ocr_status" in r]
+        if ocr:
+            entry["image_annex_ocr"] = ocr
         try:
             entry["fiscal_year"] = edition_fiscal_year(pages, fiscal_year=link_fy)
             edition = read_edition(pages, fiscal_year=entry["fiscal_year"])
@@ -570,7 +625,7 @@ def _fetch_budget_summary_editions(client, settings):
     return editions, facts
 
 
-def _apply_fiscal_framework(payload, editions):
+def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
     """Write each fiscal year's gated split onto its row. Pure; idempotent.
 
     For every row, editions are tried newest first and the first one that
@@ -613,6 +668,25 @@ def _apply_fiscal_framework(payload, editions):
     if not editions:
         return payload, "no_editions_read"
 
+    # Compare duplicate editions of the SAME budget year before promoting
+    # any column. Different years are legitimate vintages, joined below by
+    # the row's revenue source; comparing those would reject valid actuals.
+    by_year = {}
+    for url, edition in editions:
+        by_year.setdefault(edition.fiscal_year, []).append((url, edition))
+    conflicting_years = set()
+    for fy, candidates in by_year.items():
+        signatures = set()
+        for _url, edition in candidates:
+            try:
+                split = split_for_fiscal_year(edition, fy, known_ordinary_revenue=None)
+            except FiscalFrameworkError:
+                continue  # the existing per-column gate records this refusal
+            signatures.add((tuple(sorted(split.values.items())), split.tax_split_ok,
+                            split.tax_split_reason))
+        if len(signatures) > 1:
+            conflicting_years.add(fy)
+
     # An edition may describe a year the payload does not have yet. Create it
     # the way the budget books do; the API still withholds it until it can
     # cite a page.
@@ -628,7 +702,15 @@ def _apply_fiscal_framework(payload, editions):
     for row in fiscal_years:
         fy = row.get("fiscal_year")
         reasons = []
+        if fy in conflicting_years:
+            reason = "conflicting_approved_editions_for_same_fiscal_year"
+            refused[fy] = [reason]
+            row["fiscal_framework_absent_reason"] = reason
+            continue
         for url, edition in editions:
+            if edition.fiscal_year in conflicting_years:
+                reasons.append(f"{edition.fiscal_year} edition: conflicting_approved_editions_for_same_fiscal_year")
+                continue
             revenue_url = (row.get("revenue_source") or {}).get("url")
             same_document = revenue_url == url and row.get("total_revenue") is not None
             if fy != edition.fiscal_year and not same_document:
@@ -677,6 +759,8 @@ def _apply_fiscal_framework(payload, editions):
                 "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
             }
             row["_revenue_source"] = "treasury_budget_summary_annex_live"
+            if refreshed_revenue_years is not None:
+                refreshed_revenue_years.add(fy)
         if split.tax_split_ok:
             total = row.get("total_revenue")
             if total is not None and abs(Decimal(str(total)) - ordinary) <= Decimal("0.05"):
@@ -726,8 +810,8 @@ def _apply_budget_estimates(
 
         if check_fiscal_summary(candidate):
             return payload, "failed_plausibility"
-    except Exception:  # guard unavailable — the parser's own gates still ran
-        pass
+    except Exception:
+        return payload, "plausibility_unavailable"
 
     row = next(
         (r for r in fiscal_years if r.get("fiscal_year") == estimates.fiscal_year),
@@ -810,7 +894,7 @@ def _fetch_cob_headlines(
         ) as tmp:
             tmp.write(pdf_resp.content)
             tmp_path = Path(tmp.name)
-        budget, revenue, report_fy = extract_cob_headlines(tmp_path)
+        budget, revenue, report_fy = extract_cob_headlines(tmp_path, original_budget_only=True)
         return (
             float(budget) if budget is not None else None,
             float(revenue) if revenue is not None else None,
@@ -875,7 +959,7 @@ def _overlay_live_budget_headline(
         live = float(live_budget_billion)
     except (TypeError, ValueError):
         return payload, "bad_live_value"
-    if live <= 0:
+    if not math.isfinite(live) or live <= 0 or isinstance(live_budget_billion, bool):
         return payload, "bad_live_value"
 
 
@@ -887,7 +971,7 @@ def _overlay_live_budget_headline(
         if check_fiscal_summary({**latest, "appropriated_budget": live}):
             return payload, "failed_plausibility"
     except Exception:
-        pass  # if the guard can't run, fall through to the tolerance check
+        return payload, "plausibility_unavailable"
 
     # (b) reconciliation — must be near the last-known fixture value.
     fixture_budget = latest.get("appropriated_budget")
@@ -946,68 +1030,16 @@ def _overlay_live_revenue_headline(
     tolerance_pct: float = 15.0,
     fiscal_year: Optional[str] = None,
 ) -> tuple[Dict[str, Any], str]:
-    """Promote a live-parsed TOTAL revenue onto the latest fiscal year ONLY if
-    it (a) passes the plausibility gate and (b) reconciles within
-    ``tolerance_pct`` of the fixture's last-known value. ``tax_revenue`` and
-    ``non_tax_revenue`` are scaled proportionally so the components keep summing
-    to the total (otherwise the #1 reconciliation check would reject the row).
-    Otherwise the fixture stands. Safe-by-construction: missing / implausible /
-    far-off → no-op.
+    """Refuse an unqualified scalar; it cannot establish an annual estimate.
+
+    CoB collection actuals and Treasury ordinary-revenue estimates have
+    different periods and bases. A scalar also provides no tax/non-tax split.
+    Only the existing Treasury table/annex readers may replace those fields,
+    using their source-specific identity and arithmetic gates.
     """
     if live_revenue_billion is None:
         return payload, "no_live_value"
-    latest, reason = _target_row(payload, fiscal_year)
-    if latest is None:
-        return payload, reason or "no_fixture"
-    try:
-        live = float(live_revenue_billion)
-    except (TypeError, ValueError):
-        return payload, "bad_live_value"
-    if live <= 0:
-        return payload, "bad_live_value"
-
-    fixture_total = latest.get("total_revenue")
-    # Scale the tax/non-tax split proportionally to the new total so components
-    # stay consistent (and the plausibility gate's reconciliation check passes).
-    candidate = dict(latest)
-    candidate["total_revenue"] = live
-    if fixture_total:
-        try:
-            ratio = live / float(fixture_total)
-            if latest.get("tax_revenue") is not None:
-                candidate["tax_revenue"] = round(float(latest["tax_revenue"]) * ratio, 1)
-            if latest.get("non_tax_revenue") is not None:
-                candidate["non_tax_revenue"] = round(
-                    float(latest["non_tax_revenue"]) * ratio, 1
-                )
-        except (TypeError, ValueError, ZeroDivisionError):
-            pass
-
-    # (a) plausibility gate on the scaled candidate.
-    try:
-        from services.trust_guards import check_fiscal_summary
-
-        if check_fiscal_summary(candidate):
-            return payload, "failed_plausibility"
-    except Exception:
-        pass
-
-    # (b) reconciliation — must be near the last-known fixture total.
-    if fixture_total:
-        try:
-            ft = float(fixture_total)
-            if ft > 0 and abs(live - ft) > (tolerance_pct / 100.0) * ft:
-                return payload, "outside_tolerance"
-        except (TypeError, ValueError):
-            pass
-
-    latest["total_revenue"] = round(live, 1)
-    if "tax_revenue" in candidate:
-        latest["tax_revenue"] = candidate["tax_revenue"]
-    if "non_tax_revenue" in candidate:
-        latest["non_tax_revenue"] = candidate["non_tax_revenue"]
-    latest["_revenue_source"] = "cob_ng_birr_live"
-    return payload, "promoted"
+    return payload, "unqualified_revenue_headline"
 
 
 def _fetch_worldbank_fiscal_data(
@@ -1085,100 +1117,10 @@ def _merge_worldbank_data(
     payload: Dict[str, Any],
     wb_data: Dict[str, Dict[str, float]],
 ) -> Dict[str, Any]:
-    """Merge World Bank data into the fixture payload.
+    """Do not promote unqualified calendar-year actuals into fiscal estimates.
 
-    Only fills in None/missing fields — never overwrites existing fixture data
-    which is more granular (from Treasury BPS).
+    Kept as a refusal boundary for existing callers. The budget, revenue and
+    spending fields require their source-specific financial identity; mapping
+    a calendar year to an ending fiscal year cannot establish that identity.
     """
-    fiscal_years: List[Dict[str, Any]] = payload.get("fiscal_years", [])
-    fy_lookup = {fy["fiscal_year"]: fy for fy in fiscal_years}
-
-    for cal_year_str, indicators in wb_data.items():
-        try:
-            cal_year = int(cal_year_str)
-        except ValueError:
-            continue
-
-        fy_label = _calendar_year_to_fy(cal_year)
-        fy_entry = fy_lookup.get(fy_label)
-
-        if fy_entry is None:
-            # Create a new fiscal year entry from WB data
-            new_entry: Dict[str, Any] = {"fiscal_year": fy_label}
-
-            # Map WB fields to our schema
-            exp_lcu = indicators.get("government_expenditure_lcu")
-            if exp_lcu:
-                # WB data is in LCU (KES), our fixture is in billions
-                new_entry["appropriated_budget"] = round(exp_lcu / 1e9, 1)
-
-            rev_lcu = indicators.get("government_revenue_lcu")
-            if rev_lcu:
-                new_entry["total_revenue"] = round(rev_lcu / 1e9, 1)
-
-            # `debt_service_cost` and `actual_debt` are NOT filled from the
-            # World Bank here, though the indicators for both are fetched.
-            #
-            # DT.TDS.DECT.CD is debt service on EXTERNAL debt and
-            # DT.DOD.DECT.CD is EXTERNAL debt stock, while the fields they were
-            # written to are national totals: `debt_service_cost` is defined by
-            # this dataset as "interest payments PLUS principal redemptions
-            # (domestic + external)", and `actual_debt` is the total public debt
-            # the (repealed) ceiling was measured against. Kenya's domestic side
-            # is the larger half of both, so these rows understated the figure
-            # by roughly two thirds while looking entirely well-formed.
-            #
-            # What that cost: FY2021/22 came out at 393B beside the fixture's
-            # own FY2022/23 of 1,162B on the real definition. Only that one year
-            # was ever caught, by the trust_guards band, because it is the first
-            # year of the band era — and being caught, it was never written.
-            # Every EARLIER year took the `historical` exemption, skipped the
-            # band, and WAS written: those rows carry an external-only figure in
-            # a total's column to this day. The exemption's own comment then
-            # cited two of them as "real, curated" evidence for where the floors
-            # should sit, which is how the contamination came to justify the
-            # rule that hid it.
-            #
-            # They did not reach a reader, but not because anything noticed the
-            # measure was wrong: /api/v1/fiscal/summary drops rows carrying
-            # fewer than 3 of its 4 headline fields, and a World Bank stub has
-            # 2. That filter is aimed at SPARSENESS. A stub that ever gained a
-            # third field would publish the bad figure, and the fact table is
-            # wrong either way.
-            #
-            # A partial measure under a total's name is a claim the source does
-            # not support, so the field is omitted — the same choice the missing
-            # exchange rate below already makes. Absence, never a stand-in
-            # number. Fixture years FY2022/23 onward are unaffected: they carry
-            # Treasury APDMR figures and this branch only builds years the
-            # fixture does not have.
-            #
-            # A correctly-named external series would be a separate field; the
-            # national_debt domain already owns external debt.
-            #
-            # These were the only two USD-denominated fields here, so the
-            # USD/KES conversion goes with them — along with the `client` this
-            # function took solely to fetch that rate. Nothing in this branch
-            # crosses currencies now: both remaining series are World Bank LCU.
-
-            if len(new_entry) > 1:  # has at least one data field
-                new_entry["_source"] = "world_bank_api"
-                fiscal_years.append(new_entry)
-                fy_lookup[fy_label] = new_entry
-        else:
-            # Only fill gaps in existing entries
-            if fy_entry.get("appropriated_budget") is None:
-                exp_lcu = indicators.get("government_expenditure_lcu")
-                if exp_lcu:
-                    fy_entry["appropriated_budget"] = round(exp_lcu / 1e9, 1)
-
-            if fy_entry.get("total_revenue") is None:
-                rev_lcu = indicators.get("government_revenue_lcu")
-                if rev_lcu:
-                    fy_entry["total_revenue"] = round(rev_lcu / 1e9, 1)
-
-    # Sort fiscal years chronologically
-    fiscal_years.sort(key=lambda x: x.get("fiscal_year", ""))
-    payload["fiscal_years"] = fiscal_years
-
     return payload

@@ -830,7 +830,13 @@ jobs:
                       'it is not a success.'
                   )
               sys.exit(1)
-          print('\nAll domains completed successfully.')
+          source_gaps = [f for f in findings if f.level == 'WARN']
+          ingestion_warnings = [j for j in jobs if j.status == IngestionStatus.COMPLETED_WITH_ERRORS or j.errors]
+          warning_count = len(source_gaps) + len(ingestion_warnings)
+          if warning_count:
+              print(f'\nRefresh completed with source gaps or ingestion warnings: {warning_count} warning(s). Review the PARTIAL, STALE and WARN results above.')
+          else:
+              print('\nAll domains completed successfully.')
           PY
 
       # The save key must change whenever there is PROGRESS TO BANK, and not

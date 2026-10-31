@@ -1,0 +1,109 @@
+{
+  "verdict": "scoped acceptance; no remaining fiscal comment finding",
+  "original_commit": "16538db009704ece4e0aaa51ac162752d591180c",
+  "original_source_mapping_sha256": "e8e4bf3e11bc58fff4bef464f30c12abb5ee90db723f697e1d00420294629af1",
+  "original_evidence_preserved": true,
+  "repaired_source": {
+    "base": "16538db009704ece4e0aaa51ac162752d591180c",
+    "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr860-review-deploy-20261031/fiscal-review/repaired-source",
+    "files": 1559,
+    "mapping_sha256": "043687b455b5c0aee72ee64a79f72c295a812f01ae66a88abd544da121eda0a9",
+    "stable_capture_before_after": true
+  },
+  "source_readback": {
+    "files": 1559,
+    "mapping_sha256": "043687b455b5c0aee72ee64a79f72c295a812f01ae66a88abd544da121eda0a9",
+    "all_snapshot_bytes_unchanged": true,
+    "current_scope_files": {
+      "backend/seeding/domains/fiscal_summary/fetcher.py": {
+        "reviewed_sha256": "5851e98aaab5264bd08164537c2084c8f5e63d75919c44092762e376ccd4b868",
+        "checkout_sha256": "5851e98aaab5264bd08164537c2084c8f5e63d75919c44092762e376ccd4b868",
+        "matches": true
+      },
+      "backend/seeding/domains/fiscal_summary/fiscal_framework.py": {
+        "reviewed_sha256": "a37dd8759593fc906d2e317fcc32dc1a9494b082b32834408961773a61d5cb60",
+        "checkout_sha256": "a37dd8759593fc906d2e317fcc32dc1a9494b082b32834408961773a61d5cb60",
+        "matches": true
+      }
+    }
+  },
+  "original_distinct_cases": 11,
+  "original_normal": {
+    "desired_failures": 4,
+    "passed": 7,
+    "errors": 0,
+    "skips": 0
+  },
+  "original_optimized": {
+    "desired_failures": 4,
+    "passed": 7,
+    "errors": 0,
+    "skips": 0
+  },
+  "final_distinct_cases": 15,
+  "final_executions": 30,
+  "final_normal": {
+    "passed": 15,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "final_optimized": {
+    "passed": 15,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit_code": 0
+  },
+  "scope": [
+    "current per-year revenue freshness",
+    "same-fiscal-year approved-edition conflict refusal",
+    "cross-vintage document join preservation"
+  ],
+  "unreviewed_adjacent_changes": [
+    "debt changes",
+    "OCR/cache changes"
+  ],
+  "artifact_sha256": {
+    "FINDINGS-RECEIPT.json": "43f08fcf027a222ab9b9341a449a136f4d31767967a0993a3c1b5f30f290c531",
+    "REPORT.md": "4a2efd09060f0f9f3be588b0012701a399a748a476f44dea5dcfef3e65b1ffa9",
+    "test_fiscal_comments.py": "c05d5be4ab9b2d929bbfdb2d49e4d22a6324a638d72432eb0121a4e0477c612f",
+    "test_fiscal_repair_edges.py": "dc499c341dc52c8ad828598f3fcac7443413f2e36965ab41e4fd12b60cf5680e",
+    "repaired-input-pins.json": "6c77b9f4bf55c24c5d84f1069ad3055dcc1937a6023bcc0439dfdfe0e8c374de",
+    "repaired-source-manifest.json": "d311e0de7a5ede2f260cf68674d897e2b1ea7c065d15fc7be9d47d0f9e9cd35a",
+    "repair-delta.json": "65e46141bb5deaa859dae73a810ce1af2c3f5a68d43072edacc11163590b0732",
+    "repaired-source-readback.json": "7c4f579f1c6f6ad676b52606ebea6f9764a776a0a85443f7c1bc0c1076fb6a7d",
+    "repaired-case-ledger.json": "dacfc25941b230155bfb7a9002b21890ec3edf0a7c1ca0e3abdd19377e901882",
+    "final/REPORT.md": "d2225936b924aa2e53f8a2a7112cea405005891346ac35fd58160ad0e1350650",
+    "final/CLEANUP.json": "a79c66ec648c87a91fd6013b83e3bb16e7a119e151c3b8af9179a821389a338e",
+    "repaired-normal/command.json": "1838311012738cdfae5f58710b197a2d771be1a69b6f8c6013f4c656d83e36a9",
+    "repaired-normal/competing-False.json": "b86da2946799f694e65d1a9af1c8ad57cfc2e1eea476ca61444fad6a19224ee3",
+    "repaired-normal/competing-True.json": "b86da2946799f694e65d1a9af1c8ad57cfc2e1eea476ca61444fad6a19224ee3",
+    "repaired-normal/exit.json": "9e46b2eed84a570bbe3fd1d2d90ae262e6a1b9b8b34b3bc5658a5722bda8c419",
+    "repaired-normal/result.xml": "d47810e6fcb24f14f9150042fa6b50e3bd8403cf2a8a4014c65518e6e144685f",
+    "repaired-normal/revenue-False-2754.7.json": "49d2ca5b369581f6f425f932e2a1ae1f1f3bea57cc84f4b7b9bf420de89ce2cb",
+    "repaired-normal/revenue-False-2784.4.json": "1c3bc221fd18a02f4534a28db1183bd2ef7923a8d0a776cac8c94e14c779db45",
+    "repaired-normal/revenue-True-2754.7.json": "b2910aba266fbeb4a58b7b68a56bd459b2cf8db549f2529190127e60c8647e83",
+    "repaired-normal/revenue-True-2784.4.json": "ab32eaa74953d500aaea1b134122d8294d4602bef26e68f3dc4c37ee4ec31ed8",
+    "repaired-normal/run.log": "94c4c2114a642b7e9edf2f26ce7bb9549a7478f730c1094d3b14ddf1a64c5b58",
+    "repaired-normal/test_fiscal_comments.py": "c05d5be4ab9b2d929bbfdb2d49e4d22a6324a638d72432eb0121a4e0477c612f",
+    "repaired-normal/test_fiscal_repair_edges.py": "dc499c341dc52c8ad828598f3fcac7443413f2e36965ab41e4fd12b60cf5680e",
+    "repaired-normal/vintage-new.json": "df962b84895d8ffb04933178cfc1b796da6bd19488c41920123b0d726686a3c8",
+    "repaired-normal/vintage-old.json": "0946bdd2c8ce23eb42c5d1ced21d7e527ae4868dbf45e3f8c7295f66d81e1976",
+    "repaired-optimized/command.json": "3d24b48b826ada979aa0d6cdb715d15f7a3fb1fe0e94f9ba1d34a31c9d586589",
+    "repaired-optimized/competing-False.json": "b86da2946799f694e65d1a9af1c8ad57cfc2e1eea476ca61444fad6a19224ee3",
+    "repaired-optimized/competing-True.json": "b86da2946799f694e65d1a9af1c8ad57cfc2e1eea476ca61444fad6a19224ee3",
+    "repaired-optimized/exit.json": "32f098908852acef73d08a852eb6be148cf12c298135c2767b7ae54cfcaa1757",
+    "repaired-optimized/result.xml": "1c24ed8c04f2ef5c6f016815ef8bea3254a96dddcadcc187c6b74c318b64578f",
+    "repaired-optimized/revenue-False-2754.7.json": "49d2ca5b369581f6f425f932e2a1ae1f1f3bea57cc84f4b7b9bf420de89ce2cb",
+    "repaired-optimized/revenue-False-2784.4.json": "1c3bc221fd18a02f4534a28db1183bd2ef7923a8d0a776cac8c94e14c779db45",
+    "repaired-optimized/revenue-True-2754.7.json": "b2910aba266fbeb4a58b7b68a56bd459b2cf8db549f2529190127e60c8647e83",
+    "repaired-optimized/revenue-True-2784.4.json": "ab32eaa74953d500aaea1b134122d8294d4602bef26e68f3dc4c37ee4ec31ed8",
+    "repaired-optimized/run.log": "16f076f3c0f96e5b76bf4d658d896fc59293f084e8995c51253d7ef3f3b18902",
+    "repaired-optimized/test_fiscal_comments.py": "c05d5be4ab9b2d929bbfdb2d49e4d22a6324a638d72432eb0121a4e0477c612f",
+    "repaired-optimized/test_fiscal_repair_edges.py": "dc499c341dc52c8ad828598f3fcac7443413f2e36965ab41e4fd12b60cf5680e",
+    "repaired-optimized/vintage-new.json": "df962b84895d8ffb04933178cfc1b796da6bd19488c41920123b0d726686a3c8",
+    "repaired-optimized/vintage-old.json": "0946bdd2c8ce23eb42c5d1ced21d7e527ae4868dbf45e3f8c7295f66d81e1976"
+  }
+}

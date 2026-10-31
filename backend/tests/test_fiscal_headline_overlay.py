@@ -149,25 +149,22 @@ def test_revenue_extractor_ignores_budget_lines():
 
 
 # ── revenue overlay (#2) ────────────────────────────────────────────────
-def test_revenue_overlay_promotes_and_scales_components():
+def test_revenue_scalar_cannot_invent_components():
     payload, status = _overlay_live_revenue_headline(_payload(), 2968.0)
-    assert status == "promoted"
+    assert status == "unqualified_revenue_headline"
     row = payload["fiscal_years"][0]
-    assert row["total_revenue"] == 2968.0
-    # tax + non-tax must still sum to the new total (within rounding).
-    assert abs((row["tax_revenue"] + row["non_tax_revenue"]) - 2968.0) < 1.0
-    assert row["_revenue_source"] == "cob_ng_birr_live"
+    assert row == LATEST
 
 
 def test_revenue_overlay_rejects_out_of_tolerance():
     payload, status = _overlay_live_revenue_headline(_payload(), 2000.0)
-    assert status == "outside_tolerance"
+    assert status == "unqualified_revenue_headline"
     assert payload["fiscal_years"][0]["total_revenue"] == 2910
 
 
 def test_revenue_overlay_rejects_implausible():
     payload, status = _overlay_live_revenue_headline(_payload(), 99999.0)
-    assert status == "failed_plausibility"
+    assert status == "unqualified_revenue_headline"
     assert payload["fiscal_years"][0]["total_revenue"] == 2910
 
 

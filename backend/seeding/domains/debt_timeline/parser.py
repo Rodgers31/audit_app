@@ -26,6 +26,7 @@ class DebtTimelineRecord:
     #: document.
     source: str | None = None
     source_evidence: list | None = None
+    source_url: str | None = None
 
 
 def parse_debt_timeline_payload(payload: dict[str, Any]) -> list[DebtTimelineRecord]:
@@ -50,6 +51,7 @@ def parse_debt_timeline_payload(payload: dict[str, Any]) -> list[DebtTimelineRec
                     ),
                     source=(entry.get("source") or None),
                     source_evidence=entry.get("source_evidence"),
+                    source_url=entry.get("source_url"),
                 )
             )
         except (KeyError, ValueError, TypeError) as exc:

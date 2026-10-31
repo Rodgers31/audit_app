@@ -16,10 +16,20 @@ from ...utils import load_json_resource
 
 logger = logging.getLogger("seeding.debt_timeline.fetcher")
 
+
+def _timeline(base):
+    rows = base.get("timeline") if type(base) is dict else None
+    if (type(rows) is not list or not 1 <= len(rows) <= 1000
+            or any(type(row) is not dict or type(row.get("year")) is not int
+                   or not 1900 <= row["year"] <= 9999 for row in rows)
+            or len({row["year"] for row in rows}) != len(rows)):
+        raise ValueError("Bounded distinct calendar years required for debt timeline")
+    return rows
+
 # World Bank indicator: GDP in current LCU (KES for Kenya)
 _WB_GDP_URL = (
     "https://api.worldbank.org/v2/country/KEN/indicator/NY.GDP.MKTP.CN"
-    "?format=json&per_page=30"
+    "?format=json&per_page=100"
 )
 
 
@@ -40,30 +50,42 @@ def _enrich_with_wb_gdp(
 ) -> dict[str, Any]:
     """Overlay World Bank GDP data onto the base debt timeline payload.
 
-    Updates ``gdp`` and recalculates ``gdp_ratio`` for each year where
-    World Bank data is available.  Falls back silently on any error.
+    Updates GDP only from a complete observed response and records coverage.
     """
+    timeline = _timeline(base)
+    for entry in timeline:
+        entry["gdp_ratio"] = None
+        entry["source_evidence"] = [item for item in entry.get("source_evidence", [])
+            if isinstance(item, dict) and item.get("identity", {}).get("measure") not in ("gdp", "gdp_value")]
     try:
         gdp_by_year = _fetch_wb_gdp(client)
     except Exception as exc:
         logger.warning("World Bank GDP API unavailable, using fixture GDP: %s", exc)
-        return base
-
-    timeline = base.get("timeline", base) if isinstance(base, dict) else base
-    if not isinstance(timeline, list):
-        logger.warning("Cannot enrich non-list timeline structure")
+        base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
+            "state": "unavailable", "reason": "worldbank_response_unavailable",
+        }
         return base
 
     updated = 0
+    missing = []
     for entry in timeline:
         year = entry.get("year")
-        if year in gdp_by_year:
-            entry["gdp"] = gdp_by_year[year] / Decimal("1e9")
+        value = gdp_by_year.get(year)
+        if (not isinstance(value, bool) and isinstance(value, (int, Decimal))
+                and Decimal(value).is_finite() and value > 0):
+            entry["gdp"] = value / Decimal("1e9")
             entry["source_evidence"] = [*(entry.get("source_evidence") or []), *getattr(gdp_by_year, "evidence", {}).get(year, [])]
             total = entry.get("total", 0)
             if entry["gdp"] > 0:
                 entry["gdp_ratio"] = float((Decimal(str(total)) / entry["gdp"] * 100).quantize(Decimal("0.1")))
             updated += 1
+        else:
+            missing.append(year)
+
+    base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
+        "state": "live" if updated and not missing else "partial" if updated else "unavailable",
+        "observed_years": updated, "missing_years": missing,
+    }
 
     if updated:
         logger.info(
@@ -125,6 +147,7 @@ def _overlay_cbk_public_debt(
         entry["domestic"] = float(live["domestic"]) / 1e9
         entry["total"] = float(live["total"]) / 1e9
         entry["source"] = "CBK Statistical Bulletin Table 4.1.3"
+        entry.update(_stock_evidence(live))
         applied += 1
         if before and abs(before - entry["total"]) > 1:
             logger.info(
@@ -158,6 +181,7 @@ def _overlay_cbk_public_debt(
                 "gdp": None,
                 "gdp_ratio": None,
                 "source": "CBK Statistical Bulletin Table 4.1.3",
+                **_stock_evidence(live),
             }
         )
         created += 1
@@ -172,6 +196,25 @@ def _overlay_cbk_public_debt(
         "CBK public-debt overlay: %d year(s) updated, %d added", applied, created
     )
     return base, applied + created
+
+
+def _stock_evidence(observation):
+    from urllib.parse import urlsplit
+    from services.response_receipts import receipt_is_sealed
+
+    evidence = list(observation.get("source_evidence") or [])
+    result = {"source_evidence": evidence, "source_url": None}
+    receipts = [item.get("_response_receipt") for item in evidence]
+    if receipts and all(receipt_is_sealed(receipt) for receipt in receipts):
+        urls = {receipt.get("request_url") for receipt in receipts}
+        if len(urls) == 1:
+            url = urls.pop()
+            parsed = urlsplit(url)
+            if (parsed.scheme == "https" and parsed.hostname in ("www.centralbank.go.ke", "centralbank.go.ke")
+                    and parsed.username is None and parsed.password is None
+                    and parsed.port in (None, 443)):
+                result["source_url"] = url
+    return result
 
 
 def fetch_debt_timeline_payload(
@@ -192,33 +235,53 @@ def fetch_debt_timeline_payload(
         logger=logger,
         label="debt_timeline",
     )
+    _timeline(base)
+    base.setdefault("metadata", {})["refresh_components"] = {}
 
     # Authoritative debt stocks FIRST, so the GDP pass below recomputes
     # gdp_ratio from the corrected totals.
     base, overlaid = _overlay_cbk_public_debt(base, client, settings)
+    # The old ratio belongs to the old stock/GDP pair. Recalculation below
+    # requires a newly observed denominator, including when GDP is disabled.
+    for entry in _timeline(base):
+        entry["gdp_ratio"] = None
+    required = len(_timeline(base))
+    base["metadata"]["refresh_components"]["debt"] = {
+        "state": "live" if overlaid == required else "partial" if overlaid else "unavailable",
+        "observed_years": overlaid, "required_years": required,
+    }
 
     # Enrich with live World Bank GDP (graceful fallback on failure)
     if settings.enrich_with_worldbank:
         base = _enrich_with_wb_gdp(base, client)
     else:
         logger.debug("World Bank enrichment disabled via config")
+        base.setdefault("metadata", {}).setdefault("refresh_components", {})["gdp"] = {
+            "state": "disabled", "reason": "worldbank_enrichment_disabled",
+        }
 
     # Record provenance: the series is only "live" when the debt figures
     # themselves came from the publisher. Live GDP over fixture debt is
     # still fixture debt, and saying otherwise is the false-green this
     # instrumentation exists to prevent.
-    from ...freshness import mark_fixture, mark_live
+    from ...freshness import mark_fixture, mark_live, mark_partial
 
     if overlaid:
-        mark_live(
-            "debt_timeline",
-            detail=f"CBK Statistical Bulletin 4.1.3, {overlaid} year(s)",
-        )
+        detail = f"CBK Statistical Bulletin 4.1.3, {overlaid} year(s)"
+        gdp = base.get("metadata", {}).get("refresh_components", {}).get("gdp", {})
+        if gdp.get("state") == "live" and overlaid == required:
+            mark_live("debt_timeline", detail=detail)
+        else:
+            reason = "debt_stock_refresh_incomplete" if overlaid != required else "gdp_refresh_unavailable"
+            mark_partial("debt_timeline", reason=reason,
+                         detail=f"{detail} of {required}; GDP refresh: {gdp.get('state', 'unavailable')}")
     else:
-        mark_fixture(
-            "debt_timeline",
-            reason="cbk_bulletin_unavailable",
-            detail="debt stocks remain fixture values; only GDP is live",
-        )
+        gdp = base["metadata"]["refresh_components"]["gdp"]
+        if gdp["state"] in ("live", "partial"):
+            mark_partial("debt_timeline", reason="cbk_bulletin_unavailable",
+                         detail=f"No current debt-stock observation; GDP refresh: {gdp['state']}")
+        else:
+            mark_fixture("debt_timeline", reason="cbk_bulletin_unavailable",
+                         detail=f"No current debt-stock observation; GDP refresh: {gdp['state']}")
 
     return base
