@@ -46,7 +46,8 @@ test('reachability refuses transparent controls and covering headers', async ({ 
   await expect(reachable(page, '#target')).rejects.toThrow(/must receive pointer input/);
 });
 
-for (const viewport of [{ width: 1728, height: 1000 }, { width: 768, height: 900 }, { width: 375, height: 812 }, { width: 320, height: 568 }]) {
+const VIEWPORTS = [{ width: 1728, height: 1000 }, { width: 768, height: 900 }, { width: 375, height: 812 }, { width: 320, height: 568 }];
+for (const viewport of VIEWPORTS) {
   test(`admin navigation stays visible and clickable at ${viewport.width}px`, async ({ page, context }, testInfo) => {
     await page.setViewportSize(viewport);
     await authenticate(context);
@@ -60,6 +61,56 @@ for (const viewport of [{ width: 1728, height: 1000 }, { width: 768, height: 900
     await page.getByRole('navigation', { name: 'Admin navigation' }).getByRole('link', { name: 'Social', exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/social$/);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
+}
+
+for (const viewport of VIEWPORTS) {
+  test(`private utilities remain reachable and functional at ${viewport.width}px`, async ({ page, context }, testInfo) => {
+    await page.setViewportSize(viewport);
+    await authenticate(context);
+    await page.goto('/admin');
+    await expect(page.getByRole('heading', { name: 'What needs doing?' })).toBeVisible();
+    const account = '#admin-task-navigation + div > a[href="/account"]';
+    const theme = '#admin-task-navigation + div button[aria-label^="Switch to"]';
+    const publicSite = 'a[aria-label="AuditGava / Admin — public site"]';
+    for (const expanded of viewport.width <= 600 ? [false, true] : [false]) {
+      if (expanded) await page.getByRole('button', { name: 'Menu', exact: true }).click();
+      await reachable(page, account);
+      await reachable(page, theme);
+      await reachable(page, publicSite);
+    }
+    await page.screenshot({ path: testInfo.outputPath('private-utilities.png') });
+    const wasDark = await page.locator('html').evaluate(el => el.classList.contains('dark'));
+    await page.locator(theme).click();
+    const nextTheme = wasDark ? 'light' : 'dark';
+    await expect.poll(() => page.locator('html').evaluate(el => el.classList.contains('dark'))).toBe(!wasDark);
+    expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe(nextTheme);
+    await page.reload();
+    await expect(page.locator(theme)).toHaveAttribute('aria-label', wasDark ? 'Switch to dark theme' : 'Switch to light theme');
+    expect(await page.locator('html').evaluate(el => el.classList.contains('dark'))).toBe(!wasDark);
+    expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe(nextTheme);
+    await reachable(page, publicSite);
+    await page.locator(publicSite).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('nav[aria-label="Primary navigation"]')).toHaveCount(1);
+    await reachable(page, 'a[aria-label="AuditGava dashboard"]');
+    await expect(page.getByRole('navigation', { name: 'Admin navigation' })).toHaveCount(0);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/admin$/);
+    await reachable(page, account);
+    await page.locator(account).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(page.getByRole('heading', { name: 'My Account', exact: true })).toBeVisible();
+    expect(await page.locator('html').evaluate(el => el.classList.contains('dark'))).toBe(!wasDark);
+    if (viewport.width < 1024) await page.getByRole('button', { name: 'Open navigation menu', exact: true }).click();
+    else await page.getByRole('button', { name: 'User menu', exact: true }).click();
+    const logout = page.waitForResponse(response => response.url().startsWith('http://127.0.0.1:8137/auth/v1/logout') && response.request().method() === 'POST');
+    await page.getByRole(viewport.width < 1024 ? 'button' : 'menuitem', { name: 'Sign out', exact: true }).click();
+    expect((await logout).status()).toBe(204);
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/(?:\?.*)?$/);
+    await expect(page.getByRole('navigation', { name: 'Admin navigation' })).toHaveCount(0);
   });
 }
 

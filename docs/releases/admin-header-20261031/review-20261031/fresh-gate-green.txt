@@ -1,0 +1,22 @@
+
+> audit-app-frontend@1.0.0 test:admin-shell
+> node scripts/verify-node-runtime.cjs && playwright test --config playwright.admin-shell.config.ts
+
+{"check":"node-runtime","node":"v24.22.1","supported":true}
+
+Running 12 tests using 1 worker
+
+  ✓   1 browser-fixtures/admin-shell/shell.spec.ts:37:5 › reachability refuses transparent controls and covering headers (157ms)
+  ✓   2 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 1728px (345ms)
+  ✓   3 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 768px (436ms)
+  ✓   4 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 375px (449ms)
+  ✓   5 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 320px (369ms)
+  ✓   6 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 1728px (1.7s)
+  ✓   7 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 768px (1.9s)
+  ✓   8 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 375px (1.9s)
+  ✓   9 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 320px (1.9s)
+  ✓  10 browser-fixtures/admin-shell/shell.spec.ts:117:5 › all private shell entry points have one reachable task navigation (807ms)
+  ✓  11 browser-fixtures/admin-shell/shell.spec.ts:129:7 › signed-out cannot mount private navigation (85ms)
+  ✓  12 browser-fixtures/admin-shell/shell.spec.ts:129:7 › editor cannot mount private navigation (87ms)
+
+  12 passed (27.1s)

@@ -1,0 +1,32 @@
+{
+  "scope": "PR861 final test-only utility coverage corroboration; no new app build/product mutation.",
+  "verdict": "4/4 baseline browser cases passed, zero skips; focused strict TypeScript check passed.",
+  "test_sha256": "8a68fc902aa5dcd5606f23e16bff9fcef405eff17fabe21facdbfbc7cb160b03",
+  "ui_product_head": "d6bb1635ad3fd84fbe175853a31d9b8fbb034ec3",
+  "cached_build_id": "bP5LaL8giTBgzvDjz7Yke",
+  "viewports": [
+    1728,
+    768,
+    375,
+    320
+  ],
+  "browser_seconds": 9764.165,
+  "node_version": "v24.22.1",
+  "source_and_shared_config_hashes_before_after_match": true,
+  "counterfactuals": "Spec independently owns the 12 expected mutant failures; they were not rerun or counted here.",
+  "types": "Changed shell.spec.ts and actual imported fixtures under inherited strict options with cached Node types; no emit/incremental cache/build. Initial external tsconfig lacked Node type lookup; failed setup retained, then corrected explicit typeRoots/node/next-env passed.",
+  "effects": "Owned loopback fixture only; nonloopback browser requests abort and product API writes refuse403. Sign-out POST is the inert local auth fixture204. No real auth/provider/production/publishing/upload/worker action.",
+  "cleanup": {
+    "owned_service_and_app_returncodes": [
+      -15,
+      0
+    ],
+    "shared_resources_unchanged": true,
+    "no_product_edits": true
+  },
+  "ports_after": {
+    "3137": "free",
+    "8137": "free"
+  },
+  "prior_spec_outputs": "Read-only reused config/source/cached application; all new logs/JSON/browser outputs in standards-ui."
+}

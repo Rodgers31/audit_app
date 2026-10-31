@@ -1,0 +1,9 @@
+{
+  "command": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a190dd-d2e3-79e0-a6b9-39129da5068e/admin-header/runtime/node-v24.22.1-darwin-arm64/bin/npm",
+    "run",
+    "test:admin-shell"
+  ],
+  "exit_code": 0,
+  "seconds": 27.598058938980103
+}

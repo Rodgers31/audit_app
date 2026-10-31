@@ -65,7 +65,7 @@ enabled or rerun by this change.
 
 ## Executed validation and bounded adjacent review
 
-- Final actual-root production-build browser gate: **8/8 pass**, no retries.
+- Final actual-root production-build browser gate after review: **12/12 pass**, no retries. The [review disposition](review-20261031/REVIEW.md) records the utility-coverage repair and executed counterfactuals; the original eight-case results below remain historical evidence.
 - Full frontend Jest: **214 suites, 2,869 passes, one pre-existing skip**.
 - TypeScript: zero errors. Full lint: zero warnings/errors.
 - Independent [Spec review](SPEC.md): **54 browser controls**, plus 45 existing
