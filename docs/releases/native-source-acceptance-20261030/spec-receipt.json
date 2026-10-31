@@ -1,0 +1,1359 @@
+{
+  "verdict": "audit scope pass; KRA2 acceptance withheld",
+  "input_mapping_sha256": "ee8ff2e172f17d49699ef558cf6c7461fa43cb3fefddaf1e700843d946c2bc05",
+  "files": 6037,
+  "normal_passed": 87,
+  "optimized_passed": 87,
+  "distinct_cases": 87,
+  "final_failures": 0,
+  "final_errors": 0,
+  "final_skips": 0,
+  "normal_cases": [
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-fresh]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-fresh]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-already-current]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-already-current]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-missing-day]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-missing-day]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-combined-scope]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-combined-scope]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-mixed]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-mixed]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-fresh]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-fresh]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-already-current]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-already-current]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-missing-day]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-missing-day]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-combined-scope]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-combined-scope]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-mixed]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-mixed]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_desired_same_job_same_auditee_latest_qualified_edition_only[False]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_desired_same_job_same_auditee_latest_qualified_edition_only[False]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_desired_same_job_same_auditee_latest_qualified_edition_only[True]",
+      "raw_classname": "test_audit_producer_flow",
+      "name": "test_desired_same_job_same_auditee_latest_qualified_edition_only[True]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_desired_one_latest_edition_per_auditee_independent_of_processing_order[older-first]",
+      "raw_classname": "test_audit_editions",
+      "name": "test_desired_one_latest_edition_per_auditee_independent_of_processing_order[older-first]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_desired_one_latest_edition_per_auditee_independent_of_processing_order[newer-first]",
+      "raw_classname": "test_audit_editions",
+      "name": "test_desired_one_latest_edition_per_auditee_independent_of_processing_order[newer-first]",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_cross_auditee_does_not_supersede_and_withdrawal_does_not_revive_old",
+      "raw_classname": "test_audit_editions",
+      "name": "test_cross_auditee_does_not_supersede_and_withdrawal_does_not_revive_old",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_later_historical_backlog_keeps_conservative_authority_refusal",
+      "raw_classname": "test_audit_editions",
+      "name": "test_later_historical_backlog_keeps_conservative_authority_refusal",
+      "junit": "core-normal.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[missing-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[missing-series]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[empty-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[empty-series]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[list-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[list-series]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-series]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[number-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[number-series]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[short-key]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[short-key]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[uppercase-key]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[uppercase-key]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[null-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[null-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[float-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[float-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[string-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[string-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[zero-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[zero-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[negative-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[negative-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[absent-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[absent-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[duplicate-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[duplicate-head]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[empty-records]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[empty-records]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[duplicate-records]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[duplicate-records]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-record]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-record]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[string-record]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[string-record]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bad-record-container]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bad-record-container]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[wrong-scope]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[wrong-scope]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[bool-binding-record]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[bool-binding-record]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[wrong-binding-job]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[wrong-binding-job]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[bool-country]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[bool-country]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[md5]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[md5]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[url]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[url]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[archived]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[archived]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[no-binding]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[no-binding]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_unselected_valid_historical_receipt_is_not_current",
+      "raw_classname": "",
+      "name": "test_unselected_valid_historical_receipt_is_not_current",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_swapped_auditee_heads_cannot_authorize_each_other",
+      "raw_classname": "",
+      "name": "test_swapped_auditee_heads_cannot_authorize_each_other",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_job_selects_latest_edition_independent_of_order[older-first]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_job_selects_latest_edition_independent_of_order[older-first]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_job_selects_latest_edition_independent_of_order[newer-first]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_job_selects_latest_edition_independent_of_order[newer-first]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[disjoint]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[disjoint]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[mixed]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[mixed]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[missing-day]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[missing-day]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[combined-scope]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[combined-scope]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_same_source_url_cannot_leave_an_inaccessible_selected_head[False]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_same_source_url_cannot_leave_an_inaccessible_selected_head[False]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_same_source_url_cannot_leave_an_inaccessible_selected_head[True]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_same_source_url_cannot_leave_an_inaccessible_selected_head[True]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_ambiguous_audit_editions_refuse_current_scope[same-release-conflict]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_ambiguous_audit_editions_refuse_current_scope[same-release-conflict]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_ambiguous_audit_editions_refuse_current_scope[crossed-chronology]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_ambiguous_audit_editions_refuse_current_scope[crossed-chronology]",
+      "junit": "hostile-heads-precise.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[full-iso]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[full-iso]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[full-word-date]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[full-word-date]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[published-on-label]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[published-on-label]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[repeated-identical-heading]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[repeated-identical-heading]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-identity-over-url-hint]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-identity-over-url-hint]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-fy-over-url-hint]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-fy-over-url-hint]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[no-publication-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[no-publication-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[year-only]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[year-only]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[month-year-only]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[month-year-only]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[unlabelled-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[unlabelled-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[impossible-calendar-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[impossible-calendar-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[future-publisher-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[future-publisher-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[published-before-period-end]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[published-before-period-end]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[duplicate-identical-day-labels]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[duplicate-identical-day-labels]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[conflicting-day-labels]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[conflicting-day-labels]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[two-auditees]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[two-auditees]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[two-fiscal-years]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[two-fiscal-years]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[missing-audit-scope]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[missing-audit-scope]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[malformed-auditee]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[malformed-auditee]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[filename-only-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[filename-only-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[html-metadata-only-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[html-metadata-only-day]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[json-receipt-copy]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[json-receipt-copy]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[boolean-status]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[boolean-status]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[changed-digest]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[changed-digest]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[nonofficial-request-host]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[nonofficial-request-host]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[path-bytes-differ]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[path-bytes-differ]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[wrong-mime]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[wrong-mime]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[malformed-pdf]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[malformed-pdf]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[empty-pdf]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[empty-pdf]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[day-only-page-four]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[day-only-page-four]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[day-page-three]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[day-page-three]",
+      "junit": "date-normal/run.xml",
+      "outcome": "passed"
+    }
+  ],
+  "optimized_cases": [
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-fresh]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-fresh]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-already-current]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-already-current]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-missing-day]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-missing-day]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-combined-scope]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-combined-scope]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[False-mixed]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[False-mixed]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-fresh]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-fresh]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-already-current]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-already-current]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-missing-day]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-missing-day]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-combined-scope]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-combined-scope]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_actual_audit_producer_to_committed_report_flow[True-mixed]",
+      "raw_classname": "",
+      "name": "test_actual_audit_producer_to_committed_report_flow[True-mixed]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_desired_same_job_same_auditee_latest_qualified_edition_only[False]",
+      "raw_classname": "",
+      "name": "test_desired_same_job_same_auditee_latest_qualified_edition_only[False]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_producer_flow.py::test_desired_same_job_same_auditee_latest_qualified_edition_only[True]",
+      "raw_classname": "",
+      "name": "test_desired_same_job_same_auditee_latest_qualified_edition_only[True]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_desired_one_latest_edition_per_auditee_independent_of_processing_order[older-first]",
+      "raw_classname": "",
+      "name": "test_desired_one_latest_edition_per_auditee_independent_of_processing_order[older-first]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_desired_one_latest_edition_per_auditee_independent_of_processing_order[newer-first]",
+      "raw_classname": "",
+      "name": "test_desired_one_latest_edition_per_auditee_independent_of_processing_order[newer-first]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_cross_auditee_does_not_supersede_and_withdrawal_does_not_revive_old",
+      "raw_classname": "",
+      "name": "test_cross_auditee_does_not_supersede_and_withdrawal_does_not_revive_old",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_editions.py::test_later_historical_backlog_keeps_conservative_authority_refusal",
+      "raw_classname": "",
+      "name": "test_later_historical_backlog_keeps_conservative_authority_refusal",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[missing-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[missing-series]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[empty-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[empty-series]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[list-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[list-series]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-series]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[number-series]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[number-series]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[short-key]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[short-key]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[uppercase-key]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[uppercase-key]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[null-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[null-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[float-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[float-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[string-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[string-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[zero-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[zero-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[negative-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[negative-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[absent-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[absent-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[duplicate-head]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[duplicate-head]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[empty-records]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[empty-records]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[duplicate-records]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[duplicate-records]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bool-record]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bool-record]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[string-record]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[string-record]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_malformed_series_inventory_never_certifies_current_report[bad-record-container]",
+      "raw_classname": "",
+      "name": "test_malformed_series_inventory_never_certifies_current_report[bad-record-container]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[wrong-scope]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[wrong-scope]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[bool-binding-record]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[bool-binding-record]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[wrong-binding-job]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[wrong-binding-job]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[bool-country]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[bool-country]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[md5]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[md5]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[url]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[url]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[archived]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[archived]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_semantic_scope_and_source_binding_never_revive_report[no-binding]",
+      "raw_classname": "",
+      "name": "test_semantic_scope_and_source_binding_never_revive_report[no-binding]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_unselected_valid_historical_receipt_is_not_current",
+      "raw_classname": "",
+      "name": "test_unselected_valid_historical_receipt_is_not_current",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_hostile_audit_heads.py::test_swapped_auditee_heads_cannot_authorize_each_other",
+      "raw_classname": "",
+      "name": "test_swapped_auditee_heads_cannot_authorize_each_other",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_job_selects_latest_edition_independent_of_order[older-first]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_job_selects_latest_edition_independent_of_order[older-first]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_job_selects_latest_edition_independent_of_order[newer-first]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_job_selects_latest_edition_independent_of_order[newer-first]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[disjoint]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[disjoint]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[mixed]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[mixed]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[missing-day]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[missing-day]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_audit_qualified_and_unsupported_source_scopes[combined-scope]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_audit_qualified_and_unsupported_source_scopes[combined-scope]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_same_source_url_cannot_leave_an_inaccessible_selected_head[False]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_same_source_url_cannot_leave_an_inaccessible_selected_head[False]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_same_source_url_cannot_leave_an_inaccessible_selected_head[True]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_same_source_url_cannot_leave_an_inaccessible_selected_head[True]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_ambiguous_audit_editions_refuse_current_scope[same-release-conflict]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_ambiguous_audit_editions_refuse_current_scope[same-release-conflict]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/work/backend/tests/social/test_audit_report_editions.py::test_ambiguous_audit_editions_refuse_current_scope[crossed-chronology]",
+      "raw_classname": "tests.social.test_audit_report_editions",
+      "name": "test_ambiguous_audit_editions_refuse_current_scope[crossed-chronology]",
+      "junit": "all-core-optimized.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[full-iso]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[full-iso]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[full-word-date]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[full-word-date]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[published-on-label]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[published-on-label]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[repeated-identical-heading]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[repeated-identical-heading]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-identity-over-url-hint]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-identity-over-url-hint]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-fy-over-url-hint]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[actual-pdf-fy-over-url-hint]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[no-publication-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[no-publication-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[year-only]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[year-only]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[month-year-only]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[month-year-only]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[unlabelled-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[unlabelled-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[impossible-calendar-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[impossible-calendar-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[future-publisher-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[future-publisher-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[published-before-period-end]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[published-before-period-end]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[duplicate-identical-day-labels]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[duplicate-identical-day-labels]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[conflicting-day-labels]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[conflicting-day-labels]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[two-auditees]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[two-auditees]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[two-fiscal-years]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[two-fiscal-years]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[missing-audit-scope]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[missing-audit-scope]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[malformed-auditee]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[malformed-auditee]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[filename-only-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[filename-only-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[html-metadata-only-day]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[html-metadata-only-day]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[json-receipt-copy]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[json-receipt-copy]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[boolean-status]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[boolean-status]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[changed-digest]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[changed-digest]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[nonofficial-request-host]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[nonofficial-request-host]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[path-bytes-differ]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[path-bytes-differ]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[wrong-mime]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[wrong-mime]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[malformed-pdf]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[malformed-pdf]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[empty-pdf]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[empty-pdf]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[day-only-page-four]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[day-only-page-four]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    },
+    {
+      "nodeid": "/evidence/test_audit_capture.py::test_audit_capture_uses_exact_pdf_date_and_identity[day-page-three]",
+      "raw_classname": "test_audit_capture",
+      "name": "test_audit_capture_uses_exact_pdf_date_and_identity[day-page-three]",
+      "junit": "date-optimized/run.xml",
+      "outcome": "passed"
+    }
+  ],
+  "cleanup": {
+    "container": "native802-spec-pg",
+    "exit": {
+      "exit_code": 0,
+      "seconds": 0.10519620800000001
+    },
+    "credentials_absent": true
+  },
+  "remaining_audit_findings": [],
+  "other_scope_limit": "KRA frozen2 scope-tail findings under repair; no all-source acceptance",
+  "artifact_sha256": {
+    "INITIAL-FIXTURE-NOTE.json": "fdb9f754f7035f89e3848f5851e92e1482dcb9e687d9f897bc40b90bd910f631",
+    "REPORT.md": "a850638309657412b25bc48ac8acccc5e09fb481c40ed23b59b08d83e80ac913",
+    "all-core-optimized-command.json": "b30aad318de7c03842bccafa0dc02f7e980e6926d83c0e4a9ae50dee8075a852",
+    "all-core-optimized-exit.json": "3bbc3e4dc0c1e4d0fafbf304d51979f1ed81ab27c048b8dd7b02062ac4eb9f11",
+    "all-core-optimized-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "all-core-optimized.log": "409a357f02eb0a010fbb503cce9cde1c63703b2fae248c6628b5352ebd7396bc",
+    "all-core-optimized.xml": "fdac0c518a1886e33e06ed638afdc9163fbd9fa32af0d14e6a9167ecf2b0eee6",
+    "cleanup-owned-pg-command.json": "db2b97ff558de5a299d5c770202621dea49dd418fc6d721409a58e584c33b1e7",
+    "cleanup-owned-pg-exit.json": "4992771a79a5186f40d863fed310ddcb4741bbcfccf1f83c2d47fe2cf173a01e",
+    "core-normal-command.json": "17cff6323bea2354aa2f74dfb32b64692b64e46c67ee515fffbdd540cd801919",
+    "core-normal-exit.json": "782f08f057c24c7cd7e618e6567bc1a270b0491f974ad2548b8a840ad031ffe7",
+    "core-normal-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "core-normal.log": "175d8daa6aef8f868264c9dcf7289dc277ac18abea57e1015fa09189acb26382",
+    "core-normal.xml": "1742bc07ec165d1952e45ffe66548edcf37cd4b15166aa60eb31d329a384161d",
+    "date-normal/result-actual-pdf-fy-over-url-hint.json": "73616f599bbd530a80c4e871a88eab44be281525ffcb280bb2d99e1835f406fb",
+    "date-normal/result-actual-pdf-identity-over-url-hint.json": "959021d4e742ca5d4d9fbe708333e5452a9ec3937fc0a3d63aad228502fb292b",
+    "date-normal/result-boolean-status.json": "763b6657f9050581bcc7dfcfe97d48ce8f181979c6e78d5d5f972ecb0e503c0c",
+    "date-normal/result-changed-digest.json": "e8ec36c5c6cec5f83f5944f4d0852053f292037a3b715c17af7b987a673368bc",
+    "date-normal/result-conflicting-day-labels.json": "5d488d2fbd139eef7d60d40b632f1bcf4373e1f32e2db6218f17092bc225446c",
+    "date-normal/result-day-only-page-four.json": "9ff990dd7f45e63995aa7aff2feb4c4c89c99bea2b8804e0aadc9eca469bea4a",
+    "date-normal/result-day-page-three.json": "8c23955ad4e5418cb644e4f10079bef10aed9b2bdbc383597ecd06e5c88fd880",
+    "date-normal/result-duplicate-identical-day-labels.json": "7acc574cee268336184682f1935955db6491de129947ed82b6c3be058c6db2aa",
+    "date-normal/result-empty-pdf.json": "16326506fdea2261423922b81e0e43e65d2115cb42b0a73a3b0fd109cbd27130",
+    "date-normal/result-filename-only-day.json": "8be2c0a91ce3fecafa8ab92676bf01190dcd23442531fd92956dca02169fe0d4",
+    "date-normal/result-full-iso.json": "c4befb0d3fe7f2feb77baed94f1096f9ec89da4958768e71f84a000e3eff0eb2",
+    "date-normal/result-full-word-date.json": "ebb3669238ae43aae4b07a66bc03539ee87c1bfa25d9f8ff6f1c0ddfd04f47f0",
+    "date-normal/result-future-publisher-day.json": "bb4a4e8b5f2d85324ffbe14cf6a525dcb141b1aabf56718ed1b7a1eaa1f133cd",
+    "date-normal/result-html-metadata-only-day.json": "ca176ea1b4a88e20f322ff86a6641b7b8307a9ff686ac546462d3f35b547167c",
+    "date-normal/result-impossible-calendar-day.json": "0680a37d5f693d74f7db9d25ab97f7118c179b08980c713a223f064339860218",
+    "date-normal/result-json-receipt-copy.json": "57b15c1891063ccefba298fd092529d8019347550ee398c2911ba8e6fb4dd980",
+    "date-normal/result-malformed-auditee.json": "f1a0b58a08631e5d35cb41afdf29e70345f08328af3eb2db66c3a1e44f1ee848",
+    "date-normal/result-malformed-pdf.json": "f3e2899737e7c2250d61e3a0018813a791733c339714eabbeb7a23b989ded43d",
+    "date-normal/result-missing-audit-scope.json": "8a627ea7e1493e622baccdc05a449fc41a3ee9f9344b2cc778ff204e96599a30",
+    "date-normal/result-month-year-only.json": "ec3727a67009af520f4cf363ace4d51a9f591184832553099e51712dff9d0633",
+    "date-normal/result-no-publication-day.json": "867b94df9792bbe7f84348410a08b98b2cc9b967d740395d626612bd503e4c07",
+    "date-normal/result-nonofficial-request-host.json": "aa0614e5fe460ae180e18eb81e812b93186b3a4d39604be54e6fd8cad70116ee",
+    "date-normal/result-path-bytes-differ.json": "d23d4f947af6897c0e4700439c05fb2f20be83c3d4aacf158ee066eb969ca505",
+    "date-normal/result-published-before-period-end.json": "9ca99a2a0b46754f0fb723ce2c8ea9b52e2b622a36e81d22fa34c3f11a70380e",
+    "date-normal/result-published-on-label.json": "e228951916dc658c8af1ddac1a8c4c3de47afe43c31c977cdb24d51bbdfefc3e",
+    "date-normal/result-repeated-identical-heading.json": "b52be738c75f61c7c6b352a941e5c0884de6cb29e110914ac2b3f02013356b0e",
+    "date-normal/result-two-auditees.json": "fe92aca4f517bb77a181c80dab6691a77d85c0e063cc98239e9c04f54112c98e",
+    "date-normal/result-two-fiscal-years.json": "560304ff66281b6636bc044d28211a0b558334ea1c76f4dabb8f28471ef56ae0",
+    "date-normal/result-unlabelled-day.json": "7b9b282a1f3123ff20741d16e60741082af075be23d63b47581ce4ca4d2d3ea1",
+    "date-normal/result-wrong-mime.json": "086b86a07dd07b9013676ad1b335a7d3f98df9410a14fc9f8c73c882c4baceb4",
+    "date-normal/result-year-only.json": "4d4e8f8cd6f8be77cd5e22323b20c96715075478a7b4f59518c12a636973e824",
+    "date-normal/run-command.json": "7c191f5ae7385b6ee7979a8dd9a884bd90dd69e23c350bf56f49a8a112f3c74b",
+    "date-normal/run-exit.json": "a124fdc857e312d3b067f86b674ccf6b4f6d957144004c0d4fc870be26e3012a",
+    "date-normal/run-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "date-normal/run.log": "ba553a2ad37be3cfcbaca87d8cd7e869fa053cf976fee0c2fe73917ded076061",
+    "date-normal/run.py": "31de624660ae6b1a5b8ed039d8e066f3a14485ddc33f711ef126c079ee1909db",
+    "date-normal/run.xml": "4be87ec5e0837ced066565d021bda8940a15ef7ddc5e8c573d4a56f990d4dd85",
+    "date-normal/test_audit_capture.py": "9b5ae66199b92d1e98e42e6d572a64c9b8f6efa7e5d9e5caa902d008c69f03a4",
+    "date-optimized/result-actual-pdf-fy-over-url-hint.json": "73616f599bbd530a80c4e871a88eab44be281525ffcb280bb2d99e1835f406fb",
+    "date-optimized/result-actual-pdf-identity-over-url-hint.json": "959021d4e742ca5d4d9fbe708333e5452a9ec3937fc0a3d63aad228502fb292b",
+    "date-optimized/result-boolean-status.json": "763b6657f9050581bcc7dfcfe97d48ce8f181979c6e78d5d5f972ecb0e503c0c",
+    "date-optimized/result-changed-digest.json": "e8ec36c5c6cec5f83f5944f4d0852053f292037a3b715c17af7b987a673368bc",
+    "date-optimized/result-conflicting-day-labels.json": "5d488d2fbd139eef7d60d40b632f1bcf4373e1f32e2db6218f17092bc225446c",
+    "date-optimized/result-day-only-page-four.json": "9ff990dd7f45e63995aa7aff2feb4c4c89c99bea2b8804e0aadc9eca469bea4a",
+    "date-optimized/result-day-page-three.json": "8c23955ad4e5418cb644e4f10079bef10aed9b2bdbc383597ecd06e5c88fd880",
+    "date-optimized/result-duplicate-identical-day-labels.json": "7acc574cee268336184682f1935955db6491de129947ed82b6c3be058c6db2aa",
+    "date-optimized/result-empty-pdf.json": "16326506fdea2261423922b81e0e43e65d2115cb42b0a73a3b0fd109cbd27130",
+    "date-optimized/result-filename-only-day.json": "8be2c0a91ce3fecafa8ab92676bf01190dcd23442531fd92956dca02169fe0d4",
+    "date-optimized/result-full-iso.json": "c4befb0d3fe7f2feb77baed94f1096f9ec89da4958768e71f84a000e3eff0eb2",
+    "date-optimized/result-full-word-date.json": "ebb3669238ae43aae4b07a66bc03539ee87c1bfa25d9f8ff6f1c0ddfd04f47f0",
+    "date-optimized/result-future-publisher-day.json": "bb4a4e8b5f2d85324ffbe14cf6a525dcb141b1aabf56718ed1b7a1eaa1f133cd",
+    "date-optimized/result-html-metadata-only-day.json": "ca176ea1b4a88e20f322ff86a6641b7b8307a9ff686ac546462d3f35b547167c",
+    "date-optimized/result-impossible-calendar-day.json": "0680a37d5f693d74f7db9d25ab97f7118c179b08980c713a223f064339860218",
+    "date-optimized/result-json-receipt-copy.json": "57b15c1891063ccefba298fd092529d8019347550ee398c2911ba8e6fb4dd980",
+    "date-optimized/result-malformed-auditee.json": "f1a0b58a08631e5d35cb41afdf29e70345f08328af3eb2db66c3a1e44f1ee848",
+    "date-optimized/result-malformed-pdf.json": "f3e2899737e7c2250d61e3a0018813a791733c339714eabbeb7a23b989ded43d",
+    "date-optimized/result-missing-audit-scope.json": "8a627ea7e1493e622baccdc05a449fc41a3ee9f9344b2cc778ff204e96599a30",
+    "date-optimized/result-month-year-only.json": "ec3727a67009af520f4cf363ace4d51a9f591184832553099e51712dff9d0633",
+    "date-optimized/result-no-publication-day.json": "867b94df9792bbe7f84348410a08b98b2cc9b967d740395d626612bd503e4c07",
+    "date-optimized/result-nonofficial-request-host.json": "aa0614e5fe460ae180e18eb81e812b93186b3a4d39604be54e6fd8cad70116ee",
+    "date-optimized/result-path-bytes-differ.json": "d23d4f947af6897c0e4700439c05fb2f20be83c3d4aacf158ee066eb969ca505",
+    "date-optimized/result-published-before-period-end.json": "9ca99a2a0b46754f0fb723ce2c8ea9b52e2b622a36e81d22fa34c3f11a70380e",
+    "date-optimized/result-published-on-label.json": "e228951916dc658c8af1ddac1a8c4c3de47afe43c31c977cdb24d51bbdfefc3e",
+    "date-optimized/result-repeated-identical-heading.json": "b52be738c75f61c7c6b352a941e5c0884de6cb29e110914ac2b3f02013356b0e",
+    "date-optimized/result-two-auditees.json": "fe92aca4f517bb77a181c80dab6691a77d85c0e063cc98239e9c04f54112c98e",
+    "date-optimized/result-two-fiscal-years.json": "560304ff66281b6636bc044d28211a0b558334ea1c76f4dabb8f28471ef56ae0",
+    "date-optimized/result-unlabelled-day.json": "7b9b282a1f3123ff20741d16e60741082af075be23d63b47581ce4ca4d2d3ea1",
+    "date-optimized/result-wrong-mime.json": "086b86a07dd07b9013676ad1b335a7d3f98df9410a14fc9f8c73c882c4baceb4",
+    "date-optimized/result-year-only.json": "4d4e8f8cd6f8be77cd5e22323b20c96715075478a7b4f59518c12a636973e824",
+    "date-optimized/run-command.json": "4eb6cfd14f7a3b85f7e99a4a7b13d4301a3146e59a558fd72a8362bfa2776d63",
+    "date-optimized/run-exit.json": "b4ed74948898be9d03f4ea208446ee77c64665990ec9c65dc55350453f424064",
+    "date-optimized/run-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "date-optimized/run.log": "c9a8301c90c960d5a1e1e48f86b308d8e6af25227b38272745b75ea3049ee5bb",
+    "date-optimized/run.py": "c76b70a9fc8b23783f2052287f080903bf17957f7b5e980a2e285d461d0fab43",
+    "date-optimized/run.xml": "a7bbcd883a88fdec6cbb9100b86fe7f9319fb63ba745ce7c0d892bb859eca0d2",
+    "date-optimized/test_audit_capture.py": "9b5ae66199b92d1e98e42e6d572a64c9b8f6efa7e5d9e5caa902d008c69f03a4",
+    "hostile-heads-command.json": "e73d093903081680657bd5dc2ea6cd1af347d5e8c5eb6213bc6d6ab412d75b20",
+    "hostile-heads-corrected-command.json": "f202394737617f7032faede7d44242022ad4dfffe424a82182424ace7a5dae92",
+    "hostile-heads-corrected-exit.json": "8d80329e877374e62316e3d82e437e04565609657b960b9ff2b4de32f709d676",
+    "hostile-heads-corrected-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "hostile-heads-corrected.log": "a5737f64cc4a3bc2224544a95521b82326d9288699faa9dfd17aec4bea8d5289",
+    "hostile-heads-corrected.xml": "7054f87598d06c2f8a4e0268cbf12abe6dd71bddcaef75f7d88113866ce691ef",
+    "hostile-heads-exit.json": "4bf4f03ca8db24b97f67292f21cc30d42919d98aad22a985b4c844edbb5b287c",
+    "hostile-heads-precise-command.json": "e2b85be78c98a77aeeb9be43eed6f00f4bfba97fa645c8ddb0116678fff4026f",
+    "hostile-heads-precise-exit.json": "98642b7250120632ddf86e6f319e4995707bc337a33293429038fa89791b38d8",
+    "hostile-heads-precise-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "hostile-heads-precise.log": "45fa93d751315496577674a99b3132553f65b16976ff497e368c2f79efbd973e",
+    "hostile-heads-precise.xml": "a9fb61fc0d8f40385c18d3159c998b6542a398f9ce33f26d424562dda255f300",
+    "hostile-heads-source.json": "1c426a00a1a0d0c8d268f4349b4be11fc94090de158b71ccaaeb5d427d467baa",
+    "hostile-heads.log": "a2ecad2d424408f02d85be4e467f146b973e91bea7a3693081c58ee0efa63698",
+    "hostile-heads.xml": "3aaaa6ccbec91338a51367ef52ca3facee22b39a0831e0adc9f598fdf21ab189",
+    "hostile-initial-fixture.py": "62db8b08caff4b154e3aa5b51b741941fe6a4579fa43a34c32423052449365f4",
+    "manifest-verified-after.json": "50aafcd81a109cef6032095cf423c54db7ff892f709f825fea246420e8e000a0",
+    "manifest-verified.json": "c78527ad489de5d9d790046af1eaa21bf1b6abc9fa6a001f9dac5c8a2f61c1e9",
+    "run.py": "b95ebc96b5b0f2ef166694750d8a65dac2e4318f56ff40d04ffd091d4db39c92",
+    "run_optimized.py": "0a4dc83c02492b987d234ec37ecd41d9b65e41fd0f22622e41147aa7ec7dd636",
+    "test-adaptations.json": "0f7c5a655b7781207461b88b3a62d59c072561b9fa39fb02030a79788b16db95",
+    "test_audit_editions.py": "2ee7b2007afde44afebef3e88f4eec1eac23e5ff96c2393455c07e3ab4299de9",
+    "test_audit_producer_flow.py": "08b3ccbbb7109f16bcfecce69e165378af63a4166a8b26859e1be01caa00befb",
+    "test_hostile_audit_heads.py": "4b2c38e82551fb118dcc6a8b6890f4a30fd718fc3715f088239b1e16a2dc736e"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "verdict": "audit-only carry accepted",
+  "new_project_executions": 0,
+  "candidate3_mapping_sha256": "dbbe7eb21d4b35c90165ee11ca7ae1749cc71e4e48c95bee67368f46aeebd82a",
+  "candidate3_files": 6037,
+  "exact_fileset": true,
+  "mismatches": [],
+  "candidate2_mapping_sha256": "ee8ff2e172f17d49699ef558cf6c7461fa43cb3fefddaf1e700843d946c2bc05",
+  "candidate2_receipt_sha256": "6bf967bb7d0106ecc13c6f43d888038e46f6236d75f4eab1bfc31c52210dae15",
+  "carried_normal_passed": 87,
+  "carried_optimized_passed": 87,
+  "carried_failures": 0,
+  "carried_errors": 0,
+  "carried_skips": 0,
+  "dependencies": {
+    "backend/seeding/domains/audits/__init__.py": {
+      "candidate2": "21a3c1f0069942943e284315659be9c4b9bbe43db7fae62523a5c34d2307ce0f",
+      "candidate3": "21a3c1f0069942943e284315659be9c4b9bbe43db7fae62523a5c34d2307ce0f",
+      "actual_candidate3": "21a3c1f0069942943e284315659be9c4b9bbe43db7fae62523a5c34d2307ce0f",
+      "identical": true
+    },
+    "backend/seeding/native_report_authority.py": {
+      "candidate2": "d7ffebb999bca225589dddd62fea4146e45ed6ba300b98913657f1147d9c4b40",
+      "candidate3": "d7ffebb999bca225589dddd62fea4146e45ed6ba300b98913657f1147d9c4b40",
+      "actual_candidate3": "d7ffebb999bca225589dddd62fea4146e45ed6ba300b98913657f1147d9c4b40",
+      "identical": true
+    },
+    "backend/seeding/native_report_observations.py": {
+      "candidate2": "9018c260dacd1e94b9e0538581c741512aa92bec95d266b32c86d683c951b862",
+      "candidate3": "9018c260dacd1e94b9e0538581c741512aa92bec95d266b32c86d683c951b862",
+      "actual_candidate3": "9018c260dacd1e94b9e0538581c741512aa92bec95d266b32c86d683c951b862",
+      "identical": true
+    },
+    "backend/seeding/generation_dispatch.py": {
+      "candidate2": "535ddcfe66d1996bb3cfbd0c9ec38873cd4f9b117b95b52691cddcc1a1ad6c1f",
+      "candidate3": "535ddcfe66d1996bb3cfbd0c9ec38873cd4f9b117b95b52691cddcc1a1ad6c1f",
+      "actual_candidate3": "535ddcfe66d1996bb3cfbd0c9ec38873cd4f9b117b95b52691cddcc1a1ad6c1f",
+      "identical": true
+    },
+    "backend/social/generation/integration.py": {
+      "candidate2": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+      "candidate3": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+      "actual_candidate3": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+      "identical": true
+    },
+    "backend/social/generation/service.py": {
+      "candidate2": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+      "candidate3": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+      "actual_candidate3": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+      "identical": true
+    },
+    "backend/seeding/cli.py": {
+      "candidate2": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+      "candidate3": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+      "actual_candidate3": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+      "identical": true
+    },
+    "backend/seeding/pdf_evidence.py": {
+      "candidate2": "073a65793f84e0b3f0080e7156c98132ec1639d216647682a7bb7c32ccc3f30a",
+      "candidate3": "073a65793f84e0b3f0080e7156c98132ec1639d216647682a7bb7c32ccc3f30a",
+      "actual_candidate3": "073a65793f84e0b3f0080e7156c98132ec1639d216647682a7bb7c32ccc3f30a",
+      "identical": true
+    },
+    "backend/seeding/fetch_documents.py": {
+      "candidate2": "51d1c48edca17ceaece72504f7906fc80cb4722c162134c63bfc768094dae57d",
+      "candidate3": "51d1c48edca17ceaece72504f7906fc80cb4722c162134c63bfc768094dae57d",
+      "actual_candidate3": "51d1c48edca17ceaece72504f7906fc80cb4722c162134c63bfc768094dae57d",
+      "identical": true
+    },
+    "backend/seeding/domains/audits/loader.py": {
+      "candidate2": "6a3203121d874c3f541cf19813ec772afa7976c91f2010cf7c19381e6eafe173",
+      "candidate3": "6a3203121d874c3f541cf19813ec772afa7976c91f2010cf7c19381e6eafe173",
+      "actual_candidate3": "6a3203121d874c3f541cf19813ec772afa7976c91f2010cf7c19381e6eafe173",
+      "identical": true
+    },
+    "backend/tests/social/test_audit_report_editions.py": {
+      "candidate2": "3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e",
+      "candidate3": "3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e",
+      "actual_candidate3": "3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e",
+      "identical": true
+    }
+  },
+  "delta": {
+    "changed": [
+      "backend/seeding/domains/revenue_by_source/press_evidence.py",
+      "backend/tests/social/test_kra_press_source_acceptance.py"
+    ],
+    "added": [],
+    "removed": []
+  },
+  "KRA_limit": "KRA3 acceptance remains separate Standards review",
+  "report_sha256": "3aee7005fd95bd713f3504f0c0c45aa88f4e9b1112ed5c14e7256e629c1a3f94"
+}

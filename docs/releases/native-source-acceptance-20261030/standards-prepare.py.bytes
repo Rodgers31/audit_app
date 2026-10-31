@@ -1,0 +1,51 @@
+"""Host stdlib orchestration only; never connects outside own offline namespace."""
+from pathlib import Path
+import subprocess, secrets, json, time, os
+
+BASE = Path(__file__).resolve().parent
+SOURCE = BASE / 'accepted-source'
+PG = 'standards-native-source-pg'
+IMAGE = 'admin-redesign-python-runtime:local'
+
+def call(args, label, timeout=120):
+    result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    (BASE / (label + '.txt')).write_text(result.stdout + result.stderr)
+    if result.returncode:
+        raise RuntimeError(label + ' exited ' + str(result.returncode))
+    return result.stdout
+
+def main():
+    if (BASE/'runtime.env').exists() or (BASE/'pg.env').exists():
+        raise RuntimeError('Refuse credential overwrite')
+    password = secrets.token_hex(24)
+    env = {'POSTGRES_USER':'standards_native','POSTGRES_PASSWORD':password,'POSTGRES_DB':'b83_social_test'}
+    (BASE/'pg.env').write_text(''.join(k+'='+v+'\n' for k,v in env.items()))
+    runtime = {'DATABASE_URL':f'postgresql+psycopg2://standards_native:{password}@127.0.0.1:55412/b83_social_test',
+               'B83_SOCIAL_TEST_DB_URL':f'postgresql+psycopg2://standards_native:{password}@127.0.0.1:55412/b83_social_test',
+               'SOCIAL_GENERATION_HOOK_ENABLED':'false', 'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED':'false',
+               'SOCIAL_POLICY_AUTOMATION_ENABLED':'false','SOCIAL_PUBLISHING_ENABLED':'false',
+               'SOCIAL_WORKER_ENABLED':'false','SOCIAL_UPLOADS_ENABLED':'false',
+               'PYTHONDONTWRITEBYTECODE':'1','PYTHONPATH':'/work/backend:/work/backend/tests:/work/backend/tests/social'}
+    (BASE/'runtime.env').write_text(''.join(k+'='+v+'\n' for k,v in runtime.items()))
+    for path in (BASE/'pg.env',BASE/'runtime.env'):os.chmod(path,0o600)
+    call(['docker','run','--pull','never','-d','--name',PG,'--network','none','--cpus','1','--memory','1g','--pids-limit','128',
+          '--tmpfs','/var/lib/postgresql/data:rw,size=512m','--env-file',str(BASE/'pg.env'),'postgres:17',
+          '-p','55412','-c','max_connections=30','-c','shared_buffers=32MB'], 'pg-create')
+    for attempt in range(30):
+        ready = subprocess.run(['docker','exec',PG,'pg_isready','-h','127.0.0.1','-p','55412','-U','standards_native','-d','b83_social_test'],capture_output=True)
+        if ready.returncode == 0:break
+        time.sleep(.2)
+    else:raise RuntimeError('owned PG not ready')
+    call(['docker','run','--pull','never','--rm','--name','standards-native-source-migrate','--network','container:'+PG,
+          '--cpus','1','--memory','2g','--pids-limit','256','--env-file',str(BASE/'runtime.env'),
+          '-v',str(SOURCE)+':/work:ro','-w','/work/backend',IMAGE,'alembic','upgrade','head'], 'migrate',180)
+    info = json.loads(call(['docker','inspect',PG], 'pg-inspect'))[0]
+    # Do not preserve Docker's environment values (contains own throwaway password).
+    (BASE/'pg-inspect.txt').unlink()
+    (BASE/'fixture.json').write_text(json.dumps({'name':PG,'id':info['Id'],'offline':info['HostConfig']['NetworkMode']=='none',
+        'host_ports':info['HostConfig']['PortBindings'],'cpu_nanos':info['HostConfig']['NanoCpus'],
+        'memory':info['HostConfig']['Memory'],'pids_limit':info['HostConfig']['PidsLimit'],
+        'tmpfs':info['HostConfig']['Tmpfs'],'python_image':IMAGE},indent=2)+'\n')
+    print('Owned offline fixture migrated; credential files mode0600; no values printed.')
+
+if __name__=='__main__':main()

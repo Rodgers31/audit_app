@@ -52,6 +52,15 @@ def _ids(job, domain):
     if (type(ids) is not list or len(ids) > 1000 or any(type(v) is not int or not 0 < v <= 2147483647 for v in ids)
             or len(set(ids)) != len(ids)):
         raise SourceObservationUnavailable('Exact record ingestion lineage unavailable')
+    if domain == 'audits':
+        series = job.meta.get('native_report_series')
+        if (type(series) is not dict or not series or len(series) > 1000
+                or any(type(k) is not str or len(k) != 32
+                    or any(c not in '0123456789abcdef' for c in k)
+                    or type(v) is not int or v not in ids for k,v in series.items())
+                or len(set(series.values())) != len(series)):
+            raise SourceObservationUnavailable('Exact record ingestion lineage unavailable')
+        return tuple(sorted(series.values()))
     return tuple(ids)
 
 
@@ -110,6 +119,8 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
                                                          publisher=source.publisher, ingestion_id=job.id, source_identity=source_identity(source)))):
         raise SourceObservationUnavailable('Stored publisher date receipt required')
     if domain == 'audits':
+        if job.meta['native_report_series'].get(value.get('scope_key')) != record_id:
+            raise SourceObservationUnavailable('Current report authority unavailable')
         _job(db, ingestion_id, domain, scope_key=value.get('scope_key'))
     try:
         from .cob_report_metadata import validate_stored_post

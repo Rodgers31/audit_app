@@ -1,0 +1,19 @@
+{
+  "mapping_sha256": "ee8ff2e172f17d49699ef558cf6c7461fa43cb3fefddaf1e700843d946c2bc05",
+  "files": 6037,
+  "mismatches": [],
+  "exact_fileset": true,
+  "audit_carry_sha256": {
+    "backend/seeding/domains/audits/__init__.py": "21a3c1f0069942943e284315659be9c4b9bbe43db7fae62523a5c34d2307ce0f",
+    "backend/seeding/native_report_authority.py": "d7ffebb999bca225589dddd62fea4146e45ed6ba300b98913657f1147d9c4b40",
+    "backend/seeding/native_report_observations.py": "9018c260dacd1e94b9e0538581c741512aa92bec95d266b32c86d683c951b862",
+    "backend/seeding/generation_dispatch.py": "535ddcfe66d1996bb3cfbd0c9ec38873cd4f9b117b95b52691cddcc1a1ad6c1f",
+    "backend/social/generation/integration.py": "3bc80a26e00838f80774782b6efd9779f258917a759a8675e9e7f1e7590902f0",
+    "backend/social/generation/service.py": "356c034781cd2e33ccda94224e7dd653758130da6042d8a7f1d12008c4b79173",
+    "backend/seeding/cli.py": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+    "backend/seeding/pdf_evidence.py": "073a65793f84e0b3f0080e7156c98132ec1639d216647682a7bb7c32ccc3f30a",
+    "backend/seeding/fetch_documents.py": "51d1c48edca17ceaece72504f7906fc80cb4722c162134c63bfc768094dae57d",
+    "backend/seeding/domains/audits/loader.py": "6a3203121d874c3f541cf19813ec772afa7976c91f2010cf7c19381e6eafe173",
+    "backend/tests/social/test_audit_report_editions.py": "3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e"
+  }
+}

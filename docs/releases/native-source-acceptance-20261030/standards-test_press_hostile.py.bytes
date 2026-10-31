@@ -1,0 +1,45 @@
+"""Independent hostile suffixes to otherwise recognized source-shaped claims."""
+import pytest
+from seeding.domains.revenue_by_source.fetcher import _read_release
+from test_kra_press_source_acceptance import article,Publisher,URL
+
+@pytest.mark.parametrize('suffix',[
+    b' in FY 2023/2024',
+    b' in the first half of Financial Year 2024/2025',
+    b' in July 2024',
+])
+def test_explicit_claim_local_period_cannot_inherit_other_annual_scope(tmp_path,suffix):
+    body=article().replace(b'from P.A.Y.E, signifying',b'from P.A.Y.E'+suffix+b', signifying')
+    assert body!=article()
+    release=_read_release(Publisher(tmp_path,body),URL,None)
+    assert release is None or release.heads.get('PAYE') is None or release.heads['PAYE'].raw_amount is None
+
+@pytest.mark.parametrize('style',[
+    'text-align: justify;\x00display:none',
+    'text-align: justify\x1f',
+    'text-align:\njustify;display:none',
+    'text-align: justify !important',
+])
+def test_control_or_arbitrary_css_not_promoted(tmp_path,style):
+    release=_read_release(Publisher(tmp_path,article(change='style:'+style)),URL,None)
+    assert release is None or release.heads.get('PAYE') is None or release.heads['PAYE'].raw_amount is None
+
+
+from sqlalchemy import select
+from models import RevenueBySource
+from seeding.native_financial_observations import read_native_financial_observation
+from seeding.source_observations import SourceObservationUnavailable
+from test_b83_generation_postgres import pg
+from test_native_financial_changes_postgres import enable
+
+@pytest.mark.parametrize('suffix',[b' in FY 2023/2024',b' in July 2024'])
+def test_wrong_claim_scope_cannot_reach_committed_financial_fact(pg,tmp_path,monkeypatch,suffix):
+    import test_kra_press_source_acceptance as setup
+    factory,_=pg;enable(factory,monkeypatch)
+    body=article().replace(b'from P.A.Y.E, signifying',b'from P.A.Y.E'+suffix+b', signifying')
+    monkeypatch.setattr(setup,'article',lambda **kw:body)
+    job=setup.ingest_article(factory,tmp_path,monkeypatch)
+    with factory() as db:
+        record=db.scalar(select(RevenueBySource.id).where(RevenueBySource.revenue_type=='PAYE'))
+    with pytest.raises(SourceObservationUnavailable):
+        read_native_financial_observation(factory,record_id=record,ingestion_id=job,domain='revenue_by_source')

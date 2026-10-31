@@ -1,0 +1,52 @@
+"""Final-source readback of the exact owned rows created from the genuine PDF.
+
+Must run before any other fixture truncates this exclusively owned database.
+This is a fresh reader check, not a replay of the full PDF parse benchmark.
+"""
+import os,json
+from pathlib import Path
+from sqlalchemy import create_engine,select,func
+from sqlalchemy.engine import make_url
+from sqlalchemy.orm import sessionmaker
+from models import BudgetLine,IngestionJob,IngestionStatus
+from seeding.native_financial_observations import read_native_financial_observation
+from social.models import SocialPost,SocialPostTarget,SocialPublication
+from social.generation.models import SourceCursor
+
+def test_final_reader_rechecks_genuine_national_cells_without_generation():
+    url=make_url(os.environ['B83_SOCIAL_TEST_DB_URL'])
+    assert url.drivername=='postgresql+psycopg2' and url.host=='127.0.0.1' and url.port==55412
+    assert url.database=='b83_social_test' and url.username=='standards_native' and not url.query
+    engine=create_engine(url.set(query={'hostaddr':'127.0.0.1'}),pool_size=1,max_overflow=0)
+    factory=sessionmaker(bind=engine,expire_on_commit=False)
+    try:
+        with factory() as db:
+            job=db.scalar(select(IngestionJob).where(IngestionJob.domain=='national_budget').order_by(IngestionJob.id.desc()))
+            assert job is not None and job.status==IngestionStatus.COMPLETED and job.meta['source_mode']=='live'
+            ids=list(db.scalars(select(BudgetLine.id)))
+            assert len(ids)==10
+            cursors=list(db.scalars(select(SourceCursor)))
+            root='cob:financial:national_budget:baseline'
+            assert len(cursors)==11
+            assert sum(c.source_key==root for c in cursors)==1
+            assert sum(c.source_key.startswith('cob:financial:national_budget:') and c.source_key!=root for c in cursors)==10
+            for model in (SocialPost,SocialPostTarget,SocialPublication):
+                assert db.scalar(select(func.count()).select_from(model))==0
+            identity=job.id
+        pins=json.loads(Path('/evidence/national-primary-pins.json').read_text())
+        count=0
+        for record in ids:
+            observation=read_native_financial_observation(factory,record_id=record,ingestion_id=identity,domain='national_budget')
+            assert len(observation['facts'])==2
+            for fact in observation['facts']:
+                assert fact['document_checksum']==pins['national-annual.pdf']['sha256']
+                assert fact['published_on']=='2026-09-04' and fact['classification']=='actual'
+                count+=1
+        assert count==20
+        assert os.environ['SOCIAL_GENERATION_HOOK_ENABLED']=='false'
+        assert os.environ['SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED']=='false'
+        assert os.environ['SOCIAL_POLICY_AUTOMATION_ENABLED']=='false'
+        assert os.environ['SOCIAL_PUBLISHING_ENABLED']=='false'
+        assert os.environ['SOCIAL_UPLOADS_ENABLED']=='false'
+        assert os.environ['SOCIAL_WORKER_ENABLED']=='false'
+    finally:engine.dispose()

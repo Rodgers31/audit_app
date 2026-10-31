@@ -1,0 +1,55 @@
+{
+  "candidate": {
+    "base": "e1a0d6be0aa990064ab50b622c0e04570e84dd52",
+    "files": 6037,
+    "manifest_sha256": "dbbe7eb21d4b35c90165ee11ca7ae1749cc71e4e48c95bee67368f46aeebd82a"
+  },
+  "results": {
+    "final3-root-normal": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "26",
+      "tests": "481",
+      "time": "30.228",
+      "timestamp": "2026-10-30T21:31:37.735137+00:00",
+      "hostname": "72e0925f7430",
+      "sha256": "925ab5015a88ced08f0831113530bf13d02f14c01318126dab89edb1880aafb0"
+    },
+    "final3-root-optimized": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "26",
+      "tests": "481",
+      "time": "32.686",
+      "timestamp": "2026-10-30T21:32:12.182657+00:00",
+      "hostname": "72e0925f7430",
+      "sha256": "dcb45c9c731e297ab59b840a8b7cb4ed92b82428d011f14469cc372e35826e74"
+    },
+    "final3-compat-normal": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "26",
+      "time": "4.561",
+      "timestamp": "2026-10-30T21:32:58.177088+00:00",
+      "hostname": "a266bc8e0c38",
+      "sha256": "7e03c465af3d22d35838b7b98d255ee6c7688fb25b13990dd729ba29608e26de"
+    },
+    "final3-compat-optimized": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "26",
+      "time": "5.652",
+      "timestamp": "2026-10-30T21:33:06.094530+00:00",
+      "hostname": "a266bc8e0c38",
+      "sha256": "751da94e7fbb067b516a300445ca6066424573d85d2bb82ed5cff9ff3d52a8b6"
+    }
+  },
+  "unique_final_cases_per_mode": 481,
+  "skip_resolution": "455 passing cases in broad run; exactly26 historical capability cases skipped withoutSOCIAL_TEST_DATABASE_URL then executed unchanged on assigned62124 offlinePG,26passed0skipped per mode. No remaining unexecuted selected cases."
+}

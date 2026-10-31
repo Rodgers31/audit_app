@@ -1,0 +1,23 @@
+"""Remove only the recorded owned fixture and its two throwaway env files."""
+from pathlib import Path
+import subprocess,json
+BASE=Path(__file__).resolve().parent
+fixture=json.loads((BASE/'fixture.json').read_text())
+name=fixture['name']
+assert name=='standards-native-source-pg'
+current=subprocess.run(['docker','inspect',name,'--format','{{.Id}}'],capture_output=True,text=True)
+assert current.returncode==0 and current.stdout.strip()==fixture['id'],'Owned fixture identity differs'
+deleted=subprocess.run(['docker','rm','-f',name],capture_output=True,text=True)
+assert deleted.returncode==0,deleted.stderr
+for name in ('pg.env','runtime.env'):
+    path=BASE/name
+    assert path.is_file() and not path.is_symlink()
+    path.unlink()
+check=subprocess.run(['docker','inspect',fixture['name']],capture_output=True,text=True)
+assert check.returncode!=0
+assert not any((BASE/name).exists() for name in ('pg.env','runtime.env'))
+result={'owned_container':fixture['name'],'owned_id':fixture['id'],'container_absent':True,
+        'removed_credential_files':['pg.env','runtime.env'],'credential_files_absent':True,
+        'root_pg_or_node_targeted':False,'data_was_tmpfs':True}
+(BASE/'CLEANUP.json').write_text(json.dumps(result,indent=2)+'\n')
+print('Owned PG and both credential env files absent; root PG/node untouched.')

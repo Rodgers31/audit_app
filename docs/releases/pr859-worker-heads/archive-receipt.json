@@ -1,0 +1,17 @@
+{
+  "standards-evidence.tar.gz": {
+    "files": 127,
+    "sha256": "ca91c603901da33c1e39fd78618201756ab0832c84ab1acb3b460bd1a019a6d8",
+    "bytes": 144061
+  },
+  "spec-evidence.tar.gz": {
+    "files": 54,
+    "sha256": "76c9240b236e2b13fd654ae4c05d6eb0338aac98a81c2e1562e87365f217141b",
+    "bytes": 107571
+  },
+  "root-evidence.tar.gz": {
+    "files": 11,
+    "sha256": "102f4a50656ddaebe33aa32bbaccada3df68663374f9759b1a39417f08215e14",
+    "bytes": 312344
+  }
+}

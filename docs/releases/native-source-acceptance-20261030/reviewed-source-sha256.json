@@ -1,0 +1,7 @@
+{
+  "backend/seeding/native_report_authority.py": "d7ffebb999bca225589dddd62fea4146e45ed6ba300b98913657f1147d9c4b40",
+  "backend/seeding/native_report_observations.py": "9018c260dacd1e94b9e0538581c741512aa92bec95d266b32c86d683c951b862",
+  "backend/seeding/domains/revenue_by_source/press_evidence.py": "1e0d77f405ed375bd21b39a2325ae74e2b02ec5fc6627216647377e01241ba8f",
+  "backend/tests/social/test_audit_report_editions.py": "3b1f1fa5146d3dd11fd92cb9981a26b8d5836705eb5f2edc72049f07848be64e",
+  "backend/tests/social/test_kra_press_source_acceptance.py": "8c41d6d499572653fe75438f95773ddca66d9e28955c8c3ea2a6e3318bd2d7b2"
+}

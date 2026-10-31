@@ -1,0 +1,1 @@
+The original KRA binder RED XML is retained losslessly in `kra-unfixed-red.xml.gz`. Its literal assertion output includes trailing whitespace. Decompress before inspecting the original XML; no assertion output was edited. SHA256 of the uncompressed XML: `000f40e8bb2f65d8f011c2701fc05e437e5c7293e76d7f12ad2ed0b609667e0d`.

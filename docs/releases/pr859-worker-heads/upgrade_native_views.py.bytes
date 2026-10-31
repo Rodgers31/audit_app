@@ -1,0 +1,123 @@
+"""Explicit PR859 view replacement. No grant, row write or activation."""
+import hashlib
+import os
+from pathlib import Path
+
+from sqlalchemy import text
+
+NAMES = ('social_native_source_authority', 'social_native_source_authority_snapshot')
+PRIOR = dict(zip(NAMES, ('921b807c9637ae9541cf63e74313a4816875afef3de92d42cf6fc25226b09f4a',
+                        'f219c56c5f21622cfae0fe875e2020770859c90f2d1978625d21a40781aa6ba6')))
+CURRENT = dict(zip(NAMES, ('95c130e2106639dcaa3519951bfa9baa49b52c7fdd677b0dbfe1f0e744b3975a',
+                          '7549c1de87fb44bf1f00b1a9b0ca39b2859d8b1e9a3d898f9203ab4a496faf1e')))
+OFF = ('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED', 'SOCIAL_GENERATION_HOOK_ENABLED',
+       'SOCIAL_REPORT_GENERATION_ENABLED', 'SOCIAL_MEDIA_ENABLED', 'SOCIAL_NATIVE_ENABLED',
+       'SOCIAL_STUDIO_ENABLED', 'SOCIAL_WORKER_SUPERVISOR_ENABLED', 'SOCIAL_POLICY_AUTOMATION_ENABLED',
+       'ADMIN_ETL_DISPATCH_ENABLED', 'AUTO_SEEDER_ENABLED')
+
+
+def require(value):
+    if value is not True:
+        raise RuntimeError('PR859_VIEW_UPGRADE_REFUSED')
+
+
+def rows(conn):
+    result = {}
+    for row in conn.execute(text('''SELECT c.oid,c.relname,c.relowner,c.relacl::text AS acl,c.reloptions,
+        ARRAY(SELECT coalesce(a.attacl::text,'') FROM pg_attribute a
+          WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped ORDER BY a.attnum) AS column_acl,
+        pg_get_viewdef(c.oid,true) AS definition
+        FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname='public' AND c.relname=ANY(:names) AND c.relkind='v' ORDER BY c.relname'''),
+        {'names': list(NAMES)}).mappings():
+        definition = row['definition']
+        for clause in ('FROM ', 'JOIN '):
+            definition = definition.replace(clause+'public.', clause).replace(clause+'"public".', clause)
+        result[row['relname']] = {k:row[k] for k in ('oid','relowner','acl','reloptions','column_acl')}
+        result[row['relname']]['sha256'] = hashlib.sha256(definition.encode()).hexdigest()
+    require(set(result) == set(NAMES))
+    return result
+
+
+def _replace(engine, role, prior, target, *, dry_run):
+    from social.worker.native_authority_schema import definition
+    from social.worker.role_contract import NATIVE_VIEW_SHA256, _limits, _scope, _verify
+    require(type(dry_run) is bool)
+    require(all(os.getenv(k) in (None, 'false') for k in OFF))
+    # The application defaults its in-process seeder ON in production.
+    require(os.getenv('AUTO_SEEDER_ENABLED') == 'false')
+    require(NATIVE_VIEW_SHA256 == target)
+    _scope(role, 'public')
+    with engine.begin() as conn:
+        _limits(conn)
+        # Blocks concurrent view DDL; AccessShare on referenced tables permits DML.
+        conn.exec_driver_sql('LOCK TABLE public.social_native_source_authority,public.social_native_source_authority_snapshot IN ACCESS SHARE MODE')
+        before = rows(conn)
+        pins = {n:r['sha256'] for n,r in before.items()}
+        require(pins == prior or pins == target)
+        require(all(r['reloptions'] == ['security_barrier=true'] for r in before.values()))
+        controls = conn.execute(text('SELECT publishing_enabled,auto_approve_enabled,auto_schedule_enabled,auto_publish_enabled FROM public.social_controls WHERE id=1 FOR UPDATE')).all()
+        require(len(controls) == 1 and tuple(controls[0]) == (False,False,False,False))
+        require(conn.scalar(text('SELECT NOT EXISTS(SELECT 1 FROM public.social_accounts WHERE publishing_enabled IS DISTINCT FROM false)')) is True)
+        savepoint = conn.begin_nested()
+        if pins == prior:
+            conn.execute(text('SET LOCAL search_path=pg_catalog,public,pg_temp'))
+            for suffix, locked in (('_snapshot',False),('',True)):
+                conn.exec_driver_sql('CREATE OR REPLACE VIEW public.social_native_source_authority'+suffix+
+                                     ' WITH (security_barrier=true) AS '+definition(locked=locked))
+            conn.execute(text('SET LOCAL search_path=pg_catalog,pg_temp'))
+        _verify(conn, role, 'public', current=False)
+        after = rows(conn)
+        require({n:r['sha256'] for n,r in after.items()} == target)
+        require(all({k:v for k,v in before[n].items() if k!='sha256'} ==
+                    {k:v for k,v in after[n].items() if k!='sha256'} for n in NAMES))
+        if dry_run:
+            savepoint.rollback()
+            require(rows(conn) == before)
+        else:
+            savepoint.commit()
+        return dict(status='rehearsed' if dry_run else 'updated' if pins==prior else 'already_current',
+                    before=before, after=after, dry_run=dry_run, grants_changed=False, rows_written=False)
+
+
+def upgrade(engine, role, *, dry_run=True):
+    return _replace(engine, role, PRIOR, CURRENT, dry_run=dry_run)
+
+
+def restore(engine, role, *, dry_run=True):
+    # Only after reverting the application: its old builder and complete role
+    # verifier must match PRIOR. No live hash override admits old definitions.
+    return _replace(engine, role, CURRENT, PRIOR, dry_run=dry_run)
+
+
+def main(expected_sha, *, dry_run=True, operation='upgrade'):
+    """Existing production owner connection; all credentials stay in-service."""
+    import json
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import URL
+    require(operation in ('upgrade', 'restore'))
+    require(os.getenv('RENDER_GIT_COMMIT') == expected_sha and len(expected_sha) == 40)
+    # A background process would independently violate the operator off-state.
+    for directory in Path('/proc').iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            args = (directory/'cmdline').read_bytes().decode(errors='replace').split('\0')
+        except OSError:
+            continue
+        require(not any(('worker' in a or 'consumer' in a or 'supervisor' in a) and
+            (a.startswith(('social.','seeding.','etl.')) or
+             Path(a).name.startswith(('etl_dispatch_','social_worker_'))) for a in args))
+    raw = os.getenv('DATABASE_URL')
+    url = raw or URL.create('postgresql+psycopg2',username=os.environ['DB_USER'],password=os.environ['DB_PASSWORD'],
+        host=os.environ['DB_HOST'],port=int(os.getenv('DB_PORT','5432')),database=os.getenv('DB_NAME','postgres'))
+    engine = create_engine(url,connect_args={'sslmode':'verify-full','sslrootcert':'/etc/secrets/supabase-root-ca.crt',
+        'connect_timeout':5},pool_size=1,max_overflow=0,hide_parameters=True)
+    try:
+        result = (upgrade if operation=='upgrade' else restore)(engine, 'audit_social_worker', dry_run=dry_run)
+        print('PR859_VIEW_UPGRADE '+json.dumps(result),flush=True)
+    except Exception as exc:
+        print('PR859_VIEW_UPGRADE_ERROR '+json.dumps({'type':type(exc).__name__}),flush=True)
+        raise SystemExit(1) from None
+    finally:
+        engine.dispose()

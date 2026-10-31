@@ -1,0 +1,90 @@
+"""Exact retained national PDF/post, with strictly offline HTTP and own PG.
+
+The primary pins are written only after the root acquisition is complete.
+No source bytes, publication dates, values or parser results are patched.
+"""
+from pathlib import Path
+from datetime import datetime,timezone
+import hashlib,json
+import httpx
+from sqlalchemy import select,func
+from models import IngestionJob,IngestionStatus,BudgetLine
+from seeding.config import SeedingSettings
+from seeding.http_client import SeedingHttpClient
+from seeding.rate_limiter import RateLimiter
+from seeding.types import DomainRunContext
+from seeding.domains.national_budget.fetcher import _fetch_annual_sector_expenditure,AnnualReport
+from seeding.domains.national_budget.parser import parse_national_budget_payload
+from seeding.domains.national_budget.writer import persist_national_budget_records
+from seeding.native_financial_observations import read_native_financial_observation
+from seeding.generation_dispatch import dispatch_committed_generation
+from services.figure_qualification import qualify_rows
+from services.receipt_store import LocalReceiptStore
+from social.models import SocialPost,SocialPostTarget,SocialPublication
+from test_b83_generation_postgres import pg
+from test_native_financial_changes_postgres import enable
+
+PAGE='https://cob.go.ke/download/national-government-budget-implementation-review-report-fy-2025-2026/'
+URL=PAGE+'?wpdmdl=16454'
+
+def test_exact_national_pdf_fresh_parse_pg_baseline_then_retained_replay(pg,tmp_path,monkeypatch):
+    primary=Path('/primary')
+    pins=json.loads(Path('/evidence/national-primary-pins.json').read_text())
+    bodies={}
+    for name in ('national-annual.pdf','national-publisher.html'):
+        body=(primary/name).read_bytes()
+        assert len(body)==pins[name]['bytes'] and hashlib.sha256(body).hexdigest()==pins[name]['sha256']
+        bodies[name]=body
+    factory,_=pg;enable(factory,monkeypatch)
+    calls=[]
+    def transport(request):
+        assert request.method=='GET'
+        if str(request.url)==URL: name,ctype='national-annual.pdf','application/pdf'
+        elif str(request.url)==PAGE:name,ctype='national-publisher.html','text/html'
+        else:raise AssertionError('Unexpected source request: '+str(request.url))
+        calls.append(str(request.url))
+        return httpx.Response(200,content=bodies[name],headers={'content-type':ctype})
+    settings=SeedingSettings(cache_path=tmp_path/'cache',http_cache_enabled=False)
+    settings.cache_path.mkdir()
+    store=LocalReceiptStore(tmp_path/'receipts')
+    def ingest():
+        with factory.begin() as db:
+            job=IngestionJob(domain='national_budget',status=IngestionStatus.RUNNING,dry_run=False,
+                started_at=datetime.now(timezone.utc),errors=[],meta={'source_mode':'live'})
+            db.add(job);db.flush();identity=job.id
+            with SeedingHttpClient(settings,RateLimiter(1000,1),client=httpx.Client(transport=httpx.MockTransport(transport)),receipt_store=store) as client:
+                rows,status=_fetch_annual_sector_expenditure(client,settings,AnnualReport(URL,'FY 2025/26',2025),
+                    session=db,context=DomainRunContext(None,False,identity))
+            assert status.startswith('promoted') and len(rows)==10,(status,len(rows))
+            assert all(row['provenance_extra']['_native_report_authority'] is not None for row in rows)
+            stats=persist_national_budget_records(db,parse_national_budget_payload(rows),settings,DomainRunContext(None,False,identity))
+            assert not stats.errors,stats.errors
+            job.status=IngestionStatus.COMPLETED;job.finished_at=datetime.now(timezone.utc)
+        with factory() as db:
+            current=list(db.scalars(select(BudgetLine)))
+            assert len(current)==10
+            q=qualify_rows(db,'budget_lines',current)
+            for row in current:
+                assert row.publishable is True and row.quarantine_reason is None
+                for measure in ('allocated_amount','actual_spent'):
+                    assert q[row.id][measure]['status']=='verified',(row.category,measure,q[row.id][measure])
+            ids=[row.id for row in current]
+        for record in ids:
+            value=read_native_financial_observation(factory,record_id=record,ingestion_id=identity,domain='national_budget')
+            assert len(value['facts'])==2
+            assert all(f['published_on']=='2026-09-04' and f['document_url']==URL and
+                       f['document_checksum']==pins['national-annual.pdf']['sha256'] for f in value['facts'])
+        return identity
+    first=ingest()
+    baseline=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=first,dry_run=False,include_reports=False)
+    assert baseline['baselines']==10 and baseline['drafts_created']==0,baseline
+    second=ingest()
+    replay=dispatch_committed_generation(factory,domain='national_budget',ingestion_id=second,dry_run=False,include_reports=False)
+    assert replay['baselines']==replay['drafts_created']==0 and replay['unchanged']==10,replay
+    with factory() as db:
+        for model in (SocialPost,SocialPostTarget,SocialPublication):
+            assert db.scalar(select(func.count()).select_from(model))==0
+    assert calls.count(URL)==1 and calls.count(PAGE)==2,calls
+    Path('/evidence/genuine-national-detail.json').write_text(json.dumps({'scope':'Genuine historical PDF/post contents; local acquisition/job clocks; no actual source execution',
+        'source_sha256':pins['national-annual.pdf']['sha256'],'first_job':first,'reacquisition_job':second,
+        'baselines':baseline,'retained_replay':replay,'local_mock_requests':calls},indent=2)+'\n')

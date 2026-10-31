@@ -1,0 +1,79 @@
+"""Exact edition/head controls separate from publication-day refusal."""
+from datetime import datetime,timezone
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+from sqlalchemy import select
+from models import Country,DocumentStatus,DocumentType,IngestionJob,IngestionStatus,SourceDocument
+from seeding.native_report_authority import capture_pdf_report,persist_native_report
+from seeding.native_report_observations import read_native_report_record_ids,read_native_report_observation
+from seeding.source_observations import SourceObservationUnavailable
+from seeding.types import DomainRunContext
+from services.response_receipts import capture_response
+from services.receipt_store import LocalReceiptStore
+from test_b83_generation_postgres import pg,no_publication
+from test_b86_native_postgres import enable
+from test_audit_producer_flow import document,install,run_cli
+
+
+@pytest.mark.parametrize('order',['older-first','newer-first'])
+def test_desired_one_latest_edition_per_auditee_independent_of_processing_order(pg,tmp_path,monkeypatch,order):
+    factory,_=pg;enable(factory,monkeypatch)
+    old_url,old_body=document(year=2025,day='2025-07-10')
+    new_url,new_body=document(year=2026,day='2026-07-10')
+    # The producer sorts candidates by URL after retry age. Put the ordering
+    # discriminator before the FY so the two runs truly reverse processing.
+    old_url=old_url.replace('national-government-','national-government-'+('a-' if order=='older-first' else 'z-'))
+    new_url=new_url.replace('national-government-','national-government-'+('z-' if order=='older-first' else 'a-'))
+    install(monkeypatch,tmp_path,{old_url:old_body,new_url:new_body})
+    _,job,meta,_,_=run_cli(factory,monkeypatch,tmp_path)
+    ids=read_native_report_record_ids(factory,ingestion_id=job,domain='audits')
+    values=[read_native_report_observation(factory,record_id=i,ingestion_id=job,domain='audits')['report']for i in ids]
+    Path('/evidence/edition-order-'+order+'.json').write_text(json.dumps({'job':job,'processing_urls':[d['url']for d in meta['documents']],'metadata':meta,'readable_reports':values},indent=2,default=str)+'\n')
+    assert len(ids)==1 and values[0]['period']=='FY 2025/26',(ids,[v['period']for v in values])
+    assert meta['post_commit_report_generation']['state']=='completed'and meta['post_commit_report_generation']['baselines']==1 and meta['post_commit_report_generation']['drafts_created']==0
+    no_publication(factory)
+
+
+def direct(factory,tmp_path,*,name,year,day,suffix=''):
+    url,body=document(name=name,year=year,day=day,suffix=suffix)
+    with factory.begin() as db:
+        job=IngestionJob(domain='audits',status=IngestionStatus.RUNNING,dry_run=False,started_at=datetime.now(timezone.utc),errors=[],meta={'source_mode':'live'})
+        db.add(job);db.flush();identity=job.id
+        path=tmp_path/(str(identity)+'.pdf');path.write_bytes(body)
+        receipt=capture_response(httpx.Response(200,content=body,headers={'content-type':'application/pdf'},request=httpx.Request('GET',url)),LocalReceiptStore(tmp_path/'receipts'),source_kind='pdf')
+        authority,reason=capture_pdf_report(path,receipt,domain='audits');assert authority is not None,reason
+        source=SourceDocument(country_id=db.scalar(select(Country.id)),publisher='Office of the Auditor-General',title='Owned audit source',url=url,fetch_date=datetime.now(timezone.utc),doc_type=DocumentType.AUDIT,status=DocumentStatus.AVAILABLE,meta={})
+        db.add(source);db.flush()
+        record=persist_native_report(db,source,authority,context=DomainRunContext(None,False,identity),domain='audits')
+        job.status=IngestionStatus.COMPLETED;job.finished_at=datetime.now(timezone.utc)
+    return identity,record,source.id
+
+
+def read(factory,pair):return read_native_report_observation(factory,record_id=pair[1],ingestion_id=pair[0],domain='audits')
+
+
+def test_cross_auditee_does_not_supersede_and_withdrawal_does_not_revive_old(pg,tmp_path):
+    factory,_=pg
+    a=direct(factory,tmp_path,name='TEST MINISTRY',year=2025,day='2025-07-10')
+    b=direct(factory,tmp_path,name='OTHER MINISTRY',year=2026,day='2026-07-10')
+    assert read(factory,a)['report']['entity']=='TEST MINISTRY'
+    newer=direct(factory,tmp_path,name='TEST MINISTRY',year=2026,day='2026-07-10',suffix='-new')
+    with pytest.raises(SourceObservationUnavailable):read(factory,a)
+    assert read(factory,b)['report']['entity']=='OTHER MINISTRY'
+    with factory.begin() as db:
+        source=db.get(SourceDocument,newer[2]);persist_native_report(db,source,None,context=DomainRunContext(None,False,None),domain='audits')
+    with pytest.raises(SourceObservationUnavailable):read(factory,a)
+    with pytest.raises(SourceObservationUnavailable):read(factory,newer)
+    assert read(factory,b)['report']['entity']=='OTHER MINISTRY'
+    no_publication(factory)
+
+
+def test_later_historical_backlog_keeps_conservative_authority_refusal(pg,tmp_path):
+    factory,_=pg
+    current=direct(factory,tmp_path,name='TEST MINISTRY',year=2026,day='2026-07-10')
+    direct(factory,tmp_path,name='TEST MINISTRY',year=2025,day='2025-07-10',suffix='-backlog')
+    with pytest.raises(SourceObservationUnavailable):read(factory,current)
+    no_publication(factory)
