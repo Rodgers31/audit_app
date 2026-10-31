@@ -92,6 +92,7 @@ def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include
 @pytest.mark.parametrize('mode',['fresh_baseline','retained_baseline','changed_cohort'])
 def test_automatic_full_cohort_completes_with_bounded_query_latency(pg,tmp_path,monkeypatch,mode):
     factory,engine=pg;enable(factory,monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
     retained=mode!='fresh_baseline'
@@ -148,6 +149,7 @@ def automatic(factory, job):
 
 def enabled(factory, monkeypatch):
     enable(factory,monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
 

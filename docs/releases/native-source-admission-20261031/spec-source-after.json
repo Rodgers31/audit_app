@@ -1,0 +1,10 @@
+{
+  "full_files": 6587,
+  "projection_files": 1541,
+  "drift": {
+    "full_candidate": [],
+    "projection": [],
+    "checkout_projection": []
+  },
+  "full_mapping_sha256": "14a510a8ab5c4078e075d0077125aa1004bce402d1f66d3f816a7ff1a15aa813"
+}

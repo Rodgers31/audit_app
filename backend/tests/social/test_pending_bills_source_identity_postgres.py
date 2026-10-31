@@ -18,6 +18,7 @@ from test_b86_native_postgres import enable
 def test_budget_title_refresh_preserves_retained_payables_lineage(pg, tmp_path, monkeypatch):
     factory, _ = pg
     enable(factory, monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED', 'true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED', 'true')
     ingest_cohort(factory, tmp_path)
     with factory.begin() as db:
@@ -52,6 +53,7 @@ def test_budget_title_refresh_preserves_retained_payables_lineage(pg, tmp_path, 
 def test_retained_pending_report_survives_unrelated_budget_row_for_same_pdf(pg, tmp_path, monkeypatch, budget_publisher):
     factory, _ = pg
     enable(factory, monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED', 'true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED', 'true')
     ingest_cohort(factory, tmp_path)
     with factory.begin() as db:

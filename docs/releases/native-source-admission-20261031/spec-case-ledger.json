@@ -1,0 +1,201 @@
+{
+  "postgres": [
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_source_only_creator_to_fresh_reader_and_restricted_witness_creates_no_delivery_authority",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_source_only_new_job_requalifies_without_cursor_or_draft_and_does_not_revive_old_witness[unchanged-reacquisition]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_source_only_new_job_requalifies_without_cursor_or_draft_and_does_not_revive_old_witness[new-meaning]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[business-value]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[source-binding]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[receipt]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[country]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[partial-job]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[fixture-job]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "",
+      "name": "test_qualified_source_does_not_open_generation_factory_when_generation_is_off",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[true-false-True]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[false-true-False]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[false-false-False]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[true-true-True]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_source_only_admission_cannot_open_a_live_generation_hook",
+      "outcome": "passed"
+    },
+    {
+      "mode": "normal",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_source_admission_cannot_turn_catalogue_date_into_financial_authority",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_source_only_creator_to_fresh_reader_and_restricted_witness_creates_no_delivery_authority",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_source_only_new_job_requalifies_without_cursor_or_draft_and_does_not_revive_old_witness[unchanged-reacquisition]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_source_only_new_job_requalifies_without_cursor_or_draft_and_does_not_revive_old_witness[new-meaning]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[business-value]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[source-binding]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[receipt]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[country]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[partial-job]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_true_source_admission_never_preserves_current_reader_or_worker_authority_after_input_change[fixture-job]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "",
+      "name": "test_qualified_source_does_not_open_generation_factory_when_generation_is_off",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[true-false-True]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[false-true-False]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[false-false-False]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_financial_generation_does_not_grant_source_admission[true-true-True]",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_source_only_admission_cannot_open_a_live_generation_hook",
+      "outcome": "passed"
+    },
+    {
+      "mode": "optimized",
+      "suite": "tests.social.test_source_admission_separation_postgres",
+      "name": "test_source_admission_cannot_turn_catalogue_date_into_financial_authority",
+      "outcome": "passed"
+    }
+  ],
+  "flag_cache_workflow_ledger": "flag-review/CASE-LEDGER.json",
+  "total_per_mode": 146,
+  "independent_per_mode": 140,
+  "repository_corroboration_per_mode": 6,
+  "mode_replays_not_unique_new_cases": true
+}
