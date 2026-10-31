@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-31T21:23:12.063988+00:00",
+  "command": [
+    "docker",
+    "rm",
+    "-f",
+    "-v",
+    "pr865-standards-pg-20261031"
+  ],
+  "credential_file_absence_verified": true,
+  "owned_fixture": "pr865-standards-pg-20261031",
+  "owned_fixture_id": "b714fb0558f089fc04c94500fcecca68a0c51162d8f12ac9892e63b4b8fbcf83",
+  "remaining_owned_containers": [],
+  "removed": true,
+  "removed_credential_files": [
+    "pg.env",
+    "runtime.env"
+  ],
+  "retained_artifact_secret_scan": "no matches",
+  "shared_resources_touched": false
+}

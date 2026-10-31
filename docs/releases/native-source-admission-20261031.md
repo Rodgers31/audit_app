@@ -7,6 +7,12 @@ native monetary cells and whether to generate financial drafts. That coupling
 prevented independent source acceptance while the owner kept financial
 generation off.
 
+The initial acceptance packet predates the review-discovered stale numeric
+verdict on a subsequent source-disabled write. The
+[review correction](native-source-admission-review-20261031.md) records the
+reproduced defect, the shared-gate fix and superseding verification. Its original
+packet remains a historical receipt, rather than evidence for that transition.
+
 ## Independent controls
 
 `SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED` is a new **default-off**,
@@ -94,7 +100,10 @@ remains off. Pin the source/deployment, select exact domains/jobs, retain before
 and after row/value/qualification/source receipts, and restore the original
 source ceiling afterward. Turning admission off stops prospective qualification;
 it does not erase already accepted factual data or reverse its eligibility.
-Data adoption needs its own reconciliation and rollback boundary.
+An actual subsequent native writer rebinds the touched rows to a new job, so
+admission OFF invalidates those rows' earlier numeric verdicts. A later admitted
+write must qualify the current evidence again. Data adoption needs its own
+reconciliation and rollback boundary.
 
 The three old production draft preparation attempts remain correctly held on
 stale source authority. This change does not rebind their immutable events,

@@ -33,9 +33,10 @@ def test_committed_reader_valueerror_maps_to_review_required(monkeypatch,reason)
   verify_financial_authority(None,{'financial':{'record_id':1,'native_domain':'revenue_by_source'},'ingestion_id':'1'})
 
 @pytest.mark.parametrize("eligible", [True, False])
-def test_non_native_worldbank_row_eligibility_is_not_changed_by_native_gate(pg,monkeypatch,eligible):
+@pytest.mark.parametrize("admit", ['true', 'false'])
+def test_non_native_worldbank_row_eligibility_is_not_changed_by_native_gate(pg,monkeypatch,eligible,admit):
  from seeding.native_financial_gate import qualify_native_financial_rows
- factory,engine=pg;monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
+ factory,engine=pg;monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED',admit)
  monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
  with factory.begin()as db:
   country=db.scalar(select(Country).where(Country.iso_code=='KEN'))

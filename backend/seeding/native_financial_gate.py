@@ -20,10 +20,6 @@ REASON='native_financial_cells_unverified'
 
 
 def qualify_native_financial_rows(session, rows, *, domain, context):
-    # Source qualification is independently admitted; financial generation can
-    # remain OFF throughout an explicitly reviewed source-acceptance run.
-    if not source_admission_enabled():
-        return
     if context is None or context.dry_run is not False or type(context.job_id) is not int or context.job_id<=0:
         return
     table, measures=TABLES[domain]
@@ -63,6 +59,13 @@ def qualify_native_financial_rows(session, rows, *, domain, context):
         views.append(view)
         native_rows.append(row)
     if not native_rows:
+        return
+    if not source_admission_enabled():
+        # These rows have just been bound by the native writer to this job.
+        # Its new values/evidence cannot inherit a prior job's numeric verdict.
+        # Preserve explicit quarantines and unrelated publisher/scope verdicts.
+        for row in native_rows:
+            row.publishable = False
         return
     qualified=qualify_rows(session,table,views)
     for row in native_rows:
