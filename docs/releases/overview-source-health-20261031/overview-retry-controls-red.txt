@@ -1,0 +1,117 @@
+FAIL __tests__/lib/api/retryAfter.test.ts
+  server-directed temporary read recovery
+    ✕ recovers a get capacity refusal without a manual page refresh (40 ms)
+    ✕ recovers a head capacity refusal without a manual page refresh (9 ms)
+    ✕ retains the three-attempt ceiling when temporary capacity never returns (4 ms)
+    ✕ waits at least the server delay while preserving finite backoff (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: undefined (12 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "" (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "NaN" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "Infinity" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "-1" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "1.5" (4 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "4" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "99999999999999" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: true (1 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: false (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: ["1"] (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: {} (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "tomorrow" (2 ms)
+    ✓ never replays post after a temporary refusal (2 ms)
+    ✓ never replays put after a temporary refusal (2 ms)
+    ✓ never replays patch after a temporary refusal (1 ms)
+    ✓ never replays delete after a temporary refusal (2 ms)
+    ✕ cancels a pending capacity backoff without another HTTP attempt (7 ms)
+
+  ● server-directed temporary read recovery › recovers a get capacity refusal without a manual page refresh
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: {"publishing_enabled": false}
+    Received: "Evidence unavailable"
+
+      43 |       .then(r => r.data, () => 'Evidence unavailable');
+      44 |     await jest.runAllTimersAsync();
+    > 45 |     expect(await result).toEqual({ publishing_enabled: false });
+         |                          ^
+      46 |     expect(attempts).toBe(2);
+      47 |   });
+      48 |
+
+      at toEqual (__tests__/lib/api/retryAfter.test.ts:45:26)
+
+  ● server-directed temporary read recovery › recovers a head capacity refusal without a manual page refresh
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: {"publishing_enabled": false}
+    Received: "Evidence unavailable"
+
+      43 |       .then(r => r.data, () => 'Evidence unavailable');
+      44 |     await jest.runAllTimersAsync();
+    > 45 |     expect(await result).toEqual({ publishing_enabled: false });
+         |                          ^
+      46 |     expect(attempts).toBe(2);
+      47 |   });
+      48 |
+
+      at toEqual (__tests__/lib/api/retryAfter.test.ts:45:26)
+
+  ● server-directed temporary read recovery › retains the three-attempt ceiling when temporary capacity never returns
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 3
+    Received length: 1
+    Received array:  [1793461688857]
+
+      53 |     await jest.runAllTimersAsync();
+      54 |     expect(await result).toBe(503);
+    > 55 |     expect(attempts).toHaveLength(3);
+         |                      ^
+      56 |   });
+      57 |
+      58 |   it('waits at least the server delay while preserving finite backoff', async () => {
+
+      at Object.toHaveLength (__tests__/lib/api/retryAfter.test.ts:55:22)
+
+  ● server-directed temporary read recovery › waits at least the server delay while preserving finite backoff
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 503
+
+      63 |     expect(attempts).toHaveLength(1);
+      64 |     await jest.advanceTimersByTimeAsync(1);
+    > 65 |     expect(await result).toBe(200);
+         |                          ^
+      66 |     expect(attempts[1] - attempts[0]).toBe(2000);
+      67 |   });
+      68 |
+
+      at Object.toBe (__tests__/lib/api/retryAfter.test.ts:65:26)
+
+  ● server-directed temporary read recovery › cancels a pending capacity backoff without another HTTP attempt
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "ERR_CANCELED"
+    Received: "ERR_BAD_RESPONSE"
+
+      94 |     control.abort();
+      95 |     await jest.runAllTimersAsync();
+    > 96 |     expect(await result).toBe(AxiosError.ERR_CANCELED);
+         |                          ^
+      97 |     expect(attempts).toHaveLength(1);
+      98 |   });
+      99 | });
+
+      at Object.toBe (__tests__/lib/api/retryAfter.test.ts:96:26)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 17 passed, 22 total
+Snapshots:   0 total
+Time:        0.969 s
+Ran all test suites within paths "__tests__/lib/api/retryAfter.test.ts".
+Test results written to: ../../evidence/overview-retry-controls-red.json

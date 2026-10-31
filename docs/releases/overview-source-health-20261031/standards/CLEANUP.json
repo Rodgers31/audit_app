@@ -1,0 +1,7 @@
+{
+  "owned_containers_remaining": [],
+  "all_runtime_containers_used_rm": true,
+  "created_pg_or_credentials": false,
+  "shared_containers_not_touched": true,
+  "partial_unexecuted_freeze": "setup-incomplete-source-copy.json"
+}

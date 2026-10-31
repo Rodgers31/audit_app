@@ -1,0 +1,16 @@
+PASS ../../evidence/raw-header-path.test.ts
+  ✓ direct actual interceptor accepts one mixed-case plain-object instruction (12 ms)
+  ✓ direct actual interceptor refuses raw-object linebreak (2 ms)
+  ✓ direct actual interceptor refuses raw-object array (2 ms)
+  ✓ direct actual interceptor refuses raw-object numeric (1 ms)
+  ✓ direct actual interceptor refuses raw-object overbudget (2 ms)
+  ✓ direct actual interceptor refuses raw-object absent (40 ms)
+  ✓ direct actual interceptor refuses raw-object ambiguous-valid-first (1 ms)
+  ✓ direct actual interceptor refuses raw-object ambiguous-invalid-first (14 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        1.098 s
+Ran all test suites within paths "/evidence/raw-header-path.test.ts".
+Test results written to: ../../evidence/raw-path.json

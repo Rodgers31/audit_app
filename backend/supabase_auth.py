@@ -39,6 +39,7 @@ source of truth is simpler.
 from __future__ import annotations
 
 import json
+import math
 import os
 import threading
 import time
@@ -156,7 +157,15 @@ def _fetch_jwks(force_refresh: bool = False) -> dict:
         if _jwks_refresh_in_flight or cooling_down:
             if fresh:
                 return _jwks_cache
-            raise HTTPException(503, "Authentication keys temporarily unavailable")
+            # The first request owns the one permitted provider fetch. Cold
+            # followers still refuse immediately, but safe readers can retry
+            # after that fetch completes. A failed-provider cooldown advertises
+            # its real remaining duration instead of inviting a retry storm.
+            delay = 1 if _jwks_refresh_in_flight else max(
+                1, math.ceil(_JWKS_REFRESH_COOLDOWN_SECONDS - (now - _jwks_last_attempt_ts))
+            )
+            raise HTTPException(503, "Authentication keys temporarily unavailable",
+                                headers={"Retry-After": str(delay), "Cache-Control": "no-store"})
         _jwks_last_attempt_ts = now
         _jwks_refresh_in_flight = True
     try:
@@ -166,8 +175,15 @@ def _fetch_jwks(force_refresh: bool = False) -> dict:
             _jwks_cache_ts = _jwks_clock()
         return document
     except (httpx.HTTPError, ValueError, TypeError, RecursionError):
+        # The cooldown starts at the attempted fetch, not at its failure.
+        with _jwks_lock:
+            remaining = max(1, math.ceil(
+                _JWKS_REFRESH_COOLDOWN_SECONDS - (_jwks_clock() - _jwks_last_attempt_ts)
+            ))
         raise HTTPException(
-            503, "Authentication keys temporarily unavailable"
+            503, "Authentication keys temporarily unavailable",
+            headers={"Retry-After": str(remaining),
+                     "Cache-Control": "no-store"},
         ) from None
     finally:
         with _jwks_lock:

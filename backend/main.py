@@ -1927,6 +1927,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After"],
 )
 
 # Required serving controls cannot disappear behind a healthy startup.

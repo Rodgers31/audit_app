@@ -1,0 +1,33 @@
+{
+  "image": "admin-redesign-python-runtime:local",
+  "image_id": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "os": "linux",
+  "arch": "arm64",
+  "command": [
+    "docker",
+    "run",
+    "--pull",
+    "never",
+    "--rm",
+    "--name",
+    "overview-standards-runtime-identity",
+    "--network",
+    "none",
+    "--cpus",
+    "1",
+    "--memory",
+    "128m",
+    "--pids-limit",
+    "64",
+    "admin-redesign-python-runtime:local",
+    "python",
+    "-c",
+    "import sys,platform,ssl,json;print(json.dumps(dict(python=sys.version,platform=platform.platform(),openssl=ssl.OPENSSL_VERSION)))"
+  ],
+  "exit": 0,
+  "runtime": {
+    "python": "3.12.15 (main, Oct  6 2026, 02:08:11) [GCC 14.2.0]",
+    "platform": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.41",
+    "openssl": "OpenSSL 3.5.7 9 Jun 2026"
+  }
+}

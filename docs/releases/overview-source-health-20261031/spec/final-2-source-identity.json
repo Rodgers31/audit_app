@@ -1,0 +1,9 @@
+{
+  "head": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+  "files": 838,
+  "mapping_sha256": "898853c53c560452bc03f44b63e7ff4241536f52abf220a29900fbc10e7f2bf8",
+  "axios_sha256": "8bf17d9e1ab78965a9f904cd77a4d598faca49114334c25b0786cdf6f8df3fa4",
+  "author_test_sha256": "7d021f0c15f6b2dbdd7bf18c26b0a3f9aa30f75024dabc9d79e26713ade3b768",
+  "independent_fixture_sha256": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+  "classification_update": "Raw invalid headers normalized to valid numeric values by locked Axios are now positive bounded controls; values remaining malformed after normalization are refusal controls. Old failed expectations retained."
+}

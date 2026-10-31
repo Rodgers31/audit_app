@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.126" timestamp="2026-10-31T15:58:04.860030+00:00" hostname="52adaa1c537e"><testcase classname="tests.test_source_failure_diagnostics" name="test_cob_uses_verified_direct_homepage_within_existing_batch_budget" time="0.037"><failure message="assert False is True">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0xffff84bc9bb0&gt;
+
+    @pytest.mark.asyncio
+    async def test_cob_uses_verified_direct_homepage_within_existing_batch_budget(monkeypatch):
+        calls = []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs['timeout'] == 2.0
+                assert kwargs.get('verify', True) is True
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                pass
+    
+            async def head(self, url):
+                calls.append(url)
+                # Scaled deterministic control of the observed extra redirect hop.
+                if url == 'https://www.cob.go.ke':
+                    await asyncio.sleep(.04)
+                else:
+                    await asyncio.sleep(.001)
+                return SimpleNamespace(status_code=200)
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monkeypatch.setattr(sr, 'BATCH_SECONDS', .02)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, _ = monitor.observe()
+&gt;       assert sources['cob']['reachable'] is True
+E       assert False is True
+
+tests/test_source_failure_diagnostics.py:99: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,32 @@
+[
+  {
+    "kind": "plain-object",
+    "raw": "1\n",
+    "normalized": "1",
+    "boundaryHeader": "1",
+    "calls": 2,
+    "status": 200
+  },
+  {
+    "kind": "plain-object",
+    "raw": "1\r\n",
+    "normalized": "1",
+    "boundaryHeader": "1",
+    "calls": 2,
+    "status": 200
+  },
+  {
+    "kind": "mutated-AxiosHeaders-instance",
+    "raw": "1\n",
+    "normalized": "1\n",
+    "calls": 2,
+    "status": 200
+  },
+  {
+    "kind": "mutated-AxiosHeaders-instance",
+    "raw": "1\r\n",
+    "normalized": "1\r\n",
+    "calls": 2,
+    "status": 200
+  }
+]

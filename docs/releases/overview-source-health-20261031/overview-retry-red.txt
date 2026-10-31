@@ -1,0 +1,45 @@
+FAIL __tests__/lib/api/retryAfter.test.ts
+  server-directed temporary read recovery
+    ✕ recovers a get capacity refusal without a manual page refresh (51 ms)
+    ✕ recovers a head capacity refusal without a manual page refresh (5 ms)
+
+  ● server-directed temporary read recovery › recovers a get capacity refusal without a manual page refresh
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: {"publishing_enabled": false}
+    Received: "Evidence unavailable"
+
+      30 |       .then(r => r.data, () => 'Evidence unavailable');
+      31 |     await jest.runAllTimersAsync();
+    > 32 |     expect(await result).toEqual({ publishing_enabled: false });
+         |                          ^
+      33 |     expect(attempts).toBe(2);
+      34 |   });
+      35 | });
+
+      at toEqual (__tests__/lib/api/retryAfter.test.ts:32:26)
+
+  ● server-directed temporary read recovery › recovers a head capacity refusal without a manual page refresh
+
+    expect(received).toEqual(expected) // deep equality
+
+    Expected: {"publishing_enabled": false}
+    Received: "Evidence unavailable"
+
+      30 |       .then(r => r.data, () => 'Evidence unavailable');
+      31 |     await jest.runAllTimersAsync();
+    > 32 |     expect(await result).toEqual({ publishing_enabled: false });
+         |                          ^
+      33 |     expect(attempts).toBe(2);
+      34 |   });
+      35 | });
+
+      at toEqual (__tests__/lib/api/retryAfter.test.ts:32:26)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 2 total
+Snapshots:   0 total
+Time:        1.107 s
+Ran all test suites within paths "__tests__/lib/api/retryAfter.test.ts".
+Test results written to: ../../evidence/overview-retry-red.json

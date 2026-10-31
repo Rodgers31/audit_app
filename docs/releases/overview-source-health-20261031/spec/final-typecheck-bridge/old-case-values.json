@@ -1,0 +1,11 @@
+[
+  {
+    "name": "ambiguous-valid-first",
+    "headers": {
+      "Retry-After": "1",
+      "retry-after": "4"
+    },
+    "calls": 0,
+    "resultStatus": 503
+  }
+]

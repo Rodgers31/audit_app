@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.172" timestamp="2026-10-31T15:59:29.981200+00:00" hostname="e50221425acb"><testcase classname="tests.test_source_failure_diagnostics" name="test_wrapped_certificate_failure_retains_its_classification" time="0.012"><failure message="AssertionError: assert ('request_err...quest_failed') == ('certificate...te_untrusted')&#10;  &#10;  At index 0 diff: 'request_error' != 'certificate_error'&#10;  Use -v to get more diff">def test_wrapped_certificate_failure_retains_its_classification():
+        error = httpx.ConnectError('outer inert transport failure')
+        error.__cause__ = ValueError('CERTIFICATE_VERIFY_FAILED INERT_PRIVATE')
+&gt;       assert sr.failure_detail(error) == ('certificate_error', 'certificate_untrusted')
+E       AssertionError: assert ('request_err...quest_failed') == ('certificate...te_untrusted')
+E         
+E         At index 0 diff: 'request_error' != 'certificate_error'
+E         Use -v to get more diff
+
+tests/test_source_failure_diagnostics.py:24: AssertionError</failure></testcase></testsuite></testsuites>

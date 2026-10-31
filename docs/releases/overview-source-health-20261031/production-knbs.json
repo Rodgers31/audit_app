@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-31T15:59:15.043445+00:00",
+  "httpx": "0.28.1",
+  "results": [
+    {
+      "url": "https://knbs.or.ke",
+      "seconds": 0.577,
+      "error_chain": [
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "SSLCertVerificationError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": 20,
+          "verify_message": "unable to get local issuer certificate"
+        }
+      ],
+      "tls_verification": true
+    },
+    {
+      "url": "https://www.knbs.or.ke",
+      "seconds": 0.395,
+      "error_chain": [
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "ConnectError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": null,
+          "verify_message": null
+        },
+        {
+          "type": "SSLCertVerificationError",
+          "message": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1011)",
+          "verify_code": 20,
+          "verify_message": "unable to get local issuer certificate"
+        }
+      ],
+      "tls_verification": true
+    }
+  ]
+}

@@ -1,0 +1,410 @@
+FFFFFFF                                                                  [100%]
+=================================== FAILURES ===================================
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error0-certificate_expired-expired] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79e35b80>
+error = ConnectError('INERT_PRIVATE transport detail')
+reason = 'certificate_expired', word = 'expired'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff79dde7f0>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error1-certificate_chain_unverified-chain] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79e33290>
+error = ConnectError('INERT_PRIVATE transport detail')
+reason = 'certificate_chain_unverified', word = 'chain'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff79e22890>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error2-certificate_chain_unverified-chain] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79e33050>
+error = ConnectError('INERT_PRIVATE transport detail')
+reason = 'certificate_chain_unverified', word = 'chain'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff79e23100>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error3-certificate_hostname_mismatch-hostname] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79e334d0>
+error = ConnectError('INERT_PRIVATE transport detail')
+reason = 'certificate_hostname_mismatch', word = 'hostname'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff79e23920>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error4-certificate_untrusted-certificate] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79df54f0>
+error = ConnectError('INERT_PRIVATE transport detail')
+reason = 'certificate_untrusted', word = 'certificate'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff7971c180>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error5-connect_timeout-connection] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79df4620>
+error = ConnectTimeout('INERT_PRIVATE'), reason = 'connect_timeout'
+word = 'connection'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff7971c9f0>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+_ test_unavailable_source_reason_survives_without_exposing_library_text[error6-response_timeout-response] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff79df7710>
+error = ReadTimeout('INERT_PRIVATE'), reason = 'response_timeout'
+word = 'response'
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize('error,reason,word', [
+        (certificate_error(10), 'certificate_expired', 'expired'),
+        (certificate_error(20), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(21), 'certificate_chain_unverified', 'chain'),
+        (certificate_error(62), 'certificate_hostname_mismatch', 'hostname'),
+        (certificate_error(999), 'certificate_untrusted', 'certificate'),
+        (httpx.ConnectTimeout('INERT_PRIVATE'), 'connect_timeout', 'connection'),
+        (httpx.ReadTimeout('INERT_PRIVATE'), 'response_timeout', 'response'),
+    ])
+    async def test_unavailable_source_reason_survives_without_exposing_library_text(monkeypatch, error, reason, word):
+        closes, calls = [], []
+    
+        class Client:
+            def __init__(self, **kwargs):
+                assert kwargs.get('verify', True) is True
+                assert kwargs['timeout'] == 2.0
+                assert kwargs['max_redirects'] == 2
+                assert kwargs['limits'].max_connections == 5
+    
+            async def __aenter__(self):
+                return self
+    
+            async def __aexit__(self, *_):
+                closes.append(True)
+    
+            async def head(self, url):
+                calls.append(url)
+                raise error
+    
+        monkeypatch.setattr(sr.httpx, 'AsyncClient', Client)
+        monitor = sr.SourceReachability()
+        monitor.observe()
+        await monitor._task
+        sources, running = monitor.observe()
+        assert not running and len(calls) == 5 and len(closes) == 1
+>       assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_source_failure_diagnostics.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+.0 = <dict_valueiterator object at 0xffff7971d260>
+
+>   assert all(s['reachable'] is False and s['failure_reason'] == reason for s in sources.values())
+                                           ^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'failure_reason'
+
+tests/test_source_failure_diagnostics.py:55: KeyError
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+database.py:79
+  /case/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /case/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error0-certificate_expired-expired]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error1-certificate_chain_unverified-chain]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error2-certificate_chain_unverified-chain]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error3-certificate_hostname_mismatch-hostname]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error4-certificate_untrusted-certificate]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error5-connect_timeout-connection]
+FAILED tests/test_source_failure_diagnostics.py::test_unavailable_source_reason_survives_without_exposing_library_text[error6-response_timeout-response]
+7 failed, 3 warnings in 0.09s

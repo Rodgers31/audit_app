@@ -1,0 +1,13 @@
+{
+  "S1": {
+    "final_classification": "REFUTED as an application strict-input defect under locked Axios1.20.0",
+    "initial_observation": "Raw LF/CRLF adapter response objects caused bounded retries, contradicting an incorrect raw-byte refusal expectation",
+    "executed_causal_result": "Axios sanitizes response headers before the application interceptor; both raw object and mutated AxiosHeaders variants normalize to valid numeric1",
+    "preserved_rejected_hypotheses": [
+      "run-3:2failed/98passed",
+      "final:4failed/98passed",
+      "sanitizer-probe:2failed/2passed (class-instance raw refusal expectation also wrong)"
+    ],
+    "final_contract": "Normalized-valid1 recovers in2bounded attempts; values remaining malformed after normalization are refused. Defensive CR/LF check retained without raw-byte acceptance claim."
+  }
+}

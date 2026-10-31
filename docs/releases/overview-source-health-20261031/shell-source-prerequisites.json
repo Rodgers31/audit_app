@@ -1,0 +1,11 @@
+{
+  "source_root": "/Users/roger/.codex/worktrees/admin-social-release-check/audit_app/frontend",
+  "isolated_copy": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/overview-source-health-20261031/shell-build/frontend",
+  "cached_deps": "/Users/roger/.codex/worktrees/admin-header-ownership/audit_app/frontend/node_modules",
+  "no_environment_files": false,
+  "package_pins": {
+    "package-lock.json": "4368bb650760fdaaf6aa98741d416c69659f605b847fffb1be0312e9a76dbac8",
+    "package.json": "7448757653fd6ef2471e111c30ae106aef15fcf373f89043f8503e7eb778c6b3",
+    "eslint-rules/package.json": "c1fd7dc154ef657f856549b4a0117e8ce96bc39e0377f929dcbdbce3d9415f61"
+  }
+}

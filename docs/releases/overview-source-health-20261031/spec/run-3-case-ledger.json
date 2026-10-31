@@ -1,0 +1,606 @@
+[
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header NaN",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header Infinity",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header -Infinity",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header -1",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header true",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header false",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header []",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header [\"1\"]",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header [\"1\", \"2\"]",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header {}",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header null",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"NaN\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"Infinity\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"-0\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"+1\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1.0\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1e0\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"0x1\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1, 2\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1\n\"",
+    "status": "failed",
+    "failureMessages": [
+      "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 3\n    at toBe (/evidence/retry-adversarial.test.tsx:29:431)"
+    ]
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1\r\n\"",
+    "status": "failed",
+    "failureMessages": [
+      "Error: expect(received).toBe(expected) // Object.is equality\n\nExpected: 1\nReceived: 3\n    at toBe (/evidence/retry-adversarial.test.tsx:29:431)"
+    ]
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"\u00a01\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"\uff11\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"\u0661\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"4\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"004\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"999\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"1000\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries refuses malformed or outside-contract header \"Fri, 31 Oct 2026 12:00:01 GMT\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 0 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 1 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 2 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 3 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header  \t2\t with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 003 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries honors finite header 000 with base minimum",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries caps repeated503 header0 at exactly3 dispatches",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries caps repeated503 header1 at exactly3 dispatches",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries caps repeated503 header3 at exactly3 dispatches",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not replay post",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not replay put",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not replay patch",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not replay delete",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not replay options",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries three-attempt cap remains one budget when status switches503\u2192502\u2192503",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries HEAD retries; casing of actual AxiosHeaders is immaterial",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries does not reinterpret ordinary404/429 with valid Retry-After",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries pre-abort dispatches zero adapters",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries cancellation retires exactly its backoff, leaving independent request live",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries cancellation during asynchronous session retrieval prevents adapter dispatch",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries preserves exact params, headers, signal and successful evidence payload",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "independent real Axios capacity boundaries fresh same-session token is reacquired on retry",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "actual Overview + QueryClient + actual Axios adapter all seven concurrent real queries recover temporary503 automatically without refresh",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "actual Overview + QueryClient + actual Axios adapter permanent503, malformed instruction and malformed recovered payload stay unavailable",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "actual Overview + QueryClient + actual Axios adapter actor switch cancels every old503 backoff and isolates new actor data/token",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "actual Overview + QueryClient + actual Axios adapter auth revocation aborts all old503 work and never retries after session disappears",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/evidence/retry-adversarial.test.tsx",
+    "title": "actual Overview + QueryClient + actual Axios adapter unmount aborts pending503 work without any replay",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget bounds a QueryClient request through the real Axios interceptor to three HTTP attempts",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget exhausts a direct GET on 502 after three attempts",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget exhausts a direct GET on 504 after three attempts",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget recovers a direct GET after one transient network failure",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget recovers a direct GET after a timeout",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget returns an unchanged payload after a transient failure",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not retry a request configuration error with no HTTP response",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget exhausts a direct GET after three network failures",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not accept a malformed caller retry counter as an unlimited budget",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not retry permanent HTTP 400",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not retry permanent HTTP 404",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not retry permanent HTTP 429",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not retry permanent HTTP 503",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not repeat a failed post mutation",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not repeat a failed patch mutation",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget does not repeat a failed delete mutation",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget cancels a pending backoff without sending another request",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget stops an active query request when its QueryClient signal is cancelled",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudget.test.ts",
+    "title": "one HTTP retry budget propagates query cancellation through the county API adapter and its backoff",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery recovers a get capacity refusal without a manual page refresh",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery recovers a head capacity refusal without a manual page refresh",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery retains the three-attempt ceiling when temporary capacity never returns",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery waits at least the server delay while preserving finite backoff",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: undefined",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"NaN\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"Infinity\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"-1\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"1.5\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"4\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"99999999999999\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: true",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: false",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: [\"1\"]",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: {}",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery keeps an absent, malformed or over-budget Retry-After visible: \"tomorrow\"",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery never replays post after a temporary refusal",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery never replays put after a temporary refusal",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery never replays patch after a temporary refusal",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery never replays delete after a temporary refusal",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryAfter.test.ts",
+    "title": "server-directed temporary read recovery cancels a pending capacity backoff without another HTTP attempt",
+    "status": "passed",
+    "failureMessages": []
+  },
+  {
+    "suite": "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts",
+    "title": "server prefetch retry budget bounds a fresh server QueryClient and Axios request to three HTTP attempts",
+    "status": "passed",
+    "failureMessages": []
+  }
+]

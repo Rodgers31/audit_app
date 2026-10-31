@@ -1,0 +1,10 @@
+{
+  "backend/main.py": "e93baa2efbf7251284f5505c3b7f2408a6237e4b5ac1184665148ef193f16817",
+  "backend/supabase_auth.py": "2c83701dc699a56431c561285a24bcd77f991db157a2c59ea0ccfee20b69dbeb",
+  "backend/services/source_reachability.py": "0b6cb695ab9c201809d8d82cad591f44fee909a5b82907d6e0a39612d584a2ef",
+  "backend/tests/test_auth_retry_after.py": "3138b3d69558b187a61534bf2b227a286eb49cae3574a9bdbfc65ca9e7608f80",
+  "backend/tests/test_source_failure_diagnostics.py": "07dca5bb416d2379ea2fcf08a1a6299b4c9098075da1b8c2fc0a4e6722bf1074",
+  "backend/tests/test_status_v2.py": "63d3bbf2124737337f682b187656b9d53d37d2edc6a6bd752680c584c8a93274",
+  "frontend/lib/api/axios.ts": "52fc764319c621878c9adea225ec9cca58e7980850ff37735209d6074400fb5a",
+  "frontend/__tests__/lib/api/retryAfter.test.ts": "68c4a714a5574490f16c2f5c4b6dbcafd84bfd813c59314cc9e825905d575aa9"
+}

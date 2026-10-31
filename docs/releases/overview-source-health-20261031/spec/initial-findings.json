@@ -1,0 +1,37 @@
+{
+  "reviewed_source": {
+    "git_head": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+    "files": 838,
+    "mapping_sha256": "0266c6cbb20336c2996225c142c1f2d4bdc67ffdf8b96ffe0e58b16507a419c2",
+    "reviewed_delta": [
+      "frontend/lib/api/axios.ts",
+      "frontend/__tests__/lib/api/retryAfter.test.ts"
+    ],
+    "axios_sha256": "3a8e8d2c88d18a48bf4728daf64658a70a3264928e814e2bcd483d320990f478",
+    "author_test_sha256": "74c5c7c184e7c24033d6b7830b2417ff725de81eef787cf9f640619d40592fa6"
+  },
+  "suite_counts": {
+    "/evidence/retry-adversarial.test.tsx": 58,
+    "/work/frontend/__tests__/lib/api/retryBudget.test.ts": 19,
+    "/work/frontend/__tests__/lib/api/retryAfter.test.ts": 22,
+    "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts": 1
+  },
+  "total": 100,
+  "passed": 98,
+  "failed": 2,
+  "findings": [
+    {
+      "id": "S1",
+      "severity": "P3",
+      "description": "Retry-After LF/CRLF suffix accepted by final $ anchor; real interceptor retries malformed input",
+      "inputs": [
+        "1\n",
+        "1\r\n"
+      ],
+      "actual_attempts": 3,
+      "desired_attempts": 1,
+      "browser_transport_reachability": "not claimed"
+    }
+  ],
+  "source_after_mismatches": []
+}
