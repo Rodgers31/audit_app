@@ -1,0 +1,46 @@
+{
+  "scope": "PR862 portable launcher artifact only; no project test/DB/Docker execution",
+  "reviewed_files": {
+    "run-root-tests.py.bytes": "f261d9a5642984781e9f223f5baf5dca61aba1dcc6dfaefecf4341de9a38b3bc",
+    "run-final-selection.py.bytes": "2d94e8e1fb687d03c0499cb2b1e8b951f3ade0fa08b3c79a09362a67171a3d6a",
+    "selection.txt": "15ef3ae64ea94a47e4dca439c7c91154d815ffa4fc145507066fd24c1f598196",
+    "README.md": "48c31a51f0fac587ed7d1448fd24f5906551d19ed076d7fc5f8498c32cf05fdc"
+  },
+  "commands": [
+    [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr861-pr862-review-deploy-20261031/spec/final-review/test_portable_independent.py"
+    ],
+    [
+      "python3",
+      "-O",
+      "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr861-pr862-review-deploy-20261031/spec/final-review/test_portable_independent.py"
+    ]
+  ],
+  "results": {
+    "normal": {
+      "tests": 6,
+      "exit_code": 0
+    },
+    "optimized": {
+      "tests": 6,
+      "exit_code": 0
+    }
+  },
+  "fake_cli_only": true,
+  "controls": [
+    "ancestor source inference and fresh evidence with capped/off safety command shape",
+    "explicit spaced source/evidence override and optimized child",
+    "stale .txt/.xml/.command.json and dangling symlink refusal before child",
+    "missing/blank source and blank evidence overrides refuse",
+    "nonzero child29 preserved in process and receipt",
+    "companion selection/fresh names/missing input refusal"
+  ],
+  "artifact_hashes": {
+    "test_portable_independent.py": "f5075c2d2610426f2782c32dc292e78cb9e4dd42f4a215bb9fd4d31097682d19",
+    "portable-normal.txt": "ed768c5da76194035194241fa1d6a51c6d2501464b0ae28e4033973dcc083d6e",
+    "portable-optimized.txt": "70cab8504a20036b3da62d6b9edaaa3edd369d9d291949cfd9b59aa217ad70c5",
+    "portable-source-after.json": "445f96078edd6f4da120214802e1ddeff2c69f75a790fd418cb7ad4859b8abf2"
+  },
+  "interpretation": "Launcher contract passes; fake child success is not credited as real backend test execution. Cached image and owned guarded PostgreSQL remain external prerequisites documented by README."
+}

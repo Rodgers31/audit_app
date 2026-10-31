@@ -1,0 +1,12 @@
+{
+  "root": {
+    "exit": 0,
+    "stdout": "Replay evidence: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/replay relocated s8h1e9uu/results\n\n",
+    "stderr": ""
+  },
+  "companion": {
+    "exit": 0,
+    "stdout": "Replay evidence: /private/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/replay relocated s8h1e9uu/results\n\n",
+    "stderr": ""
+  }
+}

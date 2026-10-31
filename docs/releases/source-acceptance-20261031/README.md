@@ -8,6 +8,29 @@ Root command receipts include the exact local Docker limits and test selection.
 JUnit XML is gzip-compressed; failed RED/setup/resource attempts retain their
 original results and are never counted as successful acceptance.
 
+The portable replay helpers can run directly from any checkout; `.bytes` is
+part of their committed filenames, not an instruction to rename them:
+
+```sh
+python3 docs/releases/source-acceptance-20261031/run-final-selection.py.bytes normal
+python3 docs/releases/source-acceptance-20261031/run-final-selection.py.bytes optimized
+```
+
+They locate the checkout from the script's ancestors. Set
+`SOURCE802_SOURCE_ROOT` to override that source directory and
+`SOURCE802_EVIDENCE_ROOT` for a prepared writable input/output directory.
+Otherwise each invocation creates a fresh temporary evidence directory and
+prints its location. Existing receipt names are refused; the selection helper
+uses a unique name. The cached runtime image and guarded, owned `source802-pg`
+and compatibility PostgreSQL fixtures remain prerequisites. No fixtures are
+provisioned and no production database is selected by these helpers. Genuine
+input replays additionally require the exact separately retained inputs and
+test scripts in the prepared evidence directory.
+
+`original-replay-helpers.tar.gz` retains the original author's two helper bodies
+for historical evidence. Recorded command receipts and sealed review packets
+remain unchanged; the current helpers are the portable replay entry points.
+
 The independent Standards report, case ledger and source bridges are readable
 under `standards/`. Its `packet.tar.gz` contains all sanitized top-level sealed
 artifacts (no full official PDFs/HTML, snapshots or credential env files). Extract

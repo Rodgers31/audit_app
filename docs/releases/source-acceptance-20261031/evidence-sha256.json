@@ -110,14 +110,14 @@
     "bytes": 7623
   },
   "run-root-tests.py.bytes": {
-    "sha256": "64db82d34a0875e0a5c9c69d60f6b8f052c676211745f007c23cfd105e664a47",
-    "uncompressed_sha256": "64db82d34a0875e0a5c9c69d60f6b8f052c676211745f007c23cfd105e664a47",
-    "bytes": 1653
+    "sha256": "f261d9a5642984781e9f223f5baf5dca61aba1dcc6dfaefecf4341de9a38b3bc",
+    "uncompressed_sha256": "f261d9a5642984781e9f223f5baf5dca61aba1dcc6dfaefecf4341de9a38b3bc",
+    "bytes": 3740
   },
   "run-final-selection.py.bytes": {
-    "sha256": "842298edda5768d6abcd302ae29ea2b2a46527516238a5b7f0e751caa69369cc",
-    "uncompressed_sha256": "842298edda5768d6abcd302ae29ea2b2a46527516238a5b7f0e751caa69369cc",
-    "bytes": 251
+    "sha256": "2d94e8e1fb687d03c0499cb2b1e8b951f3ade0fa08b3c79a09362a67171a3d6a",
+    "uncompressed_sha256": "2d94e8e1fb687d03c0499cb2b1e8b951f3ade0fa08b3c79a09362a67171a3d6a",
+    "bytes": 1183
   },
   "test_genuine_oag_postgres.py.bytes": {
     "sha256": "08a1a69ee39743bbcfa2f3784fa17f73b74bafcc6f0a60e9e09cb93ce4dedf74",
@@ -128,5 +128,9 @@
     "sha256": "cf0360ac349b96df18348166f88e41911922131df79c2c0db09cb7508ebb3a84",
     "uncompressed_sha256": "cf0360ac349b96df18348166f88e41911922131df79c2c0db09cb7508ebb3a84",
     "bytes": 2702
+  },
+  "original-replay-helpers.tar.gz": {
+    "sha256": "ed0eb97c22426a2b31ee01bf1a283bbe529f19e0a546045d920c1f1e0d7a1991",
+    "bytes": 1204
   }
 }
