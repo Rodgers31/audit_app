@@ -79,8 +79,8 @@ function planRepairs(root, { check = false, production = false } = {}) {
   assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
   assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
   assert.equal(patchSet.schema, 3, 'tooling repair: unsupported patch schema');
-  assert.ok(Array.isArray(patchSet.packages) && patchSet.packages.length === 2 &&
-    new Set(patchSet.packages.map(p => p.name)).size === 2, 'tooling repair: complete package inventory required');
+  assert.ok(Array.isArray(patchSet.packages) && patchSet.packages.length === 3 &&
+    new Set(patchSet.packages.map(p => p.name)).size === 3, 'tooling repair: complete package inventory required');
   assert.ok(Array.isArray(patchSet.patches) && patchSet.patches.length > 0, 'tooling repair: nonempty patches required');
   const lock = JSON.parse(fs.readFileSync(regularPath(root, 'package-lock.json')));
   assert.ok(lock && lock.lockfileVersion === 3 && lock.packages && !Array.isArray(lock.packages), 'tooling repair: lock package inventory required');
@@ -96,7 +96,7 @@ function planRepairs(root, { check = false, production = false } = {}) {
     'tooling repair: reviewed argparse 2.0.1 required');
   const operations = [], packages = [], absentPackages = [], usedPatches = new Set();
   for (const inventory of patchSet.packages) {
-    assert.ok(['braces', 'js-yaml'].includes(inventory.name) && typeof inventory.version === 'string' &&
+    assert.ok(['braces', 'js-yaml', 'deepmerge'].includes(inventory.name) && typeof inventory.version === 'string' &&
       inventory.files && !Array.isArray(inventory.files) && Object.keys(inventory.files).length > 0,
     'tooling repair: invalid package inventory');
     const patches = new Map();
@@ -117,9 +117,16 @@ function planRepairs(root, { check = false, production = false } = {}) {
       const record = lock.packages[entry];
       assert.ok(record && record.version === inventory.version && record.dev === true, `tooling repair: incompatible locked ${entry}`);
     }
-    // The separate YAML4 CLI is untouched; every other occurrence must be in the repaired inventory.
-    const otherEntries = inventory.otherEntries || {};
-    assert.ok(typeof otherEntries === 'object' && !Array.isArray(otherEntries), 'tooling repair: invalid excluded locations');
+    // Only this exact, separately reviewed YAML4 CLI may remain outside repairs.
+    // A generic exception could hide an unpatched copy resolved by a real caller.
+    const hasOtherEntries = Object.hasOwn(inventory, 'otherEntries');
+    const otherEntries = hasOtherEntries ? inventory.otherEntries : {};
+    assert.ok(otherEntries && typeof otherEntries === 'object' && !Array.isArray(otherEntries),
+      'tooling repair: reviewed YAML4 exception required');
+    assert.ok(inventory.name === 'js-yaml' || !hasOtherEntries,
+      'tooling repair: reviewed YAML4 exception required');
+    assert.deepEqual(otherEntries, inventory.name === 'js-yaml' ? { 'node_modules/js-yaml': '4.3.2' } : {},
+      'tooling repair: reviewed YAML4 exception required');
     for (const [entry, version] of Object.entries(otherEntries)) {
       validateRelativePath(entry);
       assert.ok(entry.startsWith('node_modules/') && named(entry, inventory.name) &&

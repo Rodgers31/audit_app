@@ -1,0 +1,15 @@
+{
+  "name": "candidate-check",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "scripts/apply-tooling-repairs.cjs",
+    "--check"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "timed_out": false,
+  "stdout": "{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\"],\"absentPackages\":[],\"changedFiles\":0}\n",
+  "stderr": "",
+  "wall_seconds": 0.06340020800000001
+}

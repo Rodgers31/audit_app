@@ -1,0 +1,28 @@
+{
+  "observed_at": "2026-10-31T22:13:49.531486+00:00",
+  "lock_integrity": "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==",
+  "archive_sha256": "4003a0a348276a95543fa969f561f6b5968629acbbb59d66018dd23e7b8f1d5c",
+  "original_hashes": {
+    "changelog.md": "360f6a3465a3e82f7bc1428cf1dc0cf5e6935a83b97345d172d27a4d8703321e",
+    "index.js": "12440c84957c1990ea2d5e33dc0091722dc1dc1585c6d20e0c780e568ffa9d30",
+    ".editorconfig": "73cc38e40b41f1eea6fd2d98d0ade5324f1ad564c3f111ebd0040b4286d2c25c",
+    "readme.md": "202430923abee498512b2f9cbab686a1e7d64759314a503ca0d5aaa29007fc0f",
+    "rollup.config.js": "abba48beb11daa282e69134e4928ec32737ae6f6d192dd5f00a6e660e032bb25",
+    "package.json": "f56978e7a6da1a3c6edee41abb54f98584a2fa2680458c48db820ae772fef0c9",
+    "license.txt": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b",
+    "index.d.ts": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44",
+    ".eslintcache": "7690c5da38095c17a8c3ce73f3ebdc7bf7d7797c618a9c919c79a6b5e0024012",
+    "dist/cjs.js": "2e5160f84a1141bd927264afe4d15766f1e6cf07daef182b37ff53fea121de7d",
+    "dist/umd.js": "f33e6596482d1fb5c7c427f8ef92f2aa849eea9223acd974176b2fb27ddbf73a"
+  },
+  "helper_version": "1.1.0",
+  "helper_integrity": "sha512-JfyDDwUdtS4yHCgUpxOyKB9dnfZ0gecufxB0eytX6BmSXSE+8dbxDGt+V7CNRIRJ9sYFV/WQt2KJG6hNob2sBw==",
+  "source_hashes": {
+    "frontend/scripts/tooling-repairs.json": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+    "frontend/scripts/apply-tooling-repairs.cjs": "64ddbdec6d329bb7fcb14659af0dd7cba33b624c2ef46a691e79b74712c1f491",
+    "frontend/scripts/deepmerge-boundary.test.cjs": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+    "frontend/scripts/tooling-repair-install.test.cjs": "f733e72c83b5dbaa5007403a4b8700dd31e5e685aa538236cfe346455fad3251",
+    "frontend/package.json": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+    "frontend/package-lock.json": "c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc"
+  }
+}

@@ -1,5 +1,12 @@
 # Dependency remediation — 31 October 2026
 
+**Later follow-up:** the [deepmerge repair and minimatch investigation](DEPENDENCY_FOLLOWUP_2026_10_31.md)
+supersedes the initial residual classifications below. It repairs the reproduced
+deepmerge behavior and finds the specific modern minimatch preprocessing mechanism
+absent from legacy 3.1.5. Raw npm findings remain visible at 22; no suppression or
+package-version relabelling is used. Initial evidence below retains its original
+scope and timestamps.
+
 Base: `178ff97d8a593ed8a152366cfdb446a29b434a45`, freshly fetched from `origin/main`.
 Implementation uses an owned managed checkout; the dirty primary checkout and
 other admin/source branches are untouched. Issue [494](https://github.com/Rodgers31/audit_app/issues/494)

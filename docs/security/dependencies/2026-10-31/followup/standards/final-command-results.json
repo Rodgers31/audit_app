@@ -1,0 +1,41 @@
+[
+  {
+    "name": "installer",
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/standards/final_installer_probe.cjs"
+    ],
+    "start": "2026-10-31T22:21:55.873649+00:00",
+    "end": "2026-10-31T22:21:59.429479+00:00",
+    "exit": 0,
+    "stdoutTail": ":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/deepmerge/index.js\",\"packageTreeUnchanged\":true}\n{\"label\":\"missing-deepmerge-full\",\"refused\":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: absent installed node_modules/deepmerge\",\"packageTreeUnchanged\":true}\n{\"label\":\"invalid-modes-{\\\"check\\\":\\\"false\\\"}\",\"refused\":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required\",\"packageTreeUnchanged\":true}\n{\"label\":\"invalid-modes-{\\\"production\\\":\\\"false\\\"}\",\"refused\":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required\",\"packageTreeUnchanged\":true}\n{\"label\":\"invalid-modes-{\\\"check\\\":1}\",\"refused\":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required\",\"packageTreeUnchanged\":true}\n{\"label\":\"invalid-modes-{\\\"production\\\":null}\",\"refused\":true,\"diagnostic\":\"AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required\",\"packageTreeUnchanged\":true}\n{\"label\":\"production-omission-distinguished\",\"omitted\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[],\"absentPackages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\"],\"changedFiles\":0},\"fullCheckRefused\":true}\n{\"label\":\"present-production-still-repairs\",\"result\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\"],\"absentPackages\":[],\"changedFiles\":10}}\n{\"cases\":59,\"success\":true,\"sourceHashes\":{\"package.json\":\"e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f\",\"package-lock.json\":\"c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc\",\"scripts/apply-tooling-repairs.cjs\":\"c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4\",\"scripts/tooling-repairs.json\":\"9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c\",\"scripts/deepmerge-boundary.test.cjs\":\"e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500\",\"scripts/tooling-repair-install.test.cjs\":\"bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef\"}}\n",
+    "stderrTail": ""
+  },
+  {
+    "name": "behavior",
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/standards/deepmerge_probe_final.cjs"
+    ],
+    "start": "2026-10-31T22:21:55.875705+00:00",
+    "end": "2026-10-31T22:21:56.025277+00:00",
+    "exit": 0,
+    "stdoutTail": "{\"variants\":14,\"casesPerVariant\":21,\"originalFailures\":80,\"candidateFailures\":0}\n",
+    "stderrTail": ""
+  },
+  {
+    "name": "author_regression",
+    "command": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--test",
+      "--test-reporter=tap",
+      "frontend/scripts/deepmerge-boundary.test.cjs",
+      "frontend/scripts/tooling-repair-install.test.cjs"
+    ],
+    "start": "2026-10-31T22:21:55.877394+00:00",
+    "end": "2026-10-31T22:22:04.036253+00:00",
+    "exit": 0,
+    "stdoutTail": "ration_ms: 2240.423042\n  type: 'test'\n  ...\n# Subtest: omit-dev install distinguishes absent tooling packages from applied repairs\nok 62 - omit-dev install distinguishes absent tooling packages from applied repairs\n  ---\n  duration_ms: 28.143833\n  type: 'test'\n  ...\n# Subtest: symlinked node_modules refuses before creating a lock in its target\nok 63 - symlinked node_modules refuses before creating a lock in its target\n  ---\n  duration_ms: 21.924416\n  type: 'test'\n  ...\n# Subtest: invalid boolean modes cannot skip repair validation\nok 64 - invalid boolean modes cannot skip repair validation\n  ---\n  duration_ms: 19.9775\n  type: 'test'\n  ...\n# Subtest: held concurrent installer lock fails visibly and preserves the owner lock\nok 65 - held concurrent installer lock fails visibly and preserves the owner lock\n  ---\n  duration_ms: 165.473583\n  type: 'test'\n  ...\n# Subtest: two real installer processes cannot overlap patch publication\nok 66 - two real installer processes cannot overlap patch publication\n  ---\n  duration_ms: 162.830333\n  type: 'test'\n  ...\n# Subtest: production mode rejects absent traversal entries rather than reporting them omitted\nok 67 - production mode rejects absent traversal entries rather than reporting them omitted\n  ---\n  duration_ms: 58.827167\n  type: 'test'\n  ...\n# Subtest: check refuses missing mandatory unmodified braces/index.js\nok 68 - check refuses missing mandatory unmodified braces/index.js\n  ---\n  duration_ms: 151.327\n  type: 'test'\n  ...\n# Subtest: check refuses missing mandatory unmodified braces/lib/constants.js\nok 69 - check refuses missing mandatory unmodified braces/lib/constants.js\n  ---\n  duration_ms: 126.878\n  type: 'test'\n  ...\n# Subtest: check refuses changed main export even with unchanged name and version\nok 70 - check refuses changed main export even with unchanged name and version\n  ---\n  duration_ms: 86.021667\n  type: 'test'\n  ...\n# Subtest: production mode refuses a dangling installed package link\nok 71 - production mode refuses a dangling installed package link\n  ---\n  duration_ms: 55.331584\n  type: 'test'\n  ...\n1..71\n# tests 71\n# suites 0\n# pass 71\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 8121.492666\n",
+    "stderrTail": ""
+  }
+]

@@ -1,0 +1,440 @@
+{
+  "observedAt": "2026-10-31T22:21:59.421Z",
+  "sourceHashes": {
+    "package.json": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+    "package-lock.json": "c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc",
+    "scripts/apply-tooling-repairs.cjs": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+    "scripts/tooling-repairs.json": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+    "scripts/deepmerge-boundary.test.cjs": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+    "scripts/tooling-repair-install.test.cjs": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef"
+  },
+  "cases": 59,
+  "output": [
+    {
+      "label": "intended-exact-YAML4-positive",
+      "checked": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "repeated": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "cold-original-repair-idempotence",
+      "first": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 10
+      },
+      "repeated": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "checked": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      }
+    },
+    {
+      "label": "pre-fix-red-final-green-real-Jest-resolution",
+      "baseline": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "resolvedSuffix": "/node_modules/@jest/core/node_modules/jest-config/node_modules/deepmerge/dist/cjs.js",
+      "inheritedMarker": true,
+      "originalCJSsha256": "2e5160f84a1141bd927264afe4d15766f1e6cf07daef182b37ff53fea121de7d",
+      "finalRefused": true,
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-false",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-0",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-\"\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-null",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-true",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-[]",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-{}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-17",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-braces-\"unexpected\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-false",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-0",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-\"\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-null",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-true",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-[]",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-{}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required\n+ actual - expected\n\n+ {}\n- {\n-   'node_modules/js-yaml': '4.3.2'\n- }\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-17",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-js-yaml-\"unexpected\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-false",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-0",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-\"\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-null",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-true",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-[]",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-{}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-17",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "otherEntries-deepmerge-\"unexpected\"",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-wrong-version",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required\n+ actual - expected\n\n  {\n+   'node_modules/js-yaml': '4.3.3'\n-   'node_modules/js-yaml': '4.3.2'\n  }\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-wrong-path",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required\n+ actual - expected\n\n  {\n+   'node_modules/extra/node_modules/js-yaml': '4.3.2'\n-   'node_modules/js-yaml': '4.3.2'\n  }\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-extra-copy",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required\n+ actual - expected\n\n  {\n+   'node_modules/extra/node_modules/js-yaml': '3.15.2',\n    'node_modules/js-yaml': '4.3.2'\n  }\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-missing-exception",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed YAML4 exception required\n+ actual - expected\n\n+ {}\n- {\n-   'node_modules/js-yaml': '4.3.2'\n- }\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-mismatched-lock-version",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible locked node_modules/js-yaml",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "YAML-non-dev-exception",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible locked node_modules/js-yaml",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-third-inventory",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: complete package inventory required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-lock-file",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: absent path package-lock.json",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "malformed-lock",
+      "refused": true,
+      "diagnostic": "SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "empty-lock",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed argparse 2.0.1 required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "bad-lock-schema",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: lock package inventory required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-deepmerge-index.js",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: absent path node_modules/deepmerge/index.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-deepmerge-dist-cjs.js",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: absent path node_modules/deepmerge/dist/cjs.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-deepmerge-dist-umd.js",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: absent path node_modules/deepmerge/dist/umd.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "changed-deepmerge-cjs",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: upstream bytes changed node_modules/deepmerge/dist/cjs.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "changed-deepmerge-main",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: upstream bytes changed node_modules/deepmerge/package.json",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "unexpected-deepmerge-file",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: unexpected package file node_modules/deepmerge/extra.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "unreviewed-deepmerge-nested-lock",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: unexpected locked locations for deepmerge\n+ actual - expected\n\n  [\n    'node_modules/deepmerge',\n+   'node_modules/extra/node_modules/deepmerge'\n  ]\n",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "wrong-deepmerge-lock-version",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible locked node_modules/deepmerge",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "nondev-deepmerge-lock",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible locked node_modules/deepmerge",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "unsafe-deepmerge-lock-path",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: unsafe package path",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "symlink-deepmerge-source",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/deepmerge/index.js",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "missing-deepmerge-full",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: absent installed node_modules/deepmerge",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "invalid-modes-{\"check\":\"false\"}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "invalid-modes-{\"production\":\"false\"}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "invalid-modes-{\"check\":1}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "invalid-modes-{\"production\":null}",
+      "refused": true,
+      "diagnostic": "AssertionError [ERR_ASSERTION]: tooling repair: boolean modes required",
+      "packageTreeUnchanged": true
+    },
+    {
+      "label": "production-omission-distinguished",
+      "omitted": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [],
+        "absentPackages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "changedFiles": 0
+      },
+      "fullCheckRefused": true
+    },
+    {
+      "label": "present-production-still-repairs",
+      "result": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge"
+        ],
+        "absentPackages": [],
+        "changedFiles": 10
+      }
+    }
+  ]
+}

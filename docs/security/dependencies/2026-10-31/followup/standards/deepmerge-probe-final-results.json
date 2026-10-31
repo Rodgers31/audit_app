@@ -1,0 +1,1566 @@
+{
+  "observedAt": "2026-10-31T22:21:56.020Z",
+  "sourceHashes": {
+    "installer": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+    "patchSet": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c"
+  },
+  "variants": 14,
+  "casesPerVariant": 21,
+  "results": [
+    {
+      "variant": "original/cjs",
+      "case": "null target/source poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "target poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "source poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "target poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "frozen null source",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "source Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "target Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "custom merge callback",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "original/cjs",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "original/cjs",
+      "case": "clone false root protection",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "JSON escaped key",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "original/cjs",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "original/cjs",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder null",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder undefined",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder false",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder 0",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder ",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/cjs",
+      "case": "nested placeholder text",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "null target/source poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "target poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "source poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/index",
+      "case": "target poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/index",
+      "case": "frozen null source",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "source Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/index",
+      "case": "target Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/index",
+      "case": "custom merge callback",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "original/index",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "original/index",
+      "case": "clone false root protection",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "JSON escaped key",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "original/index",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "original/index",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder null",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder undefined",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder false",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder 0",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder ",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/index",
+      "case": "nested placeholder text",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "null target/source poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "target poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "source poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "target poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "frozen null source",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "source Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "target Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "custom merge callback",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "clone false root protection",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "JSON escaped key",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder null",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder undefined",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder false",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder 0",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder ",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-cjs",
+      "case": "nested placeholder text",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "null target/source poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "target poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "source poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "target poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "frozen null source",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "source Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "target Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "custom merge callback",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "clone false root protection",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "JSON escaped key",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder null",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder undefined",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder false",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder 0",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder ",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-browser",
+      "case": "nested placeholder text",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "null target/source poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "target poison",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "source poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "target poisoned getter",
+      "pass": false,
+      "error": "Error: proto getter read"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "frozen null source",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "source Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "target Proxy trap",
+      "pass": false,
+      "error": "Error: proxy proto get"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "custom merge callback",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "clone false root protection",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "JSON escaped key",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder null",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder undefined",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder false",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder 0",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder ",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "original/umd-amd",
+      "case": "nested placeholder text",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ true\n- undefined\n"
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "patched/cjs",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "patched/index",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-cjs",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-browser",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "patched/umd-amd",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "installed/Jest-CJS",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-CJS",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-browser",
+      "case": "nested placeholder text",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "null target/source poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "target poison",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "source poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "target poisoned getter",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "frozen null source",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "source Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "target Proxy trap",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "custom merge callback",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "all and nested arrays",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "custom array cloning helper",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "clone false root protection",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "JSON escaped key",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "safe same-name-looking keys",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "symbol and reserved symbol description",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "constructor/prototype retain data semantics",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder null",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder undefined",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder false",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder 0",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder ",
+      "pass": true
+    },
+    {
+      "variant": "installed/UMD-AMD",
+      "case": "nested placeholder text",
+      "pass": true
+    }
+  ],
+  "failuresInCandidate": 0,
+  "extensionBoundaries": [
+    "clone:false intentionally preserves nested object identity and an existing custom prototype",
+    "customMerge intentionally permits caller-returned objects; no general callback-output sanitization is claimed"
+  ]
+}

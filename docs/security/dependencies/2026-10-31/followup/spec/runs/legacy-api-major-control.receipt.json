@@ -1,0 +1,16 @@
+{
+  "name": "legacy-api-major-control",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=256",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-api-major-control.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "timed_out": false,
+  "stdout": "{\"forcedVersion\":\"11.0.3\",\"interceptions\":1,\"incompatible\":true,\"error\":\"Error while loading rule 'import/no-internal-modules': Cannot read properties of undefined (reading 'makeRe')\\nOccurred while linting /Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/review-spec.js\"}\n",
+  "stderr": "",
+  "wall_seconds": 0.16956979199999989
+}

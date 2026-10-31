@@ -44,8 +44,14 @@ test('an aborted modern glob stops recursive filesystem reads', { timeout: 4000 
 test('modern minimatch bounds optimization expansion and retains normal matching', () => {
   const typescript = createRequire(require.resolve('@typescript-eslint/typescript-estree'));
   const { Minimatch, minimatch } = typescript('minimatch');
-  const matcher = new Minimatch('a/**/../'.repeat(5) + 'leaf', { optimizationLevel: 2, braceExpandMax: 8 });
-  assert.ok(matcher.set.length <= 8, `pattern expanded to ${matcher.set.length} entries`);
+  // Retain the upstream regression trigger: the earlier pattern's final
+  // deduplication masked intermediate amplification in an unfixed optimizer.
+  const matcher = new Minimatch(Array(8).fill('**/../a/b').join('/'), { optimizationLevel: 2, braceExpandMax: 8 });
+  assert.equal(matcher.set.length, 8, 'pattern amplification must stop at the configured limit');
+  const small = new Minimatch('**/../a/b/**/../c/d', { optimizationLevel: 2 });
+  assert.equal(small.set.length, 4);
+  assert.equal(small.match('../a/b/../c/d'), true);
+  assert.equal(small.match('x/a/b/y/c/d'), true);
   assert.equal(minimatch('src/.owned.ts', '**/*.{ts,tsx}', { dot: true }), true);
   assert.equal(minimatch('src/owned.js', '**/*.{ts,tsx}', { dot: true }), false);
   assert.equal(minimatch('src/owned.tsx', '**/@(owned|other).tsx'), true);

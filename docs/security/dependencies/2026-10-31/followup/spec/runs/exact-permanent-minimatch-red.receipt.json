@@ -1,0 +1,20 @@
+{
+  "name": "exact-permanent-minimatch-red",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--require",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/minimatch-red-preload.cjs",
+    "--test",
+    "--test-name-pattern",
+    "modern minimatch bounds",
+    "scripts/modern-glob-boundary.test.cjs"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "returncode": 1,
+  "expected_returncode": 1,
+  "timed_out": false,
+  "stdout": "\u2716 modern minimatch bounds optimization expansion and retains normal matching (12.603ms)\nreview-minimatch-red-interceptions=1\n\u2139 tests 1\n\u2139 suites 0\n\u2139 pass 0\n\u2139 fail 1\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 65.657334\n\n\u2716 failing tests:\n\ntest at scripts/modern-glob-boundary.test.cjs:44:1\n\u2716 modern minimatch bounds optimization expansion and retains normal matching (12.603ms)\n  AssertionError [ERR_ASSERTION]: pattern amplification must stop at the configured limit\n  \n  256 !== 8\n  \n      at TestContext.<anonymous> (/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/scripts/modern-glob-boundary.test.cjs:50:10)\n      at Test.runInAsyncScope (node:async_hooks:227:14)\n      at Test.run (node:internal/test_runner/test:1402:25)\n      at Test.start (node:internal/test_runner/test:1262:17)\n      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {\n    generatedMessage: false,\n    code: 'ERR_ASSERTION',\n    actual: 256,\n    expected: 8,\n    operator: 'strictEqual',\n    diff: 'simple'\n  }\n",
+  "stderr": "",
+  "wall_seconds": 0.11226170800000013,
+  "red_failure_observed": true
+}

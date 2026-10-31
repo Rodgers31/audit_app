@@ -1,0 +1,16 @@
+{
+  "name": "guard-exemption-control",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=256",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/guard-exemption-control.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "timed_out": false,
+  "stdout": "{\"current_installer_sha256\":\"c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4\",\"old_reconstruction_sha256\":\"c4f68ef54c40b3740b991becc5edc4d81b14169b84f58979718274a0fc22e61b\",\"nested_entry\":\"node_modules/@jest/core/node_modules/jest-config/node_modules/deepmerge\",\"nested_exploit_alive\":true,\"old_guard_false_success\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\"],\"absentPackages\":[],\"changedFiles\":0},\"current_guard_rejected\":true,\"malformed_manifest_rejections\":24}\n",
+  "stderr": "",
+  "wall_seconds": 0.23744170800000042
+}

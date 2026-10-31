@@ -1,0 +1,61 @@
+{
+  "bugs": {
+    "url": "https://github.com/TehShrike/is-mergeable-object/issues"
+  },
+  "dist": {
+    "shasum": "a846e8cf0e2bad6a8cf8b243b63b4c43b9907990",
+    "tarball": "https://registry.npmjs.org/is-mergeable-object/-/is-mergeable-object-1.1.0.tgz",
+    "integrity": "sha512-JfyDDwUdtS4yHCgUpxOyKB9dnfZ0gecufxB0eytX6BmSXSE+8dbxDGt+V7CNRIRJ9sYFV/WQt2KJG6hNob2sBw==",
+    "signatures": [
+      {
+        "sig": "MEQCIGf330Q80R7pCJXnGtfq+3LXaEnfgRIireesxTIJwxpiAiAx+jo3OBnSpEUnWaPGjvz364VFVkyVrOmErt5m0uW7CA==",
+        "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"
+      }
+    ]
+  },
+  "main": "index.js",
+  "name": "is-mergeable-object",
+  "author": {
+    "name": "TehShrike"
+  },
+  "gitHead": "0d3d3c837e74b03191850544abd1abf23e94ae89",
+  "license": "MIT",
+  "scripts": {
+    "test": "jsmd readme.md"
+  },
+  "_npmUser": {
+    "name": "tehshrike",
+    "email": "me@JoshDuff.com"
+  },
+  "homepage": "https://github.com/TehShrike/is-mergeable-object#readme",
+  "keywords": [
+    "object",
+    "iterate",
+    "recursive",
+    "merge",
+    "deep"
+  ],
+  "repository": {
+    "url": "git+ssh://git@github.com/TehShrike/is-mergeable-object.git",
+    "type": "git"
+  },
+  "_npmVersion": "5.4.2",
+  "description": "Check whether or not a value is an object that makes sense to iterate over",
+  "directories": {},
+  "maintainers": [
+    {
+      "name": "tehshrike",
+      "email": "me@JoshDuff.com"
+    }
+  ],
+  "_nodeVersion": "8.2.1",
+  "devDependencies": {
+    "jsmd": "0.3.1"
+  },
+  "_npmOperationalInternal": {
+    "tmp": "tmp/is-mergeable-object-1.1.0.tgz_1506004203319_0.6167599346954376",
+    "host": "s3://npm-registry-packages"
+  },
+  "_id": "is-mergeable-object@1.1.0",
+  "version": "1.1.0"
+}

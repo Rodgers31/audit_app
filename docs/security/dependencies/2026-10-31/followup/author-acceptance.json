@@ -1,0 +1,242 @@
+{
+  "generated_at": "2026-10-31T22:23:34.335171+00:00",
+  "scope": "Final post-review deepmerge repair and constrained repair-exception guard. Package versions/lock unchanged. Python results remain attributed to initial preparation.",
+  "executable_inputs": {
+    "frontend/package.json": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+    "frontend/package-lock.json": "c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc",
+    "frontend/scripts/apply-tooling-repairs.cjs": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+    "frontend/scripts/tooling-repairs.json": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+    "frontend/scripts/deepmerge-boundary.test.cjs": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+    "frontend/scripts/tooling-repair-install.test.cjs": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef",
+    "frontend/scripts/modern-glob-boundary.test.cjs": "f1f18e79a04b2afd27cc4b55b6778997680c186642e8c143186e6c16b134f92d"
+  },
+  "acceptance": {
+    "jest_suites": 215,
+    "jest_passed": 2904,
+    "jest_existing_pending": 1,
+    "dependency_controls": 189,
+    "runtime_controls": 9,
+    "admin_browser_cases": 14,
+    "production_build": "Executed by admin-shell fixture command",
+    "raw_npm_full": {
+      "low": 5,
+      "moderate": 17,
+      "total": 22
+    },
+    "raw_npm_production": 0,
+    "audit_suppressions": []
+  },
+  "records": [
+    {
+      "start": "2026-10-31T22:19:15.815764+00:00",
+      "end": "2026-10-31T22:19:30.678142+00:00",
+      "command": [
+        "npm",
+        "ci",
+        "--include=dev",
+        "--include=optional",
+        "--no-fund"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "5eeccdf606e23dca2ce520f8308335dba309fcbf479bb908598c118aff153819",
+        "stderr": "d4533965c2a7a161f71b1e5324f5be0c8560efe84068c85ed6bfefc8759035dc"
+      },
+      "source_changes": [],
+      "label": "final-ci",
+      "receipt_sha256": "097007552dcdc4f80371818ae4db66956b112dce80b5d935b9febdaed34a3d7c"
+    },
+    {
+      "start": "2026-10-31T22:20:05.761689+00:00",
+      "end": "2026-10-31T22:20:07.192628+00:00",
+      "command": [
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "2c2c2667634c12cc39b79eb875e675cf74da06785732417584e6570333dbfb2c",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changes": [],
+      "label": "final-tree",
+      "receipt_sha256": "590182a90b8db6db4a8555f99f8377c6fb13965e254dc546b9361da840770aeb"
+    },
+    {
+      "start": "2026-10-31T22:20:05.762090+00:00",
+      "end": "2026-10-31T22:20:15.069433+00:00",
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changes": [],
+      "label": "final-types",
+      "receipt_sha256": "ce58c35f73e1ba6b773f61f10e39037d7acc310c038ff4456d38d0e78421c377"
+    },
+    {
+      "start": "2026-10-31T22:20:05.762402+00:00",
+      "end": "2026-10-31T22:20:09.285597+00:00",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "1faa70614fd79d2384d0c46a3a59a6bb2426273b1f2415223a6cbd941ad28654",
+        "stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2"
+      },
+      "source_changes": [],
+      "label": "final-lint",
+      "receipt_sha256": "ed932186d3fe06fe9dacfebd2f9a8109d82a113c4fc380332d841e73f3838be1"
+    },
+    {
+      "start": "2026-10-31T22:20:05.761691+00:00",
+      "end": "2026-10-31T22:21:08.458139+00:00",
+      "command": [
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "07c6270fbcefa4cb704a1fdbd16350de3bc69639c224d3f2b4a2a81fffd0b25c",
+        "stderr": "554f50ced28a50d5fb14f2bde32bfc4ddbea3a599428b5614a0d5e13d692d837"
+      },
+      "source_changes": [],
+      "label": "final-boundaries",
+      "receipt_sha256": "1e8caebf79a86a900cdb372347c328b92e1b94e9bb504ba1b4e4de3328e7f9f6"
+    },
+    {
+      "start": "2026-10-31T22:20:05.762467+00:00",
+      "end": "2026-10-31T22:21:20.969707+00:00",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--no-cache",
+        "--json",
+        "--outputFile=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/final-jest-results.json"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "80d3bae3236cd50e3d4888d09747dcca9c4309aa97b6e6013175e9d9dbcfbf69",
+        "stderr": "3a6942d558aa0c1b33c4753a867ed0ca7a1d53fe450c76658bd60b427513038d"
+      },
+      "source_changes": [],
+      "label": "final-jest",
+      "receipt_sha256": "ff4bdf94275125ca483013966909a90115af0cf3fad51f44d00480d13f4f9ad7"
+    },
+    {
+      "start": "2026-10-31T22:20:30.794458+00:00",
+      "end": "2026-10-31T22:21:14.074355+00:00",
+      "command": [
+        "npm",
+        "run",
+        "test:admin-shell"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "7132f3b738ef00c6e3d6c8080e56db1002da7b89b4cb27e4075a289f710a130e",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changes": [],
+      "label": "final-admin-shell",
+      "receipt_sha256": "7caf50e2fe8a7ffdb1e6f7e3f713cea5f110119fd0f21ce5e261eebb7df23f35"
+    },
+    {
+      "start": "2026-10-31T22:20:05.761899+00:00",
+      "end": "2026-10-31T22:20:07.922155+00:00",
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "exit": 1,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changes": [],
+      "label": "final-audit-full",
+      "receipt_sha256": "f6efefef2fdc17c6436cf990d24dc2bb0d961dd265f54811dd1403c7537c7b5c"
+    },
+    {
+      "start": "2026-10-31T22:20:05.761694+00:00",
+      "end": "2026-10-31T22:20:06.985379+00:00",
+      "command": [
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "exit": 0,
+      "timeout": false,
+      "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+      "source_sha256": "5439bfcb4b6e9ec3194f6c16f40a500c5405919c170c29f193e75c8bc835df56",
+      "outputs": {
+        "stdout": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "source_changes": [],
+      "label": "final-audit-production",
+      "receipt_sha256": "00c918d923b2b9ab8f151402504f5edbbaed72bd7523ab8fea9231d723ccf954"
+    }
+  ],
+  "red_controls": [
+    {
+      "label": "deepmerge-red",
+      "exit": 1,
+      "passed": 6,
+      "failed": 30,
+      "test_sha256": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+      "stdout_sha256": "594e0375a462a5c9852dbb1178752438a535517ee21643352eb2f38b737ce175",
+      "receipt_sha256": "7a0c112d918541c5132b24fcdde7fe573a2a5e4ed85c38606e9ad96ece2676dd"
+    },
+    {
+      "label": "exclusion-red",
+      "exit": 1,
+      "passed": 0,
+      "failed": 5,
+      "test_sha256": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef",
+      "stdout_sha256": "fc0c9bba41446ee0c9de13888402d9237df0ede0b7001cd2df2064f61e24afbe",
+      "receipt_sha256": "344146cd4b824f53b25e7dd37e66ec718cc268851c796880dfc54d69b5155b42"
+    }
+  ],
+  "external_evidence_root": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup"
+}
