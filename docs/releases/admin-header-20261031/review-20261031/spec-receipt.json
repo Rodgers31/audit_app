@@ -1,0 +1,77 @@
+{
+  "verdict": "SCOPED ACCEPTANCE: both review findings repaired; no remaining finding in executed scope",
+  "input_pins": {
+    "gate/browser-fixtures/admin-shell/shell.spec.ts": "8a68fc902aa5dcd5606f23e16bff9fcef405eff17fabe21facdbfbc7cb160b03",
+    "portable/run-root-tests.py.bytes": "f261d9a5642984781e9f223f5baf5dca61aba1dcc6dfaefecf4341de9a38b3bc",
+    "portable/run-final-selection.py.bytes": "2d94e8e1fb687d03c0499cb2b1e8b951f3ade0fa08b3c79a09362a67171a3d6a",
+    "portable/selection.txt": "15ef3ae64ea94a47e4dca439c7c91154d815ffa4fc145507066fd24c1f598196",
+    "portable/README.md": "48c31a51f0fac587ed7d1448fd24f5906551d19ed076d7fc5f8498c32cf05fdc"
+  },
+  "unchanged_ui_files_carried": 836,
+  "current_gate_matches_frozen": true,
+  "browser": {
+    "independent_real_utility_flows_passed": 4,
+    "injected_mutants_rejected": 12,
+    "raw_playwright_counts": {
+      "passed": 4,
+      "failed": 12,
+      "skipped": 0
+    },
+    "playwright_exit_code": 1,
+    "expected_failures_are_desired_refusals": true,
+    "widths": [
+      1728,
+      768,
+      375,
+      320
+    ],
+    "cached_build_id": "bP5LaL8giTBgzvDjz7Yke",
+    "fresh_build_claimed": false,
+    "root_fresh_default_gate_12pass": "Separately observed root log; not credited as independent execution"
+  },
+  "portable": {
+    "normal_controls_passed": 6,
+    "true_optimized_controls_passed": 6,
+    "actual_docker_commands": 0,
+    "fake_cli_only": true
+  },
+  "owned_ports_closed": {
+    "3137": true,
+    "8137": true
+  },
+  "shared_resources_untouched": true,
+  "artifact_hashes": {
+    "command.json": "a38d4695181d816fd870c09d481e4fa3c1d2a0f28534978a3c2229cec1587c99",
+    "gate-result.json": "7e0cc6d98731bb3ef4517881a17482f9f56680fbf4878a63b7f355490be4691f",
+    "gate-run.txt": "e9f828411cf57b6633b9d01a5ec17c5989608bddc810f6eb91263bfc2e22d396",
+    "gate-external.spec.ts": "2167a7c26190e020390e6d762b1a064d7f1f518133e891af054d9b55c64b3305",
+    "gate.config.ts": "9b178a2887e61addfc3cb0a69d06b6118a25f2ae5f93e762b356d105a33400af",
+    "run_gate.py": "c26bafa216d725b3ac71870d5337ee0d6cea9439b6dedcba1b2fde562e87294a",
+    "exit.json": "2618b95f1f6be6bfde8537756f85b83845d039001563135b9d59d817446733eb",
+    "owned-cleanup.json": "b01eb08b1ee75020e436b4d0f89c95a604845d9a1444c6dea1fd066954c1d025",
+    "executed-browser-cases.json": "5209fc5a03c90da4d4c50af492ff7ed9a53fec7d0eaff8eabeda31ba605f6c4e",
+    "test_portable_independent.py": "f5075c2d2610426f2782c32dc292e78cb9e4dd42f4a215bb9fd4d31097682d19",
+    "portable-normal.txt": "ed768c5da76194035194241fa1d6a51c6d2501464b0ae28e4033973dcc083d6e",
+    "portable-optimized.txt": "70cab8504a20036b3da62d6b9edaaa3edd369d9d291949cfd9b59aa217ad70c5",
+    "portable-source-after.json": "445f96078edd6f4da120214802e1ddeff2c69f75a790fd418cb7ad4859b8abf2",
+    "PORTABLE-RECEIPT.json": "ed26cd00c5c1075cf7ad4e748ec23c442db0e176b561131b409275dd5e7ebdf4"
+  },
+  "diagnostic_hashes": {
+    "browser-results/gate-external-private-util-1bdeb-ble-and-functional-at-320px-account-hidden/counterfactual-state.json": "f86cbcb16f1abb73f789da283f9129ac497d7c83e69063989c0bf804e3b9f608",
+    "browser-results/gate-external-private-util-1bdeb-ble-and-functional-at-320px-baseline/counterfactual-state.json": "0df585975611d91f7d9fcf882eaab67501eb601d7091c519bb86665b213e3c82",
+    "browser-results/gate-external-private-util-1bdeb-ble-and-functional-at-320px-public-covered/counterfactual-state.json": "088cda61ce2648a659cc7945236f3004d6fca46cd1d6ba0106ae99138c5109a0",
+    "browser-results/gate-external-private-util-1bdeb-ble-and-functional-at-320px-theme-covered/counterfactual-state.json": "69eedfc6721ab0819e5706e1381b289d06835c82e250af6d2371b1fe20a67fbc",
+    "browser-results/gate-external-private-util-5e4e2-ble-and-functional-at-768px-account-hidden/counterfactual-state.json": "249f2b6988133a62dabbc006a033e5a2c64a06f70310fdc1fdc0c451d70b068f",
+    "browser-results/gate-external-private-util-5e4e2-ble-and-functional-at-768px-baseline/counterfactual-state.json": "0df585975611d91f7d9fcf882eaab67501eb601d7091c519bb86665b213e3c82",
+    "browser-results/gate-external-private-util-5e4e2-ble-and-functional-at-768px-public-covered/counterfactual-state.json": "6c36a3b8fce44795ac09152118066bb25a0153de7a52bab3e2b4fbeab9411d96",
+    "browser-results/gate-external-private-util-5e4e2-ble-and-functional-at-768px-theme-covered/counterfactual-state.json": "040df62f54e8db70b8f912fc343944a02cfad75f3ea68b48c92f3091fadb8d53",
+    "browser-results/gate-external-private-util-8c249-ble-and-functional-at-375px-account-hidden/counterfactual-state.json": "a44525436e700f1779855199aa7c2c030663daeeb89f41b9291eae4d90406c43",
+    "browser-results/gate-external-private-util-8c249-ble-and-functional-at-375px-baseline/counterfactual-state.json": "0df585975611d91f7d9fcf882eaab67501eb601d7091c519bb86665b213e3c82",
+    "browser-results/gate-external-private-util-8c249-ble-and-functional-at-375px-public-covered/counterfactual-state.json": "8c9fdbb24f420f66aefe74e6a169eddce3e25184e9155f414281bc7a8de33b2b",
+    "browser-results/gate-external-private-util-8c249-ble-and-functional-at-375px-theme-covered/counterfactual-state.json": "bd5bc27a3c922f4569c6e46cd750416f11f53a93514262706d2dfa8c5b2241f2",
+    "browser-results/gate-external-private-util-c62d5-le-and-functional-at-1728px-account-hidden/counterfactual-state.json": "e72d7468efee3c75e62a449a2dc0a606f04efc1de160d317411f5ad65eccc1a3",
+    "browser-results/gate-external-private-util-c62d5-le-and-functional-at-1728px-baseline/counterfactual-state.json": "0df585975611d91f7d9fcf882eaab67501eb601d7091c519bb86665b213e3c82",
+    "browser-results/gate-external-private-util-c62d5-le-and-functional-at-1728px-public-covered/counterfactual-state.json": "eea6cc3cb7c570abcb4beb481746c7e9dc95ddba58b23fcb3a67a6a7d5c20901",
+    "browser-results/gate-external-private-util-c62d5-le-and-functional-at-1728px-theme-covered/counterfactual-state.json": "f2ea546e0b65f41c37f1c39091814189f722abfc2a25097abc75e20579cd60c7"
+  }
+}

@@ -25,6 +25,16 @@ function BrandMark() {
 }
 
 export default function Navigation() {
+  const pathname = usePathname() ?? '';
+  // Private routes own their complete navigation in AdminNav. Unmount the
+  // public header (including its menus and body-scroll effects) on entry.
+  const privateShell = ['/admin', '/status'].some(
+    route => pathname === route || pathname.startsWith(`${route}/`)
+  );
+  return privateShell ? null : <PublicNavigation />;
+}
+
+function PublicNavigation() {
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
   const { user, isAuthenticated, isLoading, logout } = useAuth();

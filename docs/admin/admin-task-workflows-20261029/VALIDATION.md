@@ -1,5 +1,12 @@
 # Validation record
 
+31 October correction: the component preview below replaced the product root
+layout and omitted public Navigation. It did not establish production shell
+composition or header reachability. The resulting production header collision
+is reproduced and repaired in the [admin shell release record](../../releases/admin-header-20261031/VALIDATION.md).
+Future admin UI releases must also pass the actual-root `npm run test:admin-shell`
+gate; component-preview screenshots alone cannot satisfy it.
+
 All project execution used owned capped offline Docker. PostgreSQL tests used the assigned current-head synthetic database; browser inspection used Chrome and a loopback byte bridge. No production run was performed.
 
 The 19 source-selection backend cases pass, including an actual native writer/current committed reader, read-only transaction, no social writes, stale and wrong-job refusal, private auth responses, bounded pagination and operational-error distinction. The optimized Python run is retained in `admin-task-source-selection-final.txt`.

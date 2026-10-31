@@ -9,7 +9,7 @@
  */
 
 import '@testing-library/jest-dom';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // Mock next/navigation
 const mockPathname = jest.fn().mockReturnValue('/');
@@ -92,5 +92,30 @@ describe('Navigation', () => {
   it('renders the evidence-first brand line', () => {
     render(<Navigation />);
     expect(screen.getByText(/Public money · evidence first/i)).toBeInTheDocument();
+  });
+
+  it.each(['/admin', '/admin/social/new', '/admin/users/123', '/admin/', '/status', '/status/'])('leaves navigation ownership to the guarded shell at %s', path => {
+    mockPathname.mockReturnValue(path);
+    const view = render(<Navigation />);
+    expect(view.container).toBeEmptyDOMElement();
+  });
+
+  it.each(['/administrator', '/admin-help', '/status-report', '/account'])('retains public navigation at %s', path => {
+    mockPathname.mockReturnValue(path);
+    render(<Navigation />);
+    expect(screen.getByRole('navigation', { name: 'Primary navigation' })).toBeInTheDocument();
+  });
+
+  it('retires the open public menu and scroll lock across private route transitions', () => {
+    const view = render(<Navigation />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+    expect(document.body.style.overflow).toBe('hidden');
+    mockPathname.mockReturnValue('/admin');
+    view.rerender(<Navigation />);
+    expect(view.container).toBeEmptyDOMElement();
+    expect(document.body.style.overflow).not.toBe('hidden');
+    mockPathname.mockReturnValue('/');
+    view.rerender(<Navigation />);
+    expect(screen.getByRole('button', { name: 'Open navigation menu' })).toHaveAttribute('aria-expanded', 'false');
   });
 });

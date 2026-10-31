@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react';
 import {Activity,BarChart3,History,ListChecks,PlayCircle,Send,Users} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
 import styles from './admin.module.css';
 
 const NAV_ITEMS = [
@@ -26,11 +27,15 @@ export default function AdminNav() {
 
   return <>
     <div className={styles.nav}><div className={styles.navInner}>
-      <span className={styles.identity}>AuditGava / Admin</span>
+      <Link href='/' className={styles.identity} aria-label='AuditGava / Admin — public site'>AuditGava / Admin</Link>
       <button type='button' className={styles.menuButton} aria-controls='admin-task-navigation' aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>Menu</button>
       <nav id='admin-task-navigation' aria-label='Admin navigation' className={`${styles.links} ${menuOpen ? styles.navExpanded : ''}`}>
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => <Link key={href} href={href} aria-current={activeHref === href ? 'page' : undefined}><Icon aria-hidden='true' />{label}</Link>)}
       </nav>
+      <div className={styles.utilities}>
+        <Link href='/account'>Account</Link>
+        <ThemeToggle />
+      </div>
     </div></div>
     {pathname.startsWith('/admin/social') && <div className={styles.socialNav}><nav className={styles.socialNavInner} aria-label='Social workspace'>
       <Link href='/admin/social' aria-current={pathname === '/admin/social' ? 'page' : undefined}>Review drafts</Link>

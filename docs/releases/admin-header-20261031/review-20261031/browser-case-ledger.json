@@ -1,0 +1,130 @@
+[
+  {
+    "project": "baseline",
+    "width": 1728,
+    "title": "private utilities remain reachable and functional at 1728px",
+    "actual_status": "passed",
+    "expected_counterfactual_result": "passed",
+    "message": ""
+  },
+  {
+    "project": "baseline",
+    "width": 768,
+    "title": "private utilities remain reachable and functional at 768px",
+    "actual_status": "passed",
+    "expected_counterfactual_result": "passed",
+    "message": ""
+  },
+  {
+    "project": "baseline",
+    "width": 375,
+    "title": "private utilities remain reachable and functional at 375px",
+    "actual_status": "passed",
+    "expected_counterfactual_result": "passed",
+    "message": ""
+  },
+  {
+    "project": "baseline",
+    "width": 320,
+    "title": "private utilities remain reachable and functional at 320px",
+    "actual_status": "passed",
+    "expected_counterfactual_result": "passed",
+    "message": ""
+  },
+  {
+    "project": "account-hidden",
+    "width": 1728,
+    "title": "private utilities remain reachable and functional at 1728px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div > a[href=\"/account\"] and its ancestors must be painted"
+  },
+  {
+    "project": "account-hidden",
+    "width": 768,
+    "title": "private utilities remain reachable and functional at 768px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div > a[href=\"/account\"] and its ancestors must be painted"
+  },
+  {
+    "project": "account-hidden",
+    "width": 375,
+    "title": "private utilities remain reachable and functional at 375px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div > a[href=\"/account\"] and its ancestors must be painted"
+  },
+  {
+    "project": "account-hidden",
+    "width": 320,
+    "title": "private utilities remain reachable and functional at 320px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div > a[href=\"/account\"] and its ancestors must be painted"
+  },
+  {
+    "project": "theme-covered",
+    "width": 1728,
+    "title": "private utilities remain reachable and functional at 1728px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div button[aria-label^=\"Switch to\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "theme-covered",
+    "width": 768,
+    "title": "private utilities remain reachable and functional at 768px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div button[aria-label^=\"Switch to\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "theme-covered",
+    "width": 375,
+    "title": "private utilities remain reachable and functional at 375px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div button[aria-label^=\"Switch to\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "theme-covered",
+    "width": 320,
+    "title": "private utilities remain reachable and functional at 320px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: #admin-task-navigation + div button[aria-label^=\"Switch to\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "public-covered",
+    "width": 1728,
+    "title": "private utilities remain reachable and functional at 1728px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: a[aria-label=\"AuditGava / Admin \u2014 public site\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "public-covered",
+    "width": 768,
+    "title": "private utilities remain reachable and functional at 768px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: a[aria-label=\"AuditGava / Admin \u2014 public site\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "public-covered",
+    "width": 375,
+    "title": "private utilities remain reachable and functional at 375px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: a[aria-label=\"AuditGava / Admin \u2014 public site\"] must receive pointer input without another header covering it"
+  },
+  {
+    "project": "public-covered",
+    "width": 320,
+    "title": "private utilities remain reachable and functional at 320px",
+    "actual_status": "failed",
+    "expected_counterfactual_result": "failed",
+    "message": "Error: a[aria-label=\"AuditGava / Admin \u2014 public site\"] must receive pointer input without another header covering it"
+  }
+]

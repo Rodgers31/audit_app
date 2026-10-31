@@ -1,4 +1,7 @@
-/** Offline, loopback-only preview of actual components. No product auth bypass. */
+/** Component preview only: its replacement root omits product Navigation.
+ * UI releases MUST also pass `npm run test:admin-shell` against the actual root.
+ * Offline, loopback-only; no product auth bypass.
+ */
 import {mkdir, writeFile, symlink, readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {spawn} from 'node:child_process';

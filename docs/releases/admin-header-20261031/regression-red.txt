@@ -1,0 +1,67 @@
+[WebServer] (node:5752) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5753) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5798) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5809) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5810) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5818) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5817) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5819) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5820) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:5873) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:5883) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5883) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 browser-fixtures/admin-shell/shell.spec.ts:32:7 › admin navigation stays visible and clickable at 1728px (410ms)
+
+
+  1) browser-fixtures/admin-shell/shell.spec.ts:32:7 › admin navigation stays visible and clickable at 1728px
+
+    Error: #admin-task-navigation a[href="/admin/social"] must receive pointer input without another header covering it
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      24 |     const r = el.getBoundingClientRect(), top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      25 |     return top === el || el.contains(top);
+    > 26 |   }), `${selector} must receive pointer input without another header covering it`).toBe(true);
+         |                                                                                    ^
+      27 | }
+      28 |
+      29 | test.beforeEach(async ({ page }) => { await inertReads(page); });
+        at reachable (/Users/roger/.codex/worktrees/admin-header-ownership/audit_app/frontend/browser-fixtures/admin-shell/shell.spec.ts:26:84)
+        at /Users/roger/.codex/worktrees/admin-header-ownership/audit_app/frontend/browser-fixtures/admin-shell/shell.spec.ts:39:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-shell/shell-admin-navigation-stays-visible-and-clickable-at-1728px/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-shell/shell-admin-navigation-stays-visible-and-clickable-at-1728px/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/admin-shell/shell-admin-navigation-stays-visible-and-clickable-at-1728px/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/admin-shell/shell-admin-navigation-stays-visible-and-clickable-at-1728px/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    browser-fixtures/admin-shell/shell.spec.ts:32:7 › admin navigation stays visible and clickable at 1728px

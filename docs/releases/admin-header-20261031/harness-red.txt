@@ -1,0 +1,5 @@
+{"name":"plain visible link","expectedAcceptance":true,"actualAcceptance":true,"error":null}
+{"name":"missing target","expectedAcceptance":false,"actualAcceptance":false,"error":"expect(locator).toBeVisible() failed\n\nLocator: locator('#target')\nExpected: visible\nTimeout: 500ms\nError: element(s) not found\n\nCall log:\n  - Expect \"to.be.visible\" with timeout 500ms\n  - waiting for locator('#target')\n"}
+{"name":"CSS hidden target","expectedAcceptance":false,"actualAcceptance":false,"error":"expect(locator).toBeVisible() failed\n\nLocator:  locator('#target')\nExpected: visible\nReceived: hidden\nTimeout:  500ms\n\nCall log:\n  - Expect \"to.be.visible\" with timeout 500ms\n  - waiting for locator('#target')\n    4 × locator resolved to <a id=\"target\" href=\"/admin/social\">Social</a>\n      - unexpected value \"hidden\"\n"}
+{"name":"opaque covering header","expectedAcceptance":false,"actualAcceptance":false,"error":"expect(received).toBe(expected) // Object.is equality\n\nExpected: true\nReceived: false"}
+{"name":"fully transparent control","expectedAcceptance":false,"actualAcceptance":true,"error":null}

@@ -1,0 +1,30 @@
+[
+  {
+    "title": "private utilities remain reachable and functional at 1728px",
+    "project": "baseline",
+    "result_statuses": [
+      "passed"
+    ]
+  },
+  {
+    "title": "private utilities remain reachable and functional at 768px",
+    "project": "baseline",
+    "result_statuses": [
+      "passed"
+    ]
+  },
+  {
+    "title": "private utilities remain reachable and functional at 375px",
+    "project": "baseline",
+    "result_statuses": [
+      "passed"
+    ]
+  },
+  {
+    "title": "private utilities remain reachable and functional at 320px",
+    "project": "baseline",
+    "result_statuses": [
+      "passed"
+    ]
+  }
+]
