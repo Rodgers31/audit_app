@@ -73,8 +73,13 @@ new advisories/releases for these paths, update the matching scoped/nested pins
 with the lockfile, and rerun their caller/native acceptance. A bot resolution
 failure is actionable, not evidence that no update is needed. Keep the scoped
 legacy compatibility boundary; a blanket override would break real callers.
-Likewise, source-bound braces/js-yaml repairs require manual review whenever an
-upstream update changes their reviewed hashes. Inspect Dependabot job logs when
+Likewise, source-bound braces/js-yaml/deepmerge repairs require manual review
+whenever an upstream update changes their reviewed hashes. Deepmerge's source,
+actual CJS main and UMD bundle must all retain the verified copy guards. The
+separate YAML4 exception is restricted to its exact reviewed path/version in
+both the repair inventory and installer; a proposed YAML4 update needs review
+of both. Do not add a generic exclusion to let an unpatched dependency pass.
+Inspect Dependabot job logs when
 a weekly check produces no PR; silence alone is not a clean audit.
 
 **Coverage limit:** npm security updates can repair supported transitive lockfile findings.
@@ -143,8 +148,15 @@ source writers and worker/publishing/upload/financial opt-ins off during fixture
 Use the existing human review and branch protections. The updater proposes
 changes; it cannot approve, merge, deploy, publish, migrate, or enable a source.
 For a rejected update, retain the failure and address its actual compatibility
-problem; do not add blanket major/security ignores. The known residual minimatch
-and deepmerge findings remain in issue 494 and the dated remediation report.
+problem; do not add blanket major/security ignores. The
+[31 October follow-up](DEPENDENCY_FOLLOWUP_2026_10_31.md) retains the raw 22 npm
+findings: five refer to locally repaired deepmerge at its unchanged registry
+version, and 17 refer to legacy minimatch whose implementation lacks this
+advisory's optimizer mechanism despite the aggregate affected-version range.
+Separate legacy regex-backtracking cost remains an explicit tooling risk. These
+findings remain in issue 494; the investigation is not a blanket audit ignore or
+clearance of arbitrary matcher inputs. Future releases and advisories still need
+fresh resolution, caller compatibility checks and source-bound repair review.
 
 To pause routine PR creation, set the affected `open-pull-requests-limit` to zero
 in a reviewed configuration change. This does not disable advisory security
