@@ -52,8 +52,8 @@ local containers and a disposable PostgreSQL database.
 ## Verification
 
 The [manifest](2026-10-31-refresh-gap-repair.json) pins changed source bytes and
-the retained command/XML receipts. The combined application selection executes 750 tests
-in normal Python and the same 750 in actual optimized Python: zero failures,
+the retained command/XML receipts. The combined application selection executes 797 tests
+in normal Python and the same 797 in actual optimized Python: zero failures,
 errors or skips in either mode. This includes all 113 PostgreSQL
 source-identity cases, using a disposable loopback fixture. Earlier missing
 fixture/read-only-cache setup failures are retained separately and are not
@@ -124,3 +124,15 @@ the four shutdown controls again, and admit the matching ingestion SHA only
 after the release checks pass. Inspect the next ordinary bounded run. A
 production refresh and the remaining #802 source acceptance are still required;
 this PR does not establish that the overall source rollout is complete.
+
+## PR review repair update
+
+The [review disposition](2026-10-31-pr860-review.md) records all three inline
+findings and all five body-only findings, their executed REDs, repairs and
+positive controls. It supersedes the original candidate validation counts
+above; the earlier 750-case receipts remain preserved in the manifest.
+Current review repairs passed 797 application cases and 16 runtime cases in
+each of normal and actual optimized Python, with zero failures, errors or
+skips. Current independent review receipts and the review evidence archive
+are pinned in the manifest. The earlier production readback is historical;
+deployment and ingestion admission require their own final release receipt.

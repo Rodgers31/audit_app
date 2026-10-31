@@ -1,0 +1,75 @@
+{
+  "disposition": "scoped pass: PR860 debt fallback identity/preservation and GDP-only reporting",
+  "base": "16538db009704ece4e0aaa51ac162752d591180c",
+  "final_mapping_sha256": "ef044ae9770e01228b78f27e676861973baff0d44411380d740c12d3fa84a769",
+  "backend_projection_file_count": 1466,
+  "reviewed_source_pins": {
+    "backend/seeding/domains/debt_timeline/__init__.py": "2804ae03db463635ad584716a2228943b7d7c9a474e22bc1e631beb26043fcd3",
+    "backend/seeding/domains/debt_timeline/fetcher.py": "e73cb83da80cea80f9373414e2cfb20cf5561eb5258a855f5986543aa4761670",
+    "backend/seeding/domains/debt_timeline/parser.py": "076dc9f1cd11739e5ec61b973d82dfa1611da261a85e4a7ffe905a013ef66a3a",
+    "backend/seeding/domains/debt_timeline/writer.py": "f88e9deac7a97e540ca01a47ffad18c7d6411f6fa3f1a687efdc9edf12085619",
+    "backend/seeding/observations.py": "a3492dda97be2878508129aa04c0bc92aeeb6d70fac7c0b6a9cb479a5eafe1db",
+    "backend/services/response_receipts.py": "153255e175d8e31cc13944ebfbae3bac380aab98a98135e433007dabb157d7b8",
+    "backend/services/figure_qualification.py": "9b4fc2089186fa8fffb48b00b3c086abebf89a1c0bd7f1ed10870a5fdc631b90",
+    "backend/seeding/domains/national_debt/cbk_bulletin.py": "9763215a3ba6f3e5d7b763416d2877155286928039753d73c9dbc9ccf7d85a03",
+    "backend/seeding/domains/national_gdp/__init__.py": "fb20d381c0f1e4c1e0f00ed40de0542595ca88cd8295bbefc5d971657c1ba816",
+    "backend/seeding/pdf_evidence.py": "073a65793f84e0b3f0080e7156c98132ec1639d216647682a7bb7c32ccc3f30a",
+    "backend/main.py": "bfabcf03c7f6326abe99f7b7d180596e951bb5a3cab56b3e0825bd130409d1d9",
+    "backend/models.py": "279ee4b363b3db0f6b7eaa95f31463b6e4f6b0bae4bc4e8ce534ca351c09a718",
+    "backend/seeding/cli.py": "825d967f1e76ec5d11b8f882d51ee5b7b84d4a640c92f2734109e0e4ca986ed5",
+    "backend/tests/test_refresh_review_debt.py": "25c32dd711a37db3cbefef004c2214c6108419d5b0cda327fdfb29a777a0fd45",
+    "backend/tests/test_refresh_review_debt_boundary.py": "eaece3d5811e72ee9395b295fab11c2a5eeab34fa029f91f54572247ae752d8c",
+    "backend/tests/test_refresh_gdp_completeness.py": "a4396b12507462396a365fc4fcaa8d262aa33a8b28eaaa43b1f5fe5efc1e7146",
+    "backend/tests/test_refresh_debt_evidence.py": "dbd97e2ecec49e8f7f15a4475cb721539d837f6d744fa11a3a44a97b3deecab0"
+  },
+  "snapshot_and17_reviewed_checkout_pins_before_after_equal": true,
+  "results_per_mode": {
+    "primary_and_known_regression_matrix": 92,
+    "within_tolerance_discriminator": 1,
+    "total_passed": 93,
+    "independent_passed": 78,
+    "author_passed": 15,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline_original13_per_mode": {
+    "passed": 6,
+    "failed": 7,
+    "errors": 0,
+    "skipped": 0
+  },
+  "candidate2_boundary7_normal": {
+    "passed": 6,
+    "failed": 1
+  },
+  "discriminator_candidate2_normal": {
+    "passed": 0,
+    "failed": 1
+  },
+  "unchanged_original13_test_sha256": "25c32dd711a37db3cbefef004c2214c6108419d5b0cda327fdfb29a777a0fd45",
+  "within_tolerance_discriminator_sha256": "519cc18f3712f748c6760ef24f3044a2dd39ee66151e0f1bfbf046ea23326489",
+  "prior_matrix_expected_contract_delta": {
+    "file": "test_gdp_matrix.py",
+    "original_sha256": "d263a5d8e48e2d6cbec83415fb15f390484132d3ea81a3fb6636841531fb72fa",
+    "adapted_sha256": "1d2cb628c6ab0f06dd5c958ecb48e81fb73d175d16d47f32fc94fa8e12887930",
+    "exact_edit": "('no_cbk','fixture') -> ('no_cbk','partial')",
+    "reason": "PR860 body requirement: fresh GDP while CBK unavailable is partial, not fixture-only; no assertion removed"
+  },
+  "runtime_image_id": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "limits": {
+    "network": "none",
+    "cpu": 1,
+    "memory": "1g",
+    "pids": 256
+  },
+  "cleanup": {
+    "owned_pr860_debt_containers_absent": true,
+    "no_own_PG_or_credentials_created": true,
+    "shared_containers_preserved": [
+      "admin-redesign-pg",
+      "admin-redesign-node",
+      "pr860-review-tools"
+    ]
+  }
+}

@@ -276,10 +276,12 @@ def fetch_debt_timeline_payload(
             mark_partial("debt_timeline", reason=reason,
                          detail=f"{detail} of {required}; GDP refresh: {gdp.get('state', 'unavailable')}")
     else:
-        mark_fixture(
-            "debt_timeline",
-            reason="cbk_bulletin_unavailable",
-            detail="debt stocks remain fixture values; only GDP is live",
-        )
+        gdp = base["metadata"]["refresh_components"]["gdp"]
+        if gdp["state"] in ("live", "partial"):
+            mark_partial("debt_timeline", reason="cbk_bulletin_unavailable",
+                         detail=f"No current debt-stock observation; GDP refresh: {gdp['state']}")
+        else:
+            mark_fixture("debt_timeline", reason="cbk_bulletin_unavailable",
+                         detail=f"No current debt-stock observation; GDP refresh: {gdp['state']}")
 
     return base

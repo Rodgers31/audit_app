@@ -78,6 +78,7 @@ def fetch_fiscal_summary_payload(
     estimates_applied = False
     revenue_status = "not_attempted"
     revenue_applied = False
+    refreshed_revenue_years: set[str] = set()
     framework_status = "not_attempted"
     framework_applied = False
     estimates = None
@@ -171,7 +172,9 @@ def fetch_fiscal_summary_payload(
                     known_prior_ordinary_billion=(prior_row or {}).get("total_revenue"),
                 )
                 if revenue_est:
-                    payload, rev_apply = _apply_revenue_estimates(payload, revenue_est)
+                    payload, rev_apply = _apply_revenue_estimates(
+                        payload, revenue_est, refreshed_years=refreshed_revenue_years
+                    )
                     revenue_applied = rev_apply.startswith("applied=")
                     revenue_status = rev_apply
             else:
@@ -190,7 +193,9 @@ def fetch_fiscal_summary_payload(
         try:
             editions, listing_facts = _fetch_budget_summary_editions(client, settings)
             payload["_run_facts"] = listing_facts
-            payload, framework_status = _apply_fiscal_framework(payload, editions)
+            payload, framework_status = _apply_fiscal_framework(
+                payload, editions, refreshed_revenue_years=refreshed_revenue_years
+            )
             framework_applied = framework_status.startswith("applied=")
             logger.info("fiscal_summary Treasury fiscal framework: %s", framework_status)
         except Exception as exc:
@@ -212,13 +217,19 @@ def fetch_fiscal_summary_payload(
                 or (row["fiscal_framework"].get("source") or {}).get("url") not in listed}
     framework_complete = bool(framework_applied and listed and not unreadable and not row_gaps
                               and " refused=" not in framework_status)
-    revenue_complete = revenue_applied and " refused=" not in revenue_status
+    expected_revenue_years = {str(row["fiscal_year"]) for row in payload.get("fiscal_years", [])
+                              if row.get("fiscal_year")}
+    missing_revenue_years = expected_revenue_years - refreshed_revenue_years
+    revenue_applied = bool(refreshed_revenue_years)
+    revenue_complete = revenue_applied and not missing_revenue_years
     budget_applied = estimates_applied or cob_promoted
     components = {
         "budget": {"state": "live" if budget_applied else "unavailable", "detail": estimates_status,
                    "cob_detail": cob_status},
         "revenue": {"state": "live" if revenue_complete else "partial" if revenue_applied
-                   else "unavailable", "detail": revenue_status},
+                   else "unavailable", "detail": revenue_status,
+                    "refreshed_years": sorted(refreshed_revenue_years),
+                    "missing_years": sorted(missing_revenue_years)},
         "framework": {"state": ("live" if framework_complete else "partial" if framework_applied
                                  else "unavailable"), "detail": framework_status,
                       "unreadable_editions": unreadable, "unconfirmed_years": row_gaps},
@@ -403,7 +414,7 @@ def _fetch_revenue_estimates(
         return None, f"parse_failed({type(exc).__name__})"
 
 
-def _apply_revenue_estimates(payload, series):
+def _apply_revenue_estimates(payload, series, *, refreshed_years=None):
     """Write every gated revenue estimate onto its fiscal year.
 
     Unlike ``_overlay_live_revenue_headline`` this may CREATE a year, which is
@@ -457,6 +468,8 @@ def _apply_revenue_estimates(payload, series):
             "checks": list(estimates.checks),
         }
         row["_revenue_source"] = "treasury_budget_summary_live"
+        if refreshed_years is not None:
+            refreshed_years.add(fiscal_year)
         applied.append(fiscal_year)
 
     if not applied:
@@ -468,6 +481,21 @@ def _apply_revenue_estimates(payload, series):
 #: ``seeding/staleness.py`` imports these rather than spelling them again.
 LISTING_NEWEST_FY_FACT = "budget_summary_listing_newest_fy"
 LISTING_EDITIONS_FACT = "budget_summary_editions"
+
+
+class _UncacheableOCRResults(Exception):
+    def __init__(self, records):
+        super().__init__("OCR unavailable; retain refusal details but retry next invocation")
+        self.records = records
+
+
+def _extract_budget_summary_pages(path):
+    from .fiscal_framework import extract_page_texts
+
+    records = extract_page_texts(path)
+    if any(record.get("ocr_status") == "unavailable" for record in records):
+        raise _UncacheableOCRResults(records)
+    return records
 
 
 def _fetch_budget_summary_editions(client, settings):
@@ -554,14 +582,17 @@ def _fetch_budget_summary_editions(client, settings):
                 max_seconds=settings.pdf_download_timeout_seconds,
                 max_bytes=settings.pdf_download_max_bytes,
             )
-            records = parse_with_cache(
-                pdf_path,
-                cache_dir=Path(settings.cache_path) / "pdfs",
-                kind="budget_summary_pages",
-                parse_fn=lambda p=pdf_path: extract_page_texts(p),
-                enabled=settings.parse_cache_enabled and cache_dependencies is not None,
-                key_extra=cache_dependencies or "",
-            )
+            try:
+                records = parse_with_cache(
+                    pdf_path,
+                    cache_dir=Path(settings.cache_path) / "pdfs",
+                    kind="budget_summary_pages",
+                    parse_fn=lambda p=pdf_path: _extract_budget_summary_pages(p),
+                    enabled=settings.parse_cache_enabled and cache_dependencies is not None,
+                    key_extra=cache_dependencies or "",
+                )
+            except _UncacheableOCRResults as exc:
+                records = exc.records
         except Exception as exc:
             entry["status"] = f"unreadable({type(exc).__name__})"
             continue
@@ -594,7 +625,7 @@ def _fetch_budget_summary_editions(client, settings):
     return editions, facts
 
 
-def _apply_fiscal_framework(payload, editions):
+def _apply_fiscal_framework(payload, editions, *, refreshed_revenue_years=None):
     """Write each fiscal year's gated split onto its row. Pure; idempotent.
 
     For every row, editions are tried newest first and the first one that
@@ -637,6 +668,25 @@ def _apply_fiscal_framework(payload, editions):
     if not editions:
         return payload, "no_editions_read"
 
+    # Compare duplicate editions of the SAME budget year before promoting
+    # any column. Different years are legitimate vintages, joined below by
+    # the row's revenue source; comparing those would reject valid actuals.
+    by_year = {}
+    for url, edition in editions:
+        by_year.setdefault(edition.fiscal_year, []).append((url, edition))
+    conflicting_years = set()
+    for fy, candidates in by_year.items():
+        signatures = set()
+        for _url, edition in candidates:
+            try:
+                split = split_for_fiscal_year(edition, fy, known_ordinary_revenue=None)
+            except FiscalFrameworkError:
+                continue  # the existing per-column gate records this refusal
+            signatures.add((tuple(sorted(split.values.items())), split.tax_split_ok,
+                            split.tax_split_reason))
+        if len(signatures) > 1:
+            conflicting_years.add(fy)
+
     # An edition may describe a year the payload does not have yet. Create it
     # the way the budget books do; the API still withholds it until it can
     # cite a page.
@@ -652,7 +702,15 @@ def _apply_fiscal_framework(payload, editions):
     for row in fiscal_years:
         fy = row.get("fiscal_year")
         reasons = []
+        if fy in conflicting_years:
+            reason = "conflicting_approved_editions_for_same_fiscal_year"
+            refused[fy] = [reason]
+            row["fiscal_framework_absent_reason"] = reason
+            continue
         for url, edition in editions:
+            if edition.fiscal_year in conflicting_years:
+                reasons.append(f"{edition.fiscal_year} edition: conflicting_approved_editions_for_same_fiscal_year")
+                continue
             revenue_url = (row.get("revenue_source") or {}).get("url")
             same_document = revenue_url == url and row.get("total_revenue") is not None
             if fy != edition.fiscal_year and not same_document:
@@ -701,6 +759,8 @@ def _apply_fiscal_framework(payload, editions):
                 "measure": "Ordinary Revenue (tax + non-tax, excluding A-i-A and grants)",
             }
             row["_revenue_source"] = "treasury_budget_summary_annex_live"
+            if refreshed_revenue_years is not None:
+                refreshed_revenue_years.add(fy)
         if split.tax_split_ok:
             total = row.get("total_revenue")
             if total is not None and abs(Decimal(str(total)) - ordinary) <= Decimal("0.05"):

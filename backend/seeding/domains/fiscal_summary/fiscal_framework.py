@@ -550,13 +550,24 @@ def extract_page_texts(pdf_path) -> List[dict]:
                 parse_annex_lines(record["text"].splitlines(), page=index + 1)
                 continue
             except FiscalFrameworkError as exc:
-                if exc.reason != "annex_has_no_rows":
+                if exc.reason not in ("annex_has_no_rows", "rows_not_found"):
                     continue
             if len(candidates) != 1:
                 record.update(ocr_status="unavailable", ocr_reason="ambiguous_image_annex")
                 continue
             try:
-                record["text"] = _read_image_annex(pdf.pages[index])
+                recovered = _read_image_annex(pdf.pages[index])
+                headings = []
+                for line in record["text"].splitlines():
+                    tokens = line.split()
+                    while tokens and _NUM_RE.fullmatch(tokens[-1]):
+                        tokens.pop()
+                    label = " ".join(tokens).lower()
+                    if not any(re.fullmatch(pattern, label) for _, pattern in _ROW_PATTERNS):
+                        headings.append(line)
+                # Keep known title/column qualifications, but never mix old
+                # partial numeric cells into the complete OCR table.
+                record["text"] = "\n".join([*headings, recovered])
                 record["ocr_status"] = "read"
             except Exception as exc:
                 record.update(ocr_status="unavailable",

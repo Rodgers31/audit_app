@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
 from typing import TYPE_CHECKING, Any
 
 from models import Country, DebtTimeline, DocumentType, SourceDocument
@@ -54,6 +54,11 @@ def _get_or_create_source_document(
             SourceDocument.url == source_url,
             SourceDocument.publisher == "Central Bank of Kenya",
         )
+    else:
+        query = query.filter(
+            SourceDocument.url == "https://www.centralbank.go.ke/statistics/government-finance-statistics/",
+            SourceDocument.publisher == "Central Bank of Kenya / National Treasury",
+        )
     doc = query.first()
     if doc:
         return doc
@@ -99,6 +104,57 @@ def _raw_kes(value: Any) -> Any:
     return v * Decimal("1e9") if v < 1_000_000 else v
 
 
+def _observed_evidence(record, measure: str, value) -> list[dict]:
+    """Only current acquisition manifests can replace an existing measure.
+
+    A configured fixture, serialized receipt or changed normalized cell does
+    not establish a refresh. Retention qualification remains a separate gate.
+    """
+    from urllib.parse import urlsplit
+    from services.response_receipts import receipt_is_sealed
+
+    matches = []
+    for item in record.source_evidence or []:
+        receipt = item.get("_response_receipt")
+        if not receipt_is_sealed(receipt):
+            continue
+        identity = item.get("identity", {})
+        expected = {"measure": measure, "entity_id": None, "geography": "KEN",
+                    "period": str(record.year), "unit": "KES",
+                    "basis": "current_prices" if measure == "gdp" else "actual", "dimensions": {}}
+        if identity != expected or any(item.get("checks", {}).get(k) is not True
+                                      for k in ("identity", "value", "transport", "locator")):
+            continue
+        if item.get("reconciliation", {}).get("status") != "matched":
+            continue
+        if measure == "gdp":
+            if urlsplit(receipt.get("request_url", "")).hostname != "api.worldbank.org":
+                continue
+        elif not record.source_url or receipt.get("request_url") != record.source_url:
+            continue
+        manifest_fields = ("identity", "locator", "raw_value", "raw_unit", "transformation")
+        if not any(all(entry.get(k) == item.get(k) for k in manifest_fields)
+                   for entry in receipt.get("observations", [])):
+            continue
+        try:
+            normalized = Decimal(item["value"])
+            transform = item["transformation"]
+            reproduced = Decimal(item["raw_value"]) * Decimal(transform["factor"])
+            rounding = transform.get("rounding")
+            if rounding is not None:
+                if type(rounding) is not int or not -20 <= rounding <= 20:
+                    continue
+                reproduced = reproduced.quantize(Decimal(1).scaleb(-rounding), rounding=ROUND_HALF_EVEN)
+            if (value is None or not normalized.is_finite() or not reproduced.is_finite()
+                    or normalized != reproduced or normalized != value
+                    or measure == "gdp" and normalized <= 0):
+                continue
+        except (KeyError, TypeError, ValueError, InvalidOperation):
+            continue
+        matches.append(item)
+    return matches if len(matches) == 1 else []
+
+
 def write_debt_timeline_records(
     session: Session,
     records: list[DebtTimelineRecord],
@@ -120,13 +176,48 @@ def write_debt_timeline_records(
         return doc_cache[key]
 
     for record in records:
-        source_doc = _doc_for(record)
         existing = (
             session.query(DebtTimeline).filter(DebtTimeline.year == record.year).first()
         )
+        values = {key: _raw_kes(getattr(record, key)) for key in ("external", "domestic", "total", "gdp")}
+        observed = {key: _observed_evidence(record, key, values[key]) for key in values}
+        stocks_observed = all(observed[key] for key in ("external", "domestic", "total"))
+        if stocks_observed:
+            # Independently valid cells from different bulletins do not form
+            # one observed stock. Deep copies retain the same sealed manifest.
+            receipts = [observed[key][0]["_response_receipt"]
+                        for key in ("external", "domestic", "total")]
+            stocks_observed = (len({(r._acquisition, r._sealed) for r in receipts}) == 1
+                               and abs(values["external"] + values["domestic"] - values["total"])
+                               <= values["total"] * Decimal("0.005"))
+        source_doc = _doc_for(record) if stocks_observed or existing is None else None
+        if stocks_observed:
+            association = (source_doc.id, source_doc.country_id, source_doc.publisher, source_doc.url)
+            stocks_observed = all(not item["_response_receipt"]._bound_source
+                                  or item["_response_receipt"]._bound_source[0] == association
+                                  for key in ("external", "domestic", "total") for item in observed[key])
+        gdp_observed = bool(observed["gdp"])
+        if gdp_observed:
+            from ..national_gdp import _ensure_gdp_source_document
+            if gdp_doc is None:
+                gdp_doc = _ensure_gdp_source_document(session)
+            association = (gdp_doc.id, gdp_doc.country_id, gdp_doc.publisher, gdp_doc.url)
+            receipt = observed["gdp"][0]["_response_receipt"]
+            gdp_observed = not receipt._bound_source or receipt._bound_source[0] == association
+        if existing and not stocks_observed and not gdp_observed:
+            continue
+        if existing and not stocks_observed and existing.unit != "KES":
+            raise ValueError("Retained debt stock requires declared raw KES before GDP refresh")
 
-        evidence = []
-        for item in record.source_evidence or []:
+        replaced = ({"external", "domestic", "total"} if stocks_observed else set())
+        if gdp_observed:
+            replaced.add("gdp")
+        incoming = ([item for key in values if key in replaced for item in observed[key]]
+                    if existing else record.source_evidence or [])
+
+        evidence = [item for item in (existing.meta or {}).get("source_evidence", [])
+                    if item.get("identity", {}).get("measure") not in replaced] if existing else []
+        for item in incoming:
             if item.get("identity", {}).get("measure") == "gdp":
                 from ..national_gdp import _ensure_gdp_source_document
                 if gdp_doc is None:
@@ -136,13 +227,16 @@ def write_debt_timeline_records(
                 evidence_doc = source_doc
             evidence.extend(persist_evidence(session, evidence_doc, [item]))
         if existing:
-            existing.external = _raw_kes(record.external)
-            existing.domestic = _raw_kes(record.domestic)
-            existing.total = _raw_kes(record.total)
-            existing.gdp = _raw_kes(record.gdp)
-            existing.gdp_ratio = record.gdp_ratio
+            if stocks_observed:
+                existing.external = values["external"]
+                existing.domestic = values["domestic"]
+                existing.total = values["total"]
+                existing.source_document_id = source_doc.id
+            if gdp_observed:
+                existing.gdp = values["gdp"]
+            existing.gdp_ratio = (Decimal(str(existing.total)) / existing.gdp * 100).quantize(
+                Decimal("0.1")) if gdp_observed else None
             existing.unit = "KES"
-            existing.source_document_id = source_doc.id
             existing.meta = {**(existing.meta or {}), "source_evidence": evidence}
             existing.updated_at = datetime.now(timezone.utc)
             updated += 1
