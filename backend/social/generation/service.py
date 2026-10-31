@@ -346,7 +346,8 @@ def _render_legacy(observation):
         report = observation.report
         copy = f'Report available from {report.publisher}. Verified reporting scope: {report.entity}, {report.period}.'
         if isinstance(report,CataloguedNativeReportEvidence):
-            copy += f' Official KRA catalogue entry dated {report.catalogued_on.isoformat()}. Report publication date is not stated. Human review required.'
+            name = 'KRA' if report.native_domain == 'revenue_by_source' else report.publisher
+            copy += f' Official {name} catalogue entry dated {report.catalogued_on.isoformat()}. Report publication date is not stated. Human review required.'
         else:
             copy += f' Publisher publication date: {report.published_on.isoformat()}.'
     elif observation.category == 'dataset_availability':

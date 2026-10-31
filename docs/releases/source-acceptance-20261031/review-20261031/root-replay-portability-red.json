@@ -1,0 +1,12 @@
+{
+  "root": {
+    "exit": 71,
+    "stdout": "wrong source bind\n\n",
+    "stderr": ""
+  },
+  "companion": {
+    "exit": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/replay relocated xfvm5v1u/another checkout/docs/releases/source-acceptance-20261031/run-final-selection.py.bytes\", line 5, in <module>\n    raise SystemExit(subprocess.call([sys.executable,str(p/'run-root-tests.py'),'root-combined-final-'+mode,mode]+(p/'final-selection.txt').read_text().splitlines()))\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1256, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1242, in open\n    return io.open(self, mode, buffering, encoding, errors, newline,\n  File \"/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py\", line 1110, in _opener\n    return self._accessor.open(self, flags, mode)\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/hd/tsz290p55jv0qlsrv5919p7c0000gn/T/replay relocated xfvm5v1u/another checkout/docs/releases/source-acceptance-20261031/final-selection.txt'\n"
+  }
+}

@@ -45,7 +45,8 @@ def render_social(observation, *, version):
                  'audits': 'audit', 'pending_bills': 'pending-bills'}.get(
                      getattr(report, 'native_domain', None), 'budget implementation')
         if isinstance(report, CataloguedNativeReportEvidence):
-            paragraphs.append(f'{report.entity}: a {label} report for {report.period} is listed in {report.publisher}’s catalogue.')
+            article = 'an' if label == 'audit' else 'a'
+            paragraphs.append(f'{report.entity}: {article} {label} report for {report.period} is listed in {report.publisher}’s catalogue.')
             paragraphs.append(f'Catalogue entry dated {day(report.catalogued_on)}. The report’s publication date is not stated. Human review is required.')
         else:
             paragraphs.append(f'{report.entity}: explore the {label} report for {report.period}.')

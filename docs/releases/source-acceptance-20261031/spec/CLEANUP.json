@@ -1,0 +1,7 @@
+{
+  "owned_containers_remaining": [],
+  "no_own_pg_credentials_or_flags": true,
+  "no_product_or_production_mutations": true,
+  "no_installs_network_provider_paid_or_shared_resource_actions": true,
+  "image_id": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d"
+}

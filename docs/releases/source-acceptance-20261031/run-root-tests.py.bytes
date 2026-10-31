@@ -1,0 +1,67 @@
+"""Portable local replay; historical command receipts stay immutable."""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+import time
+
+
+def source_root():
+    override = os.getenv('SOURCE802_SOURCE_ROOT')
+    if override is not None and not override.strip():
+        raise ValueError('SOURCE802_SOURCE_ROOT must not be blank')
+    candidates = [Path(override).expanduser().resolve()] if override is not None else Path(__file__).resolve().parents
+    for candidate in candidates:
+        if (candidate / 'backend/alembic.ini').is_file() and (candidate / 'frontend').is_dir():
+            return candidate
+    raise ValueError('Set SOURCE802_SOURCE_ROOT to the reviewed checkout containing backend/alembic.ini and frontend')
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('name')
+    parser.add_argument('mode', choices=('normal', 'optimized'))
+    parser.add_argument('selection', nargs='+')
+    args = parser.parse_args()
+    if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,100}', args.name) is None:
+        parser.error('name must be a safe receipt basename')
+    try:
+        root = source_root()
+        configured = os.getenv('SOURCE802_EVIDENCE_ROOT')
+        if configured is not None and not configured.strip():
+            raise ValueError('SOURCE802_EVIDENCE_ROOT must not be blank')
+        evidence = Path(configured).expanduser().resolve() if configured is not None else Path(tempfile.mkdtemp(prefix='source802-replay-'))
+        evidence.mkdir(parents=True, exist_ok=True)
+        outputs = [evidence / (args.name + suffix) for suffix in ('.txt', '.command.json', '.xml')]
+        if any(path.exists() or path.is_symlink() for path in outputs):
+            raise ValueError('Replay receipt already exists; use a fresh name or evidence directory')
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
+    command = ['docker', 'run', '--rm', '--network', 'container:source802-pg', '--cpus', '1',
+        '--memory', os.getenv('SOURCE802_TEST_MEMORY', '512m'), '--pids-limit', '256',
+        '-v', str(root) + ':/workspace:ro', '-v', str(evidence) + ':/evidence', '-w', '/workspace/backend']
+    for key, value in dict(DATABASE_URL='postgresql+psycopg2://source802_owned@127.0.0.1:55412/b83_social_test',
+        SOCIAL_TEST_DATABASE_URL='postgresql+psycopg2://source802_compat_owned@127.0.0.1:62124/social_domain_test',
+        B83_SOCIAL_TEST_DB_URL='postgresql+psycopg2://source802_owned@127.0.0.1:55412/b83_social_test',
+        PYTHONPATH='/workspace/backend:/workspace/backend/tests:/workspace/backend/tests/social',
+        PYTHONDONTWRITEBYTECODE='1', SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED='false',
+        SOCIAL_GENERATION_HOOK_ENABLED='false', SOCIAL_MEDIA_ENABLED='false', SOCIAL_NATIVE_ENABLED='false',
+        SOCIAL_WORKER_SUPERVISOR_ENABLED='false').items():
+        command += ['-e', key + '=' + value]
+    command += ['admin-redesign-python-runtime:local', 'python'] + (['-O'] if args.mode == 'optimized' else [])
+    command += ['-m', 'pytest'] + args.selection + ['-q', '-p', 'no:cacheprovider', '--junitxml=/evidence/' + args.name + '.xml']
+    start = time.time()
+    result = subprocess.run(command, capture_output=True, text=True, cwd=root)
+    (evidence / (args.name + '.txt')).write_text(result.stdout + result.stderr)
+    (evidence / (args.name + '.command.json')).write_text(json.dumps(dict(command=command,
+        exit_code=result.returncode, seconds=time.time() - start), indent=2))
+    print('Replay evidence: ' + str(evidence))
+    print((result.stdout + result.stderr)[-11000:])
+    return result.returncode
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

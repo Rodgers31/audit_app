@@ -142,6 +142,29 @@ class CataloguedNativeReportEvidence(NativeReportEvidence):
         return self
 
 
+class OagCataloguedReportEvidence(CataloguedNativeReportEvidence):
+    """A combined volume's dated OAG entry, with no PDF publication claim."""
+    native_domain: Literal['audits']
+    institution: Literal['executives', 'assemblies']
+
+    @model_validator(mode='after')
+    def bound(self):
+        from importlib import import_module
+        module = import_module('backend.seeding.oag_report_catalogue' if __package__.startswith('backend.') else 'seeding.oag_report_catalogue')
+        authority = import_module('backend.seeding.native_report_authority' if __package__.startswith('backend.') else 'seeding.native_report_authority')
+        scope = module.scope_fields(self.period, self.institution)
+        if (self.catalogue_url != module.catalogue_url(self.period)
+                or not authority.official_url(self.document_url, 'audits')
+                or self.publisher != authority.DOMAINS['audits'][2]
+                or self.canonical_url != 'https://www.auditgava.com/audits'
+                or self.entity != scope['entity'] or self.scope_key != scope['scope_key']
+                or self.period_start.isoformat() != scope['start'] or self.period_end.isoformat() != scope['end']
+                or not self.period_end <= self.catalogued_on <= self.retrieved_at.date()
+                or self.verified_at < self.retrieved_at):
+            raise ValueError('Exact OAG combined catalogue scope and chronology required')
+        return self
+
+
 class NativeFinancialEvidence(StrictModel):
     native_domain: Literal['national_budget', 'revenue_by_source', 'pending_bills']
     record_id: Annotated[int, Field(strict=True, gt=0, le=2147483647)]
@@ -172,7 +195,7 @@ class SourceObservation(StrictModel):
     publishable: StrictBool
     correction_pending: StrictBool = False
     facts: Annotated[tuple[FactEvidence, ...], Field(max_length=10)] = ()
-    report: CataloguedNativeReportEvidence | NativeReportEvidence | ReportEvidence | None = None
+    report: OagCataloguedReportEvidence | CataloguedNativeReportEvidence | NativeReportEvidence | ReportEvidence | None = None
     financial: NativeFinancialEvidence | None = None
 
     @model_serializer(mode='wrap')

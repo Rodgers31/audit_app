@@ -400,6 +400,23 @@ def run(
 
     observation = None
     with create_http_client(settings) as client:
+        # One bounded metadata acquisition per fiscal edition, including a
+        # remembered refusal. Never refetch once per county or retry an outage.
+        catalogue_receipts = {}
+        def load_catalogue(period):
+            from ...oag_report_catalogue import catalogue_url, fetch_catalogue_receipt
+            if period not in catalogue_receipts:
+                facts = {'url': catalogue_url(period)}
+                try:
+                    catalogue_receipts[period] = fetch_catalogue_receipt(client, period)
+                    facts['status'] = 'captured'
+                except Exception as exc:
+                    catalogue_receipts[period] = None
+                    facts.update(status='unavailable', reason=type(exc).__name__)
+                    logger.warning('OAG catalogue unavailable: %s', type(exc).__name__)
+                metadata.setdefault('oag_report_catalogues', {})[period] = facts
+            return catalogue_receipts[period]
+
         if context.audits_observe_listing:
             from .observation import observe_listing, verify_adopted_volume
 
@@ -836,8 +853,10 @@ def run(
                 from ...pdf_evidence import receipt_for_pdf
                 authority, authority_reason = None, "native_report_date_or_scope_unavailable"
                 if doc.status == DocumentStatus.AVAILABLE and doc.file_path:
-                    report_receipt = receipt_for_pdf(client, settings, Path(doc.file_path), doc.url, "native-report-input-v1")
-                    authority, authority_reason = capture_pdf_report(Path(doc.file_path), report_receipt, domain="audits")
+                    report_receipt = receipt_for_pdf(client, settings, Path(doc.file_path), doc.url, "native-report-input-v1",
+                                                    session=session, context=context, domain='audits')
+                    authority, authority_reason = capture_pdf_report(Path(doc.file_path), report_receipt, domain="audits",
+                                                                   catalogue_loader=load_catalogue)
                 doc_stat["native_report_authority_reason"] = authority_reason
                 doc_stat["native_report_record_id"] = persist_native_report(
                     session, doc, authority, context=context, domain="audits")

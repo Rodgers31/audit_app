@@ -1,0 +1,319 @@
+{
+  "at": "2026-10-31T08:07:04.044713+00:00",
+  "jobs": [
+    {
+      "id": 3554,
+      "domain": "audits",
+      "status": "COMPLETED",
+      "mode": "live",
+      "records": null,
+      "financial": {
+        "state": "unavailable",
+        "reason": "financial_adapter_unavailable",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 0,
+        "unchanged": 0,
+        "drafts_created": 0
+      },
+      "reports": {
+        "state": "unavailable",
+        "reason": "source_lineage_unavailable",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 0,
+        "unchanged": 0,
+        "drafts_created": 0
+      },
+      "documents": [
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+          "doc_id": 2542,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+          "doc_id": 2541,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+          "doc_id": 2539,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+          "doc_id": 2540,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+          "doc_id": 2537,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+          "doc_id": 2536,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2021-2022-VOLUME-1.pdf",
+          "doc_id": 2535,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/07/AUDITOR-GENERAL-S-REPORT-ON-THE-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLES-2021-2022-VOLUME-2.pdf",
+          "doc_id": 2534,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        },
+        {
+          "url": "https://www.oagkenya.go.ke/wp-content/uploads/2023/02/REPORT-OF-THE-AUDITOR-GENERAL-FOR-THE-COUNTY-GOVERNMENTS-FOR-THE-YEAR-2020-2021-_VOLUME-II-COUNTY-ASSEMBLIES.pdf",
+          "doc_id": 2396,
+          "dataset": "oag_county_audits",
+          "native_report_record_id": null,
+          "native_report_authority_reason": "native_report_date_or_scope_unavailable"
+        }
+      ]
+    },
+    {
+      "id": 3571,
+      "domain": "national_budget",
+      "status": "COMPLETED",
+      "mode": "fixture",
+      "records": null,
+      "financial": null,
+      "reports": null,
+      "documents": []
+    },
+    {
+      "id": 3566,
+      "domain": "revenue_by_source",
+      "status": "COMPLETED",
+      "mode": "live",
+      "records": {
+        "revenue_by_source": [
+          11117
+        ]
+      },
+      "financial": {
+        "state": "disabled",
+        "reason": "financial_environment_disabled",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 0,
+        "unchanged": 0,
+        "drafts_created": 0
+      },
+      "reports": {
+        "state": "completed",
+        "reason": "COMMITTED_EVIDENCE_CONSUMED",
+        "refused": 0,
+        "baselines": 0,
+        "processed": 1,
+        "unchanged": 1,
+        "drafts_created": 0
+      },
+      "documents": []
+    }
+  ],
+  "revenue": [
+    [
+      77,
+      "FY 2025/26",
+      "Corporation Tax",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      80,
+      "FY 2025/26",
+      "Customs & Import Duty",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      79,
+      "FY 2025/26",
+      "Excise Duty",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      81,
+      "FY 2025/26",
+      "Other Tax Revenue",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      76,
+      "FY 2025/26",
+      "PAYE",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      109,
+      "FY 2025/26",
+      "Total Agency Revenue",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      108,
+      "FY 2025/26",
+      "Total Exchequer Revenue",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      107,
+      "FY 2025/26",
+      "Total KRA Collections",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      78,
+      "FY 2025/26",
+      "VAT",
+      2550,
+      false,
+      null,
+      "3566"
+    ],
+    [
+      71,
+      "FY 2024/25",
+      "Corporation Tax",
+      1851,
+      false,
+      null,
+      null
+    ]
+  ],
+  "national": [
+    [
+      4869,
+      "Social Protection, Culture and Recreation",
+      "96350000000.00",
+      "91570000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4868,
+      "Public Administration and International Relations",
+      "377500000000.00",
+      "346540000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4867,
+      "National Security",
+      "291400000000.00",
+      "289730000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4866,
+      "Health",
+      "164920000000.00",
+      "157200000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4865,
+      "Governance, Justice, Law and Order",
+      "328210000000.00",
+      "322210000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4864,
+      "General Economic and Commercial Affairs",
+      "74940000000.00",
+      "62390000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4863,
+      "Environment Protection, Water, and Natural Resources",
+      "115350000000.00",
+      "105040000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4862,
+      "Energy, Infrastructure and ICT",
+      "608170000000.00",
+      "546850000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4861,
+      "Education",
+      "757500000000.00",
+      "745440000000.00",
+      2429,
+      false,
+      null
+    ],
+    [
+      4860,
+      "Agriculture, Rural and Urban Development",
+      "117410000000.00",
+      "103980000000.00",
+      2429,
+      false,
+      null
+    ]
+  ]
+}

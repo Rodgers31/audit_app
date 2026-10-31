@@ -1,0 +1,10 @@
+{
+  "command": [
+    "python3",
+    "-O",
+    "test_portable_replay.py"
+  ],
+  "exit_code": 0,
+  "cases": 22,
+  "actual_containers_started": 0
+}

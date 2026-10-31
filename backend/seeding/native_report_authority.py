@@ -25,6 +25,25 @@ DOMAINS = {
     'audits': ('oag', ('oagkenya.go.ke', 'www.oagkenya.go.ke'), 'Office of the Auditor-General', '/audits'),
     'pending_bills': ('cob', ('cob.go.ke', 'www.cob.go.ke'), 'Office of the Controller of Budget (OCOB)', '/debt'),
 }
+
+
+def catalogue_contract(domain):
+    if domain == 'revenue_by_source':
+        from . import kra_report_catalogue
+        return kra_report_catalogue
+    if domain == 'audits':
+        from . import oag_report_catalogue
+        return oag_report_catalogue
+    raise ValueError('Reviewed publisher catalogue contract required')
+
+
+def validate_catalogue(value, receipt, *, started=None, finished=None):
+    if value.get('catalogue_authority') is None:
+        if any(k in value for k in ('evidence_kind', 'catalogued_on', 'catalogue_url')):
+            raise ValueError('Catalogue binding required')
+        return
+    catalogue_contract(value['domain']).validate_stored_catalogue(
+        value, receipt, started=started, finished=finished)
 _TOKEN = object()
 _DATE_LABEL = re.compile(r"^(?:Publication date|Published on):[ \t]*(.+?)[ \t]*$", re.I)
 _MONTHS = {name.lower():i for i,name in enumerate(('January','February','March','April','May','June','July','August','September','October','November','December'),1)}
@@ -134,12 +153,12 @@ def _capture(receipt, *, domain, entity, scope_key, period, start, end, publishe
         from .cob_report_metadata import validate_stored_post
         validate_stored_post(value, receipt)
     if catalogue is not None:
-        from .kra_report_catalogue import VERSION as catalogue_version, validate_stored_catalogue
-        retained_publisher = copy_receipt(publisher_receipt, parser_version=catalogue_version)
+        contract = catalogue_contract(domain)
+        retained_publisher = copy_receipt(publisher_receipt, parser_version=contract.VERSION)
         seal_receipt(retained_publisher, [catalogue])
         value.update(evidence_kind='publisher_catalogue', catalogued_on=catalogue['catalogued_on'],
             catalogue_url=catalogue['catalogue_url'], catalogue_authority={**catalogue,'receipt':dict(retained_publisher)})
-        validate_stored_catalogue(value, receipt)
+        validate_catalogue(value, receipt)
     captured = copy_receipt(receipt, parser_version=VERSION)
     seal_receipt(captured, [value])
     return NativeReportAuthority(value, captured, token=_TOKEN, publisher_receipt=retained_publisher)
@@ -185,7 +204,8 @@ def capture_kra_release(receipt):
         return None, 'native_report_date_or_scope_unavailable'
 
 
-def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, publisher_loader=None):
+def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, publisher_loader=None,
+                       catalogue_loader=None):
     """Read the first three actual PDF pages; caller text/cache is never authority."""
     if domain not in ('national_budget', 'audits', 'pending_bills'):
         return None, 'native_report_domain_unavailable'
@@ -193,18 +213,11 @@ def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, p
         body = retained_body(receipt, domain, 'application/pdf')
         if path.read_bytes() != body:
             raise ValueError('PDF input differs from retained bytes')
-        import io
-        import pdfplumber
+        from .native_report_cover import extract_cover_texts
         from pdfminer.pdfexceptions import PDFException
         from pdfplumber.utils.exceptions import PdfminerException
-        pages = []
         try:
-            with pdfplumber.open(io.BytesIO(body), pages=[1,2,3]) as pdf:
-                for page in pdf.pages:
-                    page_text = page.extract_text() or ''
-                    if len(page_text) > 100000:
-                        raise ValueError('Bounded cover text required')
-                    pages.append((page.page_number, page_text))
+            pages = extract_cover_texts(body)
         except (PDFException, PdfminerException):
             raise ValueError('Malformed retained PDF') from None
         candidates = [(page, line.strip(), _DATE_LABEL.fullmatch(line.strip()))
@@ -226,6 +239,14 @@ def capture_pdf_report(path: Path, receipt, *, domain, publisher_receipt=None, p
             entity, scope_key = (('National Government of Kenya', 'annual-budget') if domain == 'national_budget'
                                  else ('County Governments of Kenya', 'annual-county-payables-report'))
         else:
+            from .oag_report_catalogue import combined_scope, capture_catalogue_report
+            combined = combined_scope(pages)
+            if combined is not None:
+                if published is not None:
+                    raise ValueError('Separate combined publication contract required')
+                if publisher_receipt is None and catalogue_loader is not None:
+                    publisher_receipt = catalogue_loader(combined['period'])
+                return capture_catalogue_report(receipt, publisher_receipt, pages)
             scopes = re.findall(r'REPORT OF THE AUDITOR.GENERAL ON (.{3,160}?) FOR THE YEAR ENDED 30 JUNE (20\d{2})\b', text, re.I)
             if len(set(scopes)) != 1:
                 raise ValueError('Exact auditee and annual report scope required')
@@ -304,8 +325,12 @@ def _audit_series_head(session, previous_id, candidate, value):
             or re.fullmatch('[a-f0-9]{64}', old['document_checksum']) is None):
         raise ValueError('Exact audit series scope required')
     try:
-        before = tuple(date.fromisoformat(old[k]) for k in ('period_start','period_end','published_on'))
-        after = tuple(date.fromisoformat(value[k]) for k in ('period_start','period_end','published_on'))
+        kind = value.get('evidence_kind', 'publication')
+        if old.get('evidence_kind', 'publication') != kind:
+            raise ValueError('Conflicting audit evidence kinds')
+        day = 'catalogued_on' if kind == 'publisher_catalogue' else 'published_on'
+        before = tuple(date.fromisoformat(old[k]) for k in ('period_start','period_end',day))
+        after = tuple(date.fromisoformat(value[k]) for k in ('period_start','period_end',day))
     except (KeyError, TypeError, ValueError):
         raise ValueError('Full audit edition chronology required') from None
     if not before[0] <= before[1] <= before[2]:
@@ -364,13 +389,14 @@ def persist_native_report(session, source, authority, *, context, domain):
     if 'retained_pdf_validation' in authority.receipt and authority.publisher_receipt is None:
         raise ValueError('Current publisher post required for retained reuse')
     if authority.publisher_receipt is not None:
-        retained_body(authority.publisher_receipt, domain, 'text/html')
+        metadata_type = ('application/rss+xml' if domain == 'audits'
+                         and 'catalogue_authority' in authority.value else 'text/html')
+        retained_body(authority.publisher_receipt, domain, metadata_type)
         context_value = metadata[0]
         if (not receipt_is_sealed(authority.publisher_receipt) or type(context_value) is not dict
                 or digest(context_value['receipt']) != digest(dict(authority.publisher_receipt))):
             raise ValueError('Intact retained publisher metadata required')
-        from .kra_report_catalogue import validate_stored_catalogue
-        validate_stored_catalogue(authority.value, authority.receipt)
+        validate_catalogue(authority.value, authority.receipt)
     country_iso = session.scalar(select(Country.iso_code)
         .where(Country.id == source.country_id).with_for_update(read=True))
     if country_iso != 'KEN':
@@ -391,7 +417,10 @@ def persist_native_report(session, source, authority, *, context, domain):
         from .cob_report_metadata import validate_stored_post
         from datetime import timezone
         started, finished = aware(job.started_at), datetime.now(timezone.utc)
-        validate_stored_post(authority.value, authority.receipt, started=started, finished=finished)
+        if domain == 'audits':
+            validate_catalogue(authority.value, authority.receipt, started=started, finished=finished)
+        else:
+            validate_stored_post(authority.value, authority.receipt, started=started, finished=finished)
         validate_retained_pdf(session, source, authority.receipt, job,
             started=started, finished=finished)
     ext = persist_receipt(session, source, authority.receipt, extractor=VERSION)

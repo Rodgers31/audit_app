@@ -1,0 +1,27 @@
+test_any_single_existing_receipt_prevents_child (__main__.PortableReplay) ... ok
+test_companion_accepts_documented_extracted_py_root_helper (__main__.PortableReplay) ... ok
+test_companion_missing_or_empty_inputs_refuse (__main__.PortableReplay) ... ok
+test_companion_runs_only_committed_names_and_selection (__main__.PortableReplay) ... ok
+test_companion_uses_fresh_names_on_repeat (__main__.PortableReplay) ... ok
+test_dangling_receipt_symlink_refuses_without_creating_target (__main__.PortableReplay) ... ok
+test_default_checkout_root_is_inferred_from_script_not_author_machine (__main__.PortableReplay) ... ok
+test_default_receipt_directory_is_fresh_on_repeat (__main__.PortableReplay) ... ok
+test_detached_helper_cannot_select_valid_checkout_from_cwd (__main__.PortableReplay) ... ok
+test_empty_explicit_evidence_override_refuses (__main__.PortableReplay) ... ok
+test_empty_explicit_source_override_never_falls_back_to_cwd (__main__.PortableReplay) ... ok
+test_evidence_file_refuses (__main__.PortableReplay) ... ok
+test_existing_receipts_are_never_clobbered (__main__.PortableReplay) ... ok
+test_explicit_source_and_receipt_roots_are_used (__main__.PortableReplay) ... ok
+test_failed_child_exit_is_propagated (__main__.PortableReplay) ... ok
+test_failed_child_receipt_preserves_exact_nonzero_status (__main__.PortableReplay) ... ok
+test_invalid_receipt_names_refuse (__main__.PortableReplay) ... ok
+test_missing_evidence_directory_is_created (__main__.PortableReplay) ... ok
+test_source_override_file_refuses (__main__.PortableReplay) ... ok
+test_source_override_incomplete_marker_refuses (__main__.PortableReplay) ... ok
+test_source_override_missing_directory_refuses (__main__.PortableReplay) ... ok
+test_unknown_mode_refuses_before_docker (__main__.PortableReplay) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 2.511s
+
+OK

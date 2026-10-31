@@ -1,0 +1,20 @@
+import hashlib,json
+from pathlib import Path
+import httpx,pytest
+from services.receipt_store import LocalReceiptStore
+from services.response_receipts import capture_response
+from test_b83_generation_postgres import pg
+from native_worker_fixture import restricted
+import test_oag_catalogue_postgres as controls
+ROOT=Path('/evidence')
+@pytest.fixture(autouse=True)
+def genuine(monkeypatch):
+ def pair(tmp_path,*,kind,**kwargs):
+  path=ROOT/('oag-'+kind+'-2023-24.pdf');meta=json.loads(path.with_suffix('.json').read_text());body=path.read_bytes()
+  if hashlib.sha256(body).hexdigest()!=meta['sha256']:raise AssertionError('Genuine body mismatch')
+  receipt=capture_response(httpx.Response(200,content=body,headers={'content-type':'application/pdf'},request=httpx.Request('GET',meta['url'])),LocalReceiptStore(tmp_path/'receipt'),source_kind='pdf')
+  return path,receipt,None
+ monkeypatch.setattr(controls,'input_pair',pair)
+def test_actual_both_volume_producers(pg,monkeypatch,tmp_path):controls.test_volume_producer_current_reader_caption_and_preview_stay_off(pg,monkeypatch,tmp_path)
+def test_actual_retained_both_volume_replay(pg,monkeypatch,tmp_path):controls.test_retained_pdf_replay_rechecks_catalogue_without_new_release(pg,monkeypatch,tmp_path)
+def test_actual_restricted_digest(restricted,monkeypatch,tmp_path):controls.test_restricted_digest_accepts_current_catalogue_and_refuses_changed_job(restricted,monkeypatch,tmp_path)

@@ -1,0 +1,29 @@
+{
+  "scope": "Portable replay helpers (#862 review) and two-PR merge-census helper only. No application acceptance rerun.",
+  "verdict": "Scoped pass on final pinned helpers; ready for a fresh real census and normal merge attempts by the owner. This receipt does not authorize an admin override.",
+  "normal_test_methods": 35,
+  "optimized_test_methods": 35,
+  "zero_skips": true,
+  "replay_helper_sha256": {
+    "run-root-tests.py.bytes": "f261d9a5642984781e9f223f5baf5dca61aba1dcc6dfaefecf4341de9a38b3bc",
+    "run-final-selection.py.bytes": "2d94e8e1fb687d03c0499cb2b1e8b951f3ade0fa08b3c79a09362a67171a3d6a",
+    "selection.txt": "15ef3ae64ea94a47e4dca439c7c91154d815ffa4fc145507066fd24c1f598196"
+  },
+  "merge_guard_sha256": "d27f1da42207237a68c066498016ccc900b0f2f1ed930b159c6ac21e7dc0401e",
+  "source_before_after_match": true,
+  "actual_docker_calls": 0,
+  "actual_containers_created": 0,
+  "actual_gh_calls": 0,
+  "credentials_created": 0,
+  "project_source_edits_by_reviewer": 0,
+  "temporary_cli_directories_remaining": [],
+  "backend_diff_paths": [],
+  "historical_receipts_or_peer_packets_changed": [],
+  "original_legacy_helper_archive_verified": "ORIGINAL-ARCHIVE-VERIFICATION.json",
+  "resolved_findings": [
+    "Original nonportable checkout/companion inputs, silent invalid mode and receipt overwrite: observed5RED+1failed-child control pass.",
+    "First repair accepted blank source override and followed dangling receipt output symlink: observed2RED and direct outside-evidence target creation; final refuses both plus blank evidence override before child.",
+    "Initial adapted merge guard accepted string-false resolved state and bool-as-count: observed2RED; final strict bool/count guards refuse. These were malformed-census hardening, not a demonstrated normal GitHub GraphQL bypass."
+  ],
+  "authorization_boundary": "Known protected-branch rejection returns maintainer_override_required with one normal attempt and no admin command. Only exact allow_override=True in intercepted tests exercises override; it rereads the full census and refuses late findings/head changes. Integer1/string true never authorize. No real override permission was supplied."
+}

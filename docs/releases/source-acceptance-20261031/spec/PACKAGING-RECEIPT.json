@@ -1,0 +1,64 @@
+{
+  "cached_attributes": "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml: text: unset\nbackend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml: whitespace: -blank-at-eol\nbackend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml: text: unset\nbackend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml: whitespace: -blank-at-eol\nbackend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml: text: unset\nbackend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml: whitespace: -blank-at-eol\nbackend/seeding/oag_report_catalogue.py: text: set\nbackend/seeding/oag_report_catalogue.py: whitespace: unspecified\n",
+  "checked_git_HEAD": "6036820d7b4c771c88f788b4e1135ce4f48611a0",
+  "exact_staged_paths": [
+    ".gitattributes",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml"
+  ],
+  "final_sealed_receipt_sha256": "3bced0f5ec0800d5110a5ce1f7e8353f70f5b2843dc77166780201ad472b0042",
+  "fixture_blobs": {
+    "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml": {
+      "git_index_oid": "e1feb90a4ed19627440c51b4c6ed193e57cc2d6b",
+      "sha256": "ad02c008ee37b6231e8b218e7b320aed2ae98c3d1e59a6af4acd57972db24a64",
+      "working_sha256": "ad02c008ee37b6231e8b218e7b320aed2ae98c3d1e59a6af4acd57972db24a64"
+    },
+    "backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml": {
+      "git_index_oid": "4533b9f0e361e7545eab5d7a493c6047e8ab85d9",
+      "sha256": "0dc4db18dac0ee7c6b786bb1ad4cbb4edb6cd3889ac10616605f6c80d8289e28",
+      "working_sha256": "0dc4db18dac0ee7c6b786bb1ad4cbb4edb6cd3889ac10616605f6c80d8289e28"
+    },
+    "backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml": {
+      "git_index_oid": "5845b360d6933c8652970127f6e7d2d10fcc3ec4",
+      "sha256": "d3e30159623fa6493994ba59b620e6c8642787e2649689b71485dc010bd0dd6c",
+      "working_sha256": "d3e30159623fa6493994ba59b620e6c8642787e2649689b71485dc010bd0dd6c"
+    }
+  },
+  "git_checks": [
+    {
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "index_blob_mismatches": [],
+  "index_entries_sha256": "af7fa61facea0923fd1ff15986c756bd38483bb449e1a249d38fc290c8ad51b2",
+  "original_committed_HEAD_red_mismatches": [
+    "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml"
+  ],
+  "previous_sealed_packet_unchanged": true,
+  "reviewed_source_mapping_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "scope": "Git raw indexed-byte/attributes/whitespace verification only; no application tests rerun, code changes, commits, network, production or activation",
+  "scoped_gitattributes_diff": "diff --git a/.gitattributes b/.gitattributes\nindex 4fd7e82..aeefa14 100644\n--- a/.gitattributes\n+++ b/.gitattributes\n@@ -27,4 +27,7 @@\n *.zip binary\n *.gz binary\n *.tgz binary\n-*.7z binary\n\\ No newline at end of file\n+*.7z binary\n+\n+# Retained official RSS response bytes, including publisher whitespace/CRLF.\n+backend/tests/fixtures/oag/*.xml -text whitespace=-blank-at-eol\n",
+  "verdict": "packaging_only_pass; index_ready_for_owner_amend",
+  "verified_index_files": 1476,
+  "verified_unix": 1793435998.005457,
+  "working_byte_mismatches": []
+}

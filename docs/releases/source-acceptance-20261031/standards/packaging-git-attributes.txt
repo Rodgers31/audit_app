@@ -1,0 +1,8 @@
+backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml: text: unset
+backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml: whitespace: -blank-at-eol
+backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml: text: unset
+backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml: whitespace: -blank-at-eol
+backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml: text: unset
+backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml: whitespace: -blank-at-eol
+backend/tests/fixtures/unrelated.xml: text: auto
+backend/tests/fixtures/unrelated.xml: whitespace: unspecified

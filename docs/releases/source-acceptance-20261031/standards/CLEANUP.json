@@ -1,0 +1,32 @@
+{
+  "owned_removed": [
+    "native802-standards-baseline-memory",
+    "native802-standards-cover-executives",
+    "native802-standards-current-normal",
+    "native802-standards-current-optimized",
+    "native802-standards-final-cover-national-normal",
+    "native802-standards-final-cover-national-optimized",
+    "native802-standards-final-cover-oag-assemblies-2022-23-normal",
+    "native802-standards-final-cover-oag-assemblies-2022-23-optimized",
+    "native802-standards-final-cover-oag-assemblies-2023-24-normal",
+    "native802-standards-final-cover-oag-assemblies-2023-24-optimized",
+    "native802-standards-final-cover-oag-assemblies-2024-25-normal",
+    "native802-standards-final-cover-oag-assemblies-2024-25-optimized",
+    "native802-standards-final-cover-oag-executives-2022-23-normal",
+    "native802-standards-final-cover-oag-executives-2022-23-optimized",
+    "native802-standards-final-cover-oag-executives-2023-24-normal",
+    "native802-standards-final-cover-oag-executives-2023-24-optimized",
+    "native802-standards-final-cover-oag-executives-2024-25-normal",
+    "native802-standards-final-cover-oag-executives-2024-25-optimized",
+    "native802-standards-pg-20261031",
+    "native802-standards-prototype-memory"
+  ],
+  "owned_remaining": [],
+  "credential_files_absent": true,
+  "credential_scan_unexpected_matches": 0,
+  "restricted_role_leftovers": 0,
+  "protected_fixtures_unchanged": {
+    "admin-redesign-pg": "72e0925f74305aaffe248b85301f6a334ef3b79905ccc269fa49c8df23ef2264",
+    "admin-redesign-node": "dfd6452f906a598691eb4d9efa831606d0757712fbdaea5a703f72868791af78"
+  }
+}
