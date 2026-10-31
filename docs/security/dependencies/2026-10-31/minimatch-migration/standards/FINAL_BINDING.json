@@ -1,0 +1,188 @@
+{
+  "at": "2026-10-31T23:29:15.900222+00:00",
+  "candidate": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app",
+  "branch": "codex/dependency-security-weekly",
+  "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+  "head_tree": "996bd659ea72ed218529aeade69eac571c7fa8eb",
+  "reviewed_delta_sha256": "fabf946b157b6007c52c983abd910033a7006e85a154bbf26de6b26881347a28",
+  "executable_inputs": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "493bc5a69f9e3d2458f31dcf51167ad2e40909a76f1ea2736835f30df61b4bad",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "changed_files_observed": {
+    "docs/security/DEPENDENCY_FOLLOWUP_2026_10_31.md": {
+      "sha256": "a29039807aa8c20e137a4937a7efbd134160a4ff2234d519ba9e2b7a5adac2d5",
+      "staged_sha256": "a29039807aa8c20e137a4937a7efbd134160a4ff2234d519ba9e2b7a5adac2d5",
+      "matches_staged": true,
+      "bytes": 10752
+    },
+    "docs/security/DEPENDENCY_MATCHER_MIGRATION_2026_10_31.md": {
+      "sha256": "c95f16c4597eeb1d88e573fcf885b93bd57e4f387d2705e76ea9b79dc34da59f",
+      "staged_sha256": "c95f16c4597eeb1d88e573fcf885b93bd57e4f387d2705e76ea9b79dc34da59f",
+      "matches_staged": true,
+      "bytes": 8910
+    },
+    "frontend/package-lock.json": {
+      "sha256": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+      "staged_sha256": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+      "matches_staged": true,
+      "bytes": 437934
+    },
+    "frontend/package.json": {
+      "sha256": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+      "staged_sha256": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+      "matches_staged": true,
+      "bytes": 4959
+    },
+    "frontend/scripts/apply-tooling-repairs.cjs": {
+      "sha256": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+      "staged_sha256": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+      "matches_staged": true,
+      "bytes": 18565
+    },
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": {
+      "sha256": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e",
+      "staged_sha256": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e",
+      "matches_staged": true,
+      "bytes": 2817
+    },
+    "frontend/scripts/lint-matcher-migration.test.cjs": {
+      "sha256": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+      "staged_sha256": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+      "matches_staged": true,
+      "bytes": 8663
+    },
+    "frontend/scripts/tooling-repair-install.test.cjs": {
+      "sha256": "493bc5a69f9e3d2458f31dcf51167ad2e40909a76f1ea2736835f30df61b4bad",
+      "staged_sha256": "493bc5a69f9e3d2458f31dcf51167ad2e40909a76f1ea2736835f30df61b4bad",
+      "matches_staged": true,
+      "bytes": 21371
+    },
+    "frontend/scripts/tooling-repairs.json": {
+      "sha256": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+      "staged_sha256": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+      "matches_staged": true,
+      "bytes": 318124
+    }
+  },
+  "all_prepared_guard_probes_bind_final_helper": true,
+  "all_15_executed_plugin_callsite_hashes_equal_final_manifest": true,
+  "entire_effective_configuration_parity": {
+    "files": 366,
+    "different": 0,
+    "unique_configs": 2,
+    "configured_rules": 54,
+    "enabled_rules": 46,
+    "all_local_rule_source_and_configuration_bytes_unchanged": true,
+    "permanent_baseline_matches_independent_snapshot": true
+  },
+  "caller_cases": {
+    "raw_originals_with_modern_matcher_fail": 30,
+    "raw_class_only_controls_pass": 2,
+    "baseline_and_final_equal": 32
+  },
+  "installer_cases": {
+    "total": 52,
+    "refused_without_package_tree_changes": 50,
+    "cold_repaired_files": 25,
+    "idempotent_repeat_changes": 0,
+    "full_check_changes": 0,
+    "explicit_omitted_packages": 7
+  },
+  "cache_cases": {
+    "baseline_flat3_rimraf3_pass": 9,
+    "candidate_flat3_rimraf6_pass": 9,
+    "rejected_flat4_alternative_fail": 2
+  },
+  "provenance": {
+    "new_inventory_original_files_verified_against_official_lock_tars": 1103,
+    "new_inventory_package_installations_verified": 11,
+    "complete_repair_inventory_regular_files": 1161,
+    "explicit_cli_links": 3,
+    "modern_entry_tar_verification": [
+      {
+        "caller": "eslint",
+        "name": "minimatch",
+        "version": "11.0.3",
+        "locked_location": "node_modules/minimatch",
+        "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.3.tgz",
+        "integrity": "sha512-iny/40PEGkNJQ5/Pv6z3nm6FbRAby32GeZRjCUJk2WnNDbgPSTcdI+DDvLqsgBdD4cD5sMtMheqPPnehCCa8Nw==",
+        "archive_sha256": "175b2fd9c9d3611e06980341c1be226c7af72b1f414eefb424dca1be9cd9e8ae",
+        "actual_commonjs_export": "dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "installed_entry_matches_official_tar": true,
+        "helper_contains_actual_entry_hash": true
+      },
+      {
+        "caller": "flat-cache",
+        "name": "rimraf",
+        "version": "6.1.3",
+        "locked_location": "node_modules/rimraf",
+        "url": "https://registry.npmjs.org/rimraf/-/rimraf-6.1.3.tgz",
+        "integrity": "sha512-LKg+Cr2ZF61fkcaK1UdkH2yEBBKnYjTyWzTJT6KNPcSPaiT7HSdhtMXQuN5wkTX0Xu72KQ1l8S42rlmexS2hSA==",
+        "archive_sha256": "3e0b33bb2cac954eddbadc3816f72ca7168bb69660fb298f4e5f1c25bf6ea368",
+        "actual_commonjs_export": "dist/commonjs/index.js",
+        "entry_sha256": "527e3ad870373000e45036d4b7dc6b390fa766c0024af0cd2a3b7190de02ca17",
+        "installed_entry_matches_official_tar": true,
+        "helper_contains_actual_entry_hash": true
+      },
+      {
+        "caller": "rimraf",
+        "name": "glob",
+        "version": "14.0.3",
+        "locked_location": "node_modules/glob",
+        "url": "https://registry.npmjs.org/glob/-/glob-14.0.3.tgz",
+        "integrity": "sha512-A1vjIwC3qpdCso45Iw127gnp7sPhqgY8lUQhDrArIs+GbmfaaVPFuoyy7WyLT9EPZCRZ7j7aLdwUhQmHWesEow==",
+        "archive_sha256": "f936d47081e316874bcd0ad9ed38a4275c7a16f5dd3300917231e0030a0acd91",
+        "actual_commonjs_export": "dist/commonjs/index.min.js",
+        "entry_sha256": "e0e787fa4b225c70db7aab2886011cae21855ef232908db066ce054c8f8ded16",
+        "installed_entry_matches_official_tar": true,
+        "helper_contains_actual_entry_hash": true
+      }
+    ]
+  },
+  "locked_matcher_graph": {
+    "minimatch": [
+      {
+        "path": "node_modules/minimatch",
+        "version": "11.0.3",
+        "dev": true
+      }
+    ],
+    "glob": [
+      {
+        "path": "node_modules/glob",
+        "version": "14.0.3",
+        "dev": true
+      }
+    ],
+    "rimraf": [
+      {
+        "path": "node_modules/rimraf",
+        "version": "6.1.3",
+        "dev": true
+      }
+    ]
+  },
+  "resolved_finding": {
+    "priority": "P2",
+    "description": "Metadata alias resolves reviewed package.json while untracked nested original3 executable runs. Original helper falsely succeeds; final helper binds and hashes canonical executable and rejects.",
+    "old_helper": "fdf4ca8f015192138cc443b5c2e630e333cc20d70400cbf6e562ce47e0eb5047",
+    "final_helper": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+    "permanent_tests_red": {
+      "pass": 0,
+      "fail": 2
+    },
+    "permanent_tests_green": {
+      "pass": 2,
+      "fail": 0
+    }
+  },
+  "remaining_implementation_findings": [],
+  "scope": "Independent Standards implementation review. Broader final clean-install/full Jest/type/lint/browser and fresh audit acceptance belongs to the author after review closure and is not claimed as reexecuted by this reviewer. Existing Python/worker/deployment/publishing/financial holds remain. Later report/evidence copies or commit require an additive final-head binding. No source or candidate node_modules edits, installs, remote writes, service starts, merge or deployment by this reviewer."
+}

@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-31T23:45:35.135541+00:00",
+  "candidate": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app",
+  "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+  "prior_implementation_addendum_sha256": "5d034328f83d2abfb6424f8f502d1f1ff764ec6f30bf624ab4985f6c6f43f131",
+  "implementation_unchanged_since_independent_portability_review": true,
+  "executable_inputs": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "final_document_and_author_proof": {
+    "docs/security/DEPENDENCY_MATCHER_MIGRATION_2026_10_31.md": {
+      "sha256": "71853eaf58e8ffdd595e50ee181a9d9fdf036b98f66be7c7ec3fde66f089c2d8",
+      "staged_sha256": "71853eaf58e8ffdd595e50ee181a9d9fdf036b98f66be7c7ec3fde66f089c2d8",
+      "staged_equals_working": true
+    },
+    "docs/security/dependencies/2026-10-31/minimatch-migration/author-acceptance.json": {
+      "sha256": "81b5a35de5fc1b3a495526993cb69bb1f6d88e37547dfcda2fac6eddfd5fa19f",
+      "staged_sha256": null,
+      "staged_equals_working": false
+    },
+    "docs/security/dependencies/2026-10-31/minimatch-migration/npm-full.json": {
+      "sha256": "22374338337065c7f0656d8e0de14f38938734c0a160d40b4208394ab7dcdfd2",
+      "staged_sha256": null,
+      "staged_equals_working": false
+    },
+    "docs/security/dependencies/2026-10-31/minimatch-migration/npm-production.json": {
+      "sha256": "9c756f7670de0c6a982596e5d75e2bf3706c1388e1ded39254b1d953d1548d70",
+      "staged_sha256": null,
+      "staged_equals_working": false
+    }
+  },
+  "author_proof_observed_at": "2026-10-31T23:44:08.587269+00:00",
+  "acceptance_read": {
+    "dependency_controls": 217,
+    "runtime_controls": 9,
+    "jest_suites": 215,
+    "jest_passed": 2904,
+    "jest_existing_pending": 1,
+    "admin_browser_cases": 14,
+    "production_build": "Executed by admin-shell fixture command",
+    "typescript": 0,
+    "lint_without_cache": 0,
+    "complete_npm_tree": 0,
+    "raw_npm_full": 5,
+    "raw_npm_production": 0,
+    "audit_suppressions": []
+  },
+  "all_nine_gates_have_unchanged_source_and_expected_exit": true,
+  "single_author_source_digest": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+  "audit_files_equal_recorded_actual_stdout_hashes": true,
+  "full_audit_counts": {
+    "info": 0,
+    "low": 5,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 5
+  },
+  "production_audit_counts": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "document_review": "Final canonical-root paragraph accurately preserves final-component root/modules refusal and permits legitimate ancestor aliases. The217-control receipt, current-policy/modern-edge distinction, independent-review scope, remaining5low audit entries, Unix-only qualification and persistent holds are accurately stated.",
+  "readback_only_no_application_tests_or_module_mutations": true,
+  "remaining_findings": [],
+  "limits": "Full clean-install/tree/types/no-cache lint/dependency/runtime/Jest/build/browser/audit commands were performed by the author. Standards read and source-bound the final receipt; its independent executable probes are in the prior review/addenda. No new broad or executable tests were run for this readback. No merge/deploy or remote writes."
+}

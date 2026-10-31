@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=384",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-flat-api.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+    "baseline"
+  ],
+  "returncode": 0,
+  "stdout": "{\"mode\":\"baseline\",\"interceptions\":0,\"cases\":{\"**/*.js\":[{\"file\":\".hidden.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"a.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"nested/.hidden.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"nested/a.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]}],\"nested/**/*.{js,ts}\":[{\"file\":\"nested/.hidden.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"nested/a.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"nested/b.ts\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]}],\"nested/**/a.js\":[{\"file\":\"nested/a.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]}],\"*.js\":[{\"file\":\".hidden.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]},{\"file\":\"a.js\",\"errors\":1,\"messages\":[{\"ruleId\":\"no-undef\",\"line\":1,\"column\":1,\"message\":\"'missingReviewSymbol' is not defined.\"}]}]},\"noMatchError\":\"NoFilesFoundError\"}\n",
+  "stderr": "",
+  "wall_seconds": 0.11458395799999987
+}

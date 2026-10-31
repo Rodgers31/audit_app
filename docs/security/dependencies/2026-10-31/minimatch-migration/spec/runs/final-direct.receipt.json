@@ -1,0 +1,14 @@
+{
+  "captured_utc": "2026-10-31T23:30:47.957009+00:00",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=1024",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-core-lint.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+    "direct"
+  ],
+  "returncode": 0,
+  "stdout_sha256": "bb5ddc4138e84a38e0a73db7ceb51f052cbd8d8515d9e7773eea941ffdf7cc46",
+  "stderr": "",
+  "wall_seconds": 2.202485125
+}

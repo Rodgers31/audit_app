@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=256",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-raw-caller-red.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "returncode": 0,
+  "stdout": "{\"installedMinimatch\":\"11.0.3\",\"eslintrcNativeEsmError\":\"The requested module 'minimatch' does not provide an export named 'default'\",\"actualRuleErrors\":[{\"plugin\":\"import\",\"rule\":\"no-internal-modules\",\"error\":\"Error while loading rule 'probe': Cannot read properties of undefined (reading 'makeRe')\\nOccurred while linting review.jsx\"},{\"plugin\":\"react\",\"rule\":\"jsx-pascal-case\",\"error\":\"minimatch is not a function\\nOccurred while linting review.jsx:1\\nRule: \\\"probe\\\"\"},{\"plugin\":\"jsx-a11y\",\"rule\":\"label-has-associated-control\",\"error\":\"(0 , _minimatch.default) is not a function\\nOccurred while linting review.jsx:1\\nRule: \\\"probe\\\"\"}]}\n",
+  "stderr": "",
+  "wall_seconds": 1.826444
+}

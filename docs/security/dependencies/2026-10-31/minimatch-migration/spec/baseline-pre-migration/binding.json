@@ -1,0 +1,16 @@
+{
+  "captured_utc": "2026-10-31T23:03:08.133341+00:00",
+  "note": "Baseline config/diagnostic payload was captured before any node_modules replacement; these still-original core files and authored configs bind that source behavior.",
+  "observed_head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+  "files": {
+    "frontend/.eslintrc.json": "6256a08cde7886afe1053965bcd3333a82befcdc8c9e16df12890e99d82b841b",
+    "frontend/eslint-rules/no-zero-fallback-on-published-figure.js": "c788fea98015a4a5693c97877e2d87514a12a33f2995f6b4f4f9b0c469d2bf7e",
+    "frontend/eslint-rules/require-reason-on-zero-fallback-disable.js": "04185087896f593c830f8002379e2ac23f70ffd302456a39ce1d0b00e9b9125b",
+    "frontend/node_modules/eslint/package.json": "cb3eb0b9246ff4cf36d7f00b76358dc6b1ccab18773ab89c25b9e390041ae9d3",
+    "frontend/node_modules/eslint/lib/cli-engine/file-enumerator.js": "191e5f182bce5ac0950d57991690d28355bfa3fd50c005ae55b7f6f5b93ddd66",
+    "frontend/node_modules/eslint/lib/eslint/eslint-helpers.js": "1f805ffd19096eb128a7379ac7ed5dc1dc52c8f1b1f933313ee60ddcd182e1e2",
+    "frontend/node_modules/@eslint/eslintrc/dist/eslintrc.cjs": "9ca72bf094d2d1b8b46e6a0afa9c5356ff35070537b5c243f0352328fb745bb3",
+    "frontend/node_modules/@humanwhocodes/config-array/api.js": "b3a25265a34ce3132278f9c24cd4f54536baef3a57a44545ffc87458f003726b"
+  },
+  "baseline_payload_sha256": "57567dc20efdfa6d054f22804fe1f99545ee6372fa4981da7035867c80b3da41"
+}

@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/npm",
+    "install",
+    "--package-lock-only",
+    "--ignore-scripts",
+    "--strict-peer-deps",
+    "--no-fund",
+    "--cache",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/npm-cache"
+  ],
+  "cwd": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/strict-eslint10",
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "npm error code ERESOLVE\nnpm error ERESOLVE unable to resolve dependency tree\nnpm error\nnpm error While resolving: undefined@undefined\nnpm error Found: eslint@10.14.0\nnpm error node_modules/eslint\nnpm error   eslint@\"10.14.0\" from the root project\nnpm error\nnpm error Could not resolve dependency:\nnpm error peer eslint@\"^7.23.0 || ^8.0.0 || ^9.0.0\" from eslint-config-next@15.5.28\nnpm error node_modules/eslint-config-next\nnpm error   eslint-config-next@\"15.5.28\" from the root project\nnpm error\nnpm error Fix the upstream dependency conflict, or retry this command with --no-strict-peer-deps, --force, or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.\nnpm error\nnpm error\nnpm error For a full report see:\nnpm error /Users/roger/.codex/visualizations/2026/10/31/***/dependencies/minimatch-migration/spec/npm-cache/_logs/2026-10-31T23_02_30_741Z-eresolve-report.txt\nnpm error A complete log of this run can be found in: /Users/roger/.codex/visualizations/2026/10/31/***/dependencies/minimatch-migration/spec/npm-cache/_logs/2026-10-31T23_02_30_741Z-debug-0.log\n",
+  "wall_seconds": 1.303174833
+}

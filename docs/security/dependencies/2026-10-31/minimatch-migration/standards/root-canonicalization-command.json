@@ -1,0 +1,8 @@
+{
+  "command": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/root_canonicalization_verified.cjs"
+  ],
+  "exit": 0,
+  "setup_note": "Initial canonical-entry symlink was refused at the earlier unsafe-relative-path guard, rather than the narrower expected error labels. Added that correct refusal diagnostic to the harness; no candidate change."
+}

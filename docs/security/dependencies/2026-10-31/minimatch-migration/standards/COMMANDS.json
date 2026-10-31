@@ -1,0 +1,64 @@
+{
+  "runtime": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "plugin_NODE_PATH": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules",
+  "commands": {
+    "snapshot_baseline.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/snapshot_baseline.cjs"
+    ],
+    "compare_effective.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/compare_effective.cjs"
+    ],
+    "plugin_callers.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/plugin_callers.cjs",
+      "raw"
+    ],
+    "plugin_callers.cjs final": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/plugin_callers.cjs",
+      "final"
+    ],
+    "cache_compatibility_verified.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/cache_compatibility_verified.cjs"
+    ],
+    "actual_rule_backtracking.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/actual_rule_backtracking.cjs"
+    ],
+    "metadata_alias_final": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/resolution_probe.cjs",
+      "metadata-alias-resolution-final-results.json",
+      "must-refuse"
+    ],
+    "link_graph_probe.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/link_graph_probe.cjs"
+    ],
+    "verify_original_inventories.py": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/verify_original_inventories.py"
+    ],
+    "verify_matcher_entries.py": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/verify_matcher_entries.py"
+    ],
+    "finalize_binding.py": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/finalize_binding.py"
+    ],
+    "finalize_docs_acceptance.py": [
+      "python3",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/finalize_docs_acceptance.py"
+    ],
+    "root_canonicalization_verified.cjs": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/root_canonicalization_verified.cjs"
+    ]
+  },
+  "note": "Some append-only evidence filenames use wx and require a fresh output name on replay. Scripts and original outputs are retained. Exact new permanent-test commands/environments and exits are in permanent-entry-red-green.json; cache and plugin preparation commands have their own adjacent command receipts."
+}

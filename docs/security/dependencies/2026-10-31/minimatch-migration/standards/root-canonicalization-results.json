@@ -1,0 +1,186 @@
+{
+  "at": "2026-10-31T23:38:54.030Z",
+  "cases": 9,
+  "priorHelperSHA256": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+  "finalHelperSHA256": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+  "sourceHashes": {
+    "package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "output": [
+    {
+      "label": "ancestor-alias-RED-to-GREEN",
+      "previousHelperFailures": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: unsafe package path"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: unsafe package path"
+        }
+      ],
+      "canonicalOperationTargets": true,
+      "applied": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 25
+      },
+      "checked": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "repeated": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      }
+    },
+    {
+      "label": "direct-root-symlink",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: real frontend root required"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: real frontend root required"
+        }
+      ]
+    },
+    {
+      "label": "direct-modules-symlink-through-valid-ancestor",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: real owned node_modules required"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: real owned node_modules required"
+        }
+      ]
+    },
+    {
+      "label": "inner-link-node_modules/braces/lib",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/braces/lib"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/braces/lib"
+        }
+      ]
+    },
+    {
+      "label": "inner-link-node_modules/deepmerge/index.js",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/deepmerge/index.js"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/deepmerge/index.js"
+        }
+      ]
+    },
+    {
+      "label": "inner-link-node_modules/eslint/lib/cli-engine",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint/lib/cli-engine/file-enumerator.js"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint/lib/cli-engine/file-enumerator.js"
+        }
+      ]
+    },
+    {
+      "label": "canonical-matcher-entry-link",
+      "refusedByBothAPIs": true,
+      "entireOwnedTreeUnchanged": true,
+      "diagnostics": [
+        {
+          "api": "planRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: unsafe package path"
+        },
+        {
+          "api": "applyRepairs",
+          "error": "AssertionError [ERR_ASSERTION]: tooling repair: unsafe package path"
+        }
+      ]
+    },
+    {
+      "label": "omission-through-ancestor",
+      "omitted": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [],
+        "absentPackages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "changedFiles": 0
+      },
+      "fullCheckRefused": true
+    },
+    {
+      "label": "canonical-held-lock-preserved",
+      "refusedConcurrentOwner": true,
+      "subsequentColdRepairFiles": 25
+    }
+  ]
+}

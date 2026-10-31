@@ -1,5 +1,10 @@
 # Deepmerge repair and minimatch applicability — 31 October 2026
 
+**Later migration:** [the lint matcher migration](DEPENDENCY_MATCHER_MIGRATION_2026_10_31.md)
+removes the remaining legacy implementation while preserving the existing lint
+policy. Its final graph/audit supersedes the 22-entry snapshot below; that
+snapshot and its evidence remain historical.
+
 This follows the initial [dependency remediation](DEPENDENCY_REMEDIATION_2026_10_31.md)
 on branch `codex/dependency-security-weekly`. It adds a tested local repair for
 deepmerge's returned-object prototype poisoning and investigates the specific

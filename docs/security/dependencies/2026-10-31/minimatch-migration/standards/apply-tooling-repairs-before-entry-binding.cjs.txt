@@ -1,0 +1,289 @@
+'use strict';
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { createRequire } = require('node:module');
+const patchSet = require('./tooling-repairs.json');
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+const digest = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+
+function validateRelativePath(relative) {
+  assert.ok(typeof relative === 'string' && !path.isAbsolute(relative) && !relative.includes('\\') &&
+    !relative.split('/').some(part => !part || part === '.' || part === '..'), 'tooling repair: unsafe package path');
+}
+
+// lstat distinguishes an omitted package from a dangling link without following it.
+function inspectPath(root, relative, absent = false) {
+  validateRelativePath(relative);
+  let current = root;
+  const parts = relative.split('/');
+  for (let i = 0; i < parts.length; i++) {
+    current = path.join(current, parts[i]);
+    let stat;
+    try { stat = fs.lstatSync(current); }
+    catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      assert.ok(absent, `tooling repair: absent path ${relative}`);
+      return { target: path.join(root, relative), stat: null };
+    }
+    assert.ok(!stat.isSymbolicLink(), `tooling repair: symlink refused ${relative}`);
+    if (i < parts.length - 1) assert.ok(stat.isDirectory(), `tooling repair: directory required ${relative}`);
+    else return { target: current, stat };
+  }
+}
+
+function regularPath(root, relative) {
+  const { target, stat } = inspectPath(root, relative);
+  assert.ok(stat.isFile(), `tooling repair: regular file required ${relative}`);
+  return target;
+}
+
+function inspectPackageLink(root, entry, file, expected, inventory) {
+  validateRelativePath(file);
+  assert.ok(/^node_modules\/\.bin\/[^/]+$/.test(file) && typeof expected === 'string' && expected &&
+    !path.isAbsolute(expected) && !expected.includes('\\'), 'tooling repair: invalid reviewed CLI link');
+  const relative = `${entry}/${file}`, parent = path.dirname(relative);
+  const directory = inspectPath(root, parent);
+  assert.ok(directory.stat.isDirectory(), 'tooling repair: CLI link directory required');
+  const target = path.join(root, relative);
+  const resolved = path.relative(path.join(root, entry), path.resolve(path.dirname(target), expected));
+  validateRelativePath(resolved);
+  assert.ok(Object.hasOwn(inventory.files, resolved), 'tooling repair: CLI link target must be inventoried');
+  assert.ok(fs.lstatSync(target).isSymbolicLink(), `tooling repair: reviewed CLI symlink required ${relative}`);
+  assert.equal(fs.readlinkSync(target), expected, `tooling repair: changed CLI link ${relative}`);
+  regularPath(root, `${entry}/${resolved}`);
+}
+
+function installedFiles(root, entry, inventory, links) {
+  const files = [];
+  function walk(relative) {
+    const file = relative.slice(entry.length + 1);
+    if (Object.hasOwn(links, file)) {
+      inspectPackageLink(root, entry, file, links[file], inventory);
+      return;
+    }
+    const { target, stat } = inspectPath(root, relative);
+    if (stat.isDirectory()) {
+      for (const name of fs.readdirSync(target).sort()) walk(`${relative}/${name}`);
+    } else {
+      assert.ok(stat.isFile(), `tooling repair: regular file required ${relative}`);
+      files.push(relative.slice(entry.length + 1));
+    }
+  }
+  walk(entry);
+  return files;
+}
+
+function replacement(patch, bytes, relative) {
+  if (patch.original_sha256 === null) {
+    assert.ok(bytes === null && typeof patch.addition === 'string' && patch.edits.length === 0,
+      `tooling repair: unexpected helper ${relative}`);
+    bytes = Buffer.from(patch.addition);
+  } else {
+    assert.ok(digest(patch.original_sha256) && bytes && hash(bytes) === patch.original_sha256,
+      `tooling repair: upstream bytes changed ${relative}`);
+    let source = bytes.toString('utf8');
+    assert.ok(Array.isArray(patch.edits) && patch.edits.length > 0 && patch.addition === null, 'tooling repair: invalid edit set');
+    for (const edit of patch.edits) {
+      assert.ok(typeof edit.before === 'string' && edit.before && typeof edit.after === 'string' &&
+        source.split(edit.before).length === 2, `tooling repair: ambiguous edit ${relative}`);
+      source = source.replace(edit.before, edit.after);
+    }
+    bytes = Buffer.from(source);
+  }
+  assert.equal(hash(bytes), patch.repaired_sha256, `tooling repair: replacement hash mismatch ${relative}`);
+  return bytes;
+}
+
+function planRepairs(root, { check = false, production = false } = {}) {
+  assert.ok(typeof check === 'boolean' && typeof production === 'boolean', 'tooling repair: boolean modes required');
+  assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
+  assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
+  assert.equal(patchSet.schema, 4, 'tooling repair: unsupported patch schema');
+  assert.ok(Array.isArray(patchSet.packages) && patchSet.packages.length === 7 &&
+    new Set(patchSet.packages.map(p => p.name)).size === 7, 'tooling repair: complete package inventory required');
+  assert.ok(Array.isArray(patchSet.patches) && patchSet.patches.length > 0, 'tooling repair: nonempty patches required');
+  const lock = JSON.parse(fs.readFileSync(regularPath(root, 'package-lock.json')));
+  assert.ok(lock && lock.lockfileVersion === 3 && lock.packages && !Array.isArray(lock.packages), 'tooling repair: lock package inventory required');
+  const named = (entry, name) => entry === `node_modules/${name}` || entry.endsWith(`/node_modules/${name}`);
+  assert.ok(!Object.keys(lock.packages).some(entry => named(entry, 'sprintf-js')),
+    'tooling repair: retired sprintf-js remains locked');
+  const argparse = Object.entries(lock.packages).filter(([entry]) => named(entry, 'argparse'));
+  for (const [entry] of argparse) {
+    validateRelativePath(entry);
+    assert.ok(entry.startsWith('node_modules/'), 'tooling repair: unsafe package path');
+  }
+  assert.ok(argparse.length > 0 && argparse.every(([, record]) => record.version === '2.0.1' && record.dev === true),
+    'tooling repair: reviewed argparse 2.0.1 required');
+  for (const [name, version] of [['minimatch', '11.0.3'], ['glob', '14.0.3'], ['rimraf', '6.1.3']]) {
+    const entries = Object.entries(lock.packages).filter(([entry]) => named(entry, name));
+    assert.ok(entries.length > 0, `tooling repair: missing reviewed ${name}`);
+    for (const [entry, record] of entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/') && record.version === version && record.dev === true,
+        `tooling repair: incompatible matcher graph ${entry}`);
+    }
+  }
+  for (const [name, dependency, version] of [
+    ['eslint', 'minimatch', '11.0.3'], ['@eslint/eslintrc', 'minimatch', '11.0.3'],
+    ['@humanwhocodes/config-array', 'minimatch', '11.0.3'], ['eslint-plugin-import', 'minimatch', '11.0.3'],
+    ['eslint-plugin-react', 'minimatch', '11.0.3'], ['eslint-plugin-jsx-a11y', 'minimatch', '11.0.3'],
+    ['flat-cache', 'rimraf', '6.1.3'], ['rimraf', 'glob', '14.0.3'],
+  ]) {
+    const entry = `node_modules/${name}`;
+    const installed = inspectPath(root, entry, true);
+    if (!installed.stat) {
+      assert.ok(production, `tooling repair: absent matcher caller ${entry}`);
+      continue;
+    }
+    const caller = regularPath(root, `${entry}/package.json`);
+    const resolved = createRequire(caller).resolve(`${dependency}/package.json`);
+    const relative = path.relative(root, resolved);
+    validateRelativePath(relative);
+    const target = regularPath(root, relative), record = lock.packages[path.dirname(relative)];
+    const metadata = JSON.parse(fs.readFileSync(target));
+    assert.ok(record && record.version === version && record.dev === true &&
+      metadata.name === dependency && metadata.version === version,
+    `tooling repair: unreviewed resolved matcher ${name} -> ${relative}`);
+  }
+  const operations = [], packages = [], absentPackages = [], usedPatches = new Set();
+  for (const inventory of patchSet.packages) {
+    assert.ok(['braces', 'js-yaml', 'deepmerge', '@eslint/eslintrc', 'eslint-plugin-import', 'eslint-plugin-react', 'eslint-plugin-jsx-a11y'].includes(inventory.name) && typeof inventory.version === 'string' &&
+      inventory.files && !Array.isArray(inventory.files) && Object.keys(inventory.files).length > 0,
+    'tooling repair: invalid package inventory');
+    const links = Object.hasOwn(inventory, 'symlinks') ? inventory.symlinks : {};
+    assert.ok(links && typeof links === 'object' && !Array.isArray(links), 'tooling repair: invalid CLI link inventory');
+    const approvedLinks = inventory.name === 'eslint-plugin-import' ? {
+      'node_modules/.bin/semver': '../semver/bin/semver.js',
+    } : inventory.name === 'eslint-plugin-react' ? {
+      'node_modules/.bin/resolve': '../resolve/bin/resolve',
+      'node_modules/.bin/semver': '../semver/bin/semver.js',
+    } : {};
+    assert.deepEqual(links, approvedLinks, 'tooling repair: reviewed CLI link inventory required');
+    const patches = new Map();
+    for (const patch of patchSet.patches.filter(p => p.package === inventory.name)) {
+      validateRelativePath(patch.file);
+      assert.ok(patch.version === inventory.version && digest(patch.repaired_sha256) && !patches.has(patch.file),
+        'tooling repair: invalid or duplicate patch identity');
+      const identity = inventory.files[patch.file];
+      assert.ok(identity && identity.original_sha256 === patch.original_sha256 && identity.repaired_sha256 === patch.repaired_sha256,
+        'tooling repair: patch inventory mismatch');
+      patches.set(patch.file, patch); usedPatches.add(patch);
+    }
+    assert.ok(Array.isArray(inventory.entries) && inventory.entries.length > 0 &&
+      new Set(inventory.entries).size === inventory.entries.length, 'tooling repair: package locations required');
+    for (const entry of inventory.entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/') && named(entry, inventory.name), 'tooling repair: unsafe package location');
+      const record = lock.packages[entry];
+      assert.ok(record && record.version === inventory.version && record.dev === true, `tooling repair: incompatible locked ${entry}`);
+    }
+    // Only this exact, separately reviewed YAML4 CLI may remain outside repairs.
+    // A generic exception could hide an unpatched copy resolved by a real caller.
+    const hasOtherEntries = Object.hasOwn(inventory, 'otherEntries');
+    const otherEntries = hasOtherEntries ? inventory.otherEntries : {};
+    assert.ok(otherEntries && typeof otherEntries === 'object' && !Array.isArray(otherEntries),
+      'tooling repair: reviewed YAML4 exception required');
+    assert.ok(inventory.name === 'js-yaml' || !hasOtherEntries,
+      'tooling repair: reviewed YAML4 exception required');
+    assert.deepEqual(otherEntries, inventory.name === 'js-yaml' ? { 'node_modules/js-yaml': '4.3.2' } : {},
+      'tooling repair: reviewed YAML4 exception required');
+    for (const [entry, version] of Object.entries(otherEntries)) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/') && named(entry, inventory.name) &&
+        lock.packages[entry]?.version === version && lock.packages[entry]?.dev === true,
+      `tooling repair: incompatible locked ${entry}`);
+    }
+    const entries = Object.entries(lock.packages).filter(([entry]) => named(entry, inventory.name) &&
+      !Object.hasOwn(otherEntries, entry));
+    for (const [entry] of entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/'), 'tooling repair: unsafe package path');
+    }
+    assert.deepEqual(entries.map(([entry]) => entry).sort(), [...inventory.entries].sort(),
+      `tooling repair: unexpected locked locations for ${inventory.name}`);
+    assert.ok(entries.length > 0, `tooling repair: missing locked ${inventory.name}`);
+    for (const [entry, record] of entries) {
+      validateRelativePath(entry);
+      assert.ok(entry.startsWith('node_modules/'), 'tooling repair: unsafe package path');
+      assert.ok(record.version === inventory.version && record.dev === true, `tooling repair: incompatible locked ${entry}`);
+      const installed = inspectPath(root, entry, true);
+      if (!installed.stat) {
+        assert.ok(production, `tooling repair: absent installed ${entry}`);
+        absentPackages.push(entry); continue;
+      }
+      assert.ok(installed.stat.isDirectory(), `tooling repair: directory required ${entry}`);
+      const metadata = JSON.parse(fs.readFileSync(regularPath(root, `${entry}/package.json`)));
+      assert.ok(metadata.name === inventory.name && metadata.version === inventory.version, `tooling repair: incompatible installed ${entry}`);
+      for (const [file, expected] of Object.entries(links)) inspectPackageLink(root, entry, file, expected, inventory);
+      for (const file of installedFiles(root, entry, inventory, links)) {
+        assert.ok(Object.hasOwn(inventory.files, file), `tooling repair: unexpected package file ${entry}/${file}`);
+      }
+      for (const [file, identity] of Object.entries(inventory.files)) {
+        validateRelativePath(file);
+        const patch = patches.get(file), relative = `${entry}/${file}`;
+        assert.ok(digest(identity.repaired_sha256) && (identity.original_sha256 === null || digest(identity.original_sha256)),
+          'tooling repair: invalid source digest');
+        const { target, stat } = inspectPath(root, relative, Boolean(patch && patch.original_sha256 === null));
+        assert.ok(stat === null || stat.isFile(), `tooling repair: regular file required ${relative}`);
+        if (identity.mode !== undefined) {
+          assert.ok(identity.mode === 0o755 && stat && (stat.mode & 0o777) === identity.mode,
+            `tooling repair: executable mode required ${relative}`);
+        }
+        const bytes = stat ? fs.readFileSync(target) : null;
+        if (bytes && hash(bytes) === identity.repaired_sha256) continue;
+        if (!patch) {
+          assert.ok(bytes && identity.original_sha256 === identity.repaired_sha256,
+            `tooling repair: invalid unchanged inventory ${relative}`);
+          assert.fail(`tooling repair: upstream bytes changed ${relative}`);
+        }
+        // Unknown bytes fail even in check mode; only the reviewed original can be repaired.
+        if (check && bytes && hash(bytes) === patch.original_sha256) {
+          assert.fail(`tooling repair: unpatched ${relative}; run npm ci with scripts enabled`);
+        }
+        const repaired = replacement(patch, bytes, relative);
+        assert.ok(!check, `tooling repair: unpatched ${relative}; run npm ci with scripts enabled`);
+        operations.push({ target, bytes: repaired, mode: stat ? stat.mode & 0o777 : 0o644 });
+      }
+      packages.push(entry);
+    }
+  }
+  assert.equal(usedPatches.size, patchSet.patches.length, 'tooling repair: unknown patch package');
+  return { operations, packages, absentPackages };
+}
+
+function applyRepairs(root = path.resolve(__dirname, '..'), options = {}) {
+  const { check = false } = options;
+  const lockPath = path.join(root, 'node_modules', '.tooling-repair-lock');
+  // Concurrent installs fail visibly; never delete an unknown/stale owner lock.
+  assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
+  assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
+  if (!check) fs.mkdirSync(lockPath);
+  try {
+    const plan = planRepairs(root, options);
+    for (const { target, bytes, mode } of plan.operations) {
+      const temporary = `${target}.repair-${process.pid}`;
+      let created = false;
+      try {
+        fs.writeFileSync(temporary, bytes, { flag: 'wx', mode }); created = true;
+        fs.chmodSync(temporary, mode);
+        fs.renameSync(temporary, target); created = false;
+      } finally {
+        if (created) fs.unlinkSync(temporary);
+      }
+      assert.equal(hash(fs.readFileSync(target)), hash(bytes), 'tooling repair: write readback failed');
+    }
+    const verified = planRepairs(root, { ...options, check: true });
+    return { check: 'source-bound-tooling-repairs', packages: verified.packages, absentPackages: verified.absentPackages, changedFiles: plan.operations.length };
+  } finally {
+    if (!check) fs.rmdirSync(lockPath);
+  }
+}
+if (require.main === module) {
+  try {
+    assert.ok(process.argv.slice(2).every(x => x === '--check'), 'tooling repair: unknown argument');
+    console.log(JSON.stringify(applyRepairs(undefined, { check: process.argv.includes('--check'), production: (process.env.npm_config_omit || '').split(/[ ,]+/).includes('dev') })));
+  } catch (error) { console.error(error.message); process.exitCode = 1; }
+}
+module.exports = { applyRepairs, planRepairs };

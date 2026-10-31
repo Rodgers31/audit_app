@@ -1,0 +1,72 @@
+[
+  {
+    "origin": "eslint/lib/cli-engine/file-enumerator.js",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=384",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-source-caller-shadow.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint/lib/cli-engine/file-enumerator.js"
+    ],
+    "returncode": 0,
+    "stdout": "{\"validBeforeShadow\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"origin\":\"eslint/lib/cli-engine/file-enumerator.js\",\"dependency\":\"minimatch\",\"caller_sha256\":\"191e5f182bce5ac0950d57991690d28355bfa3fd50c005ae55b7f6f5b93ddd66\",\"installer_sha256\":\"fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0\",\"actualCallerResolved\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/source-caller-shadow-KSe9Yu/node_modules/eslint/lib/cli-engine/node_modules/minimatch/minimatch.js\",\"actualCallerVersion\":\"3.1.5\",\"guardVerifiesPackageRootVersion\":\"11.0.3\",\"error\":\"tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/lib/cli-engine/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.93682875
+  },
+  {
+    "origin": "eslint/lib/eslint/eslint-helpers.js",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=384",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-source-caller-shadow.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint/lib/eslint/eslint-helpers.js"
+    ],
+    "returncode": 0,
+    "stdout": "{\"validBeforeShadow\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"origin\":\"eslint/lib/eslint/eslint-helpers.js\",\"dependency\":\"minimatch\",\"caller_sha256\":\"1f805ffd19096eb128a7379ac7ed5dc1dc52c8f1b1f933313ee60ddcd182e1e2\",\"installer_sha256\":\"fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0\",\"actualCallerResolved\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/source-caller-shadow-NvJ7b5/node_modules/eslint/lib/eslint/node_modules/minimatch/minimatch.js\",\"actualCallerVersion\":\"3.1.5\",\"guardVerifiesPackageRootVersion\":\"11.0.3\",\"error\":\"tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/lib/eslint/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.946005125
+  },
+  {
+    "origin": "@humanwhocodes/config-array/api.js",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=384",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-source-caller-shadow.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "@humanwhocodes/config-array/api.js"
+    ],
+    "returncode": 0,
+    "stdout": "{\"validBeforeShadow\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"origin\":\"@humanwhocodes/config-array/api.js\",\"dependency\":\"minimatch\",\"caller_sha256\":\"b3a25265a34ce3132278f9c24cd4f54536baef3a57a44545ffc87458f003726b\",\"installer_sha256\":\"fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0\",\"actualCallerResolved\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/source-caller-shadow-eXaKwR/node_modules/@humanwhocodes/config-array/node_modules/minimatch/minimatch.js\",\"actualCallerVersion\":\"3.1.5\",\"guardVerifiesPackageRootVersion\":\"3.1.5\",\"error\":\"tooling repair: unreviewed resolved matcher @humanwhocodes/config-array -> node_modules/@humanwhocodes/config-array/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.9467870420000001
+  },
+  {
+    "origin": "flat-cache/src/del.js",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=384",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-source-caller-shadow.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "flat-cache/src/del.js"
+    ],
+    "returncode": 0,
+    "stdout": "{\"validBeforeShadow\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"origin\":\"flat-cache/src/del.js\",\"dependency\":\"rimraf\",\"caller_sha256\":\"503d1f47c369dee064687c94c163e15adfbad082f10b282b0ec1e9847caa4505\",\"installer_sha256\":\"fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0\",\"actualCallerResolved\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/source-caller-shadow-xoLcGe/node_modules/flat-cache/src/node_modules/rimraf/rimraf.js\",\"actualCallerVersion\":\"3.0.2\",\"guardVerifiesPackageRootVersion\":\"6.1.3\",\"error\":\"tooling repair: unreviewed resolved matcher flat-cache -> node_modules/flat-cache/src/node_modules/rimraf/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.969637792
+  },
+  {
+    "origin": "rimraf/dist/commonjs/index.js",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=384",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-source-caller-shadow.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "rimraf/dist/commonjs/index.js"
+    ],
+    "returncode": 0,
+    "stdout": "{\"validBeforeShadow\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"origin\":\"rimraf/dist/commonjs/index.js\",\"dependency\":\"glob\",\"caller_sha256\":\"527e3ad870373000e45036d4b7dc6b390fa766c0024af0cd2a3b7190de02ca17\",\"installer_sha256\":\"fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0\",\"actualCallerResolved\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/source-caller-shadow-mbcC6t/node_modules/rimraf/dist/commonjs/node_modules/glob/glob.js\",\"actualCallerVersion\":\"7.2.3\",\"guardVerifiesPackageRootVersion\":\"14.0.3\",\"error\":\"tooling repair: unreviewed resolved matcher rimraf -> node_modules/rimraf/dist/commonjs/node_modules/glob/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 1.069283833
+  }
+]

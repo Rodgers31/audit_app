@@ -1,0 +1,49 @@
+{
+  "start": "2026-10-31T23:40:07.418989+00:00",
+  "command": [
+    "npm",
+    "run",
+    "lint",
+    "--",
+    "--no-cache"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "environment": {
+    "PATH": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+    "HOME": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/home",
+    "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/tmp",
+    "LANG": "en_US.UTF-8",
+    "PIP_CONFIG_FILE": "/dev/null",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "ONNXRUNTIME_NODE_INSTALL": "skip",
+    "ENVIRONMENT": "test",
+    "SECRET_BACKEND": "env",
+    "DATABASE_URL": "sqlite:///:memory:",
+    "REDIS_URL": "",
+    "AUTO_SEED_ENABLED": "false",
+    "SOCIAL_NATIVE_ENABLED": "false",
+    "SOCIAL_PUBLISHING_ENABLED": "false",
+    "SOCIAL_MEDIA_ENABLED": "false",
+    "SOCIAL_WORKER_SUPERVISOR_ENABLED": "false",
+    "SEED_NATIVE_FINANCIAL_GENERATION_ENABLED": "false",
+    "SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED": "false",
+    "NEXT_PUBLIC_API_URL": "http://127.0.0.1:9",
+    "NODE_OPTIONS": "--max-old-space-size=3072",
+    "PLAYWRIGHT_BROWSERS_PATH": "/Users/roger/Library/Caches/ms-playwright"
+  },
+  "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+  "tree": "996bd659ea72ed218529aeade69eac571c7fa8eb",
+  "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+  "runner_sha256": "1d1ee6391f481b844c421445fb20bd29f92dbd45c94be9312b6a13c59384ab8f",
+  "exit": 0,
+  "timeout": false,
+  "end": "2026-10-31T23:40:11.430187+00:00",
+  "seconds": 3.9804963339999997,
+  "source_changes": [],
+  "outputs": {
+    "stdout": "62f53f973c6f0961f0d71c5a02d1459ba9e144b6a37bd2218f125314fd913ff1",
+    "stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2"
+  }
+}

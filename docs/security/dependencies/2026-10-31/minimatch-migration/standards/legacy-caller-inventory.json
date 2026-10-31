@@ -1,0 +1,230 @@
+[
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/extensions.js",
+    "line": 3,
+    "text": "var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/extensions.js",
+    "line": 174,
+    "text": "          if ((0, _minimatch2['default'])(path, pattern, patternOptions || { nocomment: true })) {"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-extraneous-dependencies.js",
+    "line": 3,
+    "text": "var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-extraneous-dependencies.js",
+    "line": 255,
+    "text": "  return config.some(function (c) {return (0, _minimatch2['default'])(filename, c) ||"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-extraneous-dependencies.js",
+    "line": 256,
+    "text": "    (0, _minimatch2['default'])(filename, _path2['default'].join(process.cwd(), c));});"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-import-module-exports.js",
+    "line": 1,
+    "text": "'use strict';var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-import-module-exports.js",
+    "line": 62,
+    "text": "        var isException = !!options.exceptions && options.exceptions.some(function (glob) {return (0, _minimatch2['default'])(fileName, glob);});"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-internal-modules.js",
+    "line": 1,
+    "text": "'use strict';var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-internal-modules.js",
+    "line": 51,
+    "text": "      var allowRegexps = (options.allow || []).map(function (p) {return _minimatch2['default'].makeRe(p);});"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-internal-modules.js",
+    "line": 52,
+    "text": "      var forbidRegexps = (options.forbid || []).map(function (p) {return _minimatch2['default'].makeRe(p);});"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-internal-modules.js",
+    "line": 54,
+    "text": "      // minimatch patterns are expected to use / path separators, like import"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-namespace.js",
+    "line": 6,
+    "text": "var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-namespace.js",
+    "line": 109,
+    "text": "            if (ignoreGlobs && ignoreGlobs.find(function (glob) {return (0, _minimatch2['default'])(node.parent.source.value, glob, { matchBase: true });})) {"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-restricted-paths.js",
+    "line": 6,
+    "text": "var _minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-restricted-paths.js",
+    "line": 18,
+    "text": "    var mm = new _minimatch.Minimatch(targetPath);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-restricted-paths.js",
+    "line": 138,
+    "text": "        var mm = new _minimatch.Minimatch(absoluteFrom);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-restricted-paths.js",
+    "line": 143,
+    "text": "          var exceptionsMm = zoneExcept.map(function (except) {return new _minimatch.Minimatch(except);});"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-unassigned-import.js",
+    "line": 2,
+    "text": "var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-unassigned-import.js",
+    "line": 28,
+    "text": "  return globs.find(function (glob) {return (0, _minimatch2['default'])(filePath, glob) ||"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/no-unassigned-import.js",
+    "line": 29,
+    "text": "    (0, _minimatch2['default'])(filePath, _path2['default'].join(process.cwd(), glob));}) !=="
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/order.js",
+    "line": 3,
+    "text": "var _minimatch = require('minimatch');var _minimatch2 = _interopRequireDefault(_minimatch);"
+  },
+  {
+    "package": "eslint-plugin-import",
+    "path": "lib/rules/order.js",
+    "line": 510,
+    "text": "    if ((0, _minimatch2['default'])(path, pattern, patternOptions || { nocomment: true })) {"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/forbid-component-props.js",
+    "line": 8,
+    "text": "const minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/forbid-component-props.js",
+    "line": 158,
+    "text": "      const propNamePattern = propNamePatternArray.find((propPatternVal) => minimatch(prop, propPatternVal[0]));"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/forbid-component-props.js",
+    "line": 182,
+    "text": "          (pattern) => !minimatch(tagName, pattern)"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/forbid-component-props.js",
+    "line": 196,
+    "text": "          (pattern) => minimatch(tagName, pattern)"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/jsx-handler-names.js",
+    "line": 8,
+    "text": "const minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/jsx-handler-names.js",
+    "line": 146,
+    "text": "        const isComponentNameIgnored = ignoreComponentNames.some((ignoredComponentNamePattern) => minimatch("
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/jsx-pascal-case.js",
+    "line": 9,
+    "text": "const minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/jsx-pascal-case.js",
+    "line": 66,
+    "text": "    (entry) => name === entry || minimatch(name, entry, { noglobstar: true })"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/no-danger.js",
+    "line": 10,
+    "text": "const minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/no-danger.js",
+    "line": 83,
+    "text": "        const enableCheckingCustomComponent = customComponentNames.some((name) => minimatch(functionName, name));"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/no-unstable-nested-components.js",
+    "line": 8,
+    "text": "const minimatch = require('minimatch');"
+  },
+  {
+    "package": "eslint-plugin-react",
+    "path": "lib/rules/no-unstable-nested-components.js",
+    "line": 42,
+    "text": "  return typeof text === 'string' && minimatch(text, pattern);"
+  },
+  {
+    "package": "eslint-plugin-jsx-a11y",
+    "path": "lib/util/mayContainChildComponent.js",
+    "line": 8,
+    "text": "var _minimatch = _interopRequireDefault(require(\"minimatch\"));"
+  },
+  {
+    "package": "eslint-plugin-jsx-a11y",
+    "path": "lib/util/mayContainChildComponent.js",
+    "line": 38,
+    "text": "        if (childNode.type === 'JSXElement' && childNode.openingElement && (0, _minimatch[\"default\"])(elementType(childNode.openingElement), componentName)) {"
+  },
+  {
+    "package": "eslint-plugin-jsx-a11y",
+    "path": "lib/util/mayHaveAccessibleLabel.js",
+    "line": 9,
+    "text": "var _minimatch = _interopRequireDefault(require(\"minimatch\"));"
+  },
+  {
+    "package": "eslint-plugin-jsx-a11y",
+    "path": "lib/util/mayHaveAccessibleLabel.js",
+    "line": 75,
+    "text": "        return (0, _minimatch[\"default\"])(name, control);"
+  }
+]

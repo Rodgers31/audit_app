@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=384",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-final-public.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "returncode": 0,
+  "stdout": "{\"actualVersion\":\"2.1.4\",\"installedMinimatch\":\"11.0.3\",\"oldComparisonMinimatch\":\"3.1.5\",\"mainExports\":[\"FlatCompat\",\"Legacy\"],\"universalExports\":[\"Legacy\"],\"overrideComparisons\":120,\"invalidInputsRejected\":true,\"runtimeRedirectionUsed\":false}\n",
+  "stderr": "",
+  "wall_seconds": 0.28985075000000005
+}

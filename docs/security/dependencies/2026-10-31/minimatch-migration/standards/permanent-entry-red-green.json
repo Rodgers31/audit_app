@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-31T23:27:44.810029+00:00",
+  "environment": {
+    "NODE_PATH": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules",
+    "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/test-fixtures"
+  },
+  "results": [
+    {
+      "stage": "red",
+      "helper_sha256": "fdf4ca8f015192138cc443b5c2e630e333cc20d70400cbf6e562ce47e0eb5047",
+      "test_sha256": "493bc5a69f9e3d2458f31dcf51167ad2e40909a76f1ea2736835f30df61b4bad",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "--test-name-pattern=executable shadow behind modern metadata alias|changed canonical matcher executable",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/permanent-entry-red-green-f8itfjj4/scripts/tooling-repair-install.test.cjs"
+      ],
+      "exit": 1,
+      "summary": "1..2\n# tests 2\n# suites 0\n# pass 0\n# fail 2\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1022.433958"
+    },
+    {
+      "stage": "green",
+      "helper_sha256": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+      "test_sha256": "493bc5a69f9e3d2458f31dcf51167ad2e40909a76f1ea2736835f30df61b4bad",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--test",
+        "--test-reporter=tap",
+        "--test-name-pattern=executable shadow behind modern metadata alias|changed canonical matcher executable",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/permanent-entry-red-green-f8itfjj4/scripts/tooling-repair-install.test.cjs"
+      ],
+      "exit": 0,
+      "summary": "1..2\n# tests 2\n# suites 0\n# pass 2\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 607.854375"
+    }
+  ]
+}

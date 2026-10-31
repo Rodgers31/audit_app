@@ -1,0 +1,224 @@
+{
+  "observed_at": "2026-10-31T23:44:08.587269+00:00",
+  "scope": "Final matcher migration after executable, actual requester and canonical-root portability guards. Historical Python/native qualification limits remain separate.",
+  "executable_inputs": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "acceptance": {
+    "dependency_controls": 217,
+    "runtime_controls": 9,
+    "jest_suites": 215,
+    "jest_passed": 2904,
+    "jest_existing_pending": 1,
+    "admin_browser_cases": 14,
+    "production_build": "Executed by admin-shell fixture command",
+    "typescript": 0,
+    "lint_without_cache": 0,
+    "complete_npm_tree": 0,
+    "raw_npm_full": 5,
+    "raw_npm_production": 0,
+    "audit_suppressions": []
+  },
+  "records": [
+    {
+      "start": "2026-10-31T23:39:22.676253+00:00",
+      "end": "2026-10-31T23:39:40.149332+00:00",
+      "command": [
+        "npm",
+        "ci",
+        "--include=dev",
+        "--include=optional",
+        "--no-fund"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "f9d0ebb9e2e5b97ef5d4a3e8110f47e6aff3936d217fea2c10811f0098350283",
+        "stderr": "3403ea6bd976b402d7a27c4aec19263e91352e391c9312e1841e30b6bfe24f50"
+      },
+      "label": "canonical-ci",
+      "receipt_sha256": "cd55f03eed968468e3b2aff48e1559a2b1fafbafcf444a53236783522f48c198"
+    },
+    {
+      "start": "2026-10-31T23:40:07.419007+00:00",
+      "end": "2026-10-31T23:40:08.225142+00:00",
+      "command": [
+        "npm",
+        "ls",
+        "--all",
+        "--json"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "21ae238783f024c1bbe7d1b48fb57248235831f343539f72cfb5704540f6c8a5",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "label": "canonical-tree",
+      "receipt_sha256": "951e79e5e46454138abcef096f45647c6b07ba0ba0ea67acd515fe29ed07e0b8"
+    },
+    {
+      "start": "2026-10-31T23:40:07.418995+00:00",
+      "end": "2026-10-31T23:40:14.696849+00:00",
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "label": "canonical-types",
+      "receipt_sha256": "da485e2043d9c7cb9423ee775f5164042a0fb22031db83aed441dd3a9b1b34a8"
+    },
+    {
+      "start": "2026-10-31T23:40:07.418989+00:00",
+      "end": "2026-10-31T23:40:11.430187+00:00",
+      "command": [
+        "npm",
+        "run",
+        "lint",
+        "--",
+        "--no-cache"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "62f53f973c6f0961f0d71c5a02d1459ba9e144b6a37bd2218f125314fd913ff1",
+        "stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2"
+      },
+      "label": "canonical-lint",
+      "receipt_sha256": "775bd6ad5fcf4c9e6a27c317c9248649c20cb0710d723256034eafedf427502e"
+    },
+    {
+      "start": "2026-10-31T23:40:07.419015+00:00",
+      "end": "2026-10-31T23:41:39.020647+00:00",
+      "command": [
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "9f10d46c23073f096f05cc29d608a4d674998aa0c285e5d1bcc79c5ba36a634f",
+        "stderr": "554f50ced28a50d5fb14f2bde32bfc4ddbea3a599428b5614a0d5e13d692d837"
+      },
+      "label": "canonical-boundaries",
+      "receipt_sha256": "c97ae58bf0f67c18577238a76d1d56b187e18d15a2efc1f78c7d7d22ce30c90f"
+    },
+    {
+      "start": "2026-10-31T23:40:07.418988+00:00",
+      "end": "2026-10-31T23:41:14.418108+00:00",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--no-cache",
+        "--json",
+        "--outputFile=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/canonical-jest-results.json"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "5f6ad329d6631b2aa62decbe2ac1855193e73699d17eeeef72ac2d766fc8da4a",
+        "stderr": "2cea24afda07722070fffb062e1a4b50329f067e228db253316f4bb87c9dac95"
+      },
+      "label": "canonical-jest",
+      "receipt_sha256": "a67081026590fe44260ab1a655d72937a24da3e8ea39f15392dbde4acd7b79d3"
+    },
+    {
+      "start": "2026-10-31T23:41:46.682838+00:00",
+      "end": "2026-10-31T23:42:31.792666+00:00",
+      "command": [
+        "npm",
+        "run",
+        "test:admin-shell"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "e7c72db323eda8e5b07c7a5f9d76842456497b82c51bde1f4a5768f8e7ad924e",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "label": "canonical-admin-shell",
+      "receipt_sha256": "ff44b404abc8feb015106ff1750b67a78add90290d502a1fd7384fe5ab375bfe"
+    },
+    {
+      "start": "2026-10-31T23:40:07.418990+00:00",
+      "end": "2026-10-31T23:40:08.285422+00:00",
+      "command": [
+        "npm",
+        "audit",
+        "--json"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 1,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "22374338337065c7f0656d8e0de14f38938734c0a160d40b4208394ab7dcdfd2",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "label": "canonical-audit-full",
+      "receipt_sha256": "5a8ee0f597f1b502087870041d7fd8b5e43629ce08178ab82fea2f14a19bfb92"
+    },
+    {
+      "start": "2026-10-31T23:40:07.419001+00:00",
+      "end": "2026-10-31T23:40:08.172854+00:00",
+      "command": [
+        "npm",
+        "audit",
+        "--omit=dev",
+        "--json"
+      ],
+      "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+      "source_sha256": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+      "exit": 0,
+      "timeout": false,
+      "source_changes": [],
+      "outputs": {
+        "stdout": "9c756f7670de0c6a982596e5d75e2bf3706c1388e1ded39254b1d953d1548d70",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "label": "canonical-audit-production",
+      "receipt_sha256": "f2d26fdf0b32646b30fc7813c898e51963db1009e7a4b6b53733eb2d02082acc"
+    }
+  ],
+  "external_evidence_root": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration",
+  "source_binding_note": "Commands ran with staged source changes above HEAD; exact executable input hashes bind the candidate. All nine final source inventories match those bytes with no source changes during each run. Pre-canonical accepted-* runs are historical and are not counted here."
+}

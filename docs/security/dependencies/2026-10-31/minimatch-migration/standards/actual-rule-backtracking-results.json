@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-31T23:23:32.066Z",
+  "case": "Actual React no-danger custom-component matching; bounded nonmatching repeated wildcard/literal pattern, not an all-pattern complexity guarantee.",
+  "output": [
+    {
+      "profile": "original",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "-e",
+        "const assert=require('node:assert/strict'),{performance}=require('node:perf_hooks'),{createRequire}=require('node:module');const {Linter}=createRequire(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/package.json\")('eslint');const rule=require(\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/baseline/node_modules/eslint-plugin-react/lib/rules/no-danger.js\");const engine=new Linter();engine.defineRule('probe',rule);function run(pattern){return engine.verify('const x=<'+ 'A'.repeat(32) +' dangerouslySetInnerHTML={{__html:\"x\"}}/>;',{parserOptions:{ecmaVersion:2022,sourceType:'module',ecmaFeatures:{jsx:true}},rules:{probe:['error',{customComponentNames:[pattern]}]}},{filename:'owned.jsx'});}assert.equal(run('Other*').length,0);console.log(JSON.stringify({ordinaryControlAlive:true}));const start=performance.now();assert.equal(run('*A'.repeat(12)+'B').length,0);console.log(JSON.stringify({hostileCaseCompleted:true,elapsedMs:performance.now()-start}));"
+      ],
+      "timeoutMs": 2500,
+      "wallMs": 2507,
+      "exit": null,
+      "signal": "SIGTERM",
+      "error": "Error: spawnSync /Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node ETIMEDOUT",
+      "stdout": "{\"ordinaryControlAlive\":true}\n",
+      "stderr": ""
+    },
+    {
+      "profile": "installed",
+      "command": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "-e",
+        "const assert=require('node:assert/strict'),{performance}=require('node:perf_hooks'),{createRequire}=require('node:module');const {Linter}=createRequire(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/package.json\")('eslint');const rule=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/eslint-plugin-react/lib/rules/no-danger.js\");const engine=new Linter();engine.defineRule('probe',rule);function run(pattern){return engine.verify('const x=<'+ 'A'.repeat(32) +' dangerouslySetInnerHTML={{__html:\"x\"}}/>;',{parserOptions:{ecmaVersion:2022,sourceType:'module',ecmaFeatures:{jsx:true}},rules:{probe:['error',{customComponentNames:[pattern]}]}},{filename:'owned.jsx'});}assert.equal(run('Other*').length,0);console.log(JSON.stringify({ordinaryControlAlive:true}));const start=performance.now();assert.equal(run('*A'.repeat(12)+'B').length,0);console.log(JSON.stringify({hostileCaseCompleted:true,elapsedMs:performance.now()-start}));"
+      ],
+      "timeoutMs": 2500,
+      "wallMs": 130,
+      "exit": 0,
+      "signal": null,
+      "error": null,
+      "stdout": "{\"ordinaryControlAlive\":true}\n{\"hostileCaseCompleted\":true,\"elapsedMs\":0.7736659999999915}\n",
+      "stderr": ""
+    }
+  ]
+}

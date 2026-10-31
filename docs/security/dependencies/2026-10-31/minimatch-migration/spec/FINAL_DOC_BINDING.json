@@ -1,0 +1,39 @@
+{
+  "captured_utc": "2026-10-31T23:46:06.229136+00:00",
+  "reviewed_code_inputs": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "implementation_bytes_unchanged": true,
+  "final_document": {
+    "path": "docs/security/DEPENDENCY_MATCHER_MIGRATION_2026_10_31.md",
+    "sha256": "71853eaf58e8ffdd595e50ee181a9d9fdf036b98f66be7c7ec3fde66f089c2d8"
+  },
+  "final_author_acceptance": {
+    "path": "docs/security/dependencies/2026-10-31/minimatch-migration/author-acceptance.json",
+    "sha256": "81b5a35de5fc1b3a495526993cb69bb1f6d88e37547dfcda2fac6eddfd5fa19f",
+    "acceptance": {
+      "dependency_controls": 217,
+      "runtime_controls": 9,
+      "jest_suites": 215,
+      "jest_passed": 2904,
+      "jest_existing_pending": 1,
+      "admin_browser_cases": 14,
+      "production_build": "Executed by admin-shell fixture command",
+      "typescript": 0,
+      "lint_without_cache": 0,
+      "complete_npm_tree": 0,
+      "raw_npm_full": 5,
+      "raw_npm_production": 0,
+      "audit_suppressions": []
+    },
+    "common_reported_source_inventory_digest": "bf3c6650f1b707d86a66fc241c185b0cf59237686d6713c5ab07c1cd9a26a9fd",
+    "all_nine_records_report_no_source_changes": true
+  },
+  "qualification": "Current seven-file map matches reviewed bytes; broad author gate results are attributed, not independently rerun by this reviewer."
+}
