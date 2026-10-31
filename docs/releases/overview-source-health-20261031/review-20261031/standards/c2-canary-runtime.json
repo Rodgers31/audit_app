@@ -1,0 +1,13 @@
+{
+  "python": "3.12.15 (main, Oct  6 2026, 02:08:11) [GCC 14.2.0]",
+  "optimize": 1,
+  "debug": false,
+  "modules": {
+    "test_optimization_canary": {
+      "file": "/evidence/test_optimization_canary.py",
+      "loader": "AssertionRewritingHook",
+      "optimize": 1,
+      "debug": false
+    }
+  }
+}

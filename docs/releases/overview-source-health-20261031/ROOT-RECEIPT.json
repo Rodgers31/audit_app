@@ -1,0 +1,64 @@
+{
+  "created_at": "2026-10-31T16:31:38.407041+00:00",
+  "base": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+  "candidate_source_pins": "candidate-final-source-sha256.json",
+  "verified_independent_artifacts": {
+    "standards": 33,
+    "spec_final_bridge": 33
+  },
+  "source_drift": {
+    "frontend_projection_files_checked": 838,
+    "mismatches": [],
+    "changed_source_files_checked": 8
+  },
+  "root_results": {
+    "backend_normal": 140,
+    "backend_true_optimized": 140,
+    "frontend_suites": 215,
+    "frontend_cases": 2898,
+    "frontend_skipped": 0,
+    "postgres_http_capture_cases": 3,
+    "postgres_deselected": 38,
+    "full_tsc_exit": 0,
+    "changed_file_eslint_exit": 0,
+    "production_build_and_browser_gate_exit": 0,
+    "browser_cases": 12,
+    "browser_seconds": 37.3
+  },
+  "runtime": {
+    "python_image": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+    "node_with_git_image": "sha256:f622e876e1bfddb3d941fa2120f9ca5634ac7787d09fde50698df32c0ffe7103",
+    "node": "24.22.1",
+    "axios": "1.20.0",
+    "local_runner_git_install": "official Debian apt; no application dependency install or hosted build"
+  },
+  "shell_prerequisites": {
+    "owned_source_copy": true,
+    "owned_physical_dependency_clone": true,
+    "early_symlink_prerequisite_refusal_retained": true,
+    "actual_environment_files": {
+      ".env": false,
+      ".env.local": false,
+      ".env.production": false,
+      ".env.production.local": false
+    },
+    "package_lock_matches": true,
+    "source_change_pins_match": true,
+    "generated_files_only_in_external_copy": true
+  },
+  "capture_sha256": {
+    "ROUND8_SESSION_4_HTTP_KES_dated.json": "85a775e50229e150283bb4a2d7a65d9c6994d673f99d6f51c99b0fc1b8ec4f7c",
+    "ROUND8_SESSION_4_HTTP_KES_undated.json": "9dcf5ca177f4d791e52993703c8a06e0fc7912fc9ebb3c14153d7ef39e856d6d",
+    "ROUND8_SESSION_4_HTTP_USD_dated.json": "ff4ae5c311270f7f58c193c65beda24d7863c881f9676bd40f8043e2becf7394"
+  },
+  "cleanup": {
+    "owned_postgres_container_removed": true,
+    "owned_test_containers_remaining": [],
+    "shell_listeners_3137_8137_remaining": false,
+    "shared_resources_preserved": true
+  },
+  "production": "Read-only controls/flags/process snapshot in production-off-final.json; candidate not installed/deployed",
+  "cost_and_activation": "No paid reviews, hosted runs, new paid resources, provider activation or flag mutation",
+  "packet_limits": "Historical recipes retain original absolute cached paths; bulk frozen source copies excluded. Git baseline/candidate and complete source manifests identify tested contents.",
+  "preview_cost_guard": "Existing previewDeploymentsDisabled:true confirmed by read-only Vercel CLI/API; no change or automatic preview deployment requested"
+}

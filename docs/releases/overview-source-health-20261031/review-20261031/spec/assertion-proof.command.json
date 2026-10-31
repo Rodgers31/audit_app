@@ -1,0 +1,28 @@
+{
+  "argv": [
+    "docker",
+    "run",
+    "--pull",
+    "never",
+    "--rm",
+    "--name",
+    "pr863-spec-assertion-proof",
+    "--network",
+    "none",
+    "--cpus",
+    "1",
+    "--memory",
+    "512m",
+    "--pids-limit",
+    "128",
+    "-v",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr863-review-deploy-20261031/spec:/evidence",
+    "-w",
+    "/evidence",
+    "-e",
+    "PYTHONDONTWRITEBYTECODE=1",
+    "admin-redesign-python-runtime:local",
+    "python",
+    "/evidence/prove_runner_shapes.py"
+  ]
+}

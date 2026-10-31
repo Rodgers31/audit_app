@@ -1,0 +1,30 @@
+from pathlib import Path
+import json,hashlib,subprocess
+p=Path(__file__).resolve().parent;f=p/'final';root=Path('/Users/roger/.codex/worktrees/admin-social-release-check/audit_app');sha=lambda x:hashlib.sha256(x.read_bytes()).hexdigest()
+def cases(path):
+ x=json.loads(path.read_text());items=[]
+ if not x['success']or x['numFailedTests']or x['numPendingTests']:raise RuntimeError('Non-green result '+str(path))
+ for suite in x['testResults']:
+  if suite['status']!='passed':raise RuntimeError('Suite not passed')
+  for c in suite['assertionResults']:
+   if c['status']!='passed':raise RuntimeError('Case not passed')
+   items.append({'suite':suite['name'],'title':c['fullName'],'outcome':c['status']})
+ return items
+main=cases(f/'controls.json');raw=cases(f/'raw-path.json');allcases=main+raw
+if len(main)!=108 or len(raw)!=8 or len({(x['suite'],x['title'])for x in allcases})!=116:raise RuntimeError('Wrong/duplicate case inventory')
+prior=json.loads((p.parent/'CASE-LEDGER.json').read_text());priorids={(x['suite'],x['title'])for x in prior};nowids={(x['suite'],x['title'])for x in main}
+if len(priorids)!=105 or not priorids<=nowids or len(nowids-priorids)!=3:raise RuntimeError('Original105 not preserved exactly')
+for label in ['controls','raw-path','typecheck']:
+ if json.loads((f/(label+'.exit.json')).read_text())['exit_code']!=0:raise RuntimeError('Exit not0 '+label)
+m=json.loads((f/'source-manifest.json').read_text());frozen=[n for n,d in m.items()if sha(f/'source'/n)!=d];current=[n for n,d in m.items()if sha(root/n)!=d]
+if frozen or current:raise RuntimeError('Source drift '+repr([frozen,current]))
+pins=json.loads((f/'input-pins.json').read_text())
+for name,h in pins['fixtures'].items():
+ if sha(f/name)!=h or sha(p/name)!=h:raise RuntimeError('Fixture changed '+name)
+(f/'CASE-LEDGER.json').write_text(json.dumps(allcases,indent=2));(f/'SOURCE-AFTER.json').write_text(json.dumps({'verified_files':len(m),'frozen_mismatches':frozen,'checkout_mismatches':current,'exact_original105_ids_preserved':True,'added_repository_cases':3,'source_pins':pins},indent=2))
+cmd=['docker','ps','-a','--filter','name=overview-spec-','--format','{{.Names}}'];r=subprocess.run(cmd,capture_output=True,text=True)
+if r.returncode!=0 or r.stdout.splitlines():raise RuntimeError('Owned cleanup incomplete')
+(f/'cleanup.json').write_text(json.dumps({'command':cmd,'exit_code':r.returncode,'remaining_owned':r.stdout.splitlines(),'shared_containers_touched':False},indent=2))
+artifacts=['final/input-pins.json','final/source-manifest.json','final/SOURCE-AFTER.json','final/CASE-LEDGER.json','final/cleanup.json','final/controls.command.json','final/controls.exit.json','final/controls.json','final/controls.txt','final/raw-path.command.json','final/raw-path.exit.json','final/raw-path.json','final/raw-path.txt','final/raw-path-values.json','final/typecheck.command.json','final/typecheck.exit.json','final/typecheck.txt','final/tsconfig.focused.json','final/retry-adversarial.test.tsx','final/raw-header-path.test.ts','input-pins.json','source-manifest.json','source-after-initial.json','INITIAL-BRIDGE-RESULT.json','controls.json','raw-path.json','raw-path-repeated.json','raw-path-repeated.command.json','raw-path-values.json','old-case.json','old-case-values.json','old-case.command.json','typecheck.exit.json']
+receipt={'verdict':'FINAL TYPECHECK BRIDGE ACCEPTED; S2 fixed; no remaining scoped finding','final_source':pins,'results':{'main':108,'raw_delta':8,'total':116,'independent':68,'repository':48,'failed':0,'skipped':0,'original105_id_subset_preserved':True,'focused_strict_typescript_exit':0},'S2':{'classification':'Valid P3 direct-interceptor/raw-header fallback regression; no ordinary locked-Axios transport defect claimed','input':{'Retry-After':'1','retry-after':'4'},'before':'Typed fallbackb750 first-match dispatches once and returns200; desired matrix7pass1fail. Previous accepted8bf source refuses this ordering with0dispatch503 in selected before-control.','repair':'Raw fallback requires exactly one matching case-insensitive key','after':'Both conflicting key orderings refused before dispatch; single mixed-case key still recovers; raw8/8pass'},'S1':'Prior raw-byte application defect hypothesis remains refuted under locked Axios1.20 normalization; original sealed packet unchanged','caps':{'image':'sha256:e1582112fb9f152ed38eefcd712efc93fee1becb519fdfa57574d5e07eaa5e7d','platform':'linux/amd64','cpus':1,'memory':'1g','pids':256,'network':'none','source':'readonly','deps':'readonly'},'source_after':{'files':838,'frozen_mismatches':frozen,'checkout_mismatches':current},'cleanup':'Zero remaining owned containers; shared untouched','artifact_sha256':{name:sha(p/name)for name in artifacts}}
+(p/'FINAL-BRIDGE-RECEIPT.json').write_text(json.dumps(receipt,indent=2));print(json.dumps({'verdict':receipt['verdict'],'results':receipt['results'],'source_files':len(m)},indent=2))

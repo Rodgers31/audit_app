@@ -1,0 +1,60 @@
+[
+  {
+    "name": "linebreak",
+    "headers": {
+      "Retry-After": "1\n"
+    },
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "array",
+    "headers": {
+      "Retry-After": [
+        "1"
+      ]
+    },
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "numeric",
+    "headers": {
+      "Retry-After": 1
+    },
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "overbudget",
+    "headers": {
+      "Retry-After": "4"
+    },
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "absent",
+    "headers": {},
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "ambiguous-valid-first",
+    "headers": {
+      "Retry-After": "1",
+      "retry-after": "4"
+    },
+    "calls": 0,
+    "resultStatus": 503
+  },
+  {
+    "name": "ambiguous-invalid-first",
+    "headers": {
+      "Retry-After": "4",
+      "retry-after": "1"
+    },
+    "calls": 0,
+    "resultStatus": 503
+  }
+]

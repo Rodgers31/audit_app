@@ -1,0 +1,16 @@
+{
+  "command": [
+    "docker",
+    "ps",
+    "-a",
+    "--filter",
+    "name=pr863-spec-",
+    "--format",
+    "{{.Names}}"
+  ],
+  "exit_code": 0,
+  "remaining_owned": [],
+  "external_gh_calls": 0,
+  "shared_resources_touched": false,
+  "credential_files_created": 0
+}

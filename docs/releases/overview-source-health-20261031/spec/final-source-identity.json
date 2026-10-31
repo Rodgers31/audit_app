@@ -1,0 +1,16 @@
+{
+  "git_head": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+  "files": 838,
+  "mapping_sha256": "34ae755c824cc66144ddb2725ffe5e4d02a54abcb922082e0ed9788226c3a014",
+  "delta": {
+    "frontend/__tests__/lib/api/retryAfter.test.ts": {
+      "before": "74c5c7c184e7c24033d6b7830b2417ff725de81eef787cf9f640619d40592fa6",
+      "after": "997c2acaeeb39bbb0f659e6b3a61a35ce7f8162e7777fd6349347559a78a0b76"
+    },
+    "frontend/lib/api/axios.ts": {
+      "before": "3a8e8d2c88d18a48bf4728daf64658a70a3264928e814e2bcd483d320990f478",
+      "after": "8bf17d9e1ab78965a9f904cd77a4d598faca49114334c25b0786cdf6f8df3fa4"
+    }
+  },
+  "independent_fixture_sha256": "9ce642bc488881352f2387e0416d513e96a01730ef28e0340fce3c6d5f8f5b8a"
+}

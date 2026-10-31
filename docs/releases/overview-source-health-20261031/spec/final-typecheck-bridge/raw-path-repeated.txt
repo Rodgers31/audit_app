@@ -1,0 +1,78 @@
+FAIL ../../evidence/raw-header-path.test.ts
+  ✓ direct actual interceptor accepts one mixed-case plain-object instruction (16 ms)
+  ✓ direct actual interceptor refuses raw-object linebreak (4 ms)
+  ✓ direct actual interceptor refuses raw-object array (4 ms)
+  ✓ direct actual interceptor refuses raw-object numeric (2 ms)
+  ✓ direct actual interceptor refuses raw-object overbudget (2 ms)
+  ✓ direct actual interceptor refuses raw-object absent (2 ms)
+  ✕ direct actual interceptor refuses raw-object ambiguous-valid-first (21 ms)
+  ✓ direct actual interceptor refuses raw-object ambiguous-invalid-first (3 ms)
+
+  ● direct actual interceptor refuses raw-object ambiguous-valid-first
+
+    expect(received).toBe(expected) // Object.is equality
+
+    - Expected  -  1
+    + Received  + 45
+
+    - [AxiosError: capacity]
+    + Object {
+    +   "config": Object {
+    +     "__retryCount": 1,
+    +     "adapter": [Function anonymous],
+    +     "allowAbsoluteUrls": true,
+    +     "baseURL": "http://127.0.0.1:8100/api/v1",
+    +     "data": undefined,
+    +     "env": Object {
+    +       "Blob": [Function Blob],
+    +       "FormData": [Function FormData],
+    +     },
+    +     "headers": Object {
+    +       "Accept": "application/json, text/plain, */*",
+    +       "Content-Type": "application/json",
+    +     },
+    +     "maxBodyLength": -1,
+    +     "maxContentLength": -1,
+    +     "method": "get",
+    +     "timeout": 12000,
+    +     "transformRequest": Array [
+    +       [Function transformRequest],
+    +     ],
+    +     "transformResponse": Array [
+    +       [Function transformResponse],
+    +     ],
+    +     "transitional": Object {
+    +       "advertiseZstdAcceptEncoding": false,
+    +       "clarifyTimeoutError": false,
+    +       "forcedJSONParsing": true,
+    +       "legacyInterceptorReqResOrdering": true,
+    +       "silentJSONParsing": true,
+    +       "validateStatusUndefinedResolves": true,
+    +     },
+    +     "url": "/owned-direct-header-path",
+    +     "validateStatus": [Function validateStatus],
+    +     "xsrfCookieName": "XSRF-TOKEN",
+    +     "xsrfHeaderName": "X-XSRF-TOKEN",
+    +   },
+    +   "data": Object {
+    +     "unexpected": true,
+    +   },
+    +   "headers": Object {},
+    +   "status": 200,
+    +   "statusText": "",
+    + }
+
+      10 | test.each([
+      11 |  ['linebreak',{'Retry-After':'1\n'}],['array',{'Retry-After':['1']}],['numeric',{'Retry-After':1}],['overbudget',{'Retry-After':'4'}],['absent',{}],['ambiguous-valid-first',{'Retry-After':'1','retry-after':'4'}],['ambiguous-invalid-first',{'Retry-After':'4','retry-after':'1'}],
+    > 12 | ] as const)('direct actual interceptor refuses raw-object %s',async(name,headers)=>{let calls=0;api.defaults.adapter=async config=>{calls++;return {config,status:200,statusText:'',headers:{},data:{unexpected:true}}};const c=config();const error=new AxiosError('capacity',AxiosError.ERR_BAD_RESPONSE,c,undefined,{config:c,status:503,statusText:'',data:{},headers:headers as any});const result=fail(error).catch((e:any)=>e);await jest.runAllTimersAsync();const r=await result;records.push({name,headers,calls,resultStatus:r.response?.status??r.status});expect(r).toBe(error);expect(calls).toBe(0);});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ^
+      13 |
+
+      at toBe (../../evidence/raw-header-path.test.ts:12:562)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 7 passed, 8 total
+Snapshots:   0 total
+Time:        0.732 s
+Ran all test suites within paths "/evidence/raw-header-path.test.ts".
+Test results written to: ../../evidence/raw-path-repeated.json

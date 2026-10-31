@@ -1,0 +1,662 @@
+[
+  {
+    "case": "__main__.GuardTests.test_empty_normal_rejection_refuses",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_explicit_override_does_not_bypass_normal_first",
+    "outcome": "normal",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_explicit_override_requires_fresh_second_census",
+    "outcome": "authorized_override",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ],
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f",
+        "--admin"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_failed_override_refuses_without_further_attempt",
+    "outcome": "refused",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ],
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f",
+        "--admin"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_actual_recorded_draft",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_aggregate_changes_requested",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_boolean_census_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_census_exception_refuses_before_any_command",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_changed_head",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_closing_reference",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_failed_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_comment_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_inline_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_nested_pagination",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_review_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_thread_pagination",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_new_review_body",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_bot_rest_request",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_bot_view_request",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_review",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_reviewer_changes_requested",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_unknown_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_unresolved_thread",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_actual_recorded_draft",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_aggregate_changes_requested",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_boolean_census_count",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_census_exception_refuses_admin",
+    "outcome": "refused",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_changed_head",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_closing_reference",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_failed_check",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_incomplete_comment_count",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_incomplete_inline_count",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_incomplete_nested_pagination",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_incomplete_review_count",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_incomplete_thread_pagination",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_new_review_body",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_pending_bot_rest_request",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_pending_bot_view_request",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_pending_check",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_pending_review",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_reviewer_changes_requested",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_unknown_check",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_late_unresolved_thread",
+    "outcome": "refused after first policy rejection",
+    "census_calls": 2,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_normal_success",
+    "outcome": "normal",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_other_pr_allowlist_refuses",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_policy_block_without_explicit_optin",
+    "outcome": "maintainer_override_required",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_protected_branch_block_without_optin",
+    "outcome": "maintainer_override_required",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_truthy_nonboolean_optin_cannot_authorize_admin",
+    "outcome": "maintainer_override_required",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_unexpected_normal_rejection_refuses",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [
+      [
+        "gh",
+        "pr",
+        "merge",
+        "863",
+        "--merge",
+        "--match-head-commit",
+        "253ab29978fdb546b001381861eb767fe84b633f"
+      ]
+    ],
+    "actual_external_calls": 0
+  }
+]

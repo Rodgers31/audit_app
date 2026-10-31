@@ -1,0 +1,49 @@
+
+> audit-app-frontend@1.0.0 test:admin-shell
+> node scripts/verify-node-runtime.cjs && playwright test --config playwright.admin-shell.config.ts
+
+{"check":"node-runtime","node":"v24.22.1","supported":true}
+[2m[WebServer] [22m(node:74121) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74122) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74157) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74305) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (133kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+[2m[WebServer] [22m(node:74307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74404) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74408) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74409) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[WebServer] [22m(node:74480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[2m[WebServer] [22m(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 1 worker
+
+(node:74485) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:74485) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 browser-fixtures/admin-shell/shell.spec.ts:37:5 › reachability refuses transparent controls and covering headers (274ms)
+  ✓   2 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 1728px (454ms)
+  ✓   3 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 768px (443ms)
+  ✓   4 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 375px (464ms)
+  ✓   5 browser-fixtures/admin-shell/shell.spec.ts:51:7 › admin navigation stays visible and clickable at 320px (388ms)
+  ✓   6 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 1728px (1.8s)
+  ✓   7 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 768px (1.8s)
+  ✓   8 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 375px (1.9s)
+  ✓   9 browser-fixtures/admin-shell/shell.spec.ts:68:7 › private utilities remain reachable and functional at 320px (1.9s)
+  ✓  10 browser-fixtures/admin-shell/shell.spec.ts:117:5 › all private shell entry points have one reachable task navigation (915ms)
+  ✓  11 browser-fixtures/admin-shell/shell.spec.ts:129:7 › signed-out cannot mount private navigation (91ms)
+  ✓  12 browser-fixtures/admin-shell/shell.spec.ts:129:7 › editor cannot mount private navigation (92ms)
+
+  12 passed (37.3s)

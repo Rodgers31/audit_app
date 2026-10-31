@@ -1,0 +1,53 @@
+{
+  "hypothesis": "Python -O strips the pytest test assertions in run_review.py/run_final_review.py/run_canonical_affected.py, invalidating optimized evidence.",
+  "verdict": "Refuted for the exact retained default pytest command shapes and original collected31-case module.",
+  "review_head": "253ab29978fdb546b001381861eb767fe84b633f",
+  "runs": {
+    "c1-canary": {
+      "passed": 1,
+      "expected_failed": 1,
+      "child_exit": 1,
+      "optimize": 1,
+      "debug": false
+    },
+    "c2-canary": {
+      "passed": 1,
+      "expected_failed": 1,
+      "child_exit": 1,
+      "optimize": 1,
+      "debug": false
+    },
+    "canonical-canary": {
+      "passed": 1,
+      "expected_failed": 1,
+      "child_exit": 1,
+      "optimize": 1,
+      "debug": false
+    },
+    "original31": {
+      "passed": 32,
+      "expected_failed": 0,
+      "child_exit": 0,
+      "optimize": 1,
+      "debug": false
+    },
+    "wrong27": {
+      "passed": 31,
+      "expected_failed": 1,
+      "child_exit": 1,
+      "optimize": 1,
+      "debug": false
+    }
+  },
+  "python": "3.12.15",
+  "image_id": "sha256:571e327e2fbe507713d267f6f15050d585a5bbb53b8ec2e3afc73db2996d6d2d",
+  "optimization_proven_all_runs": true,
+  "pytest_loader": "AssertionRewritingHook",
+  "original_denied_helper_rewritten": true,
+  "controlled_mutation": "Expected Retry-After26 changed to27, exactly one literal in original module; actual value26 causes helper assert failure under-O.",
+  "historical_sealed_artifacts_unchanged": 33,
+  "product_edits": 0,
+  "limits": "This does not claim Python keeps ordinary unrewritten assert statements under-O. Pytest default rewrites collected test modules, including helper functions in them. No --assert=plain was added. Imported application modules remain optimized, which is the intended boundary being tested. No new broad application acceptance rerun.",
+  "cleanup": "CLEANUP.json",
+  "case_ledger": "CASE-LEDGER.json"
+}

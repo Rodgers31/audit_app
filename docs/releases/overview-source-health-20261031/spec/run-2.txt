@@ -1,0 +1,89 @@
+jest-haste-map: Haste module naming collision: audit-app-frontend
+  The following files share their name; please adjust your hasteImpl:
+    * <rootDir>/package.json
+    * <rootDir>/../../evidence/source/frontend/package.json
+
+jest-haste-map: Haste module naming collision: eslint-plugin-local
+  The following files share their name; please adjust your hasteImpl:
+    * <rootDir>/eslint-rules/package.json
+    * <rootDir>/../../evidence/source/frontend/eslint-rules/package.json
+
+FAIL ../../evidence/retry-adversarial.test.tsx
+  ● independent real Axios capacity boundaries › refuses malformed or outside-contract header "1
+"
+
+    pretty-format: Unknown option "maxWidth".
+
+      25 | describe('independent real Axios capacity boundaries',()=>{
+      26 |  test.each([NaN,Infinity,-Infinity,-1,true,false,[],['1'],['1','2'],{},null,'','NaN','Infinity','-0','+1','1.0','1e0','0x1','1, 2','1\n','1\r\n','\u00a01','１','١','4','004','999','1000','Fri, 31 Oct 2026 12:00:01 GMT'])('refuses malformed or outside-contract header %p',async header=>{
+    > 27 |   let calls=0;api.defaults.adapter=async config=>{calls++;return refuse(config,header)};const result=api.get('/admin/private').then(()=>null,e=>e);await jest.runAllTimersAsync();expect((await result).response.status).toBe(503);expect(calls).toBe(1);expect(jest.getTimerCount()).toBe(0);
+         |                                                                                                                                                                                                                                                  ^
+      28 |  });
+      29 |  test.each([['0',1500],['1',1500],['2',2000],['3',3000],[' \t2\t',2000],['003',3000],['000',1500]] as const)('honors finite header %s with base minimum',async(header,delay)=>{
+      30 |   const times:number[]=[];api.defaults.adapter=async config=>{times.push(Date.now());if(times.length===1)return refuse(config,header);return response(config)};const result=api.get('/safe');await jest.advanceTimersByTimeAsync(delay-1);expect(times).toHaveLength(1);await jest.advanceTimersByTimeAsync(1);expect((await result).status).toBe(200);expect(times[1]-times[0]).toBe(delay);
+
+      at toBe (../../evidence/retry-adversarial.test.tsx:27:242)
+
+  ● independent real Axios capacity boundaries › refuses malformed or outside-contract header "1
+"
+
+    pretty-format: Unknown option "maxWidth".
+
+      25 | describe('independent real Axios capacity boundaries',()=>{
+      26 |  test.each([NaN,Infinity,-Infinity,-1,true,false,[],['1'],['1','2'],{},null,'','NaN','Infinity','-0','+1','1.0','1e0','0x1','1, 2','1\n','1\r\n','\u00a01','１','١','4','004','999','1000','Fri, 31 Oct 2026 12:00:01 GMT'])('refuses malformed or outside-contract header %p',async header=>{
+    > 27 |   let calls=0;api.defaults.adapter=async config=>{calls++;return refuse(config,header)};const result=api.get('/admin/private').then(()=>null,e=>e);await jest.runAllTimersAsync();expect((await result).response.status).toBe(503);expect(calls).toBe(1);expect(jest.getTimerCount()).toBe(0);
+         |                                                                                                                                                                                                                                                  ^
+      28 |  });
+      29 |  test.each([['0',1500],['1',1500],['2',2000],['3',3000],[' \t2\t',2000],['003',3000],['000',1500]] as const)('honors finite header %s with base minimum',async(header,delay)=>{
+      30 |   const times:number[]=[];api.defaults.adapter=async config=>{times.push(Date.now());if(times.length===1)return refuse(config,header);return response(config)};const result=api.get('/safe');await jest.advanceTimersByTimeAsync(delay-1);expect(times).toHaveLength(1);await jest.advanceTimersByTimeAsync(1);expect((await result).status).toBe(200);expect(times[1]-times[0]).toBe(delay);
+
+      at toBe (../../evidence/retry-adversarial.test.tsx:27:242)
+
+  ● actual Overview + QueryClient + actual Axios adapter › permanent503, malformed instruction and malformed recovered payload stay unavailable
+
+    TestingLibraryElementError: Unable to find an element with the text: /Evidence unavailable/. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<a[39m
+      [33mclass[39m=[32m"task"[39m
+      [33mhref[39m=[32m"/admin/users"[39m
+    [36m>[39m
+      [36m<div>[39m
+        [36m<strong>[39m
+          [0mManage people and access[0m
+        [36m</strong>[39m
+        [36m<p>[39m
+          [0mChecking current evidence…[0m
+        [36m</p>[39m
+      [36m</div>[39m
+      [36m<span[39m
+        [33mclass[39m=[32m"taskAction"[39m
+      [36m>[39m
+        [0mFind a person →[0m
+      [36m</span>[39m
+    [36m</a>[39m
+
+      57 | describe('actual Overview + QueryClient + actual Axios adapter',()=>{
+      58 |  test('all seven concurrent real queries recover temporary503 automatically without refresh',async()=>{const calls:Record<string,number>={};api.defaults.adapter=async config=>{const u=config.url!;calls[u]=(calls[u]??0)+1;if(calls[u]===1)return refuse(config,'1');return response(config,200,payloads[u])};const {client}=mount();await tick(0);expect(Object.keys(calls).sort()).toEqual(Object.keys(payloads).sort());expect(Object.values(calls)).toEqual(Array(7).fill(1));expect(screen.getByRole('button',{name:'Refresh overview'})).toBeDisabled();await tick(1499);expect(Object.values(calls)).toEqual(Array(7).fill(1));await tick(2);await expectRecovered();expect(Object.values(calls)).toEqual(Array(7).fill(2));expect(client.getQueryCache().getAll()).toHaveLength(7);expect(client.getQueryCache().getAll().every(q=>q.state.status==='success')).toBe(true);});
+    > 59 |  test('permanent503, malformed instruction and malformed recovered payload stay unavailable',async()=>{const calls:Record<string,number>={};api.defaults.adapter=async config=>{const u=config.url!;calls[u]=(calls[u]??0)+1;if(u==='/admin/users/stats')return refuse(config,undefined);if(u==='/admin/social/system/status')return refuse(config,'tomorrow');if(calls[u]===1)return refuse(config,'1');return response(config,200,u==='/admin/ingestion-jobs/stats/summary'?{...payloads[u],total_jobs:NaN}:payloads[u])};mount();await tick(1501);const people=screen.getByRole('link',{name:/Manage people and access/}),social=screen.getByRole('link',{name:/Review social drafts/}),updates=screen.getByRole('link',{name:/Check data updates/});for(const card of [people,social,updates])expect(within(card).getByText(/Evidence unavailable/)).toBeInTheDocument();expect(people).not.toHaveTextContent('11 accounts');expect(calls['/admin/users/stats']).toBe(1);expect(calls['/admin/social/system/status']).toBe(1);expect(calls['/admin/ingestion-jobs/stats/summary']).toBe(2);expect(screen.getByText('No actions recorded in this view.')).toBeInTheDocument();});
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ^
+      60 |  test('actor switch cancels every old503 backoff and isolates new actor data/token',async()=>{const calls:{url:string;token:any;signal:any}[]=[];api.defaults.adapter=async config=>{calls.push({url:config.url!,token:config.headers.get('Authorization'),signal:config.signal});if(config.headers.get('Authorization')==='Bearer token-A')return refuse(config);return response(config,200,payloads[config.url!])};const view=mount();await tick(0);expect(calls).toHaveLength(7);mockActor='actor-B';mockToken='token-B';view.rerenderOverview();await tick(0);await tick(3001);await expectRecovered();expect(calls).toHaveLength(14);expect(calls.slice(0,7).every(c=>c.signal.aborted)).toBe(true);expect(calls.filter(c=>c.token==='Bearer token-A')).toHaveLength(7);expect(view.client.getQueryCache().getAll().every(q=>q.queryKey.includes('actor-B'))).toBe(true);});
+      61 |  test('auth revocation aborts all old503 work and never retries after session disappears',async()=>{const calls:InternalAxiosRequestConfig[]=[];api.defaults.adapter=async config=>{calls.push(config);return refuse(config)};const view=mount();await tick(0);expect(calls).toHaveLength(7);mockAdmin=false;mockActor=null;mockToken=null;view.rerenderOverview();await tick(5000);expect(calls).toHaveLength(7);expect(calls.every(c=>c.signal?.aborted)).toBe(true);expect(screen.getByText('Admin access required.')).toBeInTheDocument();expect(screen.queryByRole('link',{name:/Manage people and access/})).not.toBeInTheDocument();});
+      62 |  test('unmount aborts pending503 work without any replay',async()=>{const calls:InternalAxiosRequestConfig[]=[];api.defaults.adapter=async config=>{calls.push(config);return refuse(config)};const view=mount();await tick(0);expect(calls).toHaveLength(7);view.unmount();await tick(5000);expect(calls).toHaveLength(7);expect(calls.every(c=>c.signal?.aborted)).toBe(true);});
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (../../evidence/retry-adversarial.test.tsx:59:791)
+
+PASS __tests__/lib/api/retryBudget.test.ts
+PASS __tests__/lib/api/retryAfter.test.ts
+PASS __tests__/lib/api/retryBudgetServer.test.ts
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       3 failed, 97 passed, 100 total
+Snapshots:   0 total
+Time:        2.191 s
+Ran all test suites within paths "/evidence/retry-adversarial.test.tsx", "/work/frontend/__tests__/lib/api/retryAfter.test.ts", "/work/frontend/__tests__/lib/api/retryBudget.test.ts", "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts".
+Test results written to: ../../evidence/run-2.json

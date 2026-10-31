@@ -1,0 +1,71 @@
+FAIL __tests__/lib/api/retryAfter.test.ts
+  server-directed temporary read recovery
+    ✓ recovers a get capacity refusal without a manual page refresh (11 ms)
+    ✓ recovers a head capacity refusal without a manual page refresh (4 ms)
+    ✓ retains the three-attempt ceiling when temporary capacity never returns (14 ms)
+    ✓ waits at least the server delay while preserving finite backoff (6 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: undefined (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "" (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "NaN" (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "Infinity" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "-1" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "1.5" (4 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "4" (3 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "99999999999999" (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: true (1 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: false (1 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: ["1"] (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: {} (2 ms)
+    ✓ keeps an absent, malformed or over-budget Retry-After visible: "tomorrow" (2 ms)
+    ✕ keeps an absent, malformed or over-budget Retry-After visible: "1
+" (5 ms)
+    ✕ keeps an absent, malformed or over-budget Retry-After visible: "1
+" (2 ms)
+    ✓ never replays post after a temporary refusal
+    ✓ never replays put after a temporary refusal (2 ms)
+    ✓ never replays patch after a temporary refusal (2 ms)
+    ✓ never replays delete after a temporary refusal (2 ms)
+    ✓ cancels a pending capacity backoff without another HTTP attempt (5 ms)
+
+  ● server-directed temporary read recovery › keeps an absent, malformed or over-budget Retry-After visible: "1
+"
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 503
+    Received: "success"
+
+      73 |     const result = apiClient.get('/unavailable-data').then(() => 'success', e => e.response.status);
+      74 |     await jest.runAllTimersAsync();
+    > 75 |     expect(await result).toBe(503);
+         |                          ^
+      76 |     expect(attempts).toHaveLength(1);
+      77 |   });
+      78 |
+
+      at toBe (__tests__/lib/api/retryAfter.test.ts:75:26)
+
+  ● server-directed temporary read recovery › keeps an absent, malformed or over-budget Retry-After visible: "1
+"
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 503
+    Received: "success"
+
+      73 |     const result = apiClient.get('/unavailable-data').then(() => 'success', e => e.response.status);
+      74 |     await jest.runAllTimersAsync();
+    > 75 |     expect(await result).toBe(503);
+         |                          ^
+      76 |     expect(attempts).toHaveLength(1);
+      77 |   });
+      78 |
+
+      at toBe (__tests__/lib/api/retryAfter.test.ts:75:26)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 22 passed, 24 total
+Snapshots:   0 total
+Time:        0.852 s
+Ran all test suites within paths "__tests__/lib/api/retryAfter.test.ts".
+Test results written to: ../../evidence/header-review-red.json

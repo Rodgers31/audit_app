@@ -1,0 +1,8 @@
+{
+  "owned_containers_remaining": [],
+  "all_five_runs_used_rm": true,
+  "credentials_or_pg_created": false,
+  "shared_containers_not_touched": true,
+  "network_mode": "none",
+  "flags": "All operational generation/publishing/uploads/media/workers false in each retained command shape"
+}

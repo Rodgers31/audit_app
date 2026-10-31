@@ -1,0 +1,8 @@
+{
+  "NEXT_PUBLIC_API_URL": "https://audit-app-4pwa.onrender.com",
+  "NEXT_PUBLIC_SUPABASE_ANON_KEY": {
+    "present": true,
+    "sha256": "6f90787138bc3cc2a5a1095032b17acf7f8133a62693a48d52da49c9cacf5738"
+  },
+  "NEXT_PUBLIC_SUPABASE_URL": "https://xznjxwrkbkahwtnbstbj.supabase.co"
+}

@@ -1,0 +1,103 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_cold_followers_get_retry_advice_without_duplicate_key_fetch _______
+
+cold = None
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffb29465a0>
+
+    def test_cold_followers_get_retry_advice_without_duplicate_key_fetch(cold, monkeypatch):
+        entered, release = threading.Event(), threading.Event()
+        calls = []
+    
+        def read():
+            calls.append(True)
+            entered.set()
+            if not release.wait(2):
+                raise RuntimeError("Owned leader was not released")
+            return {"keys": []}
+    
+        monkeypatch.setattr(auth, "_read_jwks", read)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            leader = pool.submit(auth._fetch_jwks)
+            try:
+                assert entered.wait(1)
+                for _ in range(7):
+                    with pytest.raises(HTTPException) as caught:
+                        auth._fetch_jwks()
+                    assert caught.value.status_code == 503
+>                   assert (caught.value.headers or {}).get("Retry-After") == "1"
+E                   AssertionError: assert None == '1'
+E                    +  where None = <built-in method get of dict object at 0xffffb2a21740>('Retry-After')
+E                    +    where <built-in method get of dict object at 0xffffb2a21740> = (None or {}).get
+E                    +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers
+E                    +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = <ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2>.value
+
+tests/test_auth_retry_after.py:40: AssertionError
+______ test_provider_failure_cooldown_does_not_invite_an_immediate_retry _______
+
+cold = None
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffb29108c0>
+
+    def test_provider_failure_cooldown_does_not_invite_an_immediate_retry(cold, monkeypatch):
+        def fail():
+            raise ValueError("Inert private issuer detail")
+    
+        monkeypatch.setattr(auth, "_read_jwks", fail)
+        with pytest.raises(HTTPException) as caught:
+            auth._fetch_jwks()
+        assert caught.value.status_code == 503
+>       assert (caught.value.headers or {}).get("Retry-After") == "30"
+E       AssertionError: assert None == '30'
+E        +  where None = <built-in method get of dict object at 0xffffb2a10d80>('Retry-After')
+E        +    where <built-in method get of dict object at 0xffffb2a10d80> = (None or {}).get
+E        +      where None = HTTPException(status_code=503, detail='Authentication keys temporarily unavailable').headers
+E        +        where HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') = <ExceptionInfo HTTPException(status_code=503, detail='Authentication keys temporarily unavailable') tblen=2>.value
+
+tests/test_auth_retry_after.py:57: AssertionError
+____ test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffb2910ef0>
+
+    @pytest.mark.asyncio
+    async def test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser(monkeypatch):
+        import main
+    
+        def unavailable():
+            raise HTTPException(503, "Authentication keys temporarily unavailable", headers={"Retry-After": "1"})
+    
+        monkeypatch.setattr(main.app, "dependency_overrides", {**main.app.dependency_overrides, auth.get_current_user: unavailable})
+        cors = next(m for m in main.app.user_middleware if m.cls.__name__ == 'CORSMiddleware')
+        origin = cors.kwargs['allow_origins'][0]
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=main.app), base_url="http://owned.test") as client:
+            response = await client.get("/api/v1/admin/users/stats", headers={"Origin": origin, "Authorization": "Bearer inert"})
+        assert response.status_code == 503
+        assert response.headers["retry-after"] == "1"
+        assert response.headers["access-control-allow-origin"] == origin
+        exposed = {x.strip().lower() for x in response.headers.get("access-control-expose-headers", "").split(",")}
+>       assert "retry-after" in exposed
+E       AssertionError: assert 'retry-after' in {''}
+
+tests/test_auth_retry_after.py:81: AssertionError
+----------------------------- Captured stderr call -----------------------------
+2026-10-31 15:53:16,323 - main - WARNING - {"event":"http_request","method":"GET","route":"/api/v1/admin/users/stats","status":503,"duration_ms":51.9}
+------------------------------ Captured log call -------------------------------
+WARNING  main:main.py:2108 {"event":"http_request","method":"GET","route":"/api/v1/admin/users/stats","status":503,"duration_ms":51.9}
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+database.py:79
+  /case/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /case/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_auth_retry_after.py::test_cold_followers_get_retry_advice_without_duplicate_key_fetch
+FAILED tests/test_auth_retry_after.py::test_provider_failure_cooldown_does_not_invite_an_immediate_retry
+FAILED tests/test_auth_retry_after.py::test_admin_refusal_exposes_only_retry_advice_to_the_configured_browser
+3 failed, 3 warnings in 0.14s

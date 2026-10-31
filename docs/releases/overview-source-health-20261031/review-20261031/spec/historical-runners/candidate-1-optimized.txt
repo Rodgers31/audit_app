@@ -1,0 +1,35 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+__________________________ test_false_test_assertion ___________________________
+
+    def test_false_test_assertion():
+>       assert 26 == 27, 'deliberately false test assertion'
+E       AssertionError: deliberately false test assertion
+E       assert 26 == 27
+
+test_optimizer_assertions.py:7: AssertionError
+_________________________ test_false_helper_assertion __________________________
+
+    def test_false_helper_assertion():
+>       _false_helper()
+
+test_optimizer_assertions.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _false_helper():
+>       assert 26 == 27, 'deliberately false helper assertion in collected test module'
+E       AssertionError: deliberately false helper assertion in collected test module
+E       assert 26 == 27
+
+test_optimizer_assertions.py:4: AssertionError
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/_pytest/config/__init__.py:1346
+  /usr/local/lib/python3.12/site-packages/_pytest/config/__init__.py:1346: PytestConfigWarning: assertions not in test modules or plugins will be ignored because assert statements are not executed by the underlying Python interpreter (are you using python -O?)
+  
+    self._warn_about_missing_assertion(mode)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED test_optimizer_assertions.py::test_false_test_assertion - AssertionErr...
+FAILED test_optimizer_assertions.py::test_false_helper_assertion - AssertionE...
+2 failed, 1 passed, 1 warning in 0.03s

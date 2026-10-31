@@ -1,0 +1,97 @@
+{
+  "verdict": "FINAL TYPECHECK BRIDGE ACCEPTED; S2 fixed; no remaining scoped finding",
+  "final_source": {
+    "files": 838,
+    "mapping_sha256": "cd582ddfd7d74e7bc8944b7a363b7083d812cab50ea6ff31b03064d9e6659c9e",
+    "delta": {
+      "frontend/__tests__/lib/api/retryAfter.test.ts": {
+        "before": "b1ee1a91ba6476f166b2a35f80af960fe3f9e0abd9588dd9143fa5bb5c0c68d0",
+        "after": "68c4a714a5574490f16c2f5c4b6dbcafd84bfd813c59314cc9e825905d575aa9"
+      },
+      "frontend/lib/api/axios.ts": {
+        "before": "b7502d686612a7a83ea0160c6a6388f9f442bf81e1b4165dbe365e834f24b594",
+        "after": "52fc764319c621878c9adea225ec9cca58e7980850ff37735209d6074400fb5a"
+      }
+    },
+    "fixtures": {
+      "retry-adversarial.test.tsx": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+      "raw-header-path.test.ts": "2dab8e86f045778e520525ba150de78917923cf835d8cd1fcdd287092f0c4a5a",
+      "jest.config.cjs": "eec66a56a23a5f1bf933d3800a08c018886ae0c8d5437e20fa4b3421755df258",
+      "tsconfig.focused.json": "1fa4a3d441db75fcc2c5fcebc65f09191f6496cbaa03a4d4755e1a50b6fec6ee"
+    }
+  },
+  "results": {
+    "main": 108,
+    "raw_delta": 8,
+    "total": 116,
+    "independent": 68,
+    "repository": 48,
+    "failed": 0,
+    "skipped": 0,
+    "original105_id_subset_preserved": true,
+    "focused_strict_typescript_exit": 0,
+    "case_identity_note": "Jest pretty-format sorts object keys, so two distinct key-order parameters share a title. Occurrence ordinals tied to exact frozen source preserve116 distinct executions; all original105 identities remain present."
+  },
+  "S2": {
+    "classification": "Valid P3 direct-interceptor/raw-header fallback regression; no ordinary locked-Axios transport defect claimed",
+    "input": {
+      "Retry-After": "1",
+      "retry-after": "4"
+    },
+    "before": "Typed fallbackb750 first-match dispatches once and returns200; desired matrix7pass1fail. Previous accepted8bf source refuses this ordering with0dispatch503 in selected before-control.",
+    "repair": "Raw fallback requires exactly one matching case-insensitive key",
+    "after": "Both conflicting key orderings refused before dispatch; single mixed-case key still recovers; raw8/8pass"
+  },
+  "S1": "Prior raw-byte application defect hypothesis remains refuted under locked Axios1.20 normalization; original sealed packet unchanged",
+  "caps": {
+    "image": "sha256:e1582112fb9f152ed38eefcd712efc93fee1becb519fdfa57574d5e07eaa5e7d",
+    "platform": "linux/amd64",
+    "cpus": 1,
+    "memory": "1g",
+    "pids": 256,
+    "network": "none",
+    "source": "readonly",
+    "deps": "readonly"
+  },
+  "source_after": {
+    "files": 838,
+    "frozen_mismatches": [],
+    "checkout_mismatches": []
+  },
+  "cleanup": "Zero remaining owned containers; shared untouched",
+  "artifact_sha256": {
+    "final/input-pins.json": "8ba93a685e928ae68ed883a7c2c7f8a6f07eb57b0d87de967e164667dd6c45cc",
+    "final/source-manifest.json": "3f58002e1585fafa21b7c68ad08d06afc53a89b3ea8d86c8e54985962d2a80bf",
+    "final/SOURCE-AFTER.json": "7b041da0a6ffae766b864fd644723a0880b30c6143f84cabf13b4e94d849b96f",
+    "final/CASE-LEDGER.json": "0bbc06be58f2c19b021f2779a0faff609ad025123712d1fbd8762fe1ecbb8fec",
+    "final/cleanup.json": "3dc81b92209ce794b6bce35180865844469827fd1b0fe9ad3bee0a6ce06f7e78",
+    "final/controls.command.json": "e3452435837b5d8bd514a26d3682f2cfb80b08bb8f7dd9482d4f60d9948ab2bc",
+    "final/controls.exit.json": "c5e7ba8bd10dbfa41a12b26401365a45689dec9259c6f8be334f975ce5ef62c3",
+    "final/controls.json": "5ef961979e226eeb2326318d9a82ce21a86bba529906a6497b3b552d56f077ba",
+    "final/controls.txt": "7148bc3263e31a5f38404a5cd97dfa946bb37273eebfc98ca81c7e5a9bd65c9f",
+    "final/raw-path.command.json": "f1c4bb73d174be5a0b4d15ce87f40c62cba3cdf1c8ccdde645bc1858db2789ba",
+    "final/raw-path.exit.json": "66b03dc34fa30051748d4ed5ae82ebbefd59ce725c41f95883a7205de9f8d612",
+    "final/raw-path.json": "41572fd14c6162c4494aedc8e1f358a0804264b1b263da681116211c82a97d90",
+    "final/raw-path.txt": "ed776ce988e8317be0d87801f053932a5aff0b958b2cceadbdf158f9eaf7ee52",
+    "final/raw-path-values.json": "570606c3b4501215a5daf18d629b7b59cecae087cbdb6f5820efe3ebf65bd7cd",
+    "final/typecheck.command.json": "d0d180e8de3067b74b70a5a8d744154c3df02870980036969b7fabf1c5a0687c",
+    "final/typecheck.exit.json": "403152cf3ccc87ff2a2cab0a708abbc3648725ab9e1c322ebabab7701824879e",
+    "final/typecheck.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final/tsconfig.focused.json": "1fa4a3d441db75fcc2c5fcebc65f09191f6496cbaa03a4d4755e1a50b6fec6ee",
+    "final/retry-adversarial.test.tsx": "90970753a17d47e6663cc769a425e3b9be80619a1efff4d26f807ce163370965",
+    "final/raw-header-path.test.ts": "2dab8e86f045778e520525ba150de78917923cf835d8cd1fcdd287092f0c4a5a",
+    "input-pins.json": "9b2f6985f2d938a109a41e594ade926172c234eeffa473012f845b38c7519dc8",
+    "source-manifest.json": "505d4612d4dab84b42077fab8f56266abf179aa710cab97c17f7c2975112755c",
+    "source-after-initial.json": "fd65b2edcd35e7457be1b139ea25046f4e7b5a213773032ff19c20a033989195",
+    "INITIAL-BRIDGE-RESULT.json": "294d0015fef3c5e41704ae4ddaa681ec07a75cca8a9814f77cd2051b3020e55b",
+    "controls.json": "eebe21115b6442ac56c2147de51fd8d871d3b87d6445ceb951b558ba7bf74c41",
+    "raw-path.json": "5eb9a8ffd241522d0b753ff077faacefdc07430d3e9db1b1fefa6778aa437291",
+    "raw-path-repeated.json": "0b13eecc6a59ddf432c5587f23131ed63bb5fec53f8d271008eb85f52311c915",
+    "raw-path-repeated.command.json": "56070ad04219f9451fc5ad57c6e78b745db84a4810f8fbc97ff092e21d3b373e",
+    "raw-path-values.json": "b9b06b88e0d719cb2173f885110fd9ad18f138133c0f020391a8c3d8feb9862f",
+    "old-case.json": "4a57fb0ed16733f9ce27b766b8160536b30e9cce87d61ba720dfbf7bb2f6ce26",
+    "old-case-values.json": "4d899ce31b4e9f02a1e14aa7d8f049477c00f6a29e5f78ca0643f4d6df7d3381",
+    "old-case.command.json": "752231a10bc749bc51e0e3586204a99967dd6f20fcf7e56cedf5690ec3a36c43",
+    "typecheck.exit.json": "8fd0250d86b952e232407f400630916067ec3d270ff9910395c9a81165c67dd2"
+  }
+}

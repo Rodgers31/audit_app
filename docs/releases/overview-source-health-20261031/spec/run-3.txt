@@ -1,0 +1,47 @@
+FAIL ../../evidence/retry-adversarial.test.tsx
+  ● independent real Axios capacity boundaries › refuses malformed or outside-contract header "1
+"
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      27 | describe('independent real Axios capacity boundaries',()=>{
+      28 |  test.each([NaN,Infinity,-Infinity,-1,true,false,[],['1'],['1','2'],{},null,'','NaN','Infinity','-0','+1','1.0','1e0','0x1','1, 2','1\n','1\r\n','\u00a01','１','١','4','004','999','1000','Fri, 31 Oct 2026 12:00:01 GMT'])('refuses malformed or outside-contract header %p',async header=>{
+    > 29 |   let calls=0;api.defaults.adapter=async config=>{calls++;return refuse(config,header)};const result=api.get('/admin/private').then(()=>null,e=>e);await jest.runAllTimersAsync();const error=await result;if(typeof header==='string'&&/[\r\n]/.test(header))appendFileSync('/evidence/header-probes.jsonl',JSON.stringify({header,attempts:calls,status:error.response.status})+'\n');expect(error.response.status).toBe(503);expect(calls).toBe(1);expect(jest.getTimerCount()).toBe(0);
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                               ^
+      30 |  });
+      31 |  test.each([['0',1500],['1',1500],['2',2000],['3',3000],[' \t2\t',2000],['003',3000],['000',1500]] as const)('honors finite header %s with base minimum',async(header,delay)=>{
+      32 |   const times:number[]=[];api.defaults.adapter=async config=>{times.push(Date.now());if(times.length===1)return refuse(config,header);return response(config)};const result=api.get('/safe');await jest.advanceTimersByTimeAsync(delay-1);expect(times).toHaveLength(1);await jest.advanceTimersByTimeAsync(1);expect((await result).status).toBe(200);expect(times[1]-times[0]).toBe(delay);
+
+      at toBe (../../evidence/retry-adversarial.test.tsx:29:431)
+
+  ● independent real Axios capacity boundaries › refuses malformed or outside-contract header "1
+"
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 3
+
+      27 | describe('independent real Axios capacity boundaries',()=>{
+      28 |  test.each([NaN,Infinity,-Infinity,-1,true,false,[],['1'],['1','2'],{},null,'','NaN','Infinity','-0','+1','1.0','1e0','0x1','1, 2','1\n','1\r\n','\u00a01','１','١','4','004','999','1000','Fri, 31 Oct 2026 12:00:01 GMT'])('refuses malformed or outside-contract header %p',async header=>{
+    > 29 |   let calls=0;api.defaults.adapter=async config=>{calls++;return refuse(config,header)};const result=api.get('/admin/private').then(()=>null,e=>e);await jest.runAllTimersAsync();const error=await result;if(typeof header==='string'&&/[\r\n]/.test(header))appendFileSync('/evidence/header-probes.jsonl',JSON.stringify({header,attempts:calls,status:error.response.status})+'\n');expect(error.response.status).toBe(503);expect(calls).toBe(1);expect(jest.getTimerCount()).toBe(0);
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                               ^
+      30 |  });
+      31 |  test.each([['0',1500],['1',1500],['2',2000],['3',3000],[' \t2\t',2000],['003',3000],['000',1500]] as const)('honors finite header %s with base minimum',async(header,delay)=>{
+      32 |   const times:number[]=[];api.defaults.adapter=async config=>{times.push(Date.now());if(times.length===1)return refuse(config,header);return response(config)};const result=api.get('/safe');await jest.advanceTimersByTimeAsync(delay-1);expect(times).toHaveLength(1);await jest.advanceTimersByTimeAsync(1);expect((await result).status).toBe(200);expect(times[1]-times[0]).toBe(delay);
+
+      at toBe (../../evidence/retry-adversarial.test.tsx:29:431)
+
+PASS __tests__/lib/api/retryBudget.test.ts
+PASS __tests__/lib/api/retryAfter.test.ts
+PASS __tests__/lib/api/retryBudgetServer.test.ts
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       2 failed, 98 passed, 100 total
+Snapshots:   0 total
+Time:        2.383 s
+Ran all test suites within paths "/evidence/retry-adversarial.test.tsx", "/work/frontend/__tests__/lib/api/retryAfter.test.ts", "/work/frontend/__tests__/lib/api/retryBudget.test.ts", "/work/frontend/__tests__/lib/api/retryBudgetServer.test.ts".
+Test results written to: ../../evidence/run-3.json

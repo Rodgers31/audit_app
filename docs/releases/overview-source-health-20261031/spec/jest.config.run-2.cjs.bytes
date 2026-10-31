@@ -1,0 +1,2 @@
+const create = require('/work/frontend/node_modules/next/jest')({dir:'/work/frontend'});
+module.exports=create({rootDir:'/work/frontend',roots:['/work/frontend','/evidence'],testEnvironment:'jest-environment-jsdom',setupFilesAfterEnv:['/work/frontend/jest.setup.js'],moduleNameMapper:{'^@/(.*)$':'/work/frontend/$1'},moduleDirectories:['/work/frontend/node_modules','node_modules'],cacheDirectory:'/tmp/spec-jest-cache',testRegex:'.*\\.test\\.tsx?$',testPathIgnorePatterns:['/work/frontend/e2e/','/work/frontend/browser-fixtures/','/work/frontend/node_modules/']});

@@ -1,0 +1,42 @@
+.....F.........................                                          [100%]
+=================================== FAILURES ===================================
+__________ test_leader_failure_advertises_remaining_attempt_cooldown ___________
+
+clock = [104.25]
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff7fab3d40>
+
+    def test_leader_failure_advertises_remaining_attempt_cooldown(clock,monkeypatch):
+     def failed():clock[0]+=4.25;raise httpx.ConnectError(PRIVATE)
+>    monkeypatch.setattr(auth,'_read_jwks',failed);denied(auth._fetch_jwks,26)
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/evidence/test_backend_independent.py:37: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+call = <function _fetch_jwks at 0xffff800a89a0>, delay = 26
+
+    def denied(call,delay):
+     with pytest.raises(HTTPException) as caught:call()
+>    e=caught.value;assert e.status_code==503;assert e.headers=={'Retry-After':str(delay),'Cache-Control':'no-store'};assert PRIVATE not in e.detail
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AssertionError: assert {'Retry-After...': 'no-store'} == {'Retry-After...': 'no-store'}
+E      
+E      Omitting 1 identical items, use -vv to show
+E      Differing items:
+E      {'Retry-After': '30'} != {'Retry-After': '26'}
+E      Use -v to get more diff
+
+/evidence/test_backend_independent.py:29: AssertionError
+=============================== warnings summary ===============================
+database.py:79
+  /case/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /case/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../../evidence/test_backend_independent.py::test_leader_failure_advertises_remaining_attempt_cooldown
+1 failed, 30 passed, 2 warnings in 1.02s

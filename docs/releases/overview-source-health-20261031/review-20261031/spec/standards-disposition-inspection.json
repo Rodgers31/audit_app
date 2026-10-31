@@ -1,0 +1,51 @@
+{
+  "inspection_only_not_own_execution": true,
+  "reports_sha256": {
+    "REPORT.md": "6641e3a4a59b3ac7e71f5b50a936f69becb021032e9fca1122538898cf3f0057",
+    "RECEIPT.json": "1966acc15429f7e1fc09b40a16a032d444935931f04fab94cd68dc905e6120bf",
+    "MUTATION.json": "0a89f2b398ead832144940a40da4ebfbea4718fdf1178fb87ded05b17e83ab42",
+    "wrong27-runtime.json": "331227c36d4a76f5147bc0310507d97c077c567f2cc33beddd54635d181e102c"
+  },
+  "runs": [
+    {
+      "run": "c1-canary",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "aaa614ffeae9f722299cae88316266f9ad47246aa5e9808fc525e11f9d13c842"
+    },
+    {
+      "run": "c2-canary",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "6f091711bfe4ea3894ff9568186c1be63bb9754e2032a20707057cda0a51d810"
+    },
+    {
+      "run": "canonical-canary",
+      "tests": 2,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "d2c7ba71f0073e2959468efd0908fee23eb95aea82655df8266e53bb853805ff"
+    },
+    {
+      "run": "original31",
+      "tests": 32,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "26e9d7a84247ca0871c881a57f3751ac1434091195ac8f4b29f4f1c89cfe9f8c"
+    },
+    {
+      "run": "wrong27",
+      "tests": 32,
+      "failed": 1,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "5b13d98767792260a01125e4ff5c4dabb4d130cd66b29e6b1e4b0ed5ebaf480e"
+    }
+  ]
+}

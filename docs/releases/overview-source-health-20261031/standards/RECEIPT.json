@@ -1,0 +1,33 @@
+{
+  "scope": "Independent offline backend review of overview auth recovery, CORS Retry-After exposure and bounded source diagnostics/canonical CoB URL.",
+  "verdict": "Scoped pass on final candidate; no unresolved finding in executed boundaries. Live source availability and production rollout were not tested or authorized here.",
+  "base_head": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+  "final_source_mapping_sha256": "99fbeb3939df0756ff07860fa29bb8628aa07f779c55a97dcb7ba1e1ac420568",
+  "file_count": 1478,
+  "source_before_after_match": true,
+  "independent_pass_per_mode": 31,
+  "affected_corroboration_pass_per_mode": 140,
+  "normal_and_true_optimized_zero_skips": true,
+  "resolved_finding": {
+    "severity": "P3",
+    "problem": "Delayed failed JWKS leader returned30s while same-instant followers returned26s remaining on unchanged attempt-based cooldown.",
+    "repro": "test_backend_independent.py::test_leader_failure_advertises_remaining_attempt_cooldown",
+    "red": "candidate-1-normal.xml",
+    "fixed": "candidate-2-normal.xml and candidate-2-optimized.xml",
+    "runtime_delta": "Only supabase_auth remaining-delay computation changed between reviewed source1 and2; auth/status tests also changed."
+  },
+  "runtime": "RUNTIME.json",
+  "source_pins": {
+    "backend/main.py": "e93baa2efbf7251284f5505c3b7f2408a6237e4b5ac1184665148ef193f16817",
+    "backend/supabase_auth.py": "2c83701dc699a56431c561285a24bcd77f991db157a2c59ea0ccfee20b69dbeb",
+    "backend/services/source_reachability.py": "0b6cb695ab9c201809d8d82cad591f44fee909a5b82907d6e0a39612d584a2ef"
+  },
+  "effect_limits": "Docker network none,1CPU/1GiB/256PIDs, explicit inert SQLite /tmp and all operational generation/publishing/media/upload/worker flags false; no provider/production network, PG, credentials, shared-container mutation, paid or hosted actions.",
+  "limits": [
+    "Real internet TLS/availability and RTT were not reprobed. Tests preserve certificate failures as failures; source diagnostics do not establish ingestion authority.",
+    "Direct CoB URL/config is verified without weakening TLS or existing budgets; no claim that the publisher will always respond within3s.",
+    "The3s batch deadline initiates cancellation; slot retention through delayed client cleanup is verified, not a claim of a hard3s cleanup completion deadline.",
+    "Application signing/CORS/freshness/concurrency paths were executed using genuine local keys, ASGI requests and inert producer ports; not production credentials."
+  ],
+  "cleanup": "CLEANUP.json"
+}

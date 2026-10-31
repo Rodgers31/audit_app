@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="0.129" timestamp="2026-10-31T16:15:36.511651+00:00" hostname="04a346f1f367"><testcase classname="" name="tests.test_financial_absence_postgres" time="0.000"><error message="collection failure">ImportError while importing test module '/case/tests/test_financial_absence_postgres.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/local/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_financial_absence_postgres.py:10: in &lt;module&gt;
+    from tests.test_financial_absence_publication import (
+tests/test_financial_absence_publication.py:12: in &lt;module&gt;
+    from etl.knbs_parser import KNBSParser
+E   ModuleNotFoundError: No module named 'etl.knbs_parser'</error></testcase></testsuite></testsuites>

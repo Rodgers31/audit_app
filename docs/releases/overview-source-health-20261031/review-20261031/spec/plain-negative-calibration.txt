@@ -1,0 +1,8 @@
+...                                                                      [100%]
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/_pytest/config/__init__.py:1346
+  /usr/local/lib/python3.12/site-packages/_pytest/config/__init__.py:1346: PytestConfigWarning: ASSERTIONS ARE NOT EXECUTED and FAILING TESTS WILL PASS.  Are you using python -O?
+    self._warn_about_missing_assertion(mode)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 1 warning in 0.02s
