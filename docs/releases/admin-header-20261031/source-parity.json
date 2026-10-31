@@ -1,0 +1,50 @@
+{
+  "base": "33999e215fe7a1a776685615c832dad4793acd19",
+  "last_frontend_merge": "b7eadcb3dde3b7e5236222b8b981b9b0f3786510",
+  "observed_production_artifact": "dpl_2viCQgG8YyEmPNx9HLUhDxdmxSyU",
+  "observation": "Authenticated native Chrome DOM on https://www.auditgava.com/admin; public header top0 height65 z50; admin navigation top12 height44. All listed baseline shell bytes equal last frontend release.",
+  "files": [
+    {
+      "path": "frontend/app/layout.tsx",
+      "baseline_sha256": "638e8f9aa0240edf0795ba201c48e2991822e9012cbe3e587aca8282f075e421",
+      "last_frontend_release_sha256": "638e8f9aa0240edf0795ba201c48e2991822e9012cbe3e587aca8282f075e421",
+      "baseline_equals_release": true,
+      "candidate_sha256": "638e8f9aa0240edf0795ba201c48e2991822e9012cbe3e587aca8282f075e421"
+    },
+    {
+      "path": "frontend/app/admin/layout.tsx",
+      "baseline_sha256": "bcbbc1f22f7ec0d7c2bc6684028eb009469676b4cfe338320b8d4455bc5f8b2e",
+      "last_frontend_release_sha256": "bcbbc1f22f7ec0d7c2bc6684028eb009469676b4cfe338320b8d4455bc5f8b2e",
+      "baseline_equals_release": true,
+      "candidate_sha256": "bcbbc1f22f7ec0d7c2bc6684028eb009469676b4cfe338320b8d4455bc5f8b2e"
+    },
+    {
+      "path": "frontend/app/status/page.tsx",
+      "baseline_sha256": "c047e70542f316023ea8e46c779304f9d73d824248b1e1214d92a5bf6250621d",
+      "last_frontend_release_sha256": "c047e70542f316023ea8e46c779304f9d73d824248b1e1214d92a5bf6250621d",
+      "baseline_equals_release": true,
+      "candidate_sha256": "c047e70542f316023ea8e46c779304f9d73d824248b1e1214d92a5bf6250621d"
+    },
+    {
+      "path": "frontend/components/Navigation.tsx",
+      "baseline_sha256": "65029aa193f0ee862bada04a68cb3bcb26c6f6eef54fe8c89ad6051c80ad2332",
+      "last_frontend_release_sha256": "65029aa193f0ee862bada04a68cb3bcb26c6f6eef54fe8c89ad6051c80ad2332",
+      "baseline_equals_release": true,
+      "candidate_sha256": "9a4f4ad1f6f406befcb3a63e1c6f6b34e1d00ff2b334872e0302d649a3e9a79b"
+    },
+    {
+      "path": "frontend/components/admin/AdminNav.tsx",
+      "baseline_sha256": "e60dbd77c50ae14a0daed38ea0e360b66fa0849e8cb14858250cea81da3e47a2",
+      "last_frontend_release_sha256": "e60dbd77c50ae14a0daed38ea0e360b66fa0849e8cb14858250cea81da3e47a2",
+      "baseline_equals_release": true,
+      "candidate_sha256": "83a645a872ea1eb4fe7e15a5ad671101232cb4f2b358a20475e7a51596fab5a0"
+    },
+    {
+      "path": "frontend/components/admin/admin.module.css",
+      "baseline_sha256": "7f99c8b50732ead20301b3d85b6e34ac3094e6cd32a3b25feed666120f933e52",
+      "last_frontend_release_sha256": "7f99c8b50732ead20301b3d85b6e34ac3094e6cd32a3b25feed666120f933e52",
+      "baseline_equals_release": true,
+      "candidate_sha256": "fd88d1d66c55b5d7211ee59f131637ea8e3e531e2ca5bd112bea8d640973fb82"
+    }
+  ]
+}
