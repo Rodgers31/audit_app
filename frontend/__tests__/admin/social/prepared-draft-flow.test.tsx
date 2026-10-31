@@ -2,7 +2,7 @@ import SocialComposer from '@/components/admin/social/SocialComposer';
 import { postDestinationIssue } from '@/components/admin/social/socialDocument';
 import { automaticMediaFormats } from '@/components/admin/social/automaticMediaFormat';
 import api from '@/lib/api/axios';
-import { SocialPost } from '@/lib/api/social';
+import { SocialApiError, SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -37,7 +37,7 @@ beforeEach(() => {
 });
 afterEach(()=>qc.clear());
 const readyAccounts=accounts.map(a=>({...a,capabilities:{...a.capabilities,supported_formats:['text','image','reel'] as ('text'|'image'|'reel')[]}}));
-function mount(){return render(<QueryClientProvider client={qc}><SocialComposer initialPost={saved} accounts={readyAccounts} system={{...system,publishing_enabled:false}} /></QueryClientProvider>);}
+function mount(destinationAccounts=readyAccounts){return render(<QueryClientProvider client={qc}><SocialComposer initialPost={saved} accounts={destinationAccounts} system={{...system,publishing_enabled:false}} /></QueryClientProvider>);}
 
 test.each(['image/png','video/mp4'] as const)('add %s, review saved preview without writing or Save & validate',async mime=>{
   kind=mime;mount();
@@ -87,4 +87,69 @@ test('a delayed autosave stops its validation chain when the composer unmounts',
   view.unmount();complete!({});
   await new Promise(resolve=>setTimeout(resolve,40));
   expect(send).toHaveBeenCalledTimes(1);
+});
+
+test('legacy generated copy names missing preparation instead of claiming it is prepared',()=>{
+  saved={...saved,document:{...saved.document,master:{...saved.document.master,hashtags:[]},targets:[{account_id:facebookId,format:'text',overrides:{}}]}};
+  mount();
+  expect(screen.getByText('Copy needs preparation')).toBeInTheDocument();
+  expect(screen.getByText('Facebook: add relevant hashtags or a topic.')).toBeInTheDocument();
+  expect(screen.queryByText(/source references are prepared/)).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Publish now'})).toBeDisabled();
+  expect(send.mock.calls.some(c=>c[0].endsWith('/prepare'))).toBe(false);
+});
+
+test('complete copy requests review without claiming publication or source readiness',()=>{
+  mount();
+  expect(screen.getByText('Review saved copy')).toBeInTheDocument();
+  expect(screen.getByText(/Source and account checks still apply/)).toBeInTheDocument();
+  expect(screen.queryByText('Copy needs preparation')).not.toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Publish now'})).toBeDisabled();
+});
+
+test('an empty account hashtag override is incomplete even when the master has hashtags',()=>{
+  saved={...saved,document:{...saved.document,targets:[{account_id:facebookId,format:'text',overrides:{hashtags:{mode:'replace',value:[]}}}]}};
+  mount();
+  expect(screen.getByText('Copy needs preparation')).toBeInTheDocument();
+  expect(screen.getByText('Facebook: add relevant hashtags or a topic.')).toBeInTheDocument();
+});
+
+test('missing captions, destinations and source references stay visible',()=>{
+  saved={...saved,references:[],document:{...saved.document,master:{...saved.document.master,text:' ',link:null},targets:[{account_id:facebookId,format:'text',overrides:{}}]}};
+  mount();
+  expect(screen.getByText('Copy needs preparation')).toBeInTheDocument();
+  expect(screen.getByText('Facebook: add a caption.')).toBeInTheDocument();
+  expect(screen.getByText('Facebook: add a valid AuditGava destination.')).toBeInTheDocument();
+  expect(screen.getByText('Add supporting source references.')).toBeInTheDocument();
+});
+
+test('an edited generated caption is labelled unsaved until the saved revision is adopted',()=>{
+  mount();
+  fireEvent.change(screen.getByLabelText('Post text'),{target:{value:'Updated caption awaiting save.'}});
+  expect(screen.getByText('Unsaved copy')).toBeInTheDocument();
+  expect(screen.queryByText('Review saved copy')).not.toBeInTheDocument();
+});
+
+test('preparation identifies each selected account when platforms repeat',()=>{
+  const second={...readyAccounts[0],id:'00000000-0000-4000-8000-000000000099',display_name:'Community Page'};
+  saved={...saved,document:{...saved.document,master:{...saved.document.master,text:''},targets:[{account_id:facebookId,format:'text',overrides:{}},{account_id:second.id,format:'text',overrides:{}}]}};
+  mount([...readyAccounts,second]);
+  expect(screen.getByText('Facebook · AuditGava test Page: add a caption.')).toBeInTheDocument();
+  expect(screen.getByText('Facebook · Community Page: add a caption.')).toBeInTheDocument();
+});
+
+test('a refused current-source preparation stays visibly held without changing the saved revision',async()=>{
+  send.mockImplementation(async(path:string)=>{
+    if(path.endsWith('/prepare'))throw new SocialApiError('SOURCE_REVIEW_REQUIRED','Current source authority changed. Review its evidence again.');
+    return {data:validation(saved)};
+  });
+  mount();
+  await waitFor(()=>expect(send.mock.calls.some(c=>c[0].endsWith('/validate'))).toBe(true));
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Refresh caption & hashtags'})).toBeEnabled());
+  fireEvent.click(screen.getByRole('button',{name:'Refresh caption & hashtags'}));
+  await waitFor(()=>expect(screen.getByRole('alert')).toHaveTextContent('Current source authority changed. Review its evidence again.'));
+  expect(screen.getByText('Source review required')).toBeInTheDocument();
+  expect(screen.queryByText('Review saved copy')).not.toBeInTheDocument();
+  expect(patch).not.toHaveBeenCalled();
+  expect(screen.getByRole('button',{name:'Publish now'})).toBeDisabled();
 });

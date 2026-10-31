@@ -10,7 +10,7 @@ import { decodePost, decodePublication, DocumentTarget, PublishInput, SocialAcco
 import { useSocialDeliveryStatus, useSocialMutation, useSocialPost } from '@/lib/hooks/useSocial';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { draftFingerprint, emptyDocument, httpsUrl, postDestinationIssue, platformLabels, resolveCivilTime, resolveContent, supportedFormats, targetHints } from './socialDocument';
+import { copyPreparationIssues, draftFingerprint, emptyDocument, httpsUrl, postDestinationIssue, platformLabels, resolveCivilTime, resolveContent, supportedFormats, targetHints } from './socialDocument';
 import SocialMedia from './SocialMedia';
 import { automaticMediaFormats } from './automaticMediaFormat';
 import type { MediaAsset } from '@/lib/api/socialMedia';
@@ -110,6 +110,7 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
   const canPublish = publicationGates && (!currentPublication || readyAuthorization);
   const canResume = publicationGates && cancelledAuthorization && !!resumeReason.trim();
   const canSubmit = !commandBusy && !locked && !stale && (!post || hasContentChanges || ['draft', 'rejected'].includes(post.editorial_state));
+  const preparationIssues = copyPreparationIssues(input, accounts);
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
   useEffect(() => {
@@ -288,8 +289,10 @@ export default function SocialComposer({ initialPost, accounts, accountsAvailabl
       {currentPublication?.scheduled_for && <p className={styles.notice}>Scheduled for {currentPublication.scheduled_for} (UTC). Editing unsent content creates a new revision and requires approval again.</p>}
       <div className={`${styles.tabs} ${styles.mobileSwitch}`} aria-label='Mobile workspace view'><button type='button' aria-pressed={mobilePanel === 'editor'} onClick={() => setMobilePanel('editor')}>Editor</button><button type='button' aria-pressed={mobilePanel === 'preview'} onClick={() => setMobilePanel('preview')}>Preview</button></div>
       <fieldset disabled={busy || archivePending} className={styles.destinations}>
-        {post?.origin_type === 'generated' && <section className={styles.fields} aria-label='Prepared post and optional media'>
-          <p className={styles.muted}>Caption, relevant hashtags, website destination and source references are prepared. Add optional media, review each account preview and post when publishing is enabled. Changes save and validate automatically.</p>
+        {post?.origin_type === 'generated' && <section className={styles.fields} aria-label='Generated post and media'>
+          <p role='status'><strong>{dirty ? 'Unsaved copy' : error?.code === 'SOURCE_REVIEW_REQUIRED' ? 'Source review required' : !accountsAvailable ? 'Copy checks unavailable' : preparationIssues.length ? 'Copy needs preparation' : 'Review saved copy'}</strong></p>
+          <p className={styles.muted}>Check the caption, relevant hashtags or topic, AuditGava destination and supporting sources for each account. Refresh caption &amp; hashtags prepares a new revision from verified source evidence. Source and account checks still apply; this message does not authorize posting. Add media where required, then review each preview. Edits save and validate automatically.</p>
+          {accountsAvailable && preparationIssues.length > 0 && <ul aria-label='Copy preparation checklist'>{preparationIssues.map(issue => <li key={issue}>{issue}</li>)}</ul>}
           <section tabIndex={-1} {...fieldIssueProps('document.master.media')}><SocialMedia label='Master' contextKey={`${post.id}:master`} onBusyChange={active => mediaBusyChanged('master', active)} media={input.document.master.media} onChange={changeMasterMedia} /></section>
           <button type='button' className={styles.button} disabled={commandBusy || dirty || stale || locked} onClick={prepareCopy}>Refresh caption &amp; hashtags</button>
           <p className={styles.muted} role='status'>{busy ? 'Saving or checking this revision…' : dirty ? 'Waiting to save your changes…' : validation?.version === post.version ? 'This saved revision has been checked. Review any account holds or warnings below.' : 'Checking the saved revision…'}</p>
