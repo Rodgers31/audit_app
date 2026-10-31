@@ -1,0 +1,151 @@
+{
+  "base_sha": "1502e39feea6cd8c40d9ceb9901900ff03e8b5e2",
+  "at": "2026-10-31T05:22:38.120826+00:00",
+  "source_sha256": {
+    ".github/workflows/seed.yml": "83fe424f1c439913d3a650e9c6a2d519b9140c5b851f4bf8cd1bab8035d0a34b",
+    "backend/Dockerfile": "a60a7a5956d232b074755de47077d6c5c1bde0c427140c07606f0f7091dd4c01",
+    "backend/Dockerfile.prod": "7f53b08891da9947f638486f2897fbb45e3bf1ee6233937ba471ae0f6f1c4c24",
+    "backend/seeding/domains/debt_timeline/__init__.py": "2804ae03db463635ad584716a2228943b7d7c9a474e22bc1e631beb26043fcd3",
+    "backend/seeding/domains/debt_timeline/fetcher.py": "30ac63e33ea4a434136c21748338af2be4fc56582beab1d5a610920fbbb088a3",
+    "backend/seeding/domains/debt_timeline/parser.py": "076dc9f1cd11739e5ec61b973d82dfa1611da261a85e4a7ffe905a013ef66a3a",
+    "backend/seeding/domains/debt_timeline/writer.py": "a92c6bef80474b7c2bc76fef0462c8f3cf73c644a83c227f43d08c059a5caf2f",
+    "backend/seeding/domains/fiscal_summary/fetcher.py": "8034d2e2c811e9e0ff8f2665b47328d4228db521b7a851584e164bd532b543ef",
+    "backend/seeding/domains/fiscal_summary/fiscal_framework.py": "944708b27bdff928846c8a4b34421e270f954ab24c5f5229eb3cc358e7860302",
+    "backend/seeding/domains/national_budget/headline.py": "d56aae89ca7aa0c02680fbbbba72bbd5a03a141cdd67250a17d399ce088372eb",
+    "backend/seeding/observations.py": "a3492dda97be2878508129aa04c0bc92aeeb6d70fac7c0b6a9cb479a5eafe1db",
+    "backend/tests/test_external_debt_is_not_total_debt.py": "984ef5e9242a331d1da40fe5f7bfc3f326a1f03dd0b48e8eb57a59c83f14dc1c",
+    "backend/tests/test_fiscal_headline_overlay.py": "c0ed8644290116299641ee9d0ecd8943643b94f8fab0f0a3c765e49b23acd67f",
+    "backend/tests/test_hollow_run_gate.py": "f6f8e848f8bbad1d59f57517eb8cdff46cecbb81a8ef7e00ace12c5ca2281009",
+    "backend/tests/test_refresh_debt_evidence.py": "dbd97e2ecec49e8f7f15a4475cb721539d837f6d744fa11a3a44a97b3deecab0",
+    "backend/tests/test_refresh_fiscal_cache.py": "e3f27bb9650d88e5b253728feca3003747c45fad7b939428896514e3bbf2ea1d",
+    "backend/tests/test_refresh_fiscal_source_identity.py": "ee34d25e52879823d07b9a36ed159fba4fd3effbfd8fdf5753930e2eaff4d99f",
+    "backend/tests/test_refresh_gdp_completeness.py": "a4396b12507462396a365fc4fcaa8d262aa33a8b28eaaa43b1f5fe5efc1e7146",
+    "backend/tests/test_refresh_headline_subject.py": "ad3cd0b27797432ac2d43945e606fbd797f1c67e293fa9d5181d30c94414a6bf",
+    "backend/tests/test_refresh_native_budget_scope.py": "70efaa0428c0551b4fbe4a73af51f19f7963f82bdaa4e4fc1c26d56bc3010341",
+    "backend/tests/test_refresh_runtime_ocr.py": "df412154d058510e4ecee921bfe484413cdc413053b71e8266dcb9380f0eb0d6",
+    "backend/tests/test_refresh_scanned_annex.py": "eaeee444bb647e6c0997706c0e9ee4f6134e878dfb4af7b528222fe9ab8c069e",
+    "backend/tests/test_refresh_summary_truth.py": "4362b5e7252259124df372b863f76e150d31a7690f27f1418571f62f9de552c2"
+  },
+  "combined": {
+    "final-normal": {
+      "tests": 750,
+      "counts": {
+        "failure": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "exit": 0,
+      "seconds": 42.983720790999996,
+      "receipt_sha256": "05a544f44da262b5b969711909bbad61acaf032ca3a13334d181e919fe314336",
+      "xml_sha256": "aa192ff380c5800fe985c7e68241557366c91912c4994a9fcb881c32f4f2ff53"
+    },
+    "final-optimized": {
+      "tests": 750,
+      "counts": {
+        "failure": 0,
+        "error": 0,
+        "skipped": 0
+      },
+      "exit": 0,
+      "seconds": 45.508373666,
+      "receipt_sha256": "ddf2912b14ba61a7d645bfda5acea9630ef3ee9f1abcc498a3653838093d599e",
+      "xml_sha256": "4c57efb1f84ff7f8ec5bf17c8731820d396a92883705e423f4f3167f7128b331"
+    }
+  },
+  "sources": [
+    {
+      "file": "treasury-2021-22.pdf",
+      "sha256": "cc42b631ac9f8c92c51153dcc73c17ab677253d328d1f444e8e5743ae5571eda",
+      "checks": 7,
+      "expenditure_billion_kes": "3053.5",
+      "tax_split_accepted": false
+    },
+    {
+      "file": "treasury-2022-23.pdf",
+      "sha256": "9a59476df81d5cce4aadf66c8ebd6db41c617c6ee9c726895c45850dd5654655",
+      "checks": 7,
+      "expenditure_billion_kes": "3342.8",
+      "tax_split_accepted": false
+    }
+  ],
+  "application_tested_sources_unchanged": true,
+  "independent_receipt_sha256": {
+    "debt-final-standards/FINAL-RECEIPT.json": "27d812cb7a98d535598b96da07ff03c21389272abcd8aaf92b67ab787babe94d",
+    "ocr-spec/CURRENT-RECEIPT.json": "69f7ff02de14fb0f4ca2ae013414ac2906e1b74a615074003f223080436030bc",
+    "fiscal-independent/FINAL-RECEIPT.json": "b7edc11dac1fadbb68d4b2b6b95bb895897de076f89a669912b9095920bbf4b1",
+    "runtime-parity-review/RECEIPT.json": "80492bad07076fef1d80650aa5ddd15f38987d9a2ebc80f8eb827a7ac28f9f94"
+  },
+  "runtime_guards": {
+    "normal": {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "974fd219a5fd79ed96b050b798458de60b92f28c907329097ebd061da915c869"
+    },
+    "optimized": {
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xml_sha256": "663cef1b1d5af1a5011702d5d4bdd6f4b1d68e5df8bb4737cc3d022080aaf2b7"
+    }
+  },
+  "runtime_evidence_sha256": {
+    "runtime-final-apt-source.json": "00440bfe5849eb07b1adb5ba4f740fa6249a31403fad20626f9160f8bf703d98",
+    "runtime-final-apt-execution.json": "f6107db72b56da97b92eaf67a26be53daf0f432e75b051a22ac4b6b327f7fac0",
+    "runtime-nonroot-ocr.txt": "4e0680e3821b54b65f8d2f79f0615c76d2a67d468a501615a6319d9a6eb0e55b",
+    "production-off-readback.json": "8ce8158222dc7e81509c9881e9b44ce3f50d246c1b6bd546622f4456038e10dd",
+    "production-ocr-runtime.json": "433b174c1d6d0064c4657920b770250bb3fd43c4ec93a95802fdfb3dfac974b6",
+    "resource-cleanup.json": "70b9af7df6d473273bc5d6f28907fb155a03df054d873403dd6b0fe05d0183b9"
+  },
+  "application_test_files": [
+    "tests/test_civic_figures.py",
+    "tests/test_cob_headline_extraction.py",
+    "tests/test_debt_timeline_row_provenance.py",
+    "tests/test_debt_timeline_source_is_the_cited_row.py",
+    "tests/test_external_debt_is_not_total_debt.py",
+    "tests/test_fiscal_framework_split.py",
+    "tests/test_fiscal_headline_overlay.py",
+    "tests/test_fiscal_provenance_replacement.py",
+    "tests/test_fiscal_summary_publication_gate.py",
+    "tests/test_fiscal_summary_scoping.py",
+    "tests/test_fiscal_validation.py",
+    "tests/test_hollow_run_gate.py",
+    "tests/test_national_fiscal_fidelity.py",
+    "tests/test_national_gdp_source_creation.py",
+    "tests/test_new_fiscal_year_publication.py",
+    "tests/test_parse_cache.py",
+    "tests/test_receipt_ingress_trust.py",
+    "tests/test_refresh_debt_evidence.py",
+    "tests/test_refresh_fiscal_cache.py",
+    "tests/test_refresh_fiscal_source_identity.py",
+    "tests/test_refresh_gdp_completeness.py",
+    "tests/test_refresh_native_budget_scope.py",
+    "tests/test_refresh_scanned_annex.py",
+    "tests/test_refresh_summary_truth.py",
+    "tests/test_regional_peer_observations.py",
+    "tests/test_response_receipts.py",
+    "tests/test_revenue_estimates.py",
+    "tests/test_session3_adversarial_debt_claims.py",
+    "tests/test_session3_adversarial_fiscal_outturns.py",
+    "tests/test_staleness_gates.py",
+    "tests/test_treasury_budget_estimates.py",
+    "tests/test_worldbank_source_binding.py"
+  ],
+  "runtime_test_files": [
+    "tests/test_refresh_runtime_ocr.py"
+  ],
+  "test_configuration": {
+    "python": "3.12.15",
+    "postgres": "17",
+    "postgres_fixture": "AUDIT_TEST_POSTGRES_URL: disposable owned PostgreSQL on127.0.0.1 at non5432 port; randomized schemas created/dropped by113cases",
+    "cache_path": "/tmp/refresh-http-cache",
+    "storage_path": "/tmp/refresh-storage",
+    "source_mount": "read_only",
+    "publishing_uploads_workers_financial_generation": "unchanged/off",
+    "hosted_runs_dispatched": 0,
+    "production_python_observed": "3.12.16",
+    "production_parity_claim": "not a byte-for-byte production image build"
+  }
+}

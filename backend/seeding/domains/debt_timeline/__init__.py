@@ -88,4 +88,5 @@ def run(
         items_created=created,
         items_updated=updated,
         errors=errors,
+        metadata={"refresh_components": payload.get("metadata", {}).get("refresh_components", {})},
     )

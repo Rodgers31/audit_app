@@ -78,7 +78,9 @@ def merged():
         "fiscal_years": [{"fiscal_year": "FY 2022/23", "debt_service_cost": 1162}]
     }
     out = _merge_worldbank_data(payload, WB)
-    return next(fy for fy in out["fiscal_years"] if fy["fiscal_year"] == "FY 2021/22")
+    assert out == payload
+    assert not any(fy["fiscal_year"] == "FY 2021/22" for fy in out["fiscal_years"])
+    return {}
 
 
 class TestTheMeasureIsNotWrittenUnderTheWrongName:
@@ -100,18 +102,17 @@ class TestTheMeasureIsNotWrittenUnderTheWrongName:
             assert merged.get(field) in (None,), f"{field} = {merged.get(field)!r}"
 
 
-class TestTheLegitimateSeriesStillArrive:
-    """The branch is not deleted — the government-finance series are real."""
+class TestDifferentMeasuresCannotCreateFiscalEstimates:
+    """Calendar-year actuals do not establish a fiscal-year appropriation."""
 
-    def test_expenditure_still_maps_to_the_budget(self, merged):
-        assert merged["appropriated_budget"] == pytest.approx(3000.0, rel=1e-3)
+    def test_expenditure_is_not_relabelled_as_an_appropriation(self, merged):
+        assert "appropriated_budget" not in merged
 
-    def test_revenue_still_maps(self, merged):
-        assert merged["total_revenue"] == pytest.approx(2000.0, rel=1e-3)
+    def test_collection_actual_is_not_relabelled_as_an_annual_estimate(self, merged):
+        assert "total_revenue" not in merged
 
-    def test_the_year_is_still_created(self, merged):
-        assert merged["fiscal_year"] == "FY 2021/22"
-        assert merged["_source"] == "world_bank_api"
+    def test_unqualified_year_is_not_created(self, merged):
+        assert merged == {}
 
 
 class TestTheIndicatorNamesSayWhatTheyAre:

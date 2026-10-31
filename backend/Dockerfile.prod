@@ -37,7 +37,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-eng \
     && /usr/bin/ffprobe -version >/dev/null \
+    && audit_ocr_languages="$(/usr/bin/tesseract --list-langs)" \
+    && printf '%s\n' "$audit_ocr_languages" | grep -qx eng \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy wheels from builder

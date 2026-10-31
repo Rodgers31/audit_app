@@ -18,7 +18,8 @@ logger = logging.getLogger("seeding.debt_timeline.writer")
 
 
 def _get_or_create_source_document(
-    session: Session, metadata: dict[str, Any], title: str | None = None
+    session: Session, metadata: dict[str, Any], title: str | None = None,
+    source_url: str | None = None,
 ) -> SourceDocument:
     """Get or create the source document a debt-timeline row traces to.
 
@@ -32,26 +33,37 @@ def _get_or_create_source_document(
         "source", "CBK Annual Reports & National Treasury BPS"
     )
 
-    doc = (
+    kenya = session.query(Country).filter(Country.iso_code == "KEN").first()
+    if not kenya:
+        raise ValueError("Kenya country not found. Run bootstrap_data.py first.")
+    query = (
         session.query(SourceDocument)
         .filter(
             SourceDocument.title == title,
             SourceDocument.doc_type == DocumentType.REPORT,
+            SourceDocument.country_id == kenya.id,
         )
-        .first()
     )
+    if source_url is not None:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(source_url)
+        if (parsed.scheme != "https" or parsed.hostname not in ("www.centralbank.go.ke", "centralbank.go.ke")
+                or parsed.username is not None or parsed.password is not None or parsed.port not in (None, 443)):
+            raise ValueError("Official CBK source URL required")
+        query = query.filter(
+            SourceDocument.url == source_url,
+            SourceDocument.publisher == "Central Bank of Kenya",
+        )
+    doc = query.first()
     if doc:
         return doc
 
-    kenya = session.query(Country).filter(Country.iso_code == "KEN").first()
-    if not kenya:
-        raise ValueError("Kenya country not found. Run bootstrap_data.py first.")
-
     doc = SourceDocument(
         country_id=kenya.id,
-        publisher="Central Bank of Kenya / National Treasury",
+        publisher=("Central Bank of Kenya" if source_url is not None
+                   else "Central Bank of Kenya / National Treasury"),
         title=title,
-        url="https://www.centralbank.go.ke/statistics/government-finance-statistics/",
+        url=source_url or "https://www.centralbank.go.ke/statistics/government-finance-statistics/",
         fetch_date=datetime.now(timezone.utc),
         doc_type=DocumentType.REPORT,
         meta={
@@ -96,18 +108,16 @@ def write_debt_timeline_records(
     created = 0
     updated = 0
 
-    default_doc = _get_or_create_source_document(session, metadata)
-    doc_cache: dict[str, SourceDocument] = {}
+    doc_cache: dict[tuple, SourceDocument] = {}
     gdp_doc = None
 
     def _doc_for(record) -> SourceDocument:
-        if not record.source:
-            return default_doc
-        if record.source not in doc_cache:
-            doc_cache[record.source] = _get_or_create_source_document(
-                session, metadata, title=record.source
+        key = (record.source, record.source_url)
+        if key not in doc_cache:
+            doc_cache[key] = _get_or_create_source_document(
+                session, metadata, title=record.source, source_url=record.source_url,
             )
-        return doc_cache[record.source]
+        return doc_cache[key]
 
     for record in records:
         source_doc = _doc_for(record)

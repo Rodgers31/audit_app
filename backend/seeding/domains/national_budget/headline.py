@@ -10,7 +10,7 @@ This module pulls that headline figure from the report's summary prose/text
 conservative: it returns ``None`` unless a budget-anchored money figure is
 found, and the caller (``fiscal_summary`` overlay) re-validates the result
 against the plausibility gate AND a reconciliation tolerance before it may
-replace the last-known value — so a wrong grab can never ship.
+replace the last-known value, while preserving the selected measure and revision.
 
 Pure-text extraction (``..._from_text``) is fully unit-tested; the PDF wrapper
 is a thin shim over pdfplumber. Anchors follow the documented NG-BIRR phrasing
@@ -77,6 +77,16 @@ _MONEY_RE = re.compile(
 # How far after an anchor a figure may sit and still belong to it.
 _ANCHOR_WINDOW_CHARS = 160
 
+_SUBJECT_LINK = re.compile(
+    r"\s*(?:(?:for|in)\s+(?:the\s+)?FY\s*\d{4}\s*/\s*\d{2,4}\s*)?"
+    r"(?:(?:amount(?:s|ed)?\s+to|of|was|is|stood\s+at|stands\s+at|totalled)\s*)?",
+    re.IGNORECASE,
+)
+_BUDGET_QUALIFIER = re.compile(
+    r"\b(?:revised|ministerial|sectoral|development|recurrent)\s+(?:national\s+)?$",
+    re.IGNORECASE,
+)
+
 # Upper bound on pages scanned for the summary. The report is 418 pages;
 # the summary has always been well inside the front matter.
 _MAX_SUMMARY_PAGES = 40
@@ -109,7 +119,8 @@ def unwrap(text: str) -> str:
 
 
 def _first_figure_after_anchor(
-    text: str, anchors: tuple[str, ...]
+    text: str, anchors: tuple[str, ...], *, original_budget: bool = False,
+    revenue_subject: bool = False,
 ) -> Optional[Decimal]:
     """First money figure following an anchor, in unwrapped text.
 
@@ -128,6 +139,15 @@ def _first_figure_after_anchor(
             window = haystack[pos : pos + _ANCHOR_WINDOW_CHARS]
             match = _MONEY_RE.search(window)
             if match:
+                before = haystack[max(0, pos - 40):pos]
+                subject_link = window[len(anchor):match.start()]
+                if revenue_subject:
+                    subject_link = re.sub(r"^\s*collected(?:\s+in\s+the\s+period)?\s*",
+                                          "", subject_link, flags=re.IGNORECASE)
+                if (not _SUBJECT_LINK.fullmatch(subject_link)
+                        or original_budget and _BUDGET_QUALIFIER.search(before)):
+                    pos = low.find(anchor, pos + 1)
+                    continue
                 value = _money_to_billion(match.group(1), match.group(2))
                 if value is not None and value > 0:
                     return value
@@ -142,7 +162,7 @@ def extract_budget_bases_from_text(text: str) -> dict:
     basis onto a field defined as another without saying so.
     """
     return {
-        "gross": _first_figure_after_anchor(text, _GROSS_BUDGET_ANCHORS),
+        "gross": _first_figure_after_anchor(text, _GROSS_BUDGET_ANCHORS, original_budget=True),
         "net": _first_figure_after_anchor(text, _NET_BUDGET_ANCHORS),
     }
 
@@ -171,15 +191,11 @@ def extract_total_revenue_billion_from_text(text: str) -> Optional[Decimal]:
     """TOTAL revenue in KSh billion, or None. Revenue-specific anchors keep a
     budget/expenditure figure from ever being mistaken for revenue.
 
-    NOTE: extracting is not the same as publishing. A quarterly NG-BIRR
-    reports CUMULATIVE period actuals, while
-    ``fiscal_summaries.total_revenue`` is ANNUAL — so the overlay refuses to
-    promote this figure for a quarterly report (see
-    ``_overlay_live_revenue_headline``). The separation is deliberate: this
-    stays a general, testable text utility, and the period judgement lives
-    with the code that knows which document it read.
+    Extracting does not authorize promotion. CoB cumulative collection actuals
+    cannot replace Treasury annual ordinary-revenue estimates or establish a
+    tax/non-tax split. The fiscal overlay refuses this unqualified scalar.
     """
-    return _first_figure_after_anchor(text, _REVENUE_ANCHORS)
+    return _first_figure_after_anchor(text, _REVENUE_ANCHORS, revenue_subject=True)
 
 
 # "FY 2025/26", "FY2024/2025", "FY 2023/24" — the report's own year, which
@@ -206,6 +222,10 @@ def extract_report_fiscal_year(text: str) -> Optional[str]:
     counts: dict[str, int] = {}
     for match in _REPORT_FY_RE.finditer(text or ""):
         start, raw_end = match.group(1), match.group(2)
+        expected = int(start) + 1
+        if ((len(raw_end) == 4 and int(raw_end) != expected)
+                or (len(raw_end) == 2 and int(raw_end) != expected % 100)):
+            continue
         label = f"FY {start}/{raw_end[-2:]}"
         counts[label] = counts.get(label, 0) + 1
     if not counts:
@@ -221,12 +241,15 @@ def extract_report_fiscal_year(text: str) -> Optional[str]:
 
 
 def extract_cob_headlines(
-    pdf_path,
+    pdf_path, *, original_budget_only: bool = False,
 ) -> tuple[Optional[Decimal], Optional[Decimal], Optional[str]]:
     """Open a COB NG-BIRR PDF once and extract ``(overall_budget,
     total_revenue, report_fiscal_year)``; budget/revenue in KSh billion.
     Reads only the first pages (the summary lives up front). Any failure
     degrades to ``(None, None, None)`` (keep last-known); never raises.
+    The fiscal caller sets ``original_budget_only``: it requires an explicit
+    original gross amount for this report's fiscal year and scans all forty
+    summary pages to refuse conflicting original amounts.
     """
     try:
         import pdfplumber
@@ -241,14 +264,48 @@ def extract_cob_headlines(
             for page in pdf.pages[:_MAX_SUMMARY_PAGES]:
                 text_parts.append(page.extract_text() or "")
                 joined = "\n".join(text_parts)
-                if extract_budget_bases_from_text(joined)["gross"] is not None:
+                if not original_budget_only and extract_budget_bases_from_text(joined)["gross"] is not None:
                     break  # found it; do not read a 418-page report
         text = "\n".join(text_parts)
+        report_fy = extract_report_fiscal_year(text)
+        budget = (extract_original_gross_budget_from_text(text, report_fy)
+                  if original_budget_only else extract_overall_budget_billion_from_text(text))
         return (
-            extract_overall_budget_billion_from_text(text),
+            budget,
             extract_total_revenue_billion_from_text(text),
-            extract_report_fiscal_year(text),
+            report_fy,
         )
     except Exception as exc:  # pragma: no cover - defensive shim
         logger.warning("COB headline extraction failed: %s", exc)
         return None, None, None
+
+
+def extract_original_gross_budget_from_text(text: str, fiscal_year: Optional[str]) -> Optional[Decimal]:
+    """Explicit original gross amount for this report's year, never a revision.
+
+    An annual report often opens with the supplementary/revised budget. Neither
+    an unqualified 'approved budget' nor a prior-year comparison proves the
+    original appropriation, even when it is within a numeric tolerance.
+    """
+    if not fiscal_year:
+        return None
+    haystack = unwrap(text)
+    values = set()
+    pattern = re.compile(
+        r"\bnational\s+government(?:['’]s)?\s+original gross budget\s+(?:for|in)\s+(?:the\s+)?"
+        r"(FY\s*\d{4}\s*/\s*\d{2,4})\s*"
+        r"(?:amount(?:s|ed)?\s+to|of|was|is|stood\s+at|stands\s+at|totalled)\s*",
+        re.IGNORECASE,
+    )
+    for subject in pattern.finditer(haystack):
+        if re.search(r"\b(?:supplementary|revised|ministerial|sectoral|development|recurrent)\s*(?:[IVX\d]+)?\s*$",
+                     haystack[max(0, subject.start() - 40):subject.start()], re.IGNORECASE):
+            continue
+        if extract_report_fiscal_year(subject.group(1).upper()) != fiscal_year:
+            continue
+        amount = _MONEY_RE.match(haystack, subject.end())
+        if amount:
+            value = _money_to_billion(amount.group(1), amount.group(2))
+            if value is not None and value > 0:
+                values.add(value)
+    return next(iter(values)) if len(values) == 1 else None
