@@ -1,0 +1,151 @@
+{
+  "READ_ONLY_SOCIAL_COUNTS": {
+    "social_posts": 5,
+    "social_publications": 0,
+    "social_post_targets": 0,
+    "social_media_assets": 0,
+    "social_media_uploads": 0,
+    "social_publish_attempts": 0
+  },
+  "READ_ONLY_SOCIAL_DATABASE": {
+    "at": "2026-10-31T17:44:53.634283+00:00",
+    "transaction_read_only": "on",
+    "migration": [
+      [
+        "a756b20a0001"
+      ]
+    ],
+    "controls_columns": [
+      "publishing",
+      "auto_approve",
+      "auto_schedule",
+      "auto_publish",
+      "version"
+    ],
+    "controls": [
+      [
+        false,
+        false,
+        false,
+        false,
+        1
+      ]
+    ],
+    "accounts_platform_publishing_counts": [
+      [
+        "facebook",
+        false,
+        1
+      ],
+      [
+        "instagram",
+        false,
+        1
+      ]
+    ],
+    "target_state_counts": [],
+    "last_heartbeat": [
+      [
+        "stopped",
+        "2026-10-15 23:14:27.118641+00:00",
+        "2026-10-15 23:14:27.099245+00:00"
+      ]
+    ]
+  },
+  "READ_ONLY_PROCESS_INVENTORY": [
+    {
+      "background_worker_or_consumer": false,
+      "pid": 1,
+      "comm": "gunicorn",
+      "web": true,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 27,
+      "comm": "gunicorn",
+      "web": true,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 39,
+      "comm": "sh",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 45,
+      "comm": "bash",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 75,
+      "comm": "sh",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 81,
+      "comm": "bash",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 90,
+      "comm": "sh",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 96,
+      "comm": "bash",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 132,
+      "comm": "sh",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 138,
+      "comm": "bash",
+      "web": false,
+      "social_worker_or_supervisor": false
+    },
+    {
+      "background_worker_or_consumer": false,
+      "pid": 140,
+      "comm": "python",
+      "web": false,
+      "social_worker_or_supervisor": false
+    }
+  ],
+  "READ_ONLY_FLAGS": {
+    "at": "2026-10-31T17:44:53.640640+00:00",
+    "sha": "12b79d361eea0cfb7113d51155bf7a2489a1d076",
+    "flags": {
+      "SOCIAL_WORKER_SUPERVISOR_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED": "<unset>",
+      "SOCIAL_POLICY_AUTOMATION_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED": "<unset>",
+      "SOCIAL_MEDIA_ENABLED": "false",
+      "SOCIAL_STUDIO_ENABLED": "<unset>",
+      "SOCIAL_GENERATION_HOOK_ENABLED": "<unset>",
+      "SOCIAL_REPORT_GENERATION_ENABLED": "<unset>",
+      "AUTO_SEEDER_ENABLED": "false",
+      "ADMIN_ETL_DISPATCH_ENABLED": "false"
+    }
+  }
+}

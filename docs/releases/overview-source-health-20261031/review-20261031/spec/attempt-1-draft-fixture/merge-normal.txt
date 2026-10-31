@@ -1,0 +1,366 @@
+test_empty_normal_rejection_refuses (__main__.GuardTests.test_empty_normal_rejection_refuses) ... FAIL
+test_explicit_override_does_not_bypass_normal_first (__main__.GuardTests.test_explicit_override_does_not_bypass_normal_first) ... ERROR
+test_explicit_override_requires_fresh_second_census (__main__.GuardTests.test_explicit_override_requires_fresh_second_census) ... ERROR
+test_failed_override_refuses_without_further_attempt (__main__.GuardTests.test_failed_override_refuses_without_further_attempt) ... FAIL
+test_initial_aggregate_changes_requested (__main__.GuardTests.test_initial_aggregate_changes_requested) ... ok
+test_initial_boolean_census_count (__main__.GuardTests.test_initial_boolean_census_count) ... ok
+test_initial_census_exception_refuses_before_any_command (__main__.GuardTests.test_initial_census_exception_refuses_before_any_command) ... ok
+test_initial_changed_head (__main__.GuardTests.test_initial_changed_head) ... ok
+test_initial_closing_reference (__main__.GuardTests.test_initial_closing_reference) ... ok
+test_initial_failed_check (__main__.GuardTests.test_initial_failed_check) ... ok
+test_initial_incomplete_comment_count (__main__.GuardTests.test_initial_incomplete_comment_count) ... ok
+test_initial_incomplete_inline_count (__main__.GuardTests.test_initial_incomplete_inline_count) ... ok
+test_initial_incomplete_nested_pagination (__main__.GuardTests.test_initial_incomplete_nested_pagination) ... ok
+test_initial_incomplete_review_count (__main__.GuardTests.test_initial_incomplete_review_count) ... ok
+test_initial_incomplete_thread_pagination (__main__.GuardTests.test_initial_incomplete_thread_pagination) ... ok
+test_initial_new_review_body (__main__.GuardTests.test_initial_new_review_body) ... ok
+test_initial_pending_bot_rest_request (__main__.GuardTests.test_initial_pending_bot_rest_request) ... ok
+test_initial_pending_bot_view_request (__main__.GuardTests.test_initial_pending_bot_view_request) ... ok
+test_initial_pending_check (__main__.GuardTests.test_initial_pending_check) ... ok
+test_initial_pending_review (__main__.GuardTests.test_initial_pending_review) ... ok
+test_initial_reviewer_changes_requested (__main__.GuardTests.test_initial_reviewer_changes_requested) ... ok
+test_initial_unknown_check (__main__.GuardTests.test_initial_unknown_check) ... ok
+test_initial_unresolved_thread (__main__.GuardTests.test_initial_unresolved_thread) ... ok
+test_late_aggregate_changes_requested (__main__.GuardTests.test_late_aggregate_changes_requested) ... FAIL
+test_late_boolean_census_count (__main__.GuardTests.test_late_boolean_census_count) ... FAIL
+test_late_census_exception_refuses_admin (__main__.GuardTests.test_late_census_exception_refuses_admin) ... FAIL
+test_late_changed_head (__main__.GuardTests.test_late_changed_head) ... FAIL
+test_late_closing_reference (__main__.GuardTests.test_late_closing_reference) ... FAIL
+test_late_failed_check (__main__.GuardTests.test_late_failed_check) ... FAIL
+test_late_incomplete_comment_count (__main__.GuardTests.test_late_incomplete_comment_count) ... FAIL
+test_late_incomplete_inline_count (__main__.GuardTests.test_late_incomplete_inline_count) ... FAIL
+test_late_incomplete_nested_pagination (__main__.GuardTests.test_late_incomplete_nested_pagination) ... FAIL
+test_late_incomplete_review_count (__main__.GuardTests.test_late_incomplete_review_count) ... FAIL
+test_late_incomplete_thread_pagination (__main__.GuardTests.test_late_incomplete_thread_pagination) ... FAIL
+test_late_new_review_body (__main__.GuardTests.test_late_new_review_body) ... FAIL
+test_late_pending_bot_rest_request (__main__.GuardTests.test_late_pending_bot_rest_request) ... FAIL
+test_late_pending_bot_view_request (__main__.GuardTests.test_late_pending_bot_view_request) ... FAIL
+test_late_pending_check (__main__.GuardTests.test_late_pending_check) ... FAIL
+test_late_pending_review (__main__.GuardTests.test_late_pending_review) ... FAIL
+test_late_reviewer_changes_requested (__main__.GuardTests.test_late_reviewer_changes_requested) ... FAIL
+test_late_unknown_check (__main__.GuardTests.test_late_unknown_check) ... FAIL
+test_late_unresolved_thread (__main__.GuardTests.test_late_unresolved_thread) ... FAIL
+test_normal_success (__main__.GuardTests.test_normal_success) ... ERROR
+test_other_pr_allowlist_refuses (__main__.GuardTests.test_other_pr_allowlist_refuses) ... ok
+test_policy_block_without_explicit_optin (__main__.GuardTests.test_policy_block_without_explicit_optin) ... ERROR
+test_protected_branch_block_without_optin (__main__.GuardTests.test_protected_branch_block_without_optin) ... ERROR
+test_truthy_nonboolean_optin_cannot_authorize_admin (__main__.GuardTests.test_truthy_nonboolean_optin_cannot_authorize_admin) ... ERROR
+test_unexpected_normal_rejection_refuses (__main__.GuardTests.test_unexpected_normal_rejection_refuses) ... FAIL
+
+======================================================================
+ERROR: test_explicit_override_does_not_bypass_normal_first (__main__.GuardTests.test_explicit_override_does_not_bypass_normal_first)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 57, in test_explicit_override_does_not_bypass_normal_first
+    def test_explicit_override_does_not_bypass_normal_first(self):self.run_positive([GOOD],True,'normal',1,1)
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+ERROR: test_explicit_override_requires_fresh_second_census (__main__.GuardTests.test_explicit_override_requires_fresh_second_census)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 60, in test_explicit_override_requires_fresh_second_census
+    def test_explicit_override_requires_fresh_second_census(self):self.run_positive([POLICY,GOOD],True,'authorized_override',2,2)
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+ERROR: test_normal_success (__main__.GuardTests.test_normal_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 56, in test_normal_success
+    def test_normal_success(self):self.run_positive([GOOD],False,'normal',1,1)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+ERROR: test_policy_block_without_explicit_optin (__main__.GuardTests.test_policy_block_without_explicit_optin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 58, in test_policy_block_without_explicit_optin
+    def test_policy_block_without_explicit_optin(self):self.run_positive([POLICY],False,'maintainer_override_required',1,1)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+ERROR: test_protected_branch_block_without_optin (__main__.GuardTests.test_protected_branch_block_without_optin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 59, in test_protected_branch_block_without_optin
+    def test_protected_branch_block_without_optin(self):self.run_positive([types.SimpleNamespace(returncode=1,stdout='',stderr='Protected branch policy refused')],False,'maintainer_override_required',1,1)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+ERROR: test_truthy_nonboolean_optin_cannot_authorize_admin (__main__.GuardTests.test_truthy_nonboolean_optin_cannot_authorize_admin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 61, in test_truthy_nonboolean_optin_cannot_authorize_admin
+    def test_truthy_nonboolean_optin_cannot_authorize_admin(self):self.run_positive([POLICY],1,'maintainer_override_required',1,1)
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/test_merge_guard.py", line 55, in run_positive
+    ports=Ports([BASE,BASE],returns);result=guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=allow);self.assertEqual(result,expected);self.assertEqual(ports.reads,reads);self.assertEqual(len(ports.argv),commands);ports.record(self.id(),result)
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/evidence/merge_guard.py", line 62, in coordinate
+    validate(census(), pr, head, accepted)
+  File "/evidence/merge_guard.py", line 19, in validate
+    raise RuntimeError('PR identity/state/closing references changed')
+RuntimeError: PR identity/state/closing references changed
+
+======================================================================
+FAIL: test_empty_normal_rejection_refuses (__main__.GuardTests.test_empty_normal_rejection_refuses)
+----------------------------------------------------------------------
+RuntimeError: PR identity/state/closing references changed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 68, in test_empty_normal_rejection_refuses
+    with self.assertRaisesRegex(RuntimeError,'Unexpected normal'):guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "Unexpected normal" does not match "PR identity/state/closing references changed"
+
+======================================================================
+FAIL: test_failed_override_refuses_without_further_attempt (__main__.GuardTests.test_failed_override_refuses_without_further_attempt)
+----------------------------------------------------------------------
+RuntimeError: PR identity/state/closing references changed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 72, in test_failed_override_refuses_without_further_attempt
+    with self.assertRaisesRegex(RuntimeError,'override failed'):guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "override failed" does not match "PR identity/state/closing references changed"
+
+======================================================================
+FAIL: test_late_aggregate_changes_requested (__main__.GuardTests.test_late_aggregate_changes_requested)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_boolean_census_count (__main__.GuardTests.test_late_boolean_census_count)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_census_exception_refuses_admin (__main__.GuardTests.test_late_census_exception_refuses_admin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 81, in test_late_census_exception_refuses_admin
+    self.assertEqual((ports.reads,len(ports.argv)),(2,1));ports.record(self.id(),'refused')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (1, 0) != (2, 1)
+
+First differing element 0:
+1
+2
+
+- (1, 0)
++ (2, 1)
+
+======================================================================
+FAIL: test_late_changed_head (__main__.GuardTests.test_late_changed_head)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_closing_reference (__main__.GuardTests.test_late_closing_reference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_failed_check (__main__.GuardTests.test_late_failed_check)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_incomplete_comment_count (__main__.GuardTests.test_late_incomplete_comment_count)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_incomplete_inline_count (__main__.GuardTests.test_late_incomplete_inline_count)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_incomplete_nested_pagination (__main__.GuardTests.test_late_incomplete_nested_pagination)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_incomplete_review_count (__main__.GuardTests.test_late_incomplete_review_count)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_incomplete_thread_pagination (__main__.GuardTests.test_late_incomplete_thread_pagination)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_new_review_body (__main__.GuardTests.test_late_new_review_body)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_pending_bot_rest_request (__main__.GuardTests.test_late_pending_bot_rest_request)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_pending_bot_view_request (__main__.GuardTests.test_late_pending_bot_view_request)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_pending_check (__main__.GuardTests.test_late_pending_check)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_pending_review (__main__.GuardTests.test_late_pending_review)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_reviewer_changes_requested (__main__.GuardTests.test_late_reviewer_changes_requested)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_unknown_check (__main__.GuardTests.test_late_unknown_check)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_late_unresolved_thread (__main__.GuardTests.test_late_unresolved_thread)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 90, in test
+    self.assertEqual(ports.reads,2 if late else 1);self.assertEqual(len(ports.argv),1 if late else 0);self.assertFalse(any('--admin'in a for a in ports.argv));ports.record(self.id(),'refused after first policy rejection'if late else 'refused before first command')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 1 != 2
+
+======================================================================
+FAIL: test_unexpected_normal_rejection_refuses (__main__.GuardTests.test_unexpected_normal_rejection_refuses)
+----------------------------------------------------------------------
+RuntimeError: PR identity/state/closing references changed
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/evidence/test_merge_guard.py", line 64, in test_unexpected_normal_rejection_refuses
+    with self.assertRaisesRegex(RuntimeError,'Unexpected normal'):guard.coordinate(863,HEAD,ACCEPTED,ports.census,ports.run,allow_override=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: "Unexpected normal" does not match "PR identity/state/closing references changed"
+
+----------------------------------------------------------------------
+Ran 48 tests in 0.008s
+
+FAILED (failures=22, errors=6)

@@ -1,0 +1,5 @@
+Browser tab: 760057494, Title: "Copilot code review", URL: "https://github.com/settings/copilot/code_review".
+0 AXWebArea Copilot code review, URL: github.com/settings/copilot/code_review
+						104 checkbox Automatic Copilot code review, Value: 0
+						109 checkbox (disabled) Review new pushes, Value: 0
+						114 checkbox (disabled) Review draft pull requests, Value: 0

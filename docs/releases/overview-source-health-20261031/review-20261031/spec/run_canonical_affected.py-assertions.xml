@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="0.028" timestamp="2026-10-31T17:48:39.888355+00:00" hostname="ac5135896b91"><testcase classname="test_optimizer_assertions" name="test_false_test_assertion" time="0.002"><failure message="AssertionError: deliberately false test assertion&#10;assert 26 == 27">def test_false_test_assertion():
+&gt;       assert 26 == 27, 'deliberately false test assertion'
+E       AssertionError: deliberately false test assertion
+E       assert 26 == 27
+
+test_optimizer_assertions.py:7: AssertionError</failure></testcase><testcase classname="test_optimizer_assertions" name="test_false_helper_assertion" time="0.001"><failure message="AssertionError: deliberately false helper assertion in collected test module&#10;assert 26 == 27">def test_false_helper_assertion():
+&gt;       _false_helper()
+
+test_optimizer_assertions.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def _false_helper():
+&gt;       assert 26 == 27, 'deliberately false helper assertion in collected test module'
+E       AssertionError: deliberately false helper assertion in collected test module
+E       assert 26 == 27
+
+test_optimizer_assertions.py:4: AssertionError</failure></testcase><testcase classname="test_optimizer_assertions" name="test_real_optimized_runtime" time="0.001" /></testsuite></testsuites>

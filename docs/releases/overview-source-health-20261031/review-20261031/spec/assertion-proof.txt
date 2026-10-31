@@ -1,0 +1,9 @@
+candidate-1-optimized 1
+candidate-2-optimized 1
+canonical-affected-optimized 1
+{
+  "historical_runner_shapes": 3,
+  "false_assertions_surfaced": true,
+  "actual_gh_or_nested_docker": 0,
+  "unsafe_plain_calibration_exit": 0
+}

@@ -1,0 +1,9 @@
+{
+  "files": {
+    "merge_guard.py": "9da17d2dbd2ea18a232d2b9a3aca8020de044e6b124c93f64c1b90e24f1ca96f",
+    "review-census-20261031T174045Z.json": "84321cfdb8cdff0d4fd18d24595c3e6446506c723fbde3289db8575fa5b0089b",
+    "read-review-census.py": "446233f44179c3ce1e9c831804039ebdc3af62f5b84e4e9a2230a6d9f19dc538"
+  },
+  "prior_helper_found": true,
+  "prior_helper_sha256": "d27f1da42207237a68c066498016ccc900b0f2f1ed930b159c6ac21e7dc0401e"
+}

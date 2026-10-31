@@ -1,0 +1,20 @@
+--- /Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr861-pr862-review-deploy-20261031/merge_guard.py
++++ /Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/pr863-review-deploy-20261031/merge_guard.py
+@@ -13,7 +13,7 @@
+ 
+ 
+ def validate(value, pr, head, accepted):
+-    if (pr not in (861, 862) or value['number'] != pr or value['headRefOid'] != head
++    if (pr not in (863,) or value['number'] != pr or value['headRefOid'] != head
+             or value['baseRefName'] != 'main' or value['state'] != 'OPEN'
+             or value['isDraft'] is not False or value['closingIssuesReferences']):
+         raise RuntimeError('PR identity/state/closing references changed')
+@@ -77,7 +77,7 @@
+ 
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument('pr', type=int, choices=(861, 862))
++    parser.add_argument('pr', type=int, choices=(863,))
+     parser.add_argument('--allow-admin', action='store_true', help='Only after separate explicit owner override authorization')
+     args = parser.parse_args()
+     identity = json.loads((ROOT / ('accepted-' + str(args.pr) + '.json')).read_text())

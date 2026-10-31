@@ -1,0 +1,142 @@
+[
+  {
+    "case": "__main__.GuardTests.test_initial_aggregate_changes_requested",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_boolean_census_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_census_exception_refuses_before_any_command",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_changed_head",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_closing_reference",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_failed_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_comment_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_inline_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_nested_pagination",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_review_count",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_incomplete_thread_pagination",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_new_review_body",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_bot_rest_request",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_bot_view_request",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_pending_review",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_reviewer_changes_requested",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_unknown_check",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_initial_unresolved_thread",
+    "outcome": "refused before first command",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  },
+  {
+    "case": "__main__.GuardTests.test_other_pr_allowlist_refuses",
+    "outcome": "refused",
+    "census_calls": 1,
+    "injected_merge_argv": [],
+    "actual_external_calls": 0
+  }
+]

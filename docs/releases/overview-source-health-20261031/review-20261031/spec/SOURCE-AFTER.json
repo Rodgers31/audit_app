@@ -1,0 +1,15 @@
+{
+  "merge_helper_and_census": {
+    "merge_guard.py": "9da17d2dbd2ea18a232d2b9a3aca8020de044e6b124c93f64c1b90e24f1ca96f",
+    "review-census-20261031T174045Z.json": "84321cfdb8cdff0d4fd18d24595c3e6446506c723fbde3289db8575fa5b0089b",
+    "read-review-census.py": "446233f44179c3ce1e9c831804039ebdc3af62f5b84e4e9a2230a6d9f19dc538"
+  },
+  "historical_runners": {
+    "run_review.py": "9f6de56e04070797079ab08cbc8e03a439e9e33c81df16180a0a32fcc95c19c6",
+    "run_final_review.py": "29ddf3b6aed3f296f00fe73990428b3b2e4b79e8eef26baa9a704e88a36052a6",
+    "run_canonical_affected.py": "6bac85a4236f0f36ce62f035f674300a33e1201bede7c9c37f3ce39197a07c44"
+  },
+  "historical_runners_match_committed_head": "253ab29978fdb546b001381861eb767fe84b633f",
+  "allowlist_is_only_helper_delta": true,
+  "reviewed_disposition_sha256": "0f19cbba91e688536efc676435a11742bed078db1e2e9cc27f6d52b0aa7c1900"
+}

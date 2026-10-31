@@ -1,0 +1,55 @@
+test_empty_normal_rejection_refuses (__main__.GuardTests.test_empty_normal_rejection_refuses) ... ok
+test_explicit_override_does_not_bypass_normal_first (__main__.GuardTests.test_explicit_override_does_not_bypass_normal_first) ... ok
+test_explicit_override_requires_fresh_second_census (__main__.GuardTests.test_explicit_override_requires_fresh_second_census) ... ok
+test_failed_override_refuses_without_further_attempt (__main__.GuardTests.test_failed_override_refuses_without_further_attempt) ... ok
+test_initial_actual_recorded_draft (__main__.GuardTests.test_initial_actual_recorded_draft) ... ok
+test_initial_aggregate_changes_requested (__main__.GuardTests.test_initial_aggregate_changes_requested) ... ok
+test_initial_boolean_census_count (__main__.GuardTests.test_initial_boolean_census_count) ... ok
+test_initial_census_exception_refuses_before_any_command (__main__.GuardTests.test_initial_census_exception_refuses_before_any_command) ... ok
+test_initial_changed_head (__main__.GuardTests.test_initial_changed_head) ... ok
+test_initial_closing_reference (__main__.GuardTests.test_initial_closing_reference) ... ok
+test_initial_failed_check (__main__.GuardTests.test_initial_failed_check) ... ok
+test_initial_incomplete_comment_count (__main__.GuardTests.test_initial_incomplete_comment_count) ... ok
+test_initial_incomplete_inline_count (__main__.GuardTests.test_initial_incomplete_inline_count) ... ok
+test_initial_incomplete_nested_pagination (__main__.GuardTests.test_initial_incomplete_nested_pagination) ... ok
+test_initial_incomplete_review_count (__main__.GuardTests.test_initial_incomplete_review_count) ... ok
+test_initial_incomplete_thread_pagination (__main__.GuardTests.test_initial_incomplete_thread_pagination) ... ok
+test_initial_new_review_body (__main__.GuardTests.test_initial_new_review_body) ... ok
+test_initial_pending_bot_rest_request (__main__.GuardTests.test_initial_pending_bot_rest_request) ... ok
+test_initial_pending_bot_view_request (__main__.GuardTests.test_initial_pending_bot_view_request) ... ok
+test_initial_pending_check (__main__.GuardTests.test_initial_pending_check) ... ok
+test_initial_pending_review (__main__.GuardTests.test_initial_pending_review) ... ok
+test_initial_reviewer_changes_requested (__main__.GuardTests.test_initial_reviewer_changes_requested) ... ok
+test_initial_unknown_check (__main__.GuardTests.test_initial_unknown_check) ... ok
+test_initial_unresolved_thread (__main__.GuardTests.test_initial_unresolved_thread) ... ok
+test_late_actual_recorded_draft (__main__.GuardTests.test_late_actual_recorded_draft) ... ok
+test_late_aggregate_changes_requested (__main__.GuardTests.test_late_aggregate_changes_requested) ... ok
+test_late_boolean_census_count (__main__.GuardTests.test_late_boolean_census_count) ... ok
+test_late_census_exception_refuses_admin (__main__.GuardTests.test_late_census_exception_refuses_admin) ... ok
+test_late_changed_head (__main__.GuardTests.test_late_changed_head) ... ok
+test_late_closing_reference (__main__.GuardTests.test_late_closing_reference) ... ok
+test_late_failed_check (__main__.GuardTests.test_late_failed_check) ... ok
+test_late_incomplete_comment_count (__main__.GuardTests.test_late_incomplete_comment_count) ... ok
+test_late_incomplete_inline_count (__main__.GuardTests.test_late_incomplete_inline_count) ... ok
+test_late_incomplete_nested_pagination (__main__.GuardTests.test_late_incomplete_nested_pagination) ... ok
+test_late_incomplete_review_count (__main__.GuardTests.test_late_incomplete_review_count) ... ok
+test_late_incomplete_thread_pagination (__main__.GuardTests.test_late_incomplete_thread_pagination) ... ok
+test_late_new_review_body (__main__.GuardTests.test_late_new_review_body) ... ok
+test_late_pending_bot_rest_request (__main__.GuardTests.test_late_pending_bot_rest_request) ... ok
+test_late_pending_bot_view_request (__main__.GuardTests.test_late_pending_bot_view_request) ... ok
+test_late_pending_check (__main__.GuardTests.test_late_pending_check) ... ok
+test_late_pending_review (__main__.GuardTests.test_late_pending_review) ... ok
+test_late_reviewer_changes_requested (__main__.GuardTests.test_late_reviewer_changes_requested) ... ok
+test_late_unknown_check (__main__.GuardTests.test_late_unknown_check) ... ok
+test_late_unresolved_thread (__main__.GuardTests.test_late_unresolved_thread) ... ok
+test_normal_success (__main__.GuardTests.test_normal_success) ... ok
+test_other_pr_allowlist_refuses (__main__.GuardTests.test_other_pr_allowlist_refuses) ... ok
+test_policy_block_without_explicit_optin (__main__.GuardTests.test_policy_block_without_explicit_optin) ... ok
+test_protected_branch_block_without_optin (__main__.GuardTests.test_protected_branch_block_without_optin) ... ok
+test_truthy_nonboolean_optin_cannot_authorize_admin (__main__.GuardTests.test_truthy_nonboolean_optin_cannot_authorize_admin) ... ok
+test_unexpected_normal_rejection_refuses (__main__.GuardTests.test_unexpected_normal_rejection_refuses) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 0.007s
+
+OK

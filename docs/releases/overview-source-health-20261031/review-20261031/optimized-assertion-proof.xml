@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="3" time="0.027" timestamp="2026-10-31T17:44:03.554017+00:00" hostname="422a8225d94d"><testcase classname="test_assertion_execution" name="test_interpreter_is_optimized" time="0.000" /><testcase classname="test_assertion_execution" name="test_rewritten_false_assert_fails" time="0.000"><failure message="AssertionError: DELIBERATE_TEST_FALSE_ASSERT&#10;assert False">def test_rewritten_false_assert_fails():
+&gt;       assert False, "DELIBERATE_TEST_FALSE_ASSERT"
+E       AssertionError: DELIBERATE_TEST_FALSE_ASSERT
+E       assert False
+
+test_assertion_execution.py:12: AssertionError</failure></testcase><testcase classname="test_assertion_execution" name="test_rewritten_helper_false_assert_fails" time="0.000"><failure message="AssertionError: DELIBERATE_HELPER_FALSE_ASSERT&#10;assert False">def test_rewritten_helper_false_assert_fails():
+&gt;       denied()
+
+test_assertion_execution.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def denied():
+&gt;       assert False, "DELIBERATE_HELPER_FALSE_ASSERT"
+E       AssertionError: DELIBERATE_HELPER_FALSE_ASSERT
+E       assert False
+
+test_assertion_execution.py:5: AssertionError</failure></testcase></testsuite></testsuites>

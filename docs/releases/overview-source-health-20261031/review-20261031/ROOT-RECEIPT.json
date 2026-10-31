@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-31T17:54:57.537169+00:00",
+  "scope": "review evidence/docs only",
+  "reviewed_application_commit": "253ab29978fdb546b001381861eb767fe84b633f",
+  "application_and_test_pins_match": 8,
+  "original_packet_unchanged": true,
+  "optimized_assertion_finding": "refuted by observed intended assertion failures; original pytest modules rewritten, application remains optimized",
+  "root_negative_control": {
+    "expected_failures": 2,
+    "runtime_canary_pass": 1,
+    "exit": 1
+  },
+  "root_original_module_mutant": {
+    "expected_failure": 1,
+    "passed": 31,
+    "exit": 1
+  },
+  "standards_historical_artifact_map_verified": 36,
+  "spec_final_artifact_map_verified": 58,
+  "merge_guard_controls_per_mode": 50,
+  "production_prebuild": "838sourcepins;104logicalnode24+1edge;98aliases;notuploaded",
+  "live_validation": "valid deploymentgate;notclaimedcomplete",
+  "no_activation_or_production_business_writes": true,
+  "paid_reviews_or_hosted_test_reruns_started": false
+}

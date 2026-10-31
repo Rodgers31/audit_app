@@ -1,0 +1,663 @@
+{
+  "at": "2026-10-31T17:49:24.325131+00:00",
+  "source_sha": "253ab29978fdb546b001381861eb767fe84b633f",
+  "source_files": 838,
+  "mismatches": [],
+  "build_exit": 0,
+  "output_config_sha256": "b0ec99875be456f5f95cdf51dc258bf89b9f635d8fc58508f912cdf439eb172b",
+  "architecture": [
+    "x86_64"
+  ],
+  "api_routes": [
+    {
+      "src": "^/api/v1(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?(?<rscsuff>\\.rsc)?$",
+      "dest": "https://audit-app-4pwa.onrender.com/api/v1/$1$rscsuff",
+      "check": true
+    }
+  ],
+  "local_builder": "Node24.22.1 Linuxamd64 VercelCLI52.0.0 capped2CPU3GiB256PIDs",
+  "not_uploaded": true,
+  "source_config_unchanged": true,
+  "physical_bundle_runtime_counts": {
+    "nodejs24.x": 6,
+    "edge": 1
+  },
+  "logical_function_runtime_counts": {
+    "nodejs24.x": 104,
+    "edge": 1
+  },
+  "logical_function_count": 105,
+  "all_function_targets_owned": true,
+  "function_mapping": [
+    {
+      "function": "transparency.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "debt.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "debt.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "icon.png.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "privacy.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "robots.txt.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "apple-icon.png.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "status.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "privacy.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sources.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "about.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "terms.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "reset-password.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "account.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "index.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "robots.txt.rsc.func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sitemap.xml.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "status.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "_not-found.rsc.func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "about.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "index.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "audits.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "terms.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "middleware.func",
+      "symlink": false,
+      "runtime": "edge",
+      "architecture": null
+    },
+    {
+      "function": "learn.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sitemap.xml.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "_not-found.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "account.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sources.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "transparency.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "budget.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "reset-password.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "audits.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "budget.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/quiz.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/government.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/glossary.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/glossary.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/quiz.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/why-it-matters.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/videos.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/why-it-matters.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/videos.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "learn/government.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "auth/callback.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "auth/callback.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/users.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/audit-log.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/audit-log.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/users.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/etl.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/ingestion.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/etl.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/ingestion.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/ingestion/[jobId].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/ingestion/[jobId].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/etl/commands/[commandId].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/etl/commands/[commandId].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/studio.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/automation.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/[postId].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/privacy.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/new.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/privacy.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/new.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/studio.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/media.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/[postId].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/automation.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/media.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts/callback.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts/platform-callback.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts/platform-callback.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/social/accounts/callback.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/users/[userId].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "admin/users/[userId].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "accountability/unaccounted-funds.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "accountability/unaccounted-funds.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sources/figures/[table]/[id].func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "sources/figures/[table]/[id].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/health.func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/revalidate.func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/revalidate.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/health.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/auth/reset-password.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/auth/reset-password.func",
+      "symlink": false,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/account/delete.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "api/account/delete.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "newsletter/unsubscribe.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "newsletter/unsubscribe.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties/compare.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties/compare.rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties/[id].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "counties/[id].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "reports/[domain]/[documentId].rsc.func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    },
+    {
+      "function": "reports/[domain]/[documentId].func",
+      "symlink": true,
+      "runtime": "nodejs24.x",
+      "architecture": "x86_64"
+    }
+  ]
+}

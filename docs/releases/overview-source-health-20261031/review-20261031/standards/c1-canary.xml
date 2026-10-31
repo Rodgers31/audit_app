@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="2" time="0.032" timestamp="2026-10-31T17:44:36.950618+00:00" hostname="593e5259bf81"><testcase classname="test_optimization_canary" name="test_runtime_is_optimized_and_test_module_is_rewritten" time="0.002" /><testcase classname="test_optimization_canary" name="test_false_assert_cannot_silently_pass" time="0.000"><failure message="AssertionError: EXPECTED_REWRITTEN_FALSE_ASSERT&#10;assert False">def test_false_assert_cannot_silently_pass():
+        if sys.flags.optimize != 1:raise RuntimeError('Not optimized')
+&gt;       assert False, 'EXPECTED_REWRITTEN_FALSE_ASSERT'
+E       AssertionError: EXPECTED_REWRITTEN_FALSE_ASSERT
+E       assert False
+
+/evidence/test_optimization_canary.py:23: AssertionError</failure></testcase></testsuite></testsuites>

@@ -142,3 +142,8 @@ their complete manifests and the base/candidate Git contents; bulk temporary
 copies are not duplicated here. Historical commands and scripts retain their
 original absolute cached-runtime paths and are evidence, not a new portable
 release tool. Permanent regressions are the normal runnable repository tests.
+
+The [PR #863 review addendum](overview-source-health-20261031/review-20261031/REVIEW.md)
+classifies the body-only optimized-assertion findings using executed negative
+controls and retains live verification as a rollout requirement. This review
+round preserves all original executable source pins and sealed evidence.

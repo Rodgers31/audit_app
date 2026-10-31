@@ -1,0 +1,10 @@
+{
+  "original_sha256": "23beffcebdda3684c30c4c2cf111238f4d0e767683715b84169e97e805f18fa4",
+  "baseline_copy_sha256": "23beffcebdda3684c30c4c2cf111238f4d0e767683715b84169e97e805f18fa4",
+  "mutant_sha256": "54c76db1790512557ddbe171aab8e07cb21b56ff03865e5c49dc88ccde0c6006",
+  "only_mutation": {
+    "old": "denied(auth._fetch_jwks,26)",
+    "new": "denied(auth._fetch_jwks,27)"
+  },
+  "expected_effect": "Original fixed leader cooldown26; helper denied must fail its headers assertion against wrong expected27. No product mutation."
+}

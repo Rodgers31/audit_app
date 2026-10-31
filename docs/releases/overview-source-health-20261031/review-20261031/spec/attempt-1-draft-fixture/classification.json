@@ -1,0 +1,6 @@
+{
+  "classification": "Controlled positive fixture inherited actual draft PR state; helper correctly refused before commands",
+  "actual_recorded_draft": true,
+  "is_product_failure": false,
+  "correction": "Synthetic ready baseline explicitly sets draftFalse; raw retained census remains unchanged"
+}
