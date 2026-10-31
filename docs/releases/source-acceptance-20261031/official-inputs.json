@@ -1,0 +1,110 @@
+[
+  {
+    "name": "oag-executives-2022-23",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+    "status": 200,
+    "bytes": 8756083,
+    "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953"
+  },
+  {
+    "name": "oag-assemblies-2022-23",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+    "status": 200,
+    "bytes": 7016269,
+    "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf"
+  },
+  {
+    "name": "oag-executives-2023-24",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+    "started": "2026-10-31T07:42:28.804250+00:00",
+    "status": 200,
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+    "content_type": "application/pdf",
+    "bytes": 34055119,
+    "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+    "seconds": 9.831719292
+  },
+  {
+    "name": "oag-assemblies-2023-24",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+    "started": "2026-10-31T07:42:28.804495+00:00",
+    "status": 200,
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+    "content_type": "application/pdf",
+    "bytes": 32379711,
+    "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+    "seconds": 9.812712999999999
+  },
+  {
+    "name": "oag-executives-2024-25",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+    "started": "2026-10-31T07:35:43.569500+00:00",
+    "status": 200,
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-EXECUTIVES-2024-2025-1.pdf",
+    "content_type": "application/pdf",
+    "etag": "\"d32b65-6526b01808390\"",
+    "last_modified": "Fri, 22 May 2026 17:03:20 GMT",
+    "bytes": 13839205,
+    "sha256": "033e2aa26aa77351ec46f062573f25ede47d3e3a99978aeacf9a66af5ba717a5",
+    "seconds": 5.80581425
+  },
+  {
+    "name": "oag-assemblies-2024-25",
+    "url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+    "started": "2026-10-31T07:35:43.569890+00:00",
+    "status": 200,
+    "response_url": "https://www.oagkenya.go.ke/wp-content/uploads/2026/05/AUDITOR-GENERALS-REPORT-ON-COUNTY-GOVERNMENTS-COUNTY-ASSEMBLIES-2024-2025-1.pdf",
+    "content_type": "application/pdf",
+    "etag": "\"aea795-6526b224b6d3e\"",
+    "last_modified": "Fri, 22 May 2026 17:12:30 GMT",
+    "bytes": 11446165,
+    "sha256": "aa72b0a512fe01ce8f40b9ed8597bd78657a9f441a8daf4963b07e661104d896",
+    "seconds": 5.391260417
+  },
+  {
+    "name": "oag-feed-2020-2021",
+    "url": "https://www.oagkenya.go.ke/document-category/2020-2021-county-government-audit-reports/feed/",
+    "response_url": "https://www.oagkenya.go.ke/document-category/2020-2021-county-government-audit-reports/feed/",
+    "status": 200,
+    "bytes": 6447,
+    "sha256": "1dd582cae0fcbb33150b395a7f9144ecb1aff04d1f16fc35d815f913f61a6adf"
+  },
+  {
+    "name": "oag-feed-2021-2022",
+    "url": "https://www.oagkenya.go.ke/document-category/2021-2022-county-government-audit-reports/feed/",
+    "response_url": "https://www.oagkenya.go.ke/document-category/2021-2022-county-government-audit-reports/feed/",
+    "status": 200,
+    "bytes": 2681,
+    "sha256": "d23468460b5ae77196c6d4a1a5b2b4211352d8870b5159cd837eab39fa2e48a3"
+  },
+  {
+    "name": "oag-feed-2022-2023",
+    "url": "https://www.oagkenya.go.ke/document-category/2022-2023-county-government-audit-reports/feed/",
+    "response_url": "https://www.oagkenya.go.ke/document-category/2022-2023-county-government-audit-reports/feed/",
+    "status": 200,
+    "bytes": 2228,
+    "sha256": "ad02c008ee37b6231e8b218e7b320aed2ae98c3d1e59a6af4acd57972db24a64"
+  },
+  {
+    "name": "oag-feed-2023-24",
+    "url": "https://www.oagkenya.go.ke/document-category/2023-2024-county-government-audit-reports/feed/",
+    "response_url": "https://www.oagkenya.go.ke/document-category/2023-2024-county-government-audit-reports/feed/",
+    "content_type": "application/rss+xml; charset=UTF-8",
+    "status": 200,
+    "bytes": 2881,
+    "sha256": "0dc4db18dac0ee7c6b786bb1ad4cbb4edb6cd3889ac10616605f6c80d8289e28",
+    "at": "2026-10-31T07:38:26.180634+00:00"
+  },
+  {
+    "name": "oag-feed-2024-25",
+    "url": "https://www.oagkenya.go.ke/document-category/2024-2025-county-government-audit-reports/feed/",
+    "response_url": "https://www.oagkenya.go.ke/document-category/2024-2025-county-government-audit-reports/feed/",
+    "content_type": "application/rss+xml; charset=UTF-8",
+    "status": 200,
+    "bytes": 1178,
+    "sha256": "d3e30159623fa6493994ba59b620e6c8642787e2649689b71485dc010bd0dd6c",
+    "at": "2026-10-31T07:39:48.705295+00:00"
+  }
+]

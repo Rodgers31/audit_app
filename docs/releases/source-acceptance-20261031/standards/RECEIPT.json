@@ -1,0 +1,25 @@
+{
+  "verdict": "Scoped pass; no unresolved software blocker in tested source acceptance, resource and closed-default boundaries. Not production adoption or completion of #802.",
+  "final_source_head": "33999e215fe7a1a776685615c832dad4793acd19",
+  "final_source_mapping_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "file_count": 1476,
+  "source_before_after_matched": true,
+  "independent_cases_per_mode": 32,
+  "author_pg_corroboration_per_mode": 7,
+  "normal_and_true_optimized_zero_skips": true,
+  "genuine_cover_max_memory_peak_bytes": 271990784,
+  "genuine_cover_exact_reference_parity": true,
+  "national_full_producer_and_reader_carry": "NATIONAL-KRA-SOURCE-BRIDGE.json",
+  "final_test_only_bridge": "FINAL-TEST-ONLY-BRIDGE.json",
+  "case_ledger": "CASE-LEDGER.json",
+  "resource_failure_receipts": [
+    "baseline-memory-execution.json",
+    "cover-executives-execution.json"
+  ],
+  "source_holds": [
+    "Current FY2025/26 KRA catalogue has no exact full PDF/report publication day; embedded bundle authority and source discrepancies remain unqualified. Historical July2025 article cannot supply current dashboard date.",
+    "Latest two FY2024/25 combined OAG volumes refuse; accepted older catalogue entries claim catalogue availability only, with no report-publication day, findings, amounts or audit opinion."
+  ],
+  "effects": "Operational switches OFF. One author synthetic nonfinancial draft/concurrency case explicitly enables only owned DB draft admission; exactly one pending-review draft, no delivery/media/upload/worker. Earlier national direct eligibility test toggles only fixture-local lower-level financial qualification, then restores false; no dispatch.",
+  "cleanup": "CLEANUP.json"
+}

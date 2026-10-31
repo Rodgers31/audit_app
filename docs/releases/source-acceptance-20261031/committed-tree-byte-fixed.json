@@ -1,0 +1,7 @@
+{
+  "verified_files": 1476,
+  "mismatched_files": [],
+  "expected_projection": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "git_attributes": "backend/tests/fixtures/oag/*.xml -text whitespace=-blank-at-eol",
+  "scope": "index bytes restored to unchanged reviewed/tested runtime and test source; only Git packaging metadata changed"
+}

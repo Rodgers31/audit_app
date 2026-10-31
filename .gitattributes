@@ -28,3 +28,6 @@
 *.gz binary
 *.tgz binary
 *.7z binary
+
+# Retained official RSS response bytes, including publisher whitespace/CRLF.
+backend/tests/fixtures/oag/*.xml -text whitespace=-blank-at-eol

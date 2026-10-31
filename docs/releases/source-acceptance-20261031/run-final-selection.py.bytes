@@ -1,0 +1,5 @@
+import subprocess,sys
+from pathlib import Path
+p=Path(__file__).parent
+mode=sys.argv[1]
+raise SystemExit(subprocess.call([sys.executable,str(p/'run-root-tests.py'),'root-combined-final-'+mode,mode]+(p/'final-selection.txt').read_text().splitlines()))

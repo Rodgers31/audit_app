@@ -86,7 +86,7 @@ def receipt_for_pdf(
                 capture_local_bytes(body, store, url=url), parser_version=parser_version
             )
         return receipt
-    if session is not None and context is not None and domain in ('national_budget', 'pending_bills'):
+    if session is not None and context is not None and domain in ('national_budget', 'pending_bills', 'audits'):
         from services.response_receipts import capture_retained_pdf
         try:
             retained = capture_retained_pdf(session, context, store, domain=domain, url=url, body=body)

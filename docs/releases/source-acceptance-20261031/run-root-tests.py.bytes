@@ -1,0 +1,12 @@
+import json,os,subprocess,sys,time
+from pathlib import Path
+root=Path('/Users/roger/.codex/worktrees/admin-social-release-check/audit_app')
+evidence=Path(__file__).parent
+name,mode,*selection=sys.argv[1:]
+command=['docker','run','--rm','--network','container:source802-pg','--cpus','1','--memory',os.getenv('SOURCE802_TEST_MEMORY','512m'),'--pids-limit','256','-v',str(root)+':/workspace:ro','-v',str(evidence)+':/evidence','-w','/workspace/backend']
+for k,v in dict(DATABASE_URL='postgresql+psycopg2://source802_owned@127.0.0.1:55412/b83_social_test',SOCIAL_TEST_DATABASE_URL='postgresql+psycopg2://source802_compat_owned@127.0.0.1:62124/social_domain_test',B83_SOCIAL_TEST_DB_URL='postgresql+psycopg2://source802_owned@127.0.0.1:55412/b83_social_test',PYTHONPATH='/workspace/backend:/workspace/backend/tests:/workspace/backend/tests/social',PYTHONDONTWRITEBYTECODE='1',SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED='false',SOCIAL_GENERATION_HOOK_ENABLED='false',SOCIAL_MEDIA_ENABLED='false',SOCIAL_NATIVE_ENABLED='false',SOCIAL_WORKER_SUPERVISOR_ENABLED='false').items():command+=['-e',k+'='+v]
+command+=['admin-redesign-python-runtime:local','python']+(['-O'] if mode=='optimized' else [])+['-m','pytest']+selection+['-q','-p','no:cacheprovider','--junitxml=/evidence/'+name+'.xml']
+start=time.time();result=subprocess.run(command,capture_output=True,text=True,cwd=root)
+(evidence/(name+'.txt')).write_text(result.stdout+result.stderr)
+(evidence/(name+'.command.json')).write_text(json.dumps(dict(command=command,exit_code=result.returncode,seconds=time.time()-start),indent=2))
+print((result.stdout+result.stderr)[-11000:]);sys.exit(result.returncode)

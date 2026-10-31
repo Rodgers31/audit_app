@@ -7,7 +7,7 @@ if __package__.startswith('backend.'):
     from backend.models import Extraction, SourceDocument, IngestionJob, IngestionStatus, DocumentStatus, Country
 else:
     from models import Extraction, SourceDocument, IngestionJob, IngestionStatus, DocumentStatus, Country
-from .native_report_authority import VERSION, KEY, DOMAINS, digest, official_url, lock_native_domain, source_identity
+from .native_report_authority import VERSION, KEY, DOMAINS, digest, official_url, lock_native_domain, source_identity, validate_catalogue
 from .source_observations import SourceObservationUnavailable, _positive_id, _aware, _read_limits
 
 
@@ -124,9 +124,9 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
         _job(db, ingestion_id, domain, scope_key=value.get('scope_key'))
     try:
         from .cob_report_metadata import validate_stored_post
-        validate_stored_post(value, receipt, started=started, finished=finished)
-        from .kra_report_catalogue import validate_stored_catalogue
-        validate_stored_catalogue(value, receipt, started=started, finished=finished)
+        if not (domain == 'audits' and value.get('evidence_kind') == 'publisher_catalogue'):
+            validate_stored_post(value, receipt, started=started, finished=finished)
+        validate_catalogue(value, receipt, started=started, finished=finished)
         catalogue = value.get('evidence_kind') == 'publisher_catalogue'
         published = date.fromisoformat(value['catalogued_on'] if catalogue else value['published_on'])
         acquired = _aware(receipt['acquired_at'])
@@ -152,7 +152,10 @@ def current_native_report(db, record_id, ingestion_id, *, domain, lock=False):
             locator=value['locator'], publication_extraction_id=ext.id, qualification_extraction_id=ext.id)
         if catalogue:
             report.update(evidence_kind=value['evidence_kind'], catalogued_on=value['catalogued_on'], catalogue_url=value['catalogue_url'])
-        model = contracts.CataloguedNativeReportEvidence if catalogue else contracts.NativeReportEvidence
+            if domain == 'audits':
+                report['institution'] = value['catalogue_authority']['institution']
+        model = (contracts.OagCataloguedReportEvidence if catalogue and domain == 'audits' else
+                 contracts.CataloguedNativeReportEvidence if catalogue else contracts.NativeReportEvidence)
         model.model_validate(report)
     except (ValueError, TypeError, KeyError):
         raise SourceObservationUnavailable('Exact report period and publication locator required') from None

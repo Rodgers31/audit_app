@@ -1,0 +1,1332 @@
+[
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_independent_full_capture_positive",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[namespace_duplicate_day]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_channel]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_entry]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_self]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[guid_attribute]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[nested_title]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[link_fragment]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[link_protocol]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[wrong_year_self]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[missing_time]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_existing_canonical_cover_conflicts_refuse[COUNTY ASSEMBLIES 2023-2024]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_existing_canonical_cover_conflicts_refuse[AUDITOR-GENERAL'S REPORT ON THE COUNTY GOVERNMENTS FOR THE YEAR 2024-2025 VOLUME 1 - COUNTY EXECUTIVES]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_desired_punctuation_cannot_hide_conflicting_cover_kind_or_year[COUNTY ASSEMBLIES - 2023-2024]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_desired_punctuation_cannot_hide_conflicting_cover_kind_or_year[COUNTY EXECUTIVES: 2022/2023]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_desired_explicit_future_pdf_publication_day_cannot_be_ignored",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_combined_volume_still_requires_distinct_date_and_scope_contract[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_combined_volume_still_requires_distinct_date_and_scope_contract[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_current_native_model_accepts_audit_full_day_and_refuses_missing_day",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_current_catalogue_model_is_kra_only_not_generic_oag_fallback",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_source_observation_union_cannot_downcast_unknown_oag_catalogue",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_actual_oag_category_is_not_accepted_as_cob_publication_authority",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_publisher_shorthand_is_not_current_full_day_authority[21Feb\\u201925]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_publisher_shorthand_is_not_current_full_day_authority[21 February 25]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_existing_catalogue_copy_keeps_entry_date_distinct_from_report_publication",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_latest_combined_pdf_plus_empty_feed_cannot_invent_catalogue_day[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_latest_combined_pdf_plus_empty_feed_cannot_invent_catalogue_day[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_existing_catalogue_report_policy_requires_human_review",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_older_combined_volume_can_have_catalogue_authority_without_report_publication_day[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_older_combined_volume_can_have_catalogue_authority_without_report_publication_day[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[matching22-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[matching22-assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[wrong23-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[wrong23-assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/normal/reader.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_actual_mint_then_stored_validate[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_actual_mint_then_stored_validate[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[domain]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[publication-day]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[kind]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[scope-key]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[period-start]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[period]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[institution]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[volume-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[cover-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[cover-zero]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[checksum]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[guid-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[timestamp-null]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[title-null]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[catalogue-day]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[status-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[bytes-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[no-observations]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[request-extra]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[digest-uppercase]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[None-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[True-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/2024-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/25-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/24-True]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/24-county]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[None]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[True]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 25 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Mon, 21 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 2025 05:51:28]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 31 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 2025 05:51:28 -0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[fri, 21 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[pair-900]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[pair-901]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[checked-before]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[rss-naive]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[entry-after-original]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[job-start-after]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[job-finish-before]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[retained-current-pair]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[serialized-feed]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[mutated-feed]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[mutated-manifest]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "stored",
+    "case": "test_native_integration_rejects_missing_catalogue_context",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[text]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[vector]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[image]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[form]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_actual_iterator_never_advances_to_fourth_page",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[normal]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[early-eof]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[empty-eof]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[extract-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[text-bounds]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[text-boundary]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[raw-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "normal",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[pdf-init-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-normal/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_independent_full_capture_positive",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[namespace_duplicate_day]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_channel]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_entry]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[duplicate_self]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[guid_attribute]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[nested_title]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[link_fragment]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[link_protocol]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[wrong_year_self]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_rss_ambiguities_never_mint[missing_time]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_existing_canonical_cover_conflicts_refuse[COUNTY ASSEMBLIES 2023-2024]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_existing_canonical_cover_conflicts_refuse[AUDITOR-GENERAL'S REPORT ON THE COUNTY GOVERNMENTS FOR THE YEAR 2024-2025 VOLUME 1 - COUNTY EXECUTIVES]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_desired_punctuation_cannot_hide_conflicting_cover_kind_or_year[COUNTY ASSEMBLIES - 2023-2024]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_desired_punctuation_cannot_hide_conflicting_cover_kind_or_year[COUNTY EXECUTIVES: 2022/2023]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_desired_explicit_future_pdf_publication_day_cannot_be_ignored",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_combined_volume_still_requires_distinct_date_and_scope_contract[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_combined_volume_still_requires_distinct_date_and_scope_contract[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_current_native_model_accepts_audit_full_day_and_refuses_missing_day",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_current_catalogue_model_is_kra_only_not_generic_oag_fallback",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_source_observation_union_cannot_downcast_unknown_oag_catalogue",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_actual_oag_category_is_not_accepted_as_cob_publication_authority",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_publisher_shorthand_is_not_current_full_day_authority[21Feb\\u201925]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_publisher_shorthand_is_not_current_full_day_authority[21 February 25]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_existing_catalogue_copy_keeps_entry_date_distinct_from_report_publication",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_latest_combined_pdf_plus_empty_feed_cannot_invent_catalogue_day[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_latest_combined_pdf_plus_empty_feed_cannot_invent_catalogue_day[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_existing_catalogue_report_policy_requires_human_review",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_older_combined_volume_can_have_catalogue_authority_without_report_publication_day[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_older_combined_volume_can_have_catalogue_authority_without_report_publication_day[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[matching22-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[matching22-assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[wrong23-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "reader",
+    "case": "test_genuine_fy22_exact_catalogue_and_foreign_year_refusal[wrong23-assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/reader-review/optimized/reader.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_actual_mint_then_stored_validate[executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_actual_mint_then_stored_validate[assemblies]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[domain]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[publication-day]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[kind]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[scope-key]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[period-start]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[period]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[institution]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[volume-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[cover-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[cover-zero]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[checksum]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[guid-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[timestamp-null]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[title-null]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[catalogue-day]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[status-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[bytes-bool]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[no-observations]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[request-extra]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_metadata_mutation_refuses[digest-uppercase]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[None-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[True-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/2024-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/25-executives]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/24-True]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_scope_shape_refuses[FY 2023/24-county]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[None]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[True]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 25 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Mon, 21 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 2025 05:51:28]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 31 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[Fri, 21 Feb 2025 05:51:28 -0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_direct_timestamp_shape_refuses[fri, 21 Feb 2025 05:51:28 +0000]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[pair-900]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[pair-901]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[checked-before]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[rss-naive]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[entry-after-original]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[job-start-after]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[job-finish-before]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_stored_chronology_and_job_bounds[retained-current-pair]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[serialized-feed]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[mutated-feed]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_sealed_capability_and_json_boundaries[mutated-manifest]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "stored",
+    "case": "test_native_integration_rejects_missing_catalogue_context",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/stored-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[text]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[vector]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[image]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_owned_real_pdf_glyph_parity[form]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_actual_iterator_never_advances_to_fourth_page",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[normal]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[early-eof]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[empty-eof]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[extract-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[text-bounds]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[text-boundary]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[raw-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  },
+  {
+    "mode": "optimized",
+    "stage": "cover",
+    "case": "test_page_and_stream_lifecycle_with_owned_fakes[pdf-init-error]",
+    "outcome": "passed",
+    "junit": "candidate3/cover-review/cover-optimized/result.xml"
+  }
+]

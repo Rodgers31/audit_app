@@ -1,0 +1,18 @@
+{
+  "final_mapping_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "executed_product_mapping_sha256": "961569dab65ca92e8418200f51d5fba44baf1b1b34f2e3e1f0aef1ee50efa2fc",
+  "only_changed_paths": {
+    "backend/tests/social/test_oag_catalogue_postgres.py": {
+      "previous": "a82dd9ab4df42e62d9b2af0fd58f405c48b4842c4b6014d71f7c9b527e12dedb",
+      "sealed": "701cb4852f0fbe6a1c6817dcf6d9919d75fed5d73804b49026def492f23b69a4"
+    },
+    "backend/tests/social/test_oag_combined_catalogue.py": {
+      "previous": "0b14ce53df2721e3f396cbb5d516a1a38e235b51df2f30f36f844a6b835ba32c",
+      "sealed": "dee1b664dd410db7d89e679688925aac94beb6d106295e2b1d6d399812d4a287"
+    }
+  },
+  "all_product_files_identical": true,
+  "imported_input_pair_ast_unchanged": true,
+  "independent_final_case_count_per_mode": 32,
+  "author_pg_case_count_per_mode": 7
+}

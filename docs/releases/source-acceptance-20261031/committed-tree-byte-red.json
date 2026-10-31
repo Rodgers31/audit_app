@@ -1,0 +1,14 @@
+{
+  "mismatched_files": [
+    "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml"
+  ],
+  "expected_projection": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "observed_unpublished_commit": "6036820d7b4c771c88f788b4e1135ce4f48611a0",
+  "original_blob_sha256": {
+    "backend/tests/fixtures/oag/county-audit-catalogue-2022-23.xml": "65814e138014d74ecc571c2b1ba326f394fa01c822bf534e0cd65585fc9f170c",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2023-24.xml": "356668c4370d8d60952134238024021d9d582674a27aeeb4634248253271327d",
+    "backend/tests/fixtures/oag/county-audit-catalogue-2024-25-empty.xml": "e21523175b5b7951ae0d6ac45b3761209606be677396fb5f3c5cbc5e3eb9e899"
+  }
+}

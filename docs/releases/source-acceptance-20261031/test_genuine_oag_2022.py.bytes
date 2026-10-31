@@ -1,0 +1,33 @@
+"""Desired new explicit OAG contract; not a claim current refusals are a bug."""
+import hashlib,json
+from pathlib import Path
+from urllib.parse import urljoin,urldefrag
+import xml.etree.ElementTree as ET
+import httpx
+import pytest
+from services.receipt_store import LocalReceiptStore
+from services.response_receipts import capture_response
+from seeding.native_report_authority import capture_pdf_report
+
+@pytest.mark.parametrize('kind',['executives','assemblies'])
+def test_genuine_older_combined_volume_can_have_catalogue_authority_without_report_publication_day(tmp_path,kind):
+    root=Path('/evidence');stem='oag-'+kind+'-2022-23'
+    path=root/(stem+'.pdf');meta=json.loads((root/(stem+'.json')).read_text())
+    body=path.read_bytes()
+    if hashlib.sha256(body).hexdigest()!=meta['sha256']:raise AssertionError('genuinePDFpinmismatch')
+    feedpath=root/'oag-feed-2022-2023.xml';feedmeta=json.loads((root/'oag-feed-2022-2023.json').read_text());feed=feedpath.read_bytes()
+    if hashlib.sha256(feed).hexdigest()!=feedmeta['sha256']:raise AssertionError('genuineRSSpinmismatch')
+    items=[]
+    for item in ET.fromstring(feed).findall('./channel/item'):
+        link=urljoin(feedmeta['url'],item.findtext('link',''));clean,fragment=urldefrag(link)
+        if clean==meta['url'] and fragment in ('','new_tab'):
+            items.append({'title':item.findtext('title'),'link':link,'pubDate':item.findtext('pubDate'),'guid':item.findtext('guid')})
+    if len(items)!=1:raise AssertionError('genuineRSSdoesnotbindexactolderPDF')
+    store=LocalReceiptStore(tmp_path/'receipts')
+    pdfreceipt=capture_response(httpx.Response(200,content=body,headers={'content-type':'application/pdf'},request=httpx.Request('GET',meta['url'])),store,source_kind='pdf')
+    rssreceipt=capture_response(httpx.Response(200,content=feed,headers={'content-type':'application/rss+xml'},request=httpx.Request('GET',feedmeta['url'])),store,source_kind='rss')
+    authority,reason=capture_pdf_report(path,pdfreceipt,domain='audits',publisher_receipt=rssreceipt)
+    Path('/evidence/'+stem+'-desired.json').write_text(json.dumps({'sha256':meta['sha256'],'feed_sha256':feedmeta['sha256'],'exact_item':items[0],'current_reason':reason,'current_authority':None if authority is None else authority.value},indent=2))
+    if authority is None:raise AssertionError('desiredclosedOAGcataloguecontractnotimplemented: '+str(reason))
+    if authority.value.get('published_on') is not None:raise AssertionError('RSSentrytimestampmustnotbecomePDFpublicationday')
+    if authority.value.get('evidence_kind')!='publisher_catalogue' or authority.value.get('period')!='FY 2022/23':raise AssertionError('desiredscopedcatalogueevidencemissing')

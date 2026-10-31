@@ -1,0 +1,151 @@
+{
+  "removed_owned_names": [
+    "source802-tools",
+    "source802-compat-pg",
+    "source802-pg",
+    "source802-cover-prototype"
+  ],
+  "before": [
+    {
+      "Id": "b6fd239bd04a396e799408e614ad038dc6fb4382090427117e20b49ab4aeedc8",
+      "Name": "/source802-tools",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 35416,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-31T07:35:09.491649543Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    {
+      "Id": "73619598c909c5202845a1477381e77901c06ac84abfa3517e5184d94bdfba25",
+      "Name": "/source802-compat-pg",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 39058,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-31T08:15:07.993164875Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    {
+      "Id": "cd4725856ba97e998262470063f90e03fd3ba0f4513b6ab6b8c9be4be7fb5283",
+      "Name": "/source802-pg",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 36936,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-31T07:59:28.435508968Z",
+        "FinishedAt": "0001-01-01T00:00:00Z"
+      }
+    },
+    {
+      "Id": "09b0fad66ea5113aeafde8d03ee6e9882cc444f749d37dd68ebbbd26948e7205",
+      "Name": "/source802-cover-prototype",
+      "State": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-31T08:19:15.707510545Z",
+        "FinishedAt": "2026-10-31T08:19:24.826317216Z"
+      }
+    }
+  ],
+  "shared_before": [
+    {
+      "Id": "dfd6452f906a598691eb4d9efa831606d0757712fbdaea5a703f72868791af78",
+      "Name": "/admin-redesign-node",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 685,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-30T01:05:22.98393267Z",
+        "FinishedAt": "2026-10-30T01:03:53.406134337Z"
+      }
+    },
+    {
+      "Id": "72e0925f74305aaffe248b85301f6a334ef3b79905ccc269fa49c8df23ef2264",
+      "Name": "/admin-redesign-pg",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 732,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-30T01:05:23.04252192Z",
+        "FinishedAt": "2026-10-30T01:03:53.406142587Z"
+      }
+    }
+  ],
+  "shared_after": [
+    {
+      "Id": "dfd6452f906a598691eb4d9efa831606d0757712fbdaea5a703f72868791af78",
+      "Name": "/admin-redesign-node",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 685,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-30T01:05:22.98393267Z",
+        "FinishedAt": "2026-10-30T01:03:53.406134337Z"
+      }
+    },
+    {
+      "Id": "72e0925f74305aaffe248b85301f6a334ef3b79905ccc269fa49c8df23ef2264",
+      "Name": "/admin-redesign-pg",
+      "State": {
+        "Status": "running",
+        "Running": true,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 732,
+        "ExitCode": 0,
+        "Error": "",
+        "StartedAt": "2026-10-30T01:05:23.04252192Z",
+        "FinishedAt": "2026-10-30T01:03:53.406142587Z"
+      }
+    }
+  ],
+  "scope": "Only owned throwaway containers/tmpfs removed; shared user services and all host source/evidence paths preserved"
+}

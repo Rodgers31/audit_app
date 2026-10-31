@@ -1,4 +1,4 @@
-"""Revalidate cached CoB bytes against a persisted original acquisition.
+"""Revalidate cached CoB/OAG bytes against a persisted original acquisition.
 
 Download sidecars are never authority. The original HTTP acquisition stays
 unchanged; a separate, job-bound check records the retained-byte validation.
@@ -79,7 +79,7 @@ class RetainedBody:
 
 
 def verified_retained_pdf(session, context, store, *, domain, url, body):
-    if (domain not in ('national_budget', 'pending_bills') or not official_url(url, domain)
+    if (domain not in ('national_budget', 'pending_bills', 'audits') or not official_url(url, domain)
             or type(body) is not bytes or not 0 < len(body) <= 64*1024*1024
             or not body.startswith(b'%PDF-') or not body[-2048:].rstrip().endswith(b'%%EOF')
             or context is None or type(context.job_id) is not int or context.job_id <= 0
@@ -102,6 +102,9 @@ def verified_retained_pdf(session, context, store, *, domain, url, body):
         # Use the same explicit REPORT lane as the pending-bills writer.
         # A budget row may independently describe these same PDF bytes.
         source_scope.append(SourceDocument.doc_type == DocumentType.REPORT)
+    elif domain == 'audits':
+        source_scope.extend((SourceDocument.doc_type == DocumentType.AUDIT,
+                             SourceDocument.publisher == DOMAINS[domain][2]))
     else:
         source_scope.append(SourceDocument.publisher == DOMAINS[domain][2])
     sources = list(session.execute(select(SourceDocument.id, SourceDocument.country_id,
@@ -159,7 +162,7 @@ def verified_retained_pdf(session, context, store, *, domain, url, body):
 def validate_retained_pdf(session, source, receipt, job, *, started, finished):
     """Recheck the immutable origin and exact new-job binding after writer locks."""
     proof = receipt.get(KEY)
-    if (job.domain not in ('national_budget', 'pending_bills')
+    if (job.domain not in ('national_budget', 'pending_bills', 'audits')
             or source.publisher != DOMAINS[job.domain][2] or not official_url(source.url, job.domain)
             or type(proof) is not dict or set(proof) != FIELDS or type(proof['version']) is not int
             or proof['version'] != 1

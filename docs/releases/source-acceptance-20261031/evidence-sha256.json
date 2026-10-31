@@ -1,0 +1,132 @@
+{
+  "root-combined-final-normal.xml.gz": {
+    "sha256": "6707737aa5dedb9e38de3c9852ce4f583b76df14c7afa17dca93e8038c5ec458",
+    "uncompressed_sha256": "e5d5a29433692a2a70925f6cd04f28521026ca64b4eb4bfef08522e35f2dbde9",
+    "bytes": 93212
+  },
+  "root-combined-final-optimized.xml.gz": {
+    "sha256": "fd51b7d3e584b2aca8a35e452724d12cd1d2eba48370de35dadb7f2217cb81e8",
+    "uncompressed_sha256": "6a02bb5789d34d42902f272bbc4b10ee09f436b9149032950460495f3a489e00",
+    "bytes": 93212
+  },
+  "root-combined-final-normal.command.json": {
+    "sha256": "898259d70bdb88d413dfe509d050afe5e89e7118a4cded430d0d418a8c6168ab",
+    "uncompressed_sha256": "898259d70bdb88d413dfe509d050afe5e89e7118a4cded430d0d418a8c6168ab",
+    "bytes": 2784
+  },
+  "root-combined-final-optimized.command.json": {
+    "sha256": "9f81953d718af2461a4477a3bae915d8ce4078b24d33124a03a5fd3d1329096e",
+    "uncompressed_sha256": "9f81953d718af2461a4477a3bae915d8ce4078b24d33124a03a5fd3d1329096e",
+    "bytes": 2796
+  },
+  "root-genuine-oag-postgres-final512.xml.gz": {
+    "sha256": "ce10f691f46d200c5ab61778cc6d2ae0f45d7e35e60529955fa27ab06d7a1285",
+    "uncompressed_sha256": "62cb06db9fad5f5b1493a9718aa36a100e99c4b4ea20758ee1cbbe2d2b39ffc1",
+    "bytes": 566
+  },
+  "root-genuine-oag-postgres-final512-optimized.xml.gz": {
+    "sha256": "5a74c619e5df396e2db0cd605ab845371604ca146adc82a2dd5de6b5c8df92a4",
+    "uncompressed_sha256": "25e36340638c2cce99ac7b9e52aa21620f189aa0b875485ba1d85a7d66d205c6",
+    "bytes": 566
+  },
+  "root-genuine-oag-postgres-final512.command.json": {
+    "sha256": "1fe53330e44462552910f9f21a385b91b847072f282557443c04f41423d94b8d",
+    "uncompressed_sha256": "1fe53330e44462552910f9f21a385b91b847072f282557443c04f41423d94b8d",
+    "bytes": 1519
+  },
+  "root-genuine-oag-postgres-final512-optimized.command.json": {
+    "sha256": "739138cb7e8e45f4f3795bfd32a73fb15c2bfd5c2537c8bbe86226805ae9baa8",
+    "uncompressed_sha256": "739138cb7e8e45f4f3795bfd32a73fb15c2bfd5c2537c8bbe86226805ae9baa8",
+    "bytes": 1539
+  },
+  "root-national-layout-red.xml.gz": {
+    "sha256": "3636fcac3093ca8e204cad74849f0c5af76fc8895f99c3db3b972de51ef10114",
+    "uncompressed_sha256": "30351ad728102ee57c6572b3e5abd4ddc220812f719518f2c513c84e434dd006",
+    "bytes": 3205
+  },
+  "root-national-layout-fixed.xml.gz": {
+    "sha256": "99f8aaa62178628fbf01c8a85c222ed6fc4fd4e172c345d9147066f9aa4d0cae",
+    "uncompressed_sha256": "ec0235af19cbed2e338263bb81389aec309d23bc9fb929da316be791d2bb0cf4",
+    "bytes": 4728
+  },
+  "root-oag-catalogue-red.xml.gz": {
+    "sha256": "cd7d0f31b10c3b0e2d6a8a7a7c3b91c81e26b9a65ce379547556288763e439ec",
+    "uncompressed_sha256": "f45ea7ae27fe64de65ab5dc1617fd12939173ec4bb155d9781e1379e47a43af8",
+    "bytes": 5797
+  },
+  "root-oag-2022-red.xml.gz": {
+    "sha256": "d0c0444181bf1bea31b730caed708051d227a1c6c24cf5efb4d56a2952bf5ad8",
+    "uncompressed_sha256": "c78e7c75e047ebb0ac19176ba9f6ece57f2c3762bba1134f33998de05bb52716",
+    "bytes": 5815
+  },
+  "root-oag-2022-fixed.xml.gz": {
+    "sha256": "c0a093fbaf69a450a4ed7e8361fc4ef323ae86c3de112dd8dde2e9b2ee5c41b7",
+    "uncompressed_sha256": "da474777797d5147082405d2b3ab0120222b296fe58ac9e6a97c2d0b37dd6e28",
+    "bytes": 6800
+  },
+  "root-oag-conflict-red.xml.gz": {
+    "sha256": "9a02aa19a48adfda4c2aa7cb80fdc1a44403ad76a1f16af765b64dc28d9d52c5",
+    "uncompressed_sha256": "f3d872c98cc0e758cc61195149b011f7fa26560bd60ad7897435d7623de21969",
+    "bytes": 2870
+  },
+  "root-oag-conflict-fixed.xml.gz": {
+    "sha256": "8c6bfc372bc75f55043b519f88d5626eb751a4a10695d45638a94dede6901fbd",
+    "uncompressed_sha256": "2cd1a3decb0456819b78e76801e2591709d15769863d17d9ad8f26048b2266ba",
+    "bytes": 6465
+  },
+  "root-oag-copy-red.xml.gz": {
+    "sha256": "e9481612c5fa0660fe52974e207f0fc57e8d467ad20028f8225f7b66a011a893",
+    "uncompressed_sha256": "a9e24fd9caa9a5b80d6f3b448dc620f1c3c87a3eb19bfbfa86328c24b1cd1f78",
+    "bytes": 3087
+  },
+  "root-oag-layout-red.xml.gz": {
+    "sha256": "531abf38c0fc2134e525017b1ab531ac15354bb562ca60b4b16e9a465ded9ebc",
+    "uncompressed_sha256": "bfc010dcd3b2156b0ececc1cfa668b22f2c2ddfa18f42173c7dca83116573d78",
+    "bytes": 2580
+  },
+  "root-oag-page-budget-red.xml.gz": {
+    "sha256": "9c08e329aeb1eda70f7b11dce09c3e895c2393d35647fa0e8e0c6d1930fa61e7",
+    "uncompressed_sha256": "6971778a885ee84de9812eecc56bf9fcd8f3f05b1de24f116a36f321ee6e7951",
+    "bytes": 1988
+  },
+  "root-oag-cover-final.xml.gz": {
+    "sha256": "8fc2307f052393dc6c264faffca40cf2c199d59f06e8bb46a727eb61aed0c947",
+    "uncompressed_sha256": "7f57ed6d32711eac08b4358ec554b087d6bb0d7746caf374f7681a1a4086d15f",
+    "bytes": 6766
+  },
+  "root-oag-human-hold.xml.gz": {
+    "sha256": "5ed9665ea85331b597e9b1b4b69bd1d2f0efe0108bff25e0c2fac2ae7455c3f5",
+    "uncompressed_sha256": "f8a6e5d845cec4a87df255a079ccfbdfa8c85094a9456f4bb1effea1608d5dfa",
+    "bytes": 400
+  },
+  "production-off-readback.json": {
+    "sha256": "b19ea0a20a7dec94d0af7ad3fc0d1a471032128ee0833df55250c54064b63f5e",
+    "uncompressed_sha256": "b19ea0a20a7dec94d0af7ad3fc0d1a471032128ee0833df55250c54064b63f5e",
+    "bytes": 2368
+  },
+  "read_only_source802.json": {
+    "sha256": "002aab520a3b47bfa789c40f6edcd96c959387ad53ff29cf6451e8266de78133",
+    "uncompressed_sha256": "002aab520a3b47bfa789c40f6edcd96c959387ad53ff29cf6451e8266de78133",
+    "bytes": 7623
+  },
+  "run-root-tests.py.bytes": {
+    "sha256": "64db82d34a0875e0a5c9c69d60f6b8f052c676211745f007c23cfd105e664a47",
+    "uncompressed_sha256": "64db82d34a0875e0a5c9c69d60f6b8f052c676211745f007c23cfd105e664a47",
+    "bytes": 1653
+  },
+  "run-final-selection.py.bytes": {
+    "sha256": "842298edda5768d6abcd302ae29ea2b2a46527516238a5b7f0e751caa69369cc",
+    "uncompressed_sha256": "842298edda5768d6abcd302ae29ea2b2a46527516238a5b7f0e751caa69369cc",
+    "bytes": 251
+  },
+  "test_genuine_oag_postgres.py.bytes": {
+    "sha256": "08a1a69ee39743bbcfa2f3784fa17f73b74bafcc6f0a60e9e09cb93ce4dedf74",
+    "uncompressed_sha256": "08a1a69ee39743bbcfa2f3784fa17f73b74bafcc6f0a60e9e09cb93ce4dedf74",
+    "bytes": 1433
+  },
+  "test_genuine_oag_2022.py.bytes": {
+    "sha256": "cf0360ac349b96df18348166f88e41911922131df79c2c0db09cb7508ebb3a84",
+    "uncompressed_sha256": "cf0360ac349b96df18348166f88e41911922131df79c2c0db09cb7508ebb3a84",
+    "bytes": 2702
+  }
+}

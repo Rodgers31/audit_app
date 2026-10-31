@@ -1,0 +1,180 @@
+{
+  "base": "33999e215fe7a1a776685615c832dad4793acd19",
+  "backend_projection_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "backend_files": 1476,
+  "root_tests": {
+    "root-combined-final-normal.xml": {
+      "cases": 558,
+      "unique_cases": 558,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-combined-final-optimized.xml": {
+      "cases": 558,
+      "unique_cases": 558,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-genuine-oag-postgres-final512.xml": {
+      "cases": 3,
+      "unique_cases": 3,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-genuine-oag-postgres-final512-optimized.xml": {
+      "cases": 3,
+      "unique_cases": 3,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-national-layout-red.xml": {
+      "cases": 2,
+      "unique_cases": 2,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-national-layout-fixed.xml": {
+      "cases": 32,
+      "unique_cases": 32,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-catalogue-red.xml": {
+      "cases": 2,
+      "unique_cases": 2,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-2022-red.xml": {
+      "cases": 2,
+      "unique_cases": 2,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-2022-fixed.xml": {
+      "cases": 38,
+      "unique_cases": 38,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-conflict-red.xml": {
+      "cases": 2,
+      "unique_cases": 2,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-conflict-fixed.xml": {
+      "cases": 42,
+      "unique_cases": 42,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-copy-red.xml": {
+      "cases": 1,
+      "unique_cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-layout-red.xml": {
+      "cases": 1,
+      "unique_cases": 1,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-page-budget-red.xml": {
+      "cases": 2,
+      "unique_cases": 2,
+      "failures": 1,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-cover-final.xml": {
+      "cases": 38,
+      "unique_cases": 38,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    },
+    "root-oag-human-hold.xml": {
+      "cases": 1,
+      "unique_cases": 1,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0
+    }
+  },
+  "source_acceptance": {
+    "oag_combined_genuine_qualified": 4,
+    "oag_production_documents_unqualified": 5,
+    "national_sectors": 10,
+    "national_financial_cells": 20,
+    "national_runtime_limit_mib": 512,
+    "kra_current_financial": "unavailable",
+    "production_adoption": false
+  },
+  "production": {
+    "deployed_sha": "33999e215fe7a1a776685615c832dad4793acd19",
+    "publishing": false,
+    "uploads": false,
+    "workers": false,
+    "financial_generation": false,
+    "business_writes": 0,
+    "hosted_runs_dispatched": 0,
+    "repository_variables": 14,
+    "financial_repository_variable_present": false,
+    "existing_posts": 5,
+    "publications": 0,
+    "targets": 0,
+    "assets": 0,
+    "uploads_count": 0,
+    "attempts": 0
+  },
+  "limits": [
+    "Retained official content with local transport/job clocks is not production ingestion/adoption.",
+    "Small synthetic PDF covers carry ordinary concurrent/draft tests; separate full genuine input cases execute actual producer/current-reader paths.",
+    "OAG publication dates remain null and catalogue records require human review.",
+    "Normal full suite preceded the final added OAG human-hold assertion; that exact test was then executed fresh normally, and is included in the final optimized suite.",
+    "Earlier setup errors and larger-memory prototype runs receive no passing resource credit.",
+    "Backend tests do not certify production visual correctness."
+  ],
+  "standards": {
+    "independent_cases_per_mode": 32,
+    "corroborating_author_cases_per_mode": 7,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "source_projection_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+    "report": "standards/REPORT.md",
+    "full_sealed_packet": "standards/packet.tar.gz"
+  },
+  "spec": {
+    "independent_cases_per_mode": 95,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "source_projection_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+    "report": "spec/REPORT.md",
+    "full_sealed_packet": "spec/packet.tar.gz"
+  },
+  "packaging": {
+    "reviewed_backend_index_files": 1476,
+    "mismatches": 0,
+    "application_changes": false,
+    "attributes_sha256": "6ecb41a1383cf7a91469b6f97d77f255d29a461f427a1c4eebca372309f82713",
+    "retained_original_xml_bytes": true
+  },
+  "root_cleanup": "root-cleanup.json"
+}

@@ -226,7 +226,12 @@ def _extract_page_texts(pdf_path: Path) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     with pdfplumber.open(pdf_path) as pdf:
         for i, page in enumerate(pdf.pages, start=1):
-            out.append({"page": i, "text": page.extract_text() or ""})
+            try:
+                out.append({"page": i, "text": page.extract_text() or ""})
+            finally:
+                # Retain text, not hundreds of pdfminer page layouts. Fresh
+                # financial parsing must fit the existing ingestion budget.
+                page.close()
     return out
 
 

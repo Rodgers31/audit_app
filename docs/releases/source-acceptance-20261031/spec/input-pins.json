@@ -1,0 +1,22 @@
+{
+  "source": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/source-acceptance-802-20261031/spec/candidate4/source",
+  "files": 1476,
+  "mapping_sha256": "e005c70b78d5870a3f39f2873ea7987fd7037467a83e8df9925e1487ecc37e64",
+  "delta_from_candidate3": {
+    "backend/tests/social/test_oag_catalogue_postgres.py": {
+      "old": "8c77f3189057bc90ceda634151e6aa297994ae8fea3ad9ee57715f32cde0c4fd",
+      "new": "701cb4852f0fbe6a1c6817dcf6d9919d75fed5d73804b49026def492f23b69a4"
+    },
+    "backend/tests/social/test_oag_combined_catalogue.py": {
+      "old": "0b14ce53df2721e3f396cbb5d516a1a38e235b51df2f30f36f844a6b835ba32c",
+      "new": "dee1b664dd410db7d89e679688925aac94beb6d106295e2b1d6d399812d4a287"
+    }
+  },
+  "all_product_bytes_identical": true,
+  "execution_input_mapping": "de915683c25278cbd3d36cefed09b2ee909856c16ffa05ae3dad2541c6e78085",
+  "reviewed_diffs": [
+    "../candidate3/postgres-test-only-delta.diff",
+    "../candidate3/unit-test-only-delta.diff"
+  ],
+  "frozen_unix": 1793435431.630768
+}
