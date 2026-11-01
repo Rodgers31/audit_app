@@ -20,10 +20,12 @@ The [source manifest](source.json) binds the candidate frontend source and reusa
 
 [Red receipts](regression-red.txt) retain the failing assertion inventory. The initial seven-case regression run produced **6 failures / 1 pass** against the pre-fix composer: hidden media/publication controls, absent readiness reasons, stale/stopped/unavailable workers permitting immediate publication, and worker freshness not expiring. Two additional targeted pre-fix controls separately failed for misleading upload availability text and for a server review-attestation refusal leaving the publication action immediately available. The schedule-management counterpart also had **3 pre-fix failures** for unavailable/stale/stopped workers permitting its immediate action. Its green cases preserve future rescheduling and cancellation, with no immediate request. The final regression cases are normal Jest tests, not source-string checks.
 
-From `frontend`, using Node **24.22.1** from the retained runtime directory:
+From `frontend`, select an installed Node **24.22.1–24.x** runtime that satisfies `frontend/package.json`:
 
 ```sh
-export PATH="/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin:$PATH"
+# Select an installed Node 24.22.1–24.x runtime before running these commands.
+node --version
+node scripts/verify-node-runtime.cjs
 node node_modules/jest/bin/jest.js --runInBand \
   __tests__/admin/social __tests__/social-generation.test.tsx
 node tests/manualPublicationBrowser.mjs
@@ -42,6 +44,6 @@ The owned Chromium browser run built the production fixture with two build CPUs 
 
 Screenshots were visually inspected: [off desktop](manual-off-desktop.png), [queued manual desktop](manual-queued-desktop.png), [off mobile](manual-off-mobile.png), [queued generated mobile](generated-queued-mobile.png). The fixture uses the real social UI styling with a minimal inert shell, not the deployed admin navigation or root typography.
 
-Earlier browser setup attempts exposed the older minimal harness's missing production history bootstrap and non-exact test locators. They were fixture setup failures and are not counted as accepted scenarios. The final owned harness installs the actual `HISTORY_BRIDGE_BOOTSTRAP` before hydration and uses exact/scoped locators. Its temporary runtime directory is removed after completion. Full author receipts, including the failed controls and setup diagnostics, are retained locally under `/Users/roger/.codex/visualizations/2026/11/01/admin-publish-workflow-ui`.
+Earlier browser setup attempts exposed the older minimal harness's missing production history bootstrap and non-exact test locators. They were fixture setup failures and are not counted as accepted scenarios. The final owned harness installs the actual `HISTORY_BRIDGE_BOOTSTRAP` before hydration and uses exact/scoped locators. Its temporary runtime directory is removed after completion. The reusable runner is `frontend/tests/manualPublicationBrowser.mjs`; it writes its report to `/tmp/admin-manual-publication-browser.json` and setup diagnostics to `/tmp/admin-manual-publication-*`. Accepted receipts are committed alongside this document; additional original diagnostics remain in the author's external evidence archive and are not required to run the checks.
 
 Production publishing, uploads, all workers and financial generation remain required OFF until separately accepted external launch gates and an explicit owner decision. This local UI evidence does not close the [launch gates](LAUNCH_GATES.md).
