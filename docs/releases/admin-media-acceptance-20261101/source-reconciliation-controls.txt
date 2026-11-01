@@ -1,0 +1,155 @@
+{
+  "status": "PASS",
+  "cases": 30,
+  "scope": "source_reconciliation_controls_only",
+  "product_tests_executed": false,
+  "results": [
+    {
+      "case": "positive pinned-media source and preserved raw history",
+      "exit": 0,
+      "reason": "VERIFIED_SOURCE_SCOPE_RECONCILIATION"
+    },
+    {
+      "case": "missing receipt",
+      "exit": 2,
+      "reason": "SOURCE_RECEIPT_MISSING"
+    },
+    {
+      "case": "malformed JSON",
+      "exit": 2,
+      "reason": "SOURCE_RECEIPT_INVALID_JSON"
+    },
+    {
+      "case": "duplicate JSON keys",
+      "exit": 2,
+      "reason": "DUPLICATE_JSON_KEY"
+    },
+    {
+      "case": "oversized JSON",
+      "exit": 2,
+      "reason": "SOURCE_RECEIPT_TOO_LARGE"
+    },
+    {
+      "case": "empty object",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "array root",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "boolean schema",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_RECEIPT"
+    },
+    {
+      "case": "false test execution claim",
+      "exit": 2,
+      "reason": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "production authorization",
+      "exit": 2,
+      "reason": "INVALID_AUTHORITY_CLAIM"
+    },
+    {
+      "case": "no scopes",
+      "exit": 2,
+      "reason": "SOURCE_SCOPES_REQUIRED"
+    },
+    {
+      "case": "empty source map",
+      "exit": 2,
+      "reason": "SOURCE_FILES_REQUIRED"
+    },
+    {
+      "case": "wrong authoritative scope",
+      "exit": 2,
+      "reason": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "array authoritative scope",
+      "exit": 2,
+      "reason": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "object authoritative scope",
+      "exit": 2,
+      "reason": "AUTHORITATIVE_SCOPE_REQUIRED"
+    },
+    {
+      "case": "short source commit",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_COMMIT"
+    },
+    {
+      "case": "absent source commit",
+      "exit": 2,
+      "reason": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "wrong source hash",
+      "exit": 2,
+      "reason": "SOURCE_BLOB_MISMATCH"
+    },
+    {
+      "case": "missing source blob",
+      "exit": 2,
+      "reason": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "parent traversal source path",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_PATH"
+    },
+    {
+      "case": "boolean source hash",
+      "exit": 2,
+      "reason": "INVALID_SOURCE_HASH"
+    },
+    {
+      "case": "no raw history",
+      "exit": 2,
+      "reason": "HISTORICAL_INVENTORY_REQUIRED"
+    },
+    {
+      "case": "wrong raw historical hash",
+      "exit": 2,
+      "reason": "HISTORICAL_GIT_BYTES_CHANGED"
+    },
+    {
+      "case": "missing historical label",
+      "exit": 2,
+      "reason": "HISTORICAL_SCOPE_LABEL_REQUIRED"
+    },
+    {
+      "case": "malformed field selector",
+      "exit": 2,
+      "reason": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "unhashable comparison scope",
+      "exit": 2,
+      "reason": "INVALID_HISTORICAL_COMPARISON"
+    },
+    {
+      "case": "Git tree cannot count as a source file",
+      "exit": 2,
+      "reason": "SOURCE_PATH_NOT_REGULAR_BLOB"
+    },
+    {
+      "case": "direct API: modified historical bytes",
+      "reason": "HISTORICAL_WORKTREE_BYTES_CHANGED"
+    },
+    {
+      "case": "direct API: historical Git failure is not absence",
+      "reason": "GIT_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case": "direct API: historical comparison uses the exact hashed byte snapshot",
+      "historical_reads": 1
+    }
+  ]
+}

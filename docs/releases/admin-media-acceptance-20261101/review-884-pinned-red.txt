@@ -1,0 +1,4 @@
+baseline VERIFIED_SOURCE_SCOPE_RECONCILIATION
+tree_as_file VERIFIED_SOURCE_SCOPE_RECONCILIATION [{'scope': 'combined_after_review', 'commit': '831f8d2779ffba42a729879f5087e76791064a85', 'verified_source_files': 1}]
+git_failure_as_missing VERIFIED_SOURCE_SCOPE_RECONCILIATION ['frontend/components/admin/social/SocialComposer.tsx']
+cli_git_failure 0 VERIFIED_SOURCE_SCOPE_RECONCILIATION ['frontend/components/admin/social/SocialComposer.tsx']

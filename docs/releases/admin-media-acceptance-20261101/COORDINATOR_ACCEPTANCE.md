@@ -1,5 +1,6 @@
 # Coordinator acceptance addendum
 
+Source authority: read [SOURCE_EVIDENCE_INDEX.md](SOURCE_EVIDENCE_INDEX.md) and its scoped reconciliation receipt first. Source JSON files from earlier review stages are preserved historical captures, not interchangeable current-checkout manifests.
 All tests below use synthetic credentials and controlled storage/provider transports. Production activation is not authorized. The production-package Docker selections use the previously audited 81 runtime distributions plus a separate test overlay, actually executing Python 3.12.16, SQLAlchemy 2.0.55 and Pillow 13.0.0. Source and environments are mounted read-only. Disposable PostgreSQL runs in a namespace with no external networking and no published host port; every owned container is stopped after its selection.
 
 | Selection | Normal | Optimized | Scope |

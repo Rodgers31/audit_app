@@ -1,0 +1,36 @@
+{
+  "baseline_commit": "aae2f322d639c6c3f2c7461c6c46d1733bd0e92e",
+  "baseline_source_sha256": "51ceb10dcaee9c1a963cdb1a153758fd28797d4c8164e254135126ca37ee25cb",
+  "reviewed_fixed_source_sha256": "88216ad8cdc90f695dea0749689ecb7f448b40489d1a0dd099b166ba71a57d92",
+  "observations": [
+    {
+      "outputs": {},
+      "before": "❔ Partial — some source(s) not probed before the health-check budget ran out",
+      "after": "❔ Unknown — missing or malformed health-check verdict"
+    },
+    {
+      "outputs": {
+        "has_failures": "false"
+      },
+      "before": "❔ Partial — some source(s) not probed before the health-check budget ran out",
+      "after": "❔ Unknown — missing or malformed unprobed source count"
+    },
+    {
+      "outputs": {
+        "has_failures": "false",
+        "unprobed": "3"
+      },
+      "before": "❔ Partial — 3 source(s) not probed before the health-check budget ran out",
+      "after": "❔ Partial — 3 source(s) not probed before the health-check budget ran out"
+    },
+    {
+      "outputs": {
+        "has_failures": "true",
+        "unprobed": null
+      },
+      "before": "⚠️ Some sources were unreachable (may be related)",
+      "after": "⚠️ Some sources were unreachable (may be related)"
+    }
+  ],
+  "external_calls": 0
+}

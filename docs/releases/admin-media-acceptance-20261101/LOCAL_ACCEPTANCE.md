@@ -1,5 +1,6 @@
 # Admin media acceptance — 1 November 2026
 
+Source authority: read [SOURCE_EVIDENCE_INDEX.md](SOURCE_EVIDENCE_INDEX.md) and its scoped reconciliation receipt first. Source JSON files from earlier review stages are preserved historical captures, not interchangeable current-checkout manifests.
 This is inert local candidate evidence at base `db713b72ccd4c1938e7dac0401f66770379bdb62`, not production acceptance or permission to enable uploads, publishing, workers or financial generation. No production environment, credentials, database or object store was read or changed in this lane. Tests explicitly inject fixture credentials, fake object storage or intercepted SDK transports. Container networking is disabled. Runtime fixture switches may be enabled only inside disposable tests; no deployed controls are changed.
 
 The requested add-media workflow is implemented already. The current evidence does not support calling #490 closed. In particular, the older October 8 handoffs predate subsequent accepted scope, host and diagnostic-accounting work; they must not reopen those accepted prerequisites.

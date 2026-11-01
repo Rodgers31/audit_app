@@ -1,0 +1,883 @@
+{
+  "authoritative_scope": "combined_after_review",
+  "historical_artifacts": [
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [],
+          "against_scope": "media_pr_original",
+          "different_files": [],
+          "field": "files",
+          "matched_files": [
+            "backend/social/__init__.py",
+            "backend/social/adapters/__init__.py",
+            "backend/social/adapters/common.py",
+            "backend/social/adapters/config.py",
+            "backend/social/adapters/facebook.py",
+            "backend/social/adapters/facebook_reels.py",
+            "backend/social/adapters/instagram.py",
+            "backend/social/adapters/meta_http.py",
+            "backend/social/adapters/meta_validation.py",
+            "backend/social/adapters/platform_http.py",
+            "backend/social/adapters/threads.py",
+            "backend/social/adapters/tiktok.py",
+            "backend/social/adapters/tiktok_http.py",
+            "backend/social/adapters/tiktok_oauth.py",
+            "backend/social/adapters/validation_registry.py",
+            "backend/social/adapters/x.py",
+            "backend/social/adapters/x_text.py",
+            "backend/social/api.py",
+            "backend/social/archive.py",
+            "backend/social/automation/__init__.py",
+            "backend/social/automation/api.py",
+            "backend/social/automation/contracts.py",
+            "backend/social/automation/models.py",
+            "backend/social/automation/service.py",
+            "backend/social/connections/__init__.py",
+            "backend/social/connections/api.py",
+            "backend/social/connections/callback_ingress.py",
+            "backend/social/connections/config.py",
+            "backend/social/connections/contracts.py",
+            "backend/social/connections/crypto.py",
+            "backend/social/connections/direct_api.py",
+            "backend/social/connections/direct_callback.py",
+            "backend/social/connections/models.py",
+            "backend/social/connections/ownership.py",
+            "backend/social/connections/provider.py",
+            "backend/social/connections/recovery.py",
+            "backend/social/connections/rotation.py",
+            "backend/social/connections/service.py",
+            "backend/social/connections/signed_requests.py",
+            "backend/social/contracts.py",
+            "backend/social/destinations.py",
+            "backend/social/draft_formats.py",
+            "backend/social/generation/__init__.py",
+            "backend/social/generation/api.py",
+            "backend/social/generation/authority.py",
+            "backend/social/generation/contracts.py",
+            "backend/social/generation/copy_common.py",
+            "backend/social/generation/destination.py",
+            "backend/social/generation/editorial.py",
+            "backend/social/generation/financial_copy.py",
+            "backend/social/generation/integration.py",
+            "backend/social/generation/models.py",
+            "backend/social/generation/preview.py",
+            "backend/social/generation/service.py",
+            "backend/social/generation/social_copy.py",
+            "backend/social/generation/source_selection.py",
+            "backend/social/generation/worker_authority.py",
+            "backend/social/http_boundary.py",
+            "backend/social/http_policy.py",
+            "backend/social/media/__init__.py",
+            "backend/social/media/acceptance.py",
+            "backend/social/media/api.py",
+            "backend/social/media/cli.py",
+            "backend/social/media/config.py",
+            "backend/social/media/contracts.py",
+            "backend/social/media/deletion.py",
+            "backend/social/media/fencing.py",
+            "backend/social/media/http.py",
+            "backend/social/media/identity.py",
+            "backend/social/media/inspection.py",
+            "backend/social/media/inspection_child.py",
+            "backend/social/media/maintenance.py",
+            "backend/social/media/management.py",
+            "backend/social/media/models.py",
+            "backend/social/media/operator.py",
+            "backend/social/media/owned_writes.py",
+            "backend/social/media/privacy_adapter.py",
+            "backend/social/media/reconciliation.py",
+            "backend/social/media/retention.py",
+            "backend/social/media/runtime.py",
+            "backend/social/media/service.py",
+            "backend/social/media/storage.py",
+            "backend/social/meta_reels_recovery.py",
+            "backend/social/meta_reels_recovery_api.py",
+            "backend/social/models.py",
+            "backend/social/native_admission.py",
+            "backend/social/platform_budget.py",
+            "backend/social/platform_connections/__init__.py",
+            "backend/social/platform_connections/api.py",
+            "backend/social/platform_connections/config.py",
+            "backend/social/platform_connections/contracts.py",
+            "backend/social/platform_connections/models.py",
+            "backend/social/platform_connections/provider.py",
+            "backend/social/platform_connections/service.py",
+            "backend/social/platform_connections/tiktok_provider.py",
+            "backend/social/platform_event_models.py",
+            "backend/social/platform_events.py",
+            "backend/social/platform_materials.py",
+            "backend/social/platform_runtime.py",
+            "backend/social/privacy/__init__.py",
+            "backend/social/privacy/access_logs.py",
+            "backend/social/privacy/api.py",
+            "backend/social/privacy/deletion_ledger.py",
+            "backend/social/privacy/media_port.py",
+            "backend/social/privacy/models.py",
+            "backend/social/privacy/ownership.py",
+            "backend/social/privacy/policy.py",
+            "backend/social/privacy/private_io.py",
+            "backend/social/privacy/recovery.py",
+            "backend/social/privacy/restoration.py",
+            "backend/social/privacy/runtime.py",
+            "backend/social/privacy/service.py",
+            "backend/social/privacy/startup.py",
+            "backend/social/privacy/subjects.py",
+            "backend/social/privacy/workflow.py",
+            "backend/social/privacy/workflow_api.py",
+            "backend/social/privacy/workflow_contracts.py",
+            "backend/social/privacy/workflow_models.py",
+            "backend/social/privacy/workflow_startup.py",
+            "backend/social/recovery_database.py",
+            "backend/social/recovery_inventory.py",
+            "backend/social/recovery_operator.py",
+            "backend/social/recovery_process.py",
+            "backend/social/service.py",
+            "backend/social/studio/__init__.py",
+            "backend/social/studio/analytics.py",
+            "backend/social/studio/api.py",
+            "backend/social/studio/contracts.py",
+            "backend/social/studio/integrity.py",
+            "backend/social/studio/models.py",
+            "backend/social/studio/native_metrics.py",
+            "backend/social/studio/platform_metrics.py",
+            "backend/social/studio/render_child.py",
+            "backend/social/studio/runner.py",
+            "backend/social/studio/runtime.py",
+            "backend/social/studio/service.py",
+            "backend/social/telemetry.py",
+            "backend/social/threads_recovery.py",
+            "backend/social/threads_recovery_api.py",
+            "backend/social/validation.py",
+            "backend/social/worker/__init__.py",
+            "backend/social/worker/__main__.py",
+            "backend/social/worker/arguments.py",
+            "backend/social/worker/config.py",
+            "backend/social/worker/continuation.py",
+            "backend/social/worker/logging.py",
+            "backend/social/worker/materials.py",
+            "backend/social/worker/media_reads.py",
+            "backend/social/worker/native_authority_schema.py",
+            "backend/social/worker/native_runtime.py",
+            "backend/social/worker/ownership.py",
+            "backend/social/worker/policy.py",
+            "backend/social/worker/ports.py",
+            "backend/social/worker/repository.py",
+            "backend/social/worker/role_admin.py",
+            "backend/social/worker/role_contract.py",
+            "backend/social/worker/runner.py",
+            "backend/social/worker/startup.py",
+            "backend/tests/social/test_media_acceptance.py",
+            "backend/tests/social/test_media_api.py",
+            "backend/tests/social/test_media_browser_fixture.py",
+            "backend/tests/social/test_media_browser_hostility.py",
+            "backend/tests/social/test_media_cleanup.py",
+            "backend/tests/social/test_media_cli_privacy.py",
+            "backend/tests/social/test_media_config.py",
+            "backend/tests/social/test_media_fixture_review_regressions.py",
+            "backend/tests/social/test_media_inspection_adversary.py",
+            "backend/tests/social/test_media_inspector_availability.py",
+            "backend/tests/social/test_media_integration.py",
+            "backend/tests/social/test_media_legacy_recovery.py",
+            "backend/tests/social/test_media_lookup_indexes.py",
+            "backend/tests/social/test_media_lookup_indexes_postgres.py",
+            "backend/tests/social/test_media_maintenance.py",
+            "backend/tests/social/test_media_management.py",
+            "backend/tests/social/test_media_management_postgres.py",
+            "backend/tests/social/test_media_migration_postgres.py",
+            "backend/tests/social/test_media_object_identity.py",
+            "backend/tests/social/test_media_object_identity_postgres.py",
+            "backend/tests/social/test_media_operator.py",
+            "backend/tests/social/test_media_operator_postgres.py",
+            "backend/tests/social/test_media_owned_postgres.py",
+            "backend/tests/social/test_media_owned_review.py",
+            "backend/tests/social/test_media_owned_review_postgres.py",
+            "backend/tests/social/test_media_owned_writes.py",
+            "backend/tests/social/test_media_payload_retirement.py",
+            "backend/tests/social/test_media_privacy_adapter.py",
+            "backend/tests/social/test_media_reconciliation_boundary.py",
+            "backend/tests/social/test_media_recovery_cli.py",
+            "backend/tests/social/test_media_request_limits.py",
+            "backend/tests/social/test_media_retained_postgres.py",
+            "backend/tests/social/test_media_retained_recovery.py",
+            "backend/tests/social/test_media_retirement_postgres.py",
+            "backend/tests/social/test_media_review_492.py",
+            "backend/tests/social/test_media_service.py",
+            "backend/tests/social/test_media_settlement_migration_postgres.py",
+            "backend/tests/social/test_media_signed_headers.py",
+            "backend/tests/social/test_media_storage_adversary.py",
+            "backend/tests/social/test_media_support.py",
+            "backend/tests/social/test_media_target_safety.py",
+            "backend/tests/social/test_revision_asset_admission.py"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [],
+          "field": "files",
+          "matched_files": [
+            "backend/social/__init__.py",
+            "backend/social/adapters/__init__.py",
+            "backend/social/adapters/common.py",
+            "backend/social/adapters/config.py",
+            "backend/social/adapters/facebook.py",
+            "backend/social/adapters/facebook_reels.py",
+            "backend/social/adapters/instagram.py",
+            "backend/social/adapters/meta_http.py",
+            "backend/social/adapters/meta_validation.py",
+            "backend/social/adapters/platform_http.py",
+            "backend/social/adapters/threads.py",
+            "backend/social/adapters/tiktok.py",
+            "backend/social/adapters/tiktok_http.py",
+            "backend/social/adapters/tiktok_oauth.py",
+            "backend/social/adapters/validation_registry.py",
+            "backend/social/adapters/x.py",
+            "backend/social/adapters/x_text.py",
+            "backend/social/api.py",
+            "backend/social/archive.py",
+            "backend/social/automation/__init__.py",
+            "backend/social/automation/api.py",
+            "backend/social/automation/contracts.py",
+            "backend/social/automation/models.py",
+            "backend/social/automation/service.py",
+            "backend/social/connections/__init__.py",
+            "backend/social/connections/api.py",
+            "backend/social/connections/callback_ingress.py",
+            "backend/social/connections/config.py",
+            "backend/social/connections/contracts.py",
+            "backend/social/connections/crypto.py",
+            "backend/social/connections/direct_api.py",
+            "backend/social/connections/direct_callback.py",
+            "backend/social/connections/models.py",
+            "backend/social/connections/ownership.py",
+            "backend/social/connections/provider.py",
+            "backend/social/connections/recovery.py",
+            "backend/social/connections/rotation.py",
+            "backend/social/connections/service.py",
+            "backend/social/connections/signed_requests.py",
+            "backend/social/contracts.py",
+            "backend/social/destinations.py",
+            "backend/social/draft_formats.py",
+            "backend/social/generation/__init__.py",
+            "backend/social/generation/api.py",
+            "backend/social/generation/authority.py",
+            "backend/social/generation/contracts.py",
+            "backend/social/generation/copy_common.py",
+            "backend/social/generation/destination.py",
+            "backend/social/generation/editorial.py",
+            "backend/social/generation/financial_copy.py",
+            "backend/social/generation/integration.py",
+            "backend/social/generation/models.py",
+            "backend/social/generation/preview.py",
+            "backend/social/generation/service.py",
+            "backend/social/generation/social_copy.py",
+            "backend/social/generation/source_selection.py",
+            "backend/social/generation/worker_authority.py",
+            "backend/social/http_boundary.py",
+            "backend/social/http_policy.py",
+            "backend/social/media/__init__.py",
+            "backend/social/media/acceptance.py",
+            "backend/social/media/api.py",
+            "backend/social/media/cli.py",
+            "backend/social/media/config.py",
+            "backend/social/media/contracts.py",
+            "backend/social/media/deletion.py",
+            "backend/social/media/fencing.py",
+            "backend/social/media/http.py",
+            "backend/social/media/identity.py",
+            "backend/social/media/inspection.py",
+            "backend/social/media/inspection_child.py",
+            "backend/social/media/maintenance.py",
+            "backend/social/media/management.py",
+            "backend/social/media/models.py",
+            "backend/social/media/operator.py",
+            "backend/social/media/owned_writes.py",
+            "backend/social/media/privacy_adapter.py",
+            "backend/social/media/reconciliation.py",
+            "backend/social/media/retention.py",
+            "backend/social/media/runtime.py",
+            "backend/social/media/service.py",
+            "backend/social/media/storage.py",
+            "backend/social/meta_reels_recovery.py",
+            "backend/social/meta_reels_recovery_api.py",
+            "backend/social/models.py",
+            "backend/social/native_admission.py",
+            "backend/social/platform_budget.py",
+            "backend/social/platform_connections/__init__.py",
+            "backend/social/platform_connections/api.py",
+            "backend/social/platform_connections/config.py",
+            "backend/social/platform_connections/contracts.py",
+            "backend/social/platform_connections/models.py",
+            "backend/social/platform_connections/provider.py",
+            "backend/social/platform_connections/service.py",
+            "backend/social/platform_connections/tiktok_provider.py",
+            "backend/social/platform_event_models.py",
+            "backend/social/platform_events.py",
+            "backend/social/platform_materials.py",
+            "backend/social/platform_runtime.py",
+            "backend/social/privacy/__init__.py",
+            "backend/social/privacy/access_logs.py",
+            "backend/social/privacy/api.py",
+            "backend/social/privacy/deletion_ledger.py",
+            "backend/social/privacy/media_port.py",
+            "backend/social/privacy/models.py",
+            "backend/social/privacy/ownership.py",
+            "backend/social/privacy/policy.py",
+            "backend/social/privacy/private_io.py",
+            "backend/social/privacy/recovery.py",
+            "backend/social/privacy/restoration.py",
+            "backend/social/privacy/runtime.py",
+            "backend/social/privacy/service.py",
+            "backend/social/privacy/startup.py",
+            "backend/social/privacy/subjects.py",
+            "backend/social/privacy/workflow.py",
+            "backend/social/privacy/workflow_api.py",
+            "backend/social/privacy/workflow_contracts.py",
+            "backend/social/privacy/workflow_models.py",
+            "backend/social/privacy/workflow_startup.py",
+            "backend/social/recovery_database.py",
+            "backend/social/recovery_inventory.py",
+            "backend/social/recovery_operator.py",
+            "backend/social/recovery_process.py",
+            "backend/social/service.py",
+            "backend/social/studio/__init__.py",
+            "backend/social/studio/analytics.py",
+            "backend/social/studio/api.py",
+            "backend/social/studio/contracts.py",
+            "backend/social/studio/integrity.py",
+            "backend/social/studio/models.py",
+            "backend/social/studio/native_metrics.py",
+            "backend/social/studio/platform_metrics.py",
+            "backend/social/studio/render_child.py",
+            "backend/social/studio/runner.py",
+            "backend/social/studio/runtime.py",
+            "backend/social/studio/service.py",
+            "backend/social/telemetry.py",
+            "backend/social/threads_recovery.py",
+            "backend/social/threads_recovery_api.py",
+            "backend/social/validation.py",
+            "backend/social/worker/__init__.py",
+            "backend/social/worker/__main__.py",
+            "backend/social/worker/arguments.py",
+            "backend/social/worker/config.py",
+            "backend/social/worker/continuation.py",
+            "backend/social/worker/logging.py",
+            "backend/social/worker/materials.py",
+            "backend/social/worker/media_reads.py",
+            "backend/social/worker/native_authority_schema.py",
+            "backend/social/worker/native_runtime.py",
+            "backend/social/worker/ownership.py",
+            "backend/social/worker/policy.py",
+            "backend/social/worker/ports.py",
+            "backend/social/worker/repository.py",
+            "backend/social/worker/role_admin.py",
+            "backend/social/worker/role_contract.py",
+            "backend/social/worker/runner.py",
+            "backend/social/worker/startup.py",
+            "backend/tests/social/test_media_acceptance.py",
+            "backend/tests/social/test_media_api.py",
+            "backend/tests/social/test_media_browser_fixture.py",
+            "backend/tests/social/test_media_browser_hostility.py",
+            "backend/tests/social/test_media_cleanup.py",
+            "backend/tests/social/test_media_cli_privacy.py",
+            "backend/tests/social/test_media_config.py",
+            "backend/tests/social/test_media_fixture_review_regressions.py",
+            "backend/tests/social/test_media_inspection_adversary.py",
+            "backend/tests/social/test_media_inspector_availability.py",
+            "backend/tests/social/test_media_integration.py",
+            "backend/tests/social/test_media_legacy_recovery.py",
+            "backend/tests/social/test_media_lookup_indexes.py",
+            "backend/tests/social/test_media_lookup_indexes_postgres.py",
+            "backend/tests/social/test_media_maintenance.py",
+            "backend/tests/social/test_media_management.py",
+            "backend/tests/social/test_media_management_postgres.py",
+            "backend/tests/social/test_media_migration_postgres.py",
+            "backend/tests/social/test_media_object_identity.py",
+            "backend/tests/social/test_media_object_identity_postgres.py",
+            "backend/tests/social/test_media_operator.py",
+            "backend/tests/social/test_media_operator_postgres.py",
+            "backend/tests/social/test_media_owned_postgres.py",
+            "backend/tests/social/test_media_owned_review.py",
+            "backend/tests/social/test_media_owned_review_postgres.py",
+            "backend/tests/social/test_media_owned_writes.py",
+            "backend/tests/social/test_media_payload_retirement.py",
+            "backend/tests/social/test_media_privacy_adapter.py",
+            "backend/tests/social/test_media_reconciliation_boundary.py",
+            "backend/tests/social/test_media_recovery_cli.py",
+            "backend/tests/social/test_media_request_limits.py",
+            "backend/tests/social/test_media_retained_postgres.py",
+            "backend/tests/social/test_media_retained_recovery.py",
+            "backend/tests/social/test_media_retirement_postgres.py",
+            "backend/tests/social/test_media_review_492.py",
+            "backend/tests/social/test_media_service.py",
+            "backend/tests/social/test_media_settlement_migration_postgres.py",
+            "backend/tests/social/test_media_signed_headers.py",
+            "backend/tests/social/test_media_storage_adversary.py",
+            "backend/tests/social/test_media_support.py",
+            "backend/tests/social/test_media_target_safety.py",
+            "backend/tests/social/test_revision_asset_admission.py"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/source-before-production-cohort.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [],
+      "path": "docs/releases/admin-media-acceptance-20261101/source-stability.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "backend/tests/social/test_manual_media_workflow.py",
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py",
+            ".github/workflows/seed.yml"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs",
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "backend/tests/social/test_manual_media_workflow.py",
+            ".github/workflows/seed.yml"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/independent-review-source-before.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "backend/tests/social/test_manual_media_workflow.py",
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py"
+          ],
+          "against_scope": "media_pr_original",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            ".github/workflows/seed.yml"
+          ],
+          "field": "sha256",
+          "matched_files": []
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "backend/tests/social/test_manual_media_workflow.py",
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py",
+            ".github/workflows/seed.yml"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs",
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "backend/tests/social/test_manual_media_workflow.py",
+            ".github/workflows/seed.yml"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/independent-review-source-after.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/final-refresh-source-before.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/final-refresh-source-after.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [],
+          "against_scope": "ui_pr_original",
+          "different_files": [
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx"
+          ],
+          "field": "$",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/status-sync-review-before.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ],
+          "against_scope": "media_pr_original",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx"
+          ],
+          "field": "sha256",
+          "matched_files": []
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "ui_pr_original",
+          "different_files": [],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [],
+          "field": "sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ],
+          "against_scope": "media_pr_original",
+          "different_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx"
+          ],
+          "field": "final_sha256",
+          "matched_files": []
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "ui_pr_original",
+          "different_files": [],
+          "field": "final_sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [],
+          "field": "final_sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [],
+          "field": "final_sha256",
+          "matched_files": [
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/status-sync-review-after.json",
+      "raw_bytes_preserved": true
+    },
+    {
+      "comparisons": [
+        {
+          "absent_companion_files": [
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py",
+            "backend/tests/social/test_manual_media_workflow.py",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/tests/manualPublicationBrowser.mjs"
+          ],
+          "against_scope": "media_pr_original",
+          "different_files": [
+            ".github/workflows/seed.yml",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/tests/socialFixtures.ts"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            "backend/tests/social/test_media_cold_restore_acceptance.py",
+            "docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_before_review",
+          "different_files": [],
+          "field": "sha256",
+          "matched_files": [
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py",
+            ".github/workflows/seed.yml",
+            "backend/tests/social/test_manual_media_workflow.py",
+            "backend/tests/social/test_media_cold_restore_acceptance.py",
+            "docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "frontend/tests/socialFixtures.ts"
+          ]
+        },
+        {
+          "absent_companion_files": [],
+          "against_scope": "combined_after_review",
+          "different_files": [
+            ".github/scripts/seed_notifications.cjs",
+            ".github/scripts/tests/test_seed_notifications.py"
+          ],
+          "field": "sha256",
+          "matched_files": [
+            ".github/workflows/seed.yml",
+            "backend/tests/social/test_manual_media_workflow.py",
+            "backend/tests/social/test_media_cold_restore_acceptance.py",
+            "docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx",
+            "docs/releases/admin-publish-workflow-20261101/LAUNCH_GATES.md",
+            "frontend/__tests__/admin/social/clean-status-sync.test.tsx",
+            "frontend/__tests__/admin/social/composer-media-integration.test.tsx",
+            "frontend/__tests__/admin/social/gates.adversarial.test.tsx",
+            "frontend/__tests__/admin/social/manual-publication.test.tsx",
+            "frontend/__tests__/admin/social/schedule-contract.test.ts",
+            "frontend/__tests__/admin/social/schedules.test.tsx",
+            "frontend/components/admin/social/SocialComposer.tsx",
+            "frontend/components/admin/social/SocialMedia.tsx",
+            "frontend/components/admin/social/SocialScheduleControls.tsx",
+            "frontend/components/admin/social/useDeliveryWorkerReadiness.ts",
+            "frontend/tests/manualPublicationBrowser.mjs",
+            "frontend/tests/socialFixtures.ts"
+          ]
+        }
+      ],
+      "path": "docs/releases/admin-media-acceptance-20261101/final-reviewed-source.json",
+      "raw_bytes_preserved": true
+    }
+  ],
+  "production_authorized": false,
+  "scopes": [
+    {
+      "commit": "bb3fa2bea4b652bcbca5898c01cf1c7560149dc5",
+      "scope": "media_pr_original",
+      "verified_source_files": 24
+    },
+    {
+      "commit": "0bc78394a3bbb638ab1fd26aa103ece2f47c6a51",
+      "scope": "ui_pr_original",
+      "verified_source_files": 18
+    },
+    {
+      "commit": "aae2f322d639c6c3f2c7461c6c46d1733bd0e92e",
+      "scope": "nightly_pr_original",
+      "verified_source_files": 4
+    },
+    {
+      "commit": "7b0611a1bb135564a4713ceb0ab155767c9aefb5",
+      "scope": "combined_before_review",
+      "verified_source_files": 227
+    },
+    {
+      "commit": "831f8d2779ffba42a729879f5087e76791064a85",
+      "scope": "combined_after_review",
+      "verified_source_files": 227
+    }
+  ],
+  "status": "VERIFIED_SOURCE_SCOPE_RECONCILIATION",
+  "tests_executed": false,
+  "verification_scope": "pinned_git_blobs_and_preserved_historical_bytes_only"
+}
