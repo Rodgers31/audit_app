@@ -1,0 +1,9 @@
+import json,os,subprocess,sys,time
+from pathlib import Path
+e=Path(__file__).parent
+name,mode,*selection=sys.argv[1:]
+cmd=['docker','run','--pull','never','--rm','--name','pr865-review-'+name,'--network','container:pr865-review-pg','--cpus','1','--memory',os.environ.get('PR865_TEST_MEMORY','768m'),'--pids-limit','256','--env-file',str(e/'runtime.env'),'-v',str(e/'candidate')+':/workspace:ro','-v',str(e)+':/evidence','-v','/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/native-source-acceptance-20261030:/primary:ro','-w','/workspace/backend','pr863-python-patch-parity:local','python']+(['-O'] if mode=='optimized' else [])+['-m','pytest',*selection,'-q','-p','no:cacheprovider','--junitxml=/evidence/'+name+'.xml']
+start=time.monotonic();p=subprocess.run(cmd,capture_output=True,text=True)
+(e/(name+'.txt')).write_text(p.stdout+p.stderr)
+(e/(name+'.command.json')).write_text(json.dumps({'command':cmd,'exit_code':p.returncode,'seconds':time.monotonic()-start},indent=2)+'\n')
+print((p.stdout+p.stderr)[-2500:]);sys.exit(p.returncode)

@@ -1,0 +1,14 @@
+import json,os,subprocess,sys,time
+from pathlib import Path
+root=Path('/Users/roger/.codex/worktrees/admin-social-release-check/audit_app')
+evidence=Path(__file__).parent
+name,mode,*selection=sys.argv[1:]
+command=['docker','run','--pull','never','--rm','--name','source-admission-'+name,'--network','container:source-admission-pg','--cpus','1','--memory',os.environ.get('SOURCE_ADMISSION_TEST_MEMORY','768m'),'--pids-limit','256','-v',str(evidence/'candidate')+':/workspace:ro','-v',str(evidence)+':/evidence','-w','/workspace/backend']
+values=dict(DATABASE_URL='postgresql+psycopg2://source_admission_owner@127.0.0.1:55412/b83_social_test',B83_SOCIAL_TEST_DB_URL='postgresql+psycopg2://source_admission_owner@127.0.0.1:55412/b83_social_test',SOCIAL_TEST_DATABASE_URL='postgresql+psycopg2://source_admission_compat@127.0.0.1:62124/social_domain_test',PYTHONPATH='/workspace/backend:/workspace/backend/tests:/workspace/backend/tests/social',PYTHONDONTWRITEBYTECODE='1',SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED='false',SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED='false',SOCIAL_GENERATION_HOOK_ENABLED='false',SOCIAL_REPORT_GENERATION_ENABLED='false',SOCIAL_MEDIA_ENABLED='false',SOCIAL_NATIVE_ENABLED='false',SOCIAL_WORKER_SUPERVISOR_ENABLED='false')
+for k,v in values.items():command+=['-e',k+'='+v]
+command+=['-v','/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/native-source-acceptance-20261030:/primary:ro']
+command+=['pr863-python-patch-parity:local','python']+(['-O']if mode=='optimized'else[])+['-m','pytest']+selection+['-q','-p','no:cacheprovider','--junitxml=/evidence/'+name+'.xml']
+start=time.time();r=subprocess.run(command,capture_output=True,text=True,cwd=root)
+(evidence/(name+'.txt')).write_text(r.stdout+r.stderr)
+(evidence/(name+'.command.json')).write_text(json.dumps(dict(command=command,exit_code=r.returncode,seconds=time.time()-start),indent=2))
+print((r.stdout+r.stderr)[-3500:]);sys.exit(r.returncode)

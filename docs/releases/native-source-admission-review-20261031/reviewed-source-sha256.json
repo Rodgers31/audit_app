@@ -1,0 +1,21 @@
+{
+  "reviewed_pr_head_before_fix": "1e349292ad7496406322abd8f1b0b7f93704045f",
+  "full_frozen_candidate_files": 6617,
+  "full_frozen_candidate_mapping_sha256": "1780790d6e2921c3f2aa2ae232a78346b4979cc1d6aef9cc6fc414316ff0c9e4",
+  "changed_runtime_and_tests": {
+    "backend/seeding/native_financial_gate.py": "28583346e4be248d0f831d2614d3665d9d4a30786c489e29255c7fbe96842d40",
+    "backend/tests/social/test_automatic_cohort_timeout_postgres.py": "24fa6a748d200d89462ef46f2432732b6b2b1840dd5ffebcd3e29a050e99d5c9",
+    "backend/tests/social/test_native_financial_admission_regressions.py": "e3276188764a4f5dc94d8a9a11b7503ffba4ab23950c336133c4bc878eb90dff",
+    "backend/tests/social/test_source_admission_separation_postgres.py": "bff95f5eaf6edccbaa5567d1e72d32ce7ec1f2752782892ce585495538ac615f"
+  },
+  "prior_gate_sha256": "2bc6f78cdd8933ea864d161714a64965a435d53d9f423223e8066b5f4ee42bbf",
+  "unchanged_authority_seams": {
+    "backend/seeding/native_financial_observations.py": "0c3962244f74c9d364dd22fe741e1af20d00c6835a4b2b29c9e359b9670e2941",
+    "backend/seeding/native_report_authority.py": "5e9a94bf42eda9a3321edf0ff5982bad2548d4e6b7c28c6b3c027839b0cff230",
+    "backend/seeding/generation_dispatch.py": "535ddcfe66d1996bb3cfbd0c9ec38873cd4f9b117b95b52691cddcc1a1ad6c1f",
+    "backend/social/generation/service.py": "2407cf2f48cd3c84701dfd7f893b89ea09ccb6f1de55840f05b9d15bff4ff39a",
+    "backend/social/generation/authority.py": "fd0d0c4eb9274f4d475ab1c777a011ed9c7634a53778cf6cbb88096f989e6ea9",
+    "backend/social/generation/worker_authority.py": "68ce0b37de179df07966d674dba2e4da5f726f418138fd2c091e2f4004e4ac67"
+  },
+  "packaging_note": "Final release documentation and evidence are added after the frozen executable candidate."
+}

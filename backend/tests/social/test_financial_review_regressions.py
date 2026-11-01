@@ -21,6 +21,7 @@ from seeding.generation_dispatch import dispatch_committed_generation
 
 @pytest.fixture(autouse=True)
 def native_financial_ceiling(monkeypatch):
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
 
 

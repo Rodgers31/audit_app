@@ -1,0 +1,57 @@
+{
+  "runtime": {
+    "python": "3.12.16",
+    "SQLAlchemy": "2.0.55",
+    "architecture": "Linux arm64",
+    "note": "Local production patch profile, not a full Render image/architecture recreation"
+  },
+  "root": {
+    "source-switch-red": {
+      "cases": 4,
+      "failures": 2,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "b0dd7342eb47e38b734389526c0c0ed1acf9e41db86990a9c7981743128aa7fc",
+      "command_sha256": "73250ef7cd2f96a7bb1d10bddf701dbddfbc7bf1a28fe4dc6b07388a0c9e19d4"
+    },
+    "combined-normal": {
+      "cases": 664,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "0f0d22a282a5928b18cae5b05424a918f6ebb343e2cb518a4b2f59489fdd1b29",
+      "command_sha256": "e7fe2151ecd697ff843de200510f41b9ac2f6194fb82ee3feffabd6229f0feb9"
+    },
+    "combined-optimized": {
+      "cases": 664,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "78ba26f1cf3db149c1bbffb817e578cc6429bcfcf3deb7edb45df261d7c3cd0d",
+      "command_sha256": "f2a9eaae6b8f7735d15468e1f3ac6613a11667f1857f742cab61afb7dc22ec7e"
+    },
+    "genuine-source-only-normal": {
+      "cases": 3,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "615375babcde697e20f982e60f1ef91860b73c32724b8d045b7ae53e636c1586",
+      "command_sha256": "6323b41b029ac44f4d47b841c5593d55e5b08b8e4f2178080b3357db603ce9e4"
+    },
+    "genuine-source-only-optimized": {
+      "cases": 3,
+      "failures": 0,
+      "errors": 0,
+      "skips": 0,
+      "xml_sha256": "978baad07e7738206a2eb46baf430906dd258e85b4c566421e6d431ce3a92a63",
+      "command_sha256": "7a1cbecc93ded776464f7f0df490a6c94fd5bc23af10d25e02e1e359144dfa2d"
+    }
+  },
+  "spec_cases_per_mode": 146,
+  "standards_cases_per_mode": 30,
+  "overlapping_counts_not_added": true,
+  "genuine_local_memory_cap_mib": 512,
+  "production_adoption": false,
+  "deployment": false,
+  "new_paid_resource_or_hosted_test_run": false
+}

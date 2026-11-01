@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from ...cob_discovery import discover_latest_cob_pdf_url
 from ...config import SeedingSettings
+from ...native_financial_admission import source_admission_enabled
 from ...http_client import SeedingHttpClient
 from ...utils import load_json_resource
 from .sector_expenditure import (
@@ -258,7 +259,6 @@ def _fetch_annual_sector_expenditure(
     return ``(records, status)``. ``status`` starts with ``promoted`` only when
     at least one sector passed verification."""
     import pdfplumber
-    import os
 
     from ...parse_cache import parse_with_cache
     from ...pdf_download import get_or_download_pdf
@@ -278,7 +278,7 @@ def _fetch_annual_sector_expenditure(
         cache_dir=cache_dir,
         kind="cob_ng_birr_page_text",
         parse_fn=lambda: _extract_page_texts(pdf_path),
-        enabled=not (os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')=='true'
+        enabled=not (source_admission_enabled()
             and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0),
         key_extra=f"pdfplumber=={pdfplumber.__version__}",
     )

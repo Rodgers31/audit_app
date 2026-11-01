@@ -1,0 +1,86 @@
+{
+  "case_ledger": "CASE-LEDGER.json",
+  "cleanup": "CLEANUP.json",
+  "independent_unique_cases": 30,
+  "limitations": [
+    "Owned publisher-shaped HTML and local job/acquisition fixtures are not genuine-source adoption proof.",
+    "No hosted workflow, production state, worker-role permission or end-to-end publication claim.",
+    "Source admission is prospective; disabling it does not revoke already-qualified current-source eligibility.",
+    "Root genuine-source replay and Spec restricted-role/cache proofs are separate and not counted."
+  ],
+  "report": "REPORT.md",
+  "runs": [
+    {
+      "errors": 0,
+      "exit": 0,
+      "failed": 0,
+      "junit": "independent-normal.xml",
+      "junit_sha256": "81e87e2b42740ddf9aabaf1aef10b6160fb08099b38005a2a14f3955077ea635",
+      "mode": "normal",
+      "passed": 30,
+      "seconds": 6.269153292,
+      "skipped": 0
+    },
+    {
+      "errors": 0,
+      "exit": 0,
+      "failed": 0,
+      "junit": "independent-optimized.xml",
+      "junit_sha256": "746f444c957a372ceca141cb427894973e1ce3236b05db93db21e9256bdfd467",
+      "mode": "optimized",
+      "passed": 30,
+      "seconds": 8.723211625,
+      "skipped": 0
+    }
+  ],
+  "runtime": {
+    "image": "pr863-python-patch-parity:local",
+    "image_id": "sha256:1b4cc12668ffaa5bd5e5aa78bd96c053f8d0778651c040ad4a5d69ef305d983b",
+    "values": {
+      "final_zero_effect_counts": {
+        "social_media_assets": 0,
+        "social_media_uploads": 0,
+        "social_post_targets": 0,
+        "social_posts": 0,
+        "social_publications": 0,
+        "social_source_cursors": 0,
+        "social_source_events": 0
+      },
+      "identity": [
+        "b83_social_test",
+        "source_admission_standards_20261031",
+        "/var/lib/postgresql/data/native_admission_standards",
+        "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit"
+      ],
+      "openssl": "OpenSSL 3.5.7 9 Jun 2026",
+      "platform": "Linux-7.0.14-linuxkit-aarch64-with-glibc2.41",
+      "python": "3.12.16 (main, Oct 28 2026, 02:07:05) [GCC 14.2.0]",
+      "sqlalchemy": "2.0.55"
+    }
+  },
+  "side_effects": {
+    "social_media_assets": 0,
+    "social_media_uploads": 0,
+    "social_post_targets": 0,
+    "social_posts": 0,
+    "social_publications": 0,
+    "social_source_cursors": 0,
+    "social_source_events": 0
+  },
+  "source": {
+    "before_after_unchanged": true,
+    "candidate": "../candidate",
+    "file_count": 6587,
+    "manifest_file_sha256": "5c21428891c41e6016173f26a7e2ac9c668526e579543898efea0b928ee4f86b",
+    "mapping_sha256": "14a510a8ab5c4078e075d0077125aa1004bce402d1f66d3f816a7ff1a15aa813",
+    "product_pins": {
+      ".github/workflows/seed.yml": "130aa9dd789c2049e3a4c554970a67fec3c1f618ed740781ceaceec1a4e31286",
+      "backend/admin_etl_qualification.py": "4617d0b1534a8f866877bb3bac9b6ff992daf95d6d4f2f3f4544493d7e3215b0",
+      "backend/seeding/domains/national_budget/fetcher.py": "fbfa4781a3aafd337a39709ad7c994b02c7636a198948bd9e53f63a137d0bdb0",
+      "backend/seeding/domains/pending_bills/fetcher.py": "9a3b7d372491a4df6200717d37f6ccad619db31b75dfcb6766daed916c211432",
+      "backend/seeding/native_financial_admission.py": "40f1533c7bd4066704970fc0fd2d1d53c20346ca7249146b588590c4657914c6",
+      "backend/seeding/native_financial_gate.py": "2bc6f78cdd8933ea864d161714a64965a435d53d9f423223e8066b5f4ee42bbf"
+    }
+  },
+  "verdict": "scoped pass; no actionable finding"
+}

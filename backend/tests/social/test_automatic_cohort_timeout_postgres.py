@@ -32,7 +32,8 @@ from test_native_publisher_metadata import inputs, acquisition, listing, COUNTY_
 from native_worker_fixture import restricted
 
 
-def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include_nandi=False):
+def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include_nandi=False,
+                  expect_publishable=True):
     """Real atomic writer with sealed source-shaped test extraction facts."""
     with factory.begin() as db:
         if db.scalar(select(func.count()).select_from(Loan)) == 0:
@@ -84,7 +85,7 @@ def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include
         from services.figure_qualification import qualify_rows
         rows=list(db.scalars(select(Loan)))
         q=qualify_rows(db,'loans',rows)
-        assert db.scalar(select(func.count()).select_from(Loan).where(Loan.publishable.is_(True)))==expected_count, [(row.id,q[row.id]['outstanding']['reason']) for row in rows if not row.publishable]
+        assert db.scalar(select(func.count()).select_from(Loan).where(Loan.publishable.is_(True))) == (expected_count if expect_publishable else 0), [(row.id,q[row.id]['outstanding']['reason']) for row in rows if not row.publishable]
         job.status=IngestionStatus.COMPLETED;job.finished_at=datetime.now(timezone.utc)
     return identity
 
@@ -92,6 +93,7 @@ def ingest_cohort(factory, tmp_path, *, correction=None, retained=False, include
 @pytest.mark.parametrize('mode',['fresh_baseline','retained_baseline','changed_cohort'])
 def test_automatic_full_cohort_completes_with_bounded_query_latency(pg,tmp_path,monkeypatch,mode):
     factory,engine=pg;enable(factory,monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
     retained=mode!='fresh_baseline'
@@ -148,6 +150,7 @@ def automatic(factory, job):
 
 def enabled(factory, monkeypatch):
     enable(factory,monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
 

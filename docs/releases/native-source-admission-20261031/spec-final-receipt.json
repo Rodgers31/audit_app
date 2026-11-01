@@ -1,0 +1,89 @@
+{
+  "verdict": "SCOPED PASS; no confirmed source-admission finding",
+  "full_source_mapping_sha256": "14a510a8ab5c4078e075d0077125aa1004bce402d1f66d3f816a7ff1a15aa813",
+  "source_entries": 6587,
+  "execution_projection_entries": 1541,
+  "results": {
+    "normal": 146,
+    "true_optimized": 146,
+    "independent_each": 140,
+    "repository_each": 6,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "postgres_each": 16,
+    "flag_cache_workflow_each": 130,
+    "same_ids_each_mode": true
+  },
+  "postgres_scope": [
+    "Actual KRA creator\u2192writer\u2192fresh current reader\u2192captured restricted worker witness without posts/cursors",
+    "Missing/forged/bool/stale witnesses refuse; actual private business-table SELECT denied42501",
+    "Unchanged and changed-value new-job reacquisition preserves exact record ID and new evidence, refuses old witness",
+    "Changed business/source/receipt/country/partial-job/fixture-job inputs refuse current reader and worker",
+    "Source-only global hook cannot open generation SessionFactory while financial generationfalse",
+    "Repository fourflag matrix/global hook/catalogue no-financial-date corroborated"
+  ],
+  "limits": [
+    "Owned publisher-shaped and retained catalogue fixtures, not live production adoption",
+    "No full genuine national/pending PDF parse in this lane; root owns genuine source-only replay",
+    "Cache tests stop at actual cache-boundary argument, no persisted-cache authority claim",
+    "Restricted SQL role/view proof is not a worker process or publication authorization",
+    "No generation/publishing/upload/provider/production activation or sharedPG access"
+  ],
+  "flag_child_receipt_sha256": "230e130f41efec5a9d357da76fbd27dc793f49d5a07199c76a2f24a689a98bfa",
+  "runtime": {
+    "python_image": "pr863-python-patch-parity:local",
+    "image_id_observed": "sha256:1b4cc12668ffaa5bd5e5aa78bd96c053f8d0778651c040ad4a5d69ef305d983b",
+    "postgres_image_id_observed": "sha256:2d2b8998d31037bf721cfdf764d76ba74171b4fab3431b7f72c27c56ddbdf9e3",
+    "PGhead": "a756b20a0001",
+    "app_caps": "1CPU/768MiB/256PIDs",
+    "PGcaps": "1CPU/512MiB/256PIDs/tmpfs384MiB",
+    "network": "own PG networknone namespace/loopback55412; no host ports"
+  },
+  "cleanup": {
+    "owned_pg": "source-admission-spec-pg",
+    "ownership_id_verified": true,
+    "owned_pg_removed": true,
+    "private_env_mode_octal": "0o600",
+    "private_env_deleted": true,
+    "remaining_owned_containers": [],
+    "shared_or_parent_databases_touched": false,
+    "workers_or_providers_started": false
+  },
+  "final_own_counts": {
+    "database": "b83_social_test",
+    "head": "a756b20a0001",
+    "posts": 0,
+    "revisions": 0,
+    "publications": 0,
+    "targets": 0,
+    "attempts": 0,
+    "cursors": 0,
+    "events": 0,
+    "owned_worker_roles": 0
+  },
+  "artifact_sha256": {
+    "input-pins.json": "78deaeef86c9b4b4b70c1b57fd4c97336219adc4e4e53db90b2150415f9cc45a",
+    "full-input-manifest.json": "8a2637cc9eb4a183528567556bf727591a59ed216babf2c55544560e93259fed",
+    "source-manifest.json": "23d51db1ff2aa1487ac6c35554808ca31afef442f37b698dff9a849b7934d67f",
+    "SOURCE-AFTER.json": "dd9ff2ed3a3d552be3120cec5cb0b4a2a46387905a49a25a4168c9385782f417",
+    "CASE-LEDGER.json": "3faa06f8e19b559006b6ec30418f82e73e12951e27ca385ac76dd552b2d5798d",
+    "pg-start.command.json": "c9eeb990e62bfd564d37ce3756b974045bc387e8d5a7bb193b1a1c9d9b2e3ef7",
+    "pg-owner.json": "cade16b327924c15adf64442179615b05bb26a67006a4d55583d65d07e99882e",
+    "migrate.command.json": "45c29d6e5860bedc7886f3fe5e4f1ad61eb39b091f9393f0d1ab2c77d8f88bff",
+    "migrate.txt": "92af653046c9a0d97becd3827a11e768f169608946b580034819b37db079c564",
+    "migrate.exit.json": "3f4a0e9a4b3c98d8fecd8d524c601f7e321b54da8308a9fd2b211af88db71d52",
+    "pg-normal.command.json": "b08dcf7f632785668806d23deb6143a203ee5d6a1bf686025834dd23f74db3cc",
+    "pg-normal.txt": "9128ddcede03d398cb6e46f6d1ec8d0c603402fd2b50fe7bcd8022a5089a8b02",
+    "pg-normal.xml": "15ffbcb6a186f49c48df427af47adccf66bba39570142e5e59b7998e9bcdafcc",
+    "pg-normal.exit.json": "1f8849a45c8333f7fa382e9bec77710d318270a5dfcd43f7889df2dd0cde1010",
+    "pg-optimized.command.json": "96f59f9942c8a606a4f224fa8c5b6edd6a60ed1cd66ca908e420ea6b5d77d742",
+    "pg-optimized.txt": "c3ba779772e2862c31332594e3f2818b71403701965fa169b68ec77e35fbbb9d",
+    "pg-optimized.xml": "1cc13e247e1b1cb1de601071a8efcd929fd69358921230b2925fba4bb62ba15d",
+    "pg-optimized.exit.json": "1877e306127ff7cafd770317890e3b96074477ac0d441c6970e5748baab87a85",
+    "test_source_only_worker.py": "693e7ac1d0591e563112b323b1f9617f230b11e86a30e76a99deeb403996c4fb",
+    "run_pg.py": "42e4939b51a10a7c2c6661e16e5a87703b0bdb6acf3faf4fe2881393a16bd5f7",
+    "final-owned-state.json": "8e828d30317c47e436ce1d63d58a1cb5c2b3be17a3ab407d90de981ae06ab838",
+    "CLEANUP.json": "9d9025faaad9b4460b239595ef4c0bcb733a7ec51f60fe663331290a9798cb78"
+  }
+}

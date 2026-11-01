@@ -1,0 +1,80 @@
+"""Exact historical official HTML; only transport, job clocks and DB are local."""
+from pathlib import Path
+from datetime import datetime, timezone
+from decimal import Decimal
+import hashlib
+import httpx
+import pytest
+from sqlalchemy import select,func
+from models import IngestionJob,IngestionStatus,RevenueBySource
+from seeding.config import SeedingSettings
+from seeding.types import DomainRunContext
+from seeding.domains.revenue_by_source import fetcher,parser,writer
+from seeding.native_financial_observations import read_native_financial_observation
+from seeding.generation_dispatch import dispatch_committed_generation
+from services.receipt_store import LocalReceiptStore
+from social.models import SocialPost,SocialPublication,SocialPostTarget
+from social.generation.models import SourceCursor
+from test_b83_generation_postgres import pg
+
+URL='https://www.kra.go.ke/news-center/press-release/2235-kra-grows-revenue-by-6-8-despite-tough-economic-environment-4'
+SHA='ad35dcb5175af4dd26a8707dede239a879c8af0c885f325d3b6cf1cdbc47dce3'
+
+def source_client(tmp_path):
+    body=Path('/primary/kra-annual-release.html').read_bytes()
+    assert len(body)==119603 and hashlib.sha256(body).hexdigest()==SHA
+    class Client:
+        receipt_store=LocalReceiptStore(tmp_path/'receipts')
+        def get(self,url,**kw):
+            assert url==URL,'No unrelated source request permitted'
+            return httpx.Response(200,content=body,headers={'content-type':'text/html'},request=httpx.Request('GET',url))
+    return Client()
+
+def test_exact_genuine_html_has_dated_report_and_measure_evidence(tmp_path):
+    release=fetcher._read_release(source_client(tmp_path),URL,None)
+    assert release is not None
+    assert release.native_report_authority is not None, release.native_report_authority_reason
+    assert release.native_report_authority.value['published_on']=='2025-07-10'
+    assert release.heads['PAYE'].amount_bn==Decimal('560.963')
+    assert release.heads['PAYE'].raw_amount is not None, 'Genuine annual collection paragraph did not receive cell authority'
+    assert Decimal(release.heads['PAYE'].raw_amount)==Decimal('560963000000')
+
+def ingest(factory,tmp_path,monkeypatch):
+    client=source_client(tmp_path)
+    with factory.begin() as db:
+        job=IngestionJob(domain='revenue_by_source',status=IngestionStatus.RUNNING,dry_run=False,
+            started_at=datetime.now(timezone.utc),errors=[],meta={'source_mode':'live'})
+        db.add(job);db.flush();job_id=job.id
+        release=fetcher._read_release(client,URL,None)
+        monkeypatch.setattr(fetcher,'discover_kra_releases',lambda *a:([release],release.fiscal_year,release.url))
+        payload,status=fetcher._apply_kra_live([],client,SeedingSettings())
+        assert status.startswith('promoted'),status
+        stats=writer.persist_revenue_records(db,parser.parse_revenue_payload(payload),SeedingSettings(),DomainRunContext(None,False,job_id))
+        assert not stats.errors,stats.errors
+        job.status=IngestionStatus.COMPLETED;job.finished_at=datetime.now(timezone.utc)
+        record=db.scalar(select(RevenueBySource.id).where(RevenueBySource.revenue_type=='PAYE'))
+    return job_id,record
+
+def test_genuine_producer_pg_financial_baseline_then_exact_reacquisition(pg,tmp_path,monkeypatch):
+    factory,_=pg
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED','true')
+    monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
+    monkeypatch.setenv('SOCIAL_REPORT_GENERATION_ENABLED','false')
+    first,record=ingest(factory,tmp_path,monkeypatch)
+    value=read_native_financial_observation(factory,record_id=record,ingestion_id=first,domain='revenue_by_source')
+    assert value['facts'][0]['published_on']=='2025-07-10'
+    assert value['facts'][0]['scale']=='billions'
+    assert value['facts'][0]['document_url']==URL
+    outcome=dispatch_committed_generation(factory,domain='revenue_by_source',ingestion_id=first,dry_run=False,include_reports=False)
+    assert outcome['state']=='disabled' and outcome['reason']=='financial_environment_disabled',outcome
+    assert outcome['processed']==outcome['drafts_created']==0
+    same,same_record=ingest(factory,tmp_path,monkeypatch)
+    assert same_record==record
+    replay=dispatch_committed_generation(factory,domain='revenue_by_source',ingestion_id=same,dry_run=False,include_reports=False)
+    assert replay['state']=='disabled' and replay['reason']=='financial_environment_disabled',replay
+    assert replay['processed']==replay['drafts_created']==0
+    with factory() as db:
+        for model in (SocialPost,SocialPublication,SocialPostTarget,SourceCursor):
+            assert db.scalar(select(func.count()).select_from(model))==0
+

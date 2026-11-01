@@ -1,0 +1,391 @@
+{
+  "cases": [
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[None]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[false]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[true]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[TRUE]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[ true ]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[1]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[None]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[false]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[true]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[TRUE]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[1]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[None-true-False]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[true-false-True]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[TRUE-true-False]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_admission_is_prospective_then_sticky_for_an_already_verified_source",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[operator_hold]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_publisher]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_url]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[unavailable]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[receipt_missing]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[changed_value]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_country]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[running]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[partial]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[fixture]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[wrong_domain]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_cannot_open_financial_dispatch_without_its_generation_gate[true]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_cannot_open_financial_dispatch_without_its_generation_gate[false]",
+      "junit": "independent-normal.xml",
+      "mode": "normal",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[None]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[false]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[true]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[TRUE]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[ true ]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[1]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_actual_workflow_binding_and_process_admission_are_independent[]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[None]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[false]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[true]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[TRUE]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[1]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_ordinary_admin_qualification_cannot_ignore_source_admission[]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[None-true-False]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[true-false-True]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_fresh_process_defaults_do_not_borrow_generation_flag[TRUE-true-False]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_admission_is_prospective_then_sticky_for_an_already_verified_source",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[operator_hold]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_publisher]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_url]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[unavailable]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[receipt_missing]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[changed_value]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_never_promotes_unqualified_or_quarantined_rows[foreign_country]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[running]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[partial]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[fixture]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_current_job_contract_stays_closed_after_source_only_qualification[wrong_domain]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_cannot_open_financial_dispatch_without_its_generation_gate[true]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    },
+    {
+      "id": "test_admission_independent::test_source_flag_cannot_open_financial_dispatch_without_its_generation_gate[false]",
+      "junit": "independent-optimized.xml",
+      "mode": "optimized",
+      "outcome": "passed"
+    }
+  ],
+  "executions": 60,
+  "runs": [
+    {
+      "errors": 0,
+      "exit": 0,
+      "failed": 0,
+      "junit": "independent-normal.xml",
+      "junit_sha256": "81e87e2b42740ddf9aabaf1aef10b6160fb08099b38005a2a14f3955077ea635",
+      "mode": "normal",
+      "passed": 30,
+      "seconds": 6.269153292,
+      "skipped": 0
+    },
+    {
+      "errors": 0,
+      "exit": 0,
+      "failed": 0,
+      "junit": "independent-optimized.xml",
+      "junit_sha256": "746f444c957a372ceca141cb427894973e1ce3236b05db93db21e9256bdfd467",
+      "mode": "optimized",
+      "passed": 30,
+      "seconds": 8.723211625,
+      "skipped": 0
+    }
+  ],
+  "source_mapping_sha256": "14a510a8ab5c4078e075d0077125aa1004bce402d1f66d3f816a7ff1a15aa813",
+  "unique_cases": 30
+}

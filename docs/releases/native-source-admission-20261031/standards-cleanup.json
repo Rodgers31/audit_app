@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-31T20:04:53.756305+00:00",
+  "command": [
+    "docker",
+    "rm",
+    "-f",
+    "-v",
+    "native-admission-standards-pg-20261031"
+  ],
+  "credential_file_absence_verified": true,
+  "owned_fixture": "native-admission-standards-pg-20261031",
+  "owned_fixture_id": "134cf077f7234bf3b45467fb4e44dad9bd80d0dde12ce7d57fc280efd05bd118",
+  "remaining_owned_containers": [],
+  "removed": true,
+  "removed_credential_files": [
+    "pg.env",
+    "runtime.env"
+  ],
+  "retained_artifact_secret_scan": "no matches",
+  "shared_resources_touched": false
+}

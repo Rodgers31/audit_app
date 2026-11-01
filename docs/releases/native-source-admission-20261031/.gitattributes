@@ -1,0 +1,2 @@
+# Preserve exact executed replay bytes, including terminal blank lines.
+*.bytes -text whitespace=-blank-at-eof

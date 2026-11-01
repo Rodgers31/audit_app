@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-31T21:33:04.541029+00:00",
+  "removed_disposable_fixtures": {
+    "pr865-review-compat-pg": "9b54e6eba66c5da5b5704cdfbf4cbcef56561357ba129cce642a070a687e79f2",
+    "pr865-review-pg": "dfce7aee2b807491e724870658b25798d92b469507241c8935bd519d6785711c"
+  },
+  "anonymous_volumes_removed": true,
+  "runtime_env_removed": true,
+  "all_container_ids_before": {
+    "pr865-review-compat-pg": "9b54e6eba66c5da5b5704cdfbf4cbcef56561357ba129cce642a070a687e79f2",
+    "pr865-review-pg": "dfce7aee2b807491e724870658b25798d92b469507241c8935bd519d6785711c",
+    "admin-redesign-node": "dfd6452f906a598691eb4d9efa831606d0757712fbdaea5a703f72868791af78",
+    "admin-redesign-pg": "72e0925f74305aaffe248b85301f6a334ef3b79905ccc269fa49c8df23ef2264"
+  },
+  "all_container_ids_after": {
+    "admin-redesign-node": "dfd6452f906a598691eb4d9efa831606d0757712fbdaea5a703f72868791af78",
+    "admin-redesign-pg": "72e0925f74305aaffe248b85301f6a334ef3b79905ccc269fa49c8df23ef2264"
+  },
+  "preserved_all_observed_unowned_ids": true,
+  "initial_setup_note": "The first cleanup attempt inspected a concurrently owned dependency fixture that had already exited; it stopped before deleting anything. Final teardown inventories currently existing resources and removes only verified owned IDs."
+}

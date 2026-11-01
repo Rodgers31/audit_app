@@ -1,0 +1,9 @@
+{
+  "owned_pg_removed": true,
+  "ownership_id_verified": true,
+  "private_env_mode_before_delete": "0o600",
+  "private_env_deleted": true,
+  "remaining_owned_containers": [],
+  "shared_or_parent_databases_touched": false,
+  "workers_or_providers_started": false
+}
