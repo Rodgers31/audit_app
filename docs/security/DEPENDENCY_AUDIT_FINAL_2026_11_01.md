@@ -88,6 +88,35 @@ sign-off. Cached test images are not claimed to equal every deployed OS package.
 Any different resolved deployment graph requires an explicit comparison and
 additional affected validation before acceptance.
 
+## Literal production dependency installation
+
+The `-r requirements.txt` environment above contains 87 distributions. The
+existing `Dockerfile.prod` instead builds 36 direct wheels with `--no-deps`,
+then installs the wheel filenames. Reproducing those exact pip steps on Linux
+3.12.16 produces 81 distributions with a clean `pip check`. All shared versions
+match the fresh 87-package environment; there are no added packages. Thus all
+81 exact versions are included in the completed advisory queries.
+
+The six omitted requested extras are bcrypt, httptools, PyYAML, uvloop,
+watchfiles and websockets. They are also absent from the actual pre-release
+production inventory. Current backend runtime code has no direct import/use of
+those packages or passlib; JWT verification uses the retained Supabase/JWT and
+cryptography path. This audit preserves that existing production installation
+behavior. A future feature requiring one of those extras must qualify and add
+it deliberately; the requirements-file profile alone cannot prove it is
+installed in the production image.
+
+The reproduced production installation passes 339 affected cases in each of
+normal and actual optimized Python, with zero failures/errors/skips and network
+disabled. Six separately declared pytest tools are added only to the test copy;
+all 81 original versions remain exact and all six optional extras remain absent.
+The Linux arm64 dependency-step proof does not certify the deployed x86 OS
+image or its native binaries. The exact package/version inventory is the
+deployment comparison target,
+with compiler/architecture and OS differences still distinguished. A graph
+difference must be investigated before acceptance rather than removed from the
+expected set to obtain a passing result.
+
 ## Source-fetching boundary remains explicit
 
 No confirmed anonymous URL-control or authorization-bypass path was found in
