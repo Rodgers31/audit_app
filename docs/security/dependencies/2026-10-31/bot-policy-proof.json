@@ -1,0 +1,140 @@
+{
+  "observed_at": "2026-10-31T21:29:34.431885+00:00",
+  "generator_sha256": "bba2bc8c571c410a08a974a8169c904212d8f6df2927db38e2b4d4ab741e0d79",
+  "dependabot_sha256": "7245c05d9576b5801b41ed902d2e7642a2ad1f18a5f58ebf6bd73a170767012f",
+  "schema_sha256": "f310bfb4960eea6a5fb7d75de54ab49ba36f947757c8f4d5de88d3ea8ac51d3f",
+  "upstream_parser_sha256": "0d766b57be963bef64b20745b5696d50705c594311bc0b55bab307b30cf8dea5",
+  "schema_rejections": [
+    "bad-ecosystem",
+    "unknown-option",
+    "negative-cap",
+    "bad-schedule"
+  ],
+  "pip_discovery": {
+    "/backend": {
+      "declarations": 107,
+      "files": [
+        "requirements-dev.txt",
+        "requirements.txt",
+        "security-constraints.txt"
+      ]
+    },
+    "/etl": {
+      "declarations": 18,
+      "files": [
+        "requirements.txt"
+      ]
+    },
+    "/tools/worker_host_fixture": {
+      "declarations": 93,
+      "files": [
+        "requirements.txt"
+      ]
+    },
+    "/docs/admin/batch66": {
+      "declarations": 1,
+      "files": [
+        "preflight-driver-requirements.txt"
+      ]
+    },
+    "/docs/admin/batch71": {
+      "declarations": 1,
+      "files": [
+        "metadata-driver-requirements.txt"
+      ]
+    },
+    "/docs/admin/batch80": {
+      "declarations": 1,
+      "files": [
+        "github-driver-requirements.txt"
+      ]
+    }
+  },
+  "winter_0800_chicago_utc": "2026-11-02T14:00:00+00:00",
+  "summer_0800_chicago_utc": "2026-07-06T13:00:00+00:00",
+  "verdict": "PASS",
+  "limitations": "Local schema/parser/group controls; no hosted updater job or PR generation executed.",
+  "npm_override_probe": {
+    "upstream_commit": "85379652e4ef784fdd38bf4598b0b347832f805b",
+    "helper_sha256": "82300ddc369dbfaef56d3510ae1af5d2097e0185adddbb9d556a0437d3b4e57b",
+    "results": [
+      {
+        "name": "follow-redirects",
+        "changed": true,
+        "retained_overrides": {
+          "follow-redirects": "1.16.3",
+          "d3-color": "^3.1.0",
+          "fast-uri": "^3.1.8",
+          "path-to-regexp": "^8.0.0",
+          "postcss": "8.5.23",
+          "protobufjs": "^7.6.5",
+          "next": {
+            "sharp": "0.35.5"
+          },
+          "postcss-selector-parser": "7.1.6",
+          "argparse": "2.0.1",
+          "glob@>=9 <14.0.2": "14.0.3",
+          "minimatch@>=9 <11.0.1": "11.0.3"
+        }
+      },
+      {
+        "name": "glob",
+        "changed": false,
+        "retained_overrides": {
+          "follow-redirects": "1.16.2",
+          "d3-color": "^3.1.0",
+          "fast-uri": "^3.1.8",
+          "path-to-regexp": "^8.0.0",
+          "postcss": "8.5.23",
+          "protobufjs": "^7.6.5",
+          "next": {
+            "sharp": "0.35.5"
+          },
+          "postcss-selector-parser": "7.1.6",
+          "argparse": "2.0.1",
+          "glob@>=9 <14.0.2": "14.0.3",
+          "minimatch@>=9 <11.0.1": "11.0.3"
+        }
+      },
+      {
+        "name": "minimatch",
+        "changed": false,
+        "retained_overrides": {
+          "follow-redirects": "1.16.2",
+          "d3-color": "^3.1.0",
+          "fast-uri": "^3.1.8",
+          "path-to-regexp": "^8.0.0",
+          "postcss": "8.5.23",
+          "protobufjs": "^7.6.5",
+          "next": {
+            "sharp": "0.35.5"
+          },
+          "postcss-selector-parser": "7.1.6",
+          "argparse": "2.0.1",
+          "glob@>=9 <14.0.2": "14.0.3",
+          "minimatch@>=9 <11.0.1": "11.0.3"
+        }
+      },
+      {
+        "name": "sharp",
+        "changed": false,
+        "retained_overrides": {
+          "follow-redirects": "1.16.2",
+          "d3-color": "^3.1.0",
+          "fast-uri": "^3.1.8",
+          "path-to-regexp": "^8.0.0",
+          "postcss": "8.5.23",
+          "protobufjs": "^7.6.5",
+          "next": {
+            "sharp": "0.35.5"
+          },
+          "postcss-selector-parser": "7.1.6",
+          "argparse": "2.0.1",
+          "glob@>=9 <14.0.2": "14.0.3",
+          "minimatch@>=9 <11.0.1": "11.0.3"
+        }
+      }
+    ],
+    "scope": "Actual upstream helper with transport/type/data-class stubs; not a hosted updater run."
+  }
+}
