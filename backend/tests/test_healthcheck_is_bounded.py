@@ -316,15 +316,22 @@ def _issue_body(**env) -> str:
     script = ISSUE_STEP["with"]["script"]
     assert "${{" not in script, "the issue script splices GitHub expressions again"
     harness = (
-        "const github = {rest: {issues: {create: async (a) => { console.log(JSON.stringify(a)); }}}};\n"
+        "const github = {rest: {issues: {listForRepo:async () => ({data:[]}), create: async (a) => { console.log(JSON.stringify(a)); }}}};\n"
         "const context = {repo: {owner: 'o', repo: 'r'}, serverUrl: 'https://github.com', runId: 1, eventName: 'schedule'};\n"
+        "const core = {summary:{addRaw(){return this},async write(){}},setFailed(){}};\n"
         "(async () => {\n" + script + "\n})().catch((e) => { console.error(e); process.exit(1); });\n"
     )
-    base = {"PIPELINE_SEED_RESULT": "skipped", "PIPELINE_VALIDATE_RESULT": "failure", "PIPELINE_DOMAIN": "all"}
-    proc = subprocess.run([node, "-e", harness], env={**base, **env}, capture_output=True, text=True, timeout=30)
-    assert proc.returncode == 0, proc.stderr
     import json
-
+    values = {"PIPELINE_SEED_RESULT": "skipped", "PIPELINE_VALIDATE_RESULT": "failure", **env}
+    needs = {key:{'result':'success','outputs':{}} for key in ('source_plan','migrate','seed','bootstrap','validate','revalidate','healthcheck')}
+    needs['source_plan']['outputs']={'bootstrap':'false','domains':'["audits"]'}
+    for key in ('seed','validate','revalidate'):
+        needs[key]['result']=values.get(f'PIPELINE_{key.upper()}_RESULT','success')
+    needs['healthcheck']={'result':values.get('HEALTHCHECK_RESULT',''), 'outputs':{
+        'has_failures':values.get('HEALTHCHECK_HAS_FAILURES',''), 'unprobed':values.get('HEALTHCHECK_UNPROBED','')}}
+    base = {'PIPELINE_NEEDS':json.dumps(needs),'PIPELINE_INPUTS':'{}','PIPELINE_RUN_ATTEMPT':'1'}
+    proc = subprocess.run([node, "-e", harness], env=base, cwd=REPO, capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 0, proc.stderr
     return json.loads(proc.stdout.strip().splitlines()[-1])["body"]
 
 
@@ -334,9 +341,8 @@ def _health_line(body: str) -> str:
 
 def test_the_issue_step_takes_its_inputs_from_the_job_results():
     env = ISSUE_STEP["env"]
-    assert env["HEALTHCHECK_RESULT"] == "${{ needs.healthcheck.result }}"
-    assert env["HEALTHCHECK_HAS_FAILURES"] == "${{ needs.healthcheck.outputs.has_failures }}"
-    assert env["HEALTHCHECK_UNPROBED"] == "${{ needs.healthcheck.outputs.unprobed }}"
+    assert env['PIPELINE_NEEDS'] == '${{ toJSON(needs) }}'
+    assert 'healthcheck' in DOC['jobs']['notify']['needs']
 
 
 def test_a_cancelled_health_check_is_not_reported_as_all_reachable():
@@ -392,6 +398,6 @@ def test_missing_or_malformed_health_verdict_is_not_success(verdict):
 
 def test_refresh_failure_is_in_the_failure_issue():
     body = _issue_body(PIPELINE_SEED_RESULT='success', PIPELINE_VALIDATE_RESULT='success', PIPELINE_REVALIDATE_RESULT='failure')
-    assert '**Failed Steps:** Cache / page refresh' in body
+    assert 'Cache / page refresh' in next(line for line in body.splitlines() if line.startswith('**Failed Steps:**'))
     assert 'revalidate' in DOC['jobs']['notify']['needs']
-    assert "needs.revalidate.result == 'failure'" in ISSUE_STEP['if']
+    assert ISSUE_STEP['if'] == 'always()'

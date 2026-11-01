@@ -1243,11 +1243,12 @@ jobs:
   # ══════════════════════════════════════════════════════════════════
   notify:
     name: Post-Run Summary
-    needs: [source_plan, healthcheck, seed, bootstrap, validate, revalidate]
+    needs: [source_plan, healthcheck, migrate, seed, bootstrap, validate, revalidate]
     if: always() && (github.event_name != 'schedule' || vars.INGESTION_NIGHTLY_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       - name: Create summary
         env:
           SEED_PLAN_RESULT: ${{ needs.source_plan.result }}
@@ -1271,6 +1272,7 @@ jobs:
           echo "| **Planned Domains** | $SEED_PLANNED_DOMAINS |" >> $GITHUB_STEP_SUMMARY
           echo "| **Plan Status** | $SEED_PLAN_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| **Bootstrap Planned** | $SEED_PLANNED_BOOTSTRAP |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Database Admission** | ${{ needs.migrate.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Bootstrap Status** | ${{ needs.bootstrap.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Health Check** | ${{ needs.healthcheck.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Seed Status** | ${{ needs.seed.result }} |" >> $GITHUB_STEP_SUMMARY
@@ -1323,7 +1325,8 @@ jobs:
               tableRows,
               ``,
               `### What This Means`,
-              `- The seeding pipeline still ran, but affected domains may have **stale or missing data**`,
+              `- Source probes run independently of database admission; check the pipeline outcome for writer execution`,
+              `- Affected domains may have **stale or missing data**`,
               `- Government websites (OAG, COB, CBK) occasionally restructure their URLs`,
               `- External APIs (World Bank, IMF) may have temporary outages`,
               ``,
@@ -1412,60 +1415,17 @@ jobs:
               console.log(`Auto-closed resolved health-check issue #${issue.number}`);
             }
 
+      # Always assess all direct prerequisites, even if a health-issue API step
+      # failed. The helper decides whether an incident is required; intentional
+      # source-plan/bootstrap/preview exclusions are not pipeline failures.
       - name: Create issue on seeding/validation failure
-        if: needs.seed.result == 'failure' || needs.validate.result == 'failure' || needs.revalidate.result == 'failure'
+        if: always()
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
-        # Inputs arrive as env, not `${{ }}` spliced into the script, so
-        # backend/tests/test_healthcheck_is_bounded.py can run this script.
         env:
-          PIPELINE_SEED_RESULT: ${{ needs.seed.result }}
-          PIPELINE_VALIDATE_RESULT: ${{ needs.validate.result }}
-          PIPELINE_REVALIDATE_RESULT: ${{ needs.revalidate.result }}
-          HEALTHCHECK_RESULT: ${{ needs.healthcheck.result }}
-          HEALTHCHECK_HAS_FAILURES: ${{ needs.healthcheck.outputs.has_failures }}
-          HEALTHCHECK_UNPROBED: ${{ needs.healthcheck.outputs.unprobed }}
-          PIPELINE_DOMAIN: ${{ github.event.inputs.domain || 'all' }}
+          PIPELINE_NEEDS: ${{ toJSON(needs) }}
+          PIPELINE_INPUTS: ${{ toJSON(github.event.inputs) }}
+          PIPELINE_RUN_ATTEMPT: ${{ github.run_attempt }}
         with:
           script: |
-            const env = process.env;
-            const failedSteps = [];
-            if (env.PIPELINE_SEED_RESULT === 'failure') failedSteps.push('Seeding');
-            if (env.PIPELINE_VALIDATE_RESULT === 'failure') failedSteps.push('Validation');
-            if (env.PIPELINE_REVALIDATE_RESULT === 'failure') failedSteps.push('Cache / page refresh');
-
-            // This line used to be `has_failures == 'true' && '⚠️ …' || '✅
-            // All sources reachable'`. A health check that was cancelled
-            // writes no outputs, so has_failures is '' and the issue said
-            // "✅ All sources reachable" about a check that never finished
-            // (#229, run 36211613362). And has_failures=false only ever meant
-            // "no CRITICAL line" — transient warnings do not set it.
-            let health;
-            if (env.HEALTHCHECK_RESULT !== 'success') {
-              health = `❔ Unknown — the health check did not finish (${env.HEALTHCHECK_RESULT || 'no result'})`;
-            } else if (env.HEALTHCHECK_HAS_FAILURES === 'true') {
-              health = '⚠️ Some sources were unreachable (may be related)';
-            } else if (env.HEALTHCHECK_UNPROBED !== '0') {
-              health = `❔ Partial — ${env.HEALTHCHECK_UNPROBED || 'some'} source(s) not probed before the health-check budget ran out`;
-            } else if (env.HEALTHCHECK_HAS_FAILURES !== 'false') {
-              health = '❔ Unknown — missing or malformed health-check verdict';
-            } else {
-              health = '✅ No critical source failures (warnings, if any, are in the health-check job)';
-            }
-
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Data pipeline failed: ${failedSteps.join(', ')} — ${new Date().toISOString().split('T')[0]}`,
-              body: `## Automated Data Pipeline Failure\n\n` +
-                `**Failed Steps:** ${failedSteps.join(', ')}\n` +
-                `**Health Check:** ${health}\n` +
-                `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n` +
-                `**Triggered by:** ${context.eventName}\n` +
-                `**Domain:** ${env.PIPELINE_DOMAIN}\n\n` +
-                `### Action Required\n` +
-                `1. Check the [workflow run logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})\n` +
-                `2. Verify the \`ingestion_jobs\` table for domain-level errors\n` +
-                `3. If a data source is down, the workflow will retry tomorrow automatically\n` +
-                `4. For persistent failures, check if the upstream API/URL has changed\n`,
-              labels: ['bug', 'data-pipeline', 'automated']
-            });
+            const {report} = require('./.github/scripts/seed_notifications.cjs');
+            await report({github, context, core});

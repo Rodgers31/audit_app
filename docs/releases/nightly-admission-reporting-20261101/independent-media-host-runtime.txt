@@ -1,0 +1,8 @@
+COMMAND: /opt/homebrew/bin/ffmpeg -version
+ffmpeg version 9.0.1 Copyright (c) 2000-2026 the FFmpeg developers
+
+COMMAND: /opt/homebrew/bin/ffprobe -version
+ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers
+
+COMMAND: /Users/roger/Documents/projects/audit_app/.venv/bin/python -c import platform,PIL,sqlalchemy; print(platform.python_version(),PIL.__version__,sqlalchemy.__version__)
+3.14.0 12.1.1 2.0.46

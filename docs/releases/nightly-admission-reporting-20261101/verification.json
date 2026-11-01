@@ -1,0 +1,48 @@
+{
+  "baseline_commit": "db713b72ccd4c1938e7dac0401f66770379bdb62",
+  "baseline_workflow_sha256": "29d92cec4579c79330e61695be3dd75d43dcd16da859cb2deba5dfce423266a1",
+  "candidate_files_sha256": {
+    ".github/workflows/seed.yml": "4f6adae87d4a02bf809626d1cd0532408720d4c5e439539cabede2800cd03df5",
+    ".github/scripts/seed_notifications.cjs": "51ceb10dcaee9c1a963cdb1a153758fd28797d4c8164e254135126ca37ee25cb",
+    ".github/scripts/tests/test_seed_notifications.py": "afda18e17168e3561bcbbc3011b7aa7cc6f174e4494d10e1180cd461ef69f318",
+    "backend/tests/test_healthcheck_is_bounded.py": "c2c38760f827728a4a5150e5ded656d9e500de4771b59c2fd5a8b8129feadccb"
+  },
+  "unchanged_non_notify_jobs": {
+    "source_plan": true,
+    "healthcheck": true,
+    "migrate": true,
+    "bootstrap": true,
+    "seed": true,
+    "validate": true,
+    "revalidate": true
+  },
+  "unchanged_top_level_workflow_configuration": true,
+  "admission_guard_sha256": "1aa448133f14d2ae4e8919bf526f91fdcb874cf6a8fbfdf8da00f9e7ebb65cb3",
+  "admission_guard_matches_baseline": true,
+  "runtime": {
+    "python": "3.13.9",
+    "python_executable": "/private/tmp/claude-501/-Users-roger-Documents-projects-audit-app/adf17a97-6837-4335-9fec-17dedb453f59/scratchpad/backend-venv/bin/python",
+    "node": "v24.22.1"
+  },
+  "results": {
+    "red_admission": "1 test, 1 assertion failure: no alert selected by old workflow",
+    "new_workflow_fixture": "17 tests passed; normal and Python -O executions are separate overlapping selections",
+    "existing_workflow_tests": "320 passed, 6 skipped in 22.80s",
+    "existing_selection_summary_tests": "5 passed, 23 deselected in 6.68s"
+  },
+  "setup_failures_retained": [
+    "summary-compatibility-setup-failure.txt: absent backend/tests PYTHONPATH; corrected unchanged selection passed"
+  ],
+  "other_setup_attempts": [
+    "system Python lacked FastAPI while loading backend/conftest; used isolated workflow-only --confcutdir selection",
+    "provided audited backend env entrypoint had missing /usr/local/bin/python target; used pre-existing local Python3.13 backend venv"
+  ],
+  "external_mutation": false,
+  "external_observation_pending": "No workflow dispatch, hosted rerun, GitHub issue write or production observation performed. Hosted notification delivery remains unverified.",
+  "limits": [
+    "A zero-job run, disabled scheduled workflow, pre-notify runner failure, or notify checkout failure cannot be certified or alerted by this job.",
+    "Workflow cancellation can prevent notify from starting despite always(); local cancellation-result fixtures prove classification only.",
+    "Reporter job success does not certify source extraction, database content, data freshness or publication.",
+    "Managed pipeline incidents require human recovery review; this change does not auto-close them."
+  ]
+}

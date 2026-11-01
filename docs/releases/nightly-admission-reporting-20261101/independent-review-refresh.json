@@ -1,0 +1,134 @@
+{
+  "reviewed_source_unchanged": {
+    "frontend/components/admin/social/SocialComposer.tsx": true,
+    "frontend/components/admin/social/SocialMedia.tsx": true,
+    "frontend/components/admin/social/useDeliveryWorkerReadiness.ts": true,
+    "frontend/tests/socialFixtures.ts": true,
+    "backend/tests/social/test_media_cold_restore_acceptance.py": true,
+    "backend/tests/social/test_manual_media_workflow.py": true,
+    "backend/social/media/service.py": true,
+    "backend/social/media/inspection.py": true,
+    "backend/social/service.py": true
+  },
+  "pg_junit_verified": [
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/manual-media-pg-normal.xml",
+      "sha256_matches": true,
+      "tests": 299,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/manual-media-pg-optimized.xml",
+      "sha256_matches": true,
+      "tests": 302,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/operator-pg-normal.xml",
+      "sha256_matches": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/operator-pg-optimized.xml",
+      "sha256_matches": true,
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/owned-pg-normal.xml",
+      "sha256_matches": true,
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/owned-pg-optimized.xml",
+      "sha256_matches": true,
+      "tests": 36,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/retirement-pg-normal.xml",
+      "sha256_matches": true,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/retirement-pg-optimized.xml",
+      "sha256_matches": true,
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "new_runtime_logic_since_prior_review": true,
+  "additional_runtime_execution": {
+    "reviewer_authored_schedule_cases": "8 passed,0 skipped,1.793s",
+    "existing_affected_schedules_module": "11 passed,0 skipped,1.064s",
+    "scope": "no broad run or browser rebuild by reviewer"
+  },
+  "documentation_finding": "Resolved: OFF requirements distinguished from fresh rendered observations and prior financial OFF/process receipt.",
+  "fixture_note": "Resolved: generated queued-post mock binds current authorization revision, due/UTC/requested local time and next action. Final author browser6groups49requests source manifest matches current runner.",
+  "approval": "Approved final frozen local candidate artifacts for separate draft review; no unresolved findings. No merge, deployment or activation authorized.",
+  "launch_gates_sha256": "b445a1569c6661070adc9d4cd33282d37aa587e8cc8ea27ec3a2edf76437e7aa",
+  "additional_reviewed_source_sha256": {
+    "frontend/components/admin/social/SocialScheduleControls.tsx": "f2fd9309cafc66fa9531c1f6cc2f6d2bdd44c41ade2ed82374771e8827300365",
+    "frontend/__tests__/admin/social/schedules.test.tsx": "116926b876a6367b88c9803f7578104785247779b5dc0dfecd0951b664a22289"
+  },
+  "schedule_reviewer_fixture_sha256": "2f16cb1a994048e61e44e5fe1c6480da4778d7b4c420d53ba191d83dbf18402d",
+  "latest_status_sync_refresh": {
+    "source_sha256": {
+      "frontend/components/admin/social/SocialComposer.tsx": "9fc12c9de9322cfc399447f3bbd598872e0dae1712d3384c65f8af64b7b447c3",
+      "frontend/components/admin/social/SocialMedia.tsx": "8efdd8ec036da2387d2a2d6a42fc7ec38f775c67ffbf71f8a8ad0ccaf7ee71df",
+      "frontend/components/admin/social/SocialScheduleControls.tsx": "f2fd9309cafc66fa9531c1f6cc2f6d2bdd44c41ade2ed82374771e8827300365",
+      "frontend/components/admin/social/useDeliveryWorkerReadiness.ts": "c78465e44c5246b5c61b366788723808fba6b5f48496a7722b17ae7ec31b043a",
+      "frontend/__tests__/admin/social/clean-status-sync.test.tsx": "54dcd70bfbff2a45ac653a0a3e2d28bf382564af4e135498e484c07c63265956",
+      "frontend/__tests__/admin/social/composer-media-integration.test.tsx": "b035f7741a7380fe3f863601bf1bfdc12d80549dd79e6ac2cbf4e960eec51f20"
+    },
+    "reviewer_fixture_sha256": "a41382f61cf5f15d1ddd9d86731334f62c098e22a91cbb86a2877dcb4c668634",
+    "independent_red": "1 executed assertion failure,5unselected before fix: accepted same-revision status bump falsely reports conflict",
+    "independent_green": "6passed0skips1.592s after copy matcher and async observer harness corrections",
+    "affected_owner_modules": "9passed0skips1.346s after queued helper copy; preceding9pass3.406s receipt retained separately",
+    "approval": "Approved latest status-sync effect and queued helper copy for draft review; no unresolved product findings. Final author browser/build artifacts remain separately owned.",
+    "queued_copy_review": "Busy/dirty precedence; queued message requires due time and matching immutable revision. No state/effect/API mutation added.",
+    "browser_runner_sha256": "51aa19cd693a5384d79a77322b7314c3fc211c92ef35d7056e357c4e3f8b6f02",
+    "launch_gates_sha256": "b445a1569c6661070adc9d4cd33282d37aa587e8cc8ea27ec3a2edf76437e7aa",
+    "author_browser_manifest_status": "Resolved: final17hash manifest,6group49request browser receipt and parent production-mode build independently reconciled in independent-final-acceptance.json"
+  },
+  "media_coordinator_review": "Approved; four hashes and all17 skippedcase reconciliations in independent-media-coordinator-review.json",
+  "pre_status_sync_final_author_manifest_selected_files_match": {
+    "frontend/components/admin/social/SocialComposer.tsx": true,
+    "frontend/components/admin/social/SocialMedia.tsx": true,
+    "frontend/components/admin/social/useDeliveryWorkerReadiness.ts": true,
+    "frontend/tests/socialFixtures.ts": true,
+    "frontend/components/admin/social/SocialScheduleControls.tsx": true,
+    "frontend/__tests__/admin/social/schedules.test.tsx": true,
+    "frontend/tests/manualPublicationBrowser.mjs": true
+  },
+  "pre_status_sync_final_browser_runner_sha256": "3f8d97b0e919608358f2fd0b7139d3db0e630308554ca4f67f4cd27173f5b21f",
+  "pre_status_sync_final_browser_receipt": {
+    "sha256": "3f56037079e0591be45c717a6b9a83980f7daedd9ba29d82799638b9fdf0beaa",
+    "groups": 6,
+    "requests": 49,
+    "external_requests": 0,
+    "page_errors": 0,
+    "observation": "inspected author execution receipt, not independent browser rerun"
+  },
+  "receipt_stage_notes": "Unchanged/selected-manifest booleans and pre_status_sync_final_* describe the preceding approved stage. latest_status_sync_refresh holds the authoritative current runtime identity after the later visual finding.",
+  "final_acceptance_receipt": "independent-final-acceptance.json"
+}

@@ -1,0 +1,21 @@
+FAIL ../../../../../../../tmp/nightly-other-lanes-review-20261101/worker-readiness.independent.test.tsx
+  ● Test suite failed to run
+
+    Cannot find module 'react/jsx-runtime' from '../../../../../../../tmp/nightly-other-lanes-review-20261101/worker-readiness.independent.test.tsx'
+
+      23 | });
+      24 | afterEach(()=>clients.forEach(qc=>qc.clear()));
+    > 25 | test.each(['absent','missing-heartbeat','missing-scan','invalid-heartbeat','invalid-scan','future-heartbeat','future-scan','stale-idle'])('%s report never permits immediate publish after real rendered validation',async damage=>{
+         |                     ^
+      26 |   const worker=fresh();
+      27 |   if(damage==='missing-heartbeat') worker.heartbeat_at=null;
+      28 |   if(damage==='missing-scan') worker.last_scan_at=null;
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:1031:11)
+      at Object.<anonymous> (../../../../../../../tmp/nightly-other-lanes-review-20261101/worker-readiness.independent.test.tsx:25:21)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.121 s
+Ran all test suites within paths "/tmp/nightly-other-lanes-review-20261101/worker-readiness.independent.test.tsx".

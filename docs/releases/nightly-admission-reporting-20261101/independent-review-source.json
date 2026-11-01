@@ -1,0 +1,21 @@
+{
+  "base": "db713b72ccd4c1938e7dac0401f66770379bdb62",
+  "source_sha256": {
+    "frontend/components/admin/social/SocialComposer.tsx": "12d135de8e6f522fb8466800da15ecd81b5ff8cb0527b25fe18df5ad48302ae8",
+    "frontend/components/admin/social/SocialMedia.tsx": "8efdd8ec036da2387d2a2d6a42fc7ec38f775c67ffbf71f8a8ad0ccaf7ee71df",
+    "frontend/components/admin/social/useDeliveryWorkerReadiness.ts": "c78465e44c5246b5c61b366788723808fba6b5f48496a7722b17ae7ec31b043a",
+    "frontend/tests/socialFixtures.ts": "c36d199df4e49f4f9c93bcce392fa1f03da00cf206a3b523d78589076449ab83",
+    "backend/tests/social/test_media_cold_restore_acceptance.py": "69ce171ad9d616c7df85422175310445b923138e96b58daa44a48dd069cc50d3",
+    "backend/tests/social/test_manual_media_workflow.py": "c2e19f20ec1dce7a37e247628e32b4fd9bb7a107438d3eb9d642fb7373f64b5f",
+    "backend/social/media/service.py": "b95732fbe58a01d432216b0bb42c30e67b7f764a00af794478ffa915e8708c6f",
+    "backend/social/media/inspection.py": "0238a1acca5c110d322a0918f64b0d51c17e5d38a4703197b7c8b634182ac4cf",
+    "backend/social/service.py": "97fbc78a09da49cad03a8bed2fe37e3451b5620a2334ee5f9433176532db33b3"
+  },
+  "reviewer_fixture_sha256": "95e8dfcbd484549b40d8260dafd8fa531e9b30d4f3796abc52fcef69ae8ae5e8",
+  "docker_image": "sha256:1b4cc12668ffaa5bd5e5aa78bd96c053f8d0778651c040ad4a5d69ef305d983b",
+  "ui_result": "11 passed, 0 skipped; independent actual rendered composer",
+  "media_manual_result": "6 passed, 0 skipped; network-none exact-package container",
+  "findings": [],
+  "external_calls_performed": false,
+  "product_edits_performed": false
+}
