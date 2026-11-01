@@ -4,8 +4,8 @@ This verdict never grants announcement authority. Committed readers separately
 require current publisher evidence and complete successful live-job linkage.
 """
 from types import SimpleNamespace
-import os
 from sqlalchemy import select
+from .native_financial_admission import source_admission_enabled
 if __package__.startswith('backend.'):
     from backend.services.figure_qualification import qualify_rows
     from backend.models import SourceDocument, DocumentStatus
@@ -20,10 +20,6 @@ REASON='native_financial_cells_unverified'
 
 
 def qualify_native_financial_rows(session, rows, *, domain, context):
-    # Prospective rollout must not alter existing numeric publication verdicts
-    # while the new native financial lane remains explicitly paused.
-    if os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')!='true':
-        return
     if context is None or context.dry_run is not False or type(context.job_id) is not int or context.job_id<=0:
         return
     table, measures=TABLES[domain]
@@ -63,6 +59,13 @@ def qualify_native_financial_rows(session, rows, *, domain, context):
         views.append(view)
         native_rows.append(row)
     if not native_rows:
+        return
+    if not source_admission_enabled():
+        # These rows have just been bound by the native writer to this job.
+        # Its new values/evidence cannot inherit a prior job's numeric verdict.
+        # Preserve explicit quarantines and unrelated publisher/scope verdicts.
+        for row in native_rows:
+            row.publishable = False
         return
     qualified=qualify_rows(session,table,views)
     for row in native_rows:

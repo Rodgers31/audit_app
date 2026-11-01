@@ -33,9 +33,11 @@ def test_committed_reader_valueerror_maps_to_review_required(monkeypatch,reason)
   verify_financial_authority(None,{'financial':{'record_id':1,'native_domain':'revenue_by_source'},'ingestion_id':'1'})
 
 @pytest.mark.parametrize("eligible", [True, False])
-def test_non_native_worldbank_row_eligibility_is_not_changed_by_native_gate(pg,monkeypatch,eligible):
+@pytest.mark.parametrize("admit", ['true', 'false'])
+def test_non_native_worldbank_row_eligibility_is_not_changed_by_native_gate(pg,monkeypatch,eligible,admit):
  from seeding.native_financial_gate import qualify_native_financial_rows
- factory,engine=pg;monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
+ factory,engine=pg;monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED',admit)
+ monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','false')
  with factory.begin()as db:
   country=db.scalar(select(Country).where(Country.iso_code=='KEN'))
   job=IngestionJob(domain='revenue_by_source',status=IngestionStatus.RUNNING,dry_run=False,started_at=datetime.now(timezone.utc),errors=[],meta={'source_mode':'live'});db.add(job);db.flush()
@@ -44,13 +46,15 @@ def test_non_native_worldbank_row_eligibility_is_not_changed_by_native_gate(pg,m
   qualify_native_financial_rows(db,[row],domain='revenue_by_source',context=DomainRunContext(None,False,job.id))
   assert row.publishable is eligible and row.quarantine_reason is None,'Native KRA gate altered unrelated World Bank numeric eligibility'
 
-def test_qualification_policy_requires_new_native_financial_flag_off(monkeypatch):
+@pytest.mark.parametrize('enabled_flag', ['SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED', 'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED'])
+def test_qualification_policy_requires_generation_and_source_admission_off(monkeypatch, enabled_flag):
  import admin_etl_qualification as q
  now=datetime.now(timezone.utc);generation=str(uuid4())
  raw=dict(version=1,generation=generation,issued_at=now.isoformat().replace('+00:00','Z'),expires_at=(now+timedelta(seconds=3600)).isoformat().replace('+00:00','Z'))
  monkeypatch.setenv(q.POLICY_ENV,json.dumps(raw))
  for key in q.DISABLED_FLAGS:monkeypatch.setenv(key,'false')
- for key,value in {'ADMIN_ETL_DISPATCH_SOURCES':'opendata','SEED_OPENDATA_INGESTION_ENABLED':'true','AUTO_SEEDER_ENABLED':'false','SEED_KNBS_RELEASE_DISCOVERY_ENABLED':'false','SOCIAL_GENERATION_HOOK_ENABLED':'false','SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED':'true'}.items():monkeypatch.setenv(key,value)
+ for key,value in {'ADMIN_ETL_DISPATCH_SOURCES':'opendata','SEED_OPENDATA_INGESTION_ENABLED':'true','AUTO_SEEDER_ENABLED':'false','SEED_KNBS_RELEASE_DISCOVERY_ENABLED':'false','SOCIAL_GENERATION_HOOK_ENABLED':'false'}.items():monkeypatch.setenv(key,value)
+ monkeypatch.setenv(enabled_flag,'true')
  with pytest.raises(q.QualificationRefused):q.qualification(now)
 
 

@@ -1,0 +1,151 @@
+{
+  "verdict": "Scoped pass; known predecessor-verdict defect reproduced and fixed; no remaining confirmed finding",
+  "inputs": {
+    "full_count": 6617,
+    "full_manifest_sha256": "3a4a494bf7b7e4676a7f287b41024196d7516e56a786c03f87f9a0813a776e48",
+    "full_mapping_sha256": "1780790d6e2921c3f2aa2ae232a78346b4979cc1d6aef9cc6fc414316ff0c9e4",
+    "projection_count": 1541,
+    "projection_mapping_sha256": "e690a876b189d307b78279baf5e4e928888d5c4bb61eecaa3eb66249718e7a06",
+    "candidate_mismatches": []
+  },
+  "gate_sha256": "28583346e4be248d0f831d2614d3665d9d4a30786c489e29255c7fbe96842d40",
+  "results": {
+    "normal": 152,
+    "true_optimized": 152,
+    "independent_actual_pg_each_mode": 22,
+    "independent_direct_each_mode": 130,
+    "final_failures": 0,
+    "final_errors": 0,
+    "final_skips": 0,
+    "baseline_expected_failures": 6,
+    "same_ids_each_mode": true
+  },
+  "baseline_overlay": {
+    "baseline_commit": "1e349292",
+    "path": "backend/seeding/native_financial_gate.py",
+    "baseline_gate_sha256": "2bc6f78cdd8933ea864d161714a64965a435d53d9f423223e8066b5f4ee42bbf",
+    "overlay_only": true,
+    "all_other_product_bytes": "frozen final candidate projection"
+  },
+  "source_after": {
+    "candidate_count": 6617,
+    "projection_count": 1541,
+    "candidate_mismatches": [],
+    "projection_mismatches": [],
+    "manifest_file_unchanged": true
+  },
+  "cleanup": {
+    "owned_pg_removed": true,
+    "ownership_id_verified": true,
+    "private_env_mode_before_delete": "0o600",
+    "private_env_deleted": true,
+    "remaining_owned_containers": [],
+    "shared_or_parent_databases_touched": false,
+    "workers_or_providers_started": false
+  },
+  "final_fixture_state": {
+    "database": "b83_social_test",
+    "head": "a756b20a0001",
+    "before_fixture_teardown": {
+      "social_posts": 1,
+      "social_post_revisions": 1,
+      "social_publications": 1,
+      "social_post_targets": 1,
+      "social_publish_attempts": 0,
+      "social_source_cursors": 2,
+      "social_source_events": 1
+    },
+    "after_fixture_teardown": {
+      "social_posts": 0,
+      "social_post_revisions": 0,
+      "social_publications": 0,
+      "social_post_targets": 0,
+      "social_publish_attempts": 0,
+      "social_source_cursors": 0,
+      "social_source_events": 0
+    },
+    "leftover_worker_fixture_roles": 0,
+    "synthetic_approved_fixture_only": true
+  },
+  "uncredited_attempts": {
+    "independent-normal": {
+      "credited": false,
+      "exit_code": 2,
+      "reason": "External harness omitted backend/tests from PYTHONPATH; helper import test_cob_publication_producer could not resolve. No test executed, no product defect."
+    },
+    "independent-normal-final": {
+      "credited": false,
+      "exit_code": 1,
+      "passed": 21,
+      "failed": 1,
+      "reason": "Lineage fixture assigned Python bool True over integer1 through SQLAlchemy dict equality; True==1 suppressed the UPDATE. Repaired fixture uses explicit jsonb_set to persist actual boolean, as required by desired strict-type attack. Other21 checks passed; this was not acceptance of a persisted bool by product."
+    }
+  },
+  "artifacts_sha256": {
+    "CASE-LEDGER.json": "7297a505319915baaaf36675ea6739e002c89ea7d50e226b2b6e261614f40a47",
+    "CLEANUP.json": "1bb064d2b46fe9fc551c4ea8e4fcba2b034606387b0002330edb0f44e5d84ccd",
+    "INPUT-PINS.json": "05337897c2777b118b07e9bb5d69d89c865a7240d26fcb3a8e4eb7e30fa6deed",
+    "RED-PROJECTION.json": "8e79a24f32b864c96e88ea0b4940b398f695d723d4807885d79474eaabba5b88",
+    "REPORT.md": "7d30161bd1e3a4f3870afb575ad5e9f0836575c4a481192ec3f1da498f5d59af",
+    "SETUP-ATTEMPTS.json": "cf94f0d600c981c7bc69b6157b73fe1f6575964731b0f8aea1d3354d1c62cf45",
+    "SOURCE-AFTER.json": "991d719c7b6e7ffad02b3d4e9e1870df689995869d7c74e7d40f760dace843bc",
+    "baseline-six-red.command.json": "c4df788bfe6472ffacb97d729a90a30c98995d274a9d35585e12244deedcc972",
+    "baseline-six-red.exit.json": "e7a3602b800bf1375d3ea78cf3365f91ded4f0de1431fcab823d7a292b8933b8",
+    "baseline-six-red.txt": "caed07fc16d4eb5df9d5fc21ac3b42882802e66ad262a20718548e26e610c4af",
+    "baseline-six-red.xml": "24b5f91abe2a1c99a65281f18d6bf08637bcf6e37a0092591c2aa02447558105",
+    "final-owned-state.json": "329bb747de459da3c3b200b564104a01d6fd4a213cb5c3fd16bb46d8d157e6f4",
+    "final-state.command.json": "e1152aad8345dd719b1667e534986e96a84abeeddb7e021b30e719be352b1d42",
+    "final-state.exit.json": "a5131642006d5e95e64d143e1702f2c07cfc67b9dff14d401b4bbf47a7fc61b7",
+    "final-state.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final_state.py": "fa38ae3a924abb7a1584ab66903cef08017903a3d55dfc9736f2be4c77cfcb5d",
+    "full-manifest.json": "3a4a494bf7b7e4676a7f287b41024196d7516e56a786c03f87f9a0813a776e48",
+    "independent-normal-final.command.json": "ad0988178d9a483ebf34083bc79f782d48a51c8285f2d0e480fdc09934692109",
+    "independent-normal-final.exit.json": "ccf438364432fccd932f34aa73934b91f7c61fde71960e4f8b7c560fce790f18",
+    "independent-normal-final.txt": "3497d2caceff7c89f20c9085f5f7741f8771d27f9fc98b097b1aa8bfd68e8751",
+    "independent-normal-final.xml": "aa2db41e7798d87219731d819db4a559ef98c3c80260ad3d91a2c90013362422",
+    "independent-normal-sealed.command.json": "b8f4a5dbb6e3913ec48ac6cb7dba57818a59050c65568ea817c026101c3618b4",
+    "independent-normal-sealed.exit.json": "dbdea6fc7627498bcfb380b2ba2ea80481128882ff993207aa0e6c3167abcba0",
+    "independent-normal-sealed.txt": "9bdf212c02f0b394eeadbf9d63d9ca9152a1fa1a6a3f61d87b12c830294b0388",
+    "independent-normal-sealed.xml": "5af48f579bcc10539d1741c04407daad1abdf664b8174c1acef16b7c8e5d0c2e",
+    "independent-normal.command.json": "427b5a77dc7f0cd98fb9b21dc4618412d70046b42fd2d09546e6df3084319bea",
+    "independent-normal.exit.json": "0d5357a1510153245823a2bd430105b081036dc3434c40cf80c34b0d0e58cef5",
+    "independent-normal.txt": "5bcf5dd098914411258260ca52745750f979567c4d8fc43e573c87946a549c57",
+    "independent-normal.xml": "5882f883ac7b0b3e008ca721203f93fd8086d4cdd3d03560a5ef9a1a1cb53db1",
+    "independent-optimized-sealed.command.json": "96a9e0b99cf2d5e86ce28ebb1d3b1e8410324f98829b4690f040137115fc87fc",
+    "independent-optimized-sealed.exit.json": "2c5f44a8a942328b28ac4b5caa40157bcc5e87118edb302fe454db1b97b99611",
+    "independent-optimized-sealed.txt": "92d58589e2da2bfe6cec79562b303492766dded34beb3476f6cef10f7a1c12bf",
+    "independent-optimized-sealed.xml": "4499ded8604933d46f10e9cac922631803c27f35bf1bbed73d1a0228baf96758",
+    "migrate.command.json": "90d14530c94bb94a2268300b0ad13d16e24ce744a055b72578cfaefecefb4908",
+    "migrate.exit.json": "0c082bf2a79f16bd8a90330d04ad6ec725eb0c2616573be6cdb98e3924fe1ce4",
+    "migrate.txt": "92af653046c9a0d97becd3827a11e768f169608946b580034819b37db079c564",
+    "pg-owner.json": "567dd2784266ce3913d827433c70436751c231c6d6a3ab02c0178fb3a34f21b9",
+    "pg-start.command.json": "9c49157d120483fab775280566553e29d27e04453336453cf3fdcf5236e6368c",
+    "pre-fix-native_financial_gate.py": "2bc6f78cdd8933ea864d161714a64965a435d53d9f423223e8066b5f4ee42bbf",
+    "run_pg.py": "3f690cbda747b361f2147ebcc51ec95edb420a54cabeb831749ab25b43d1e7b5",
+    "seal.py": "43c5b3045037851c1f5acf1305ca81719367fbc0fd4f72d8d6cb9207279c4ee9",
+    "source-manifest.json": "c5f4611b7de1adc671ec71f5030ad801d472c727415190602bb1e8c8439a1dd1",
+    "test_native_refresh_authority-first.py.txt": "d1796c55ae1748fad90a0f637a55e9c7e931e092b250cb17963c0efe66623616",
+    "test_native_refresh_authority.py": "360c40ffdeb76659a6e14de3105ac759b9761e54afcd6e3ac8dd2afb06407a1f",
+    "direct-controls/CASE-LEDGER.json": "671b62b72aecea2cf057be1578fffba1abbff1fc035b2d875e3ead7d6d6068ce",
+    "direct-controls/CLEANUP.json": "7510e610f71b5e8aa78466f03b4e40ba070aa94b7a7da8825d739cde16c80b48",
+    "direct-controls/INPUTS.json": "556e6d2e8ffdad9a135ba80ad0fc6d229f2f4383c39f15250cd706de6a4a8567",
+    "direct-controls/RECEIPT.json": "40d0e2af649232b918d0c17a96d59034da9dd1d436ef3087be0c39132f2b2bc5",
+    "direct-controls/REPORT.md": "8937e02416fa42e65620537929faaa47c85fdf068fe463fdfc0170269288e181",
+    "direct-controls/SOURCE-AFTER.json": "831abd886d7f6b475a33066ff248badb12ae71938e4c1c544205ec902d7847b3",
+    "direct-controls/normal.command.json": "5310a886473ca34fcd66dcec924490b64e487b0c04aabba41a3630342ed2507c",
+    "direct-controls/normal.exit.json": "f25fe4ff095770c4085f7340cdc756898ee0566108e69322bda77f40f32081cc",
+    "direct-controls/normal.txt": "a6b2e4194defe7bbdd3e4a568a251bead93ebd7cf853917fd536a175fc67efaf",
+    "direct-controls/normal.xml": "4a4965bcb0bbf18591cd4a513ac4c5826897fd6d6d96821355f5a2d301123cfb",
+    "direct-controls/optimized.command.json": "6e8f65e402956b83ff79f49c3907e425a8559c2813b70c5e3e34176955cb81f8",
+    "direct-controls/optimized.exit.json": "317449f38f979ca8ae9656f7619631092fc4a03f5b2ccf2eadd367abef13f2b2",
+    "direct-controls/optimized.txt": "cc3d6308954d8dfa486cb8c9c29403e60012f422c41e5fd2aa177641ceb0c9d7",
+    "direct-controls/optimized.xml": "e5212410eb39e3c2f17b069af9001c1ca83b01ca63297f197ef1ec0c7d8d95af",
+    "direct-controls/test_direct_gate.py": "5407e5fa5b8edc59c5aba43fc4bbcfbd043e06310a84ef3de4b5190042809d31"
+  },
+  "limitations": [
+    "Synthetic source inputs/real writers, receipts, migrated PG and restricted gates; no new genuine source adoption claim.",
+    "Only two synthetic approved-revision cases use inert local approval/publication and an opened fake DB publishing switch to reach the source gate; no worker/provider action or attempts.",
+    "Other20 actualPG cases assert no social generation state.",
+    "No production/shared/dependency database or container touched; no project edits."
+  ]
+}

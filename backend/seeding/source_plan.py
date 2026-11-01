@@ -15,6 +15,11 @@ from .registries import _BUILTIN_DOMAIN_PACKAGES
 LEGACY_DOMAINS = tuple(sorted(p.rsplit('.', 1)[1] for p in _BUILTIN_DOMAIN_PACKAGES))
 DAILY = '0 2 * * 1-6'
 WEEKLY = '0 3 * * 0'
+OAG_SOURCE_ACCEPTANCE = 'oag-combined-catalogue-20261101'
+OAG_ACCEPTANCE_MANIFEST = Path(__file__).resolve().parents[2] / 'docs/operations/2026-11-01-oag-catalogue-acceptance/manifest.json'
+OAG_SOURCE_ONLY_CONTROLS = ('SOCIAL_GENERATION_HOOK_ENABLED', 'SOCIAL_REPORT_GENERATION_ENABLED',
+                          'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED',
+                          'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED')
 
 
 def boolean(value):
@@ -30,6 +35,7 @@ class SourcePlan:
     dry_run: bool
     audits_review: str = ""
     reacquire_pending_pdf: bool = False
+    audits_source_acceptance: str = ''
 
     @property
     def argv(self):
@@ -39,6 +45,8 @@ class SourcePlan:
             args.extend(['--domain', domain])
         if self.audits_review:
             args.extend(['--audits-reconciliation-review', self.audits_review])
+        if self.audits_source_acceptance:
+            args.extend(['--audits-source-manifest', str(OAG_ACCEPTANCE_MANIFEST)])
         if len(self.domains) > 1 and not self.dry_run:
             args.append('--fair-progress')
         return [*args, '--dry-run' if self.dry_run else '--no-dry-run']
@@ -46,7 +54,9 @@ class SourcePlan:
 
 def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
                bootstrap='false', county_borrowing='false', audits_review='',
-               reacquire_pending_pdf='false'):
+               reacquire_pending_pdf='false', audits_source_acceptance=''):
+    if type(audits_source_acceptance) is not str or audits_source_acceptance not in ('', OAG_SOURCE_ACCEPTANCE):
+        raise ValueError('Unknown reviewed audits acquisition scope')
     if audits_review not in ('', 'oag-2542-20261026'):
         raise ValueError('Unknown source-checked audits review')
     enabled = {'cra': boolean(cra), 'opendata': boolean(opendata),
@@ -60,7 +70,7 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
     if type(domain) is not str or domain not in ('', *LEGACY_DOMAINS, 'cra', 'opendata', 'county_borrowing'):
         raise ValueError('Unknown source plan domain')
     if event == 'schedule':
-        if schedule not in (DAILY, WEEKLY) or domain or dry or boot or audits_review or reacquire:
+        if schedule not in (DAILY, WEEKLY) or domain or dry or boot or audits_review or reacquire or audits_source_acceptance:
             raise ValueError('Unsupported scheduled source plan')
         weekly = schedule == WEEKLY
         # Admit explicit opt-ins before legacy work can consume the shared
@@ -70,6 +80,8 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
         return SourcePlan(domains, weekly, False)
     if event != 'workflow_dispatch' or schedule != '':
         raise ValueError('Unsupported source plan event')
+    if audits_source_acceptance and (domain != 'audits' or dry or boot or audits_review or reacquire):
+        raise ValueError('Reviewed audits acquisition requires only the manual live audits domain')
     if reacquire and (domain != 'pending_bills' or boot or audits_review):
         raise ValueError('PDF reacquisition requires only the manual pending-bills domain')
     if domain in enabled and not enabled[domain]:
@@ -77,7 +89,7 @@ def build_plan(*, event, schedule, domain, dry_run, cra, opendata, discovery,
     domains = (domain,) if domain else (*(d for d, on in enabled.items() if on), *LEGACY_DOMAINS)
     if audits_review and (dry or 'audits' not in domains):
         raise ValueError('Source-checked review requires a live audits selection')
-    return SourcePlan(domains, boot, dry, audits_review, reacquire)
+    return SourcePlan(domains, boot, dry, audits_review, reacquire, audits_source_acceptance)
 
 
 def environment_plan():
@@ -91,7 +103,8 @@ def environment_plan():
         discovery=os.environ.get('SEED_KNBS_RELEASE_DISCOVERY_ENABLED', 'false'),
         county_borrowing=os.environ.get('SEED_COUNTY_BORROWING_INGESTION_ENABLED', 'false'),
         audits_review=os.environ.get('SEED_PLAN_AUDITS_REVIEW', ''),
-        reacquire_pending_pdf=os.environ.get('SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF', 'false'))
+        reacquire_pending_pdf=os.environ.get('SEED_PLAN_REACQUIRE_PENDING_BILLS_PDF', 'false'),
+        audits_source_acceptance=os.environ.get('SEED_PLAN_AUDITS_SOURCE_ACCEPTANCE', ''))
 
 
 def validate_plan(plan):
@@ -104,6 +117,9 @@ def validate_plan(plan):
             or type(plan.audits_review) is not str
             or plan.audits_review not in ('', 'oag-2542-20261026')
             or type(plan.reacquire_pending_pdf) is not bool
+            or type(plan.audits_source_acceptance) is not str
+            or plan.audits_source_acceptance not in ('', OAG_SOURCE_ACCEPTANCE)
+            or (plan.audits_source_acceptance and (plan.domains != ('audits',) or plan.bootstrap or plan.dry_run or plan.audits_review or plan.reacquire_pending_pdf))
             or (plan.reacquire_pending_pdf and (plan.domains != ('pending_bills',) or plan.bootstrap or plan.audits_review))
             or (plan.audits_review and (plan.dry_run or 'audits' not in plan.domains))):
         raise ValueError('Invalid source plan output or invocation')
@@ -135,12 +151,17 @@ def main():
         print(json.dumps({'domains': plan.domains, 'bootstrap': plan.bootstrap,
                           'dry_run': plan.dry_run, 'audits_review': plan.audits_review,
                           'reacquire_pending_pdf': plan.reacquire_pending_pdf,
+                          'audits_source_acceptance': plan.audits_source_acceptance,
                           'evidence': 'selection_plan_only'}), flush=True)
         if sys.argv[1] == '--execute':
             args = plan.argv  # Validate direct plans before constructing execution options.
             options = {'check': False}
-            if plan.reacquire_pending_pdf:
+            if plan.reacquire_pending_pdf or plan.audits_source_acceptance:
                 options['env'] = dict(os.environ, SEED_PDF_CACHE_TTL_SECONDS='0')
+            if plan.audits_source_acceptance:
+                # The manual source-only path must not inherit ordinary nightly
+                # generation permissions. Never modify the parent's controls.
+                options['env'].update(dict.fromkeys(OAG_SOURCE_ONLY_CONTROLS, 'false'))
             return subprocess.run(args, **options).returncode
         return 0
     except (KeyError, ValueError) as exc:

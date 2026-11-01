@@ -1,0 +1,93 @@
+{
+  "at": "2026-10-31T21:32:41.736813+00:00",
+  "root": {
+    "disabled-refresh-red-final": {
+      "counts": {
+        "cases": 6,
+        "failures": 6,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 1,
+      "seconds": 4.015242542,
+      "junit_sha256": "3f1db743b6fe5235c005cac97061c7c95c81d035abcd8897e30977e3648a9b39",
+      "command_sha256": "c8db360867004d620677c04e870cf8d03b3bc22285115b0df907bde8ab170b84"
+    },
+    "refresh-green-final": {
+      "counts": {
+        "cases": 26,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 0,
+      "seconds": 6.659573207999999,
+      "junit_sha256": "1bef1ed2bb2f750bafcc6677a2674159d4b67efc18f859f249eafafd05717d15",
+      "command_sha256": "30f32541e1a3a13e91062d9aeae73385eae38333bc61f784b6b3ebea7bb18e5e"
+    },
+    "combined-normal": {
+      "counts": {
+        "cases": 675,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 0,
+      "seconds": 272.499568458,
+      "junit_sha256": "2374c74150188754871d22de31af315904d79966b03a3ff48ef5c2022fa929fd",
+      "command_sha256": "a05ccd3646af697931c00c40431b73505261147dc9b36800871eca1aed3936ff"
+    },
+    "combined-optimized": {
+      "counts": {
+        "cases": 675,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 0,
+      "seconds": 322.445035833,
+      "junit_sha256": "2ed50c87700a60f3318038ce46b824061ae69d4b17ed1fbe717df966b95fd844",
+      "command_sha256": "bed8bc4994de63ee6456b71baf257e07943b5987e84d5bbef7894ce6d5f075a1"
+    },
+    "genuine-normal": {
+      "counts": {
+        "cases": 3,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 0,
+      "seconds": 67.31175279200001,
+      "junit_sha256": "2fd3e4847acb06d65afae23939cbcf256cdd51f65ab87ac6508130b6f999f282",
+      "command_sha256": "90a7e5afdea427cf699176dc32df5816fac18ffd38b71da33cf4251f732af948"
+    },
+    "genuine-optimized": {
+      "counts": {
+        "cases": 3,
+        "failures": 0,
+        "errors": 0,
+        "skips": 0
+      },
+      "exit_code": 0,
+      "seconds": 60.841964833,
+      "junit_sha256": "522a0426c01f57ebeec74629c7f5772dd293c560c2c77ef23763a3d2abacf7e5",
+      "command_sha256": "88e99e43a7c83856426a2afcaaddd3851c1e813bfa794ca1f1be435f3554f95a"
+    }
+  },
+  "identical_normal_optimized_inventories": true,
+  "spec_cases_per_mode": 152,
+  "standards_cases_per_mode": 47,
+  "counts_overlap": true,
+  "runtime": {
+    "python": "3.12.16",
+    "sqlalchemy": "2.0.55",
+    "architecture": "Linux arm64",
+    "full_render_parity": false,
+    "genuine_memory_mib": 512
+  },
+  "pr864_merged": true,
+  "pr864_deployed": false,
+  "pr865_merged": false,
+  "production_adoption": false,
+  "new_paid_resource_or_hosted_test_rerun": false
+}

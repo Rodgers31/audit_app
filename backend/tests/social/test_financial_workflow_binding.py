@@ -10,7 +10,7 @@ from seeding import source_observations
 
 ROOT = Path(__file__).resolve().parents[3]
 FLAGS = ('SOCIAL_GENERATION_HOOK_ENABLED', 'SOCIAL_REPORT_GENERATION_ENABLED',
-         'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')
+         'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED', 'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED')
 
 
 def runner_flags(variables):
@@ -94,3 +94,24 @@ def test_financial_flag_alone_cannot_enable_global_hook_or_dry_run(monkeypatch):
     assert bridge.dispatch_committed_generation(forbidden, domain='pending_bills', ingestion_id=23, dry_run=False) is None
     monkeypatch.setenv('SOCIAL_GENERATION_HOOK_ENABLED', 'true')
     assert bridge.dispatch_committed_generation(forbidden, domain='pending_bills', ingestion_id=23, dry_run=True) is None
+
+
+def test_source_admission_workflow_flag_cannot_enable_financial_dispatch(monkeypatch):
+    from seeding.native_financial_admission import source_admission_enabled
+    apply_runner_flags(monkeypatch, {'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED': 'true',
+                                   'SOCIAL_GENERATION_HOOK_ENABLED': 'true'})
+    assert source_admission_enabled()
+    def forbidden(*a, **kw):
+        pytest.fail('Source admission opened financial generation')
+    monkeypatch.setattr(source_observations, 'read_native_financial_record_ids', forbidden)
+    monkeypatch.setattr(bridge, '_invoke', forbidden)
+    monkeypatch.setattr(bridge, '_record_outcome', lambda *a, **kw: None)
+    result = bridge.dispatch_committed_generation(forbidden, domain='pending_bills', ingestion_id=23, dry_run=False)
+    assert result['reason'] == 'financial_environment_disabled'
+    assert result['drafts_created'] == result['processed'] == 0
+
+
+def test_workflow_defaults_keep_source_admission_off_even_with_generation_enabled(monkeypatch):
+    from seeding.native_financial_admission import source_admission_enabled
+    apply_runner_flags(monkeypatch, {'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED': 'true'})
+    assert not source_admission_enabled()
