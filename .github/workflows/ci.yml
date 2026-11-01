@@ -62,6 +62,12 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Test bounded worker host fixture controls
+        timeout-minutes: 2
+        # Pure unit controls use temporary files and mocked process boundaries;
+        # this does not build, launch or enable a worker or contact a provider.
+        run: python -m unittest discover -s tools/worker_host_fixture/tests -p 'test_*.py' -v
+
       - name: Lint with flake8 (Critical Errors Only)
         run: |
           cd backend
