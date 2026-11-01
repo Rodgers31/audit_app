@@ -1,0 +1,78 @@
+{
+  "schema": "source802_production_acceptance_checkpoint/v1",
+  "base_release": "4386f4927dbaddc691c97a6c535d7a942c6c37cb",
+  "code_sha256": {
+    ".github/workflows/seed.yml": "29d92cec4579c79330e61695be3dd75d43dcd16da859cb2deba5dfce423266a1",
+    "backend/seeding/cli.py": "63a05436cf90c1d92e2b580e732188a592d36dc38d28e8ca3af899bf7477f847",
+    "backend/seeding/domains/audits/__init__.py": "3fca8dba1651863e46b8964d9654a29b217187d39ae09a1648b60055fee5138f",
+    "backend/seeding/domains/audits/scope.py": "4c3e250a1cf14b636f1d2e922226d46f58e294d75ab261acb9d35b7c2e1b3b64",
+    "backend/seeding/source_plan.py": "58344075d91f967a2325ca0ca7ca38dde2be7c2c23653e282b8f8a9ae5defa6b",
+    "docs/operations/2026-11-01-oag-catalogue-acceptance/manifest.json": "dfcdf69d76f5f2b9d837b22cb711cbad155747fa217871c9443fcecb21af5489",
+    "backend/tests/test_oag_source_acceptance_plan.py": "2d08e0341d557a2fa2fabc12745121778bacdba9dbdaf68cd0c51fbf5c0691f0",
+    "backend/tests/test_oag_source_acceptance_boundaries.py": "0cf2ce3047442734dd646508009d9ec8dcc01f75e075e15ba4781e93d995e2d2",
+    "backend/tests/test_oag_source_acceptance_callers.py": "37d3a0b6772d1244d6784bce6d0ceb669826b64da72dc2181366345389738378",
+    "backend/tests/test_oag_auxiliary_evidence.py": "78d83e3712be8806650c01b879b796cd5a133bb2949f047bf19034160f67e8b1"
+  },
+  "private_evidence_sha256": {
+    "final-source-normal.txt": "5a1b82be1cfb441f39f183e219d0d83258bf4f94677fb078df5934b9e4b3ceec",
+    "final-source-optimized.txt": "27695c8509345182a0e08baecae419287cab35af44b39df4f13383a0991f8df6",
+    "b66-isolated-normal.txt": "3e27367372004daaa1d5ae1d01de6789b1fdb8535c134c6e5dc311d1961de7c3",
+    "b66-isolated-optimized.txt": "3f7240d9bc487f25befe34002e73faf19c21a014f8445e5c70c281294401bde6",
+    "b66-isolated-normal-receipt.json": "f2ed9e1d961a2b6f5c3e9abf98bd4cbeb6dbd13ae400cdd0d6c3f551b2ffe13e",
+    "b66-isolated-optimized-receipt.json": "331dc2fef82c041d22cbfa6ed91256818f432116831745147dc7d6203588950a",
+    "production-draft-recovery-ledger.json": "ccb8206d88bee1b196c4f9c592b3623dda286365c2b6826ca55dfa46e02fae96",
+    "production-draft-witness-result.json": "ffc7418cef11a690e15afd23a2178aac9ca7222c8d6df13d5bda55e99e1f2af1",
+    "production-recovery-final-result.json": "03fea2693933eabcda0e806e6d1cd4d2427f040253e8fadf08bea239c9b612bd",
+    "production-oag-byte-readbacks.json": "cf9a7d8af1735a2c56d315a2bcc2e71a381d9c67b0d52cd265c52f4792d7f0a1",
+    "national-acceptance-summary.json": "d3d2ab6e96c1995f37056ac92797847f9da48df78f02a40e7d5077e046692b3c",
+    "kra-pending-acceptance-summary.json": "115fc3b17f067260ab44a633e53f2f6d85bdd79d36e5b846dfb37e1add04a68f",
+    "oag-refusal-summary.json": "b2da7ded77a3e4e6fb50d851c5af8c915cdf45c160c4842585a6408b2a06c903",
+    "spec/oag-code-review/RECEIPT.json": "6f1903cecc20a8e01c75c75b742401190075db9c7c4915d0677bbb6454e32f84",
+    "standards/oag-review/RECEIPT.json": "99c42f16185a8d7d0cc7d8c515b7a2aab03c046b88ebb547ca297aa7926a90d8",
+    "standards/oag-review/ALLAPP-RECEIPT.json": "b1c60942cbfa0ca80795e5e8b322fdd46cb756830b12d065387089ca1fa8bff8"
+  },
+  "validation_per_mode": {
+    "affected_repository_cases": 182,
+    "existing_workflow_cases": 47,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "modes": [
+      "normal",
+      "optimized"
+    ],
+    "external_network": false
+  },
+  "production": {
+    "national_job": 3579,
+    "national_report": 11124,
+    "national_monetary_rows": 10,
+    "national_cells": 20,
+    "county_job": 3567,
+    "county_qualified_figures": 46,
+    "kra_job": 3566,
+    "kra_scope": "catalogue_only_no_financial_authority",
+    "oag_job": 3581,
+    "oag_status": "refused_pending_repaired_acquisition",
+    "finding_count_unchanged": 8920,
+    "finding_semantic_sha256": "d3f0be9a3d484a53dd81e6dc87a4e36d893a1ebee2878d8e46d52cd2c1fe6aa4",
+    "recovered_drafts": 3,
+    "old_generated_archived": 3,
+    "unchanged_manual_drafts": 2,
+    "delivery_targets": 0,
+    "publications": 0,
+    "media_assets": 0,
+    "uploads": 0,
+    "publishing_attempts": 0,
+    "actual_restricted_witness_cases": 9,
+    "oag_pdf_existing_bytes": 82207182,
+    "four_controls": "off",
+    "source_admission": "off"
+  },
+  "limitations": [
+    "OAG production report acceptance awaits reviewed release and bounded actual acquisition.",
+    "Genuine retained-content fixtures use local transport/job clocks and are engineering evidence.",
+    "Independent selections overlap and are not a unique aggregate test count.",
+    "Account/provider, media, worker and broader launch acceptance remain separate."
+  ]
+}

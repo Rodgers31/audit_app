@@ -381,7 +381,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             audits_source_manifest=source_manifest,
             audits_observe_listing=observe_listing,
             audits_reconciliation_review=review_id,
-            audits_source_receipt=receipt_for(source_entries)
+            audits_source_receipt=receipt_for(source_entries, raw=source_manifest)
             if source_entries is not None
             else None,
         )
