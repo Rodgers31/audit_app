@@ -1,0 +1,56 @@
+import SocialScheduleControls from '@/components/admin/social/SocialScheduleControls';
+import api from '@/lib/api/axios';
+import { SocialPost, SocialSystemStatus } from '@/lib/api/social';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { actorId, post, system, target } from '@/tests/socialFixtures';
+jest.mock('@/lib/api/axios',()=>({__esModule:true,default:{get:jest.fn(),post:jest.fn(),patch:jest.fn()}}));
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
+const send=api.post as jest.Mock;
+let clients:QueryClient[];
+function scheduled():SocialPost {
+  return post({editorial_state:'approved',delivery_status:'scheduled',targets:[{...target('queued'),next_action_at:'2099-01-05T07:00:00Z'}],
+    publication:{version:2,scheduled_for:'2099-01-05T07:00:00Z',schedule_timezone:'Africa/Nairobi',requested_local_time:'2099-01-05T10:00:00'}});
+}
+function fresh(){const stamp=new Date().toISOString();return{state:'active',heartbeat_at:stamp,last_scan_at:stamp};}
+function mount(worker:SocialSystemStatus['worker']){
+ const p=scheduled(),qc=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});clients.push(qc);
+ const updated=jest.fn();
+ render(<QueryClientProvider client={qc}><SocialScheduleControls post={p} system={{...system,worker}} disabled={false} onUpdated={updated}/></QueryClientProvider>);
+ fireEvent.change(screen.getByLabelText('Reason for schedule change'),{target:{value:'Independent unchanged delivery review'}});
+ return{p,updated};
+}
+beforeEach(()=>{jest.clearAllMocks();clients=[];});
+afterEach(()=>{clients.forEach(q=>q.clear());jest.useRealTimers();});
+test.each(['absent','invalid','future','stale','stopped','missing-scan'])('%s worker cannot bypass readiness through Publish unsent now',damage=>{
+ const worker=fresh();
+ if(damage==='invalid')worker.heartbeat_at='invalid';
+ if(damage==='future')worker.heartbeat_at=new Date(Date.now()+60000).toISOString();
+ if(damage==='stale')worker.last_scan_at=new Date(Date.now()-45001).toISOString();
+ if(damage==='stopped')worker.state='stopped';
+ if(damage==='missing-scan')worker.last_scan_at=null;
+ mount(damage==='absent'?undefined:worker);
+ const immediate=screen.getByRole('button',{name:'Publish unsent now'});
+ expect(immediate).toBeDisabled();expect(immediate).toHaveAccessibleDescription(/Delivery worker/);
+ expect(screen.getByRole('button',{name:'Confirm reschedule'})).toBeEnabled();
+ fireEvent.click(immediate);expect(send).not.toHaveBeenCalled();
+});
+test('scheduled immediate control expires while open',()=>{
+ jest.useFakeTimers();mount(fresh());
+ expect(screen.getByRole('button',{name:'Publish unsent now'})).toBeEnabled();
+ act(()=>jest.advanceTimersByTime(45001));
+ expect(screen.getByRole('button',{name:'Publish unsent now'})).toBeDisabled();
+ expect(send).not.toHaveBeenCalled();
+});
+test('missing worker still permits exact future reschedule and preserves authorization',async()=>{
+ const {p,updated}=mount(undefined);const due='2099-01-06T07:00:00.000Z';
+ send.mockImplementation(async()=>({data:post({...p,version:p.version+1,publication:{...p.publication,version:3,scheduled_for:due,requested_local_time:'2099-01-06T10:00:00'},targets:p.targets.map(t=>({...t,next_action_at:due}))})}));
+ fireEvent.change(screen.getByLabelText('New local publish time'),{target:{value:'2099-01-06T10:00'}});
+ fireEvent.click(screen.getByRole('button',{name:'Confirm reschedule'}));
+ await screen.findByText(/Schedule updated for unchanged unsent destinations/);
+ expect(send.mock.calls[0][0]).toBe(`/admin/social/posts/${p.id}/reschedule`);
+ expect(send.mock.calls[0][1]).toEqual({expected_version:p.version,publication_id:p.publication!.id,expected_publication_version:2,reason:'Independent unchanged delivery review',acknowledged_warning_codes:[],schedule:{local_time:'2099-01-06T10:00:00',timezone:'Africa/Nairobi',utc_offset:'+03:00'}});
+ expect(updated).toHaveBeenCalledTimes(1);
+ expect(updated.mock.calls[0][0].publication.revision_id).toBe(p.revision_id);
+});

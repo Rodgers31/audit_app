@@ -1,0 +1,6 @@
+
+Test Suites: 2 passed, 2 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        1.346 s, estimated 2 s
+Ran all test suites matching __tests__/admin/social/clean-status-sync.test.tsx|__tests__/admin/social/composer-media-integration.test.tsx.

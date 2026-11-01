@@ -1,0 +1,61 @@
+import SocialComposer from '@/components/admin/social/SocialComposer';
+import api from '@/lib/api/axios';
+import { SocialPost } from '@/lib/api/social';
+import { socialKeys } from '@/lib/hooks/useSocial';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { act,fireEvent,render,screen,waitFor } from '@testing-library/react';
+import {accounts,actorId,deliverySystem,post,publicationReceipt,target,validation} from '@/tests/socialFixtures';
+jest.mock('@/lib/api/axios',()=>({__esModule:true,default:{get:jest.fn(),post:jest.fn(),patch:jest.fn()}}));
+jest.mock('@/lib/auth/admin',()=>({useAdmin:()=>({isAdmin:true})}));
+jest.mock('@/lib/auth/AuthProvider',()=>({useAuth:()=>({user:{id:'00000000-0000-4000-8000-000000000001'}})}));
+const get=api.get as jest.Mock,send=api.post as jest.Mock;
+let clients:QueryClient[],server:SocialPost;
+function mount(p=post({version:2})){
+ server=p;const qc=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});clients.push(qc);
+ qc.setQueryData(socialKeys.detail(actorId,p.id),p);
+ render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={deliverySystem()}/></QueryClientProvider>);
+ return{p,qc};
+}
+beforeEach(()=>{jest.clearAllMocks();clients=[];
+ get.mockImplementation(async(path:string)=>({data:path.endsWith('/media/capabilities')?{upload_available:false,library_available:true,allowed_mime_types:[],max_image_bytes:1,max_video_bytes:1,unavailable_reason:'OFF'}:server}));
+ send.mockImplementation(async(path:string)=>({data:path.endsWith('/validate')?validation(server):publicationReceipt(server)}));
+});
+afterEach(()=>clients.forEach(q=>q.clear()));
+test('accepted publication status version2 to3 with same saved revision creates no local-edit conflict',async()=>{
+ const{p}=mount();
+ send.mockImplementation(async(path:string)=>{
+  if(path.endsWith('/validate'))return{data:validation(p)};
+  const due=new Date().toISOString();server=post({...p,version:3,editorial_state:'approved',delivery_status:'queued',targets:[{...target('queued'),next_action_at:due}],publication:{revision_id:p.revision_id,scheduled_for:due,schedule_timezone:'UTC'}});
+  return{data:publicationReceipt(p,{scheduled_for:due})};
+ });
+ fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+ await waitFor(()=>expect(screen.getByRole('button',{name:'Publish now'})).toBeEnabled());
+ fireEvent.click(screen.getByRole('button',{name:'Publish now'}));
+ await screen.findByText(/Publication accepted for 1 destination/);
+ await waitFor(()=>expect(screen.queryByText(/A newer (?:revision|saved post version) is available/)).not.toBeInTheDocument());
+ expect(screen.queryByRole('button',{name:'Load current revision'})).not.toBeInTheDocument();
+ expect(screen.queryByRole('link',{name:/View Facebook post/})).not.toBeInTheDocument();
+});
+test.each(['dirty','new-revision','changed-content','other-post'])('%s update cannot silently replace the local draft',async attack=>{
+ const{p,qc}=mount();
+ if(attack==='dirty')fireEvent.change(screen.getByLabelText('Post text'),{target:{value:'Preserve independent local edits'}});
+ const next=post({...p,version:3,
+  ...(attack==='new-revision'?{revision_id:'00000000-0000-4000-8000-000000000049'}:{}),
+  ...(attack==='other-post'?{id:'00000000-0000-4000-8000-000000000099'}:{}),
+  ...(attack==='changed-content'?{document:{...p.document,master:{...p.document.master,text:'Unexpected remote content on same revision'}}}:{})});
+ await act(async()=>qc.setQueryData(socialKeys.detail(actorId,p.id),next));
+ expect(await screen.findByText(/A newer (?:revision|saved post version) is available/)).toBeVisible();
+ expect(screen.getByLabelText('Post text')).toHaveValue(attack==='dirty'?'Preserve independent local edits':p.document.master.text);
+ expect(screen.getByRole('button',{name:'Load current revision'})).toBeInTheDocument();
+});
+test('inflight validation is not silently rebased to a metadata update',async()=>{
+ const{p,qc}=mount();let release:(value:any)=>void;
+ send.mockImplementation(()=>new Promise(resolve=>{release=resolve}));
+ fireEvent.click(screen.getByRole('button',{name:'Save & validate'}));
+ server=post({...p,version:3});
+ await act(async()=>qc.setQueryData(socialKeys.detail(actorId,p.id),server));
+ expect(await screen.findByText(/A newer (?:revision|saved post version) is available/)).toBeVisible();
+ await act(async()=>release({data:validation(p)}));
+ await waitFor(()=>expect(screen.queryByText(/A newer (?:revision|saved post version) is available/)).not.toBeInTheDocument());
+ expect(screen.getByRole('button',{name:'Publish now'})).toBeDisabled();
+});

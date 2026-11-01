@@ -1,0 +1,191 @@
+FAIL ../../../../../../../tmp/nightly-other-lanes-review-20261101/status-sync.independent.test.tsx
+  ● accepted publication status version2 to3 with same saved revision creates no local-edit conflict
+
+    expect(element).not.toBeInTheDocument()
+
+    expected document not to contain element, found <p class="notice" role="alert">A newer revision is available (version 3). Your local edits are preserved. Load the current revision before publishing.</p> instead
+
+    Ignored nodes: comments, script, style
+    [36m<html>[39m
+      [36m<head />[39m
+      [36m<body>[39m
+        [36m<div>[39m
+          [36m<article[39m
+            [33maria-label[39m=[32m"Social post composer"[39m
+            [33mclass[39m=[32m"editor"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"editorHeading"[39m
+            [36m>[39m
+              [36m<div>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"tag"[39m
+                [36m>[39m
+                  [0mWritten manually[0m
+                [36m</span>[39m
+                [36m<h2>[39m
+                  [0mWhat does unsupported expenditure mean?[0m
+                [36m</h2>[39m
+              [36m</div>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"badge"[39m
+              [36m>[39m
+                [0mdraft · revision 2[0m
+              [36m</span>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"editorBody"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"success"[39m
+                [33mrole[39m=[32m"status"[39m
+              [36m>[39m
+                [0mPublication accepted for 1 destination(s). The worker reports each delivery separately; nothing is marked published here.[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"notice"[39m
+                [33mrole[39m=[32m"alert"[39m
+              [36m>[39m
+                [0mA newer revision is available (version [0m
+                [0m3[0m
+                [0m). Your local edits are preserved. Load the current revision before publishing.[0m
+              [36m</p>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"fields"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33mclass[39m=[32m"button"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mLoad current revision[0m
+                [36m</button>[39m
+              [36m</div>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"notice"[39m
+              [36m>[39m
+                [0mScheduled for [0m
+                [0m2026-11-01T22:32:02.588Z[0m
+                [0m (UTC). Editing unsent content creates a new revision and requires approval again.[0m
+              [36m</p>[39m
+              [36m<div[39m
+                [33maria-label[39m=[32m"Mobile workspace view"[39m
+                [33mclass[39m=[32m"tabs mobileSwitch"[39m
+              [36m>[39m
+                [36m<button[39m
+                  [33maria-pressed[39m=[32m"true"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mEditor[0m
+                [36m</button>[39m
+                [36m<button[39m
+                  [33maria-pressed[39m=[32m"false"[39m
+                  [33mtype[39m=[32m"button"[39m
+                [36m>[39m
+                  [0mPreview[0m
+                [36m</button>[39m
+              [36m</div>[39m
+              [36m<fieldset[39m
+                [33mclass[39m=[32m"destinations"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"composerGrid"[39m
+                [36m>[39m
+                  [36m<fieldset[39m
+                    [33mclass[39m=[32m"destinations fields "[39m
+                    [33mdata-composer-panel[39m=[32m"editor"[39m
+                  [36m>[39m
+                    [36m<label>[39m
+                      [0mPost text[0m
+                      [36m<textarea[39m
+                        [33mdata-social-field[39m=[32m"document.master.text"[39m
+                        [33mid[39m=[32m"social-command-error-_r_1_-field-document-master-text"[39m
+                        [33mrows[39m=[32m"7"[39m
+                      [36m>[39m
+                        [0mRead the finding and its supporting evidence.[0m
+                      [36m</textarea>[39m
+                    [36m</label>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"muted"[39m
+                    [36m>[39m
+                      [0m45[0m
+                      [0m characters · local count is provisional[0m
+                    [36m</p>[39m
+                    [36m<label>[39m
+                      [0mWebsite URL[0m
+                      [36m<input[39m
+                        [33mdata-social-field[39m=[32m"document.master.link"[39m
+                        [33mid[39m=[32m"social-command-error-_r_1_-field-document-master-link"[39m
+                        [33mtype[39m=[32m"url"[39m
+                        [33mvalue[39m=[32m"https://www.auditgava.com/audits"[39m
+                      [36m/>[39m
+                    [36m</label>[39m
+                    [36m<details[39m
+                      [33mclass[39m=[32m"evidence"[39m
+                    [36m>[39m
+                      [36m<summary>[39m
+                        [0mPost settings & hashtags[0m
+                      [36m</summary>[39m
+                      [36m<div>[39m
+                        [36m<div[39m
+                          [33mclass[39m=[32m"twoFields"[39m
+                        [36m>[39m
+                          [36m<label>[39m
+                            [0mDraft title[0m
+                            [36m<input[39m
+                              [33mdata-social-field[39m=[32m"title"[39m
+                              [33mid[39m=[32m"social-command-error-_r_1_-field-title"[39m
+                              [33mvalue[39m=[32m"What does unsupported expenditure mean?"[39m
+                            [36m/>[39m
+                          [36m</label>[39m
+                          [36m<label>[39m
+                            [0mContent type[0m
+                            [36m<input[39m
+                              [33mdata-social-field[39m=[32m"content_type"[39m
+                              [33mid[39m=[32m"social-command-error-_r_1_-field-content_type"[39m
+                              [33mvalue[39m=[32m"announcement"[39m
+                            [36m/>[39m
+                          [36m</label>[39m
+                        [36m</div>[39m
+                        [36m<label>[39m
+                          [0mMaster hashtags[0m
+                          [36m<input[39m
+                            [33mdata-social-field[39m=[32m"document.master.hashtags"[39m
+                            [33mid[39m=[32m"social-command-error-_r_1_-field-document-master-hashtags"[39m
+                            [33mvalue[39m=[32m"#Evidence"[39m
+                          [36m/>[39m
+                          [36m<span[39m
+                            [33mclass[39m=[32m"muted"[39m
+                          [36m>[39m
+                            [0mSeparate hashtags with spaces. Prepared captions use the verified facts and the selected account’s limits.[0m
+                          [36m</span>[39m
+                        [36m</label>[39m
+                      [36m</div>[39m
+                    [36m</details>[39m
+                    [36m<details[39m
+                      [33mclass[39m=[32m"evidence"[39m
+                    [36m>[39m
+                      [36m<summary>[39m
+                        [0mSource references[0m
+                      [36m</summary>[39m
+                      [36m<div>[39m
+                        [36m<p[39...
+
+      33 |  fireEvent.click(screen.getByRole('button',{name:'Publish now'}));
+      34 |  await screen.findByText(/Publication accepted for 1 destination/);
+    > 35 |  await waitFor(()=>expect(screen.queryByText(/A newer revision is available/)).not.toBeInTheDocument());
+         |                                                                                    ^
+      36 |  expect(screen.queryByRole('button',{name:'Load current revision'})).not.toBeInTheDocument();
+      37 |  expect(screen.queryByRole('link',{name:/View Facebook post/})).not.toBeInTheDocument();
+      38 | });
+
+      at toBeInTheDocument (../../../../../../../private/tmp/nightly-other-lanes-review-20261101/status-sync.independent.test.tsx:35:84)
+      at runWithExpensiveErrorDiagnosticsDisabled (node_modules/@testing-library/dom/dist/config.js:47:12)
+      at checkCallback (node_modules/@testing-library/dom/dist/wait-for.js:124:77)
+      at checkRealTimersCallback (node_modules/@testing-library/dom/dist/wait-for.js:118:16)
+      at Timeout.task [as _onTimeout] (node_modules/jsdom/lib/jsdom/browser/Window.js:579:19)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 5 skipped, 6 total
+Snapshots:   0 total
+Time:        2.517 s
+Ran all test suites within paths "/tmp/nightly-other-lanes-review-20261101/status-sync.independent.test.tsx".

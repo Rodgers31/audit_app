@@ -1,0 +1,31 @@
+{
+  "calls": [
+    {
+      "method": "listForRepo",
+      "args": {
+        "owner": "o",
+        "repo": "r",
+        "labels": "data-pipeline,automated",
+        "state": "open",
+        "per_page": 100
+      }
+    },
+    {
+      "method": "create",
+      "args": {
+        "owner": "o",
+        "repo": "r",
+        "title": "Data pipeline failed: Database admission, Seeding, Bootstrap, Validation, Cache / page refresh",
+        "body": "<!-- seed-pipeline-incident:v1 -->\n<!-- seed-pipeline-observation:41268107359:1 -->\n## Automated Data Pipeline Failure\n\n**Failed Steps:** Database admission, Seeding, Bootstrap, Validation, Cache / page refresh\n**Health Check:** ✅ No critical source failures (warnings, if any, are in the health-check job)\n**Run:** https://github.com/o/r/actions/runs/41268107359\n**Attempt:** 1\n**Triggered by:** schedule\n**Domain:** all\n\n| Job | Result | Interpretation |\n| --- | --- | --- |\n| Source plan (`source_plan`) | success | success |\n| Health check execution (`healthcheck`) | success | success |\n| Database admission (`migrate`) | failure | failure |\n| Seeding (`seed`) | skipped | skipped — blocked by migrate |\n| Bootstrap (`bootstrap`) | skipped | skipped — blocked by migrate, seed |\n| Validation (`validate`) | skipped | skipped — blocked by migrate |\n| Cache / page refresh (`revalidate`) | skipped | skipped — blocked by seed, validate |\n\n### Action Required\n1. Inspect the [workflow run logs](https://github.com/o/r/actions/runs/41268107359) and admission/source-plan diagnostics before considering any write.\n2. If seeding ran, inspect ingestion job and source receipts for domain-level failures.\n3. Keep the accepted source revision guard unchanged; a reporting failure never authorizes a retry or activation.\n\nThis managed incident records the latest unsuccessful run attempt. A repeated attempt adds no duplicate issue or comment. Review recovery before closing it.\n",
+        "labels": [
+          "bug",
+          "data-pipeline",
+          "automated"
+        ]
+      }
+    }
+  ],
+  "summary": "\n### Pipeline outcome\n\n**⚠️ Pipeline completion not verified**\n\n| Job | Result | Interpretation |\n| --- | --- | --- |\n| Source plan (`source_plan`) | success | success |\n| Health check execution (`healthcheck`) | success | success |\n| Database admission (`migrate`) | failure | failure |\n| Seeding (`seed`) | skipped | skipped — blocked by migrate |\n| Bootstrap (`bootstrap`) | skipped | skipped — blocked by migrate, seed |\n| Validation (`validate`) | skipped | skipped — blocked by migrate |\n| Cache / page refresh (`revalidate`) | skipped | skipped — blocked by seed, validate |\n\n**Health Check:** ✅ No critical source failures (warnings, if any, are in the health-check job)\n\nJob success confirms execution only; source transport, extraction, freshness and publication require their own receipts.\n",
+  "failure": "Pipeline completion not verified; review the job results in the summary.",
+  "selected": true
+}

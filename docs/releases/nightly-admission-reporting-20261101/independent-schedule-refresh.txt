@@ -1,0 +1,5 @@
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        1.793 s
+Ran all test suites within paths "/tmp/nightly-other-lanes-review-20261101/schedule-readiness.independent.test.tsx".
