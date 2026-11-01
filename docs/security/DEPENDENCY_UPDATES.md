@@ -142,8 +142,18 @@ owned browser checks. Do not replace these with source-string assertions.
 For each Python PR, install into fresh environments using the real manifests and
 constraints, run pip check and exact resolved pip-audit/OSV queries, then affected
 auth/parser/native/source tests in normal and true optimized modes where required.
-Hashed preflight driver updates must retain every qualified Python/platform wheel
-hash and pass that preflight's isolation controls. Rebuilding the worker image
+For hashed preflight driver updates, inspect the complete hash diff before
+merging. Dependabot can expand a hash set to additional wheels or source
+distributions: reject that generated diff, or manually prune it to only the
+explicitly reviewed CPython/platform wheel identities. Do not accept new hashes
+merely because `pip --require-hashes` accepts them as alternatives. When the
+package version changes, verify the new official wheel bytes and their hashes
+for every previously qualified Python/platform combination; keep source
+distributions and unqualified platforms excluded. Re-run the exact driver's
+manifest identity and isolation controls after pruning. This applies to the
+hashed `batch66/preflight-driver-requirements.txt` and
+`batch80/github-driver-requirements.txt`; the separately un-hashed batch71 pin
+does not confer the same wheel constraint. Rebuilding the worker image
 requires its complete exact installer and unchanged confinement/capacity workload
 qualification; a package-clean audit alone is insufficient. Keep production data,
 source writers and worker/publishing/upload/financial opt-ins off during fixtures.
