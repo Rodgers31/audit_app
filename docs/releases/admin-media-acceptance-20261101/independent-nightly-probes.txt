@@ -1,0 +1,1 @@
+{"status":"PASS","cases":95,"scope":"actual_workflow_script_with_intercepted_github","external_calls":0}

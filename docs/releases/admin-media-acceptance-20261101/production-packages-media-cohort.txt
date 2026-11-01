@@ -1,0 +1,43 @@
+........................................................................ [  9%]
+........................................................................ [ 18%]
+............ss..s....................................................... [ 27%]
+........................................................................ [ 36%]
+........................................................................ [ 45%]
+...............sssssssss................................................ [ 55%]
+........................................................................ [ 64%]
+........................................................................ [ 73%]
+........................................................................ [ 82%]
+..........................................sssss......................... [ 91%]
+................................................................         [100%]
+=============================== warnings summary ===============================
+../evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+database.py:79
+  /app/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+models.py:29
+  /app/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/social/test_media_cleanup.py:108: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_cleanup.py:132: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_cleanup.py:190: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:277: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:284: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:292: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [2] tests/social/test_media_inspection_adversary.py:314: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:328: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:352: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:358: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_inspection_adversary.py:370: Read-only installed ffmpeg/ffprobe unavailable
+SKIPPED [1] tests/social/test_media_maintenance.py:458: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_maintenance.py:484: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_maintenance.py:515: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_maintenance.py:554: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+SKIPPED [1] tests/social/test_media_maintenance.py:609: Set SOCIAL_WORKER_TEST_DATABASE_URL for the isolated media PostgreSQL lane
+767 passed, 17 skipped, 3 warnings in 44.32s

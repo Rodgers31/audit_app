@@ -1,0 +1,209 @@
+{
+  "cases": [
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_stale_cleanup_candidate_cannot_release_other_pending_quota"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_same_intent_replay_and_quota_races",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_same_intent_replay_and_quota_races"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_same_intent_replay_and_quota_races"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_cleanup.py",
+      "function": "test_pg_concurrent_completion_is_busy_during_active_remote_finalize",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_concurrent_completion_is_busy_during_active_remote_finalize"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_concurrent_completion_is_busy_during_active_remote_finalize"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_mp4_has_positive_inspected_evidence",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_mp4_has_positive_inspected_evidence"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_header_only_and_truncated_mp4_are_not_ready",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_header_only_and_truncated_mp4_are_not_ready"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_corrupt_h264_packets_cannot_be_ready",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_corrupt_h264_packets_cannot_be_ready"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 2,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready[0]",
+          "test_actual_one_corrupt_h264_packet_among_good_packets_is_not_ready[-1]"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_missing_final_h264_packet_cannot_pass_after_a_good_first_frame"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_h264_and_aac_have_positive_decoding_evidence",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_h264_and_aac_have_positive_decoding_evidence"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_corrupt_aac_with_good_h264_video_is_not_ready",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_corrupt_aac_with_good_h264_video_is_not_ready"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_inspection_adversary.py",
+      "function": "test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video",
+      "executed_case_receipts": {
+        "host-native-video.xml": [
+          "test_actual_missing_final_aac_packet_cannot_pass_with_complete_good_video"
+        ]
+      },
+      "scope": "host_compatibility_different_packages"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_two_grant_signers_keep_one_intent_and_reservation",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_two_grant_signers_keep_one_intent_and_reservation"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_two_grant_signers_keep_one_intent_and_reservation"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_reconciliation_accepts_receipt_between_its_locked_transactions"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_reconciliation_freeze_blocks_other_reconciler_and_cleanup_then_releases_once"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_revision_asset_lock_precedes_ready_quarantine_cleanup_and_retains_history"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    },
+    {
+      "original_skip_count": 1,
+      "module": "tests/social/test_media_maintenance.py",
+      "function": "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack",
+      "executed_case_receipts": {
+        "manual-media-pg-normal.xml": [
+          "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack"
+        ],
+        "manual-media-pg-optimized.xml": [
+          "test_pg_archived_cleanup_rejects_concurrent_revision_before_delete_ack"
+        ]
+      },
+      "scope": "literal_production_packages_local_postgres"
+    }
+  ],
+  "original_skips": 17,
+  "local_pg_cases_per_mode": 8,
+  "host_native_video_cases": 9,
+  "production_video_parity_proven": false
+}

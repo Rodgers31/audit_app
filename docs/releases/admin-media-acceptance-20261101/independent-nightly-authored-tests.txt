@@ -1,0 +1,22 @@
+test_bootstrap_only_failure_pages (__main__.NotificationTests.test_bootstrap_only_failure_pages) ... ok
+test_cancelled_excluded_job_still_pages (__main__.NotificationTests.test_cancelled_excluded_job_still_pages) ... ok
+test_disabled_schedule_is_intentional_and_manual_still_reports (__main__.NotificationTests.test_disabled_schedule_is_intentional_and_manual_still_reports) ... ok
+test_each_critical_result_is_fail_closed (__main__.NotificationTests.test_each_critical_result_is_fail_closed) ... ok
+test_early_admission_rejection_pages_and_names_blocked_jobs (__main__.NotificationTests.test_early_admission_rejection_pages_and_names_blocked_jobs) ... ok
+test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create (__main__.NotificationTests.test_full_lookup_and_api_failure_fail_visibly_without_duplicate_create) ... ok
+test_health_reporting_keeps_warnings_partial_and_unknown_distinct (__main__.NotificationTests.test_health_reporting_keeps_warnings_partial_and_unknown_distinct) ... ok
+test_malformed_notification_inputs_fail_visibly (__main__.NotificationTests.test_malformed_notification_inputs_fail_visibly) ... ok
+test_missing_bootstrap_plan_is_not_a_success (__main__.NotificationTests.test_missing_bootstrap_plan_is_not_a_success) ... ok
+test_multiple_managed_incidents_are_ambiguous (__main__.NotificationTests.test_multiple_managed_incidents_are_ambiguous) ... ok
+test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident (__main__.NotificationTests.test_same_run_attempt_deduplicates_and_later_attempt_updates_managed_incident) ... ok
+test_scheduled_null_inputs_are_supported (__main__.NotificationTests.test_scheduled_null_inputs_are_supported) ... ok
+test_source_plan_failure_and_independent_health_failure_page (__main__.NotificationTests.test_source_plan_failure_and_independent_health_failure_page) ... ok
+test_success_and_intentional_manual_exclusions_do_not_page (__main__.NotificationTests.test_success_and_intentional_manual_exclusions_do_not_page) ... ok
+test_unmanaged_issues_are_not_modified (__main__.NotificationTests.test_unmanaged_issues_are_not_modified) ... ok
+test_untrusted_domain_and_result_never_enter_issue (__main__.NotificationTests.test_untrusted_domain_and_result_never_enter_issue) ... ok
+test_validation_still_required_after_seed_failure (__main__.NotificationTests.test_validation_still_required_after_seed_failure) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 2.399s
+
+OK

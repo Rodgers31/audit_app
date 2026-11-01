@@ -1,0 +1,11 @@
+PASS __tests__/admin/social/gates.adversarial.test.tsx
+PASS __tests__/admin/social/clean-status-sync.test.tsx
+PASS __tests__/admin/social/schedules.test.tsx
+PASS __tests__/admin/social/manual-publication.test.tsx
+PASS __tests__/admin/social/composer-media-integration.test.tsx
+
+Test Suites: 5 passed, 5 total
+Tests:       62 passed, 62 total
+Snapshots:   0 total
+Time:        5.077 s
+Ran all test suites matching __tests__/admin/social/clean-status-sync.test.tsx|__tests__/admin/social/composer-media-integration.test.tsx|__tests__/admin/social/gates.adversarial.test.tsx|__tests__/admin/social/schedules.test.tsx|__tests__/admin/social/manual-publication.test.tsx.

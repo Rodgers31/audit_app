@@ -1,0 +1,21 @@
+{
+  "sha256": {
+    "frontend/components/admin/social/useDeliveryWorkerReadiness.ts": "c78465e44c5246b5c61b366788723808fba6b5f48496a7722b17ae7ec31b043a",
+    "frontend/components/admin/social/SocialComposer.tsx": "12d135de8e6f522fb8466800da15ecd81b5ff8cb0527b25fe18df5ad48302ae8",
+    "frontend/components/admin/social/SocialMedia.tsx": "8efdd8ec036da2387d2a2d6a42fc7ec38f775c67ffbf71f8a8ad0ccaf7ee71df",
+    "frontend/tests/manualPublicationBrowser.mjs": "a5d1ca80ed952f7cb3df76d8845505abaf8d48d65cee905b9839fec1160f4cbb",
+    "frontend/__tests__/admin/social/manual-publication.test.tsx": "e0036d31a7e6585ee9f395472d6e7f129fe9492aa990b78a8bd753b0dee1ad76",
+    "backend/tests/social/test_manual_media_workflow.py": "c2e19f20ec1dce7a37e247628e32b4fd9bb7a107438d3eb9d642fb7373f64b5f",
+    ".github/scripts/seed_notifications.cjs": "51ceb10dcaee9c1a963cdb1a153758fd28797d4c8164e254135126ca37ee25cb",
+    ".github/scripts/tests/test_seed_notifications.py": "afda18e17168e3561bcbbc3011b7aa7cc6f174e4494d10e1180cd461ef69f318",
+    ".github/workflows/seed.yml": "4f6adae87d4a02bf809626d1cd0532408720d4c5e439539cabede2800cd03df5"
+  },
+  "changed_since_review_start": [
+    "frontend/tests/manualPublicationBrowser.mjs"
+  ],
+  "supplemental_static_review": {
+    "file": "frontend/tests/manualPublicationBrowser.mjs",
+    "sha256": "a5d1ca80ed952f7cb3df76d8845505abaf8d48d65cee905b9839fec1160f4cbb",
+    "change": "Generated mobile Preview/library/automatic validation/human exact-revision attestation scenario added during review; current file re-read and Node syntax checked; no browser rebuild by reviewer."
+  }
+}

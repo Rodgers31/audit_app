@@ -1,0 +1,21 @@
+FAIL ../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx
+  ● Test suite failed to run
+
+    Cannot find module 'react/jsx-runtime' from '../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx'
+
+      33 |   server = next;
+      34 |   await act(async () => { qc.setQueryData(oldKey, next); });
+    > 35 | }
+         |  ^
+      36 | const metadata = () => post({ version: 2, editorial_state: 'approved', delivery_status: 'queued', targets: [target('queued')], publication: {} });
+      37 |
+      38 | test('clean identical immutable revision adopts newer delivery metadata without a false revision conflict', async () => {
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:1031:11)
+      at Object.<anonymous> (../docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx:35:21)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.256 s
+Ran all test suites within paths "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/docs/releases/admin-media-acceptance-20261101/independent-composer-metadata.spec.tsx".

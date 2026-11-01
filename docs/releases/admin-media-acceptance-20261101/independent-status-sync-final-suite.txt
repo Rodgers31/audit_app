@@ -1,0 +1,14 @@
+PASS __tests__/admin/social/clean-status-sync.test.tsx
+  ✓ own generated publication reconciles its clean delivery version without inventing a new content revision or clearing human review (171 ms)
+  ✓ clean same-revision status refresh updates the post version without resetting input or attestation (63 ms)
+  ✓ same-revision delivery refresh preserves dirty local text and explicit stale review (46 ms)
+  ✓ new revision cannot silently overwrite a clean draft (34 ms)
+  ✓ conflicting content cannot silently overwrite a clean draft (42 ms)
+  ✓ an in-flight command defers clean status reconciliation until its response settles (75 ms)
+  ✓ a generated ready authorization still validates the refreshed post version before human publication (62 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 passed, 7 total
+Snapshots:   0 total
+Time:        1.412 s
+Ran all test suites matching __tests__/admin/social/clean-status-sync.test.tsx.

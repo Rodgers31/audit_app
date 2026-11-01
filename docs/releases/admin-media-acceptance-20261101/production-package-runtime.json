@@ -1,0 +1,12 @@
+{
+  "python": "3.12.16 (main, Oct 28 2026, 02:07:05) [GCC 14.2.0]",
+  "system": "Linux",
+  "machine": "aarch64",
+  "pytest": "9.1.1",
+  "sqlalchemy": "2.0.55",
+  "pillow": "13.0.0",
+  "ffprobe": null,
+  "ffmpeg": null,
+  "production_authorized": false,
+  "live_acceptance": "not_run"
+}
