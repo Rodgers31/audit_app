@@ -64,7 +64,7 @@ PyJWT==2.15.1
 pypdfium2==5.14.0
 pytesseract==0.3.13
 pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest-asyncio==1.4.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.4
 python-json-logger==4.2.0
