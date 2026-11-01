@@ -1,0 +1,6 @@
+
+Test Suites: 47 passed, 47 total
+Tests:       750 passed, 750 total
+Snapshots:   0 total
+Time:        31.464 s, estimated 32 s
+Ran all test suites matching __tests__/admin/social|__tests__/social-generation.test.tsx.

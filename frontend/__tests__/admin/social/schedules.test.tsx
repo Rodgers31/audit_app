@@ -5,7 +5,7 @@ import { SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, post, system, target } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, post, system, target } from '../../../tests/socialFixtures';
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
 jest.mock('@/lib/auth/AuthProvider', () => ({ useAuth: () => ({ user: { id: '00000000-0000-4000-8000-000000000001' } }) }));
@@ -15,10 +15,10 @@ function scheduled(): SocialPost {
   const p = post({ editorial_state: 'approved', delivery_status: 'scheduled', targets: [{ ...target('queued'), next_action_at: '2027-01-05T07:00:00Z' }] });
   return { ...p, publication: { id: '00000000-0000-4000-8000-000000000060', revision_id: p.revision_id, version: 2, approved_at: '2026-10-03T12:00:00Z', approved_by: actorId, scheduled_for: '2027-01-05T07:00:00Z', schedule_timezone: 'Africa/Nairobi', requested_local_time: '2027-01-05T10:00:00', cancel_requested_at: null } };
 }
-function mount(p?: SocialPost) {
+function mount(p?: SocialPost, status = deliverySystem()) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   if (p) qc.setQueryData(socialKeys.detail(actorId, p.id), p);
-  return render(<QueryClientProvider client={qc}>{p ? <SocialComposer initialPost={p} accounts={accounts} system={system} /> : <SocialWorkspace />}</QueryClientProvider>);
+  return render(<QueryClientProvider client={qc}>{p ? <SocialComposer initialPost={p} accounts={accounts} system={status} /> : <SocialWorkspace />}</QueryClientProvider>);
 }
 beforeEach(() => { jest.clearAllMocks(); Object.defineProperty(crypto, 'randomUUID', { configurable: true, value: () => '00000000-0000-4000-8000-000000000099' }); });
 test('scheduled and history request global filters and paginate mixed results', async () => {
@@ -124,3 +124,17 @@ test('history shows independent confirmed timestamps and only verified HTTPS pub
 });
 
 beforeEach(() => { window.history.replaceState({}, "", "/admin/social"); });
+
+
+test.each(['unavailable','stale','stopped'])('%s worker blocks advancing an approved delivery now while keeping future rescheduling available', async state => {
+  const p=scheduled();get.mockResolvedValue({data:p});
+  mount(p,{...deliverySystem(),worker:{...deliverySystem().worker,state}});
+  fireEvent.change(screen.getByLabelText('Reason for schedule change'),{target:{value:'Move only unchanged unsent destinations'}});
+  fireEvent.change(screen.getByLabelText('New local publish time'),{target:{value:'2027-01-06T10:00'}});
+  expect(screen.getByRole('button',{name:'Publish unsent now'})).toBeDisabled();
+  expect(screen.getByRole('button',{name:'Publish unsent now'})).toHaveAccessibleDescription(/Delivery worker/);
+  expect(screen.getByRole('button',{name:'Confirm reschedule'})).toBeEnabled();
+  expect(screen.getByRole('button',{name:'Cancel unsent deliveries'})).toBeEnabled();
+  fireEvent.click(screen.getByRole('button',{name:'Publish unsent now'}));
+  expect(send).not.toHaveBeenCalled();
+});

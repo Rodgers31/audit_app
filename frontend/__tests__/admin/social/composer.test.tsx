@@ -5,7 +5,7 @@ import { SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { accounts, actorId, assetId, facebookId, instagramId, post, system, target, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, assetId, facebookId, instagramId, post, system, target, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -14,7 +14,7 @@ jest.mock('next/navigation', () => ({ useRouter: () => ({ push: jest.fn() }) }))
 const get = api.get as jest.Mock, send = api.post as jest.Mock, patch = api.patch as jest.Mock;
 let savedPost: SocialPost;
 function typedError(code: string, message: string, targetErrors: unknown[] = []) { return { isAxiosError: true, response: { status: 409, data: { detail: { code, message, field_errors: [], target_errors: targetErrors, retryable: false, request_id: actorId } } } }; }
-function mount(p?: SocialPost, connected = accounts, publishing = system) {
+function mount(p?: SocialPost, connected = accounts, publishing = deliverySystem()) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   if (p) qc.setQueryData(socialKeys.detail(actorId, p.id), p);
   const tree = render(<QueryClientProvider client={qc}><div><SocialComposer initialPost={p} accounts={connected} system={publishing} onSaved={jest.fn()} /></div></QueryClientProvider>);
@@ -107,7 +107,7 @@ test('global pause gates valid posts while draft saving remains available', asyn
   expect(screen.getByRole('button', { name: 'Publish now' })).toBeDisabled();
   fireEvent.change(screen.getByLabelText('Draft title'), { target: { value: 'An edited draft during the publishing pause' } });
   expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
-  expect(screen.getByText(/Publishing is paused/)).toBeInTheDocument();
+  expect(screen.getByText('Publishing is paused. Draft saving and review remain available.')).toBeInTheDocument();
 });
 
 test('stale save preserves local text and expected version until explicit conflict resolution', async () => {

@@ -37,3 +37,9 @@ export function publicationReceipt(p: SocialPost, overrides: Partial<SocialPubli
   const targets = p.targets.length ? p.targets : p.document.targets.map(t => target('queued', accounts.find(a => a.id === t.account_id)!.platform));
   return { post_id: p.id, publication_id: p.publication?.id ?? '00000000-0000-4000-8000-000000000060', status: 'queued', scheduled_for: p.publication?.scheduled_for ?? '2026-10-03T12:00:00Z', targets: targets.map(t => ({ id: t.id, account_id: t.account_id, platform: t.platform, status: 'queued' })), status_url: `/api/v1/admin/social/posts/${p.id}/status`, ...overrides };
 }
+
+/** Positive delivery fixtures must explicitly report a fresh worker; the default stays unavailable. */
+export function deliverySystem(): SocialSystemStatus {
+  const timestamp = new Date().toISOString();
+  return { ...system, worker: { state: 'idle', heartbeat_at: timestamp, last_scan_at: timestamp } };
+}

@@ -1,14 +1,17 @@
 'use client';
 import { decodePost, ScheduleEditInput, SocialApiError, SocialPost, SocialSystemStatus } from '@/lib/api/social';
 import { useSocialMutation } from '@/lib/hooks/useSocial';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { SocialErrorBanner } from './SocialNotice';
+import useDeliveryWorkerReadiness from './useDeliveryWorkerReadiness';
 import { resolveCivilTime } from './socialDocument';
 import styles from './social.module.css';
 
 export default function SocialScheduleControls({ post, system, disabled, onUpdated }: { post: SocialPost; system?: SocialSystemStatus; disabled: boolean; onUpdated: (post: SocialPost) => void }) {
   const publication = post.publication!;
   const mutation = useSocialMutation();
+  const workerIssue = useDeliveryWorkerReadiness(system?.worker);
+  const workerDescriptionId = useId();
   const [reason, setReason] = useState('');
   const [localTime, setLocalTime] = useState(publication.requested_local_time?.slice(0, 16) ?? '');
   const [timezone, setTimezone] = useState(publication.schedule_timezone ?? 'Africa/Nairobi');
@@ -30,7 +33,7 @@ export default function SocialScheduleControls({ post, system, disabled, onUpdat
   const blocked = disabled || mutation.isPending || post.editorial_state !== 'approved' || !!publication.cancel_requested_at || system?.publishing_enabled !== true || !reason.trim() || !post.targets.some(t => ['ready', 'queued'].includes(t.state)) || post.targets.some(t => ['claimed', 'dispatching', 'processing', 'reconciling'].includes(t.state));
   const warnings = mutation.error?.code === 'WARNINGS_NOT_ACKNOWLEDGED' ? mutation.error.fieldErrors : [];
   async function change(scheduled: boolean) {
-    if (blocked || running.current || scheduled && !selected) return;
+    if (blocked || running.current || (!scheduled && workerIssue) || scheduled && !selected) return;
     running.current = true; setMessage('');
     const requestedAt = Date.now(), requestedLocal = localTime.length === 16 ? `${localTime}:00` : localTime;
     const body: ScheduleEditInput = { expected_version: post.version, publication_id: publication.id, expected_publication_version: publication.version, reason, acknowledged_warning_codes: acknowledged };
@@ -68,7 +71,8 @@ export default function SocialScheduleControls({ post, system, disabled, onUpdat
     {civil.candidates.length > 1 && <label>New UTC offset<select value={offsetChoice} onChange={e => setOffsetChoice(e.target.value)}><option value=''>Choose the intended occurrence</option>{civil.candidates.map(c => <option key={c.offset} value={c.offset}>{c.offset} · {c.utc}</option>)}</select></label>}
     {selected && <p className={styles.muted}>New UTC due time: {selected.utc}</p>}
     {warnings.map(w => <label key={`${w.code}:${w.field}`} className={styles.reviewCheck}><input type='checkbox' checked={acknowledged.includes(w.code)} onChange={e => setAcknowledged(e.target.checked ? [...acknowledged, w.code] : acknowledged.filter(c => c !== w.code))} />{w.message}</label>)}
-    <div className={styles.actions}><button type='button' className={styles.button} disabled={blocked || !selected || Date.parse(selected.utc) <= Date.now()} onClick={() => change(true)}>Confirm reschedule</button><button type='button' className={styles.button} disabled={blocked} onClick={() => change(false)}>Publish unsent now</button></div>
+    {workerIssue && <p className={styles.muted} id={workerDescriptionId}>{workerIssue} Future rescheduling remains a separate decision.</p>}
+    <div className={styles.actions}><button type='button' className={styles.button} disabled={blocked || !selected || Date.parse(selected.utc) <= Date.now()} onClick={() => change(true)}>Confirm reschedule</button><button type='button' className={styles.button} disabled={blocked || !!workerIssue} aria-describedby={workerIssue ? workerDescriptionId : undefined} onClick={() => change(false)}>Publish unsent now</button></div>
     {mutation.error && <SocialErrorBanner error={mutation.error} context='schedule' />}
     {message && <p role='status' className={styles.success}>{message}</p>}
   </section>;

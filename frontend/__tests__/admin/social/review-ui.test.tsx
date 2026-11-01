@@ -8,7 +8,7 @@ import { SocialPost } from '@/lib/api/social';
 import { socialKeys } from '@/lib/hooks/useSocial';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { accounts, actorId, post, system, target, validation } from '../../../tests/socialFixtures';
+import { deliverySystem, accounts, actorId, post, system, target, validation } from '../../../tests/socialFixtures';
 
 jest.mock('@/lib/api/axios', () => ({ __esModule: true, default: { get: jest.fn(), post: jest.fn(), patch: jest.fn() } }));
 jest.mock('@/lib/auth/admin', () => ({ useAdmin: () => ({ isAdmin: true }) }));
@@ -42,7 +42,7 @@ function approved() {
 function mount(p: SocialPost) {
   get.mockResolvedValue({ data: p });
   const qc = client(p);
-  render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={system} /></QueryClientProvider>);
+  render(<QueryClientProvider client={qc}><SocialComposer initialPost={p} accounts={accounts} system={deliverySystem()} /></QueryClientProvider>);
   return qc;
 }
 async function validate() {
@@ -205,7 +205,7 @@ test('reverting local changes to the saved content clears edits without creating
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   await waitFor(() => expect(screen.queryByText('Unsaved edits')).not.toBeInTheDocument());
   expect(patch).not.toHaveBeenCalled();
-  expect(screen.getByText(/approved · revision 1/)).toBeInTheDocument();
+  expect(screen.getByText(/approved · version 1/)).toBeInTheDocument();
 });
 
 test.each(['text', 'link', 'hashtags', 'format'] as const)('a valid preview with changed %s cannot authorize the saved selection', async field => {
