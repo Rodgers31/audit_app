@@ -1,0 +1,7 @@
+{
+  "version": "4.17.1",
+  "gitHead": "b767b8c16cae017ac7b092a161684e31b262e5ae",
+  "url": "https://raw.githubusercontent.com/un-ts/eslint-plugin-import-x/b767b8c16cae017ac7b092a161684e31b262e5ae/src/rules/no-internal-modules.ts",
+  "sha256": "e7e8adc7585461df2991348c9f48d7e60e48387d53a855a2d36bfbbf2885bf69",
+  "uses_makeRe": true
+}

@@ -1,0 +1,107 @@
+{
+  "at": "2026-10-31T23:12:26.449116+00:00",
+  "manifest_sha256": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+  "lock_sha256": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+  "results": [
+    {
+      "entry": "node_modules/@eslint/eslintrc",
+      "version": "2.1.4",
+      "url": "https://registry.npmjs.org/@eslint/eslintrc/-/eslintrc-2.1.4.tgz",
+      "integrity": "sha512-269Z39MS6wVJtsoUl10L60WdkhJVdPG24Q4eZTH3nnF6lpvSShEK3wQjDX9JRWAUPvPh7COouPpU9IrqaZFvtQ==",
+      "archive_sha256": "39e121a5e2d6a03bb51ffd180639765519146af7e21a70dcf3b9ace1586aa4dc",
+      "files": 28,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-import",
+      "version": "2.32.0",
+      "url": "https://registry.npmjs.org/eslint-plugin-import/-/eslint-plugin-import-2.32.0.tgz",
+      "integrity": "sha512-whOE1HFo/qJDyX4SnXzP4N6zOWn79WhnCUY/iDR0mPfQZO8wcYE4JClzI2oZrhBnnMUCBCHZhO6VQyoBU95mZA==",
+      "archive_sha256": "4c122b593c52e40f3167a89b388d0b9a155aaddc08f05935ccece7b4ff51ecde",
+      "files": 132,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-import/node_modules/debug",
+      "version": "3.2.7",
+      "url": "https://registry.npmjs.org/debug/-/debug-3.2.7.tgz",
+      "integrity": "sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==",
+      "archive_sha256": "72378f4db53abdf4c6d094e85169b0dc35a404ea4257da13ecafeda029a21c84",
+      "files": 9,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-import/node_modules/doctrine",
+      "version": "2.1.0",
+      "url": "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz",
+      "integrity": "sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==",
+      "archive_sha256": "220d8b27410873a935daa31af93f3f4cac69be2c76b066cc7eabdd7040fd1dcd",
+      "files": 9,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-import/node_modules/semver",
+      "version": "6.3.1",
+      "url": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
+      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
+      "archive_sha256": "3c9b042a38e099cbd00a9bd792042aefb62a70b3f0f1ba1a3cbddf07e5eb1230",
+      "files": 6,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-jsx-a11y",
+      "version": "6.10.2",
+      "url": "https://registry.npmjs.org/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.10.2.tgz",
+      "integrity": "sha512-scB3nz4WmG75pV8+3eRUQOHZlNSUhFNq37xnpgRkCCELU3XMvXAxLk1eqWWyE22Ki4Q01Fnsw9BA3cJHDPgn2Q==",
+      "archive_sha256": "2740719a2bddb1a1b80e514503284b8e76915ea80e4d86aa978ff3aa7923271b",
+      "files": 229,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-jsx-a11y/node_modules/aria-query",
+      "version": "5.3.2",
+      "url": "https://registry.npmjs.org/aria-query/-/aria-query-5.3.2.tgz",
+      "integrity": "sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw==",
+      "archive_sha256": "62691953222d8acef97db2daa0e84adedc8eb6b074c33ec02367291a32e4ad37",
+      "files": 157,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-react",
+      "version": "7.37.5",
+      "url": "https://registry.npmjs.org/eslint-plugin-react/-/eslint-plugin-react-7.37.5.tgz",
+      "integrity": "sha512-Qteup0SqU15kdocexFNAJMvCJEfa2xUKNV4CC1xsVMrIIqEy3SQ/rqyxCWNzfrd3/ldy6HMlD2e0JDVpDg2qIA==",
+      "archive_sha256": "45cc9f87030c2d56bf53b5db62367d3cde946cd63e6dde865d66a6b21051ba0b",
+      "files": 406,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-react/node_modules/doctrine",
+      "version": "2.1.0",
+      "url": "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz",
+      "integrity": "sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==",
+      "archive_sha256": "220d8b27410873a935daa31af93f3f4cac69be2c76b066cc7eabdd7040fd1dcd",
+      "files": 9,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-react/node_modules/resolve",
+      "version": "2.0.0-next.6",
+      "url": "https://registry.npmjs.org/resolve/-/resolve-2.0.0-next.6.tgz",
+      "integrity": "sha512-3JmVl5hMGtJ3kMmB3zi3DL25KfkCEyy3Tw7Gmw7z5w8M9WlwoPFnIvwChzu1+cF3iaK3sp18hhPz8ANeimdJfA==",
+      "archive_sha256": "d98c210379d39cc765eea04a811aefc0c5305a7ed2cf7049112d72d9c5349842",
+      "files": 112,
+      "all_original_hashes_and_file_paths_match": true
+    },
+    {
+      "entry": "node_modules/eslint-plugin-react/node_modules/semver",
+      "version": "6.3.1",
+      "url": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
+      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
+      "archive_sha256": "3c9b042a38e099cbd00a9bd792042aefb62a70b3f0f1ba1a3cbddf07e5eb1230",
+      "files": 6,
+      "all_original_hashes_and_file_paths_match": true
+    }
+  ],
+  "original_files_verified": 1103
+}

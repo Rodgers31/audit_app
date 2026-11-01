@@ -1,0 +1,16 @@
+{
+  "name": "deepmerge-installer-adversarial",
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=256",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/deepmerge-installer-adversarial.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "timed_out": false,
+  "stdout": "{\"securityCases\":24,\"measurements\":[{\"name\":\"baseline-cjs\",\"prototypeInjected\":true},{\"name\":\"baseline-umd-cjs\",\"prototypeInjected\":true},{\"name\":\"baseline-umd-browser\",\"prototypeInjected\":true},{\"name\":\"repaired-cjs\",\"securityCases\":8},{\"name\":\"repaired-umd-cjs\",\"securityCases\":8},{\"name\":\"repaired-umd-browser\",\"securityCases\":8},{\"name\":\"cold-and-repeat\",\"changed\":10,\"repeatChanged\":0,\"actualByteChanges\":10},{\"name\":\"unknown-deepmerge-cjs\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"missing-deepmerge-umd\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"unexpected-deepmerge-file\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"changed-deepmerge-main\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"wrong-installed-deepmerge-version\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"source-symlink\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"new-nested-deepmerge\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"deepmerge-not-dev\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"missing-deepmerge\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"invalid-late-umd\",\"rejected\":true,\"allFixtureBytesUnchanged\":true},{\"name\":\"direct-production-types\",\"rejectedCases\":6},{\"name\":\"omit-dev-explicit-coverage\",\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\"],\"absentPackages\":[\"node_modules/deepmerge\"],\"changedFiles\":7}]}\n",
+  "stderr": "",
+  "wall_seconds": 0.5254806250000001
+}

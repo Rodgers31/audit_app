@@ -1,0 +1,271 @@
+{
+  "captured_at": "2026-10-31T21:19:11.726142+00:00",
+  "scope": "Author successful diagnostic gate snapshot. Final frozen-source replay is bound to the eventual PR head separately; selections overlap. Earlier setup failures remain in PROVENANCE and original packet.",
+  "node": [
+    {
+      "label": "npm-ci",
+      "command": [
+        "npm",
+        "ci",
+        "--include=dev",
+        "--include=optional",
+        "--no-fund"
+      ],
+      "start": "2026-10-31T20:48:21.340596+00:00",
+      "end": "2026-10-31T20:48:29.369003+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+      "outputs": {
+        "stdout": "c71ee583029d61545c8f87ee4d72938990d21096d2d25f7a05a066b09561433c",
+        "stderr": "d4533965c2a7a161f71b1e5324f5be0c8560efe84068c85ed6bfefc8759035dc"
+      }
+    },
+    {
+      "label": "node-regressions",
+      "command": [
+        "node",
+        "--test",
+        "scripts/redirect-credential-boundary.test.cjs",
+        "scripts/modern-glob-boundary.test.cjs"
+      ],
+      "start": "2026-10-31T20:49:05.021164+00:00",
+      "end": "2026-10-31T20:49:05.295282+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "1b20e5e7d641bed28cbeda762525d8fe0637895229060c0aeb7a90cf679cc800",
+      "outputs": {
+        "stdout": "90374ac716b81155d02c7e2e3ce573737b2b4c2edb7be626d9a9f74857ae8104",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "dependency-boundaries-tap",
+      "command": [
+        "npm",
+        "run",
+        "test:dependency-boundaries"
+      ],
+      "start": "2026-10-31T20:52:53.196578+00:00",
+      "end": "2026-10-31T20:53:18.164990+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+      "outputs": {
+        "stdout": "370a2fa39c2877cb577981de50f515f51cca56f27cd410839441799ada128852",
+        "stderr": "554f50ced28a50d5fb14f2bde32bfc4ddbea3a599428b5614a0d5e13d692d837"
+      }
+    },
+    {
+      "label": "tooling",
+      "command": [
+        "npm",
+        "run",
+        "verify:dependency-tooling"
+      ],
+      "start": "2026-10-31T20:53:19.371018+00:00",
+      "end": "2026-10-31T20:53:20.198323+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+      "outputs": {
+        "stdout": "a4572e1c9d6ca6102d6d4b8376bfe06c45fce24228d977f9ad1a35c0288acddd",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "typescript",
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "start": "2026-10-31T20:50:11.513267+00:00",
+      "end": "2026-10-31T20:50:16.990314+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+      "outputs": {
+        "stdout": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "start": "2026-10-31T20:51:03.682055+00:00",
+      "end": "2026-10-31T20:51:06.554170+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+      "outputs": {
+        "stdout": "08dd3b9a3011b6ef75b20ce9002b0757e1b93785536beaaf164b2f6cf6ea7025",
+        "stderr": "a9e853f86aaa439d80c9c70fc5cb52ed5a20a68e3611a5b826d196cc46d675a2"
+      }
+    },
+    {
+      "label": "jest",
+      "command": [
+        "npm",
+        "test",
+        "--",
+        "--runInBand",
+        "--no-cache",
+        "--json",
+        "--outputFile=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/final/jest-results.json"
+      ],
+      "start": "2026-10-31T20:51:07.301613+00:00",
+      "end": "2026-10-31T20:52:05.401508+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "c98a4f6c49e4e02352b211805b72b962c3568a2270ea789f8d0c5c9b2405732f",
+      "outputs": {
+        "stdout": "fee67c1458aefc81a0586382845bc3ecbc22df1c15a063c956c3f7bdfd6ecf9d",
+        "stderr": "b9574e2ed9a599d67f1abe5deecad03f1e6067a877d562a8feda19540f78c4a2"
+      }
+    },
+    {
+      "label": "native",
+      "command": [
+        "env",
+        "NATIVE_VERIFY_CACHE_DIR=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/model",
+        "npm",
+        "run",
+        "verify:native"
+      ],
+      "start": "2026-10-31T20:53:53.254862+00:00",
+      "end": "2026-10-31T20:53:56.699966+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "57aa8800f08d9e9c95b4bae961c77e276f953510430a6c5a96fe6e4e2823da6c",
+      "outputs": {
+        "stdout": "b8556ef2e2008f55cace4eaa9a0d30e9a1556c873bc51089a4556a60da2104d1",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "admin-shell-cached-browser",
+      "command": [
+        "npm",
+        "run",
+        "test:admin-shell",
+        "--",
+        "--output=/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/final/admin-cached-browser-results"
+      ],
+      "start": "2026-10-31T21:05:52.568752+00:00",
+      "end": "2026-10-31T21:06:19.471014+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "0575b00279cbacc61794221d1c9127501c49b78d744b26918f3519da464d01c4",
+      "outputs": {
+        "stdout": "2287dd643ae9e36e43b9f7b1bdbd0d1f8e25891bc6c7bf52c2699f237db8c235",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "label": "browser-search-image-v2",
+      "command": [
+        "node",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/browser-preview-v2.cjs"
+      ],
+      "start": "2026-10-31T21:11:05.068792+00:00",
+      "end": "2026-10-31T21:11:17.004276+00:00",
+      "exit": 0,
+      "source_changes": [],
+      "source_manifest_sha256": "0575b00279cbacc61794221d1c9127501c49b78d744b26918f3519da464d01c4",
+      "outputs": {
+        "stdout": "034df92c9a4e7467a98a978b2f147cba8b67ba3211ab5d24caef855916daaae9",
+        "stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    }
+  ],
+  "python_junit": {
+    "backend-compat": {
+      "cases": 314,
+      "skipped": 0,
+      "failures": 0,
+      "junit_sha256": "52b7b57dadcc19ce579b12fae34485060cc6a884c56e45d1fb1ec5a7b72f1625"
+    },
+    "backend-optimized": {
+      "cases": 89,
+      "skipped": 0,
+      "failures": 0,
+      "junit_sha256": "5cff18ce1d1947a3cc5e645489b1e2491a682c6da5b7dec7c01a68a5ead02c5c"
+    },
+    "etl-compat": {
+      "cases": 5,
+      "skipped": 0,
+      "failures": 0,
+      "junit_sha256": "cb8838d394022797b2e79eac163319c8c1180812af9dec59988b2ad572576a62"
+    },
+    "media-compat": {
+      "cases": 150,
+      "skipped": 9,
+      "failures": 0,
+      "junit_sha256": "318110ef9c4b8c89194e95170cea658586b076a6b39e4cbad99ab2ea7d30d109"
+    },
+    "media-optimized": {
+      "cases": 150,
+      "skipped": 9,
+      "failures": 0,
+      "junit_sha256": "ca778ad91f0ff567fbc3f98f42bc386292e708d8be756fc49362c353bf84aa1e"
+    }
+  },
+  "worker_real_install": {
+    "start": "2026-10-31T21:15:33.727414+00:00",
+    "end": "2026-10-31T21:16:44.568846+00:00",
+    "command": [
+      "/evidence/envs/worker-final-order/bin/python",
+      "-I",
+      "-c",
+      "import runpy;runpy.run_path(\"/source/tools/worker_host_fixture/install_locked.py\")[\"install\"](\"/source/tools/worker_host_fixture/requirements.txt\")"
+    ],
+    "initial_installer": "pip 25.0.1 from /evidence/envs/worker-final-order/lib/python3.12/site-packages/pip (python 3.12)",
+    "first_install": "FIXTURE_LOCK_INSTALL 1/93 pip==26.2.2",
+    "final_package_count": 93,
+    "exact_profile_match": true,
+    "exit": 0,
+    "generator_sha256": "5364eab6d4c05c4f505ffb90626e38dcdcdc4c1a205f0fdbd5f8f22962a41d4a",
+    "installer_sha256": "227edc62e4d6367c66d44d1a6cb0229646bf6cd04dc3011050e24ca5956c7292",
+    "requirements_sha256": "0605b0ebab819c76248399b798099b6e127add019d0dcfba1409d2d56a7be5f9",
+    "log_sha256": "8a002b3efb1707e9f08f0a81823b54b170b2df6e231bbfc63716daa8abb1af92"
+  },
+  "pdf_red_green": {
+    "test_sha256": "49e03f48cf1dfd464d5f2b08ba2956d7d97f33768e78c08e4f54672200414b12",
+    "generator_sha256": "d211665d3a8c3f2d7d5e23e76cc9b045f3725b304eb4897e67a0895acfd1c954",
+    "observed": [
+      {
+        "python": "/evidence/envs/etl-baseline/bin/python",
+        "optimized": false,
+        "outcome": "TIMEOUT"
+      },
+      {
+        "python": "/evidence/envs/etl-baseline/bin/python",
+        "optimized": true,
+        "outcome": "TIMEOUT"
+      },
+      {
+        "python": "/tmp/etl/bin/python",
+        "optimized": false,
+        "outcome": "PASS"
+      },
+      {
+        "python": "/tmp/etl/bin/python",
+        "optimized": true,
+        "outcome": "PASS"
+      }
+    ]
+  },
+  "reviewed_installer_sha256": "227edc62e4d6367c66d44d1a6cb0229646bf6cd04dc3011050e24ca5956c7292",
+  "review_reports": {
+    "reviews/spec/REPORT.md": "03ad4ad4f4ce67fc0703edbeabe2cc7e9ef3da8b11d7d6d964f69121e4990909",
+    "reviews/spec/final-installer/REPORT.md": "96a34860aa99350b7653e5e0dce637a067a7e1c9ff03bc8aa5e80b86f7595a93",
+    "reviews/standards/REPORT.md": "03f1f6bcd6f6deaedd10427b7f4a6e2920ae9ff2b8f0db333f73e1d31cd5be94"
+  }
+}

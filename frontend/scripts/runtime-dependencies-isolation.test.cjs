@@ -49,7 +49,7 @@ test('destructive runtime regressions preserve a linked source installation', ()
     fs.copyFileSync(path.join(source, 'package.json'), path.join(linked, 'package.json'));
     fs.symlinkSync(path.join(source, 'node_modules'), path.join(linked, 'node_modules'), 'junction');
     const before = contentIdentity(source);
-    const result = spawnSync(process.execPath, ['--test', path.join(__dirname, 'runtime-dependencies.test.cjs')], {
+    const result = spawnSync(process.execPath, ['--test', '--test-reporter=tap', path.join(__dirname, 'runtime-dependencies.test.cjs')], {
       env: { PATH: process.env.PATH, RUNTIME_VERIFY_ROOT: linked }, encoding: 'utf8', timeout: 90000,
     });
     const after = contentIdentity(source);

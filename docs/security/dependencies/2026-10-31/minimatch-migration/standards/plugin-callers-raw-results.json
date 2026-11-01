@@ -1,0 +1,924 @@
+{
+  "at": "2026-10-31T23:08:58.398Z",
+  "stage": "raw",
+  "activeModules": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/cache-modern/raw-plugin/node_modules",
+  "sourceHashes": {
+    "eslint-plugin-import/lib/rules/extensions.js": "fe98adecf33a02952d842227014535fc390f4d18c96a4944f4c90783d4af3945",
+    "eslint-plugin-import/lib/rules/no-extraneous-dependencies.js": "58e174298161b31c7dc4f345543cb2707346f3072a9145f78a0fd5e914484b19",
+    "eslint-plugin-import/lib/rules/no-import-module-exports.js": "d83581c24ae4fb0fc00dce02f3deec9e0bdf4cc624bf1b7e374e2aee79d3ba66",
+    "eslint-plugin-import/lib/rules/no-internal-modules.js": "f36ab9b9b97cc2d8a49f8fe474c4200875db4fa357c5061fe71538b01db696a4",
+    "eslint-plugin-import/lib/rules/no-namespace.js": "39d2140a547b9825ef630e922b680dc938786258af5029b02f47eea625013d84",
+    "eslint-plugin-import/lib/rules/no-restricted-paths.js": "abc65972e5c3d1bd95b472c0bae3c208671dbfb4c353c39d55cf6db7245dd04c",
+    "eslint-plugin-import/lib/rules/no-unassigned-import.js": "e565350ae91b62d9c104c51c73ae88d58f4a2ef7caafc83755cf2887bb86d58c",
+    "eslint-plugin-import/lib/rules/order.js": "83fd2c12da1f437288b006abe4f0a9ffc68eca385964e4c1ea014a053730cfe6",
+    "eslint-plugin-jsx-a11y/lib/util/mayContainChildComponent.js": "d2a7fd3e513a42ab781543d6529776950f240249f9367f94899dbc9258e198d0",
+    "eslint-plugin-jsx-a11y/lib/util/mayHaveAccessibleLabel.js": "e765378d87cca48ac64e76967edfb33c52a9423c6822fd048024c88296ba9a2b",
+    "eslint-plugin-react/lib/rules/forbid-component-props.js": "2f928750174f7c93846598ba7939cdc0844ebda46954be2c990b056c9ec662b6",
+    "eslint-plugin-react/lib/rules/jsx-handler-names.js": "2a0ffd32c997da581b9b7acecfec800b126774902fd06c09e08a8803e44155ca",
+    "eslint-plugin-react/lib/rules/jsx-pascal-case.js": "dc9cdba6bd5897142976cf0ce68bc3cb134c45da8c2883c88c1db9ba933f0f17",
+    "eslint-plugin-react/lib/rules/no-danger.js": "61f9fd97581e959d75bfb7ef030e9fb7b74c2df224980bed89f6463d05d2734a",
+    "eslint-plugin-react/lib/rules/no-unstable-nested-components.js": "5ae81f553263438f6fc9e059872fb617519fa8de08777a78a06a738db12313e8"
+  },
+  "cases": 32,
+  "baselineFailures": 0,
+  "installedFailures": 30,
+  "equivalents": 2,
+  "output": [
+    {
+      "index": 0,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-internal-modules': Cannot read properties of undefined (reading 'makeRe')\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 1,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-internal-modules': Cannot read properties of undefined (reading 'makeRe')\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 2,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "forbid": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-internal-modules': Cannot read properties of undefined (reading 'makeRe')\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 3,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "forbid": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-internal-modules': Cannot read properties of undefined (reading 'makeRe')\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 4,
+      "target": "eslint-plugin-import/no-import-module-exports",
+      "code": "import x from \"pkg\"; module.exports = x;",
+      "options": [
+        {
+          "exceptions": [
+            "<fixture>/input.js"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-import-module-exports\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 5,
+      "target": "eslint-plugin-import/no-import-module-exports",
+      "code": "import x from \"pkg\"; module.exports = x;",
+      "options": [
+        {
+          "exceptions": [
+            "<fixture>/elsewhere.js"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-import-module-exports",
+            "severity": 2,
+            "message": "Cannot use import declarations in modules that export using CommonJS (module.exports = 'foo' or exports.bar = 'hi')",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 21
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-import-module-exports\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 6,
+      "target": "eslint-plugin-import/no-namespace",
+      "code": "import * as x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "ignore": [
+            "secret"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-namespace\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 7,
+      "target": "eslint-plugin-import/no-namespace",
+      "code": "import * as x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "ignore": [
+            "other"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-namespace",
+            "severity": 2,
+            "message": "Unexpected namespace import.",
+            "line": 1,
+            "column": 8,
+            "nodeType": "ImportNamespaceSpecifier",
+            "endLine": 1,
+            "endColumn": 14
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-namespace\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 8,
+      "target": "eslint-plugin-import/no-unassigned-import",
+      "code": "import \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-unassigned-import\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 9,
+      "target": "eslint-plugin-import/no-unassigned-import",
+      "code": "import \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unassigned-import",
+            "severity": 2,
+            "message": "Imported module should be assigned",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 29
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-unassigned-import\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 10,
+      "target": "eslint-plugin-import/no-extraneous-dependencies",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "devDependencies": [
+            "<fixture>/input.js"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-extraneous-dependencies': (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 11,
+      "target": "eslint-plugin-import/no-extraneous-dependencies",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "devDependencies": [
+            "<fixture>/elsewhere.js"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-extraneous-dependencies",
+            "severity": 2,
+            "message": "'pkg' should be listed in the project's dependencies, not devDependencies.",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 36
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: Error while loading rule 'review/no-extraneous-dependencies': (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 12,
+      "target": "eslint-plugin-import/extensions",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        "always",
+        {
+          "ignorePackages": false,
+          "pathGroupOverrides": [
+            {
+              "pattern": "pkg/**",
+              "action": "ignore"
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/extensions\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 13,
+      "target": "eslint-plugin-import/extensions",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        "always",
+        {
+          "ignorePackages": false,
+          "pathGroupOverrides": [
+            {
+              "pattern": "pkg/**",
+              "action": "enforce"
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/extensions",
+            "severity": 2,
+            "message": "Missing file extension \"js\" for \"pkg/private/secret\"",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/extensions\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 14,
+      "target": "eslint-plugin-import/order",
+      "code": "import x from \"pkg/private/secret\"; import fs from \"fs\";",
+      "options": [
+        {
+          "groups": [
+            "builtin",
+            "external",
+            "internal"
+          ],
+          "pathGroups": [
+            {
+              "pattern": "pkg/**",
+              "group": "internal",
+              "position": "before"
+            }
+          ],
+          "pathGroupsExcludedImportTypes": []
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/order",
+            "severity": 2,
+            "message": "`fs` import should occur before import of `pkg/private/secret`",
+            "line": 1,
+            "column": 37,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 57,
+            "fix": {
+              "range": [
+                0,
+                56
+              ],
+              "text": " import fs from \"fs\";\nimport x from \"pkg/private/secret\";"
+            }
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/order\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 15,
+      "target": "eslint-plugin-import/order",
+      "code": "import fs from \"fs\"; import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "groups": [
+            "builtin",
+            "external",
+            "internal"
+          ],
+          "pathGroups": [
+            {
+              "pattern": "pkg/**",
+              "group": "internal",
+              "position": "before"
+            }
+          ],
+          "pathGroupsExcludedImportTypes": []
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch2.default) is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/order\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 16,
+      "target": "eslint-plugin-import/no-restricted-paths",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "basePath": "<fixture>",
+          "zones": [
+            {
+              "target": "./",
+              "from": "./node_modules/pkg/private/**"
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-restricted-paths",
+            "severity": 2,
+            "message": "Unexpected path \"pkg/private/secret\" imported in restricted zone.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-restricted-paths",
+            "severity": 2,
+            "message": "Unexpected path \"pkg/private/secret\" imported in restricted zone.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 17,
+      "target": "eslint-plugin-import/no-restricted-paths",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "basePath": "<fixture>",
+          "zones": [
+            {
+              "target": "./",
+              "from": "./node_modules/pkg/public/**"
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 18,
+      "target": "eslint-plugin-react/no-danger",
+      "code": "const x = <FormInput dangerouslySetInnerHTML={{ __html: \"x\" }} />;",
+      "options": [
+        {
+          "customComponentNames": [
+            "Form*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-danger",
+            "severity": 2,
+            "message": "Dangerous property 'dangerouslySetInnerHTML' found",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "dangerousProp",
+            "endLine": 1,
+            "endColumn": 63
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-danger\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 19,
+      "target": "eslint-plugin-react/no-danger",
+      "code": "const x = <FormInput dangerouslySetInnerHTML={{ __html: \"x\" }} />;",
+      "options": [
+        {
+          "customComponentNames": [
+            "Other*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-danger\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 20,
+      "target": "eslint-plugin-react/jsx-pascal-case",
+      "code": "const x = <BAD_COMPONENT />;",
+      "options": [
+        {
+          "ignore": [
+            "BAD_*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/jsx-pascal-case\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 21,
+      "target": "eslint-plugin-react/jsx-pascal-case",
+      "code": "const x = <BAD_COMPONENT />;",
+      "options": [
+        {
+          "ignore": [
+            "OTHER_*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-pascal-case",
+            "severity": 2,
+            "message": "Imported JSX component BAD_COMPONENT must be in PascalCase",
+            "line": 1,
+            "column": 11,
+            "nodeType": "JSXOpeningElement",
+            "messageId": "usePascalCase",
+            "endLine": 1,
+            "endColumn": 28
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/jsx-pascal-case\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 22,
+      "target": "eslint-plugin-react/jsx-handler-names",
+      "code": "const x = <FormInput onClick={this.badHandler} />;",
+      "options": [
+        {
+          "ignoreComponentNames": [
+            "Form*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/jsx-handler-names\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 23,
+      "target": "eslint-plugin-react/jsx-handler-names",
+      "code": "const x = <FormInput onClick={this.badHandler} />;",
+      "options": [
+        {
+          "ignoreComponentNames": [
+            "Other*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-handler-names",
+            "severity": 2,
+            "message": "Handler function for onClick prop key must be a camelCase name beginning with 'handle' only",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "badHandlerName",
+            "endLine": 1,
+            "endColumn": 47
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/jsx-handler-names\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 24,
+      "target": "eslint-plugin-react/no-unstable-nested-components",
+      "code": "function App() { return <Container renderPanel={() => <div />} />; }",
+      "options": [
+        {
+          "propNamePattern": "render*"
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-unstable-nested-components\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 25,
+      "target": "eslint-plugin-react/no-unstable-nested-components",
+      "code": "function App() { return <Container renderPanel={() => <div />} />; }",
+      "options": [
+        {
+          "propNamePattern": "slot*"
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unstable-nested-components",
+            "severity": 2,
+            "message": "Do not define components during render. React will see a new component type on every render and destroy the entire subtree’s DOM nodes and state (https://reactjs.org/docs/reconciliation.html#elements-of-different-types). Instead, move this component definition out of the parent component “App” and pass data as props. If you want to allow component creation in props, set allowAsProps option to true.",
+            "line": 1,
+            "column": 49,
+            "nodeType": "ArrowFunctionExpression",
+            "endLine": 1,
+            "endColumn": 62
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/no-unstable-nested-components\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 26,
+      "target": "eslint-plugin-react/forbid-component-props",
+      "code": "const x = <SafeWidget data-test=\"1\" />;",
+      "options": [
+        {
+          "forbid": [
+            {
+              "propNamePattern": "data-*",
+              "allowedForPatterns": [
+                "Safe*"
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/forbid-component-props\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 27,
+      "target": "eslint-plugin-react/forbid-component-props",
+      "code": "const x = <BadWidget data-test=\"1\" />;",
+      "options": [
+        {
+          "forbid": [
+            {
+              "propNamePattern": "data-*",
+              "allowedForPatterns": [
+                "Safe*"
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/forbid-component-props",
+            "severity": 2,
+            "message": "Prop \"data-test\" is forbidden on Components",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "propIsForbidden",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: minimatch is not a function\nOccurred while linting <fixture>/input.js:1\nRule: \"review/forbid-component-props\""
+      },
+      "equivalent": false
+    },
+    {
+      "index": 28,
+      "target": "eslint-plugin-jsx-a11y/mayContainChildComponent",
+      "pattern": "Input*",
+      "expected": true,
+      "baseline": {
+        "success": true,
+        "value": true
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch.default) is not a function"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 29,
+      "target": "eslint-plugin-jsx-a11y/mayContainChildComponent",
+      "pattern": "Other*",
+      "expected": false,
+      "baseline": {
+        "success": true,
+        "value": false
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch.default) is not a function"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 30,
+      "target": "eslint-plugin-jsx-a11y/mayHaveAccessibleLabel",
+      "pattern": "Input*",
+      "expected": false,
+      "baseline": {
+        "success": true,
+        "value": false
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch.default) is not a function"
+      },
+      "equivalent": false
+    },
+    {
+      "index": 31,
+      "target": "eslint-plugin-jsx-a11y/mayHaveAccessibleLabel",
+      "pattern": "Other*",
+      "expected": true,
+      "baseline": {
+        "success": true,
+        "value": true
+      },
+      "installed": {
+        "success": false,
+        "error": "TypeError: (0 , _minimatch.default) is not a function"
+      },
+      "equivalent": false
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=256",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-eslintrc-esm.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend"
+  ],
+  "returncode": 0,
+  "stdout": "{\"baselineVersion\":\"2.1.4\",\"modernMinimatch\":\"11.0.3\",\"originalEsmFailure\":\"The requested module 'minimatch' does not provide an export named 'default'\",\"patchedSourceSha256\":\"47d0140fe48e73387e9f5605ff8e5262f8fb67e97cf1ac707d00f38e027b8d40\",\"originalSourceSha256\":\"dcb0beb172afb43a2c019eea2193c29f15edb98bf10ca77f1c3307f176c0a75a\",\"publicExports\":[\"FlatCompat\",\"Legacy\"],\"legacyExports\":[\"CascadingConfigArrayFactory\",\"ConfigArray\",\"ConfigArrayFactory\",\"ConfigDependency\",\"ConfigOps\",\"ConfigValidator\",\"ExtractedConfig\",\"IgnorePattern\",\"ModuleResolver\",\"OverrideTester\",\"createConfigArrayFactoryContext\",\"environments\",\"getUsedExtractedConfigs\",\"naming\"],\"overrideComparisons\":120,\"invalidInputsRejected\":true}\n",
+  "stderr": "",
+  "wall_seconds": 0.214468542
+}

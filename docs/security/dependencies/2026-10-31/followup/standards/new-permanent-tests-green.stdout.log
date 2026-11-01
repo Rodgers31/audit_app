@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: repair manifest cannot exempt an unpatched deepmerge resolved by a real Jest caller
+ok 1 - repair manifest cannot exempt an unpatched deepmerge resolved by a real Jest caller
+  ---
+  duration_ms: 1031.424833
+  type: 'test'
+  ...
+# Subtest: repair manifest rejects malformed or unapproved braces exclusions
+ok 2 - repair manifest rejects malformed or unapproved braces exclusions
+  ---
+  duration_ms: 2095.739542
+  type: 'test'
+  ...
+# Subtest: repair manifest rejects malformed or unapproved js-yaml exclusions
+ok 3 - repair manifest rejects malformed or unapproved js-yaml exclusions
+  ---
+  duration_ms: 3783.844625
+  type: 'test'
+  ...
+# Subtest: repair manifest rejects malformed or unapproved deepmerge exclusions
+ok 4 - repair manifest rejects malformed or unapproved deepmerge exclusions
+  ---
+  duration_ms: 664.084833
+  type: 'test'
+  ...
+# Subtest: YAML4 exclusion is limited to its exact reviewed path and version
+ok 5 - YAML4 exclusion is limited to its exact reviewed path and version
+  ---
+  duration_ms: 181.657083
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7808.688917

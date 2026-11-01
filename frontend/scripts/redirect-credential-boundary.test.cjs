@@ -5,6 +5,7 @@ const http = require('node:http');
 const { once } = require('node:events');
 const { test } = require('node:test');
 const redirects = require('follow-redirects');
+const vm = require('node:vm');
 
 async function crossOriginHeaders(t, headers, sensitiveHeaders) {
   let initialHeaders;
@@ -87,3 +88,17 @@ test('custom credential header names are matched literally', { timeout: 4000 }, 
   assert.equal(initialHeaders[name], 'inert-fixture');
   assert.equal(redirectedHeaders[name], undefined);
 });
+
+for (const arrayForm of [false, true]) {
+  test(`cross-realm credential names are stripped with ${arrayForm ? 'array' : 'object'} headers`, { timeout: 4000 }, async t => {
+    const sensitive = vm.runInNewContext("['X-API-Key']");
+    assert.ok(Array.isArray(sensitive));
+    assert.equal(sensitive instanceof Array, false);
+    const headers = arrayForm
+      ? ['X-API-Key', 'inert-fixture', 'X-Public', 'visible']
+      : { 'X-API-Key': 'inert-fixture', 'X-Public': 'visible' };
+    const { initialHeaders, redirectedHeaders } = await crossOriginHeaders(t, headers, sensitive);
+    assert.equal(initialHeaders['x-api-key'], 'inert-fixture');
+    assert.equal(redirectedHeaders['x-api-key'], undefined);
+  });
+}

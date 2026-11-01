@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "--max-old-space-size=384",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/capture-final-binding.cjs",
+    "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app"
+  ],
+  "returncode": 0,
+  "stderr": "",
+  "stdout_sha256": "d244f78f7ac01131adb314ea499403e74d3d8a971df1fc650adf7f3585c251a8",
+  "wall_seconds": 0.17920724999999998
+}

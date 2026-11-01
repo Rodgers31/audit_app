@@ -1,0 +1,44 @@
+--- previous-reviewed-helper-068a93
++++ canonical-root-helper-fbff08
+@@ -105,6 +105,7 @@
+   assert.ok(typeof check === 'boolean' && typeof production === 'boolean', 'tooling repair: boolean modes required');
+   assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
+   assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
++  root = fs.realpathSync(root);
+   assert.equal(patchSet.schema, 4, 'tooling repair: unsupported patch schema');
+   assert.ok(Array.isArray(patchSet.packages) && patchSet.packages.length === 7 &&
+     new Set(patchSet.packages.map(p => p.name)).size === 7, 'tooling repair: complete package inventory required');
+@@ -275,10 +276,11 @@
+ 
+ function applyRepairs(root = path.resolve(__dirname, '..'), options = {}) {
+   const { check = false } = options;
+-  const lockPath = path.join(root, 'node_modules', '.tooling-repair-lock');
+   // Concurrent installs fail visibly; never delete an unknown/stale owner lock.
+   assert.ok(fs.lstatSync(root).isDirectory(), 'tooling repair: real frontend root required');
+   assert.ok(fs.lstatSync(path.join(root, 'node_modules')).isDirectory(), 'tooling repair: real owned node_modules required');
++  root = fs.realpathSync(root);
++  const lockPath = path.join(root, 'node_modules', '.tooling-repair-lock');
+   if (!check) fs.mkdirSync(lockPath);
+   try {
+     const plan = planRepairs(root, options);
+
+--- previous-reviewed-tests-493bc5
++++ canonical-root-tests-9bee14
+@@ -118,6 +118,17 @@
+  assert.equal(applyRepairs(root).changedFiles, 0);
+  assert.equal(applyRepairs(root, { check: true }).changedFiles, 0);
+  assert.equal(fs.existsSync(path.join(root, 'node_modules/.tooling-repair-lock')), false);
++}));
++test('a real fixture beneath a symlinked ancestor uses one canonical comparison root', () => withFixture(root => {
++ const owner = fs.mkdtempSync(path.join(os.tmpdir(), 'tooling-root-alias-'));
++ try {
++  const link = path.join(owner, 'parent'); fs.symlinkSync(path.dirname(root), link, 'dir');
++  const alias = path.join(link, path.basename(root));
++  assert.equal(applyRepairs(alias).changedFiles, 25);
++  assert.equal(applyRepairs(alias, { check: true }).changedFiles, 0);
++  const direct = path.join(owner, 'direct'); fs.symlinkSync(root, direct, 'dir');
++  assert.throws(() => applyRepairs(direct), /real frontend root/);
++ } finally { fs.rmSync(owner, { recursive: true, force: true }); }
+ }));
+ for (const [name, mutate, diagnostic] of [
+  ['legacy matcher lock', root => { const p=path.join(root,'package-lock.json'); const d=JSON.parse(fs.readFileSync(p)); d.packages['node_modules/minimatch'].version='3.1.5'; fs.writeFileSync(p,JSON.stringify(d)); }, /incompatible matcher graph/],

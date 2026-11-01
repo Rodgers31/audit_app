@@ -1,0 +1,21 @@
+{
+  "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app",
+  "TMPDIR": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/standards/author-fixtures",
+  "commands": {
+    "installer": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/standards/final_installer_probe.cjs"
+    ],
+    "behavior": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/standards/deepmerge_probe_final.cjs"
+    ],
+    "author_regression": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--test",
+      "--test-reporter=tap",
+      "frontend/scripts/deepmerge-boundary.test.cjs",
+      "frontend/scripts/tooling-repair-install.test.cjs"
+    ]
+  }
+}

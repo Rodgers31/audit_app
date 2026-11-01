@@ -1,0 +1,25 @@
+{
+  "frontend_tree": "c7cb8f61e6f247946dce5dab886419d6132d36d7",
+  "source_files": 842,
+  "source_mismatches": [],
+  "build_exit": 0,
+  "output_config_sha256": "738221671c756f28030c66cb4e47ed2e08a72b5a3ca15b4afed658ef5bf5235a",
+  "logical_node_functions": 104,
+  "logical_edge_functions": 1,
+  "physical_bundles": 7,
+  "all_node_architecture": "x86_64",
+  "all_function_targets_owned": true,
+  "api_routes": [
+    {
+      "src": "^/api/v1(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?(?<rscsuff>\\.rsc)?$",
+      "dest": "https://audit-app-4pwa.onrender.com/api/v1/$1$rscsuff",
+      "check": true
+    }
+  ],
+  "private_value_leaks": [],
+  "uploaded": false,
+  "production_public_values_only_in_builder": true,
+  "known_runtime_inventory_exact": true,
+  "all_external_destinations_reviewed": true,
+  "canonical_redirect_verified": true
+}

@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-31T23:40:21.924042+00:00",
+  "candidate": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app",
+  "head": "1ebfaed53deabe9f0ce0f2dc5e02a81a20f83b9f",
+  "prior_implementation_binding_sha256": "2a412a0ead885fb4e5d4e850f202a9e5f9756ca3fa6ec61466a0e2b22dbec295",
+  "prior_docs_acceptance_binding_sha256": "faa4bcd62e2e33803b1704e1c5b0a508134d51c63dc732d35fd13f1dd38379b6",
+  "prior_helper_sha256": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+  "final_helper_sha256": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+  "executable_inputs": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/fixtures/lint-rules-before-matcher-migration.json": "3727cb5db7e829a8d2cc54ae988386c11d6e1031e1895372b35b7f4021d2720e"
+  },
+  "only_two_executable_input_changes": [
+    "frontend/scripts/apply-tooling-repairs.cjs",
+    "frontend/scripts/tooling-repair-install.test.cjs"
+  ],
+  "exact_helper_delta": "After the existing root/node_modules final-component lstat directory checks, canonicalize root using fs.realpathSync in both APIs; compute the apply lock path after canonicalization. No requester/metadata/entry/hash/CLI/inventory guard change.",
+  "exact_test_delta": "One canonical-ancestor positive/direct-root-symlink refusal test; removing exactly that case reproduces the prior reviewed test SHA.",
+  "case_count": 9,
+  "old_helper_counterfactual_red": "Both planRepairs/applyRepairs reject the real root beneath a symlinked ancestor as unsafe package path. Exact old helper hash reconstructed and verified.",
+  "positive_controls": "New direct plan has25 canonical targets; cold apply25, repeat/check0, seven packages. Ancestor omission explicitly reports7, full check refuses. Held canonical lock remains owned and blocks overlap.",
+  "negative_controls": "Both APIs refuse final root symlink, final node_modules symlink, inner braces directory/deepmerge source/ESLint requester symlinks and canonical matcher entry symlink. Every complete owned case tree remains unchanged on refusal.",
+  "node_modules_or_candidate_mutations_by_reviewer": false,
+  "broader_author_acceptance": "Prior216-control acceptance belongs to068a helper. Author is repeating the final broad gates forfbff helper/new217 controls; this binding does not preclaim that outcome.",
+  "remaining_findings": []
+}

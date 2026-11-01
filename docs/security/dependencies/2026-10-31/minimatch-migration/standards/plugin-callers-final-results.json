@@ -1,0 +1,1078 @@
+{
+  "at": "2026-10-31T23:11:39.086Z",
+  "stage": "final",
+  "activeModules": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules",
+  "sourceHashes": {
+    "eslint-plugin-import/lib/rules/extensions.js": "3e408b095b8986e78f77261c2c5a3cc39e9194a81cc9099112333d00c68f70f4",
+    "eslint-plugin-import/lib/rules/no-extraneous-dependencies.js": "e833104f23cdcd6d98b8c24e574e5f4c188f5771d595dc228512526c2962db88",
+    "eslint-plugin-import/lib/rules/no-import-module-exports.js": "b6e666932f0623711504d65efc3e2b664c360ab1a842d795c95a80685f1f9155",
+    "eslint-plugin-import/lib/rules/no-internal-modules.js": "34a611fe1ee692faee24f890a4ae90ab33d2e80db87497185191dabb1439cc62",
+    "eslint-plugin-import/lib/rules/no-namespace.js": "ad2cae576c241a4c88d0713c7318028343341ae0d63229c7bcfae6e6685d189d",
+    "eslint-plugin-import/lib/rules/no-restricted-paths.js": "abc65972e5c3d1bd95b472c0bae3c208671dbfb4c353c39d55cf6db7245dd04c",
+    "eslint-plugin-import/lib/rules/no-unassigned-import.js": "4af9d1677c409d74b1f201420f467c04a1a4ef6e0062095722caa73570e3dab3",
+    "eslint-plugin-import/lib/rules/order.js": "bed741750e6b05b131a14b395f89b6e4a97bd3e9d8f69bac1eb0b0d7ba07fdb9",
+    "eslint-plugin-jsx-a11y/lib/util/mayContainChildComponent.js": "f6b15d0d9d9d3958bcbe95426e93d53cdc657915f2b83c049c206b8c144ab595",
+    "eslint-plugin-jsx-a11y/lib/util/mayHaveAccessibleLabel.js": "903fcc41c4712b87f7c92bb3989591ebb2285b6fbfef7c3ab5da41fdc2fd4839",
+    "eslint-plugin-react/lib/rules/forbid-component-props.js": "69aafb80260296b4a1ca64e6267d60d3797f07217194e41e250e4d1dbd87ca85",
+    "eslint-plugin-react/lib/rules/jsx-handler-names.js": "379ddc1d3e762223adfd5e62f176580a70358dc7b8ae18c0a49671dfe478c388",
+    "eslint-plugin-react/lib/rules/jsx-pascal-case.js": "e3669c0abc1d05a0be2cdc1cf864ccf3b507f1b1933f657cac48a4d415e756f3",
+    "eslint-plugin-react/lib/rules/no-danger.js": "a17bd303d725c422a1ee58af31fee9edd01ca7d2f16d9bd5ce21542362f5b541",
+    "eslint-plugin-react/lib/rules/no-unstable-nested-components.js": "a6506804fe1bac53a6e0bd9ed5db6721079a4f2f3755ebdb8855a4a3d5761524"
+  },
+  "cases": 32,
+  "baselineFailures": 0,
+  "installedFailures": 0,
+  "equivalents": 32,
+  "output": [
+    {
+      "index": 0,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 1,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 2,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "forbid": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-internal-modules",
+            "severity": 2,
+            "message": "Reaching to \"pkg/private/secret\" is not allowed.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 3,
+      "target": "eslint-plugin-import/no-internal-modules",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "forbid": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 4,
+      "target": "eslint-plugin-import/no-import-module-exports",
+      "code": "import x from \"pkg\"; module.exports = x;",
+      "options": [
+        {
+          "exceptions": [
+            "<fixture>/input.js"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 5,
+      "target": "eslint-plugin-import/no-import-module-exports",
+      "code": "import x from \"pkg\"; module.exports = x;",
+      "options": [
+        {
+          "exceptions": [
+            "<fixture>/elsewhere.js"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-import-module-exports",
+            "severity": 2,
+            "message": "Cannot use import declarations in modules that export using CommonJS (module.exports = 'foo' or exports.bar = 'hi')",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 21
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-import-module-exports",
+            "severity": 2,
+            "message": "Cannot use import declarations in modules that export using CommonJS (module.exports = 'foo' or exports.bar = 'hi')",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 21
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 6,
+      "target": "eslint-plugin-import/no-namespace",
+      "code": "import * as x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "ignore": [
+            "secret"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 7,
+      "target": "eslint-plugin-import/no-namespace",
+      "code": "import * as x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "ignore": [
+            "other"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-namespace",
+            "severity": 2,
+            "message": "Unexpected namespace import.",
+            "line": 1,
+            "column": 8,
+            "nodeType": "ImportNamespaceSpecifier",
+            "endLine": 1,
+            "endColumn": 14
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-namespace",
+            "severity": 2,
+            "message": "Unexpected namespace import.",
+            "line": 1,
+            "column": 8,
+            "nodeType": "ImportNamespaceSpecifier",
+            "endLine": 1,
+            "endColumn": 14
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 8,
+      "target": "eslint-plugin-import/no-unassigned-import",
+      "code": "import \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/private/**"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 9,
+      "target": "eslint-plugin-import/no-unassigned-import",
+      "code": "import \"pkg/private/secret\";",
+      "options": [
+        {
+          "allow": [
+            "pkg/public/**"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unassigned-import",
+            "severity": 2,
+            "message": "Imported module should be assigned",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 29
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unassigned-import",
+            "severity": 2,
+            "message": "Imported module should be assigned",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 29
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 10,
+      "target": "eslint-plugin-import/no-extraneous-dependencies",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "devDependencies": [
+            "<fixture>/input.js"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 11,
+      "target": "eslint-plugin-import/no-extraneous-dependencies",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "devDependencies": [
+            "<fixture>/elsewhere.js"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-extraneous-dependencies",
+            "severity": 2,
+            "message": "'pkg' should be listed in the project's dependencies, not devDependencies.",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 36
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-extraneous-dependencies",
+            "severity": 2,
+            "message": "'pkg' should be listed in the project's dependencies, not devDependencies.",
+            "line": 1,
+            "column": 1,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 36
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 12,
+      "target": "eslint-plugin-import/extensions",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        "always",
+        {
+          "ignorePackages": false,
+          "pathGroupOverrides": [
+            {
+              "pattern": "pkg/**",
+              "action": "ignore"
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 13,
+      "target": "eslint-plugin-import/extensions",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        "always",
+        {
+          "ignorePackages": false,
+          "pathGroupOverrides": [
+            {
+              "pattern": "pkg/**",
+              "action": "enforce"
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/extensions",
+            "severity": 2,
+            "message": "Missing file extension \"js\" for \"pkg/private/secret\"",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/extensions",
+            "severity": 2,
+            "message": "Missing file extension \"js\" for \"pkg/private/secret\"",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 14,
+      "target": "eslint-plugin-import/order",
+      "code": "import x from \"pkg/private/secret\"; import fs from \"fs\";",
+      "options": [
+        {
+          "groups": [
+            "builtin",
+            "external",
+            "internal"
+          ],
+          "pathGroups": [
+            {
+              "pattern": "pkg/**",
+              "group": "internal",
+              "position": "before"
+            }
+          ],
+          "pathGroupsExcludedImportTypes": []
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/order",
+            "severity": 2,
+            "message": "`fs` import should occur before import of `pkg/private/secret`",
+            "line": 1,
+            "column": 37,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 57,
+            "fix": {
+              "range": [
+                0,
+                56
+              ],
+              "text": " import fs from \"fs\";\nimport x from \"pkg/private/secret\";"
+            }
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/order",
+            "severity": 2,
+            "message": "`fs` import should occur before import of `pkg/private/secret`",
+            "line": 1,
+            "column": 37,
+            "nodeType": "ImportDeclaration",
+            "endLine": 1,
+            "endColumn": 57,
+            "fix": {
+              "range": [
+                0,
+                56
+              ],
+              "text": " import fs from \"fs\";\nimport x from \"pkg/private/secret\";"
+            }
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 15,
+      "target": "eslint-plugin-import/order",
+      "code": "import fs from \"fs\"; import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "groups": [
+            "builtin",
+            "external",
+            "internal"
+          ],
+          "pathGroups": [
+            {
+              "pattern": "pkg/**",
+              "group": "internal",
+              "position": "before"
+            }
+          ],
+          "pathGroupsExcludedImportTypes": []
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 16,
+      "target": "eslint-plugin-import/no-restricted-paths",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "basePath": "<fixture>",
+          "zones": [
+            {
+              "target": "./",
+              "from": "./node_modules/pkg/private/**"
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-restricted-paths",
+            "severity": 2,
+            "message": "Unexpected path \"pkg/private/secret\" imported in restricted zone.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-restricted-paths",
+            "severity": 2,
+            "message": "Unexpected path \"pkg/private/secret\" imported in restricted zone.",
+            "line": 1,
+            "column": 15,
+            "nodeType": "Literal",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 17,
+      "target": "eslint-plugin-import/no-restricted-paths",
+      "code": "import x from \"pkg/private/secret\";",
+      "options": [
+        {
+          "basePath": "<fixture>",
+          "zones": [
+            {
+              "target": "./",
+              "from": "./node_modules/pkg/public/**"
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 18,
+      "target": "eslint-plugin-react/no-danger",
+      "code": "const x = <FormInput dangerouslySetInnerHTML={{ __html: \"x\" }} />;",
+      "options": [
+        {
+          "customComponentNames": [
+            "Form*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-danger",
+            "severity": 2,
+            "message": "Dangerous property 'dangerouslySetInnerHTML' found",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "dangerousProp",
+            "endLine": 1,
+            "endColumn": 63
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-danger",
+            "severity": 2,
+            "message": "Dangerous property 'dangerouslySetInnerHTML' found",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "dangerousProp",
+            "endLine": 1,
+            "endColumn": 63
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 19,
+      "target": "eslint-plugin-react/no-danger",
+      "code": "const x = <FormInput dangerouslySetInnerHTML={{ __html: \"x\" }} />;",
+      "options": [
+        {
+          "customComponentNames": [
+            "Other*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 20,
+      "target": "eslint-plugin-react/jsx-pascal-case",
+      "code": "const x = <BAD_COMPONENT />;",
+      "options": [
+        {
+          "ignore": [
+            "BAD_*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 21,
+      "target": "eslint-plugin-react/jsx-pascal-case",
+      "code": "const x = <BAD_COMPONENT />;",
+      "options": [
+        {
+          "ignore": [
+            "OTHER_*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-pascal-case",
+            "severity": 2,
+            "message": "Imported JSX component BAD_COMPONENT must be in PascalCase",
+            "line": 1,
+            "column": 11,
+            "nodeType": "JSXOpeningElement",
+            "messageId": "usePascalCase",
+            "endLine": 1,
+            "endColumn": 28
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-pascal-case",
+            "severity": 2,
+            "message": "Imported JSX component BAD_COMPONENT must be in PascalCase",
+            "line": 1,
+            "column": 11,
+            "nodeType": "JSXOpeningElement",
+            "messageId": "usePascalCase",
+            "endLine": 1,
+            "endColumn": 28
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 22,
+      "target": "eslint-plugin-react/jsx-handler-names",
+      "code": "const x = <FormInput onClick={this.badHandler} />;",
+      "options": [
+        {
+          "ignoreComponentNames": [
+            "Form*"
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 23,
+      "target": "eslint-plugin-react/jsx-handler-names",
+      "code": "const x = <FormInput onClick={this.badHandler} />;",
+      "options": [
+        {
+          "ignoreComponentNames": [
+            "Other*"
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-handler-names",
+            "severity": 2,
+            "message": "Handler function for onClick prop key must be a camelCase name beginning with 'handle' only",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "badHandlerName",
+            "endLine": 1,
+            "endColumn": 47
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/jsx-handler-names",
+            "severity": 2,
+            "message": "Handler function for onClick prop key must be a camelCase name beginning with 'handle' only",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "badHandlerName",
+            "endLine": 1,
+            "endColumn": 47
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 24,
+      "target": "eslint-plugin-react/no-unstable-nested-components",
+      "code": "function App() { return <Container renderPanel={() => <div />} />; }",
+      "options": [
+        {
+          "propNamePattern": "render*"
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 25,
+      "target": "eslint-plugin-react/no-unstable-nested-components",
+      "code": "function App() { return <Container renderPanel={() => <div />} />; }",
+      "options": [
+        {
+          "propNamePattern": "slot*"
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unstable-nested-components",
+            "severity": 2,
+            "message": "Do not define components during render. React will see a new component type on every render and destroy the entire subtree’s DOM nodes and state (https://reactjs.org/docs/reconciliation.html#elements-of-different-types). Instead, move this component definition out of the parent component “App” and pass data as props. If you want to allow component creation in props, set allowAsProps option to true.",
+            "line": 1,
+            "column": 49,
+            "nodeType": "ArrowFunctionExpression",
+            "endLine": 1,
+            "endColumn": 62
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/no-unstable-nested-components",
+            "severity": 2,
+            "message": "Do not define components during render. React will see a new component type on every render and destroy the entire subtree’s DOM nodes and state (https://reactjs.org/docs/reconciliation.html#elements-of-different-types). Instead, move this component definition out of the parent component “App” and pass data as props. If you want to allow component creation in props, set allowAsProps option to true.",
+            "line": 1,
+            "column": 49,
+            "nodeType": "ArrowFunctionExpression",
+            "endLine": 1,
+            "endColumn": 62
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 26,
+      "target": "eslint-plugin-react/forbid-component-props",
+      "code": "const x = <SafeWidget data-test=\"1\" />;",
+      "options": [
+        {
+          "forbid": [
+            {
+              "propNamePattern": "data-*",
+              "allowedForPatterns": [
+                "Safe*"
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": 0,
+      "baseline": {
+        "success": true,
+        "messages": []
+      },
+      "installed": {
+        "success": true,
+        "messages": []
+      },
+      "equivalent": true
+    },
+    {
+      "index": 27,
+      "target": "eslint-plugin-react/forbid-component-props",
+      "code": "const x = <BadWidget data-test=\"1\" />;",
+      "options": [
+        {
+          "forbid": [
+            {
+              "propNamePattern": "data-*",
+              "allowedForPatterns": [
+                "Safe*"
+              ]
+            }
+          ]
+        }
+      ],
+      "expected": 1,
+      "baseline": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/forbid-component-props",
+            "severity": 2,
+            "message": "Prop \"data-test\" is forbidden on Components",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "propIsForbidden",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "installed": {
+        "success": true,
+        "messages": [
+          {
+            "ruleId": "review/forbid-component-props",
+            "severity": 2,
+            "message": "Prop \"data-test\" is forbidden on Components",
+            "line": 1,
+            "column": 22,
+            "nodeType": "JSXAttribute",
+            "messageId": "propIsForbidden",
+            "endLine": 1,
+            "endColumn": 35
+          }
+        ]
+      },
+      "equivalent": true
+    },
+    {
+      "index": 28,
+      "target": "eslint-plugin-jsx-a11y/mayContainChildComponent",
+      "pattern": "Input*",
+      "expected": true,
+      "baseline": {
+        "success": true,
+        "value": true
+      },
+      "installed": {
+        "success": true,
+        "value": true
+      },
+      "equivalent": true
+    },
+    {
+      "index": 29,
+      "target": "eslint-plugin-jsx-a11y/mayContainChildComponent",
+      "pattern": "Other*",
+      "expected": false,
+      "baseline": {
+        "success": true,
+        "value": false
+      },
+      "installed": {
+        "success": true,
+        "value": false
+      },
+      "equivalent": true
+    },
+    {
+      "index": 30,
+      "target": "eslint-plugin-jsx-a11y/mayHaveAccessibleLabel",
+      "pattern": "Input*",
+      "expected": false,
+      "baseline": {
+        "success": true,
+        "value": false
+      },
+      "installed": {
+        "success": true,
+        "value": false
+      },
+      "equivalent": true
+    },
+    {
+      "index": 31,
+      "target": "eslint-plugin-jsx-a11y/mayHaveAccessibleLabel",
+      "pattern": "Other*",
+      "expected": true,
+      "baseline": {
+        "success": true,
+        "value": true
+      },
+      "installed": {
+        "success": true,
+        "value": true
+      },
+      "equivalent": true
+    }
+  ]
+}

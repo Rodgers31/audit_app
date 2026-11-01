@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/cache_compatibility_verified.cjs"
+  ],
+  "exit": 0,
+  "at": "2026-10-31T23:04:39.755092+00:00",
+  "setupNotes": [
+    "First run incorrectly expected skip-output to remove an existing cached result; baseline also failed. Corrected to test an uncached output-bearing file.",
+    "Second run expected null on direct missing-file wrapper call; all variants instead throw before meta access, matching existing wrapper assumption. Final test expects that baseline behavior, while direct file-entry-cache missing-file detection is separately asserted."
+  ]
+}

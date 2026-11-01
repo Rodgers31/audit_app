@@ -1,0 +1,97 @@
+[
+  {
+    "module": "mm3",
+    "parts": 4,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm3",
+      "4"
+    ],
+    "timed_out": false,
+    "returncode": 0,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"3.1.5\",\"pattern\":\"*a*a*a*ab\",\"valueLength\":32}\n{\"phase\":\"after-match\",\"elapsed_ms\":0.5560410000000005,\"result\":false}\n",
+    "stderr": "",
+    "wall_seconds": 0.040063125
+  },
+  {
+    "module": "mm3",
+    "parts": 8,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm3",
+      "8"
+    ],
+    "timed_out": false,
+    "returncode": 0,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"3.1.5\",\"pattern\":\"*a*a*a*a*a*a*a*ab\",\"valueLength\":32}\n{\"phase\":\"after-match\",\"elapsed_ms\":54.245292,\"result\":false}\n",
+    "stderr": "",
+    "wall_seconds": 0.093107583
+  },
+  {
+    "module": "mm3",
+    "parts": 12,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm3",
+      "12"
+    ],
+    "timed_out": true,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"3.1.5\",\"pattern\":\"*a*a*a*a*a*a*a*a*a*a*a*ab\",\"valueLength\":32}\n",
+    "stderr": null,
+    "wall_seconds": 0.75556675
+  },
+  {
+    "module": "mm11",
+    "parts": 4,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm11",
+      "4"
+    ],
+    "timed_out": false,
+    "returncode": 0,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"11.0.3\",\"pattern\":\"*a*a*a*ab\",\"valueLength\":32}\n{\"phase\":\"after-match\",\"elapsed_ms\":1.0883749999999992,\"result\":false}\n",
+    "stderr": "",
+    "wall_seconds": 0.04048391699999998
+  },
+  {
+    "module": "mm11",
+    "parts": 8,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm11",
+      "8"
+    ],
+    "timed_out": false,
+    "returncode": 0,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"11.0.3\",\"pattern\":\"*a*a*a*a*a*a*a*ab\",\"valueLength\":32}\n{\"phase\":\"after-match\",\"elapsed_ms\":1.1089999999999982,\"result\":false}\n",
+    "stderr": "",
+    "wall_seconds": 0.03918166700000003
+  },
+  {
+    "module": "mm11",
+    "parts": 12,
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=64",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/legacy-other-pattern.cjs",
+      "mm11",
+      "12"
+    ],
+    "timed_out": false,
+    "returncode": 0,
+    "stdout": "{\"phase\":\"before-match\",\"version\":\"11.0.3\",\"pattern\":\"*a*a*a*a*a*a*a*a*a*a*a*ab\",\"valueLength\":32}\n{\"phase\":\"after-match\",\"elapsed_ms\":1.0619999999999976,\"result\":false}\n",
+    "stderr": "",
+    "wall_seconds": 0.03862162499999999
+  }
+]

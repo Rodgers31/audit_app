@@ -1,0 +1,41 @@
+{
+  "captured_utc": "2026-10-31T23:00:14.198735+00:00",
+  "comparison": "exact full effective config/options, every source file diagnostic and direct ConfigArray behavior",
+  "linted": 360,
+  "unique_configs": 2,
+  "rules_in_first_config": 54,
+  "enabled_rules_in_first_config": 46,
+  "rule_namespaces": {
+    "@next": {
+      "configured": 21,
+      "enabled": 20
+    },
+    "import": {
+      "configured": 1,
+      "enabled": 1
+    },
+    "jsx-a11y": {
+      "configured": 6,
+      "enabled": 6
+    },
+    "local": {
+      "configured": 2,
+      "enabled": 2
+    },
+    "react-hooks": {
+      "configured": 2,
+      "enabled": 1
+    },
+    "react": {
+      "configured": 22,
+      "enabled": 16
+    }
+  },
+  "interceptions": [
+    "node_modules/@eslint/eslintrc/dist/eslintrc.cjs",
+    "node_modules/@humanwhocodes/config-array/api.js",
+    "node_modules/eslint/lib/cli-engine/file-enumerator.js",
+    "node_modules/eslint/lib/eslint/eslint-helpers.js"
+  ],
+  "equal": true
+}

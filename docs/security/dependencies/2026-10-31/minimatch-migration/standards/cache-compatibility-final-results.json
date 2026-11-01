@@ -1,0 +1,309 @@
+{
+  "at": "2026-10-31T23:04:39.739Z",
+  "wrapperSHA256": "f5b61884f945179e9d71adc1b7699de5e2fc06fd95e25d59bf70573199987b5e",
+  "variants": 3,
+  "casesPerVariant": 9,
+  "outputs": [
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "metadata-roundtrip-and-mutation",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "checksum-detects-same-size-content-with-restored-mtime",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "literal-metachar-cache-filename",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "malformed-cache-forces-recompute",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "actual-ESLint-cache-wrapper-metadata",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "actual-ESLint-cache-wrapper-content",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "delete-literal-file-no-glob",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "delete-nested-directory",
+      "pass": true
+    },
+    {
+      "variant": "baseline-flat3-rimraf3",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "3.0.2",
+        "glob": "7.2.3",
+        "minimatch": "3.1.5"
+      },
+      "case": "delete-directory-symlink-preserves-target",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "metadata-roundtrip-and-mutation",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "checksum-detects-same-size-content-with-restored-mtime",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "literal-metachar-cache-filename",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "malformed-cache-forces-recompute",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "actual-ESLint-cache-wrapper-metadata",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "actual-ESLint-cache-wrapper-content",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "delete-literal-file-no-glob",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "delete-nested-directory",
+      "pass": true
+    },
+    {
+      "variant": "flat3-rimraf6",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "3.2.0",
+        "rimraf": "6.1.3",
+        "glob": "14.0.3",
+        "minimatch": "11.0.3"
+      },
+      "case": "delete-directory-symlink-preserves-target",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "metadata-roundtrip-and-mutation",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "checksum-detects-same-size-content-with-restored-mtime",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "literal-metachar-cache-filename",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "malformed-cache-forces-recompute",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "actual-ESLint-cache-wrapper-metadata",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "actual-ESLint-cache-wrapper-content",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "delete-literal-file-no-glob",
+      "pass": true
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "delete-nested-directory",
+      "pass": false,
+      "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n"
+    },
+    {
+      "variant": "flat4",
+      "identity": {
+        "fileEntryCache": "6.0.1",
+        "flatCache": "4.0.1"
+      },
+      "case": "delete-directory-symlink-preserves-target",
+      "pass": false,
+      "error": "Error: ENOENT: no such file or directory, open '/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/cache-case-LuIZKy/owned-target/sentinel'"
+    }
+  ],
+  "failuresInBaselineOrRimraf6Candidate": 0,
+  "recommendation": "Scoped flat-cache3.2.0 -> rimraf6.1.3 preserves tested cache and deletion behavior on Node24 and avoids glob7/minimatch3. Flat-cache4.0.1 changes deletion behavior for nested directories and directory symlinks; avoid that alternative without broader qualification."
+}

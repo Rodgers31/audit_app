@@ -1,0 +1,200 @@
+{
+  "at": "2026-10-31T22:14:09.562801+00:00",
+  "harness_sha256": "2578793f10b8e1485594eb65edfe8181ef57eb77287109b6d7c19d1c8b8ef467",
+  "results": [
+    {
+      "module": "mm10",
+      "version": "10.2.6",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+      "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": false,
+      "features": {
+        "firstPhase": true,
+        "secondPhase": true,
+        "partsMatch": true
+      },
+      "observations": {
+        "firstPhase": [],
+        "secondPhase": [],
+        "partsMatch": 0
+      },
+      "globParts": 256,
+      "setLength": 256,
+      "elapsed_ms": 6.6485,
+      "heap_delta": 916568,
+      "rss": 62521344
+    },
+    {
+      "module": "mm10",
+      "version": "10.2.6",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+      "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": true,
+      "features": {
+        "firstPhase": true,
+        "secondPhase": true,
+        "partsMatch": true
+      },
+      "observations": {
+        "firstPhase": [
+          {
+            "before": 1,
+            "after": 256
+          }
+        ],
+        "secondPhase": [
+          {
+            "before": 256,
+            "after": 256
+          }
+        ],
+        "partsMatch": 32640
+      },
+      "globParts": 256,
+      "setLength": 256,
+      "elapsed_ms": 6.971749999999998,
+      "heap_delta": 853888,
+      "rss": 62341120
+    },
+    {
+      "module": "mm11",
+      "version": "11.0.3",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+      "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": false,
+      "features": {
+        "firstPhase": true,
+        "secondPhase": true,
+        "partsMatch": true
+      },
+      "observations": {
+        "firstPhase": [],
+        "secondPhase": [],
+        "partsMatch": 0
+      },
+      "globParts": 8,
+      "setLength": 8,
+      "elapsed_ms": 0.6570420000000023,
+      "heap_delta": 119944,
+      "rss": 52707328
+    },
+    {
+      "module": "mm11",
+      "version": "11.0.3",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+      "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": true,
+      "features": {
+        "firstPhase": true,
+        "secondPhase": true,
+        "partsMatch": true
+      },
+      "observations": {
+        "firstPhase": [
+          {
+            "before": 1,
+            "after": 8
+          }
+        ],
+        "secondPhase": [
+          {
+            "before": 8,
+            "after": 8
+          }
+        ],
+        "partsMatch": 28
+      },
+      "globParts": 8,
+      "setLength": 8,
+      "elapsed_ms": 0.5989170000000001,
+      "heap_delta": 124216,
+      "rss": 52805632
+    },
+    {
+      "module": "mm3",
+      "version": "3.1.5",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+      "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": false,
+      "features": {
+        "firstPhase": false,
+        "secondPhase": false,
+        "partsMatch": false
+      },
+      "observations": {
+        "firstPhase": [],
+        "secondPhase": [],
+        "partsMatch": 0
+      },
+      "globParts": 1,
+      "setLength": 1,
+      "elapsed_ms": 0.28545899999999946,
+      "heap_delta": 777984,
+      "rss": 51183616
+    },
+    {
+      "module": "mm3",
+      "version": "3.1.5",
+      "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+      "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+      "family": "advisory",
+      "parts": 8,
+      "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+      "options": {
+        "braceExpandMax": 8,
+        "optimizationLevel": 2
+      },
+      "instrument": true,
+      "features": {
+        "firstPhase": false,
+        "secondPhase": false,
+        "partsMatch": false
+      },
+      "observations": {
+        "firstPhase": [],
+        "secondPhase": [],
+        "partsMatch": 0
+      },
+      "globParts": 1,
+      "setLength": 1,
+      "elapsed_ms": 0.2960830000000012,
+      "heap_delta": 777984,
+      "rss": 51068928
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "owned-minimatch-applicability-fixture",
+  "private": true,
+  "dependencies": {
+    "mm3": "npm:minimatch@3.1.5",
+    "mm6": "npm:minimatch@6.2.0",
+    "mm7": "npm:minimatch@7.0.0",
+    "mm71": "npm:minimatch@7.1.0",
+    "mm9": "npm:minimatch@9.0.9",
+    "mm1024": "npm:minimatch@10.2.4",
+    "mm10": "npm:minimatch@10.2.6",
+    "mm1100": "npm:minimatch@11.0.0",
+    "mm1101": "npm:minimatch@11.0.1",
+    "mm11": "npm:minimatch@11.0.3"
+  }
+}

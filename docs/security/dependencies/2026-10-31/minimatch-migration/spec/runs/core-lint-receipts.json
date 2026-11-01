@@ -1,0 +1,30 @@
+[
+  {
+    "mode": "baseline",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=1024",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-core-lint.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "baseline"
+    ],
+    "returncode": 0,
+    "stdout_sha256": "57567dc20efdfa6d054f22804fe1f99545ee6372fa4981da7035867c80b3da41",
+    "stderr": "",
+    "wall_seconds": 3.3777860410000002
+  },
+  {
+    "mode": "modern-core",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=1024",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-core-lint.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "modern-core"
+    ],
+    "returncode": 0,
+    "stdout_sha256": "42ec2fb5e1ddade7c91f279205900faeb13d5164f31b6914bc61f98fb79840d2",
+    "stderr": "",
+    "wall_seconds": 2.30448775
+  }
+]

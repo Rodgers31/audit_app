@@ -1,0 +1,17 @@
+{
+  "source_files": 360,
+  "linted_files": 360,
+  "unique_configs": 2,
+  "baseline_payload_sha256": "57567dc20efdfa6d054f22804fe1f99545ee6372fa4981da7035867c80b3da41",
+  "installed_minimatch": "11.0.3",
+  "runtime_redirection_used": false,
+  "comparisons": {
+    "sourceFileCount": true,
+    "lintedFileCount": true,
+    "configurations": true,
+    "mappings": true,
+    "configArrayCases": true,
+    "diagnostic": true
+  },
+  "identical": true
+}

@@ -1,0 +1,130 @@
+[
+  {
+    "caller": "eslint",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-y7tsuM/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-y7tsuM/node_modules/eslint/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-y7tsuM/node_modules/eslint/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.676440292
+  },
+  {
+    "caller": "@eslint/eslintrc",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "@eslint/eslintrc",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-5fv2rY/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-5fv2rY/node_modules/@eslint/eslintrc/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-5fv2rY/node_modules/@eslint/eslintrc/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher @eslint/eslintrc -> node_modules/@eslint/eslintrc/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.671920375
+  },
+  {
+    "caller": "@humanwhocodes/config-array",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "@humanwhocodes/config-array",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-FjsblT/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-FjsblT/node_modules/@humanwhocodes/config-array/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-FjsblT/node_modules/@humanwhocodes/config-array/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher @humanwhocodes/config-array -> node_modules/@humanwhocodes/config-array/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.6386187090000001
+  },
+  {
+    "caller": "eslint-plugin-import",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint-plugin-import",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-e0HkJg/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-e0HkJg/node_modules/eslint-plugin-import/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-e0HkJg/node_modules/eslint-plugin-import/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher eslint-plugin-import -> node_modules/eslint-plugin-import/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.628388834
+  },
+  {
+    "caller": "eslint-plugin-react",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint-plugin-react",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-xzrvpg/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-xzrvpg/node_modules/eslint-plugin-react/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-xzrvpg/node_modules/eslint-plugin-react/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher eslint-plugin-react -> node_modules/eslint-plugin-react/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.8270972919999999
+  },
+  {
+    "caller": "eslint-plugin-jsx-a11y",
+    "dependency": "minimatch",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "eslint-plugin-jsx-a11y",
+      "minimatch"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-iKIAxd/node_modules/minimatch/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-iKIAxd/node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-iKIAxd/node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch\",\"error\":\"tooling repair: unreviewed resolved matcher eslint-plugin-jsx-a11y -> node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.825943292
+  },
+  {
+    "caller": "flat-cache",
+    "dependency": "rimraf",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "flat-cache",
+      "rimraf"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-29jEyR/node_modules/rimraf/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-29jEyR/node_modules/flat-cache/node_modules/rimraf/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-29jEyR/node_modules/flat-cache/node_modules/rimraf\",\"error\":\"tooling repair: unreviewed resolved matcher flat-cache -> node_modules/flat-cache/node_modules/rimraf/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.7442510420000001
+  },
+  {
+    "caller": "rimraf",
+    "dependency": "glob",
+    "argv": [
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+      "--max-old-space-size=256",
+      "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/probe-installer-resolver-cache.cjs",
+      "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+      "rimraf",
+      "glob"
+    ],
+    "returncode": 0,
+    "stdout": "{\"first\":{\"check\":\"source-bound-tooling-repairs\",\"packages\":[\"node_modules/braces\",\"node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml\",\"node_modules/deepmerge\",\"node_modules/@eslint/eslintrc\",\"node_modules/eslint-plugin-import\",\"node_modules/eslint-plugin-react\",\"node_modules/eslint-plugin-jsx-a11y\"],\"absentPackages\":[],\"changedFiles\":0},\"before\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-60aisl/node_modules/glob/package.json\",\"after\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-60aisl/node_modules/rimraf/node_modules/glob/package.json\",\"shadow\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/spec/runs/resolver-cache-60aisl/node_modules/rimraf/node_modules/glob\",\"error\":\"tooling repair: unreviewed resolved matcher rimraf -> node_modules/rimraf/node_modules/glob/package.json\"}\n",
+    "stderr": "",
+    "wall_seconds": 0.7302540419999999
+  }
+]

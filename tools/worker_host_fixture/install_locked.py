@@ -32,6 +32,9 @@ def install(path):
         pinned.append((name, version, row))
     if not pinned:
         raise ValueError('Nonempty complete lock required')
+    # Upgrade the profile's installer before it handles any other distribution.
+    # Stable sorting retains the declared order of all non-installer pins.
+    pinned.sort(key=lambda item: item[0].lower() != 'pip')
     # PIP_CONFIG_FILE disables global/site config too; --isolated alone does not.
     environment = dict(PATH='/usr/local/bin:/usr/bin:/bin', HOME='/tmp',
         LC_ALL='C.UTF-8', PIP_CONFIG_FILE='/dev/null')

@@ -1,0 +1,375 @@
+{
+  "at": "2026-10-31T23:27:25.008Z",
+  "cases": 52,
+  "sourceHashes": {
+    "package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "scripts/apply-tooling-repairs.cjs": "068a93d7f52424739f07adf3f4140ffb7daf172fcd44942e050725760f1f4b5e",
+    "scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2"
+  },
+  "output": [
+    {
+      "label": "all-25-originals-repaired-repeat-check-with-exact-links",
+      "installed": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 25
+      },
+      "repeated": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      },
+      "checked": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "absentPackages": [],
+        "changedFiles": 0
+      }
+    },
+    {
+      "label": "changed-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: changed CLI link node_modules/eslint-plugin-import/node_modules/.bin/semver\n+ actual - expected\n\n+ '../semver/package.json'\n- '../semver/bin/semver.js'\n             ^\n"
+    },
+    {
+      "label": "absolute-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: changed CLI link node_modules/eslint-plugin-import/node_modules/.bin/semver\n+ actual - expected\n\n+ '/owned/no-target'\n- '../semver/bin/semver.js'\n"
+    },
+    {
+      "label": "escaping-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: changed CLI link node_modules/eslint-plugin-import/node_modules/.bin/semver\n+ actual - expected\n\n+ '../../../../outside'\n- '../semver/bin/semver.js'\n      ^\n"
+    },
+    {
+      "label": "dangling-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: changed CLI link node_modules/eslint-plugin-import/node_modules/.bin/semver\n+ actual - expected\n\n+ '../semver/bin/missing'\n- '../semver/bin/semver.js'\n                 ^\n"
+    },
+    {
+      "label": "missing-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "Error: ENOENT: no such file or directory, lstat '/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/minimatch-migration/standards/link-graph-case-Xzmvx0/node_modules/eslint-plugin-import/node_modules/.bin/semver'"
+    },
+    {
+      "label": "regular-file-instead-of-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI symlink required node_modules/eslint-plugin-import/node_modules/.bin/semver"
+    },
+    {
+      "label": "symlink-bin-ancestor",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint-plugin-import/node_modules/.bin"
+    },
+    {
+      "label": "undeclared-bin-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint-plugin-import/node_modules/.bin/extra"
+    },
+    {
+      "label": "undeclared-package-link",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint-plugin-react/extra.js"
+    },
+    {
+      "label": "missing-link-target",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: absent path node_modules/eslint-plugin-import/node_modules/semver/bin/semver.js"
+    },
+    {
+      "label": "changed-link-target-bytes",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: upstream bytes changed node_modules/eslint-plugin-import/node_modules/semver/bin/semver.js"
+    },
+    {
+      "label": "nonexecutable-link-target",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: executable mode required node_modules/eslint-plugin-import/node_modules/semver/bin/semver.js"
+    },
+    {
+      "label": "symlink-link-target",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: symlink refused node_modules/eslint-plugin-import/node_modules/semver/bin/semver.js"
+    },
+    {
+      "label": "bad-link-map-null",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: invalid CLI link inventory"
+    },
+    {
+      "label": "bad-link-map-false",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: invalid CLI link inventory"
+    },
+    {
+      "label": "bad-link-map-0",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: invalid CLI link inventory"
+    },
+    {
+      "label": "bad-link-map-\"\"",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: invalid CLI link inventory"
+    },
+    {
+      "label": "bad-link-map-[]",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: invalid CLI link inventory"
+    },
+    {
+      "label": "bad-link-map-{}",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI link inventory required\n+ actual - expected\n\n+ {}\n- {\n-   'node_modules/.bin/semver': '../semver/bin/semver.js'\n- }\n"
+    },
+    {
+      "label": "bad-link-map-{\"node_modules/.bin/semver\":\"/outside\"}",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI link inventory required\n+ actual - expected\n\n  {\n+   'node_modules/.bin/semver': '/outside'\n-   'node_modules/.bin/semver': '../semver/bin/semver.js'\n  }\n"
+    },
+    {
+      "label": "bad-link-map-{\"node_modules/.bin/semver\":\"../../../../outside\"}",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI link inventory required\n+ actual - expected\n\n  {\n+   'node_modules/.bin/semver': '../../../../outside'\n-   'node_modules/.bin/semver': '../semver/bin/semver.js'\n  }\n"
+    },
+    {
+      "label": "bad-link-map-{\"node_modules/.bin/new\":\"../semver/bin/semver.js\"}",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI link inventory required\n+ actual - expected\n\n  {\n+   'node_modules/.bin/new': '../semver/bin/semver.js'\n-   'node_modules/.bin/semver': '../semver/bin/semver.js'\n  }\n"
+    },
+    {
+      "label": "link-map-on-unrelated-package",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: reviewed CLI link inventory required\n+ actual - expected\n\n+ {\n+   'node_modules/.bin/extra': '../index.js'\n+ }\n- {}\n"
+    },
+    {
+      "label": "physical-shadow-eslint",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-@eslint_eslintrc",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher @eslint/eslintrc -> node_modules/@eslint/eslintrc/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-@humanwhocodes_config-array",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher @humanwhocodes/config-array -> node_modules/@humanwhocodes/config-array/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-eslint-plugin-import",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint-plugin-import -> node_modules/eslint-plugin-import/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-eslint-plugin-react",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint-plugin-react -> node_modules/eslint-plugin-react/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-eslint-plugin-jsx-a11y",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint-plugin-jsx-a11y -> node_modules/eslint-plugin-jsx-a11y/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "physical-shadow-flat-cache",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher flat-cache -> node_modules/flat-cache/node_modules/rimraf/package.json"
+    },
+    {
+      "label": "physical-shadow-rimraf",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher rimraf -> node_modules/rimraf/node_modules/glob/package.json"
+    },
+    {
+      "label": "deep-physical-shadow-eslint_lib_cli-engine",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/lib/cli-engine/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "deep-physical-shadow-eslint_lib_eslint",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher eslint -> node_modules/eslint/lib/eslint/node_modules/minimatch/package.json"
+    },
+    {
+      "label": "deep-physical-shadow-flat-cache_src",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher flat-cache -> node_modules/flat-cache/src/node_modules/rimraf/package.json"
+    },
+    {
+      "label": "deep-physical-shadow-rimraf_dist_commonjs",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed resolved matcher rimraf -> node_modules/rimraf/dist/commonjs/node_modules/glob/package.json"
+    },
+    {
+      "label": "missing-actual-requester",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: absent path node_modules/eslint/lib/cli-engine/file-enumerator.js"
+    },
+    {
+      "label": "locked-old-minimatch",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible matcher graph node_modules/unreviewed/node_modules/minimatch"
+    },
+    {
+      "label": "locked-old-glob",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible matcher graph node_modules/unreviewed/node_modules/glob"
+    },
+    {
+      "label": "locked-old-rimraf",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible matcher graph node_modules/unreviewed/node_modules/rimraf"
+    },
+    {
+      "label": "missing-reviewed-matcher",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: missing reviewed minimatch"
+    },
+    {
+      "label": "nondev-reviewed-matcher",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: incompatible matcher graph node_modules/minimatch"
+    },
+    {
+      "label": "unexpected-nested-plugin-source",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unexpected package file node_modules/eslint-plugin-react/node_modules/unreviewed.js"
+    },
+    {
+      "label": "changed-plugin-source",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: upstream bytes changed node_modules/eslint-plugin-react/lib/rules/no-danger.js"
+    },
+    {
+      "label": "missing-new-package-inventory",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: complete package inventory required"
+    },
+    {
+      "label": "canonical-entry-bytes-minimatch",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: matcher executable bytes changed node_modules/minimatch/dist/commonjs/index.js\n+ actual - expected\n\n+ '4409875001b94fea36dfdb76d644aa97036b520e7637e74dc617dee3a8c727df'\n- '235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32'\n"
+    },
+    {
+      "label": "canonical-entry-symlink-minimatch",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed matcher executable eslint -> owned-entry.js\n+ actual - expected\n\n+ 'owned-entry.js'\n- 'node_modules/minimatch/dist/commonjs/index.js'\n"
+    },
+    {
+      "label": "canonical-entry-bytes-rimraf",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: matcher executable bytes changed node_modules/rimraf/dist/commonjs/index.js\n+ actual - expected\n\n+ '739a34db7aa6128c40bd18eb357440a553968364cfb9282b124811555dcc3f3e'\n- '527e3ad870373000e45036d4b7dc6b390fa766c0024af0cd2a3b7190de02ca17'\n"
+    },
+    {
+      "label": "canonical-entry-symlink-rimraf",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed matcher executable flat-cache -> owned-entry.js\n+ actual - expected\n\n+ 'owned-entry.js'\n- 'node_modules/rimraf/dist/commonjs/index.js'\n"
+    },
+    {
+      "label": "canonical-entry-bytes-glob",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: matcher executable bytes changed node_modules/glob/dist/commonjs/index.min.js\n+ actual - expected\n\n+ '16350f1dd06bb1b93b1bfcd2f8f59ee8f153620954dfbb981d516788e4894353'\n- 'e0e787fa4b225c70db7aab2886011cae21855ef232908db066ce054c8f8ded16'\n"
+    },
+    {
+      "label": "canonical-entry-symlink-glob",
+      "refused": true,
+      "packageTreeUnchanged": true,
+      "error": "AssertionError [ERR_ASSERTION]: tooling repair: unreviewed matcher executable rimraf -> owned-entry.js\n+ actual - expected\n\n+ 'owned-entry.js'\n- 'node_modules/glob/dist/commonjs/index.min.js'\n"
+    },
+    {
+      "label": "production-omission-is-explicit",
+      "result": {
+        "check": "source-bound-tooling-repairs",
+        "packages": [],
+        "absentPackages": [
+          "node_modules/braces",
+          "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+          "node_modules/deepmerge",
+          "node_modules/@eslint/eslintrc",
+          "node_modules/eslint-plugin-import",
+          "node_modules/eslint-plugin-react",
+          "node_modules/eslint-plugin-jsx-a11y"
+        ],
+        "changedFiles": 0
+      },
+      "fullCheckRefused": true
+    }
+  ]
+}

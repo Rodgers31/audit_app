@@ -4,6 +4,12 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci --include=dev --include=optional",
   "outputDirectory": ".next",
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/**": false,
+      "codex/dependency-security-*": false
+    }
+  },
   "redirects": [
     {
       "source": "/(.*)",

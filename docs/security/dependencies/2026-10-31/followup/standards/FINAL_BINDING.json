@@ -1,0 +1,211 @@
+{
+  "observed_at": "2026-10-31T22:25:25.274270+00:00",
+  "candidate": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app",
+  "branch": "codex/dependency-security-weekly",
+  "head": "45bb6b90fd1d902f4ca74a4c4eca5bcb6b75b7be",
+  "head_tree": "4315b6c26a131cf152d7b872f56d7bd011ea4d1f",
+  "reviewed_delta_sha256": "9ac37ead5ec971c658e5b90050b3e2a95359ff38248e527fd49daa3d18133e06",
+  "executable_inputs": {
+    "frontend/package.json": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+    "frontend/package-lock.json": "c183980beaa75a9a8cbe6bcdd742942acef2e3990f0af1bdc1e50c81e3de99cc",
+    "frontend/scripts/apply-tooling-repairs.cjs": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+    "frontend/scripts/tooling-repairs.json": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+    "frontend/scripts/deepmerge-boundary.test.cjs": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+    "frontend/scripts/tooling-repair-install.test.cjs": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef",
+    "frontend/scripts/modern-glob-boundary.test.cjs": "f1f18e79a04b2afd27cc4b55b6778997680c186642e8c143186e6c16b134f92d"
+  },
+  "tested_source_still_matches": true,
+  "changed_files_observed": {
+    "docs/security/DEPENDENCY_FOLLOWUP_2026_10_31.md": {
+      "sha256": "ead0c8d052c372680ff3266971195cdbbab04104a57b3ed784529bb062bc0a12",
+      "bytes": 10458,
+      "staged_sha256": "ead0c8d052c372680ff3266971195cdbbab04104a57b3ed784529bb062bc0a12",
+      "matches_staged": true
+    },
+    "docs/security/DEPENDENCY_REMEDIATION_2026_10_31.md": {
+      "sha256": "02620b8cffb964666f4eb7873e8b7a2691ab1d7dc3470bee9c9f8863dd4adc15",
+      "bytes": 15642,
+      "staged_sha256": "02620b8cffb964666f4eb7873e8b7a2691ab1d7dc3470bee9c9f8863dd4adc15",
+      "matches_staged": true
+    },
+    "docs/security/dependencies/2026-10-31/followup/author-acceptance.json": {
+      "sha256": "a413cb1dd84d0d2e793a2b142051a0745cc25c3050c28d0495c025dd6b2edb04",
+      "bytes": 9355,
+      "staged_sha256": "a413cb1dd84d0d2e793a2b142051a0745cc25c3050c28d0495c025dd6b2edb04",
+      "matches_staged": true
+    },
+    "docs/security/dependencies/2026-10-31/followup/legacy-backtracking-author-replay.json": {
+      "sha256": "79d6df2701fd29202e7928315a90d3ff023257a886637d4035525b5743d036b8",
+      "bytes": 5007,
+      "staged_sha256": "79d6df2701fd29202e7928315a90d3ff023257a886637d4035525b5743d036b8",
+      "matches_staged": true
+    },
+    "docs/security/dependencies/2026-10-31/followup/minimatch-author-replay.json": {
+      "sha256": "203eb0fb6f87dd69be49688bf5419b6b097ef90cc459edd6ff79e4f5f9e49270",
+      "bytes": 6162,
+      "staged_sha256": "203eb0fb6f87dd69be49688bf5419b6b097ef90cc459edd6ff79e4f5f9e49270",
+      "matches_staged": true
+    },
+    "docs/security/dependencies/2026-10-31/followup/npm-full.json": {
+      "sha256": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+      "bytes": 11984,
+      "staged_sha256": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+      "matches_staged": true
+    },
+    "docs/security/dependencies/2026-10-31/followup/npm-production.json": {
+      "sha256": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b",
+      "bytes": 365,
+      "staged_sha256": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b",
+      "matches_staged": true
+    },
+    "frontend/package.json": {
+      "sha256": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+      "bytes": 4441,
+      "staged_sha256": "e60c0ab74c9e3624f27c5b93bb833b4bdc06d13fbae0d8382ce3d49dfa05ff0f",
+      "matches_staged": true
+    },
+    "frontend/scripts/apply-tooling-repairs.cjs": {
+      "sha256": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+      "bytes": 13018,
+      "staged_sha256": "c8e47c698c5327ba8bbac8232c2b894436bb5382c7cfe1a1fc9013e9d46816e4",
+      "matches_staged": true
+    },
+    "frontend/scripts/deepmerge-boundary.test.cjs": {
+      "sha256": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+      "bytes": 4740,
+      "staged_sha256": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+      "matches_staged": true
+    },
+    "frontend/scripts/modern-glob-boundary.test.cjs": {
+      "sha256": "f1f18e79a04b2afd27cc4b55b6778997680c186642e8c143186e6c16b134f92d",
+      "bytes": 3998,
+      "staged_sha256": "f1f18e79a04b2afd27cc4b55b6778997680c186642e8c143186e6c16b134f92d",
+      "matches_staged": true
+    },
+    "frontend/scripts/tooling-repair-install.test.cjs": {
+      "sha256": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef",
+      "bytes": 15013,
+      "staged_sha256": "bd3279200c75c76c57f53fafebe51c1716e83f0db0e77b4bc1e46439fa7e2bef",
+      "matches_staged": true
+    },
+    "frontend/scripts/tooling-repairs.json": {
+      "sha256": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+      "bytes": 26193,
+      "staged_sha256": "9b57e3b386ae3553d78788fb79d9d9dcc35be040fca30d9e94de4ef851db3c3c",
+      "matches_staged": true
+    }
+  },
+  "deepmerge_tar": {
+    "url": "https://registry.npmjs.org/deepmerge/-/deepmerge-4.3.1.tgz",
+    "sha256": "4003a0a348276a95543fa969f561f6b5968629acbbb59d66018dd23e7b8f1d5c",
+    "integrity": "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==",
+    "all_original_inventory_files_match_tar": true,
+    "all_installed_repaired_inventory_files_match": true,
+    "original_files": {
+      ".editorconfig": "73cc38e40b41f1eea6fd2d98d0ade5324f1ad564c3f111ebd0040b4286d2c25c",
+      ".eslintcache": "7690c5da38095c17a8c3ce73f3ebdc7bf7d7797c618a9c919c79a6b5e0024012",
+      "dist/cjs.js": "2e5160f84a1141bd927264afe4d15766f1e6cf07daef182b37ff53fea121de7d",
+      "index.js": "12440c84957c1990ea2d5e33dc0091722dc1dc1585c6d20e0c780e568ffa9d30",
+      "rollup.config.js": "abba48beb11daa282e69134e4928ec32737ae6f6d192dd5f00a6e660e032bb25",
+      "dist/umd.js": "f33e6596482d1fb5c7c427f8ef92f2aa849eea9223acd974176b2fb27ddbf73a",
+      "package.json": "f56978e7a6da1a3c6edee41abb54f98584a2fa2680458c48db820ae772fef0c9",
+      "changelog.md": "360f6a3465a3e82f7bc1428cf1dc0cf5e6935a83b97345d172d27a4d8703321e",
+      "readme.md": "202430923abee498512b2f9cbab686a1e7d64759314a503ca0d5aaa29007fc0f",
+      "index.d.ts": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44",
+      "license.txt": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b"
+    },
+    "installed_files": {
+      ".editorconfig": "73cc38e40b41f1eea6fd2d98d0ade5324f1ad564c3f111ebd0040b4286d2c25c",
+      ".eslintcache": "7690c5da38095c17a8c3ce73f3ebdc7bf7d7797c618a9c919c79a6b5e0024012",
+      "changelog.md": "360f6a3465a3e82f7bc1428cf1dc0cf5e6935a83b97345d172d27a4d8703321e",
+      "dist/cjs.js": "356029d223e5857197cbee3b05fab42203853fe65421e12f92f3bca0add510d9",
+      "dist/umd.js": "27b1ceb384b6bb6d91fc40339aa704d537d03ae0e03bb8238b5d717dbbc1ccb9",
+      "index.d.ts": "146ba4b99c5feb82663e17a671bf9f53bb39c704cd76345d6c5a801c26372f44",
+      "index.js": "85d67681ab9b201317d77790a89de8ef35e39289fe68e151ffacd8cc003e0d61",
+      "license.txt": "6cfc4687cb2f2d86f4a77e6b526290d3878e5e512f3fec2f4cb36a9cb36f798b",
+      "package.json": "f56978e7a6da1a3c6edee41abb54f98584a2fa2680458c48db820ae772fef0c9",
+      "readme.md": "202430923abee498512b2f9cbab686a1e7d64759314a503ca0d5aaa29007fc0f",
+      "rollup.config.js": "abba48beb11daa282e69134e4928ec32737ae6f6d192dd5f00a6e660e032bb25"
+    }
+  },
+  "independent_cases": {
+    "own_installer_scenarios": 59,
+    "preflight_refusals_with_full_package_tree_unchanged": 54,
+    "behavior_variants": 14,
+    "behavior_cases_per_variant": 21,
+    "behavior_candidate_failures": 0,
+    "author_targeted_tests_replayed": 71,
+    "new_permanent_tests_red": {
+      "pass": 0,
+      "fail": 5
+    },
+    "new_permanent_tests_green": {
+      "pass": 5,
+      "fail": 0
+    }
+  },
+  "actual_checkout_check": {
+    "command": [
+      "node",
+      "scripts/apply-tooling-repairs.cjs",
+      "--check"
+    ],
+    "cwd": "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend",
+    "exit": 0,
+    "packages": [
+      "node_modules/braces",
+      "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+      "node_modules/deepmerge"
+    ],
+    "changedFiles": 0
+  },
+  "author_acceptance_read": {
+    "path": "docs/security/dependencies/2026-10-31/followup/author-acceptance.json",
+    "sha256": "a413cb1dd84d0d2e793a2b142051a0745cc25c3050c28d0495c025dd6b2edb04",
+    "generated_at": "2026-10-31T22:23:34.335171+00:00",
+    "all_seven_executable_hashes_match_current": true,
+    "acceptance": {
+      "jest_suites": 215,
+      "jest_passed": 2904,
+      "jest_existing_pending": 1,
+      "dependency_controls": 189,
+      "runtime_controls": 9,
+      "admin_browser_cases": 14,
+      "production_build": "Executed by admin-shell fixture command",
+      "raw_npm_full": {
+        "low": 5,
+        "moderate": 17,
+        "total": 22
+      },
+      "raw_npm_production": 0,
+      "audit_suppressions": []
+    },
+    "independently_reexecuted_here": false
+  },
+  "retained_audits_read": {
+    "npm-full.json": {
+      "sha256": "d864d5bcd1e83d4c99d7e27b6ac61e31a6b84cea3d87440c99ceface3a5edd16",
+      "counts": {
+        "info": 0,
+        "low": 5,
+        "moderate": 17,
+        "high": 0,
+        "critical": 0,
+        "total": 22
+      }
+    },
+    "npm-production.json": {
+      "sha256": "fd8347691a5cb635dd826c2cf4eba287e72533021cf0cf8ac0a8d605a3cd261b",
+      "counts": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    }
+  },
+  "remaining_implementation_findings": [],
+  "scope_note": "Independent deepmerge behavior/installer review. Separate minimatch reviewer and author own broader applicability/performance/acceptance evidence. No repository/module edits, installs, commits, pushes, hosted mutations, services, merge or deploy by this reviewer. This binds the working and staged delta above HEAD, not HEAD alone; later evidence/report copies require a separate additive binding."
+}

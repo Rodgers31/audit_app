@@ -1,0 +1,425 @@
+[
+  {
+    "source": "https://registry.npmjs.org/eslint-config-next",
+    "retrieved_utc": "2026-10-31T22:58:39.438501+00:00",
+    "selected": [
+      {
+        "name": "eslint-config-next",
+        "version": "16.4.3",
+        "deprecated": null,
+        "dependencies": {
+          "globals": "16.4.0",
+          "typescript-eslint": "^8.56.0",
+          "eslint-plugin-react": "^7.37.0",
+          "eslint-plugin-import": "^2.32.0",
+          "eslint-plugin-jsx-a11y": "^6.10.0",
+          "@next/eslint-plugin-next": "16.4.3",
+          "eslint-plugin-react-hooks": "^7.1.0",
+          "eslint-import-resolver-node": "^0.3.6",
+          "eslint-import-resolver-typescript": "^3.5.2"
+        },
+        "peerDependencies": {
+          "eslint": ">=9.0.0",
+          "typescript": ">=3.3.1"
+        },
+        "engines": null,
+        "license": "MIT",
+        "gitHead": null
+      },
+      {
+        "name": "eslint-config-next",
+        "version": "15.5.28",
+        "deprecated": null,
+        "dependencies": {
+          "eslint-plugin-react": "^7.37.0",
+          "eslint-plugin-import": "^2.31.0",
+          "eslint-plugin-jsx-a11y": "^6.10.0",
+          "@rushstack/eslint-patch": "^1.10.3",
+          "@next/eslint-plugin-next": "15.5.28",
+          "@typescript-eslint/parser": "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+          "eslint-plugin-react-hooks": "^5.0.0",
+          "eslint-import-resolver-node": "^0.3.6",
+          "@typescript-eslint/eslint-plugin": "^5.4.2 || ^6.0.0 || ^7.0.0 || ^8.0.0",
+          "eslint-import-resolver-typescript": "^3.5.2"
+        },
+        "peerDependencies": {
+          "eslint": "^7.23.0 || ^8.0.0 || ^9.0.0",
+          "typescript": ">=3.3.1"
+        },
+        "engines": null,
+        "license": "MIT",
+        "gitHead": null
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/eslint-plugin-import-x/latest",
+    "retrieved_utc": "2026-10-31T23:02:30.478446+00:00",
+    "selected": [
+      {
+        "name": "eslint-plugin-import-x",
+        "version": "4.17.1",
+        "deprecated": null,
+        "dependencies": {
+          "debug": "^4.4.1",
+          "semver": "^7.7.2",
+          "is-glob": "^4.0.3",
+          "minimatch": "^9.0.3 || ^10.1.2",
+          "stable-hash-x": "^0.2.0",
+          "unrs-resolver": "^1.9.2",
+          "comment-parser": "^1.4.1",
+          "eslint-import-context": "^0.1.9",
+          "@typescript-eslint/types": "^8.56.0"
+        },
+        "peerDependencies": {
+          "eslint": "^8.57.0 || ^9.0.0 || ^10.0.0",
+          "@typescript-eslint/utils": "^8.56.0",
+          "eslint-import-resolver-node": "*"
+        },
+        "engines": {
+          "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+        },
+        "license": "MIT",
+        "gitHead": "b767b8c16cae017ac7b092a161684e31b262e5ae"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/eslint-plugin-import",
+    "retrieved_utc": "2026-10-31T22:58:39.112078+00:00",
+    "selected": [
+      {
+        "name": "eslint-plugin-import",
+        "version": "2.32.0",
+        "deprecated": null,
+        "dependencies": {
+          "@rtsao/scc": "^1.1.0",
+          "array-includes": "^3.1.9",
+          "array.prototype.findlastindex": "^1.2.6",
+          "array.prototype.flat": "^1.3.3",
+          "array.prototype.flatmap": "^1.3.3",
+          "debug": "^3.2.7",
+          "doctrine": "^2.1.0",
+          "eslint-import-resolver-node": "^0.3.9",
+          "eslint-module-utils": "^2.12.1",
+          "hasown": "^2.0.2",
+          "is-core-module": "^2.16.1",
+          "is-glob": "^4.0.3",
+          "minimatch": "^3.1.2",
+          "object.fromentries": "^2.0.8",
+          "object.groupby": "^1.0.3",
+          "object.values": "^1.2.1",
+          "semver": "^6.3.1",
+          "string.prototype.trimend": "^1.0.9",
+          "tsconfig-paths": "^3.15.0"
+        },
+        "peerDependencies": {
+          "eslint": "^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9"
+        },
+        "engines": {
+          "node": ">=4"
+        },
+        "license": "MIT",
+        "gitHead": "01c9eb04331d2efa8d63f2d7f4bfec3bc44c94f3"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/eslint-plugin-jsx-a11y",
+    "retrieved_utc": "2026-10-31T22:58:39.085194+00:00",
+    "selected": [
+      {
+        "name": "eslint-plugin-jsx-a11y",
+        "version": "6.10.2",
+        "deprecated": null,
+        "dependencies": {
+          "aria-query": "^5.3.2",
+          "array-includes": "^3.1.8",
+          "array.prototype.flatmap": "^1.3.2",
+          "ast-types-flow": "^0.0.8",
+          "axe-core": "^4.10.0",
+          "axobject-query": "^4.1.0",
+          "damerau-levenshtein": "^1.0.8",
+          "emoji-regex": "^9.2.2",
+          "hasown": "^2.0.2",
+          "jsx-ast-utils": "^3.3.5",
+          "language-tags": "^1.0.9",
+          "minimatch": "^3.1.2",
+          "object.fromentries": "^2.0.8",
+          "safe-regex-test": "^1.0.3",
+          "string.prototype.includes": "^2.0.1"
+        },
+        "peerDependencies": {
+          "eslint": "^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9"
+        },
+        "engines": {
+          "node": ">=4.0"
+        },
+        "license": "MIT",
+        "gitHead": "7f3d698f40d697471555e1dae74bfc7ee94d0b86"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/eslint-plugin-react",
+    "retrieved_utc": "2026-10-31T22:58:39.114887+00:00",
+    "selected": [
+      {
+        "name": "eslint-plugin-react",
+        "version": "7.37.5",
+        "deprecated": null,
+        "dependencies": {
+          "array-includes": "^3.1.8",
+          "array.prototype.findlast": "^1.2.5",
+          "array.prototype.flatmap": "^1.3.3",
+          "array.prototype.tosorted": "^1.1.4",
+          "doctrine": "^2.1.0",
+          "es-iterator-helpers": "^1.2.1",
+          "estraverse": "^5.3.0",
+          "hasown": "^2.0.2",
+          "jsx-ast-utils": "^2.4.1 || ^3.0.0",
+          "minimatch": "^3.1.2",
+          "object.entries": "^1.1.9",
+          "object.fromentries": "^2.0.8",
+          "object.values": "^1.2.1",
+          "prop-types": "^15.8.1",
+          "resolve": "^2.0.0-next.5",
+          "semver": "^6.3.1",
+          "string.prototype.matchall": "^4.0.12",
+          "string.prototype.repeat": "^1.0.0"
+        },
+        "peerDependencies": {
+          "eslint": "^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7"
+        },
+        "engines": {
+          "node": ">=4"
+        },
+        "license": "MIT",
+        "gitHead": "2c98b83c451a4297edf1787d9a616e50687e27e8"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/eslint",
+    "retrieved_utc": "2026-10-31T22:58:39.037133+00:00",
+    "selected": [
+      {
+        "name": "eslint",
+        "version": "10.14.0",
+        "deprecated": null,
+        "dependencies": {
+          "ajv": "^6.14.0",
+          "debug": "^4.3.2",
+          "espree": "^11.2.0",
+          "ignore": "^5.2.0",
+          "esquery": "^1.7.0",
+          "esutils": "^2.0.2",
+          "find-up": "^5.0.0",
+          "is-glob": "^4.0.0",
+          "minimatch": "^10.2.6",
+          "optionator": "^0.9.3",
+          "cross-spawn": "^7.0.6",
+          "glob-parent": "^6.0.2",
+          "imurmurhash": "^0.1.4",
+          "@eslint/core": "^1.2.1",
+          "eslint-scope": "^9.1.2",
+          "@humanfs/node": "^0.16.8",
+          "@types/estree": "^1.0.6",
+          "fast-deep-equal": "^3.1.3",
+          "natural-compare": "^1.4.0",
+          "file-entry-cache": "11.1.5 || >11.1.6 <12",
+          "@eslint/plugin-kit": "^0.7.3",
+          "eslint-visitor-keys": "^5.0.1",
+          "@eslint/config-array": "^0.23.5",
+          "@humanwhocodes/retry": "^0.4.2",
+          "escape-string-regexp": "^4.0.0",
+          "@eslint/config-helpers": "^0.7.0",
+          "@eslint-community/regexpp": "^4.12.2",
+          "@eslint-community/eslint-utils": "^4.8.0",
+          "@humanwhocodes/module-importer": "^1.0.1",
+          "json-stable-stringify-without-jsonify": "^1.0.1"
+        },
+        "peerDependencies": {
+          "jiti": "*"
+        },
+        "engines": {
+          "node": "^20.19.0 || ^22.13.0 || >=24"
+        },
+        "license": "MIT",
+        "gitHead": "12cbff4125db3f6446f72fa0c48c46b92b120427"
+      },
+      {
+        "name": "eslint",
+        "version": "8.57.1",
+        "deprecated": "This version is no longer supported. Please see https://eslint.org/version-support for other options.",
+        "dependencies": {
+          "ajv": "^6.12.4",
+          "levn": "^0.4.1",
+          "chalk": "^4.0.0",
+          "debug": "^4.3.2",
+          "espree": "^9.6.1",
+          "ignore": "^5.2.0",
+          "esquery": "^1.4.2",
+          "esutils": "^2.0.2",
+          "find-up": "^5.0.0",
+          "globals": "^13.19.0",
+          "is-glob": "^4.0.0",
+          "js-yaml": "^4.1.0",
+          "doctrine": "^3.0.0",
+          "graphemer": "^1.4.0",
+          "minimatch": "^3.1.2",
+          "@eslint/js": "8.57.1",
+          "optionator": "^0.9.3",
+          "strip-ansi": "^6.0.1",
+          "text-table": "^0.2.0",
+          "cross-spawn": "^7.0.2",
+          "glob-parent": "^6.0.2",
+          "imurmurhash": "^0.1.4",
+          "eslint-scope": "^7.2.2",
+          "lodash.merge": "^4.6.2",
+          "is-path-inside": "^3.0.3",
+          "fast-deep-equal": "^3.1.3",
+          "natural-compare": "^1.4.0",
+          "@eslint/eslintrc": "^2.1.4",
+          "@nodelib/fs.walk": "^1.2.8",
+          "file-entry-cache": "^6.0.1",
+          "eslint-visitor-keys": "^3.4.3",
+          "escape-string-regexp": "^4.0.0",
+          "@ungap/structured-clone": "^1.2.0",
+          "@eslint-community/regexpp": "^4.6.1",
+          "@humanwhocodes/config-array": "^0.13.0",
+          "@eslint-community/eslint-utils": "^4.2.0",
+          "@humanwhocodes/module-importer": "^1.0.1",
+          "json-stable-stringify-without-jsonify": "^1.0.1"
+        },
+        "peerDependencies": null,
+        "engines": {
+          "node": "^12.22.0 || ^14.17.0 || >=16.0.0"
+        },
+        "license": "MIT",
+        "gitHead": "5b9414c501c58bfa85f41f96f821973c41e8ae74"
+      },
+      {
+        "name": "eslint",
+        "version": "9.39.5",
+        "deprecated": "This version is no longer supported. Please see https://eslint.org/version-support for other options.",
+        "dependencies": {
+          "ajv": "^6.14.0",
+          "chalk": "^4.0.0",
+          "debug": "^4.3.2",
+          "espree": "^10.4.0",
+          "ignore": "^5.2.0",
+          "esquery": "^1.5.0",
+          "esutils": "^2.0.2",
+          "find-up": "^5.0.0",
+          "is-glob": "^4.0.0",
+          "minimatch": "^3.1.5",
+          "@eslint/js": "9.39.5",
+          "optionator": "^0.9.3",
+          "cross-spawn": "^7.0.6",
+          "glob-parent": "^6.0.2",
+          "imurmurhash": "^0.1.4",
+          "@eslint/core": "^0.17.0",
+          "eslint-scope": "^8.4.0",
+          "lodash.merge": "^4.6.2",
+          "@humanfs/node": "^0.16.6",
+          "@types/estree": "^1.0.6",
+          "fast-deep-equal": "^3.1.3",
+          "natural-compare": "^1.4.0",
+          "@eslint/eslintrc": "^3.3.6",
+          "file-entry-cache": "^8.0.0",
+          "@eslint/plugin-kit": "^0.4.1",
+          "eslint-visitor-keys": "^4.2.1",
+          "@eslint/config-array": "^0.21.2",
+          "@humanwhocodes/retry": "^0.4.2",
+          "escape-string-regexp": "^4.0.0",
+          "@eslint/config-helpers": "^0.4.2",
+          "@eslint-community/regexpp": "^4.12.1",
+          "@eslint-community/eslint-utils": "^4.8.0",
+          "@humanwhocodes/module-importer": "^1.0.1",
+          "json-stable-stringify-without-jsonify": "^1.0.1"
+        },
+        "peerDependencies": {
+          "jiti": "*"
+        },
+        "engines": {
+          "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+        },
+        "license": "MIT",
+        "gitHead": "4a24e8c09d374d773a034e36b1d7a7fbe1216478"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/@eslint%2fconfig-array",
+    "retrieved_utc": "2026-10-31T22:58:38.958150+00:00",
+    "selected": [
+      {
+        "name": "@eslint/config-array",
+        "version": "0.23.5",
+        "deprecated": null,
+        "dependencies": {
+          "@eslint/object-schema": "^3.0.5",
+          "debug": "^4.3.1",
+          "minimatch": "^10.2.4"
+        },
+        "peerDependencies": null,
+        "engines": {
+          "node": "^20.19.0 || ^22.13.0 || >=24"
+        },
+        "license": "Apache-2.0",
+        "gitHead": "d2dbf7b73d01505da89a69b7465e486d8a88aa8f"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/@eslint%2feslintrc",
+    "retrieved_utc": "2026-10-31T22:58:38.967933+00:00",
+    "selected": [
+      {
+        "name": "@eslint/eslintrc",
+        "version": "3.3.7",
+        "deprecated": null,
+        "dependencies": {
+          "ajv": "^6.14.0",
+          "debug": "^4.3.2",
+          "espree": "^10.0.1",
+          "ignore": "^5.2.0",
+          "globals": "^14.0.0",
+          "js-yaml": "^4.3.2",
+          "minimatch": "^3.1.5",
+          "import-fresh": "^3.2.1",
+          "strip-json-comments": "^3.1.1"
+        },
+        "peerDependencies": null,
+        "engines": {
+          "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
+        },
+        "license": "MIT",
+        "gitHead": "7943fa6dd55b236a539f658b88c763a4f9fbb38d"
+      }
+    ]
+  },
+  {
+    "source": "https://registry.npmjs.org/@humanwhocodes%2fconfig-array",
+    "retrieved_utc": "2026-10-31T22:58:38.959406+00:00",
+    "selected": [
+      {
+        "name": "@humanwhocodes/config-array",
+        "version": "0.13.0",
+        "deprecated": "Use @eslint/config-array instead",
+        "dependencies": {
+          "debug": "^4.3.1",
+          "minimatch": "^3.0.5",
+          "@humanwhocodes/object-schema": "^2.0.3"
+        },
+        "peerDependencies": null,
+        "engines": {
+          "node": ">=10.10.0"
+        },
+        "license": "Apache-2.0",
+        "gitHead": "bf264c7cc6c20ce844bf17a162b04c1e773d3cd0"
+      }
+    ]
+  }
+]

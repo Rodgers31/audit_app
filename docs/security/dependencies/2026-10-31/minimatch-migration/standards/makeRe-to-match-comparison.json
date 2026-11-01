@@ -1,0 +1,366 @@
+{
+  "at": "2026-10-31T23:06:14.685Z",
+  "cases": 260,
+  "differences": [
+    {
+      "pattern": "pkg/**",
+      "input": "pkg/.hidden",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/**",
+      "input": "pkg/.hidden/x",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "**/private/**",
+      "input": "private/x",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/*",
+      "input": "pkg/private/",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/{public,shared}/**",
+      "input": "pkg/public/.hidden",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/{public,shared}/**",
+      "input": "pkg/public/../secret",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/!(private)/**",
+      "input": "pkg/private/",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/!(private)/**",
+      "input": "pkg/private/x",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/!(private)/**",
+      "input": "pkg/public/.hidden",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/!(private)/**",
+      "input": "pkg/public/../secret",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/private",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/private/",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/public/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/shared/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/.hidden",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/.hidden/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/public/.hidden",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/public/../secret",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/secret",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "/pkg/private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "a/private/b",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg\\private\\x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "pkg/a.js",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": ".x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "#comment",
+      "input": "x.js",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/private",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/private/",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/public/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/shared/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/.hidden",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/.hidden/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/public/.hidden",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/public/../secret",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/secret",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "/pkg/private/x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "a/private/b",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg\\private\\x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "pkg/a.js",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": true
+    },
+    {
+      "pattern": "",
+      "input": ".x",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "",
+      "input": "x.js",
+      "before": "TypeError: old.makeRe(...).test is not a function",
+      "after": false
+    },
+    {
+      "pattern": "**/*.js",
+      "input": "x.js",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "**/.*",
+      "input": ".x",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/private",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/.hidden/x",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/public/.hidden",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/public/../secret",
+      "before": true,
+      "after": false
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/secret",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/**/**",
+      "input": "pkg/a.js",
+      "before": false,
+      "after": true
+    },
+    {
+      "pattern": "pkg/**/",
+      "input": "pkg/",
+      "before": false,
+      "after": true
+    }
+  ]
+}

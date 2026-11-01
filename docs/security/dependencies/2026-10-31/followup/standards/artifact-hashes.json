@@ -1,0 +1,18 @@
+{
+  "FINAL_BINDING.json": "65bf0bb0d9f6844f90d4653b601fb6a971795ff3a39b564df70a080065b747eb",
+  "REPORT.md": "676a7bc0d55ce001b695dde822bd788172bd6f6088161a04f47e06a001238308",
+  "apply-tooling-repairs-before-exception.cjs.txt": "64ddbdec6d329bb7fcb14659af0dd7cba33b624c2ef46a691e79b74712c1f491",
+  "deepmerge-probe-final-results.json": "d5d0668e46251e4cd8092c583d45c638e311e85d6dbda79e054aad8f94d76a8a",
+  "deepmerge_probe_final.cjs": "fa875b5ef5e17c32509f95e3916855b4d77c37056781578395fa890d9ea6a169",
+  "final-command-results.json": "5046e480e24183b813eed34e44a7233d2af90b3715f05e6c40ef8bf46ce61707",
+  "final-executable-commands.json": "ba85c74b9477ad156999a47e12d0f10dfb53a1483da80e0ae10195ba5a5cfd34",
+  "final-installer-probe-results.json": "bdba9f7219f2601e23da1a7150ab7e232729d8dd8a63f260c785dcfd5390e81f",
+  "final_installer_probe.cjs": "19dbf345c2fa057dce563c417ac9ef6bd02bdba59d50d28282dab240a85fb8b7",
+  "helper-metadata.json": "1d60ba03c836773ba3181f3c24ce1de0e78407a82f8341b45d0db8edf7996f12",
+  "new-permanent-tests-green.stdout.log": "98fb84b8904f673de114e1b038b00df3bc568eeb8f6829294a89ebf459c081fd",
+  "new-permanent-tests-red-green.json": "7e9e0cf5b2d37c0d514b376c5787f38e6dd7fc6d992918bd0b4f4546d8f88402",
+  "new-permanent-tests-red.stdout.log": "95c28fe72e4a1a8b129ecf8a18959d364983019629533e92221b4753fe18a134",
+  "official-references.json": "e13af5ee8b0b12cf20f8b68b7713c4da52030fc40c3a6bc0b91e122567ae94b5",
+  "preparation.json": "3c5da2dc7c5e66c7fe80bfe42bd40bf13844c6594a9381842d40ff021d7aed5a",
+  "prepare.py": "c124b552af3bca78015fbd1c8302924f680e7f86d58fd7a09a21de3696021a22"
+}

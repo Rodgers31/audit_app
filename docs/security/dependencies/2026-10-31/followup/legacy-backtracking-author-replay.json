@@ -1,0 +1,90 @@
+{
+  "at": "2026-10-31T22:22:51.661616+00:00",
+  "scope": "Separate bounded matching control, not the GHSA optimizer mechanism and not a CVE attribution.",
+  "results": [
+    {
+      "version": "3.1.5",
+      "pattern_repeats": 4,
+      "path_chars": 32,
+      "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/minimatch/minimatch.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(4)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":0.5612080000000006}\n",
+      "stderr": "",
+      "wall_seconds": 0.032316333
+    },
+    {
+      "version": "3.1.5",
+      "pattern_repeats": 8,
+      "path_chars": 32,
+      "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/minimatch/minimatch.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(8)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":54.288708}\n",
+      "stderr": "",
+      "wall_seconds": 0.08465587500000002
+    },
+    {
+      "version": "3.1.5",
+      "pattern_repeats": 12,
+      "path_chars": 32,
+      "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/minimatch/minimatch.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(12)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":1415.145292}\n",
+      "stderr": "",
+      "wall_seconds": 1.4472059590000002
+    },
+    {
+      "version": "11.0.3",
+      "pattern_repeats": 4,
+      "path_chars": 32,
+      "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch/dist/commonjs/index.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(4)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":0.9866250000000001}\n",
+      "stderr": "",
+      "wall_seconds": 0.03401366699999997
+    },
+    {
+      "version": "11.0.3",
+      "pattern_repeats": 8,
+      "path_chars": 32,
+      "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch/dist/commonjs/index.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(8)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":1.0026250000000019}\n",
+      "stderr": "",
+      "wall_seconds": 0.03453408299999983
+    },
+    {
+      "version": "11.0.3",
+      "pattern_repeats": 12,
+      "path_chars": 32,
+      "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+      "wall_timeout_seconds": 2,
+      "heap_limit_mb": 64,
+      "script": "const lib=require(\"/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/frontend/node_modules/@typescript-eslint/typescript-estree/node_modules/minimatch/dist/commonjs/index.js\"); const fn=typeof lib==='function'?lib:lib.minimatch;const start=performance.now();const result=fn('a'.repeat(32),'*a'.repeat(12)+'b'); console.log(JSON.stringify({result,elapsed_ms:performance.now()-start}));",
+      "exit": 0,
+      "timeout": false,
+      "stdout": "{\"result\":false,\"elapsed_ms\":1.032458}\n",
+      "stderr": "",
+      "wall_seconds": 0.03348645799999983
+    }
+  ]
+}

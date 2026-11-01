@@ -1,0 +1,38 @@
+{
+  "at": "2026-11-01T17:55:57.560732+00:00",
+  "reviewed_code_head": "dfc0ea9e3a448ce5e281e15693c56477b280c1a8",
+  "source_trees": {
+    "frontend": "c7cb8f61e6f247946dce5dab886419d6132d36d7",
+    "backend": "c1fd66a2b1206b9e79c6c6098a429947c2a57437",
+    "etl": "9e7966f4b4794e5eabeaccfd3c2e07c0b9632e00",
+    "tools/worker_host_fixture": "e687bbef85940276f2e28a4984e0bb8c16b2c451"
+  },
+  "npm_production_findings": 0,
+  "npm_full_findings": {
+    "low": 5,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "raw_npm_audit_suppressed": false,
+  "deepmerge_registry_relabelled": false,
+  "python_unique_versions": 158,
+  "python_raw_advisory_ids": 0,
+  "python_positive_control_ids": 7,
+  "python_unique_tests_per_mode": 551,
+  "python_fixture_controls_per_mode": 34,
+  "python_final_skips": 0,
+  "frontend_full_jest_pass": 2904,
+  "frontend_optional_case_initially_skipped_then_executed": true,
+  "frontend_distinct_cases_pass": 2905,
+  "node_dependency_controls": 217,
+  "node_runtime_controls": 9,
+  "admin_browser_cases": 14,
+  "local_production_artifact_verified": true,
+  "production_deployed_yet": false,
+  "media_publishing_workers_financial_generation_off": true,
+  "nightly_ingestion_remains_enabled": true,
+  "full_ingestion_egress_guarantee": false,
+  "new_paid_resources": false,
+  "source_acceptance_802_still_open": true
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "independent-security-review/v1",
+  "reviewed_head": "dfc0ea9e3a448ce5e281e15693c56477b280c1a8",
+  "checkout_clean": true,
+  "bot_delta_commit": "06e1fc3f370f35bebdfee883f8deee94bd72ca81",
+  "reviewed_source_sha256": {
+    "frontend/package.json": "f66bebbe195d4a9ac24b59d4c41921337e4e297c585b123f01d411a78f221065",
+    "frontend/package-lock.json": "d471048ae042933321b719579e8f6251947c497d1190d2fee607c0f360ebfa03",
+    "frontend/scripts/apply-tooling-repairs.cjs": "fbff08a0fef57d93760a3c5ac18c5e117e5b0d769f44637a735e60c5e33188b0",
+    "frontend/scripts/tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2",
+    "frontend/scripts/tooling-repair-install.test.cjs": "9bee14db7c684d9ee9ffb3a81695c7d9dedb981be955d54e848dd86120eb8749",
+    "frontend/scripts/deepmerge-boundary.test.cjs": "e5bd57adfc4c2950fd125e3b1701f446bfe920984567b3d0a69e0573b9fc2500",
+    "frontend/scripts/lint-matcher-migration.test.cjs": "e5fae1399802cd4690b42b3791ec657b82e47a3d7e142fd74c1fe55ba3ae145e",
+    "frontend/scripts/modern-glob-boundary.test.cjs": "f1f18e79a04b2afd27cc4b55b6778997680c186642e8c143186e6c16b134f92d",
+    "frontend/scripts/tooling-repair-behavior.test.cjs": "6c7ae2d687259a335eb0b73a0fd19240a88be10e39258964c621c0f03be0e1ef",
+    "frontend/vercel.json": "442bee0cbab871504d129a6fe517960c2574323bb9e966a13af4c8b67b5d8a08",
+    "frontend/scripts/redirect-credential-boundary.test.cjs": "11f9c39cd286908198d8c4f6e547539cfd370806cf53fbeb6c5849100b6d48eb",
+    "frontend/scripts/runtime-dependencies-isolation.test.cjs": "a464471243af5d283419224007a05a56d64041cc75878ce0283b6cb93fd4ccfe",
+    ".github/workflows/ci.yml": "7d2c13b7ef9ac2e3860752433a2655034d19d67a922b9e138c08d6cd597cf35c"
+  },
+  "reviewed_bot_exports": {
+    "bot-policy.yml": "7245c05d9576b5801b41ed902d2e7642a2ad1f18a5f58ebf6bd73a170767012f",
+    "bot-python-version.txt": "a05e0074505ce29f25abf3aebe4f7218d28e98411822f199e3272740be4e363c",
+    "bot-update-guide.md": "290834e68555fc162d648c1e42e53914deca7c5aec5d653febb7d02e19f9c7cf"
+  },
+  "execution": {
+    "permanent_frontend_boundaries": 126,
+    "independent_installer_cases": 19,
+    "installed_inventoried_files_hashed": 1161,
+    "weekly_policy_cases": 16,
+    "osv_verdict_cases_normal": 62,
+    "osv_verdict_cases_optimized": 62
+  },
+  "osv_helper_sha256": "bd5063283f94ca7b036608523e80b3e7319a9c808b4738921e091170207996e5",
+  "actual_osv_wire_review_sha256": "8f97e0d241725de316093c9512d210ebdb394cb5ebf4a899d70d815dddbb3e13",
+  "product_mutations": 0,
+  "shared_node_modules_mutations": 0,
+  "live_operations": 0,
+  "new_paid_services": 0,
+  "verdict": "clear_for_reviewed_scope_subject_to_root_combined_source_and_release_checks"
+}

@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-31T23:18:30.244Z",
+  "sourceHashes": {
+    "apply-tooling-repairs.cjs": "fdf4ca8f015192138cc443b5c2e630e333cc20d70400cbf6e562ce47e0eb5047",
+    "tooling-repairs.json": "8afa0ebe8c3441b63e9ef216e86159d8297d6cea00c660fd3e62dc74986beac2"
+  },
+  "positive": {
+    "check": "source-bound-tooling-repairs",
+    "packages": [
+      "node_modules/braces",
+      "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+      "node_modules/deepmerge",
+      "node_modules/@eslint/eslintrc",
+      "node_modules/eslint-plugin-import",
+      "node_modules/eslint-plugin-react",
+      "node_modules/eslint-plugin-jsx-a11y"
+    ],
+    "absentPackages": [],
+    "changedFiles": 0
+  },
+  "metadataResolved": "node_modules/minimatch/package.json",
+  "actualResolved": "node_modules/eslint/node_modules/minimatch/dist/commonjs/index.js",
+  "actualOriginalMinimatchSourceSHA256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+  "legacyMakeRePresent": true,
+  "accepted": true,
+  "verdict": {
+    "check": "source-bound-tooling-repairs",
+    "packages": [
+      "node_modules/braces",
+      "node_modules/@istanbuljs/load-nyc-config/node_modules/js-yaml",
+      "node_modules/deepmerge",
+      "node_modules/@eslint/eslintrc",
+      "node_modules/eslint-plugin-import",
+      "node_modules/eslint-plugin-react",
+      "node_modules/eslint-plugin-jsx-a11y"
+    ],
+    "absentPackages": [],
+    "changedFiles": 0
+  },
+  "scope": "Owned malformed physical installation: untracked ESLint nested package uses a package.json symlink to the legitimate reviewed modern metadata but resolves the legacy executable entry."
+}

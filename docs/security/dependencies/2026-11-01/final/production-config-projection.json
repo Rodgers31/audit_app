@@ -1,0 +1,73 @@
+{
+  "legacy_pipeline_import": {
+    "available": false,
+    "missing_module": "etl.kenya_pipeline"
+  },
+  "no_pipeline_instantiation": true,
+  "runtime": {
+    "background_processes": 0,
+    "flags": {
+      "ADMIN_ETL_DISPATCH_ENABLED": "false",
+      "AUTO_SEEDER_ENABLED": "false",
+      "SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED": "<unset>",
+      "SOCIAL_GENERATION_HOOK_ENABLED": "<unset>",
+      "SOCIAL_MEDIA_ENABLED": "false",
+      "SOCIAL_NATIVE_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED": "<unset>",
+      "SOCIAL_POLICY_AUTOMATION_ENABLED": "<unset>",
+      "SOCIAL_REPORT_GENERATION_ENABLED": "<unset>",
+      "SOCIAL_STUDIO_ENABLED": "<unset>",
+      "SOCIAL_WORKER_SUPERVISOR_ENABLED": "<unset>"
+    }
+  },
+  "settings_only_no_fetch": true,
+  "sha": "8c4b5dee73bfd333c43d9caab78adbcde8232b34",
+  "source_flags": {
+    "counties_budget_prefer_live_source": true,
+    "http_follow_redirects": true,
+    "live_pdf_fetch_enabled": true
+  },
+  "source_url_projection": {
+    "cob_birr_page_url": {
+      "configured": true,
+      "has_query": false,
+      "has_userinfo": false,
+      "hostname": "cob.go.ke",
+      "scheme": "https",
+      "sha256": "6f26e408cad3df126d2f61ebc5156e57557ec3ad65ef62deb29bf103d068b015"
+    },
+    "counties_budget_cob_reports_url": {
+      "configured": true,
+      "has_query": false,
+      "has_userinfo": false,
+      "hostname": "cob.go.ke",
+      "scheme": "https",
+      "sha256": "ca71501c6d85d0a986fdff49b9dab3613ebe052b3058e49fc5d9af1ddb57360b"
+    },
+    "counties_budget_cob_wp_api_url": {
+      "configured": true,
+      "has_query": true,
+      "has_userinfo": false,
+      "hostname": "cob.go.ke",
+      "scheme": "https",
+      "sha256": "bbaf20f13e4ca2809be0bb248180942fb7e58d4ea7fc191a3b6ea265968f846f"
+    },
+    "treasury_brop_page_url": {
+      "configured": true,
+      "has_query": false,
+      "has_userinfo": false,
+      "hostname": "www.treasury.go.ke",
+      "scheme": "https",
+      "sha256": "9b21ea965839d8607c1fa7cde40de21f772cbb36cbf4a4319b7cc499941b8f60"
+    },
+    "treasury_brop_url": {
+      "configured": true,
+      "has_query": false,
+      "has_userinfo": false,
+      "hostname": "www.treasury.go.ke",
+      "scheme": "https",
+      "sha256": "0a5d054c6e37fcf8a46973ce0b715e51d9825b811add0e5c586e048841734fca"
+    }
+  }
+}

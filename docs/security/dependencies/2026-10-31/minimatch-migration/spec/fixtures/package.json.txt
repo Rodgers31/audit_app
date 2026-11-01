@@ -1,0 +1,1 @@
+{"name":"independent-minimatch-migration-spec","private":true,"version":"0.0.0","dependencies":{"minimatch":"11.0.3"}}

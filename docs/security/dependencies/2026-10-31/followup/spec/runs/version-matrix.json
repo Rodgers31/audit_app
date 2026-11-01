@@ -1,0 +1,2570 @@
+{
+  "harness_sha256": "d780cabaf0fd31be17d35370035aec4bfde3c66fcee270e2340488c5d4ae6ca7",
+  "node": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+  "timeout_seconds": 4,
+  "cpu_seconds": 3,
+  "max_old_space_mb": 96,
+  "records": [
+    {
+      "index": 0,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":2.261209000000008,\"heap_delta\":785112,\"rss\":51625984}\n",
+      "stderr": "",
+      "wall_seconds": 1.32546125,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 2.261209000000008,
+        "heap_delta": 785112,
+        "rss": 51625984
+      }
+    },
+    {
+      "index": 1,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.3372499999999974,\"heap_delta\":34784,\"rss\":51314688}\n",
+      "stderr": "",
+      "wall_seconds": 0.04310366700000001,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.3372499999999974,
+        "heap_delta": 34784,
+        "rss": 51314688
+      }
+    },
+    {
+      "index": 2,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.33262500000000017,\"heap_delta\":34752,\"rss\":51658752}\n",
+      "stderr": "",
+      "wall_seconds": 0.03932904200000009,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.33262500000000017,
+        "heap_delta": 34752,
+        "rss": 51658752
+      }
+    },
+    {
+      "index": 3,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.33591699999999847,\"heap_delta\":785064,\"rss\":51445760}\n",
+      "stderr": "",
+      "wall_seconds": 0.037089833000000016,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.33591699999999847,
+        "heap_delta": 785064,
+        "rss": 51445760
+      }
+    },
+    {
+      "index": 4,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm6\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm6",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm6\",\"version\":\"6.2.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.6274159999999966,\"heap_delta\":809112,\"rss\":52084736}\n",
+      "stderr": "",
+      "wall_seconds": 0.076239167,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm6",
+        "version": "6.2.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.6274159999999966,
+        "heap_delta": 809112,
+        "rss": 52084736
+      }
+    },
+    {
+      "index": 5,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm6\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm6",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm6\",\"version\":\"6.2.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5360829999999979,\"heap_delta\":809112,\"rss\":52035584}\n",
+      "stderr": "",
+      "wall_seconds": 0.051268624999999846,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm6",
+        "version": "6.2.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5360829999999979,
+        "heap_delta": 809112,
+        "rss": 52035584
+      }
+    },
+    {
+      "index": 6,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm6\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm6",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm6\",\"version\":\"6.2.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5195830000000008,\"heap_delta\":809464,\"rss\":52101120}\n",
+      "stderr": "",
+      "wall_seconds": 0.038129124999999986,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm6",
+        "version": "6.2.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5195830000000008,
+        "heap_delta": 809464,
+        "rss": 52101120
+      }
+    },
+    {
+      "index": 7,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm6\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm6",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm6\",\"version\":\"6.2.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5373749999999973,\"heap_delta\":809256,\"rss\":52264960}\n",
+      "stderr": "",
+      "wall_seconds": 0.03828100000000001,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm6",
+        "version": "6.2.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm6/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5373749999999973,
+        "heap_delta": 809256,
+        "rss": 52264960
+      }
+    },
+    {
+      "index": 8,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm7\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm7",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm7\",\"version\":\"7.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":64.44491599999999,\"heap_delta\":1283560,\"rss\":58277888}\n",
+      "stderr": "",
+      "wall_seconds": 0.30951712499999995,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm7",
+        "version": "7.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 64.44491599999999,
+        "heap_delta": 1283560,
+        "rss": 58277888
+      }
+    },
+    {
+      "index": 9,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm7\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm7",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm7\",\"version\":\"7.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":5.645208,\"heap_delta\":1167776,\"rss\":61734912}\n",
+      "stderr": "",
+      "wall_seconds": 0.04709162499999975,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm7",
+        "version": "7.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 5.645208,
+        "heap_delta": 1167776,
+        "rss": 61734912
+      }
+    },
+    {
+      "index": 10,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm7\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm7",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm7\",\"version\":\"7.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":4.718332999999998,\"heap_delta\":1223904,\"rss\":61571072}\n",
+      "stderr": "",
+      "wall_seconds": 0.03971195899999991,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm7",
+        "version": "7.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 4.718332999999998,
+        "heap_delta": 1223904,
+        "rss": 61571072
+      }
+    },
+    {
+      "index": 11,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm7\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm7",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm7\",\"version\":\"7.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":5.326833000000001,\"heap_delta\":1351056,\"rss\":61767680}\n",
+      "stderr": "",
+      "wall_seconds": 0.0413244589999997,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm7",
+        "version": "7.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm7/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 5.326833000000001,
+        "heap_delta": 1351056,
+        "rss": 61767680
+      }
+    },
+    {
+      "index": 12,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm71\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm71",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm71\",\"version\":\"7.1.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.8708749999999981,\"heap_delta\":14944,\"rss\":53166080}\n",
+      "stderr": "",
+      "wall_seconds": 0.06728608299999994,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm71",
+        "version": "7.1.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.8708749999999981,
+        "heap_delta": 14944,
+        "rss": 53166080
+      }
+    },
+    {
+      "index": 13,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm71\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm71",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm71\",\"version\":\"7.1.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.0612920000000017,\"heap_delta\":-258296,\"rss\":52707328}\n",
+      "stderr": "",
+      "wall_seconds": 0.04286304200000002,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm71",
+        "version": "7.1.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.0612920000000017,
+        "heap_delta": -258296,
+        "rss": 52707328
+      }
+    },
+    {
+      "index": 14,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm71\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm71",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm71\",\"version\":\"7.1.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.0314999999999976,\"heap_delta\":-262936,\"rss\":52625408}\n",
+      "stderr": "",
+      "wall_seconds": 0.039498374999999974,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm71",
+        "version": "7.1.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.0314999999999976,
+        "heap_delta": -262936,
+        "rss": 52625408
+      }
+    },
+    {
+      "index": 15,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm71\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm71",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm71\",\"version\":\"7.1.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js\",\"entry_sha256\":\"7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":4.908833000000001,\"heap_delta\":1350288,\"rss\":61865984}\n",
+      "stderr": "",
+      "wall_seconds": 0.04211412499999989,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm71",
+        "version": "7.1.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm71/dist/cjs/index-cjs.js",
+        "entry_sha256": "7ffd8d84d4a99798dbf6edcaa3857acacbb4517d758054e1d039b45000bc286f",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 4.908833000000001,
+        "heap_delta": 1350288,
+        "rss": 61865984
+      }
+    },
+    {
+      "index": 16,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm9\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm9",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm9\",\"version\":\"9.0.9\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js\",\"entry_sha256\":\"a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.1134160000000008,\"heap_delta\":867320,\"rss\":53198848}\n",
+      "stderr": "",
+      "wall_seconds": 0.07957750000000008,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm9",
+        "version": "9.0.9",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js",
+        "entry_sha256": "a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.1134160000000008,
+        "heap_delta": 867320,
+        "rss": 53198848
+      }
+    },
+    {
+      "index": 17,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm9\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm9",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm9\",\"version\":\"9.0.9\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js\",\"entry_sha256\":\"a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.073999999999998,\"heap_delta\":871360,\"rss\":52936704}\n",
+      "stderr": "",
+      "wall_seconds": 0.03856933299999987,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm9",
+        "version": "9.0.9",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js",
+        "entry_sha256": "a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.073999999999998,
+        "heap_delta": 871360,
+        "rss": 52936704
+      }
+    },
+    {
+      "index": 18,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm9\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm9",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm9\",\"version\":\"9.0.9\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js\",\"entry_sha256\":\"a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.9939169999999997,\"heap_delta\":853880,\"rss\":52903936}\n",
+      "stderr": "",
+      "wall_seconds": 0.038545124999999736,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm9",
+        "version": "9.0.9",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js",
+        "entry_sha256": "a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.9939169999999997,
+        "heap_delta": 853880,
+        "rss": 52903936
+      }
+    },
+    {
+      "index": 19,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm9\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm9",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm9\",\"version\":\"9.0.9\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js\",\"entry_sha256\":\"a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":8.027542,\"heap_delta\":333880,\"rss\":62996480}\n",
+      "stderr": "",
+      "wall_seconds": 0.04438991700000017,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm9",
+        "version": "9.0.9",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm9/dist/commonjs/index.js",
+        "entry_sha256": "a958a41536f57484cc427a03a10a6a094eb062a004c58261add4dbb6dd77bbda",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 8.027542,
+        "heap_delta": 333880,
+        "rss": 62996480
+      }
+    },
+    {
+      "index": 20,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1024\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1024",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1024\",\"version\":\"10.2.4\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js\",\"entry_sha256\":\"3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.0008750000000006,\"heap_delta\":859504,\"rss\":53313536}\n",
+      "stderr": "",
+      "wall_seconds": 0.08147054099999984,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1024",
+        "version": "10.2.4",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js",
+        "entry_sha256": "3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.0008750000000006,
+        "heap_delta": 859504,
+        "rss": 53313536
+      }
+    },
+    {
+      "index": 21,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1024\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1024",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1024\",\"version\":\"10.2.4\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js\",\"entry_sha256\":\"3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.911999999999999,\"heap_delta\":860976,\"rss\":53035008}\n",
+      "stderr": "",
+      "wall_seconds": 0.037094583000000014,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1024",
+        "version": "10.2.4",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js",
+        "entry_sha256": "3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.911999999999999,
+        "heap_delta": 860976,
+        "rss": 53035008
+      }
+    },
+    {
+      "index": 22,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1024\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1024",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1024\",\"version\":\"10.2.4\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js\",\"entry_sha256\":\"3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.279084000000001,\"heap_delta\":862224,\"rss\":53051392}\n",
+      "stderr": "",
+      "wall_seconds": 0.03888783299999998,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1024",
+        "version": "10.2.4",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js",
+        "entry_sha256": "3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.279084000000001,
+        "heap_delta": 862224,
+        "rss": 53051392
+      }
+    },
+    {
+      "index": 23,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1024\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1024",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1024\",\"version\":\"10.2.4\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js\",\"entry_sha256\":\"3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":8.943000000000001,\"heap_delta\":1136592,\"rss\":63160320}\n",
+      "stderr": "",
+      "wall_seconds": 0.047480332999999764,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1024",
+        "version": "10.2.4",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1024/dist/commonjs/index.js",
+        "entry_sha256": "3736296f8c1f937821b202626138bcf36163e2ee172ba6a6943dfcf332f4ed96",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 8.943000000000001,
+        "heap_delta": 1136592,
+        "rss": 63160320
+      }
+    },
+    {
+      "index": 24,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.061,\"heap_delta\":859640,\"rss\":53444608}\n",
+      "stderr": "",
+      "wall_seconds": 0.06340320799999999,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.061,
+        "heap_delta": 859640,
+        "rss": 53444608
+      }
+    },
+    {
+      "index": 25,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.9512919999999987,\"heap_delta\":624880,\"rss\":52920320}\n",
+      "stderr": "",
+      "wall_seconds": 0.0392454579999999,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.9512919999999987,
+        "heap_delta": 624880,
+        "rss": 52920320
+      }
+    },
+    {
+      "index": 26,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.9652080000000005,\"heap_delta\":862712,\"rss\":53198848}\n",
+      "stderr": "",
+      "wall_seconds": 0.03984291700000009,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.9652080000000005,
+        "heap_delta": 862712,
+        "rss": 53198848
+      }
+    },
+    {
+      "index": 27,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":8.821625000000001,\"heap_delta\":855240,\"rss\":64176128}\n",
+      "stderr": "",
+      "wall_seconds": 0.0459790830000002,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 8.821625000000001,
+        "heap_delta": 855240,
+        "rss": 64176128
+      }
+    },
+    {
+      "index": 28,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1100\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1100",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1100\",\"version\":\"11.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js\",\"entry_sha256\":\"f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.6822090000000003,\"heap_delta\":785704,\"rss\":53018624}\n",
+      "stderr": "",
+      "wall_seconds": 0.06097791600000013,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1100",
+        "version": "11.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js",
+        "entry_sha256": "f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.6822090000000003,
+        "heap_delta": 785704,
+        "rss": 53018624
+      }
+    },
+    {
+      "index": 29,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1100\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1100",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1100\",\"version\":\"11.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js\",\"entry_sha256\":\"f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5169169999999994,\"heap_delta\":174336,\"rss\":53362688}\n",
+      "stderr": "",
+      "wall_seconds": 0.04070316699999976,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1100",
+        "version": "11.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js",
+        "entry_sha256": "f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5169169999999994,
+        "heap_delta": 174336,
+        "rss": 53362688
+      }
+    },
+    {
+      "index": 30,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1100\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1100",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1100\",\"version\":\"11.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js\",\"entry_sha256\":\"f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.6770000000000032,\"heap_delta\":775512,\"rss\":53362688}\n",
+      "stderr": "",
+      "wall_seconds": 0.04700712499999993,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1100",
+        "version": "11.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js",
+        "entry_sha256": "f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.6770000000000032,
+        "heap_delta": 775512,
+        "rss": 53362688
+      }
+    },
+    {
+      "index": 31,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1100\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1100",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1100\",\"version\":\"11.0.0\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js\",\"entry_sha256\":\"f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":256}],\"secondPhase\":[{\"before\":256,\"after\":256}],\"partsMatch\":32640},\"globParts\":256,\"setLength\":256,\"elapsed_ms\":5.2578749999999985,\"heap_delta\":1412808,\"rss\":62504960}\n",
+      "stderr": "",
+      "wall_seconds": 0.05902983300000031,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1100",
+        "version": "11.0.0",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1100/dist/commonjs/index.js",
+        "entry_sha256": "f4b0e05afbbb7154cc661b04affe9411093475f7df4da3dda571e507a4320d54",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 256
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 256,
+              "after": 256
+            }
+          ],
+          "partsMatch": 32640
+        },
+        "globParts": 256,
+        "setLength": 256,
+        "elapsed_ms": 5.2578749999999985,
+        "heap_delta": 1412808,
+        "rss": 62504960
+      }
+    },
+    {
+      "index": 32,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1101\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1101",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1101\",\"version\":\"11.0.1\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js\",\"entry_sha256\":\"d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.6931249999999984,\"heap_delta\":81048,\"rss\":53395456}\n",
+      "stderr": "",
+      "wall_seconds": 0.0502515830000001,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1101",
+        "version": "11.0.1",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js",
+        "entry_sha256": "d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.6931249999999984,
+        "heap_delta": 81048,
+        "rss": 53395456
+      }
+    },
+    {
+      "index": 33,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1101\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1101",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1101\",\"version\":\"11.0.1\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js\",\"entry_sha256\":\"d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5011249999999983,\"heap_delta\":788024,\"rss\":53248000}\n",
+      "stderr": "",
+      "wall_seconds": 0.04080499999999976,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1101",
+        "version": "11.0.1",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js",
+        "entry_sha256": "d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5011249999999983,
+        "heap_delta": 788024,
+        "rss": 53248000
+      }
+    },
+    {
+      "index": 34,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1101\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1101",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1101\",\"version\":\"11.0.1\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js\",\"entry_sha256\":\"d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5496249999999989,\"heap_delta\":299128,\"rss\":53149696}\n",
+      "stderr": "",
+      "wall_seconds": 0.04349266699999976,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1101",
+        "version": "11.0.1",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js",
+        "entry_sha256": "d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5496249999999989,
+        "heap_delta": 299128,
+        "rss": 53149696
+      }
+    },
+    {
+      "index": 35,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm1101\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm1101",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm1101\",\"version\":\"11.0.1\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js\",\"entry_sha256\":\"d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":8}],\"secondPhase\":[{\"before\":8,\"after\":8}],\"partsMatch\":28},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":0.7495000000000012,\"heap_delta\":817752,\"rss\":53723136}\n",
+      "stderr": "",
+      "wall_seconds": 0.0499691659999999,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm1101",
+        "version": "11.0.1",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm1101/dist/commonjs/index.js",
+        "entry_sha256": "d89e8ca7dda77bd9dc9efed6920b0ed09deb2f478ada54110980daa3080d3f9b",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 8
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 8,
+              "after": 8
+            }
+          ],
+          "partsMatch": 28
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 0.7495000000000012,
+        "heap_delta": 817752,
+        "rss": 53723136
+      }
+    },
+    {
+      "index": 36,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":8,\"level\":\"default\",\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 8,
+        "level": "default",
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.148333000000001,\"heap_delta\":-241288,\"rss\":53248000}\n",
+      "stderr": "",
+      "wall_seconds": 0.06327829199999968,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.148333000000001,
+        "heap_delta": -241288,
+        "rss": 53248000
+      }
+    },
+    {
+      "index": 37,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":8,\"level\":0,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 8,
+        "level": 0,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":0},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":1.304707999999998,\"heap_delta\":81888,\"rss\":53067776}\n",
+      "stderr": "",
+      "wall_seconds": 0.06193741699999977,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 0
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 1.304707999999998,
+        "heap_delta": 81888,
+        "rss": 53067776
+      }
+    },
+    {
+      "index": 38,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":8,\"level\":1,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 8,
+        "level": 1,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":1},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.5489159999999984,\"heap_delta\":18584,\"rss\":53608448}\n",
+      "stderr": "",
+      "wall_seconds": 0.05311758299999969,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 1
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.5489159999999984,
+        "heap_delta": 18584,
+        "rss": 53608448
+      }
+    },
+    {
+      "index": 39,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":8,\"level\":2,\"instrument\":true}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 8,
+        "level": 2,
+        "instrument": true
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":8,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":8}],\"secondPhase\":[{\"before\":8,\"after\":8}],\"partsMatch\":28},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":0.7483749999999993,\"heap_delta\":113256,\"rss\":53084160}\n",
+      "stderr": "",
+      "wall_seconds": 0.04987208399999954,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 8,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 8
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 8,
+              "after": 8
+            }
+          ],
+          "partsMatch": 28
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 0.7483749999999993,
+        "heap_delta": 113256,
+        "rss": 53084160
+      }
+    },
+    {
+      "index": 40,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":4,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 4,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":4,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":16,\"setLength\":16,\"elapsed_ms\":2.8759580000000007,\"heap_delta\":426248,\"rss\":53723136}\n",
+      "stderr": "",
+      "wall_seconds": 0.04656133299999965,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 4,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 16,
+        "setLength": 16,
+        "elapsed_ms": 2.8759580000000007,
+        "heap_delta": 426248,
+        "rss": 53723136
+      }
+    },
+    {
+      "index": 41,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":6,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 6,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":6,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":64,\"setLength\":64,\"elapsed_ms\":4.242958000000002,\"heap_delta\":958704,\"rss\":56852480}\n",
+      "stderr": "",
+      "wall_seconds": 0.061856582999999965,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 6,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 64,
+        "setLength": 64,
+        "elapsed_ms": 4.242958000000002,
+        "heap_delta": 958704,
+        "rss": 56852480
+      }
+    },
+    {
+      "index": 42,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":10,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 10,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"advisory\",\"parts\":10,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1024,\"setLength\":1024,\"elapsed_ms\":39.60974999999999,\"heap_delta\":2051048,\"rss\":66240512}\n",
+      "stderr": "",
+      "wall_seconds": 0.09454175000000031,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "advisory",
+        "parts": 10,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1024,
+        "setLength": 1024,
+        "elapsed_ms": 39.60974999999999,
+        "heap_delta": 2051048,
+        "rss": 66240512
+      }
+    },
+    {
+      "index": 43,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":4,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 4,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":4,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":0.7220000000000013,\"heap_delta\":798984,\"rss\":53248000}\n",
+      "stderr": "",
+      "wall_seconds": 0.08571066700000074,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 4,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 0.7220000000000013,
+        "heap_delta": 798984,
+        "rss": 53248000
+      }
+    },
+    {
+      "index": 44,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":6,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 6,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":6,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":0.6723329999999983,\"heap_delta\":-518440,\"rss\":53379072}\n",
+      "stderr": "",
+      "wall_seconds": 0.04211866600000036,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 6,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 0.6723329999999983,
+        "heap_delta": -518440,
+        "rss": 53379072
+      }
+    },
+    {
+      "index": 45,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm11\",\"parts\":10,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm11",
+        "parts": 10,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm11\",\"version\":\"11.0.3\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js\",\"entry_sha256\":\"235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32\",\"family\":\"advisory\",\"parts\":10,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":0.850833999999999,\"heap_delta\":125880,\"rss\":53444608}\n",
+      "stderr": "",
+      "wall_seconds": 0.053632208999999875,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm11",
+        "version": "11.0.3",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm11/dist/commonjs/index.js",
+        "entry_sha256": "235c5458355f1449cc100f1cea1a43d45f788a4feb524a83497aa146bea88f32",
+        "family": "advisory",
+        "parts": 10,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 0.850833999999999,
+        "heap_delta": 125880,
+        "rss": 53444608
+      }
+    },
+    {
+      "index": 46,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":4,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 4,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":4,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.32379200000000097,\"heap_delta\":786376,\"rss\":51576832}\n",
+      "stderr": "",
+      "wall_seconds": 0.03977837500000003,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 4,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.32379200000000097,
+        "heap_delta": 786376,
+        "rss": 51576832
+      }
+    },
+    {
+      "index": 47,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":6,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 6,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":6,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.32204100000000224,\"heap_delta\":783128,\"rss\":51183616}\n",
+      "stderr": "",
+      "wall_seconds": 0.05078454199999971,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 6,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.32204100000000224,
+        "heap_delta": 783128,
+        "rss": 51183616
+      }
+    },
+    {
+      "index": 48,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm3\",\"parts\":10,\"level\":2,\"instrument\":false}"
+      ],
+      "config": {
+        "module": "mm3",
+        "parts": 10,
+        "level": 2,
+        "instrument": false
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm3\",\"version\":\"3.1.5\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js\",\"entry_sha256\":\"746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d\",\"family\":\"advisory\",\"parts\":10,\"pattern\":\"**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":false,\"features\":{\"firstPhase\":false,\"secondPhase\":false,\"partsMatch\":false},\"observations\":{\"firstPhase\":[],\"secondPhase\":[],\"partsMatch\":0},\"globParts\":1,\"setLength\":1,\"elapsed_ms\":0.4316659999999999,\"heap_delta\":36752,\"rss\":51134464}\n",
+      "stderr": "",
+      "wall_seconds": 0.04582587500000024,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm3",
+        "version": "3.1.5",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm3/minimatch.js",
+        "entry_sha256": "746849f267c4868a53729225bd85c7dccd387712136fb305fcc0a3eadd4a3d9d",
+        "family": "advisory",
+        "parts": 10,
+        "pattern": "**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b/**/../a/b",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": false,
+        "features": {
+          "firstPhase": false,
+          "secondPhase": false,
+          "partsMatch": false
+        },
+        "observations": {
+          "firstPhase": [],
+          "secondPhase": [],
+          "partsMatch": 0
+        },
+        "globParts": 1,
+        "setLength": 1,
+        "elapsed_ms": 0.4316659999999999,
+        "heap_delta": 36752,
+        "rss": 51134464
+      }
+    },
+    {
+      "index": 49,
+      "argv": [
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+        "--max-old-space-size=96",
+        "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/probe-version.cjs",
+        "{\"module\":\"mm10\",\"parts\":8,\"level\":2,\"instrument\":true,\"family\":\"previous\"}"
+      ],
+      "config": {
+        "module": "mm10",
+        "parts": 8,
+        "level": 2,
+        "instrument": true,
+        "family": "previous"
+      },
+      "returncode": 0,
+      "stdout": "{\"module\":\"mm10\",\"version\":\"10.2.6\",\"entry\":\"/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js\",\"entry_sha256\":\"d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783\",\"family\":\"previous\",\"parts\":8,\"pattern\":\"a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../leaf\",\"options\":{\"braceExpandMax\":8,\"optimizationLevel\":2},\"instrument\":true,\"features\":{\"firstPhase\":true,\"secondPhase\":true,\"partsMatch\":true},\"observations\":{\"firstPhase\":[{\"before\":1,\"after\":128}],\"secondPhase\":[{\"before\":128,\"after\":8}],\"partsMatch\":568},\"globParts\":8,\"setLength\":8,\"elapsed_ms\":2.8416669999999975,\"heap_delta\":635696,\"rss\":55197696}\n",
+      "stderr": "",
+      "wall_seconds": 0.055817249999999596,
+      "timed_out": false,
+      "measurement": {
+        "module": "mm10",
+        "version": "10.2.6",
+        "entry": "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/followup/spec/versions/node_modules/mm10/dist/commonjs/index.js",
+        "entry_sha256": "d224f71f20d7c206fcc5b7e9f747324c7698345a0b2c28d717dd9cf698306783",
+        "family": "previous",
+        "parts": 8,
+        "pattern": "a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../a/**/../leaf",
+        "options": {
+          "braceExpandMax": 8,
+          "optimizationLevel": 2
+        },
+        "instrument": true,
+        "features": {
+          "firstPhase": true,
+          "secondPhase": true,
+          "partsMatch": true
+        },
+        "observations": {
+          "firstPhase": [
+            {
+              "before": 1,
+              "after": 128
+            }
+          ],
+          "secondPhase": [
+            {
+              "before": 128,
+              "after": 8
+            }
+          ],
+          "partsMatch": 568
+        },
+        "globParts": 8,
+        "setLength": 8,
+        "elapsed_ms": 2.8416669999999975,
+        "heap_delta": 635696,
+        "rss": 55197696
+      }
+    }
+  ]
+}

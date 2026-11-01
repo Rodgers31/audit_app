@@ -1,0 +1,215 @@
+{
+  "sealed_at": "2026-11-01T17:44:09.143128+00:00",
+  "scope": "Defensive Python dependency inventory, live exact-version advisories and existing owned-fixture tests only",
+  "head": "dfc0ea9e3a448ce5e281e15693c56477b280c1a8",
+  "source_changed": false,
+  "manifest_sha256": {
+    "backend/requirements.txt": "bdae2d75e7f322723670e0c9ed54b8ed971d8dc9b30591b06002c6553856515d",
+    "backend/requirements-dev.txt": "31d93df9239fcadb3038fa34804ecb81e4d29ae33943173752846022d3d439e7",
+    "backend/security-constraints.txt": "22a48a5d28facb3eb2f47148090ce81f7ea5a7fe483a8db4ab7839dc356bc9f3",
+    "etl/requirements.txt": "a1791572e899465c1ff8b77de8ae590ba04b9843e2a6a78c4e4e151dfb686e42",
+    "tools/worker_host_fixture/requirements.txt": "0605b0ebab819c76248399b798099b6e127add019d0dcfba1409d2d56a7be5f9",
+    "docs/admin/batch66/preflight-driver-requirements.txt": "5f598f5998378d37b4086c8eca3224251ddb90f9b2c2873bca4f421bdfc6c2e9",
+    "docs/admin/batch71/metadata-driver-requirements.txt": "ac1d1c17618ce831288d16d1e0f42b895a4b4bb769868758c509a4672dcbad21",
+    "docs/admin/batch80/github-driver-requirements.txt": "dc049e00b25769d36b06a1384268a314ee1188b6b36e500fe7ed59e8900d9ff9",
+    "backend/Dockerfile": "a60a7a5956d232b074755de47077d6c5c1bde0c427140c07606f0f7091dd4c01",
+    "backend/Dockerfile.prod": "7f53b08891da9947f638486f2897fbb45e3bf1ee6233937ba471ae0f6f1c4c24"
+  },
+  "fresh_profile_distributions": {
+    "runtime": 87,
+    "dev": 129,
+    "etl": 52,
+    "worker": 93,
+    "native-dev": 128
+  },
+  "fresh_profile_pip_check": {
+    "runtime": "No broken requirements found.",
+    "dev": "No broken requirements found.",
+    "etl": "No broken requirements found.",
+    "worker": "No broken requirements found.",
+    "native-dev": "No broken requirements found."
+  },
+  "advisory_result": {
+    "observed_at": "2026-11-01T17:42:19.110077+00:00",
+    "query_inventory_sha256": "ba32e86f2c26eb7b405abc23c762515e6d889e6642fe770c276e97f80459f4c0",
+    "profile_counts": {
+      "runtime": 87,
+      "dev": 129,
+      "etl": 52,
+      "worker": 93,
+      "native-dev": 128,
+      "preflight66": 1,
+      "metadata71": 1,
+      "github80": 1
+    },
+    "unique_profile_versions": 158,
+    "completed_profile_version_queries": 158,
+    "all_profile_queries_complete": true,
+    "requests": 4,
+    "pagination_continuations": 0,
+    "reported_matches": [],
+    "release_known_advisory_clear": true,
+    "details_used_for_clearance": false,
+    "positive_control": {
+      "name": "pypdf",
+      "version": "6.21.2",
+      "advisory_ids": [
+        "GHSA-42gh-23hr-vphw",
+        "GHSA-4vqv-7265-gm2w",
+        "GHSA-5849-834g-hvw5",
+        "GHSA-62m5-6wh8-28x7",
+        "GHSA-cggf-277g-3q54",
+        "GHSA-mfr5-77xh-9j7h",
+        "GHSA-x3rh-gjgm-fmqc"
+      ]
+    },
+    "scope_limit": "Python package exact-version advisories only; not OS/native/browser or production-image clearance"
+  },
+  "helper_sha256": "bd5063283f94ca7b036608523e80b3e7319a9c808b4738921e091170207996e5",
+  "independent_helper_review": "standards/osv-final-{normal,optimized}.xml:62cases each",
+  "tests": {
+    "native-security-normal": {
+      "passed": 533,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "1ab9888f02151b5a4fba65904771c7d16501b702be18b2e5cebe08b54d72a5d7"
+    },
+    "native-security-optimized": {
+      "passed": 533,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "8abe0a989759290822785df722351bbd8d5249b01c28350e642685908860b915"
+    },
+    "linux-dev-normal": {
+      "passed": 339,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "65ee57a5ab72bbb5486b1667c2c47dc515722e29d275b738acb94057b132687e"
+    },
+    "linux-dev-optimized": {
+      "passed": 339,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "150866d2d8ca4010d31262eada3667c8b187c9667dd13a7e7395ab28976ffe40"
+    },
+    "linux-etl-normal": {
+      "passed": 5,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "4417e5ff2cac86c2bde5fe2d15b21397c63f382f6d6d11cea0e3c12d7997b5c2"
+    },
+    "linux-etl-optimized": {
+      "passed": 5,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "3b0e47fe31c5a3b4825e1d575365ac8d9bea9d884eb111a789a983081560eecc"
+    },
+    "financial-http-normal": {
+      "passed": 3,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "ba1e7fafa6dfdbda800ec68f575b7f01c8b2c53332ce050145e387d4824cbbd5"
+    },
+    "financial-http-optimized": {
+      "passed": 3,
+      "errors": 0,
+      "failed": 0,
+      "skipped": 0,
+      "xml_sha256": "ec307bb09491fe0c445b5a56c712b23c5d76bbfd7d9df14665e609e42774a598"
+    }
+  },
+  "distinct_pytest_cases_per_mode": 551,
+  "native_linux_overlap_per_mode": 329,
+  "actual_owned_security_postgres_cases_per_mode": 54,
+  "previous_native_video_skips_now_executed_per_mode": 9,
+  "fresh_locked_worker_unittest_controls_per_mode": 34,
+  "http_capture_sha256": {
+    "ROUND8_SESSION_4_HTTP_KES_dated.json": "85a775e50229e150283bb4a2d7a65d9c6994d673f99d6f51c99b0fc1b8ec4f7c",
+    "ROUND8_SESSION_4_HTTP_KES_undated.json": "9dcf5ca177f4d791e52993703c8a06e0fc7912fc9ebb3c14153d7ef39e856d6d",
+    "ROUND8_SESSION_4_HTTP_USD_dated.json": "ff4ae5c311270f7f58c193c65beda24d7863c881f9676bd40f8043e2becf7394"
+  },
+  "driver_cross_download": {
+    "wheels": [
+      {
+        "manifest": "docs/admin/batch66/preflight-driver-requirements.txt",
+        "manifest_sha256": "5f598f5998378d37b4086c8eca3224251ddb90f9b2c2873bca4f421bdfc6c2e9",
+        "python_abi": "cp312",
+        "filename": "psycopg2_binary-2.9.12-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "sha256": "9fe06d93e72f1c048e731a2e3e7854a5bfaa58fc736068df90b352cefe66f03f",
+        "bytes": 4274917,
+        "official_pypi_sha256_match": true,
+        "pip_require_hashes_exit": 0,
+        "installed_or_executed": false,
+        "start": "2026-11-01T17:28:17.960709+00:00",
+        "finished": "2026-11-01T17:28:20.968826+00:00"
+      },
+      {
+        "manifest": "docs/admin/batch66/preflight-driver-requirements.txt",
+        "manifest_sha256": "5f598f5998378d37b4086c8eca3224251ddb90f9b2c2873bca4f421bdfc6c2e9",
+        "python_abi": "cp313",
+        "filename": "psycopg2_binary-2.9.12-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "sha256": "c41321a14dd74aceb6a9a643b9253a334521babfa763fa873e33d89cfa122fb5",
+        "bytes": 4274982,
+        "official_pypi_sha256_match": true,
+        "pip_require_hashes_exit": 0,
+        "installed_or_executed": false,
+        "start": "2026-11-01T17:28:20.968910+00:00",
+        "finished": "2026-11-01T17:28:22.174867+00:00"
+      },
+      {
+        "manifest": "docs/admin/batch80/github-driver-requirements.txt",
+        "manifest_sha256": "dc049e00b25769d36b06a1384268a314ee1188b6b36e500fe7ed59e8900d9ff9",
+        "python_abi": "cp312",
+        "filename": "psycopg2_binary-2.9.13-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "sha256": "e3861eba31f8ea8663fd876166b032fd89179e42aa63764d6feb281f13f9eb60",
+        "bytes": 4282380,
+        "official_pypi_sha256_match": true,
+        "pip_require_hashes_exit": 0,
+        "installed_or_executed": false,
+        "start": "2026-11-01T17:28:22.229404+00:00",
+        "finished": "2026-11-01T17:28:22.535075+00:00"
+      },
+      {
+        "manifest": "docs/admin/batch80/github-driver-requirements.txt",
+        "manifest_sha256": "dc049e00b25769d36b06a1384268a314ee1188b6b36e500fe7ed59e8900d9ff9",
+        "python_abi": "cp313",
+        "filename": "psycopg2_binary-2.9.13-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+        "sha256": "f04ada42bcd537adbaf8b7f3140237a204e452a88d0c1831cfce69f7d2e59f4e",
+        "bytes": 4282438,
+        "official_pypi_sha256_match": true,
+        "pip_require_hashes_exit": 0,
+        "installed_or_executed": false,
+        "start": "2026-11-01T17:28:22.535160+00:00",
+        "finished": "2026-11-01T17:28:24.100490+00:00"
+      }
+    ],
+    "legacy_batch71": {
+      "manifest_sha256": "ac1d1c17618ce831288d16d1e0f42b895a4b4bb769868758c509a4672dcbad21",
+      "pin": "psycopg2-binary==2.9.13",
+      "hashes": false,
+      "same_version_public_advisory_audit": true
+    },
+    "qualification_limit": "Cross-download/hash/metadata only; cached runtime is arm64, so cp312/cp313 x86_64 wheels were not executed. Native arm64 psycopg2 2.9.13 executed in actual owned PG tests."
+  },
+  "owned_containers_remaining": [],
+  "preexisting_containers_left_untouched": [
+    "admin-redesign-node",
+    "admin-redesign-pg"
+  ],
+  "production_provider_operations": false,
+  "new_paid_resources": [],
+  "remaining_limits": [
+    "Python package advisory snapshot only; OS/native/browser and deployed-image security are separate scopes.",
+    "Linux CPython3.12.16 arm64 and native macOS CPython3.13.9 arm64 are separately qualified; x86_64 driver wheels were hash-checked, not executed.",
+    "macOS ffmpeg9.0.1 qualification does not certify the future production Linux ffmpeg binary; media/uploads/workers remain off.",
+    "Pinned worker graph and unit controls do not activate or independently requalify a production worker host.",
+    "Runtime requirements are ranges; a later build resolving a different version needs an inventory/advisory comparison."
+  ]
+}

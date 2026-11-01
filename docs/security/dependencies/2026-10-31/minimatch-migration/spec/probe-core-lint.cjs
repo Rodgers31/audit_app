@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');const Module=require('node:module');const crypto=require('node:crypto');
+const frontend=path.resolve(process.argv[2]);const mode=process.argv[3];assert.ok(['baseline','modern-core','direct'].includes(mode));const req=Module.createRequire(path.join(frontend,'package.json'));const fixture=Module.createRequire(path.join(__dirname,'fixtures/package.json'));const modern=fixture('minimatch');const load=Module._load;const events=[];
+const prefixes=['eslint/','@eslint/eslintrc/','@humanwhocodes/config-array/'].map(x=>path.join(frontend,'node_modules',x));
+if(mode==='modern-core')Module._load=function(request,parent){if(request==='minimatch'&&parent&&prefixes.some(p=>parent.filename.startsWith(p))){events.push(path.relative(frontend,parent.filename));return modern;}return load.apply(this,arguments);};
+const stable=x=>{if(Array.isArray(x))return x.map(stable);if(x&&typeof x==='object')return Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])]));return x;};const hash=x=>crypto.createHash('sha256').update(x).digest('hex');
+(async()=>{
+ const{ESLint}=req('eslint');const lint=new ESLint({cwd:frontend,cache:false});const fg=req('fast-glob');const files=fg.sync('{pages,components,lib,src,app}/**/*.{js,jsx,ts,tsx,mjs,cjs}',{cwd:frontend,absolute:true,onlyFiles:true,dot:true}).sort();
+ const targets=[...files,path.join(frontend,'__migration_probe__.js'),path.join(frontend,'nested/__migration_probe__.tsx'),path.join(frontend,'nested/.hidden.ts')];
+ const configurations={},mappings={};const active=[];
+ for(const file of targets){if(await lint.isPathIgnored(file))continue;const config=stable(await lint.calculateConfigForFile(file));const key=hash(JSON.stringify(config));configurations[key]=config;mappings[path.relative(frontend,file)]=key;if(files.includes(file))active.push(file);}
+ assert.ok(active.length>300);const results=await lint.lintFiles(active);assert.equal(results.length,active.length);const diagnostic=results.map(r=>({file:path.relative(frontend,r.filePath),errors:r.errorCount,warnings:r.warningCount,fatal:r.fatalErrorCount,messages:r.messages}));assert.equal(diagnostic.reduce((sum,x)=>sum+x.fatal,0),0);
+ const ConfigArray=req('@humanwhocodes/config-array').ConfigArray;const configArray=new ConfigArray([{files:['**/*.{js,ts}'],tag:'source'},{files:['nested/**'],tag:'nested'},{ignores:['**/ignored/**']}],{basePath:frontend,schema:{tag:{merge:'replace',validate:'string'}}});configArray.normalizeSync();const configArrayCases={};for(const rel of ['a.js','a.ts','a.css','nested/a.js','nested/.hidden.ts','ignored/a.js','nested/ignored/a.ts'])configArrayCases[rel]=configArray.getConfig(path.join(frontend,rel));
+ if(mode==='modern-core'){assert.ok(events.some(x=>x.includes('eslint/lib/cli-engine/file-enumerator'))||events.some(x=>x.includes('eslint/lib/eslint/eslint-helpers')));assert.ok(events.some(x=>x.includes('@eslint/eslintrc')));assert.ok(events.some(x=>x.includes('@humanwhocodes/config-array')));}
+ const data={mode,eslintVersion:req('eslint/package.json').version,minimatchUsed:mode==='modern-core'?fixture('minimatch/package.json').version:req('minimatch/package.json').version,interceptions:[...new Set(events)].sort(),sourceFileCount:files.length,lintedFileCount:active.length,configurations,mappings,configArrayCases,diagnostic};
+ console.log(JSON.stringify(data));
+})().catch(e=>{console.error(e.stack);process.exitCode=1;}).finally(()=>{Module._load=load;});
