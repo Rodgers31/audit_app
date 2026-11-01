@@ -1,0 +1,12 @@
+{
+  "commit": "0bc78394a3bbb638ab1fd26aa103ece2f47c6a51",
+  "scope": "git_blob_representation_only",
+  "committed_log_sha256": "3344b7aab36864f5c31d05e2948f5f1afefb0c89fe2f3f3caee8a3d930d9495e",
+  "raw_prior_reviewed_log_sha256": "23da90aebad45c71f90feba87f5f8e4257a7f7697c2de9363b24aa58b2700964",
+  "raw_private_log_retained": "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/manual-publish-launch-20261101/frontend-build-final.log",
+  "raw_normalization_matches_committed_bytes": true,
+  "runtime_source_entries_unchanged": 17,
+  "tests_rerun": false,
+  "normalization": "CRLF to LF only",
+  "all_17_committed_source_hashes_match": true
+}

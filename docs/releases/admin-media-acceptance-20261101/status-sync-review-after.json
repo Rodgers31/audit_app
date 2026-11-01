@@ -1,0 +1,20 @@
+{
+  "sha256": {
+    "frontend/components/admin/social/SocialComposer.tsx": "9fc12c9de9322cfc399447f3bbd598872e0dae1712d3384c65f8af64b7b447c3",
+    "frontend/__tests__/admin/social/clean-status-sync.test.tsx": "54dcd70bfbff2a45ac653a0a3e2d28bf382564af4e135498e484c07c63265956",
+    "frontend/__tests__/admin/social/composer-media-integration.test.tsx": "b035f7741a7380fe3f863601bf1bfdc12d80549dd79e6ac2cbf4e960eec51f20",
+    "frontend/__tests__/admin/social/gates.adversarial.test.tsx": "c67e5991450375442e02d974f490b25d381584fc56877ef86148ceb471f53635",
+    "frontend/tests/manualPublicationBrowser.mjs": "51aa19cd693a5384d79a77322b7314c3fc211c92ef35d7056e357c4e3f8b6f02"
+  },
+  "changed_files": [
+    "frontend/__tests__/admin/social/clean-status-sync.test.tsx"
+  ],
+  "final_sha256": {
+    "frontend/components/admin/social/SocialComposer.tsx": "9fc12c9de9322cfc399447f3bbd598872e0dae1712d3384c65f8af64b7b447c3",
+    "frontend/__tests__/admin/social/clean-status-sync.test.tsx": "54dcd70bfbff2a45ac653a0a3e2d28bf382564af4e135498e484c07c63265956",
+    "frontend/__tests__/admin/social/composer-media-integration.test.tsx": "b035f7741a7380fe3f863601bf1bfdc12d80549dd79e6ac2cbf4e960eec51f20",
+    "frontend/__tests__/admin/social/gates.adversarial.test.tsx": "c67e5991450375442e02d974f490b25d381584fc56877ef86148ceb471f53635",
+    "frontend/tests/manualPublicationBrowser.mjs": "51aa19cd693a5384d79a77322b7314c3fc211c92ef35d7056e357c4e3f8b6f02"
+  },
+  "supplemental_test_review": "Owner appended ready-authorization validation case while original affected-suite run was completing; current final file re-read and seven cases rerun successfully. No runtime-source change during reviewer execution."
+}

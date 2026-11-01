@@ -1,0 +1,66 @@
+[
+  {
+    "file": "manual-media-pg-normal.xml",
+    "tests": 299,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "ffbe2c198c8dc4710aa5537dd2a9c818aca3dba2559ec5323db73b8da0db914c"
+  },
+  {
+    "file": "manual-media-pg-optimized.xml",
+    "tests": 302,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "58cb52e7a2aa224bd1a90db4b234627043b35332f7bbff897c417555199e7a58"
+  },
+  {
+    "file": "operator-pg-normal.xml",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "74efbb95222a5e36ac62e43bad13e6d01f4269d268cca63685d896aa473df2e7"
+  },
+  {
+    "file": "operator-pg-optimized.xml",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "f899da3ff81b4d7394479b66d9fc3756e44dafb1b4f5666476e19bcc78b21677"
+  },
+  {
+    "file": "owned-pg-normal.xml",
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "dd655679e45dc00c73587ddd20f971c4936a8fa3c7b0d7c729448f26a046a625"
+  },
+  {
+    "file": "owned-pg-optimized.xml",
+    "tests": 36,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "f5facf70de6e67aa5b5b071fb3c7be3d8986dd32e00a2b7c2beab5ca64cfa53f"
+  },
+  {
+    "file": "retirement-pg-normal.xml",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "062cb5ce641ad22b5eb0b12e7adeedb2cf7f7acb8ebdae3f8a82f8baa7b128c5"
+  },
+  {
+    "file": "retirement-pg-optimized.xml",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "98d4a9559f4947a8434150849b283302facc2fd4ea2e214868156a3d8bc60883"
+  }
+]

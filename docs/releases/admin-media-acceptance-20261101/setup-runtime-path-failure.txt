@@ -1,0 +1,1 @@
+env: /Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/python/envs/backend/bin/python: No such file or directory
