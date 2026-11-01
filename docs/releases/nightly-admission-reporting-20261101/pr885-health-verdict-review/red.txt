@@ -1,0 +1,905 @@
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='', count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='wat', count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='TRUE', count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict='False', count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=None, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=False, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=True, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=0, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=1, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict=[], count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='3', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='3', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count=None, alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count=None, alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='invalid', alert=False)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (verdict={}, count='invalid', alert=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 234, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (missing_verdict={})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 240, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    self.assert_health_message(outputs, 'Unknown — missing or malformed health-check verdict', alert=True)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — some source(s) not probed before the health-check budget ran out'
+
+======================================================================
+FAIL: test_unknown_health_verdict_never_claims_partial_for_any_counter (test_seed_notifications.NotificationTests) (missing_verdict={'unprobed': '3'})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 240, in test_unknown_health_verdict_never_claims_partial_for_any_counter
+    self.assert_health_message(outputs, 'Unknown — missing or malformed health-check verdict', alert=True)
+  File "/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app/.github/scripts/tests/test_seed_notifications.py", line 219, in assert_health_message
+    self.assertIn(expected, summary)
+AssertionError: 'Unknown — missing or malformed health-check verdict' not found in '**Health Check:** ❔ Partial — 3 source(s) not probed before the health-check budget ran out'
+
+----------------------------------------------------------------------
+Ran 1 test in 3.362s
+
+FAILED (failures=90)

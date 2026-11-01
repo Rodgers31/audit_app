@@ -3,8 +3,8 @@
   "baseline_workflow_sha256": "29d92cec4579c79330e61695be3dd75d43dcd16da859cb2deba5dfce423266a1",
   "candidate_files_sha256": {
     ".github/workflows/seed.yml": "4f6adae87d4a02bf809626d1cd0532408720d4c5e439539cabede2800cd03df5",
-    ".github/scripts/seed_notifications.cjs": "51ceb10dcaee9c1a963cdb1a153758fd28797d4c8164e254135126ca37ee25cb",
-    ".github/scripts/tests/test_seed_notifications.py": "afda18e17168e3561bcbbc3011b7aa7cc6f174e4494d10e1180cd461ef69f318",
+    ".github/scripts/seed_notifications.cjs": "88216ad8cdc90f695dea0749689ecb7f448b40489d1a0dd099b166ba71a57d92",
+    ".github/scripts/tests/test_seed_notifications.py": "63de4a0ae3c04788d006b7be4017369c471a08e321cdd4154e5ac963ff0c8f31",
     "backend/tests/test_healthcheck_is_bounded.py": "c2c38760f827728a4a5150e5ded656d9e500de4771b59c2fd5a8b8129feadccb"
   },
   "unchanged_non_notify_jobs": {
@@ -26,7 +26,7 @@
   },
   "results": {
     "red_admission": "1 test, 1 assertion failure: no alert selected by old workflow",
-    "new_workflow_fixture": "17 tests passed; normal and Python -O executions are separate overlapping selections",
+    "new_workflow_fixture": "20 tests passed in normal and Python -O executions; overlapping selections, not additive. Current outputs in pr885-health-verdict-review/.",
     "existing_workflow_tests": "320 passed, 6 skipped in 22.80s",
     "existing_selection_summary_tests": "5 passed, 23 deselected in 6.68s"
   },
@@ -44,5 +44,35 @@
     "Workflow cancellation can prevent notify from starting despite always(); local cancellation-result fixtures prove classification only.",
     "Reporter job success does not certify source extraction, database content, data freshness or publication.",
     "Managed pipeline incidents require human recovery review; this change does not auto-close them."
-  ]
+  ],
+  "receipt_history": {
+    "prior_verification": "pr885-health-verdict-review/verification-before-review.json",
+    "prior_verification_sha256": "b9145e1854b40dc9d703431977c76308b4bd3c03d11671a3866a50cb1439b2f4",
+    "historical_raw_captures_retained": true,
+    "prior_green_files": "green.txt and green-optimized.txt retain original17test observations and are not relabeled as current20test runs."
+  },
+  "current_review_validation": {
+    "reviewed_pr": 885,
+    "review_id": 5730688325,
+    "reviewed_head": "aae2f322d639c6c3f2c7461c6c46d1733bd0e92e",
+    "author_base_combined_snapshot": "7b0611a1bb135564a4713ceb0ab155767c9aefb5",
+    "classification": "valid; suggested verdict-before-partial ordering good, completed with strict count validation",
+    "red_verdict": "1 test,90 observed failing subtests",
+    "red_count": "1 test,43 observed failing subtests",
+    "normal": "20passed6.721s",
+    "optimized": "20passed6.729s",
+    "existing_healthcheck": "20passed17.74s",
+    "all_GitHub_calls_intercepted": true,
+    "non_notify_jobs_unchanged": {
+      "source_plan": true,
+      "healthcheck": true,
+      "migrate": true,
+      "bootstrap": true,
+      "seed": true,
+      "validate": true,
+      "revalidate": true
+    },
+    "workflow_file_unchanged_from_prior_candidate": true,
+    "independent_executable_review": "media_launch_acceptance:481 actual-wrapper/direct-function cases CLEAR; helperSHA bound in pr885-health-verdict-review/independent-review.json"
+  }
 }

@@ -53,12 +53,16 @@ function healthDescription(needs) {
     const result = STATES.has(check?.result) ? check.result : 'no result';
     return `❔ Unknown — the health check did not finish (${result})`;
   }
+  // A partial probe is a measured outcome, not a fallback for missing or
+  // malformed outputs. Validate the verdict before interpreting its count.
+  if (!['true', 'false'].includes(outputs.has_failures)) return '❔ Unknown — missing or malformed health-check verdict';
   if (outputs.has_failures === 'true') return '⚠️ Some sources were unreachable (may be related)';
-  if (outputs.unprobed !== '0') {
-    const count = /^\d{1,5}$/.test(outputs.unprobed) ? outputs.unprobed : 'some';
-    return `❔ Partial — ${count} source(s) not probed before the health-check budget ran out`;
+  if (typeof outputs.unprobed !== 'string' || !/^(0|[1-9][0-9]{0,4})$/.test(outputs.unprobed)) {
+    return '❔ Unknown — missing or malformed unprobed source count';
   }
-  if (outputs.has_failures !== 'false') return '❔ Unknown — missing or malformed health-check verdict';
+  if (outputs.unprobed !== '0') {
+    return `❔ Partial — ${outputs.unprobed} source(s) not probed before the health-check budget ran out`;
+  }
   return '✅ No critical source failures (warnings, if any, are in the health-check job)';
 }
 

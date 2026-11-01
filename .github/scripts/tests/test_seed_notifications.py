@@ -209,6 +209,60 @@ class NotificationTests(unittest.TestCase):
                 needs['healthcheck']['outputs']=outputs
                 self.assertIn(expected,execute(needs)['calls'][-1]['args']['body'])
 
+    def assert_health_message(self, outputs, expected, *, alert):
+        needs = healthy()
+        needs['healthcheck']['outputs'] = outputs
+        if alert:
+            needs['seed']['result'] = 'failure'
+        result = execute(needs)
+        summary = next(line for line in result['summary'].splitlines() if line.startswith('**Health Check:**'))
+        self.assertIn(expected, summary)
+        if alert:
+            issue = result['calls'][-1]['args']['body']
+            self.assertEqual(summary, next(line for line in issue.splitlines() if line.startswith('**Health Check:**')))
+        else:
+            # Unknown source output does not invent a new pipeline incident;
+            # health job execution and the existing source alert remain separate.
+            self.assertEqual(result['calls'], [])
+        return summary
+
+    def test_unknown_health_verdict_never_claims_partial_for_any_counter(self):
+        for verdict in ('', 'wat', 'TRUE', 'False', None, False, True, 0, 1, [], {}):
+            for count in ('0', '3', '', None, 'invalid'):
+                for alert in (False, True):
+                    with self.subTest(verdict=verdict, count=count, alert=alert):
+                        message = self.assert_health_message({'has_failures': verdict, 'unprobed': count},
+                            'Unknown — missing or malformed health-check verdict', alert=alert)
+                        self.assertNotIn('Partial', message)
+                        self.assertNotIn('✅', message)
+        for outputs in ({}, {'unprobed': '3'}):
+            with self.subTest(missing_verdict=outputs):
+                self.assert_health_message(outputs, 'Unknown — missing or malformed health-check verdict', alert=True)
+
+    def test_invalid_health_count_never_invents_budget_exhaustion(self):
+        invalid = ('', None, False, True, 0, 3, 3.0, -1, '00', '03', '-1', '1.0', '1e1',
+                   ' 3', '3 ', '999999', 'NaN', 'Infinity', '<script>', [], {})
+        for count in invalid:
+            for alert in (False, True):
+                with self.subTest(count=count, alert=alert):
+                    message = self.assert_health_message({'has_failures': 'false', 'unprobed': count},
+                        'Unknown — missing or malformed unprobed source count', alert=alert)
+                    self.assertNotIn('Partial', message)
+                    self.assertNotIn('✅', message)
+        self.assert_health_message({'has_failures': 'false'},
+            'Unknown — missing or malformed unprobed source count', alert=True)
+
+    def test_valid_health_contract_preserves_critical_partial_and_complete(self):
+        cases = [({'has_failures': 'true', 'unprobed': count}, 'Some sources were unreachable')
+                 for count in ('0', '3', '', None, 'invalid')]
+        cases += [({'has_failures': 'false', 'unprobed': '0'}, '✅ No critical source failures'),
+                  ({'has_failures': 'false', 'unprobed': '3'}, 'Partial — 3 source(s) not probed'),
+                  ({'has_failures': 'false', 'unprobed': '99999'}, 'Partial — 99999 source(s) not probed')]
+        for outputs, expected in cases:
+            for alert in (False, True):
+                with self.subTest(outputs=outputs, alert=alert):
+                    self.assert_health_message(outputs, expected, alert=alert)
+
     def test_multiple_managed_incidents_are_ambiguous(self):
         needs=healthy(); needs['migrate']['result']='failure'
         body=execute(needs)['calls'][-1]['args']['body']
