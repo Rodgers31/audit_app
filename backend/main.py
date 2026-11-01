@@ -2315,7 +2315,7 @@ async def root(request: Request):
         return response
     except Exception as e:
         logger.error(f"Error in main backend root: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.api_route("/health", methods=["GET", "HEAD"])
@@ -2381,7 +2381,7 @@ async def get_seeder_status() -> JSONResponse:
         return JSONResponse(
             {
                 "status": "error",
-                "error": str(e),
+                "error": "Seeder status unavailable",
                 "auto_seeder": {"is_running": False},
             }
         )
@@ -2463,13 +2463,14 @@ def _pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
             module_status[mod_name] = {
                 "available": False,
                 "description": description,
-                "error": str(exc),
+                "error": "Module unavailable",
             }
+            logger.warning("Web ETL module unavailable: %s", mod_name, exc_info=True)
             alerts.append(
                 {
                     "level": "warning",
                     "source": mod_name,
-                    "message": f"Module not importable: {exc}. Web ETL discovery is unavailable.",
+                    "message": "Module not importable. Web ETL discovery is unavailable.",
                 }
             )
 
@@ -2480,11 +2481,12 @@ def _pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
 
         seeder_info = copy.deepcopy(_get_status())
     except Exception as exc:
+        logger.warning("Could not retrieve seeder status", exc_info=True)
         alerts.append(
             {
                 "level": "error",
                 "source": "auto_seeder",
-                "message": f"Could not retrieve seeder status: {exc}",
+                "message": "Could not retrieve seeder status",
             }
         )
 
@@ -2540,7 +2542,7 @@ def _pipeline_health_snapshot(*, include_legacy_module: bool = True) -> dict:
             {
                 "level": "error",
                 "source": "database",
-                "message": f"Could not query database: {exc}",
+                "message": "Could not query database",
             }
         )
 
@@ -2652,14 +2654,9 @@ async def get_pipeline_health() -> dict:
                 }
             )
 
-    # ── 5. APScheduler jobs ──
+    # Job identifiers, results and errors belong to the admin status route.
+    # Retain the legacy public field without projecting the private queue.
     scheduler_jobs: list[dict] = []
-    try:
-        # The scheduler is set up in setup_scheduler() — we check module-level _etl_jobs dict
-        for jid, jinfo in _etl_jobs.items():
-            scheduler_jobs.append({"job_id": jid, **jinfo})
-    except Exception:
-        pass
 
     # ── 6. Build overall status ──
     error_count = sum(1 for a in alerts if a["level"] == "error")
@@ -3617,7 +3614,7 @@ async def get_counties(fiscal_year: Optional[str] = None):
             status_code=500,
             detail={
                 "error": "Database query failed",
-                "message": str(e),
+                "message": "County data temporarily unavailable",
                 "solution": "Check database schema and seeded data",
             },
         )
@@ -4974,7 +4971,7 @@ async def get_county_comprehensive(
         raise
     except Exception as e:
         logging.error(f"Error in comprehensive county endpoint for {county_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/api/v1/counties/{county_id}/financial")
@@ -8278,7 +8275,7 @@ async def resolve_document(url: str = Query(..., description="Original document 
         "original_url": url,
         "mirrored": bool(s3_key and presigned),
         "mirror_url": presigned,
-        "local_path": rec.get("file_path"),
+        "local_path": None,
         "title": rec.get("title"),
         "source": rec.get("source"),
         "doc_type": rec.get("doc_type"),
@@ -13239,7 +13236,7 @@ async def dashboard_fiscal_outturns():
                 "revenue": None,
                 "expenditure": None,
                 "balance": None,
-                "provenance": {"title": d.get("title"), "file": d.get("file_path")},
+                "provenance": {"title": d.get("title"), "file": None},
             }
         )
     if not series:
@@ -13330,7 +13327,7 @@ async def dashboard_sector_ceilings():
     prov = [
         {
             "title": d.get("title"),
-            "file": d.get("file_path"),
+            "file": None,
             "fetched": d.get("fetched"),
         }
         for d in bps_like[:3]
