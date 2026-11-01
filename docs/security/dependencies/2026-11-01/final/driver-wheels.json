@@ -1,0 +1,63 @@
+{
+  "wheels": [
+    {
+      "manifest": "docs/admin/batch66/preflight-driver-requirements.txt",
+      "manifest_sha256": "5f598f5998378d37b4086c8eca3224251ddb90f9b2c2873bca4f421bdfc6c2e9",
+      "python_abi": "cp312",
+      "filename": "psycopg2_binary-2.9.12-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "9fe06d93e72f1c048e731a2e3e7854a5bfaa58fc736068df90b352cefe66f03f",
+      "bytes": 4274917,
+      "official_pypi_sha256_match": true,
+      "pip_require_hashes_exit": 0,
+      "installed_or_executed": false,
+      "start": "2026-11-01T17:28:17.960709+00:00",
+      "finished": "2026-11-01T17:28:20.968826+00:00"
+    },
+    {
+      "manifest": "docs/admin/batch66/preflight-driver-requirements.txt",
+      "manifest_sha256": "5f598f5998378d37b4086c8eca3224251ddb90f9b2c2873bca4f421bdfc6c2e9",
+      "python_abi": "cp313",
+      "filename": "psycopg2_binary-2.9.12-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "c41321a14dd74aceb6a9a643b9253a334521babfa763fa873e33d89cfa122fb5",
+      "bytes": 4274982,
+      "official_pypi_sha256_match": true,
+      "pip_require_hashes_exit": 0,
+      "installed_or_executed": false,
+      "start": "2026-11-01T17:28:20.968910+00:00",
+      "finished": "2026-11-01T17:28:22.174867+00:00"
+    },
+    {
+      "manifest": "docs/admin/batch80/github-driver-requirements.txt",
+      "manifest_sha256": "dc049e00b25769d36b06a1384268a314ee1188b6b36e500fe7ed59e8900d9ff9",
+      "python_abi": "cp312",
+      "filename": "psycopg2_binary-2.9.13-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "e3861eba31f8ea8663fd876166b032fd89179e42aa63764d6feb281f13f9eb60",
+      "bytes": 4282380,
+      "official_pypi_sha256_match": true,
+      "pip_require_hashes_exit": 0,
+      "installed_or_executed": false,
+      "start": "2026-11-01T17:28:22.229404+00:00",
+      "finished": "2026-11-01T17:28:22.535075+00:00"
+    },
+    {
+      "manifest": "docs/admin/batch80/github-driver-requirements.txt",
+      "manifest_sha256": "dc049e00b25769d36b06a1384268a314ee1188b6b36e500fe7ed59e8900d9ff9",
+      "python_abi": "cp313",
+      "filename": "psycopg2_binary-2.9.13-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "f04ada42bcd537adbaf8b7f3140237a204e452a88d0c1831cfce69f7d2e59f4e",
+      "bytes": 4282438,
+      "official_pypi_sha256_match": true,
+      "pip_require_hashes_exit": 0,
+      "installed_or_executed": false,
+      "start": "2026-11-01T17:28:22.535160+00:00",
+      "finished": "2026-11-01T17:28:24.100490+00:00"
+    }
+  ],
+  "legacy_batch71": {
+    "manifest_sha256": "ac1d1c17618ce831288d16d1e0f42b895a4b4bb769868758c509a4672dcbad21",
+    "pin": "psycopg2-binary==2.9.13",
+    "hashes": false,
+    "same_version_public_advisory_audit": true
+  },
+  "qualification_limit": "Cross-download/hash/metadata only; cached runtime is arm64, so cp312/cp313 x86_64 wheels were not executed. Native arm64 psycopg2 2.9.13 executed in actual owned PG tests."
+}

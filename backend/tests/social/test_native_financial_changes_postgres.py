@@ -28,6 +28,7 @@ from test_b86_native_authority import HTML, KRA_URL
 
 def enable(factory,monkeypatch):
     enable_reports(factory,monkeypatch)
+    monkeypatch.setenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED','true')
     monkeypatch.setenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED','true')
 
 
@@ -175,8 +176,9 @@ def test_actual_reader_then_transaction_rollback_leaves_no_baseline_or_draft(pg,
     no_publication(factory)
 
 
-def test_new_native_lane_default_off_preserves_numeric_verdicts_and_report_hook(pg,tmp_path,monkeypatch):
+def test_new_source_lane_default_off_preserves_numeric_verdicts_and_report_hook(pg,tmp_path,monkeypatch):
     factory,_=pg;enable(factory,monkeypatch)
+    monkeypatch.delenv('SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED')
     monkeypatch.delenv('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')
     job,record=ingest_revenue(factory,tmp_path,monkeypatch)
     with factory() as db:

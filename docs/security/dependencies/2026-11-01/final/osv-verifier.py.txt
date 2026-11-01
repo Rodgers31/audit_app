@@ -1,0 +1,77 @@
+"""Exact-version public OSV queries with complete cardinality/pagination receipts."""
+from pathlib import Path
+from datetime import datetime,timezone
+import json,urllib.request,hashlib,re,sys
+from packaging.version import Version,InvalidVersion
+E=Path(__file__).resolve().parent;R=Path('/Users/roger/.codex/worktrees/dependency-security-weekly/audit_app')
+def require(c,m):
+ if c is not True:raise RuntimeError(m)
+def canonical(n):
+ require(type(n)is str and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]*',n)is not None,'Exact package name required')
+ return re.sub(r'[-_.]+','-',n).lower()
+def version_value(value):
+ require(type(value)is str and bool(value) and not any(c.isspace()for c in value),'Actual non-whitespace PEP440 installed version required')
+ try:Version(value)
+ except InvalidVersion as exc:raise RuntimeError('Invalid installed package version')from exc
+ return value
+def validate_batch(raw,count):
+ require(type(raw)is dict and set(raw)=={'results'} and type(raw['results'])is list and len(raw['results'])==count,'Incomplete OSV batch coverage')
+ for item in raw['results']:
+  require(type(item)is dict and set(item)<= {'vulns','next_page_token'},'OSV result has error/unknown shape')
+  vulns=item.get('vulns',[]);require(type(vulns)is list,'Vulnerability list missing')
+  for v in vulns:require(type(v)is dict and type(v.get('id'))is str and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{1,120}',v['id'])is not None,'Exact advisory ID missing')
+  token=item.get('next_page_token');require(token is None or type(token)is str and bool(token),'Malformed pagination token')
+ return raw['results']
+def fetch(path,payload,out):
+ data=json.dumps(payload,sort_keys=True,separators=(',',':')).encode()if payload is not None else None
+ if data is not None:(out.with_suffix('.request.json')).write_bytes(data)
+ req=urllib.request.Request('https://api.osv.dev/v1/'+path,data,{'Content-Type':'application/json','User-Agent':'AuditGava-owned-dependency-maintenance/1'})
+ with urllib.request.urlopen(req,timeout=45)as response:
+  require(response.status==200 and response.url.startswith('https://api.osv.dev/'),'Official successful OSV response required');raw=response.read(8*1024*1024+1)
+ require(len(raw)<=8*1024*1024,'OSV response exceeds bounded receipt');out.write_bytes(raw);return json.loads(raw)
+def load_profiles():
+ profiles={name:json.loads((E/(name+'-inventory.json')).read_text())for name in ['runtime','dev','etl','worker','native-dev']}
+ for label,path in [('preflight66','docs/admin/batch66/preflight-driver-requirements.txt'),('metadata71','docs/admin/batch71/metadata-driver-requirements.txt'),('github80','docs/admin/batch80/github-driver-requirements.txt')]:
+  lines=[line.strip()for line in (R/path).read_text().splitlines()if line.strip()and not line.strip().startswith('#')];pins=[]
+  for line in lines:
+   if line.endswith(chr(92)):line=line[:-1].rstrip()
+   if line.startswith('psycopg2-binary=='):
+    match=re.fullmatch(r'psycopg2-binary==([^\s\\]+)',line);require(match is not None,'Complete exact driver pin required');pins.append(version_value(match.group(1)))
+   else:require(re.fullmatch(r'--hash=sha256:[a-f0-9]{64}',line)is not None,'Uninventoried requirement or malformed driver hash line')
+  require(len(pins)==1,'Single exact preflight driver pin required');profiles[label]=[{'name':'psycopg2-binary','version':pins[0]}]
+ require(len(profiles)==8 and all(len(v)>0 for v in profiles.values()),'Every release profile must have actual inventory')
+ return profiles
+def main():
+ dest=E/'live-osv-verified';dest.mkdir(exist_ok=False);profiles=load_profiles();by={};refs={}
+ for label,rows in profiles.items():
+  seen=set()
+  for row in rows:
+   require(type(row)is dict,'Actual installed distribution row required');version_value(row.get('version'))
+   key=(canonical(row['name']),row['version']);require(key[0]not in seen,'Duplicate installed distribution');seen.add(key[0]);by[key]={'package':{'name':key[0],'ecosystem':'PyPI'},'version':key[1]};refs.setdefault(key,[]).append(label)
+ queries=[by[k]for k in sorted(by)];keys=sorted(by);queries.append({'package':{'name':'pypdf','ecosystem':'PyPI'},'version':'6.21.2'});keys.append(('pypdf','6.21.2'))
+ input_file=dest/'query-inventory.json';input_file.write_text(json.dumps({'profiles':profiles,'queries':queries},indent=2)+'\n')
+ completed={};matches={};requests=0;pagination=0
+ for offset in range(0,len(queries),50):
+  active=[(i,queries[i],None)for i in range(offset,min(offset+50,len(queries)))];seen_tokens=set()
+  for page in range(20):
+   require(bool(active),'Nonempty active query page required');payload={'queries':[q|({'page_token':t}if t is not None else{})for _,q,t in active]};requests+=1
+   result=validate_batch(fetch('querybatch',payload,dest/(f'batch-{requests:03d}.response.json')),len(active));next_active=[]
+   for (i,q,_),res in zip(active,result):
+    matches.setdefault(i,set()).update(v['id']for v in res.get('vulns',[]));token=res.get('next_page_token')
+    if token is None:completed[i]=True
+    else:
+     require((i,token)not in seen_tokens,'OSV pagination cycle');seen_tokens.add((i,token));next_active.append((i,q,token));pagination+=1
+   if not next_active:break
+   active=next_active
+  else:raise RuntimeError('OSV pagination did not complete within bound')
+ require(set(completed)==set(range(len(queries))),'At least one exact-version query did not complete')
+ control=matches[len(queries)-1]
+ known_control={'GHSA-42gh-23hr-vphw','GHSA-4vqv-7265-gm2w','GHSA-5849-834g-hvw5','GHSA-62m5-6wh8-28x7','GHSA-cggf-277g-3q54','GHSA-mfr5-77xh-9j7h','GHSA-x3rh-gjgm-fmqc'}
+ require(known_control<=control,'Known old pypdf positive control did not return all seven known advisories')
+ rows=[]
+ for i,key in enumerate(keys[:-1]):
+  for vid in sorted(matches[i]):rows.append({'package':key[0],'version':key[1],'id':vid,'profiles':refs[key]})
+ summary={'observed_at':datetime.now(timezone.utc).isoformat(),'query_inventory_sha256':hashlib.sha256(input_file.read_bytes()).hexdigest(),'profile_counts':{k:len(v)for k,v in profiles.items()},'unique_profile_versions':len(queries)-1,'completed_profile_version_queries':len(completed)-1,'all_profile_queries_complete':True,'requests':requests,'pagination_continuations':pagination,'reported_matches':rows,'release_known_advisory_clear':len(rows)==0,'details_used_for_clearance':False,'positive_control':{'name':'pypdf','version':'6.21.2','advisory_ids':sorted(control)},'scope_limit':'Python package exact-version advisories only; not OS/native/browser or production-image clearance'}
+ (dest/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps(summary),flush=True)
+ if rows:raise SystemExit(1)
+if __name__=='__main__':main()

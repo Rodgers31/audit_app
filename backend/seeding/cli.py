@@ -381,7 +381,7 @@ def run_seed_command(args: argparse.Namespace, settings: SeedingSettings) -> int
             audits_source_manifest=source_manifest,
             audits_observe_listing=observe_listing,
             audits_reconciliation_review=review_id,
-            audits_source_receipt=receipt_for(source_entries)
+            audits_source_receipt=receipt_for(source_entries, raw=source_manifest)
             if source_entries is not None
             else None,
         )
@@ -748,7 +748,7 @@ def build_parser() -> argparse.ArgumentParser:
     seed_parser.add_argument(
         "--audits-source-manifest",
         type=Path,
-        help="Restrict audits to the exact reviewed five-edition readiness manifest (not live approval)",
+        help="Restrict audits to an exact reviewed five-edition readiness or four-edition catalogue manifest (not live approval)",
     )
     seed_parser.add_argument(
         "--audits-observe-listing",

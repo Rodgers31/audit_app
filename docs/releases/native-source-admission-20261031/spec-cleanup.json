@@ -1,0 +1,10 @@
+{
+  "owned_pg": "source-admission-spec-pg",
+  "ownership_id_verified": true,
+  "owned_pg_removed": true,
+  "private_env_mode_octal": "0o600",
+  "private_env_deleted": true,
+  "remaining_owned_containers": [],
+  "shared_or_parent_databases_touched": false,
+  "workers_or_providers_started": false
+}

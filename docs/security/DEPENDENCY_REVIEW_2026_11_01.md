@@ -1,5 +1,8 @@
 # Dependency PR review disposition — 1 November 2026
 
+The [final scoped audit](DEPENDENCY_AUDIT_FINAL_2026_11_01.md) supersedes this
+limited maintenance checkpoint; the findings and evidence below remain historical.
+
 This is a limited maintenance review of PR866 and its stacked weekly-bot PR867.
 It is not completion or signoff of the interrupted broader application security
 audit. It enables no workflow, worker, source writer, upload or publication.

@@ -1,0 +1,73 @@
+{
+  "reviewed_source_sha": "dfc0ea9e3a448ce5e281e15693c56477b280c1a8",
+  "status": "scoped_backend_dependency_public_disclosure_deployment_review_clear",
+  "new_confirmed_deployment_blockers": 0,
+  "application_cases_per_mode": 259,
+  "additional_sandbox_controls_per_mode": 1,
+  "modes": [
+    "normal",
+    "python -O"
+  ],
+  "final_failures": 0,
+  "final_errors": 0,
+  "final_skips": 0,
+  "public_disclosure_baseline": {
+    "tests": 14,
+    "red_failures": 11,
+    "errors": 0,
+    "skips": 0,
+    "only_replaced_blob": "backend/main.py from9d35197"
+  },
+  "production_config_source": {
+    "path": "production-config-projection.json",
+    "sha256": "fab51bf07eca862baf04267593ccdb351dcd0488cf73c421af013c34752c76f5",
+    "deployed_sha": "8c4b5dee73bfd333c43d9caab78adbcde8232b34",
+    "reviewer_production_access": false,
+    "coordinator_reported_nightly_ingestion_enabled": true,
+    "coordinator_reported_admitted_sha": "8c4b5dee73bfd333c43d9caab78adbcde8232b34",
+    "render_readback_is_not_full_github_runner_config": true
+  },
+  "ingestion_boundary": {
+    "classification": "existing_trust_assumption_and_open_hardening_boundary",
+    "confirmed_anonymous_url_control": false,
+    "demonstrated_behavior": "publisher HTML/JSON selected other-host and loopback HTTP URLs reach the actual client through controlled MockTransport",
+    "required_actor": "trusted configuration operator, or control of configured upstream listing/redirect response",
+    "normal_native_ingestion_remains_active": true,
+    "finance_source_admission_off_does_not_stop_fetches_or_source_writes": true,
+    "no_owner_accepted_exception_asserted": true,
+    "full_egress_guarantee": false,
+    "tracked_gate": "#802/launch review",
+    "minimum_policy": "HTTPS/exact approved publisher aliases/no userinfo/approved ports before first request and every redirect hop; CDN compatibility qualified separately",
+    "stronger_separate_guarantee": "public-address validation and peer pinning for DNS/private-resolution threats"
+  },
+  "coverage_limits": [
+    "Scoped backend/ETL source view, not exhaustive entire repository or full backend suite",
+    "37 graph controls apply only to exported backend/ETL view",
+    "Three listing behavior cases are traces, not security clearance",
+    "No live penetration/provider/media-binary qualification or external auth-project grant readback by this reviewer"
+  ],
+  "execution_boundary": {
+    "network": "none or owned PostgreSQL network namespace with loopback only",
+    "uid": 65534,
+    "readonly_source_toolchain_root": true,
+    "empty_allowlisted_environment": true,
+    "target_scratch_tmpfs_mib": 192,
+    "cpu_count": 1,
+    "memory_mib": 768,
+    "pids": 192,
+    "child_cpu_seconds": 120,
+    "file_size_mib": 4,
+    "child_wall_seconds": 150,
+    "shared_memory_disabled": true,
+    "message_queue_mount_readonly": true,
+    "bounded_no_follow_promotion_after_target_exit": true
+  },
+  "production_provider_or_hosted_ci_calls": false,
+  "new_paid_resources": false,
+  "worktree_mutations": false,
+  "validation_history": [
+    "Ten initial private schema wrapper setup errors from omitted readiness wait retained; corrected fixture readiness only, then all ten execute and pass in both modes.",
+    "Final groups repeated after disabling shared-memory and making the IPC message-queue mount read-only; one OS control verifies actual restrictions. Preliminary runs remain retained but are not counted again.",
+    "Earlier progress message incorrectly summed259 as299; corrected before final receipt."
+  ]
+}

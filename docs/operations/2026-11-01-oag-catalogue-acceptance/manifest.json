@@ -1,0 +1,48 @@
+{
+  "schema": "source802_oag_catalogue_acceptance/v1",
+  "prepared_date": "2026-11-01",
+  "issue": "https://github.com/Rodgers31/audit_app/issues/802",
+  "purpose": "Exact four-source native acquisition scope; not publication-date or production acceptance authority. Real fresh HTTP PDF receipts and exact current official catalogue evidence remain required.",
+  "deferred_sources": [
+    {
+      "label": "2023/2024 assemblies",
+      "fiscal_year": "2023/2024",
+      "institution": "assemblies",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-ASSEMBLIES-2024-FINAL-01-April-2025-KLB.pdf",
+      "sha256": "683fa522bf11eaa2b0bc2a9eef51eadc3d664d9a512d3af63cb6e9479820f8a2",
+      "md5": "15cd6108a0f08498a9e9f699430b365b",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "pdf_pages": 217
+    },
+    {
+      "label": "2023/2024 executives",
+      "fiscal_year": "2023/2024",
+      "institution": "executives",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2025/02/GREEN-BOOK-EXECUTIVES-2024-FINAL-5.3.2025-SIGNED.pdf",
+      "sha256": "bf36d9e65b7403f9ce66eaf32890834f546ca3674c331a2d5f734f9e68c59bcd",
+      "md5": "0c0f7b1eb6f63d3b16d0720ed627da40",
+      "listed_at": "https://www.oagkenya.go.ke/2023-2024-county-government-audit-reports/",
+      "pdf_pages": 555
+    },
+    {
+      "label": "2022/2023 assemblies",
+      "fiscal_year": "2022/2023",
+      "institution": "assemblies",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-ASSEMBLIES-VOL.-2-2022-2023.pdf",
+      "sha256": "5c0ebf31a7cd6dc07558e55507b2b5228fb9a653e638a39abd72beffa46674cf",
+      "md5": "1e757ebf2480ab1959dd7e86e8fffddf",
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "pdf_pages": 219
+    },
+    {
+      "label": "2022/2023 executives",
+      "fiscal_year": "2022/2023",
+      "institution": "executives",
+      "source_url": "https://www.oagkenya.go.ke/wp-content/uploads/2024/04/GREEN-BOOK-COUNTY-EXECUTIVES-VOL-1-2022-2023-1.pdf",
+      "sha256": "e873eb8a2f5b24366b4b847e529c832ef42d2aea02702a015597c6c406f9b953",
+      "md5": "f49345102b734ddc4825110e44ef9113",
+      "listed_at": "https://www.oagkenya.go.ke/2022-2023-county-government-audit-reports/",
+      "pdf_pages": 504
+    }
+  ]
+}

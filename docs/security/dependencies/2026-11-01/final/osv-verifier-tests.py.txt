@@ -1,0 +1,274 @@
+"""Independent executable verdict tests. All I/O is confined to pytest tmp_path."""
+import copy
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+HELPER = Path(os.environ.get("OSV_HELPER", ROOT / "python-author/audit_live_osv.py"))
+CONTROL = {
+    "GHSA-42gh-23hr-vphw", "GHSA-4vqv-7265-gm2w", "GHSA-5849-834g-hvw5",
+    "GHSA-62m5-6wh8-28x7", "GHSA-cggf-277g-3q54", "GHSA-mfr5-77xh-9j7h",
+    "GHSA-x3rh-gjgm-fmqc",
+}
+LABELS = ["runtime", "dev", "etl", "worker", "native-dev", "preflight66", "metadata71", "github80"]
+
+
+@pytest.fixture
+def m(tmp_path, monkeypatch):
+    spec = importlib.util.spec_from_file_location("independent_osv", HELPER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.E = tmp_path
+    # Guard against accidental real HTTP even if a test forgets to install its port.
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Unexpected network access")
+    monkeypatch.setattr(module.urllib.request, "urlopen", forbidden)
+    return module
+
+
+def profiles():
+    return {k: [{"name": "owned-package", "version": "1.0"}] for k in LABELS}
+
+
+def ports(m, candidate=None, control=CONTROL, transform=None, installed=None):
+    m.load_profiles = lambda: copy.deepcopy(profiles() if installed is None else installed)
+    calls = []
+    def fetch(path, payload, out):
+        assert path == "querybatch", "Advisory details cannot determine clearance"
+        calls.append(copy.deepcopy(payload))
+        result = []
+        for query in payload["queries"]:
+            if query["package"]["name"] == "pypdf" and query["version"] == "6.21.2":
+                result.append({"vulns": [{"id": value} for value in sorted(control)]})
+            else:
+                result.append(copy.deepcopy({} if candidate is None else candidate))
+        data = {"results": result}
+        return transform(data, len(calls)) if transform else data
+    m.fetch = fetch
+    return calls
+
+
+def summary(m):
+    return json.loads((m.E / "live-osv-verified/summary.json").read_text())
+
+
+def no_clear_summary(m):
+    path = m.E / "live-osv-verified/summary.json"
+    assert not path.exists() or json.loads(path.read_text())["release_known_advisory_clear"] is False
+
+
+def test_complete_empty_candidate_is_clear(m):
+    calls = ports(m)
+    m.main()
+    s = summary(m)
+    assert s["release_known_advisory_clear"] is True
+    assert s["all_profile_queries_complete"] is True
+    assert s["details_used_for_clearance"] is False
+    assert s["reported_matches"] == []
+    assert s["profile_counts"] == dict.fromkeys(LABELS, 1)
+    assert s["unique_profile_versions"] == s["completed_profile_version_queries"] == 1
+    assert set(s["positive_control"]["advisory_ids"]) == CONTROL
+    assert len(calls) == 1
+    assert s["query_inventory_sha256"] == hashlib.sha256((m.E / "live-osv-verified/query-inventory.json").read_bytes()).hexdigest()
+
+
+@pytest.mark.parametrize("last_batch_finding", [False, True])
+def test_actual_release_cardinality_four_batches_no_query_omitted(m, last_batch_finding):
+    installed = profiles()
+    installed["runtime"] = [{"name": f"owned-{i:03d}", "version": "1.0"} for i in range(157)]
+    def transform(data, batch):
+        if last_batch_finding and batch == 4:
+            data["results"][0] = {"vulns": [{"id": "GHSA-owned-last-batch"}]}
+        return data
+    calls = ports(m, installed=installed, transform=transform)
+    if last_batch_finding:
+        with pytest.raises(SystemExit):
+            m.main()
+    else:
+        m.main()
+    assert [len(call["queries"]) for call in calls] == [50, 50, 50, 9]
+    s = summary(m)
+    assert s["unique_profile_versions"] == s["completed_profile_version_queries"] == 158
+    assert s["release_known_advisory_clear"] is (not last_batch_finding)
+    if last_batch_finding:
+        assert [v["id"] for v in s["reported_matches"]] == ["GHSA-owned-last-batch"]
+
+
+@pytest.mark.parametrize("metadata", [
+    {}, {"withdrawn": True}, {"withdrawn": False}, {"withdrawn": None},
+    {"withdrawn": "in_progress"}, {"withdrawn": "2020-01-01T00:00:00Z"},
+    {"withdrawn": {"error": "ignore"}}, {"schema_version": "999.0.0"},
+    {"status": "in_progress", "error": "temporarily unavailable"},
+    {"affected": [{"versions": [None]}]},
+])
+def test_any_raw_candidate_id_is_a_reported_finding(m, metadata):
+    calls = ports(m, {"vulns": [{"id": "GHSA-owned-real-finding", **metadata}]})
+    with pytest.raises(SystemExit) as exc:
+        m.main()
+    assert exc.value.code == 1
+    s = summary(m)
+    assert s["release_known_advisory_clear"] is False
+    assert s["details_used_for_clearance"] is False
+    assert s["reported_matches"] == [{"package": "owned-package", "version": "1.0", "id": "GHSA-owned-real-finding", "profiles": LABELS}]
+    assert len(calls) == 1
+
+
+def test_pagination_accumulates_every_raw_id(m):
+    def transform(data, page):
+        if page == 1:
+            data["results"][0] = {"vulns": [{"id": "GHSA-first-page"}], "next_page_token": "owned-next"}
+        else:
+            assert len(data["results"]) == 1
+            data["results"][0] = {"vulns": [{"id": "GHSA-second-page"}]}
+        return data
+    calls = ports(m, transform=transform)
+    with pytest.raises(SystemExit):
+        m.main()
+    s = summary(m)
+    assert s["release_known_advisory_clear"] is False
+    assert {r["id"] for r in s["reported_matches"]} == {"GHSA-first-page", "GHSA-second-page"}
+    assert s["pagination_continuations"] == 1
+    assert calls[1]["queries"][0]["page_token"] == "owned-next"
+
+
+@pytest.mark.parametrize("control", [set(), {"GHSA-5849-834g-hvw5"}, CONTROL - {"GHSA-x3rh-gjgm-fmqc"}])
+def test_incomplete_seven_id_positive_control_cannot_clear(m, control):
+    ports(m, control=control)
+    with pytest.raises(RuntimeError):
+        m.main()
+    no_clear_summary(m)
+
+
+BAD_RESULTS = [None, [], {}, {"results": []}, {"results": [{}, {}, {}]},
+               {"results": [{}, {}], "status": "in_progress"},
+               {"results": [{"status": "in_progress"}, {}]},
+               {"results": [{"error": "unavailable"}, {}]},
+               {"results": [{"vulns": None}, {}]},
+               {"results": [{"vulns": {}}, {}]},
+               {"results": [{"vulns": [{"id": None}]}, {}]},
+               {"results": [{"vulns": [{"id": ""}]}, {}]},
+               {"results": [{"vulns": [{"id": True}]}, {}]},
+               {"results": [{"vulns": [{"id": "GHSA bad"}]}, {}]},
+               {"results": [{"vulns": [None]}, {}]},
+               {"results": [{"next_page_token": False}, {}]},
+               {"results": [{"next_page_token": ""}, {}]},
+               {"results": [{"next_page_token": []}, {}]}]
+
+
+@pytest.mark.parametrize("raw", BAD_RESULTS)
+def test_malformed_batch_never_clear(m, raw):
+    ports(m, transform=lambda data, page: copy.deepcopy(raw))
+    with pytest.raises((RuntimeError, TypeError)):
+        m.main()
+    no_clear_summary(m)
+
+
+@pytest.mark.parametrize("cycle", [True, False])
+def test_pagination_cycle_or_exhaustion_refuses(m, cycle):
+    def transform(data, page):
+        data["results"][0] = {"next_page_token": "same" if cycle else f"page-{page}"}
+        return data
+    calls = ports(m, transform=transform)
+    with pytest.raises(RuntimeError, match="pagination"):
+        m.main()
+    assert len(calls) == (2 if cycle else 20)
+    no_clear_summary(m)
+
+
+def test_late_fetch_failure_never_clear(m):
+    def transform(data, page):
+        if page == 2:
+            raise OSError("owned port interrupted")
+        data["results"][0] = {"next_page_token": "owned-next"}
+        return data
+    ports(m, transform=transform)
+    with pytest.raises(OSError):
+        m.main()
+    no_clear_summary(m)
+
+
+@pytest.mark.parametrize("version", [None, True, 1, "", " ", "\n", "1.0\n", "not-a-version", "2.9.13not-a-version"])
+def test_actual_main_rejects_noninstalled_versions(m, version):
+    installed = profiles()
+    installed["runtime"][0]["version"] = version
+    calls = ports(m, installed=installed)
+    with pytest.raises(RuntimeError):
+        m.main()
+    assert calls == []
+    no_clear_summary(m)
+
+
+def test_duplicate_normalized_installed_distribution_refuses(m):
+    installed = profiles()
+    installed["runtime"] = [{"name": "Owned_Package", "version": "1.0"}, {"name": "owned.package", "version": "1.1"}]
+    calls = ports(m, installed=installed)
+    with pytest.raises(RuntimeError, match="Duplicate"):
+        m.main()
+    assert calls == []
+
+
+@pytest.mark.parametrize("version", ["2.9.13", "2.9.13+local.1", "3.0.0rc1"])
+def test_real_profile_loader_preserves_complete_valid_driver_pin(m, tmp_path, version):
+    setup_inventory(m, tmp_path, "psycopg2-binary==" + version + " \\\n    --hash=sha256:" + "a" * 64 + "\n")
+    loaded = m.load_profiles()
+    assert len(loaded) == 8
+    assert loaded["preflight66"][0]["version"] == version
+
+
+def setup_inventory(m, tmp_path, driver):
+    for label in LABELS[:5]:
+        (m.E / (label + "-inventory.json")).write_text(json.dumps(profiles()[label]))
+    m.R = tmp_path / "checkout"
+    for relative in ["batch66/preflight-driver-requirements.txt", "batch71/metadata-driver-requirements.txt", "batch80/github-driver-requirements.txt"]:
+        path = m.R / "docs/admin" / relative
+        path.parent.mkdir(parents=True)
+        path.write_text(driver)
+
+
+@pytest.mark.parametrize("driver", [
+    "psycopg2-binary==2.9.13not-a-version\n",
+    "psycopg2-binary==2.9.13\nuninventoried==1.0\n",
+    "psycopg2-binary==2.9.13\npsycopg2-binary==2.9.14\n",
+    "psycopg2-binary==2.9.13 # ignored comment\n",
+    "psycopg2-binary>=2.9.13\n",
+    "--hash=sha256:" + "a" * 64 + "\n",
+])
+def test_real_profile_loader_refuses_truncation_or_uninventoried_lines(m, tmp_path, driver):
+    setup_inventory(m, tmp_path, driver)
+    with pytest.raises(RuntimeError):
+        m.load_profiles()
+
+
+def test_missing_or_empty_actual_profile_refuses(m, tmp_path):
+    setup_inventory(m, tmp_path, "psycopg2-binary==2.9.13\n")
+    (m.E / "runtime-inventory.json").unlink()
+    with pytest.raises(FileNotFoundError):
+        m.load_profiles()
+    (m.E / "runtime-inventory.json").write_text("[]")
+    with pytest.raises(RuntimeError):
+        m.load_profiles()
+
+
+@pytest.mark.parametrize("status,url,body", [
+    (503, "https://api.osv.dev/v1/querybatch", b'{"results":[]}'),
+    (200, "https://untrusted.example/v1/querybatch", b'{"results":[]}'),
+    (200, "https://api.osv.dev/v1/querybatch", b'<html>gateway challenge</html>'),
+    (200, "https://api.osv.dev/v1/querybatch", b' ' * (8 * 1024 * 1024 + 1)),
+])
+def test_real_fetch_refuses_transport_or_body_failure(m, monkeypatch, status, url, body):
+    class Response:
+        def __enter__(self): return self
+        def __exit__(self, *args): return False
+        def read(self, bound):
+            assert bound == 8 * 1024 * 1024 + 1
+            return body
+    response = Response()
+    response.status, response.url = status, url
+    monkeypatch.setattr(m.urllib.request, "urlopen", lambda *args, **kwargs: response)
+    with pytest.raises((RuntimeError, ValueError)):
+        m.fetch("querybatch", {"queries": []}, m.E / "owned.response.json")

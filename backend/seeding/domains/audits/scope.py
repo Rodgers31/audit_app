@@ -1,4 +1,4 @@
-"""Opt-in execution boundary for the five retained county audit editions.
+"""Opt-in execution boundary for exact reviewed county audit packets.
 
 The pinned readiness packet is source evidence, never production authorization.
 Accepting its exact bytes avoids treating an arbitrary URL list as reviewed scope.
@@ -9,12 +9,23 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 
 from ... import pdf_artifact
 from ...oag_discovery import CountyAuditDiscovery, OagDocument
 
 MANIFEST_SHA256 = "9388815ee8233d727558a2b47aef6bf3c4c6b6f1565dac22a4c8c10bbe9b6277"
+CATALOGUE_MANIFEST_SHA256 = "dfcdf69d76f5f2b9d837b22cb711cbad155747fa217871c9443fcecb21af5489"
+PACKETS = {
+    MANIFEST_SHA256: ('round11_oag_catchup_readiness/v1', 5),
+    CATALOGUE_MANIFEST_SHA256: ('source802_oag_catalogue_acceptance/v1', 4),
+}
 MAX_MANIFEST_BYTES = 128 * 1024
+# Python str.strip whitespace semantics, including Unicode separators. SQL's
+# default trim (and ASCII-only variants) leave visually empty findings valid.
+FINDING_WHITESPACE = (' \t\n\r\f\v\x1c\x1d\x1e\x1f\x85\xa0\u1680'
+                      '\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a'
+                      '\u2028\u2029\u202f\u205f\u3000')
 
 
 class AuditSourceScopeError(ValueError):
@@ -38,14 +49,15 @@ def parse_manifest(raw):
         type(raw) is not bytes
         or not raw
         or len(raw) > MAX_MANIFEST_BYTES
-        or hashlib.sha256(raw).hexdigest() != MANIFEST_SHA256
+        or hashlib.sha256(raw).hexdigest() not in PACKETS
     ):
         raise AuditSourceScopeError(
-            "audit source manifest is not the reviewed five-edition packet"
+            "audit source manifest is not a reviewed exact-edition packet"
         )
     data = json.loads(raw)
     entries = data["deferred_sources"]
-    if data["schema"] != "round11_oag_catchup_readiness/v1" or len(entries) != 5:
+    schema, count = PACKETS[hashlib.sha256(raw).hexdigest()]
+    if data["schema"] != schema or len(entries) != count:
         raise AuditSourceScopeError(
             "audit source manifest schema or source count changed"
         )
@@ -69,15 +81,40 @@ def discovery_for(entries):
     )
 
 
-def receipt_for(entries):
+def receipt_for(entries, *, raw=None):
+    if type(entries) is not list or not entries or any(type(e) is not dict for e in entries):
+        raise AuditSourceScopeError('concrete nonempty reviewed source entries required')
+    keys = ('source_url', 'fiscal_year', 'institution', 'sha256', 'md5')
+    if raw is None:
+        # The adopted-volume observation has only the packaged legacy edition
+        # inventory. Preserve that caller, but never label another selection
+        # with the original five-edition manifest's provenance.
+        from .observation import accepted_editions
+        legacy = list(accepted_editions().values())[3:]
+        try:
+            if [{k: e[k] for k in keys} for e in entries] != [{k: e[k] for k in keys} for e in legacy]:
+                raise ValueError('changed legacy entries')
+            for entry, known in zip(entries, legacy):
+                if type(entry.get('pdf_pages')) is not int or entry['pdf_pages'] != known['pdf_pages']:
+                    raise ValueError('changed legacy page count')
+                listing = 'https://www.oagkenya.go.ke/' + known['fiscal_year'].replace('/', '-') + '-county-government-audit-reports/'
+                if 'listed_at' in entry and entry['listed_at'] != listing:
+                    raise ValueError('changed legacy listing association')
+        except (KeyError, TypeError, ValueError):
+            raise AuditSourceScopeError('exact reviewed manifest bytes required for source receipt') from None
+        digest = MANIFEST_SHA256
+    else:
+        if parse_manifest(raw) != entries:
+            raise AuditSourceScopeError('source receipt does not match reviewed entries')
+        digest = hashlib.sha256(raw).hexdigest()
     return {
-        "manifest_sha256": MANIFEST_SHA256,
+        "manifest_sha256": digest,
         "inventory_basis": "reviewed_retained_manifest_not_live_discovery",
         "whole_world_coverage": False,
         "selected": [
             {
                 k: e[k]
-                for k in ("source_url", "fiscal_year", "institution", "sha256", "md5")
+                for k in keys
             }
             for e in entries
         ],
@@ -188,14 +225,65 @@ def verify_extraction_evidence(session, doc, entry):
     from models import Extraction
     from sqlalchemy import select, func
 
+    # Acquisitions and report authority are metadata, not findings. Canonical
+    # historical local-byte refusals also remain metadata; this classifier
+    # grants no transport, date or native report authority to any receipt.
+    auxiliary = ('native-report-authority-v1', 'pdf-receipt-v1')
+    payload = Extraction.extracted_json
+    receipt = payload['response_receipt']
+    postgres = session.get_bind().dialect.name == 'postgresql'
+    wrapper = (
+        (func.jsonb_typeof(payload) == 'object')
+        & (payload.op('-')('response_receipt') == {})
+        & (func.jsonb_typeof(receipt) == 'object')
+        if postgres else
+        (func.json_type(payload) == 'object')
+        & (func.json_remove(payload, '$.response_receipt') == '{}')
+        & (func.json_type(payload, '$.response_receipt') == 'object')
+    )
+    metadata = session.execute(select(
+        wrapper, Extraction.extractor, receipt['version'], receipt['source_kind'],
+        receipt['parser_version'], receipt['request']['method'],
+        receipt['request']['url'], receipt['request_url'], receipt['response_url'],
+        receipt['digest'], receipt['byte_size'], receipt['storage_key'],
+        receipt['byte_check']['status'], receipt['byte_check']['sha256'],
+        (func.jsonb_typeof(receipt['version']) if postgres else func.json_type(payload, '$.response_receipt.version')),
+        (func.jsonb_typeof(receipt['byte_size']) if postgres else func.json_type(payload, '$.response_receipt.byte_size')),
+    ).where(Extraction.source_document_id == doc.id,
+            Extraction.extractor.in_(auxiliary)).limit(1001)).all()
+    if len(metadata) > 1000:
+        raise AuditSourceScopeError(f'auxiliary receipt inventory exceeds review bound: {entry["label"]}')
+    for (shape, extractor, version, source_kind, parser, method, request_url,
+         requested, response_url, digest, size, key, byte_status, byte_digest, version_type, size_type) in metadata:
+        parsers = (('native-report-authority-v1',) if extractor == 'native-report-authority-v1'
+                   else ('native-report-input-v1', 'native-report-authority-v1'))
+        if (shape is not True or type(version) is not int or version != 1
+                or version_type != ('number' if postgres else 'integer')
+                or source_kind != 'pdf' or parser not in parsers or method != 'GET'
+                or request_url != doc.url or requested != doc.url
+                or type(response_url) is not str or not response_url
+                or type(digest) is not str or re.fullmatch('[a-f0-9]{64}', digest) is None
+                or type(size) is not int or size <= 0
+                or size_type != ('number' if postgres else 'integer')
+                or key is not None and key != digest
+                or byte_status not in ('matched', 'missing', 'conflict')
+                or byte_status == 'matched' and (key != digest or byte_digest != digest)):
+            raise AuditSourceScopeError(f'auxiliary receipt schema/source changed: {entry["label"]}')
+
     # Project guard fields only; do not transfer every full finding a second
     # time on a cached turn merely to validate edition and artifact association.
-    payload = Extraction.extracted_json
     present = (
         payload.has_key(pdf_artifact.BINDING_KEY)
         if session.get_bind().dialect.name == "postgresql"
         else func.json_type(payload, "$." + pdf_artifact.BINDING_KEY).isnot(None)
     )
+    def nonempty_string(key):
+        kind = (func.jsonb_typeof(payload[key]) == 'string' if postgres
+                else func.json_type(payload, '$.' + key) == 'text')
+        # Compute the content guard inside SQL. Large finding text must not be
+        # transferred again merely to establish nonempty canonical evidence.
+        return kind & (func.length(func.trim(payload[key].as_string(), FINDING_WHITESPACE)) > 0)
+
     rows = session.execute(
         select(
             present,
@@ -204,16 +292,22 @@ def verify_extraction_evidence(session, doc, entry):
             payload["fiscal_year"],
             payload["volume_kind"],
             payload[pdf_artifact.BINDING_KEY],
-        ).where(Extraction.source_document_id == doc.id)
+            nonempty_string('finding_text'),
+            nonempty_string('entity_name'),
+            payload['severity'],
+        ).where(Extraction.source_document_id == doc.id,
+                Extraction.extractor.notin_(auxiliary))
     ).all()
     if not rows:
         raise AuditSourceScopeError(f"extraction evidence missing: {entry['label']}")
-    for has_binding, extractor, schema, fiscal_year, kind, binding in rows:
+    for has_binding, extractor, schema, fiscal_year, kind, binding, has_text, has_entity, severity in rows:
         if (
             extractor != "oag_county_volume"
             or schema != "oag_county_volume/v1"
             or fiscal_year != entry["fiscal_year"]
             or kind != entry["institution"]
+            or has_text is not True or has_entity is not True
+            or severity not in ('CRITICAL', 'WARNING', 'INFO')
         ):
             raise AuditSourceScopeError(
                 f"extraction schema/edition/evidence changed: {entry['label']}"

@@ -717,7 +717,8 @@ def fetch_county_payables_payload(
     # Existing cohorts need newly qualified stock cells even when neither
     # acquisition flag is selected. Cached normalized JSON grants no authority.
     adopted_aging = _has_aging_pointer(session, pdf_url)
-    financial_enabled = (os.environ.get('SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED')=='true'
+    from ...native_financial_admission import source_admission_enabled
+    financial_enabled = (source_admission_enabled()
         and context is not None and context.dry_run is False and type(context.job_id) is int and context.job_id>0)
     logger.info("county payables: reading %s", pdf_url)
     try:

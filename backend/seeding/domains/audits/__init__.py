@@ -320,7 +320,7 @@ def run(
         else None
     )
     if source_entries is not None:
-        context.audits_source_receipt = receipt_for(source_entries)
+        context.audits_source_receipt = receipt_for(source_entries, raw=context.audits_source_manifest)
     scope_receipt = context.audits_source_receipt if selected is not None else None
 
     def bank():

@@ -1,0 +1,36 @@
+{
+  "observed_at": "2026-11-01T17:42:19.110077+00:00",
+  "query_inventory_sha256": "ba32e86f2c26eb7b405abc23c762515e6d889e6642fe770c276e97f80459f4c0",
+  "profile_counts": {
+    "runtime": 87,
+    "dev": 129,
+    "etl": 52,
+    "worker": 93,
+    "native-dev": 128,
+    "preflight66": 1,
+    "metadata71": 1,
+    "github80": 1
+  },
+  "unique_profile_versions": 158,
+  "completed_profile_version_queries": 158,
+  "all_profile_queries_complete": true,
+  "requests": 4,
+  "pagination_continuations": 0,
+  "reported_matches": [],
+  "release_known_advisory_clear": true,
+  "details_used_for_clearance": false,
+  "positive_control": {
+    "name": "pypdf",
+    "version": "6.21.2",
+    "advisory_ids": [
+      "GHSA-42gh-23hr-vphw",
+      "GHSA-4vqv-7265-gm2w",
+      "GHSA-5849-834g-hvw5",
+      "GHSA-62m5-6wh8-28x7",
+      "GHSA-cggf-277g-3q54",
+      "GHSA-mfr5-77xh-9j7h",
+      "GHSA-x3rh-gjgm-fmqc"
+    ]
+  },
+  "scope_limit": "Python package exact-version advisories only; not OS/native/browser or production-image clearance"
+}

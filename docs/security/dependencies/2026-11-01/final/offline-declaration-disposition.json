@@ -1,0 +1,52 @@
+{
+  "offline_scanner_walked_package_declarations_not_only_resolved_graph": true,
+  "declared_ranges_matching_flags": [
+    {
+      "file": "frontend/node_modules/@jest/environment-jsdom-abstract/node_modules/jest-util/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "^4.17.19"
+    },
+    {
+      "file": "frontend/node_modules/esprima/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "~3.10.1"
+    },
+    {
+      "file": "frontend/node_modules/jest-util/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "^4.17.19"
+    },
+    {
+      "file": "frontend/node_modules/object-assign/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "^4.16.4"
+    },
+    {
+      "file": "frontend/node_modules/fast-levenshtein/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "^4.0.1"
+    },
+    {
+      "file": "frontend/node_modules/follow-redirects/package.json",
+      "section": "devDependencies",
+      "name": "express",
+      "declared_range": "^4.16.4"
+    },
+    {
+      "file": "frontend/node_modules/jest-environment-jsdom/node_modules/jest-util/package.json",
+      "section": "devDependencies",
+      "name": "lodash",
+      "declared_range": "^4.17.19"
+    }
+  ],
+  "actual_current_npm_audit": {
+    "production": 0,
+    "full_low_jest_deepmerge": 5,
+    "moderate_high_critical": 0
+  }
+}

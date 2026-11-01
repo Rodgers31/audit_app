@@ -1,0 +1,2 @@
+# Exact historical command producer bytes.
+*.bytes -text whitespace=-blank-at-eof
