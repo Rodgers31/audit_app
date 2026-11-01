@@ -1,0 +1,16 @@
+{
+  "production_distributions": 81,
+  "tested_distributions": 87,
+  "production_versions_unchanged": true,
+  "original_production_env_unchanged": true,
+  "only_test_tools": {
+    "iniconfig": "2.3.1",
+    "pluggy": "1.7.0",
+    "pygments": "2.21.0",
+    "pytest": "9.1.1",
+    "pytest-asyncio": "1.4.0",
+    "pytest-mock": "3.14.0"
+  },
+  "all_six_production_extras_still_absent": true,
+  "pip_check_exit": 0
+}
