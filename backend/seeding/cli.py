@@ -748,7 +748,7 @@ def build_parser() -> argparse.ArgumentParser:
     seed_parser.add_argument(
         "--audits-source-manifest",
         type=Path,
-        help="Restrict audits to the exact reviewed five-edition readiness manifest (not live approval)",
+        help="Restrict audits to an exact reviewed five-edition readiness or four-edition catalogue manifest (not live approval)",
     )
     seed_parser.add_argument(
         "--audits-observe-listing",

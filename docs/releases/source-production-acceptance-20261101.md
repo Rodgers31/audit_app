@@ -74,7 +74,10 @@ match the previously reviewed genuine editions. This is an explicit finite
 scope, not a discovery completeness claim.
 
 For that manual choice only, the existing runner omits PDF cache restore/save
-and the CLI child gets PDF cache TTL0. The ordinary nightly cache, schedules,
+and the CLI child gets PDF cache TTL0. That child explicitly forces both social
+generation hooks, financial generation and native financial source admission
+to literal false, regardless of inherited values, without changing the parent
+environment. The ordinary nightly cache, schedules,
 source rules, generation controls, providers, resources and quotas are unchanged.
 Fresh HTTP capture, durable byte readback, exact current official RSS scope and
 the existing native report writer/readers remain mandatory. A catalogue date
@@ -83,17 +86,21 @@ must remain a catalogue date; no publication day is inferred.
 The scoped extraction guard also distinguishes canonical acquisition/report
 metadata from findings. Historical local-byte, missing-byte and conflict
 receipts remain non-authoritative metadata. Unknown/malformed/misnamed records
-refuse; at least one genuine finding extraction and all existing FY, institution
+refuse; at least one finding extraction with nonempty string text/entity and a
+recognized severity is required. SQL computes those content guards without
+transferring the full finding text. Its trim set covers all29 Python whitespace
+characters, including Unicode separators. All existing FY, institution
 and artifact checks are still required. Only guard fields are projected, with a
 bounded auxiliary inventory; full findings and receipt observation payloads
 are not transferred again. New receipts identify the actual manifest hash;
 the legacy adopted-volume caller permits only its unchanged exact five-edition
 inventory. One-shot iterators and mismatched/new packets cannot emit a false
-legacy receipt.
+legacy receipt. Legacy page counts and any supplied listing association must
+also match that reviewed context. CLI help identifies both supported packets.
 
 ## Validation and remaining acceptance
 
-The affected repository selection passes182 cases per Python mode; the existing
+The affected repository selection passes220 cases per Python mode; the existing
 workflow-plan/launcher selection adds47 per mode with owned migrated PostgreSQL.
 Both run without external network, paid services or hosted CI. The executable
 review packet records independent Spec and Standards cases and observed REDs

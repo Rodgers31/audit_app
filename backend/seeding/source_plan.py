@@ -17,6 +17,9 @@ DAILY = '0 2 * * 1-6'
 WEEKLY = '0 3 * * 0'
 OAG_SOURCE_ACCEPTANCE = 'oag-combined-catalogue-20261101'
 OAG_ACCEPTANCE_MANIFEST = Path(__file__).resolve().parents[2] / 'docs/operations/2026-11-01-oag-catalogue-acceptance/manifest.json'
+OAG_SOURCE_ONLY_CONTROLS = ('SOCIAL_GENERATION_HOOK_ENABLED', 'SOCIAL_REPORT_GENERATION_ENABLED',
+                          'SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED',
+                          'SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED')
 
 
 def boolean(value):
@@ -155,6 +158,10 @@ def main():
             options = {'check': False}
             if plan.reacquire_pending_pdf or plan.audits_source_acceptance:
                 options['env'] = dict(os.environ, SEED_PDF_CACHE_TTL_SECONDS='0')
+            if plan.audits_source_acceptance:
+                # The manual source-only path must not inherit ordinary nightly
+                # generation permissions. Never modify the parent's controls.
+                options['env'].update(dict.fromkeys(OAG_SOURCE_ONLY_CONTROLS, 'false'))
             return subprocess.run(args, **options).returncode
         return 0
     except (KeyError, ValueError) as exc:

@@ -84,6 +84,9 @@ def allow_controlled_bytes(monkeypatch, harness):
                     "schema": "oag_county_volume/v1",
                     "fiscal_year": hashes[doc.url]["fiscal_year"],
                     "volume_kind": hashes[doc.url]["institution"],
+                    "entity_name": "County Assembly of Nairobi",
+                    "finding_text": "Owned synthetic attributed finding.",
+                    "severity": "WARNING",
                 }
             session.flush()
         return stats

@@ -21,6 +21,11 @@ PACKETS = {
     CATALOGUE_MANIFEST_SHA256: ('source802_oag_catalogue_acceptance/v1', 4),
 }
 MAX_MANIFEST_BYTES = 128 * 1024
+# Python str.strip whitespace semantics, including Unicode separators. SQL's
+# default trim (and ASCII-only variants) leave visually empty findings valid.
+FINDING_WHITESPACE = (' \t\n\r\f\v\x1c\x1d\x1e\x1f\x85\xa0\u1680'
+                      '\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a'
+                      '\u2028\u2029\u202f\u205f\u3000')
 
 
 class AuditSourceScopeError(ValueError):
@@ -89,6 +94,12 @@ def receipt_for(entries, *, raw=None):
         try:
             if [{k: e[k] for k in keys} for e in entries] != [{k: e[k] for k in keys} for e in legacy]:
                 raise ValueError('changed legacy entries')
+            for entry, known in zip(entries, legacy):
+                if type(entry.get('pdf_pages')) is not int or entry['pdf_pages'] != known['pdf_pages']:
+                    raise ValueError('changed legacy page count')
+                listing = 'https://www.oagkenya.go.ke/' + known['fiscal_year'].replace('/', '-') + '-county-government-audit-reports/'
+                if 'listed_at' in entry and entry['listed_at'] != listing:
+                    raise ValueError('changed legacy listing association')
         except (KeyError, TypeError, ValueError):
             raise AuditSourceScopeError('exact reviewed manifest bytes required for source receipt') from None
         digest = MANIFEST_SHA256
@@ -266,6 +277,13 @@ def verify_extraction_evidence(session, doc, entry):
         if session.get_bind().dialect.name == "postgresql"
         else func.json_type(payload, "$." + pdf_artifact.BINDING_KEY).isnot(None)
     )
+    def nonempty_string(key):
+        kind = (func.jsonb_typeof(payload[key]) == 'string' if postgres
+                else func.json_type(payload, '$.' + key) == 'text')
+        # Compute the content guard inside SQL. Large finding text must not be
+        # transferred again merely to establish nonempty canonical evidence.
+        return kind & (func.length(func.trim(payload[key].as_string(), FINDING_WHITESPACE)) > 0)
+
     rows = session.execute(
         select(
             present,
@@ -274,17 +292,22 @@ def verify_extraction_evidence(session, doc, entry):
             payload["fiscal_year"],
             payload["volume_kind"],
             payload[pdf_artifact.BINDING_KEY],
+            nonempty_string('finding_text'),
+            nonempty_string('entity_name'),
+            payload['severity'],
         ).where(Extraction.source_document_id == doc.id,
                 Extraction.extractor.notin_(auxiliary))
     ).all()
     if not rows:
         raise AuditSourceScopeError(f"extraction evidence missing: {entry['label']}")
-    for has_binding, extractor, schema, fiscal_year, kind, binding in rows:
+    for has_binding, extractor, schema, fiscal_year, kind, binding, has_text, has_entity, severity in rows:
         if (
             extractor != "oag_county_volume"
             or schema != "oag_county_volume/v1"
             or fiscal_year != entry["fiscal_year"]
             or kind != entry["institution"]
+            or has_text is not True or has_entity is not True
+            or severity not in ('CRITICAL', 'WARNING', 'INFO')
         ):
             raise AuditSourceScopeError(
                 f"extraction schema/edition/evidence changed: {entry['label']}"

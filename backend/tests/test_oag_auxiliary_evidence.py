@@ -48,7 +48,7 @@ def world():
     engine.dispose()
 
 def finding(session,doc,entry):
-    row=Extraction(source_document_id=doc.id,extractor='oag_county_volume',page_number=7,extracted_json=dict(schema='oag_county_volume/v1',fiscal_year=entry['fiscal_year'],volume_kind=entry['institution'],finding_text='Owned inert finding with no public authority'))
+    row=Extraction(source_document_id=doc.id,extractor='oag_county_volume',page_number=7,extracted_json=dict(schema='oag_county_volume/v1',fiscal_year=entry['fiscal_year'],volume_kind=entry['institution'],finding_text='Owned inert finding with no public authority',entity_name='County Assembly of Nairobi',severity='WARNING'))
     session.add(row);session.flush();return row
 
 def auxiliary(session,doc,kind='pdf-receipt-v1',local=True):

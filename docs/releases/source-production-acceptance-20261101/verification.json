@@ -1,17 +1,19 @@
 {
-  "schema": "source802_production_acceptance_checkpoint/v1",
+  "schema": "source802_production_acceptance_checkpoint/v2",
   "base_release": "4386f4927dbaddc691c97a6c535d7a942c6c37cb",
   "code_sha256": {
     ".github/workflows/seed.yml": "29d92cec4579c79330e61695be3dd75d43dcd16da859cb2deba5dfce423266a1",
-    "backend/seeding/cli.py": "63a05436cf90c1d92e2b580e732188a592d36dc38d28e8ca3af899bf7477f847",
+    "backend/seeding/cli.py": "65f7581901ef39c1ced78823220f06c098f40a3ad724d27565b12789e6b4f2e8",
     "backend/seeding/domains/audits/__init__.py": "3fca8dba1651863e46b8964d9654a29b217187d39ae09a1648b60055fee5138f",
-    "backend/seeding/domains/audits/scope.py": "4c3e250a1cf14b636f1d2e922226d46f58e294d75ab261acb9d35b7c2e1b3b64",
-    "backend/seeding/source_plan.py": "58344075d91f967a2325ca0ca7ca38dde2be7c2c23653e282b8f8a9ae5defa6b",
+    "backend/seeding/domains/audits/scope.py": "1da4b7b13c84f65283556b40d56942ba3d93df85ffd055307a4cb7be72b7c286",
+    "backend/seeding/source_plan.py": "0d40974c54e9b243045c54eb80c8033dd881f5dde0e10cc962bfc7502058f7a1",
     "docs/operations/2026-11-01-oag-catalogue-acceptance/manifest.json": "dfcdf69d76f5f2b9d837b22cb711cbad155747fa217871c9443fcecb21af5489",
     "backend/tests/test_oag_source_acceptance_plan.py": "2d08e0341d557a2fa2fabc12745121778bacdba9dbdaf68cd0c51fbf5c0691f0",
     "backend/tests/test_oag_source_acceptance_boundaries.py": "0cf2ce3047442734dd646508009d9ec8dcc01f75e075e15ba4781e93d995e2d2",
     "backend/tests/test_oag_source_acceptance_callers.py": "37d3a0b6772d1244d6784bce6d0ceb669826b64da72dc2181366345389738378",
-    "backend/tests/test_oag_auxiliary_evidence.py": "78d83e3712be8806650c01b879b796cd5a133bb2949f047bf19034160f67e8b1"
+    "backend/tests/test_oag_auxiliary_evidence.py": "e4dfe6f7affcd1bfd77460fb9d860c907552cd04e3cdd79e7d530d5f0c239011",
+    "backend/tests/test_oag_acceptance_review_regressions.py": "da28b6dfbdfe92615f8ae5941714bb9c42faa967bafe43069c17f188b0ff2a2b",
+    "backend/tests/test_audits_source_scope.py": "b4dc62107b3f91b35c85ee922899d2b17382c71e2801fbf9b10cf3e5d6886cdb"
   },
   "private_evidence_sha256": {
     "final-source-normal.txt": "5a1b82be1cfb441f39f183e219d0d83258bf4f94677fb078df5934b9e4b3ceec",
@@ -32,7 +34,7 @@
     "standards/oag-review/ALLAPP-RECEIPT.json": "b1c60942cbfa0ca80795e5e8b322fdd46cb756830b12d065387089ca1fa8bff8"
   },
   "validation_per_mode": {
-    "affected_repository_cases": 182,
+    "affected_repository_cases": 220,
     "existing_workflow_cases": 47,
     "failures": 0,
     "errors": 0,
@@ -74,5 +76,24 @@
     "Genuine retained-content fixtures use local transport/job clocks and are engineering evidence.",
     "Independent selections overlap and are not a unique aggregate test count.",
     "Account/provider, media, worker and broader launch acceptance remain separate."
-  ]
+  ],
+  "review_correction_of": "04af307263fb557c919cd356ec7936bbb36b7d74",
+  "review_fix_private_evidence_sha256": {
+    "review-regressions-red.txt": "78fff5345b77550ce87ee85fb9709cfcc279d9a20029a3438fc304763c5f794e",
+    "unicode-review-red.txt": "3e1d78fae57adbbd3e0c0bb5b812955b13d8052b731fab49d619a49472a6e69c",
+    "final-app-normal.txt": "5f5cb24abc7f1f9595eeed82bb2f79f50bdcfb925a58f32820b9aa051727dac7",
+    "final-app-optimized.txt": "fa3b792c44650408b8ef78a98ed1df843b0491c352712d17acabd1df82463590",
+    "b66-isolated-normal.txt": "e442a7fdcd05658e8014c2341a9fff816aea003a3f79acdb7ad48df0da7e64cf",
+    "b66-isolated-optimized.txt": "3ccb9696c4ee6a5bdccacf7e74fa91f937f939eb2a99b9a084799496e5a0964d",
+    "spec/RECEIPT.json": "9ed2108ad7d3879795d01d43f0e37550589196291387667b81213e9fa59479ab",
+    "standards/RECEIPT.json": "3d9b4a1132ff3a232ca2929ff23d21753b9efc09c482de1d8e5777b39dae524b",
+    "standards/coordinator/RECEIPT.json": "aa7ac10ef7318e5e03019cec294c704ee34bf9de788d8d3363974eee5b00ea1c"
+  },
+  "review_disposition": {
+    "schema_only_finding": "valid_understated_fixed",
+    "inherited_generation_controls": "valid_fixed_child_only_clamp",
+    "legacy_listing_and_page_context": "valid_fixed",
+    "cli_help": "nit_fixed",
+    "unicode_blank_text": "independent_review_valid_fixed"
+  }
 }
