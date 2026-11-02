@@ -1,0 +1,16 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_numeric_native_proof_must_not_authorize_enable ______________
+backend/tests/social/test_account_publishing.py:160: in test_numeric_native_proof_must_not_authorize_enable
+    with pytest.raises(SocialError,match='NATIVE_ADMISSION_UNAVAILABLE'): execute(db,row,body)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SocialError
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_publishing.py::test_numeric_native_proof_must_not_authorize_enable
+1 failed, 1 warning in 0.45s

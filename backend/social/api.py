@@ -15,6 +15,7 @@ else:
     from supabase_auth import AdminUser, require_admin
 from .contracts import PostFormat, ApproveCommand, CapabilitySet, ControlsCommand, CreatePost, EditorialState, PatchPost, Platform, PostDocument, PublishCommand, Reference, RejectCommand, ResumeCommand, RetryCommand, ScheduleCommand, ScheduleEditCommand, RescheduleCommand, StrictModel, TargetState, ValidateCommand, ValidationResult, VersionCommand
 from .service import SocialError, SocialService
+from .account_publishing import AccountPublishingCommand, AccountPublishingDTO, account_publishing, set_account_publishing
 from .http_boundary import IdempotencyKey, NO_STORE, SocialRoute, social_admin
 
 router = APIRouter(prefix='/api/v1/admin/social', tags=['Admin Social'], dependencies=[Depends(social_admin)], route_class=SocialRoute)
@@ -160,7 +161,8 @@ class SystemDTO(StrictModel):
 def service(request: Request, db: Session=Depends(get_db)):
     from .worker.native_runtime import registered_adapters
     from .media.runtime import request_media_runtime
-    return SocialService(db, available_adapters=registered_adapters(request), media_runtime=request_media_runtime(request))
+    import os
+    return SocialService(db, available_adapters=registered_adapters(request), media_runtime=request_media_runtime(request), privacy_app_id=os.environ.get('META_APP_ID'))
 
 def command(request, svc, admin, key, body, action, status=200):
     try:
@@ -252,6 +254,14 @@ def retry_target(target_id: UUID, request: Request, body: RetryCommand, svc: Ser
 @router.get('/accounts', response_model=AccountsDTO)
 def get_accounts(svc: Service):
     return svc.accounts()
+
+@router.get('/accounts/{account_id}/publishing', response_model=AccountPublishingDTO)
+def account_publishing_status(account_id: UUID, svc: Service):
+    return account_publishing(svc, account_id)
+
+@router.patch('/accounts/{account_id}/publishing', response_model=AccountPublishingDTO)
+def account_publishing_update(account_id: UUID, body: AccountPublishingCommand, request: Request, svc: Service, admin: Admin, key: IdempotencyKey):
+    return command(request, svc, admin, key, body, lambda: set_account_publishing(svc, account_id, body))
 
 @router.get('/platforms', response_model=PlatformsDTO)
 def get_platforms(svc: Service):

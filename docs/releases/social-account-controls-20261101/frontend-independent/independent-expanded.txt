@@ -1,0 +1,123 @@
+FAIL ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx
+  ✓ real API read and patch decode exact success without global readiness claim (55 ms)
+  ✕ wrong mutation witness must not confirm enabled account: { controls_version: 1 } (15 ms)
+  ✕ wrong mutation witness must not confirm enabled account: { controls_version: 9 } (13 ms)
+  ✕ wrong mutation witness must not confirm enabled account: {
+  state_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+} (12 ms)
+  ✕ missing global hold cannot be decoded as coherent readiness
+  ✓ actual API rejects malformed read without rendering actions: { account_id: '00000000-0000-4000-8000-000000000002' } (6 ms)
+  ✓ actual API rejects malformed read without rendering actions: { publishing_enabled: 1 } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: 0 } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: 1.5 } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: NaN } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { controls_version: Infinity } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { state_token: 'bad' } (5 ms)
+  ✓ actual API rejects malformed read without rendering actions: { global_publishing_enabled: undefined } (4 ms)
+  ✓ actual API rejects malformed read without rendering actions: { enable_available: 'true' } (4 ms)
+  ✓ actual API rejects malformed read without rendering actions: {
+  enable_available: true,
+  enable_blockers: [ 'CREDENTIAL_UNAVAILABLE', [length]: 1 ]
+} (5 ms)
+  ✓ same command body and key survive a rejected transport result through real API wrapper (16 ms)
+  ✓ signout and account change fence a late mutation success and parent refresh (8 ms)
+  ✓ pause remains available when current credentials no longer permit enable (11 ms)
+  ✕ same-frame overlapping refresh attempts do not allow an older read to replace a newer one (2 ms)
+
+  ● wrong mutation witness must not confirm enabled account: { controls_version: 1 }
+
+    expect(jest.fn()).not.toHaveBeenCalled()
+
+    Expected number of calls: 0
+    Received number of calls: 1
+
+    1: called with 0 arguments
+
+      49 |   await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+      50 |   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh account publishing controls' })).toBeEnabled());
+    > 51 |   expect(refresh).not.toHaveBeenCalled();
+         |                       ^
+      52 |   expect(screen.queryByRole('button', { name: 'Pause publishing for Fixture Page' })).not.toBeInTheDocument();
+      53 |   expect(screen.getByRole('alert')).toBeVisible();
+      54 | });
+
+      at toHaveBeenCalled (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:51:23)
+
+  ● wrong mutation witness must not confirm enabled account: { controls_version: 9 }
+
+    expect(jest.fn()).not.toHaveBeenCalled()
+
+    Expected number of calls: 0
+    Received number of calls: 1
+
+    1: called with 0 arguments
+
+      49 |   await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+      50 |   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh account publishing controls' })).toBeEnabled());
+    > 51 |   expect(refresh).not.toHaveBeenCalled();
+         |                       ^
+      52 |   expect(screen.queryByRole('button', { name: 'Pause publishing for Fixture Page' })).not.toBeInTheDocument();
+      53 |   expect(screen.getByRole('alert')).toBeVisible();
+      54 | });
+
+      at toHaveBeenCalled (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:51:23)
+
+  ● wrong mutation witness must not confirm enabled account: {
+  state_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+}
+
+    expect(jest.fn()).not.toHaveBeenCalled()
+
+    Expected number of calls: 0
+    Received number of calls: 1
+
+    1: called with 0 arguments
+
+      49 |   await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+      50 |   await waitFor(() => expect(screen.getByRole('button', { name: 'Refresh account publishing controls' })).toBeEnabled());
+    > 51 |   expect(refresh).not.toHaveBeenCalled();
+         |                       ^
+      52 |   expect(screen.queryByRole('button', { name: 'Pause publishing for Fixture Page' })).not.toBeInTheDocument();
+      53 |   expect(screen.getByRole('alert')).toBeVisible();
+      54 | });
+
+      at toHaveBeenCalled (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:51:23)
+
+  ● missing global hold cannot be decoded as coherent readiness
+
+    expect(received).toThrow()
+
+    Received function did not throw
+
+      55 |
+      56 | test('missing global hold cannot be decoded as coherent readiness', () => {
+    > 57 |   expect(() => decodeAccountPublishing({ ...initial, delivery_holds: [] })).toThrow();
+         |                                                                             ^
+      58 | });
+      59 |
+      60 | test.each([
+
+      at Object.toThrow (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:57:77)
+
+  ● same-frame overlapping refresh attempts do not allow an older read to replace a newer one
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 2
+
+      113 |   const button = screen.getByRole('button', { name: 'Refresh account publishing controls' });
+      114 |   act(() => { fireEvent.click(button); fireEvent.click(button); });
+    > 115 |   expect(read).toHaveBeenCalledTimes(1);
+          |                ^
+      116 |   await act(async () => { first({ data: initial }); });
+      117 |   expect(await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeEnabled();
+      118 | });
+
+      at Object.toHaveBeenCalledTimes (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:115:16)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 14 passed, 19 total
+Snapshots:   0 total
+Time:        0.425 s
+Ran all test suites.

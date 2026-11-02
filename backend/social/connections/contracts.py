@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from datetime import datetime
 from uuid import UUID
 from pydantic import Field, StrictBool, StrictStr, StringConstraints
-from ..contracts import StrictModel, PositiveVersion, Reason
+from ..contracts import StrictModel, PositiveVersion, Reason, Hash
 from ..contracts import CapabilitySet, Platform
 
 class AccountDTO(StrictModel):
@@ -115,3 +115,9 @@ class DirectStartedFlow(StrictModel):
 
 class DirectCompleteCommand(StrictModel):
     flow_id: UUID
+
+
+class ExistingGrantVerificationCommand(StrictModel):
+    expected_controls_version: PositiveVersion
+    expected_state: Hash
+    reason: Reason

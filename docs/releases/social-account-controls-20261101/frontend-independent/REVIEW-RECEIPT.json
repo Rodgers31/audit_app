@@ -1,0 +1,27 @@
+{
+  "schema": "independent-account-publishing-ui-review/v1",
+  "base_commit": "9bbdde51d6ebe9e38bf0aa86f4d0f086c5cdffeb",
+  "reviewed_runtime_sha256": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "3a2f72e3c8d73cc13af56cd5ec8d5b33b05c6d460874df0d07be332ef080b710",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "65223b42a8c3c441d702dd86274b6b9ad879edf2970fcbc37cda056bf4d2b8f5",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698",
+    "backend/social/account_publishing.py": "6d002ebb431be620acb1f0ffd2be773c65be9baa3e546073a09607e0556f6efa",
+    "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+    "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98"
+  },
+  "private_transport_backed_component_cases": 19,
+  "author_focused_cases_independently_executed": 17,
+  "confirmed_initial_reds_then_fixed": 5,
+  "tests_keep_real_component_and_client_decode": true,
+  "mocked_boundaries": [
+    "auth context",
+    "axios HTTP transport"
+  ],
+  "manual_activation_doc_sha256_at_readback": "86a757174c5b4e48d9f22882647dcd90fff1184a991a583988d38a4daf6682d1",
+  "production_posture_sha256": "9c092b2fcc8ddc56ba7baff27357b7e2e03abfdfbcaccd357fcd169f7031e88a",
+  "no_provider_or_production_actions": true,
+  "no_checkout_edits_or_installs": true,
+  "browser_visual_acceptance_by_this_reviewer": false,
+  "verdict": "clear_ui_and_api_client_scope"
+}

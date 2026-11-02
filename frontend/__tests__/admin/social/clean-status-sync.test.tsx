@@ -40,9 +40,9 @@ test('own generated publication reconciles its clean delivery version without in
     return { data: publicationReceipt(current) };
   });
   mount(p);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Publish now', exact: true })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Publish now' })).toBeEnabled());
   fireEvent.click(screen.getByRole('checkbox', { name: /I checked the facts and sources/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Publish now', exact: true }));
+  fireEvent.click(screen.getByRole('button', { name: 'Publish now' }));
   await screen.findByText(/Publication accepted for 1 destination/);
   await screen.findByText('approved · version 2');
   expect(screen.queryByRole('button', { name: 'Load current revision' })).not.toBeInTheDocument();
@@ -105,5 +105,5 @@ test('a generated ready authorization still validates the refreshed post version
   await screen.findByText('approved · version 2');
   await waitFor(()=>expect(send).toHaveBeenCalledTimes(2));
   expect(send.mock.calls.map(([path,body])=>({action:path.split('/').at(-1),version:body.expected_version}))).toEqual([{action:'validate',version:1},{action:'validate',version:2}]);
-  await waitFor(()=>expect(screen.getByRole('button',{name:'Publish now',exact:true})).toBeEnabled());
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Publish now'})).toBeEnabled());
 });

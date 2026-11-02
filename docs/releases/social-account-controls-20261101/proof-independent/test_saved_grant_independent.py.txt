@@ -1,0 +1,136 @@
+"""Independent proof boundary probes; mocked Graph only, synthetic grants."""
+from copy import deepcopy
+from dataclasses import replace
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+from types import SimpleNamespace
+
+import httpx
+import pytest
+from sqlalchemy import select, func
+
+from social.account_publishing import account_publishing
+from social.connections.models import SocialCredential
+from social.connections.provider import MetaProvider
+from social.models import SocialAccount, SocialControls, SocialCommandReceipt, SocialAuditEvent
+from social.service import SocialError
+from test_connections_support import ACTOR, BINDING, PAGE, USER
+from test_existing_grant_verification import saved, db, config, graph, body_for, verify
+
+
+def current_account(db, identifier):
+    db.expire_all()
+    return db.get(SocialAccount, identifier)
+
+
+def test_proof_updates_only_selected_snapshot_and_is_historical_on_replay(saved, graph):
+    service, row, registry=saved; identifier=row.id
+    before=[(c.id,c.version,c.encrypted_bundle,c.access_expires_at,c.data_access_expires_at) for c in service.db.scalars(select(SocialCredential).order_by(SocialCredential.id))]
+    peer=service.db.scalar(select(SocialAccount).where(SocialAccount.platform=='instagram'))
+    peer_id=peer.id; peer_snapshot=deepcopy(peer.capability_snapshot)
+    body=body_for(service,row); key=uuid4()
+    result=verify(service,SimpleNamespace(id=identifier),body,key)
+    assert result['publishing_enabled'] is False and result['enable_available'] is True
+    assert result['global_publishing_enabled'] is False
+    assert result['controls_version']==body['expected_controls_version']+1
+    assert result['state_token']!=body['expected_state']
+    assert graph.calls and all(r.method=='GET' and 'oauth' not in r.url.path for r in graph.calls)
+    assert peer_snapshot==current_account(service.db,peer_id).capability_snapshot
+    after=[(c.id,c.version,c.encrypted_bundle,c.access_expires_at,c.data_access_expires_at) for c in service.db.scalars(select(SocialCredential).order_by(SocialCredential.id))]
+    assert before==after
+    calls=len(graph.calls)
+    row=current_account(service.db,identifier);row.connection_state='disconnected';service.db.commit()
+    assert verify(service,SimpleNamespace(id=identifier),body,key)==result
+    assert len(graph.calls)==calls
+    assert current_account(service.db,identifier).connection_state=='disconnected'
+
+
+@pytest.mark.parametrize('change',['credential_version','credential_revoke','account_disconnect','account_hold','controls_version'])
+def test_change_during_provider_read_cannot_become_verified_proof(saved,graph,change):
+    service,row,_=saved;identifier=row.id;credential_id=row.credential_id
+    original=deepcopy(row.capability_snapshot);body=body_for(service,row)
+    changed=False
+    def handler(request):
+        nonlocal changed
+        # The real provider runs outside the DB transaction and cannot freeze
+        # a stale credential/account snapshot until its later commit.
+        assert not service.db.in_transaction()
+        if not changed:
+            account=service.db.get(SocialAccount,identifier);credential=service.db.get(SocialCredential,credential_id)
+            if change=='credential_version':credential.version+=1
+            if change=='credential_revoke':credential.revoked_at=datetime.now(timezone.utc)
+            if change=='account_disconnect':account.connection_state='disconnected'
+            if change=='account_hold':account.hold_reason='outcome_unknown'
+            if change=='controls_version':service.db.get(SocialControls,1).version+=1
+            service.db.commit();changed=True
+        return graph(request)
+    service.provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(handler))
+    with pytest.raises(SocialError):verify(service,SimpleNamespace(id=identifier),body)
+    assert current_account(service.db,identifier).capability_snapshot==original
+    assert service.db.scalar(select(func.count()).select_from(SocialCommandReceipt).where(SocialCommandReceipt.route_key.like('POST verify/%')))==0
+
+
+def test_callback_privacy_is_not_a_new_prerequisite_for_saved_grant_maintenance(saved,graph):
+    service,row,_=saved
+    service.config=replace(service.config,verified_callback_ingress_uris=())
+    assert 'CALLBACK_INGRESS_UNVERIFIED' in service.config.oauth_blockers()
+    assert not service.config.blockers()
+    identifier=row.id
+    result=verify(service,SimpleNamespace(id=identifier))
+    assert result['publishing_enabled'] is False and result['enable_available'] is True
+    assert graph.calls and all(r.method=='GET' for r in graph.calls)
+
+
+@pytest.mark.parametrize('platform',['facebook','instagram'])
+def test_selected_identity_and_current_tasks_are_required(saved,graph,platform):
+    service,row,_=saved
+    if platform=='instagram': row=service.db.scalar(select(SocialAccount).where(SocialAccount.platform=='instagram'))
+    identifier=row.id;original=deepcopy(row.capability_snapshot);body=body_for(service,row)
+    if platform=='facebook':graph.pages[0]['tasks']=[]
+    else:graph.pages[0].pop('instagram_business_account')
+    with pytest.raises(SocialError):verify(service,SimpleNamespace(id=identifier),body)
+    assert current_account(service.db,identifier).capability_snapshot==original
+
+
+def test_missing_runtime_refuses_before_any_provider_read(saved,graph):
+    service,row,_=saved;service.base.available_adapters={}
+    identifier=row.id
+    with pytest.raises(SocialError):verify(service,SimpleNamespace(id=identifier))
+    assert graph.calls==[]
+
+
+def test_pending_privacy_namespace_without_registered_reader_cannot_certify_proof(saved):
+    from social.privacy.models import SocialPrivacyReceipt, PRIVACY_TABLES
+    from social.models import Base
+    from social.privacy.subjects import SubjectDigester
+    service,row,_=saved;identifier=row.id
+    assert service.ownership_recorder is None
+    service.db.rollback();Base.metadata.create_all(service.db.bind,tables=PRIVACY_TABLES)
+    digester=SubjectDigester('test',{'test':b'x'*32})
+    audit_id=uuid4()
+    service.db.add(SocialAuditEvent(id=audit_id,actor_kind='system',action='privacy.received',request_id=str(uuid4())))
+    service.db.flush()
+    service.db.add(SocialPrivacyReceipt(app_id=service.config.app_id,kind='deauthorization',digest_version='test',subject_digest=digester.digest(service.config.app_id,'701'),event_key='c'*64,request_fingerprint='d'*64,affected={},resolution='fixture_pending',state='ownership_unresolved',audit_id=audit_id))
+    service.db.commit()
+    with pytest.raises(SocialError):verify(service,SimpleNamespace(id=identifier))
+
+
+def test_new_privacy_receipt_between_proof_and_consent_cannot_be_bypassed(saved):
+    from social.privacy.models import SocialPrivacyReceipt, PRIVACY_TABLES
+    from social.privacy.subjects import SubjectDigester
+    from social.models import Base
+    from social.account_publishing import AccountPublishingCommand, set_account_publishing
+    service,row,_=saved;identifier=row.id
+    result=verify(service,SimpleNamespace(id=identifier))
+    assert result['enable_available'] is True
+    service.db.rollback();Base.metadata.create_all(service.db.bind,tables=PRIVACY_TABLES)
+    digester=SubjectDigester('test',{'test':b'x'*32});audit_id=uuid4()
+    service.db.add(SocialAuditEvent(id=audit_id,actor_kind='system',action='privacy.received',request_id=str(uuid4())))
+    service.db.flush()
+    service.db.add(SocialPrivacyReceipt(app_id=service.config.app_id,kind='deauthorization',digest_version='test',subject_digest=digester.digest(service.config.app_id,'701'),event_key='e'*64,request_fingerprint='f'*64,affected={},resolution='fixture_pending',state='ownership_unresolved',audit_id=audit_id));service.db.commit()
+    # Read the real, newly returned readiness before submitting explicit consent.
+    fresh=account_publishing(service.base,identifier)
+    body={'expected_controls_version':fresh['controls_version'],'expected_state':fresh['state_token'],'publishing_enabled':True,'reason':'Synthetic explicit consent after pending receipt'}
+    service.db.rollback()
+    with pytest.raises(SocialError):
+        service.base.command(actor=ACTOR,route='PATCH account/'+str(identifier),key=uuid4(),body=body,request_id=uuid4(),action=lambda:set_account_publishing(service.base,identifier,AccountPublishingCommand.model_validate(body)))

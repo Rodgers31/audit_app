@@ -1,0 +1,22 @@
+FAIL __tests__/social-connections/account-publishing.test.tsx
+  ● batched refresh clicks share a synchronous in-flight lock
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 2
+
+      39 |  const button=screen.getByRole('button',{name:'Refresh account publishing controls'});
+      40 |  act(()=>{button.dispatchEvent(new MouseEvent('click',{bubbles:true}));button.dispatchEvent(new MouseEvent('click',{bubbles:true}));});
+    > 41 |  expect(load).toHaveBeenCalledTimes(1);await act(async()=>{resolve(state);});
+         |               ^
+      42 | });
+      43 |
+
+      at Object.toHaveBeenCalledTimes (__tests__/social-connections/account-publishing.test.tsx:41:15)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 16 passed, 17 total
+Snapshots:   0 total
+Time:        0.631 s
+Ran all test suites matching __tests__/social-connections/account-publishing.test.tsx.

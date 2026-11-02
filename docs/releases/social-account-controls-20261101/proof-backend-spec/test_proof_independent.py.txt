@@ -1,0 +1,337 @@
+"""Second independent local saved-grant review. HTTPX fake ports; no network."""
+import copy
+import hashlib
+import json
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
+
+import httpx
+import pytest
+from sqlalchemy import select, text
+
+from social.connections.models import SocialCredential
+from social.connections.provider import MetaProvider
+from social.models import SocialAccount, SocialAuditEvent, SocialCommandReceipt, SocialControls
+from social.service import SocialError
+from test_connections_support import db, config, graph, ACTOR, BINDING, USER, PAGE
+from test_existing_grant_verification import saved, body_for, client_for
+
+ROUTE = 'POST /independent/verify-publishing-access'
+
+
+def invoke(service, row, body=None, key=None, actor=ACTOR, binding=BINDING, route=ROUTE):
+    account_id = row.id
+    service.db.rollback()
+    command = body if body is not None else body_for(service, row)
+    return service.verify_existing_grant(account_id, actor, binding, route, key or uuid4(), command, uuid4())
+
+
+def state(service):
+    def encode(value):
+        if isinstance(value, bytes):
+            return {'bytes_sha256': hashlib.sha256(value).hexdigest()}
+        return str(value)
+    snapshot = {}
+    for model in (SocialAccount, SocialCredential, SocialControls, SocialAuditEvent, SocialCommandReceipt):
+        values = [dict(row) for row in service.db.execute(select(model.__table__)).mappings()]
+        snapshot[model.__tablename__] = sorted(values, key=lambda row: str(row['id']))
+    digest = hashlib.sha256(json.dumps(snapshot, sort_keys=True, default=encode).encode()).hexdigest()
+    service.db.rollback()
+    return digest
+
+
+@pytest.mark.parametrize('attack', [
+    'wrong_app', 'valid_integer', 'wrong_token_type', 'different_page_me',
+    'other_user', 'permission_denied', 'granular_other_asset', 'granular_bad_targets',
+    'tasks_bad_type', 'tasks_truthy_not_content', 'page_duplicate', 'page_missing',
+    'scopes_bad_type', 'scopes_boolean', 'expiry_boolean', 'expiry_negative',
+    'expiry_float', 'expiry_huge', 'ig_wrong_id', 'ig_bad_handle',
+    'http_forbidden', 'http_error_payload', 'invalid_json', 'html_challenge',
+])
+def test_real_parser_bad_provider_evidence_never_admits(saved, graph, attack):
+    service, row, _ = saved
+    if attack.startswith('ig_'):
+        row = service.db.scalar(select(SocialAccount).where(SocialAccount.platform == 'instagram'))
+        service.db.rollback()
+    body = body_for(service, row)
+    baseline = state(service)
+    original = graph.__call__
+    def read(request):
+        assert request.method == 'GET'
+        assert not service.db.in_transaction()
+        response = original(request)
+        path = request.url.path.removeprefix('/v26.0/')
+        value = response.json()
+        if attack == 'http_forbidden':
+            return httpx.Response(403, json={'error': {'code': 200}})
+        if attack == 'http_error_payload':
+            return httpx.Response(200, json={'error': {'code': 190}})
+        if attack == 'invalid_json':
+            return httpx.Response(200, content=b'{broken')
+        if attack == 'html_challenge':
+            return httpx.Response(200, content=b'<!doctype html><title>Challenge</title>')
+        if path == 'debug_token':
+            data = value['data']
+            patch = {
+                'wrong_app': {'app_id': '124'}, 'valid_integer': {'is_valid': 1},
+                'wrong_token_type': {'type': 'APP'}, 'other_user': {'user_id': '999'},
+                'scopes_bad_type': {'scopes': {}}, 'scopes_boolean': {'scopes': [True]},
+                'expiry_boolean': {'expires_at': True}, 'expiry_negative': {'expires_at': -1},
+                'expiry_float': {'expires_at': 10000000000.1}, 'expiry_huge': {'expires_at': 10**100},
+                'granular_other_asset': {'granular_scopes': [{'scope': 'pages_manage_posts', 'target_ids': ['999']}]},
+                'granular_bad_targets': {'granular_scopes': [{'scope': 'pages_manage_posts', 'target_ids': True}]},
+            }.get(attack)
+            if patch:
+                data.update(patch)
+        if path == 'me' and attack == 'different_page_me':
+            value['id'] = '902'
+        if path == 'me/permissions' and attack == 'permission_denied':
+            for permission in value['data']:
+                if permission['permission'] == 'pages_manage_posts':
+                    permission['status'] = 'declined'
+        if path == 'me/accounts':
+            if attack == 'tasks_bad_type': value['data'][0]['tasks'] = {'CREATE_CONTENT': True}
+            if attack == 'tasks_truthy_not_content': value['data'][0]['tasks'] = ['ANALYZE']
+            if attack == 'page_duplicate': value['data'] *= 2
+            if attack == 'page_missing': value['data'] = []
+        if path == '801':
+            if attack == 'ig_wrong_id': value['id'] = '802'
+            if attack == 'ig_bad_handle': value['username'] = 'not valid!'
+        return httpx.Response(200, json=value)
+    service.provider_factory = lambda c: MetaProvider(c, transport=httpx.MockTransport(read))
+    with pytest.raises(SocialError):
+        invoke(service, row, body)
+    assert state(service) == baseline
+
+
+@pytest.mark.parametrize('attack', [
+    'page_revoked', 'parent_revoked', 'page_expired', 'parent_expired',
+    'page_data_expired', 'parent_data_expired', 'page_refresh_held', 'parent_refresh_held',
+    'sibling_enabled', 'sibling_hold', 'sibling_lease', 'own_enabled',
+])
+def test_saved_state_preconditions_refuse_without_graph(saved, graph, attack):
+    service, row, _ = saved
+    page = service.db.get(SocialCredential, row.credential_id)
+    parent = service.db.get(SocialCredential, page.parent_credential_id)
+    sibling = service.db.scalar(select(SocialAccount).where(SocialAccount.platform == 'instagram'))
+    past = datetime.now(timezone.utc) - timedelta(days=1)
+    future = datetime.now(timezone.utc) + timedelta(minutes=1)
+    if attack.endswith('_revoked'):
+        (page if attack.startswith('page_') else parent).revoked_at = past
+    if attack in ('page_expired', 'parent_expired'):
+        (page if attack.startswith('page_') else parent).access_expires_at = past
+    if attack in ('page_data_expired', 'parent_data_expired'):
+        (page if attack.startswith('page_') else parent).data_access_expires_at = past
+    if attack.endswith('_refresh_held'):
+        credential = page if attack.startswith('page_') else parent
+        credential.refresh_lease_token, credential.refresh_lease_expires_at = uuid4(), future
+    if attack == 'sibling_enabled': sibling.publishing_enabled = True
+    if attack == 'own_enabled': row.publishing_enabled = True
+    if attack == 'sibling_hold': sibling.hold_reason = 'independent unresolved owner'
+    if attack == 'sibling_lease':
+        # Even an orphan ownership token must refuse; do not invent an FK target.
+        sibling.publish_lease_token, sibling.publish_lease_expires_at = uuid4(), future
+    service.db.commit()
+    body = body_for(service, row)
+    baseline = state(service)
+    with pytest.raises(SocialError):
+        invoke(service, row, body)
+    assert not graph.calls
+    assert state(service) == baseline
+
+
+@pytest.mark.parametrize('attack', ['parent_revoke', 'parent_expiry', 'account_scopes', 'sibling_hold', 'parent_envelope', 'account_identity'])
+def test_state_changes_between_read_and_commit_are_fenced(saved, graph, attack):
+    service, row, _ = saved
+    account_id, page_id = row.id, row.credential_id
+    parent_id = service.db.get(SocialCredential, page_id).parent_credential_id
+    service.db.rollback()
+    body = body_for(service, row)
+    original = graph.__call__
+    baseline_after_race = None
+    def read(request):
+        nonlocal baseline_after_race
+        assert not service.db.in_transaction()
+        if baseline_after_race is None:
+            if attack == 'parent_revoke': service.db.get(SocialCredential, parent_id).revoked_at = datetime.now(timezone.utc)
+            if attack == 'parent_expiry': service.db.get(SocialCredential, parent_id).data_access_expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+            if attack == 'parent_envelope': service.db.get(SocialCredential, parent_id).encrypted_bundle = b'changed-encrypted-envelope'
+            if attack == 'account_scopes': service.db.get(SocialAccount, account_id).granted_scopes = ['pages_show_list']
+            if attack == 'account_identity': service.db.get(SocialAccount, account_id).external_account_id = '999'
+            if attack == 'sibling_hold': service.db.scalar(select(SocialAccount).where(SocialAccount.platform == 'instagram')).hold_reason = 'retained uncertain send'
+            service.db.commit()
+            baseline_after_race = state(service)
+        return original(request)
+    service.provider_factory = lambda c: MetaProvider(c, transport=httpx.MockTransport(read))
+    with pytest.raises(SocialError):
+        invoke(service, row, body)
+    assert baseline_after_race is not None
+    assert state(service) == baseline_after_race
+
+
+@pytest.mark.parametrize('effect', ['erase_audit', 'rewrite_audit', 'restore_old_proof', 'change_credential', 'enable_sibling', 'rewrite_controls'])
+def test_late_database_effects_cannot_commit_false_verification(saved, effect):
+    service, row, _ = saved
+    body = body_for(service, row)
+    old_proof = json.dumps(row.capability_snapshot).replace("'", "''")
+    effects = {
+        'erase_audit': "DELETE FROM social_audit_events WHERE action='connection.publishing_access_verified';",
+        'rewrite_audit': "UPDATE social_audit_events SET reason='not the operator reason' WHERE action='connection.publishing_access_verified';",
+        'restore_old_proof': f"UPDATE social_accounts SET capability_snapshot='{old_proof}' WHERE platform='facebook';",
+        'change_credential': "UPDATE social_credentials SET version=version+1;",
+        'enable_sibling': "UPDATE social_accounts SET publishing_enabled=1 WHERE platform='instagram';",
+        'rewrite_controls': "UPDATE social_controls SET version=version+1 WHERE id=1;",
+    }
+    service.db.execute(text("CREATE TRIGGER independent_late_effect AFTER INSERT ON social_command_receipts WHEN NEW.route_key='" + ROUTE + "' BEGIN " + effects[effect] + " END"))
+    service.db.commit()
+    baseline = state(service)
+    with pytest.raises(SocialError):
+        invoke(service, row, body)
+    assert state(service) == baseline
+
+
+def test_verified_proof_preserves_envelopes_and_replay_session_binding(saved, graph):
+    service, row, _ = saved
+    old = [(c.id,c.version,c.key_version,c.encrypted_bundle,c.access_expires_at,c.data_access_expires_at) for c in service.db.scalars(select(SocialCredential).order_by(SocialCredential.id))]
+    service.db.rollback()
+    body = body_for(service, row); key = uuid4()
+    result = invoke(service, row, body, key)
+    assert result['publishing_enabled'] is False and result['enable_available'] is True
+    assert result['global_publishing_enabled'] is False
+    assert result['controls_version'] == body['expected_controls_version'] + 1
+    calls = len(graph.calls)
+    assert invoke(service, row, body, key) == result
+    assert len(graph.calls) == calls
+    with pytest.raises(SocialError, match='IDEMPOTENCY_CONFLICT'):
+        invoke(service, row, body, key, binding='different-session-binding')
+    assert len(graph.calls) == calls
+    current = [(c.id,c.version,c.key_version,c.encrypted_bundle,c.access_expires_at,c.data_access_expires_at) for c in service.db.scalars(select(SocialCredential).order_by(SocialCredential.id))]
+    assert current == old
+    audits = list(service.db.scalars(select(SocialAuditEvent).where(SocialAuditEvent.action == 'connection.publishing_access_verified')))
+    assert len(audits) == 1
+    assert audits[0].actor_id == ACTOR and audits[0].reason == body['reason'] and audits[0].account_id == row.id
+    receipts = list(service.db.scalars(select(SocialCommandReceipt).where(SocialCommandReceipt.route_key == ROUTE)))
+    assert len(receipts) == 1 and receipts[0].response == result
+
+
+def test_graph_transport_failure_leaves_no_receipt_and_same_key_retry_is_safe(saved, graph):
+    service, row, _ = saved
+    body = body_for(service, row); key = uuid4(); baseline = state(service)
+    def fail(request):
+        assert not service.db.in_transaction()
+        raise httpx.ReadTimeout('synthetic read timeout')
+    service.provider_factory = lambda c: MetaProvider(c, transport=httpx.MockTransport(fail))
+    with pytest.raises(SocialError, match='PROVIDER_UNAVAILABLE'):
+        invoke(service, row, body, key)
+    assert state(service) == baseline
+    service.provider_factory = lambda c: MetaProvider(c, transport=httpx.MockTransport(graph))
+    assert invoke(service, row, body, key)['publishing_enabled'] is False
+
+
+def test_authenticated_http_response_is_private_minimal_and_remains_paused(saved, graph):
+    service, row, _ = saved
+    account_id = row.id
+    body = body_for(service, row)
+    response = client_for(service).post(f'/api/v1/admin/social/accounts/{account_id}/verify-publishing-access', json=body, headers={'Idempotency-Key': str(uuid4())})
+    assert response.status_code == 200, response.text
+    assert response.headers['cache-control'] == 'private, no-store'
+    value = response.json()
+    assert set(value) == {'account_id','publishing_enabled','controls_version','state_token','enable_available','enable_blockers','global_publishing_enabled','delivery_holds'}
+    assert value['publishing_enabled'] is False
+    assert USER not in response.text and PAGE not in response.text
+    assert all(request.method == 'GET' and '/oauth/' not in request.url.path for request in graph.calls)
+
+
+@pytest.mark.parametrize('policy', [None, {'facebook': {'publishing_enabled': 'false'}}])
+def test_unreadable_platform_policy_refuses_before_provider(saved, graph, policy):
+    from sqlalchemy.orm.attributes import flag_modified
+    service, row, _ = saved
+    controls = service.db.get(SocialControls, 1)
+    controls.platform_controls = policy
+    flag_modified(controls, 'platform_controls')
+    service.db.commit()
+    body = body_for(service, row); baseline = state(service)
+    with pytest.raises(SocialError, match='PLATFORM_CONTROLS_UNAVAILABLE'):
+        invoke(service, row, body)
+    assert not graph.calls
+    assert state(service) == baseline
+
+
+@pytest.mark.parametrize('field', ['capabilities_checked_at', 'last_api_success_at'])
+def test_late_suppressed_proof_timestamps_cannot_return_success(saved, field):
+    service, row, _ = saved
+    body = body_for(service, row)
+    service.db.execute(text("CREATE TRIGGER independent_late_timestamp AFTER INSERT ON social_command_receipts WHEN NEW.route_key='" + ROUTE + "' BEGIN UPDATE social_accounts SET " + field + "=NULL WHERE platform='facebook'; END"))
+    service.db.commit(); baseline = state(service)
+    with pytest.raises(SocialError, match='ACCOUNT_CONTROL_FAILED'):
+        invoke(service, row, body)
+    assert state(service) == baseline
+
+
+def add_privacy_receipt(service, *, subject='701', app_id=None, digest_version='known', digester=None):
+    from social.privacy.models import SocialPrivacyReceipt
+    audit_id = service.db.scalar(select(SocialAuditEvent.id).limit(1))
+    app_id = service.config.app_id if app_id is None else app_id
+    subject_digest = digester.digest(app_id, subject) if digester is not None else 'a' * 64
+    service.db.add(SocialPrivacyReceipt(app_id=app_id, kind='deauthorization', digest_version=digest_version,
+        subject_digest=subject_digest, event_key='b' * 64, request_fingerprint='c' * 64,
+        affected={}, resolution='fixture_retained', state='ownership_unresolved', audit_id=audit_id))
+    service.db.commit()
+
+
+@pytest.mark.parametrize('stage', ['before', 'during', 'receipt'])
+def test_no_privacy_reader_never_erases_same_app_retained_ownership(saved, graph, stage):
+    service, row, _ = saved
+    assert service.ownership_recorder is None
+    body = body_for(service, row)
+    if stage == 'before':
+        add_privacy_receipt(service)
+    if stage == 'receipt':
+        audit_id = service.db.scalar(select(SocialAuditEvent.id).limit(1)).hex
+        service.db.execute(text("CREATE TRIGGER independent_late_privacy AFTER INSERT ON social_command_receipts WHEN NEW.route_key='" + ROUTE + "' BEGIN INSERT INTO social_privacy_receipts (id,app_id,kind,digest_version,subject_digest,event_key,request_fingerprint,affected,resolution,state,audit_id) VALUES ('" + uuid4().hex + "','123','deauthorization','known','" + 'a'*64 + "','" + 'b'*64 + "','" + 'c'*64 + "','{}','fixture_retained','ownership_unresolved','" + audit_id + "'); END"))
+        service.db.commit()
+    baseline = state(service)
+    original = graph.__call__; inserted = False
+    def read(request):
+        nonlocal inserted
+        assert not service.db.in_transaction()
+        if stage == 'during' and not inserted:
+            inserted = True
+            add_privacy_receipt(service)
+        return original(request)
+    service.provider_factory = lambda c: MetaProvider(c, transport=httpx.MockTransport(read))
+    with pytest.raises(SocialError, match='PRIVACY_GRANT_BLOCKED'):
+        invoke(service, row, body)
+    assert state(service) == baseline
+    if stage == 'before': assert not graph.calls
+
+
+@pytest.mark.parametrize('receipt', ['unrelated_subject', 'foreign_app', 'unknown_digest'])
+def test_configured_privacy_namespace_distinguishes_known_unrelated_from_unreadable(saved, graph, receipt):
+    from social.privacy.ownership import OwnershipRecorder
+    from social.privacy.subjects import SubjectDigester
+    service, row, _ = saved
+    digester = SubjectDigester('known', {'known': b'z'*32})
+    service.ownership_recorder = OwnershipRecorder(service.config.app_id, digester)
+    add_privacy_receipt(service, subject='999', app_id='124' if receipt == 'foreign_app' else None,
+        digest_version='unknown' if receipt == 'unknown_digest' else 'known',
+        digester=None if receipt == 'unknown_digest' else digester)
+    body = body_for(service, row)
+    if receipt == 'unknown_digest':
+        baseline = state(service)
+        with pytest.raises(SocialError, match='PRIVACY_GRANT_BLOCKED'):
+            invoke(service, row, body)
+        assert not graph.calls and state(service) == baseline
+    else:
+        assert invoke(service, row, body)['publishing_enabled'] is False
+
+
+def test_missing_privacy_table_is_http_503_before_provider(saved, graph):
+    service, row, _ = saved
+    account_id = row.id; body = body_for(service, row)
+    service.db.execute(text('DROP TABLE social_privacy_receipts')); service.db.commit()
+    response = client_for(service).post(f'/api/v1/admin/social/accounts/{account_id}/verify-publishing-access', json=body, headers={'Idempotency-Key': str(uuid4())})
+    assert response.status_code == 503, response.text
+    assert response.json()['detail']['code'] == 'SOCIAL_SCHEMA_UNAVAILABLE'
+    assert response.headers['cache-control'] == 'private, no-store'
+    assert not graph.calls

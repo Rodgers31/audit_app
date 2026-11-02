@@ -1,0 +1,25 @@
+FAIL ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/verification.independent.test.tsx
+  ● direct client call rejects malformed input account before any transport
+
+    ConnectionError: The connection service returned an unexpected response. Refresh before continuing.
+
+      14 |   constructor(public code: string, message: string, public requestId?: string) { super(message); this.name = 'ConnectionError'; }
+      15 | }
+    > 16 | function invalid(): never { throw new ConnectionError('INVALID_RESPONSE', 'The connection service returned an unexpected response. Refresh before continuing.'); }
+         |                                   ^
+      17 | function object(v: unknown): Record<string, unknown> { if (!v || typeof v !== 'object' || Array.isArray(v)) return invalid(); return v as Record<string, unknown>; }
+      18 | function exact(v: unknown, keys: string[]) { const o = object(v); if (Object.keys(o).some(k => !keys.includes(k)) || keys.some(k => !(k in o))) invalid(); return o; }
+      19 | function text(v: unknown): string { if (typeof v !== 'string') invalid(); return v as string; }
+
+      at invalid (lib/api/socialConnections.ts:16:35)
+      at invalid (lib/api/socialConnections.ts:24:126)
+      at Object.id [as verifyPublishingAccess] (lib/api/socialConnections.ts:108:203)
+      at Object.verifyPublishingAccess (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/verification.independent.test.tsx:111:30)
+
+PASS ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx
+
+Test Suites: 1 failed, 1 passed, 2 total
+Tests:       1 failed, 43 passed, 44 total
+Snapshots:   0 total
+Time:        1.777 s
+Ran all test suites.

@@ -1,0 +1,256 @@
+..F.....FFFFFFFFF.FFFFF.....FF                                           [100%]
+=================================== FAILURES ===================================
+___ test_provider_reads_have_no_database_transaction_and_replay_has_no_reads ___
+backend/tests/social/test_existing_grant_verification.py:77: in test_provider_reads_have_no_database_transaction_and_replay_has_no_reads
+    result=verify(service,row,body,key);count=len(graph.calls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+____________ test_provider_evidence_failures_never_promote[revoked] ____________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+_________ test_provider_evidence_failures_never_promote[expired_user] __________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+__________ test_provider_evidence_failures_never_promote[permissions] __________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+_____________ test_provider_evidence_failures_never_promote[tasks] _____________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+__________ test_provider_evidence_failures_never_promote[page_absent] __________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+________ test_provider_evidence_failures_never_promote[linked_identity] ________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+____________ test_provider_evidence_failures_never_promote[subject] ____________
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+______ test_provider_evidence_failures_never_promote[shorter_page_expiry] ______
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+______ test_provider_evidence_failures_never_promote[shorter_data_expiry] ______
+backend/tests/social/test_existing_grant_verification.py:124: in test_provider_evidence_failures_never_promote
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+___________ test_changes_during_read_are_fenced[credential_version] ____________
+backend/tests/social/test_existing_grant_verification.py:155: in test_changes_during_read_are_fenced
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+_____________ test_changes_during_read_are_fenced[sibling_enabled] _____________
+backend/tests/social/test_existing_grant_verification.py:155: in test_changes_during_read_are_fenced
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+____________ test_changes_during_read_are_fenced[controls_version] _____________
+backend/tests/social/test_existing_grant_verification.py:155: in test_changes_during_read_are_fenced
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+_______________ test_changes_during_read_are_fenced[disconnect] ________________
+backend/tests/social/test_existing_grant_verification.py:155: in test_changes_during_read_are_fenced
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+________________ test_changes_during_read_are_fenced[envelope] _________________
+backend/tests/social/test_existing_grant_verification.py:155: in test_changes_during_read_are_fenced
+    with pytest.raises(SocialError):verify(service,row,body)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+______ test_suppressed_proof_or_audit_cannot_commit_receipt[proof_write] _______
+backend/tests/social/test_existing_grant_verification.py:174: in test_suppressed_proof_or_audit_cannot_commit_receipt
+    with pytest.raises(SocialError,match='ACCOUNT_CONTROL_FAILED'):verify(service,row,body)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+______ test_suppressed_proof_or_audit_cannot_commit_receipt[audit_write] _______
+backend/tests/social/test_existing_grant_verification.py:174: in test_suppressed_proof_or_audit_cannot_commit_receipt
+    with pytest.raises(SocialError,match='ACCOUNT_CONTROL_FAILED'):verify(service,row,body)
+                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_existing_grant_verification.py:60: in verify
+    return service.verify_existing_grant(row.id,ACTOR,BINDING,'POST verify/'+str(row.id),key or uuid4(),body or body_for(service,row),uuid4())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/connections/service.py:457: in verify_existing_grant
+    with self.db.begin():
+         ^^^^^^^^^^^^^^^
+/evidence/docker-prod-test-env/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1946: in begin
+    raise sa_exc.InvalidRequestError(
+E   sqlalchemy.exc.InvalidRequestError: A transaction is already begun on this Session.
+=============================== warnings summary ===============================
+../evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/database.py:79
+  /app/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_reads_have_no_database_transaction_and_replay_has_no_reads
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[revoked]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[expired_user]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[permissions]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[tasks]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[page_absent]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[linked_identity]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[subject]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[shorter_page_expiry]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_provider_evidence_failures_never_promote[shorter_data_expiry]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_changes_during_read_are_fenced[credential_version]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_changes_during_read_are_fenced[sibling_enabled]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_changes_during_read_are_fenced[controls_version]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_changes_during_read_are_fenced[disconnect]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_changes_during_read_are_fenced[envelope]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_suppressed_proof_or_audit_cannot_commit_receipt[proof_write]
+FAILED backend/tests/social/test_existing_grant_verification.py::test_suppressed_proof_or_audit_cannot_commit_receipt[audit_write]
+17 failed, 13 passed, 3 warnings in 3.32s

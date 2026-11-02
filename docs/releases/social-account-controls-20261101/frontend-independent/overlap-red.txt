@@ -1,0 +1,47 @@
+FAIL ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx
+  ✕ same-frame overlapping refresh attempts do not allow an older read to replace a newer one (42 ms)
+  ○ skipped real API read and patch decode exact success without global readiness claim
+  ○ skipped wrong mutation witness must not confirm enabled account: { controls_version: 1 }
+  ○ skipped wrong mutation witness must not confirm enabled account: { controls_version: 9 }
+  ○ skipped wrong mutation witness must not confirm enabled account: {
+  state_token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+}
+  ○ skipped missing global hold cannot be decoded as coherent readiness
+  ○ skipped actual API rejects malformed read without rendering actions: { account_id: '00000000-0000-4000-8000-000000000002' }
+  ○ skipped actual API rejects malformed read without rendering actions: { publishing_enabled: 1 }
+  ○ skipped actual API rejects malformed read without rendering actions: { controls_version: 0 }
+  ○ skipped actual API rejects malformed read without rendering actions: { controls_version: 1.5 }
+  ○ skipped actual API rejects malformed read without rendering actions: { controls_version: NaN }
+  ○ skipped actual API rejects malformed read without rendering actions: { controls_version: Infinity }
+  ○ skipped actual API rejects malformed read without rendering actions: { state_token: 'bad' }
+  ○ skipped actual API rejects malformed read without rendering actions: { global_publishing_enabled: undefined }
+  ○ skipped actual API rejects malformed read without rendering actions: { enable_available: 'true' }
+  ○ skipped actual API rejects malformed read without rendering actions: {
+  enable_available: true,
+  enable_blockers: [ 'CREDENTIAL_UNAVAILABLE', [length]: 1 ]
+}
+  ○ skipped same command body and key survive a rejected transport result through real API wrapper
+  ○ skipped signout and account change fence a late mutation success and parent refresh
+  ○ skipped pause remains available when current credentials no longer permit enable
+
+  ● same-frame overlapping refresh attempts do not allow an older read to replace a newer one
+
+    expect(element).toBeDisabled()
+
+    Received element is not disabled:
+      <button class="button" type="button" />
+
+      122 |     await act(async () => { first({ data: held }); });
+      123 |   }
+    > 124 |   expect(await screen.findByRole('button', { name: 'Enable publishing for Fixture Page' })).toBeDisabled();
+          |                                                                                             ^
+      125 | });
+      126 |
+
+      at Object.toBeDisabled (../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx:124:93)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 18 skipped, 19 total
+Snapshots:   0 total
+Time:        0.398 s
+Ran all test suites with tests matching "overlapping refresh".

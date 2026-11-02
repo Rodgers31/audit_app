@@ -216,6 +216,16 @@ class MetaProvider:
         token = long_lived.get('access_token')
         if not isinstance(token, str) or not token or len(token) > 16384:
             raise SocialError('PROVIDER_RESPONSE_INVALID', 'Meta did not return a usable long-lived grant.', 502)
+        return self._inspect_user_grant(token)
+
+    def inspect_saved_grant(self, user_token, page_token, page_id):
+        """Read only: inspect the exact saved User and Page grants, without exchange."""
+        _identity(page_id)
+        if any(type(token) is not str or not token or len(token) > 16384 for token in (user_token, page_token)):
+            raise SocialError('CREDENTIAL_UNREADABLE', 'The saved grant is incomplete. Reconnect this account.', 503)
+        return self._inspect_user_grant(user_token, selected_page=(page_id, page_token))
+
+    def _inspect_user_grant(self, token, selected_page=None):
         metadata = self.inspect_token(token, expected_type='USER')
         permissions = self._paged('me/permissions', 'permission,status', token)
         actual = {item.get('permission') for item in permissions if item.get('status') == 'granted'}
@@ -231,7 +241,9 @@ class MetaProvider:
             if page_id in ids:
                 raise SocialError('PROVIDER_RESPONSE_INVALID', 'Meta returned duplicate Page identities.', 502)
             ids.add(page_id)
-            page_token = page.get('access_token')
+            if selected_page is not None and page_id != selected_page[0]:
+                continue
+            page_token = selected_page[1] if selected_page is not None else page.get('access_token')
             if not isinstance(page_token, str) or not page_token or len(page_token) > 16384:
                 continue  # A Page without a derived token is not a connectable destination.
             page_metadata = self.inspect_token(page_token, expected_type='PAGE', expected_page_id=page_id)

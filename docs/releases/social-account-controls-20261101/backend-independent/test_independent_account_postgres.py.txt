@@ -1,0 +1,120 @@
+"""Actual migrated PostgreSQL control fences, no providers or live data."""
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from uuid import uuid4
+import pytest
+from sqlalchemy import select,func,text
+from sqlalchemy.orm import Session
+from test_domain_postgres import current_pg_engine
+from test_account_publishing import connected,intent,REGISTRY,ACTOR
+from social.account_publishing import set_account_publishing
+from social.service import SocialService,SocialError
+from social.models import SocialAccount,SocialControls,SocialAuditEvent,SocialCommandReceipt
+
+
+def call(engine,account_id,body,key):
+ with Session(engine,expire_on_commit=False) as db:
+  svc=SocialService(db,available_adapters=REGISTRY)
+  return svc.command(actor=ACTOR,route='PATCH account/'+str(account_id),key=key,body=body.model_dump(mode='json'),request_id=uuid4(),action=lambda:set_account_publishing(svc,account_id,body))[1]
+
+
+def seeded(engine):
+ with Session(engine,expire_on_commit=False) as db:
+  row=connected(db);body=intent(db,row);return row.id,body
+
+
+def test_pg_two_intents_cannot_both_commit(current_pg_engine):
+ engine=current_pg_engine;account_id,body=seeded(engine);barrier=Barrier(2)
+ def worker(_):
+  barrier.wait(timeout=10)
+  try:call(engine,account_id,body,uuid4());return 'committed'
+  except SocialError as e:return e.code
+ with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(worker,range(2)))
+ assert sorted(results)==['VERSION_CONFLICT','committed']
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).publishing_enabled is True
+  assert db.get(SocialControls,1).version==2
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent))==1
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt))==1
+
+
+def test_pg_same_key_race_is_one_audit_and_receipt(current_pg_engine):
+ engine=current_pg_engine;account_id,body=seeded(engine);barrier=Barrier(2);key=uuid4()
+ def worker(_):barrier.wait(timeout=10);return call(engine,account_id,body,key)
+ with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(worker,range(2)))
+ assert results[0]==results[1]
+ with Session(engine) as db:
+  assert db.get(SocialControls,1).version==2
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent))==1
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt))==1
+
+
+def test_pg_deferred_toggle_reversion_cannot_return_success(current_pg_engine):
+ engine=current_pg_engine;account_id,body=seeded(engine)
+ with engine.begin() as con:
+  con.execute(text('''CREATE FUNCTION review_deferred_revert() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF NEW.publishing_enabled AND NOT OLD.publishing_enabled THEN
+        UPDATE social_accounts SET publishing_enabled=false WHERE id=NEW.id;
+      END IF;
+      RETURN NEW;
+    END $$'''))
+  con.execute(text('''CREATE CONSTRAINT TRIGGER review_deferred_toggle AFTER UPDATE ON social_accounts
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION review_deferred_revert()'''))
+ try:
+  result=call(engine,account_id,body,uuid4())
+ except SocialError as e:
+  assert e.code=='ACCOUNT_CONTROL_FAILED'
+ else:
+  with Session(engine) as db:
+   actual=db.get(SocialAccount,account_id).publishing_enabled
+   receipts=db.scalar(select(func.count()).select_from(SocialCommandReceipt))
+  assert not result['publishing_enabled'] or actual is True, f'FALSE SUCCESS: response={result["publishing_enabled"]}, durable={actual}, receipts={receipts}'
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).publishing_enabled is False
+  assert db.get(SocialControls,1) is None
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt))==0
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent))==0
+
+
+@pytest.mark.parametrize('late_change',['flag','controls_version','credential'])
+def test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state(current_pg_engine,late_change):
+ engine=current_pg_engine;account_id,body=seeded(engine)
+ with engine.begin() as con:
+  statement={'flag':f"UPDATE social_accounts SET publishing_enabled=false WHERE id='{account_id}'::uuid;",
+   'controls_version':'UPDATE social_controls SET version=version+1 WHERE id=1;',
+   'credential':f"UPDATE social_credentials SET revoked_at=clock_timestamp(),version=version+1 WHERE id=(SELECT credential_id FROM social_accounts WHERE id='{account_id}'::uuid);"}[late_change]
+  con.execute(text('CREATE FUNCTION review_receipt_side_effect() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN '+statement+' RETURN NEW; END $$'))
+  con.execute(text('''CREATE CONSTRAINT TRIGGER review_late_receipt AFTER INSERT ON social_command_receipts
+   DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION review_receipt_side_effect()'''))
+ try:result=call(engine,account_id,body,uuid4())
+ except SocialError as e:
+  assert e.code=='ACCOUNT_CONTROL_FAILED'
+ else:
+  from social.account_publishing import account_publishing
+  with Session(engine) as db:observed=account_publishing(SocialService(db,available_adapters=REGISTRY),account_id)
+  assert result==observed,f'FALSE DURABLE RECEIPT after {late_change}: response={result}, current={observed}'
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).publishing_enabled is False
+  assert db.get(SocialControls,1) is None
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt))==0
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent))==0
+
+
+def test_pg_suppressed_audit_cannot_certify_audited_account_command(current_pg_engine):
+ engine=current_pg_engine;account_id,body=seeded(engine)
+ with engine.begin() as con:
+  con.execute(text('CREATE FUNCTION review_suppress_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NULL; END $$'))
+  con.execute(text("CREATE TRIGGER review_suppress_audit BEFORE INSERT ON social_audit_events FOR EACH ROW WHEN (NEW.action='account.publishing_updated') EXECUTE FUNCTION review_suppress_audit()"))
+ try:result=call(engine,account_id,body,uuid4())
+ except SocialError as error:
+  assert error.code=='ACCOUNT_CONTROL_FAILED'
+  with Session(engine) as db:
+   assert db.get(SocialAccount,account_id).publishing_enabled is False
+   assert db.get(SocialControls,1) is None
+   assert db.scalar(select(func.count()).select_from(SocialCommandReceipt))==0
+   assert db.scalar(select(func.count()).select_from(SocialAuditEvent))==0
+  return
+ with Session(engine) as db:
+  count=db.scalar(select(func.count()).select_from(SocialAuditEvent))
+  assert count==1,f'Accepted account consent but zero audit events: {result}'

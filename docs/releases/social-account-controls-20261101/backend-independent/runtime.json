@@ -1,0 +1,12 @@
+{
+  "python": "3.12.16",
+  "packages": {
+    "SQLAlchemy": "2.0.55",
+    "fastapi": "0.156.8",
+    "pydantic": "2.14.2",
+    "psycopg2-binary": "2.9.13",
+    "cryptography": "50.0.2",
+    "Pillow": "13.0.0",
+    "pytest": "9.1.1"
+  }
+}

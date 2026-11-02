@@ -1,0 +1,50 @@
+.FFF..F.FF                                                               [100%]
+=================================== FAILURES ===================================
+_ test_privacy_namespace_and_subject_scope[False-None-999-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_STATE_UNAVAILABLE] _
+backend/tests/social/test_account_privacy_consent.py:64: in test_privacy_namespace_and_subject_scope
+    assert status['enable_available'] is (expected is None)
+E   AssertionError: assert True is ('PRIVACY_STATE_UNAVAILABLE' is None)
+_ test_privacy_namespace_and_subject_scope[False-123-123-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_STATE_UNAVAILABLE] _
+backend/tests/social/test_account_privacy_consent.py:64: in test_privacy_namespace_and_subject_scope
+    assert status['enable_available'] is (expected is None)
+E   AssertionError: assert True is ('PRIVACY_STATE_UNAVAILABLE' is None)
+_ test_privacy_namespace_and_subject_scope[True-123-123-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_GRANT_BLOCKED] _
+backend/tests/social/test_account_privacy_consent.py:64: in test_privacy_namespace_and_subject_scope
+    assert status['enable_available'] is (expected is None)
+E   AssertionError: assert True is ('PRIVACY_GRANT_BLOCKED' is None)
+_ test_privacy_namespace_and_subject_scope[True-123-123-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-v2-PRIVACY_STATE_UNAVAILABLE] _
+backend/tests/social/test_account_privacy_consent.py:64: in test_privacy_namespace_and_subject_scope
+    assert status['enable_available'] is (expected is None)
+E   AssertionError: assert True is ('PRIVACY_STATE_UNAVAILABLE' is None)
+___________ test_receipt_after_readiness_invalidates_cached_consent ____________
+backend/tests/social/test_account_privacy_consent.py:85: in test_receipt_after_readiness_invalidates_cached_consent
+    with pytest.raises(SocialError,match='VERSION_CONFLICT'):consent(svc,identifier,body=body)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SocialError
+_____ test_real_provider_verification_cannot_bypass_later_retained_receipt _____
+backend/tests/social/test_account_privacy_consent.py:93: in test_real_provider_verification_cannot_bypass_later_retained_receipt
+    with pytest.raises(SocialError,match='PRIVACY_STATE_UNAVAILABLE'):consent(service.base,identifier)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE SocialError
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /evidence/docker-prod-test-env/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+backend/database.py:79
+  /app/backend/database.py:79: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_privacy_consent.py::test_privacy_namespace_and_subject_scope[False-None-999-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_STATE_UNAVAILABLE]
+FAILED backend/tests/social/test_account_privacy_consent.py::test_privacy_namespace_and_subject_scope[False-123-123-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_STATE_UNAVAILABLE]
+FAILED backend/tests/social/test_account_privacy_consent.py::test_privacy_namespace_and_subject_scope[True-123-123-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1-PRIVACY_GRANT_BLOCKED]
+FAILED backend/tests/social/test_account_privacy_consent.py::test_privacy_namespace_and_subject_scope[True-123-123-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-v2-PRIVACY_STATE_UNAVAILABLE]
+FAILED backend/tests/social/test_account_privacy_consent.py::test_receipt_after_readiness_invalidates_cached_consent
+FAILED backend/tests/social/test_account_privacy_consent.py::test_real_provider_verification_cannot_bypass_later_retained_receipt
+6 failed, 4 passed, 3 warnings in 0.99s

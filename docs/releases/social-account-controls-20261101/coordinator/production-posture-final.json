@@ -1,0 +1,70 @@
+{
+  "at": "2026-11-02T01:35:41.702357+00:00",
+  "sha": "9bbdde51d6ebe9e38bf0aa86f4d0f086c5cdffeb",
+  "readonly": true,
+  "runtime": {
+    "flags": {
+      "SOCIAL_WORKER_SUPERVISOR_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_OPERATIONAL_GATES_VERIFIED": "<unset>",
+      "SOCIAL_POLICY_AUTOMATION_ENABLED": "<unset>",
+      "SOCIAL_NATIVE_FINANCIAL_GENERATION_ENABLED": "<unset>",
+      "SOCIAL_MEDIA_ENABLED": "false",
+      "SOCIAL_STUDIO_ENABLED": "<unset>",
+      "SOCIAL_GENERATION_HOOK_ENABLED": "<unset>",
+      "SOCIAL_REPORT_GENERATION_ENABLED": "<unset>",
+      "AUTO_SEEDER_ENABLED": "false",
+      "ADMIN_ETL_DISPATCH_ENABLED": "false",
+      "SEED_NATIVE_FINANCIAL_SOURCE_ADMISSION_ENABLED": "<unset>"
+    },
+    "background_processes": 0
+  },
+  "controls": [
+    {
+      "id": 1,
+      "publishing_enabled": false,
+      "generation_enabled": false,
+      "auto_approve_enabled": false,
+      "auto_schedule_enabled": false,
+      "auto_publish_enabled": false,
+      "version": 1
+    }
+  ],
+  "accounts": [
+    {
+      "platform": "facebook",
+      "api_product": "facebook_pages",
+      "connection_method": "facebook_login",
+      "connection_state": "connected",
+      "publishing_enabled": false,
+      "hold_reason": null,
+      "capabilities_checked_at": "2026-10-18 22:39:12.862719+00:00",
+      "credential_kind": "facebook_page",
+      "credential_version": 1,
+      "access_expires_at": null,
+      "data_access_expires_at": "2027-01-16 22:38:52+00:00",
+      "revoked_at": null,
+      "parent_access_expires_at": null,
+      "parent_data_access_expires_at": "2027-01-16 22:38:52+00:00",
+      "parent_revoked_at": null
+    },
+    {
+      "platform": "instagram",
+      "api_product": "instagram_graph_facebook_login",
+      "connection_method": "facebook_login",
+      "connection_state": "connected",
+      "publishing_enabled": false,
+      "hold_reason": null,
+      "capabilities_checked_at": "2026-10-18 22:39:12.862719+00:00",
+      "credential_kind": "facebook_page",
+      "credential_version": 1,
+      "access_expires_at": null,
+      "data_access_expires_at": "2027-01-16 22:38:52+00:00",
+      "revoked_at": null,
+      "parent_access_expires_at": null,
+      "parent_data_access_expires_at": "2027-01-16 22:38:52+00:00",
+      "parent_revoked_at": null
+    }
+  ],
+  "private_credential_material_read": false
+}

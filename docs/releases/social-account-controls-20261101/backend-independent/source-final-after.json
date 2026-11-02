@@ -1,0 +1,11 @@
+{
+  "backend/social/account_publishing.py": "6d002ebb431be620acb1f0ffd2be773c65be9baa3e546073a09607e0556f6efa",
+  "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+  "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98",
+  "backend/social/service.py": "c2d2ca82f6befc02d1f0140e3b30ad5497f502e2e9625007374452930afd813c",
+  "backend/social/validation.py": "3a070b2e2e34b27f0ab51893eb2a038c7142a881b237ac7e0cd3741839fc99fd",
+  "backend/social/native_admission.py": "a00c13fb531ccd1414249d7922b0ded9457e156816f7765d6b288817d2302c06",
+  "backend/tests/social/test_account_publishing.py": "b97f75fee0156675de3c923a54d56eab76df655a588dc220193b06f6d17c7ed0",
+  "backend/tests/social/test_manual_media_workflow.py": "c94dc73546e03f7394c7dc8527be52c94fd54cab6f84732c9352d180581edf17",
+  "backend/tests/social/test_worker_materials.py": "da67e012fd39f87d2c11899c1fe30de05db5c393e60b6c401ad1b939e3f337fc"
+}

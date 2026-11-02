@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { receiveMetaCallback, receiveDirectMetaCallback, launchDirectMeta } from './callbackSecurity';
 import { forgetConnectionRecovery, readConnectionRecovery, saveConnectionRecovery } from './connectionRecovery';
+import AccountPublishingControl from './AccountPublishingControl';
 import styles from '../social.module.css';
 
 function useActorEpoch(actor: string | undefined) {
@@ -49,6 +50,7 @@ function AccountCard({ account, actor, onReconnect, refresh, connectAvailable }:
     <p>{account.handle ? `@${account.handle}` : 'Page identity'} · {health.data?.connection_state ?? account.connection_state}</p>
     <p className={styles.muted}>Publishing {account.publishing_enabled ? 'enabled by account controls' : 'disabled'}. {account.capabilities.adapter_available ? 'Publishing adapter registered; delivery gates still apply.' : 'Publishing adapter unavailable.'}</p>
     <div className={styles.actions}><button className={styles.button} type='button' aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>Connection details</button><button className={styles.button} type='button' disabled={busy || !connectAvailable} onClick={() => onReconnect(account.id)}>Reconnect identity</button></div>
+    <AccountPublishingControl accountId={account.id} name={account.display_name} refresh={refresh} canVerifyMeta />
     {expanded && <div className={styles.fields}>
       {health.isPending && <p role='status'>Loading connection health…</p>}
       <ErrorNotice error={health.error ?? error} />

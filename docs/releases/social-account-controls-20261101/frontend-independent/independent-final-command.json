@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "/Users/roger/.codex/worktrees/admin-social-release-check/audit_app/frontend/node_modules/jest/bin/jest.js",
+    "--config",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/jest.config.cjs",
+    "--runInBand",
+    "--no-cache"
+  ],
+  "source_sha256": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "3a2f72e3c8d73cc13af56cd5ec8d5b33b05c6d460874df0d07be332ef080b710",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "65223b42a8c3c441d702dd86274b6b9ad879edf2970fcbc37cda056bf4d2b8f5",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698"
+  },
+  "exit": 0,
+  "seconds": 2.9125051498413086,
+  "unchanged": true
+}

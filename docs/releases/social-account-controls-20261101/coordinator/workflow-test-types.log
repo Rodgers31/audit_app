@@ -1,0 +1,6 @@
+
+Test Suites: 3 passed, 3 total
+Tests:       32 passed, 32 total
+Snapshots:   0 total
+Time:        4.875 s
+Ran all test suites within paths "__tests__/admin/social/clean-status-sync.test.tsx", "__tests__/admin/social/manual-publication.test.tsx", "__tests__/admin/social/prepared-draft-flow.test.tsx".

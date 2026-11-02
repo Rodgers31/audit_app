@@ -1,0 +1,5 @@
+Test Suites: 1 passed, 1 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        0.55 s
+Ran all test suites matching __tests__/social-connections/account-publishing.test.tsx.

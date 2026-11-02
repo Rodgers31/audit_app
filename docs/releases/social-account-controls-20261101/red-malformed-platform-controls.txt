@@ -1,0 +1,145 @@
+FFFFFFFFFFFFF.....                                                       [100%]
+=================================== FAILURES ===================================
+___ test_malformed_platform_controls_refuse_enable_and_preserve_pause[None] ____
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy1] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+___ test_malformed_platform_controls_refuse_enable_and_preserve_pause[True] ____
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'bool' object has no attribute 'get'
+_____ test_malformed_platform_controls_refuse_enable_and_preserve_pause[1] _____
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[invalid] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy5] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy6] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy7] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'bool' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy8] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'get'
+__ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy9] __
+backend/tests/social/test_account_publishing.py:204: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    observed=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:127: in _view
+    if controls and controls.platform_controls.get(account.platform,{}).get('publishing_enabled') is False:
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'get'
+_ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy10] __
+backend/tests/social/test_account_publishing.py:205: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    assert observed['enable_available'] is False
+E   assert True is False
+_ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy11] __
+backend/tests/social/test_account_publishing.py:205: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    assert observed['enable_available'] is False
+E   assert True is False
+_ test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy12] __
+backend/tests/social/test_account_publishing.py:205: in test_malformed_platform_controls_refuse_enable_and_preserve_pause
+    assert observed['enable_available'] is False
+E   assert True is False
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[None]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy1]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[True]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[1]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[invalid]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy5]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy6]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy7]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy8]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy9]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy10]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy11]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_platform_controls_refuse_enable_and_preserve_pause[policy12]
+13 failed, 5 passed, 25 deselected, 1 warning in 0.89s

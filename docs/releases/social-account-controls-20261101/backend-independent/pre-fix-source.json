@@ -1,0 +1,7 @@
+{
+  "backend/social/account_publishing.py": "3e48c7d84387344b1e4d8238bec39f8683bb7225b98907b4b3367264dc41951e",
+  "backend/social/service.py": "97fbc78a09da49cad03a8bed2fe37e3451b5620a2334ee5f9433176532db33b3",
+  "backend/social/native_admission.py": "a00c13fb531ccd1414249d7922b0ded9457e156816f7765d6b288817d2302c06",
+  "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+  "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98"
+}

@@ -158,7 +158,7 @@ test('a refused current-source preparation stays visibly held without changing t
 test('generated draft media remains discoverable from the default preview and publishes only after a human decision', async () => {
   send.mockImplementation(async (path:string) => ({data:path.endsWith('/validate')?validation(saved):publicationReceipt(saved)}));
   mount(readyAccounts, deliverySystem());
-  expect(screen.getByRole('button',{name:'Preview',exact:true})).toHaveAttribute('aria-pressed','true');
+  expect(screen.getByRole('button',{name:'Preview'})).toHaveAttribute('aria-pressed','true');
   await waitFor(()=>expect(screen.getByRole('button',{name:'Choose from library'})).toBeEnabled());
   expect(screen.getByRole('button',{name:'Choose from library'}).closest('[data-composer-panel]')).toBeNull();
   fireEvent.click(screen.getByRole('button',{name:'Choose from library'}));

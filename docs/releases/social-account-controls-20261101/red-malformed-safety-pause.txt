@@ -1,0 +1,100 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+______ test_malformed_tiktok_admission_cannot_prevent_safety_pause[None] _______
+backend/tests/social/test_account_publishing.py:191: in test_malformed_tiktok_admission_cannot_prevent_safety_pause
+    body=intent(db,row,False,registry=registry)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_account_publishing.py:38: in intent
+    status = account_publishing(SocialService(db, available_adapters=registry),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'get'
+____ test_malformed_tiktok_admission_cannot_prevent_safety_pause[snapshot1] ____
+backend/tests/social/test_account_publishing.py:191: in test_malformed_tiktok_admission_cannot_prevent_safety_pause
+    body=intent(db,row,False,registry=registry)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_account_publishing.py:38: in intent
+    status = account_publishing(SocialService(db, available_adapters=registry),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'list' object has no attribute 'get'
+______ test_malformed_tiktok_admission_cannot_prevent_safety_pause[True] _______
+backend/tests/social/test_account_publishing.py:191: in test_malformed_tiktok_admission_cannot_prevent_safety_pause
+    body=intent(db,row,False,registry=registry)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_account_publishing.py:38: in intent
+    status = account_publishing(SocialService(db, available_adapters=registry),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'bool' object has no attribute 'get'
+________ test_malformed_tiktok_admission_cannot_prevent_safety_pause[1] ________
+backend/tests/social/test_account_publishing.py:191: in test_malformed_tiktok_admission_cannot_prevent_safety_pause
+    body=intent(db,row,False,registry=registry)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_account_publishing.py:38: in intent
+    status = account_publishing(SocialService(db, available_adapters=registry),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'int' object has no attribute 'get'
+_____ test_malformed_tiktok_admission_cannot_prevent_safety_pause[invalid] _____
+backend/tests/social/test_account_publishing.py:191: in test_malformed_tiktok_admission_cannot_prevent_safety_pause
+    body=intent(db,row,False,registry=registry)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/tests/social/test_account_publishing.py:38: in intent
+    status = account_publishing(SocialService(db, available_adapters=registry),row.id)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:140: in account_publishing
+    return _view(svc, account_id)[2]
+           ^^^^^^^^^^^^^^^^^^^^^^
+backend/social/account_publishing.py:92: in _view
+    caps = capability_for(account, svc.available_adapters, capability_context(svc.db, account))
+                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+backend/social/validation.py:29: in capability_context
+    return {'tiktok_product_approved': account.capability_snapshot.get('eligible') is True}
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'str' object has no attribute 'get'
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_tiktok_admission_cannot_prevent_safety_pause[None]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_tiktok_admission_cannot_prevent_safety_pause[snapshot1]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_tiktok_admission_cannot_prevent_safety_pause[True]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_tiktok_admission_cannot_prevent_safety_pause[1]
+FAILED backend/tests/social/test_account_publishing.py::test_malformed_tiktok_admission_cannot_prevent_safety_pause[invalid]
+5 failed, 1 warning in 0.55s

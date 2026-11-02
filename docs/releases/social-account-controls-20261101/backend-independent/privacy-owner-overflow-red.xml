@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.780" timestamp="2026-11-02T01:31:35.783700+00:00" hostname="f7cb732c0477"><testcase classname="test_account_privacy_guard_independent" name="test_overflowed_owner_inventory_cannot_hide_a_retained_namespace" time="0.139"><failure message="AssertionError: Truncated owner inventory hid a mapped retained application namespace&#10;assert True is False">/review/test_account_privacy_guard_independent.py:83: in test_overflowed_owner_inventory_cannot_hide_a_retained_namespace
+    assert status['enable_available'] is False, 'Truncated owner inventory hid a mapped retained application namespace'
+E   AssertionError: Truncated owner inventory hid a mapped retained application namespace
+E   assert True is False</failure></testcase></testsuite></testsuites>

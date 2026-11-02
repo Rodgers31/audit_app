@@ -1,0 +1,8 @@
+{
+  "backend/social/account_publishing.py": "3e48c7d84387344b1e4d8238bec39f8683bb7225b98907b4b3367264dc41951e",
+  "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+  "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98",
+  "backend/tests/social/test_account_publishing.py": "b4b5caeddb1160d02bc5585528a86d249b03c14de7088f63495c6796c48350e4",
+  "backend/tests/social/test_manual_media_workflow.py": "c94dc73546e03f7394c7dc8527be52c94fd54cab6f84732c9352d180581edf17",
+  "backend/tests/social/test_worker_materials.py": "da67e012fd39f87d2c11899c1fe30de05db5c393e60b6c401ad1b939e3f337fc"
+}

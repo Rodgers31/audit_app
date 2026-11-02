@@ -1,0 +1,12 @@
+{
+  "status": "VERIFIED",
+  "scoped_source_files": 25,
+  "runtime_files": 14,
+  "test_files": 10,
+  "receipt_files": 190,
+  "direct_file_checks": 215,
+  "current_receipt_source_checks": 1056,
+  "mismatches": [],
+  "index_sha256": "42757cd8cc93670fb175184c4a58ddd4c01b4e38ad01dd783c326354f9255ed9",
+  "runtime_activation": false
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "label": "frontend-copy-final-jest",
+    "exit": 0
+  },
+  {
+    "label": "frontend-copy-final-tsc",
+    "exit": 0
+  }
+]

@@ -2,6 +2,7 @@
 import api from '@/lib/api/axios';
 import axios from 'axios';
 import type { SocialAccount } from './social';
+import { decodeAccountPublishing, type AccountPublishingStatus } from './social';
 
 export interface MetaConnectionStatus { provider: 'meta'; available: boolean; blockers: string[]; access_mode: 'unverified' | 'owned_standard' | 'advanced'; scopes: string[]; publishing_adapter_available: false; direct_callback?: string | null }
 export interface MetaDirectStartedFlow { flow_id: string; launch_url: string; launch_token: string; expires_at: string }
@@ -68,7 +69,7 @@ export function decodeAccountHealth(v: unknown): MetaAccountHealth {
   if (o.connection_method !== 'facebook_login' || o.credential_kind !== 'facebook_page' || o.renewal_strategy !== 'facebook_login_reconnect' || o.provider_revocation_confirmed !== false || typeof o.credential_version !== 'number' || !Number.isSafeInteger(o.credential_version) || o.credential_version < 1) invalid();
   return { account_id: id(o.account_id), external_account_id: external(o.external_account_id), api_product: text(o.api_product), connection_method: 'facebook_login', connection_state: text(o.connection_state), credential_kind: 'facebook_page', credential_id: id(o.credential_id), credential_version: o.credential_version as number, key_version: text(o.key_version), access_expires_at: nullableDate(o.access_expires_at), data_access_expires_at: nullableDate(o.data_access_expires_at), parent_access_expires_at: nullableDate(o.parent_access_expires_at), parent_data_access_expires_at: nullableDate(o.parent_data_access_expires_at), parent_grant_reconnect_required: bool(o.parent_grant_reconnect_required), granted_scopes: list(o.granted_scopes), missing_scopes: list(o.missing_scopes), checked_at: nullableDate(o.checked_at), last_api_success_at: nullableDate(o.last_api_success_at), reconnect_required: bool(o.reconnect_required), publishing_enabled: bool(o.publishing_enabled), renewal_strategy: 'facebook_login_reconnect', provider_revocation_confirmed: false };
 }
-async function request<T>(path: string, decode: (value: unknown) => T, body?: unknown, key?: string, signal?: AbortSignal): Promise<T> {
+async function request<T>(path: string, decode: (value: unknown) => T, body?: unknown, key?: string, signal?: AbortSignal, failureMessage = 'The connection request failed. Refresh account status before starting a new flow.'): Promise<T> {
   try {
     const response = body === undefined ? await api.get('/admin/social' + path, { signal, headers: { 'Cache-Control': 'no-store' } }) : await api.post('/admin/social' + path, body, { timeout: 120_000, headers: { 'Idempotency-Key': key ?? crypto.randomUUID(), 'Cache-Control': 'no-store' } });
     return decode(response.data);
@@ -81,7 +82,7 @@ async function request<T>(path: string, decode: (value: unknown) => T, body?: un
         if (typeof d.code === 'string' && typeof d.message === 'string') throw new ConnectionError(d.code, d.message, typeof d.request_id === 'string' ? d.request_id : undefined);
       }
     }
-    throw new ConnectionError('CONNECTION_REQUEST_FAILED', 'The connection request failed. Refresh account status before starting a new flow.');
+    throw new ConnectionError('CONNECTION_REQUEST_FAILED', failureMessage);
   }
 }
 export function decodeSelectedAccounts(v: unknown): { flow_id: string; accounts: SocialAccount[] } {
@@ -104,6 +105,12 @@ export function decodeSelectedAccounts(v: unknown): { flow_id: string; accounts:
   return { flow_id: id(o.flow_id), accounts };
 }
 export const connectionApi = {
+  verifyPublishingAccess: (account: string, body: { expected_controls_version: number; expected_state: string; reason: string }, key: string): Promise<AccountPublishingStatus> => request('/accounts/' + id(account) + '/verify-publishing-access', value => {
+    const result = decodeAccountPublishing(value);
+    if (result.account_id !== account || result.publishing_enabled !== false || !result.enable_available
+        || result.controls_version !== body.expected_controls_version + 1 || result.state_token === body.expected_state) invalid();
+    return result;
+  }, body, key, undefined, 'Publishing access was not confirmed. Retry the same verification or refresh account controls.'),
   startDirect: (admin_origin: string, callback: string, reconnect_account_id?: string) => request('/connections/meta/direct/start', value => decodeDirectStartedFlow(value, callback), { admin_origin, reconnect_account_id: reconnect_account_id ?? null, reason: reconnect_account_id ? 'Administrator requested account reconnection' : 'Administrator requested owned account connection' }),
   completeDirect: (flow_id: string, key: string) => request('/connections/meta/direct/complete', value => { const result = decodeDiscoveredFlow(value); if (result.flow_id !== flow_id) invalid(); return result; }, { flow_id: id(flow_id) }, key),
   status: (signal?: AbortSignal) => request('/connections/meta/status', decodeConnectionStatus, undefined, undefined, signal),

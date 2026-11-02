@@ -1,0 +1,69 @@
+{
+  "schema": "independent-saved-grant-backend-review/v1",
+  "base_commit": "9bbdde51d6ebe9e38bf0aa86f4d0f086c5cdffeb",
+  "reviewed_source_sha256": {
+    "backend/social/connections/provider.py": "58b6f734de0b83618502cd626b46707d8f536acb865db09d25e1c9ff31822146",
+    "backend/social/connections/service.py": "74688e7a393a04033dbabc8b8b5c5b4f4fa2306ee8a7f8457918ec89fe163ba6",
+    "backend/social/connections/contracts.py": "d7fea687e2769f3b126e86a7b9f157103facd2f819092cc6c45be9259b28c7fc",
+    "backend/social/connections/api.py": "6b130a77f0db3cec60d61f17ab9fc2d3f7f918108a724332f86f9b5a81455372",
+    "backend/social/account_publishing.py": "29969acabab679e759c25a77b0a0b275b3f32adb5c0b9facd74f0694236ac457",
+    "backend/social/service.py": "c2d2ca82f6befc02d1f0140e3b30ad5497f502e2e9625007374452930afd813c",
+    "backend/social/validation.py": "3a070b2e2e34b27f0ab51893eb2a038c7142a881b237ac7e0cd3741839fc99fd",
+    "backend/tests/social/test_existing_grant_verification.py": "8ae532047262fe7e4c412d1d3db043fce8507d90ebc8a6d7858a7d35cd30d7fd",
+    "backend/tests/social/test_connections_support.py": "bd0468d1fde42f24f6c183c2d2548df22b9d614e00670d4fa969650b56560ca2"
+  },
+  "independent_cases": 62,
+  "source_verification_cases": 43,
+  "compatibility_cases": 23,
+  "runs": {
+    "normal": {
+      "counts": {
+        "tests": 128,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "exit": 0,
+      "source_unchanged": true,
+      "command_receipt": "frozen-normal-command.json"
+    },
+    "optimized": {
+      "counts": {
+        "tests": 128,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "exit": 0,
+      "source_unchanged": true,
+      "command_receipt": "frozen-optimized-command.json"
+    }
+  },
+  "real_product_paths": [
+    "MetaProvider HTTP parser",
+    "ConnectionService saved-grant verification",
+    "SocialService command/receipt/postconditions",
+    "mounted strict HTTP route and response DTO"
+  ],
+  "replaced_boundaries": [
+    "Graph HTTP transport",
+    "administrator identity",
+    "in-memory SQLite database"
+  ],
+  "sql_transaction_during_provider_reads": false,
+  "provider_methods": "GET only",
+  "publishing_after_success": false,
+  "global_publishing_after_success": false,
+  "privacy_receipt_at_all_three_phases_refuses": true,
+  "late_database_effects_refuse_and_rollback": true,
+  "exact_replay_without_new_provider_reads": true,
+  "source_edits": 0,
+  "dependency_installs": 0,
+  "live_provider_or_production_or_browser_actions": 0,
+  "limitations": [
+    "No live Meta permission acceptance",
+    "No PostgreSQL concurrency or deferred-trigger qualification by this suite",
+    "No production activation or browser visual acceptance"
+  ],
+  "verdict": "clear_backend_saved_grant_verification_scope"
+}

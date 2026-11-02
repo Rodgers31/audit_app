@@ -1,0 +1,95 @@
+"""Actual migrated PostgreSQL saved-grant transaction and receipt fences."""
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+from uuid import uuid4
+import httpx
+import pytest
+from sqlalchemy import select,func,text
+from sqlalchemy.orm import Session
+from test_domain_postgres import current_pg_engine
+from test_connections_support import config,graph,ACTOR,BINDING
+from test_existing_grant_verification import saved,body_for
+from social.connections.service import ConnectionService
+from social.connections.provider import MetaProvider
+from social.models import SocialAccount,SocialAuditEvent,SocialCommandReceipt
+from social.service import SocialError
+
+@pytest.fixture
+def prepared(current_pg_engine,config,graph):
+ with Session(current_pg_engine,expire_on_commit=False) as db:
+  generator=saved.__wrapped__(db,config,graph)
+  service,row,registry=next(generator)
+  account_id=row.id;body=body_for(service,row)
+  yield current_pg_engine,config,graph,registry,account_id,body
+  try:next(generator)
+  except StopIteration:pass
+
+@pytest.mark.parametrize('same_key',[False,True])
+def test_pg_saved_proof_contended_commands(prepared,same_key):
+ engine,config,graph,registry,account_id,body=prepared;barrier=Barrier(2);shared=uuid4()
+ def worker(index):
+  with Session(engine,expire_on_commit=False) as db:
+   seen=False
+   def handler(request):
+    nonlocal seen
+    assert not db.in_transaction()
+    if not seen:seen=True;barrier.wait(timeout=10)
+    return graph(request)
+   service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(handler)),available_adapters=registry)
+   try:return service.verify_existing_grant(account_id,ACTOR,BINDING,'POST saved-proof/'+str(account_id),shared if same_key else uuid4(),body,uuid4())
+   except SocialError as error:return error.code
+ with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(worker,range(2)))
+ if same_key:assert results[0]==results[1] and isinstance(results[0],dict)
+ else:assert sum(isinstance(value,dict) for value in results)==1 and 'VERSION_CONFLICT' in results
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).publishing_enabled is False
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent).where(SocialAuditEvent.action=='connection.publishing_access_verified'))==1
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt).where(SocialCommandReceipt.route_key.like('POST saved-proof/%')))==1
+
+
+def test_pg_receipt_time_proof_reversion_refuses(prepared):
+ engine,config,graph,registry,account_id,body=prepared
+ with Session(engine) as db:old=db.get(SocialAccount,account_id).capability_snapshot
+ import json
+ with engine.begin() as connection:
+  connection.execute(text('''CREATE FUNCTION saved_proof_revert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF NEW.route_key LIKE 'POST saved-proof/%' THEN
+      UPDATE social_accounts SET capability_snapshot=CAST('''+"'"+json.dumps(old).replace("'","''")+"'"+''' AS jsonb) WHERE id='''+"'"+str(account_id)+"'"+'''::uuid;
+    END IF; RETURN NEW; END $$'''))
+  connection.execute(text('''CREATE CONSTRAINT TRIGGER saved_proof_late AFTER INSERT ON social_command_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION saved_proof_revert()'''))
+ with Session(engine,expire_on_commit=False) as db:
+  service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(graph)),available_adapters=registry)
+  with pytest.raises(SocialError,match='ACCOUNT_CONTROL_FAILED'):
+   service.verify_existing_grant(account_id,ACTOR,BINDING,'POST saved-proof/'+str(account_id),uuid4(),body,uuid4())
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).capability_snapshot==old
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent).where(SocialAuditEvent.action=='connection.publishing_access_verified'))==0
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt).where(SocialCommandReceipt.route_key.like('POST saved-proof/%')))==0
+
+
+def test_pg_pending_privacy_at_enable_receipt_settlement_rolls_back(prepared):
+ from social.account_publishing import account_publishing,AccountPublishingCommand,set_account_publishing
+ from social.privacy.models import SocialPrivacyReceipt
+ engine,config,graph,registry,account_id,body=prepared
+ with Session(engine,expire_on_commit=False) as db:
+  service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(graph)),available_adapters=registry)
+  service.verify_existing_grant(account_id,ACTOR,BINDING,'POST saved-proof/'+str(account_id),uuid4(),body,uuid4())
+ with engine.begin() as connection:
+  connection.execute(text('''CREATE FUNCTION enable_privacy_receipt() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+   IF NEW.route_key='PATCH privacy-at-commit' THEN
+    INSERT INTO social_privacy_receipts(id,app_id,kind,digest_version,subject_digest,event_key,request_fingerprint,received_at,affected,resolution,state,audit_id)
+    VALUES('''+"'"+str(uuid4())+"'"+'''::uuid,'123','deauthorization','review','''+"'"+'a'*64+"','"+'b'*64+"','"+'c'*64+"'"+''',clock_timestamp(),'{}'::jsonb,'review','ownership_unresolved',
+      (SELECT id FROM social_audit_events WHERE action='account.publishing_updated' LIMIT 1));
+   END IF; RETURN NEW; END $$'''))
+  connection.execute(text('''CREATE CONSTRAINT TRIGGER enable_late_privacy AFTER INSERT ON social_command_receipts DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION enable_privacy_receipt()'''))
+ with Session(engine,expire_on_commit=False) as db:
+  service=ConnectionService(db,config,provider_factory=lambda c:MetaProvider(c,transport=httpx.MockTransport(graph)),available_adapters=registry)
+  status=account_publishing(service.base,account_id);db.rollback()
+  enable=AccountPublishingCommand(expected_controls_version=status['controls_version'],expected_state=status['state_token'],publishing_enabled=True,reason='Independent PG account decision')
+  with pytest.raises(SocialError,match='ACCOUNT_CONTROL_FAILED'):
+   service.base.command(actor=ACTOR,route='PATCH privacy-at-commit',key=uuid4(),body=enable.model_dump(mode='json'),request_id=uuid4(),action=lambda:set_account_publishing(service.base,account_id,enable))
+ with Session(engine) as db:
+  assert db.get(SocialAccount,account_id).publishing_enabled is False
+  assert db.scalar(select(func.count()).select_from(SocialPrivacyReceipt))==0
+  assert db.scalar(select(func.count()).select_from(SocialCommandReceipt).where(SocialCommandReceipt.route_key=='PATCH privacy-at-commit'))==0
+  assert db.scalar(select(func.count()).select_from(SocialAuditEvent).where(SocialAuditEvent.action=='account.publishing_updated'))==0

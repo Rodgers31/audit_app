@@ -1,0 +1,14 @@
+{
+  "REPORT.md": "b9ebb03cc6d78d72093c89e99042e2dbb275083805ae9a8c0fa06a46c60e81be",
+  "REVIEW-RECEIPT.json": "17a076e8569891d74815ba93d433a1f7856db31b5213d82f1753963533fe7923",
+  "account-publishing.independent.test.tsx": "272acfc92ffc0012526510572bf913bf4d42e6dbf7a81536c2f87c2f9b698628",
+  "independent-expanded-command.json": "853fc94065cc49064ef0d8ff37559153d098114a4e69b5d3082095a413c7914b",
+  "independent-expanded.txt": "818d42dbaec5cb06d22b7b3d181a7b0bdb5df903bd079b2ac52cd919999391d7",
+  "independent-final-command.json": "2c99b035377ac4cfa9c2dbd9e0ea61e3d7da170e671210e9bfea9197ea7b851e",
+  "independent-final.txt": "d576bae6c8f0dcdd35618c421ed8537527d8772d94fcccd8f6ebcd32eccee019",
+  "independent-initial-command.json": "20bf960e86050a938174c72fab9c179d0b3f435e8ce4b679cf07322a1f4d90ad",
+  "independent-initial.txt": "39268e602d785423b5ae93d5be4eb5ef265d5108b9caea8b6c0906eb92e418ba",
+  "jest.config.cjs": "6ab5e408d9cca104f42eb0e719c0f51df6d9062ca20daaa996dc32fff18ec769",
+  "overlap-red-command.json": "371a401e461555cbbc5edd6d7928c87019ddc8c9cbea56cb2897361b2f18b95b",
+  "overlap-red.txt": "e52f5c4cdd9997da7cbc4d65beb2b8dcb87f8a09692958d25b7b6632edb1e9d4"
+}

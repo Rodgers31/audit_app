@@ -1,0 +1,8 @@
+PASS ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/verification.independent.test.tsx
+PASS ../../../../visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/account-publishing.independent.test.tsx
+
+Test Suites: 2 passed, 2 total
+Tests:       44 passed, 44 total
+Snapshots:   0 total
+Time:        2.429 s
+Ran all test suites.

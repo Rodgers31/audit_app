@@ -1,0 +1,52 @@
+..FFFF                                                                   [100%]
+=================================== FAILURES ===================================
+___________ test_pg_deferred_toggle_reversion_cannot_return_success ____________
+/review/test_independent_account_postgres.py:72: in test_pg_deferred_toggle_reversion_cannot_return_success
+    assert not result['publishing_enabled'] or actual is True, f'FALSE SUCCESS: response={result["publishing_enabled"]}, durable={actual}, receipts={receipts}'
+E   AssertionError: FALSE SUCCESS: response=True, durable=False, receipts=1
+E   assert (not True or False is True)
+_ test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[flag] _
+/review/test_independent_account_postgres.py:96: in test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state
+    assert result==observed,f'FALSE DURABLE RECEIPT after {late_change}: response={result}, current={observed}'
+E   AssertionError: FALSE DURABLE RECEIPT after flag: response={'account_id': 'eeb1af9d-f7fd-4f08-8dab-ab0c8e17e488', 'publishing_enabled': True, 'controls_version': 2, 'state_token': '668ccde824ab236abf1121be7eea983a28cec4ba4a6131d6b579db4ed917b9d8', 'enable_available': True, 'enable_blockers': [], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}, current={'account_id': 'eeb1af9d-f7fd-4f08-8dab-ab0c8e17e488', 'publishing_enabled': False, 'controls_version': 2, 'state_token': '4318a225b6affa6ad48267a4e755df9b1219c45f45264519a2e700d1d2fc600c', 'enable_available': True, 'enable_blockers': [], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}
+E   assert {'account_id'...917b9d8', ...} == {'account_id'...2fc600c', ...}
+E     
+E     Omitting 6 identical items, use -vv to show
+E     Differing items:
+E     {'state_token': '668ccde824ab236abf1121be7eea983a28cec4ba4a6131d6b579db4ed917b9d8'} != {'state_token': '4318a225b6affa6ad48267a4e755df9b1219c45f45264519a2e700d1d2fc600c'}
+E     {'publishing_enabled': True} != {'publishing_enabled': False}
+E     Use -v to get more diff
+_ test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[controls_version] _
+/review/test_independent_account_postgres.py:96: in test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state
+    assert result==observed,f'FALSE DURABLE RECEIPT after {late_change}: response={result}, current={observed}'
+E   AssertionError: FALSE DURABLE RECEIPT after controls_version: response={'account_id': '55133036-f70a-4dbb-b845-d31a908d0e67', 'publishing_enabled': True, 'controls_version': 2, 'state_token': '071f55a2ee89fc1166bfe0ac81fddce06588ae4699757db9addfcae69766f9ae', 'enable_available': True, 'enable_blockers': [], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}, current={'account_id': '55133036-f70a-4dbb-b845-d31a908d0e67', 'publishing_enabled': True, 'controls_version': 3, 'state_token': '071f55a2ee89fc1166bfe0ac81fddce06588ae4699757db9addfcae69766f9ae', 'enable_available': True, 'enable_blockers': [], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}
+E   assert {'account_id'...766f9ae', ...} == {'account_id'...766f9ae', ...}
+E     
+E     Omitting 7 identical items, use -vv to show
+E     Differing items:
+E     {'controls_version': 2} != {'controls_version': 3}
+E     Use -v to get more diff
+_ test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[credential] _
+/review/test_independent_account_postgres.py:96: in test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state
+    assert result==observed,f'FALSE DURABLE RECEIPT after {late_change}: response={result}, current={observed}'
+E   AssertionError: FALSE DURABLE RECEIPT after credential: response={'account_id': '48414343-fa3e-4517-944b-52b1788b3a21', 'publishing_enabled': True, 'controls_version': 2, 'state_token': '98fecdcc1cdbe3db1698a5c6d6deba340163d1287d708e3953102e131ae50083', 'enable_available': True, 'enable_blockers': [], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}, current={'account_id': '48414343-fa3e-4517-944b-52b1788b3a21', 'publishing_enabled': True, 'controls_version': 2, 'state_token': 'd74a4d253b068630a22d2c7317251b9cfec5b7a3b2f3ac4b8eb2dcee946dfb12', 'enable_available': False, 'enable_blockers': ['CREDENTIAL_UNAVAILABLE'], 'global_publishing_enabled': False, 'delivery_holds': ['GLOBAL_PUBLISHING_DISABLED']}
+E   assert {'account_id'...ae50083', ...} == {'account_id'...46dfb12', ...}
+E     
+E     Omitting 5 identical items, use -vv to show
+E     Differing items:
+E     {'enable_blockers': []} != {'enable_blockers': ['CREDENTIAL_UNAVAILABLE']}
+E     {'state_token': '98fecdcc1cdbe3db1698a5c6d6deba340163d1287d708e3953102e131ae50083'} != {'state_token': 'd74a4d253b068630a22d2c7317251b9cfec5b7a3b2f3ac4b8eb2dcee946dfb12'}
+E     {'enable_available': True} != {'enable_available': False}
+E     Use -v to get more diff
+=============================== warnings summary ===============================
+backend/models.py:29
+  /app/backend/models.py:29: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED ../review/test_independent_account_postgres.py::test_pg_deferred_toggle_reversion_cannot_return_success
+FAILED ../review/test_independent_account_postgres.py::test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[flag]
+FAILED ../review/test_independent_account_postgres.py::test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[controls_version]
+FAILED ../review/test_independent_account_postgres.py::test_pg_receipt_deferred_side_effect_cannot_certify_stale_account_state[credential]
+4 failed, 2 passed, 1 warning in 1.21s

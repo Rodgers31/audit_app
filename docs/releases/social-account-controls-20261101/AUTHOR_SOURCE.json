@@ -1,0 +1,30 @@
+{
+  "scope": "Uncommitted author account-control feature snapshot; not deployed or production activation evidence",
+  "base_commit": "9bbdde51d6ebe9e38bf0aa86f4d0f086c5cdffeb",
+  "branch": "codex/social-account-publishing-controls",
+  "files": {
+    "backend/social/account_publishing.py": "3e48c7d84387344b1e4d8238bec39f8683bb7225b98907b4b3367264dc41951e",
+    "backend/social/api.py": "fb8f9d43dd054bdb3a9aeb1ff0e26ae8fc9fc136d156542bc668b037c0f8b514",
+    "backend/social/worker/materials.py": "d9b5186accde619712641dc6e7ebf793c853da6abc055d6db5bb34684cafec98",
+    "backend/tests/social/test_account_publishing.py": "b4b5caeddb1160d02bc5585528a86d249b03c14de7088f63495c6796c48350e4",
+    "backend/tests/social/test_manual_media_workflow.py": "c94dc73546e03f7394c7dc8527be52c94fd54cab6f84732c9352d180581edf17",
+    "backend/tests/social/test_worker_materials.py": "da67e012fd39f87d2c11899c1fe30de05db5c393e60b6c401ad1b939e3f337fc",
+    "frontend/lib/api/social.ts": "e33f7659d6609400354addb437b81e7a4c648db763c71e9c546cbb079af193b9",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "115a9c95fcdbb2635e1c255f60c747981bfdfe4641d25619db0d541918412de2",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "65223b42a8c3c441d702dd86274b6b9ad879edf2970fcbc37cda056bf4d2b8f5",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698",
+    "frontend/__tests__/social-connections/account-publishing.test.tsx": "3067ca16a8bf1017cda4ac32b2696bbd0635821320c87488760524ac3c77fb04"
+  },
+  "raw_receipts": {
+    "author-backend.txt": "40f1f9553f163aa4e9308f4795f2c5ff6eae3c15678cd2d337847da186c2c164",
+    "author-runtime.txt": "262cea1714a3fbc89415ba1e8ac1b1535f4e5c7ac714848fb9240c8cc6312a3e",
+    "author-typescript.txt": "0049e6d7b2cd159ef2ebee90aca6c015d032d3e464e05fa6239f6e823c42ec1a",
+    "author-ui.txt": "09f71771a781b8da90f67115d4ba069eace6611a8098093902d1ae9fba355e42",
+    "red-account-api-baseline.txt": "9be63ce0b3686a00f3e76fea71bf2727a7471d8c5b478060b887dfb6fa9f6bcb",
+    "red-parent-access-baseline.txt": "90ecab986ff4560c4b427a62532b02ced639a5e4757e8e4b81cfad3ca3856e8a"
+  },
+  "baseline_overlay_blobs": {
+    "backend/social/api.py": "acae969a803a6e6a061b88bf2e01648e542fa6faa20aeb20378e7c4c067da830",
+    "backend/social/worker/materials.py": "418d263f3cb810a6f654d9ce32254a4578972b3dba5d24a54fa4fdbc8f380bf3"
+  }
+}

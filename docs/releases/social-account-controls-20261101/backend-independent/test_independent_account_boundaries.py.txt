@@ -1,0 +1,143 @@
+"""Independent executed local boundary review; no provider or external calls."""
+from uuid import uuid4
+from datetime import timedelta
+import asyncio
+import pytest
+from fastapi import HTTPException
+from pydantic import ValidationError
+from sqlalchemy import select,text
+from sqlalchemy.orm.attributes import flag_modified
+from social.account_publishing import AccountPublishingCommand,account_publishing,set_account_publishing
+from social.service import SocialService,SocialError
+from social.models import SocialAccount,SocialControls,SocialAuditEvent,SocialCommandReceipt
+from social.connections.models import SocialCredential
+from test_account_publishing import connected,intent,execute,REGISTRY,CAPS,Adapter,ACTOR,retain_delivery
+from test_media_support import media_db,media
+from test_manual_media_workflow import mounted_client,BASE,headers
+from social.http_boundary import require_admin,AdminUser
+
+BAD_VERSIONS=[None,True,False,0,-1,1.0,'1','01','1.0',[],{},float('nan'),float('inf')]
+BAD_BOOLS=[None,0,1,-1,'true','false','0','1',[],{}]
+BAD_HASHES=[None,True,0,'','a'*63,'A'*64,'z'*64,[],{}]
+
+@pytest.mark.parametrize('field,invalid',[(f,v) for f,vs in [('expected_controls_version',BAD_VERSIONS),('publishing_enabled',BAD_BOOLS),('expected_state',BAD_HASHES),('reason',[None,True,0,'','  ',[],{},'a'*2001])] for v in vs])
+def test_direct_and_http_strict_fields(media,field,invalid):
+ svc,_=media;row=connected(svc.db);body=intent(svc.db,row).model_dump(mode='json');body[field]=invalid
+ with pytest.raises((ValidationError,ValueError,TypeError)):
+  set_account_publishing(SocialService(svc.db,available_adapters=REGISTRY),row.id,body)
+ svc.db.rollback()
+ if isinstance(invalid,float) and (invalid!=invalid or invalid==float('inf')):return
+ client=mounted_client(media); response=client.patch(BASE+f'/accounts/{row.id}/publishing',json=body,headers=headers())
+ assert response.status_code==422,response.text
+ assert response.headers['cache-control']=='private, no-store'
+ svc.db.expire_all();assert svc.db.get(SocialAccount,row.id).publishing_enabled is False
+ assert not list(svc.db.scalars(select(SocialCommandReceipt)))
+
+@pytest.mark.parametrize('schema',[{},[],None,{'eligible':True}, {**CAPS.model_dump(mode='json'),'schema_version':999},{**CAPS.model_dump(mode='json'),'eligible':1},{**CAPS.model_dump(mode='json'),'adapter_available':'true'},{**CAPS.model_dump(mode='json'),'limits':{'max_text_length':True}}])
+def test_bad_native_snapshots_cannot_enable(media_db,schema):
+ db=media_db;row=connected(db);row.capability_snapshot=schema;flag_modified(row,"capability_snapshot");db.commit();db.refresh(row)
+ try:
+  status=account_publishing(SocialService(db,available_adapters=REGISTRY),row.id)
+ except (ValueError,TypeError,AttributeError):
+  db.rollback();return
+ assert status['enable_available'] is False
+ db.rollback()
+ with pytest.raises(SocialError):execute(db,row,intent(db,row))
+ assert db.get(SocialAccount,row.id).publishing_enabled is False
+
+@pytest.mark.parametrize('denial',[401,403,'bad-id'])
+def test_mounted_auth_every_method(media,denial):
+ svc,_=media;row=connected(svc.db);client=mounted_client(media);path=BASE+f'/accounts/{row.id}/publishing'
+ body=intent(svc.db,row).model_dump(mode='json')
+ def denied():
+  if denial=='bad-id':return AdminUser(id='not-a-uuid',email=None,roles=['admin'])
+  raise HTTPException(denial)
+ client.app.dependency_overrides[require_admin]=denied
+ for response in (client.get(path),client.patch(path,json=body,headers=headers())):
+  assert response.status_code==(403 if denial=='bad-id' else denial),response.text
+  assert response.headers['cache-control']=='private, no-store'
+
+@pytest.mark.parametrize('mutation',['external','scopes','capability','connection','page_version','parent_version','parent_revoked','page_expiry','parent_data','page_refresh','parent_refresh','hold','lease'])
+def test_every_metadata_change_fences_old_intent(media_db,mutation):
+ db=media_db;row=connected(db);body=intent(db,row);cred=db.get(SocialCredential,row.credential_id);parent=db.get(SocialCredential,cred.parent_credential_id);now=SocialService(db).now()
+ if mutation=='external':row.external_account_id='replacement-page'
+ elif mutation=='scopes':row.granted_scopes=['changed']
+ elif mutation=='capability':row.capability_snapshot={}
+ elif mutation=='connection':row.connection_state='disconnected'
+ elif mutation=='page_version':cred.version+=1
+ elif mutation=='parent_version':parent.version+=1
+ elif mutation=='parent_revoked':parent.revoked_at=now
+ elif mutation=='page_expiry':cred.access_expires_at=now+timedelta(days=1)
+ elif mutation=='parent_data':parent.data_access_expires_at=now+timedelta(days=1)
+ elif mutation=='page_refresh':cred.refresh_lease_token=uuid4();cred.refresh_lease_expires_at=now-timedelta(seconds=1)
+ elif mutation=='parent_refresh':parent.refresh_lease_token=uuid4();parent.refresh_lease_expires_at=now-timedelta(seconds=1)
+ elif mutation=='hold':row.hold_reason='outcome_unknown'
+ elif mutation=='lease':retain_delivery(db,row)
+ db.commit()
+ with pytest.raises(SocialError,match='VERSION_CONFLICT'):execute(db,row,body)
+ assert db.get(SocialAccount,row.id).publishing_enabled is False
+ assert not list(db.scalars(select(SocialCommandReceipt)))
+
+
+def test_replay_is_historical_not_a_new_enable_after_disconnect(media_db):
+ db=media_db;row=connected(db);body=intent(db,row);key=uuid4();accepted=execute(db,row,body,key=key)
+ row.connection_state='disconnected';row.publishing_enabled=False;db.commit()
+ assert execute(db,row,body,key=key)==accepted
+ assert db.get(SocialAccount,row.id).publishing_enabled is False
+ assert len(list(db.scalars(select(SocialAuditEvent))))==1
+ for name,value in [('publishing_enabled',False),('reason','Changed reason'),('expected_controls_version',2),('expected_state','b'*64)]:
+  changed=body.model_copy(update={name:value})
+  with pytest.raises(SocialError,match='IDEMPOTENCY_CONFLICT'):execute(db,row,changed,key=key)
+
+
+def test_unknown_account_and_absent_schema_http_fail_closed(media):
+ svc,_=media;client=mounted_client(media);path=BASE+f'/accounts/{uuid4()}/publishing'
+ assert client.get(path).status_code==404
+ body={'expected_controls_version':1,'expected_state':'a'*64,'publishing_enabled':True,'reason':'Independent unknown-account probe'}
+ assert client.patch(path,json=body,headers=headers()).status_code==404
+ with svc.db.begin():svc.db.execute(text('DROP TABLE social_accounts'))
+ for response in (client.get(path),client.patch(path,json=body,headers=headers())):
+  assert response.status_code==503,response.text
+  assert response.json()['detail']['code']=='SOCIAL_SCHEMA_UNAVAILABLE'
+
+
+def test_numeric_native_eligible_must_not_authorize_enable(media_db):
+ db=media_db;row=connected(db);row.capability_snapshot={**CAPS.model_dump(mode='json'),'eligible':1};flag_modified(row,'capability_snapshot');db.commit();db.refresh(row);assert type(row.capability_snapshot['eligible']) is int
+ body=intent(db,row)
+ try:result=execute(db,row,body)
+ except SocialError:return
+ assert result['publishing_enabled'] is False, 'Malformed eligible=1 metadata was accepted and durable account consent became true'
+
+
+def test_suppressed_audit_cannot_certify_audited_command(media_db):
+ db=media_db;row=connected(db);body=intent(db,row)
+ db.execute(text("CREATE TRIGGER review_suppress_audit BEFORE INSERT ON social_audit_events WHEN NEW.action='account.publishing_updated' BEGIN SELECT RAISE(IGNORE); END"));db.commit()
+ try:result=execute(db,row,body)
+ except SocialError as error:
+  assert error.code=='ACCOUNT_CONTROL_FAILED'
+  db.rollback()
+  assert db.get(SocialAccount,row.id).publishing_enabled is False
+  assert not list(db.scalars(select(SocialCommandReceipt)))
+  assert not list(db.scalars(select(SocialAuditEvent)))
+  return
+ assert len(list(db.scalars(select(SocialAuditEvent))))==1, f'Accepted account consent but zero audit events: {result}'
+
+
+@pytest.mark.parametrize('malformed',[None,[],True,1,'unknown'])
+def test_tiktok_malformed_admission_still_allows_explicit_pause(media_db,malformed):
+ from social.platform_connections.models import PlatformCredential
+ db=media_db;row=connected(db);row.platform='tiktok';row.api_product='tiktok_direct_post';row.credential_id=None;row.publishing_enabled=True;row.capability_snapshot=malformed;flag_modified(row,'capability_snapshot');now=SocialService(db).now()
+ db.add(PlatformCredential(id=uuid4(),account_id=row.id,platform='tiktok',encrypted_bundle=b'synthetic',key_version='fixture',version=1,access_expires_at=now+timedelta(days=1),issued_at=now));db.commit();db.refresh(row)
+ registry={('tiktok','tiktok_direct_post'):Adapter()}
+ state=account_publishing(SocialService(db,available_adapters=registry),row.id)
+ assert state['enable_available'] is False
+ db.rollback()
+ paused=execute(db,row,intent(db,row,False,registry=registry),registry=registry)
+ assert paused['publishing_enabled'] is False
+
+
+def test_direct_mutation_requires_command_lifecycle(media_db):
+ db=media_db;row=connected(db);body=intent(db,row);svc=SocialService(db,available_adapters=REGISTRY)
+ with pytest.raises(SocialError,match='COMMAND_REQUIRED'):set_account_publishing(svc,row.id,body)
+ assert svc._command_postconditions is None
+ assert db.get(SocialAccount,row.id).publishing_enabled is False

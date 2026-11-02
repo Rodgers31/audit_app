@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "/Users/roger/.codex/worktrees/admin-social-release-check/audit_app/frontend/node_modules/jest/bin/jest.js",
+    "--config",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/jest.config.cjs",
+    "--runInBand",
+    "--no-cache"
+  ],
+  "source_sha256": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/lib/api/socialConnections.ts": "cb568723dd6bf2717384dbd1146902c509246c807132706fb07790fd539a279e",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "049db4301ccd6c23c133cf8b8a26e8dee635eb46525a4feea5c7002a32b8e565",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "df9736c4f788578cdc4c6dd20229f497c9e88ce20608e6a9f56f43bd6ee167b2",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698"
+  },
+  "source_sha256_after": {
+    "frontend/lib/api/social.ts": "dda817012080ab3839d0eb9bcabb4ed2a25fe0669142352d01022e151615222b",
+    "frontend/lib/api/socialConnections.ts": "cb568723dd6bf2717384dbd1146902c509246c807132706fb07790fd539a279e",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "049db4301ccd6c23c133cf8b8a26e8dee635eb46525a4feea5c7002a32b8e565",
+    "frontend/components/admin/social/connections/MetaAccounts.tsx": "df9736c4f788578cdc4c6dd20229f497c9e88ce20608e6a9f56f43bd6ee167b2",
+    "frontend/components/admin/social/connections/PlatformAccounts.tsx": "fcc8cd3c93a71233d7d84ae21984b1d1cd23b4b283773c8f5ae4fbcf73035698"
+  },
+  "exit": 0,
+  "seconds": 5.405202083,
+  "unchanged": true
+}

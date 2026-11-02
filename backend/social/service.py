@@ -50,21 +50,38 @@ INFLIGHT = frozenset({"dispatching", "processing", "reconciling", "outcome_unkno
 
 
 class SocialService:
-    def __init__(self, db: Session, *, available_adapters=frozenset(), media_runtime=None):
+    def __init__(self, db: Session, *, available_adapters=frozenset(), media_runtime=None, privacy_app_id=None):
         self.db = db
         self.media_runtime = media_runtime
+        self.privacy_app_id = privacy_app_id
         from collections.abc import Mapping
         from types import MappingProxyType
         self.available_adapters = MappingProxyType(dict(available_adapters)) if isinstance(available_adapters, Mapping) else frozenset(available_adapters)
         self.actor = None
         self.actor_kind = "admin"
         self.request_id = None
+        self._command_postconditions = None
 
     def now(self):
         clock = func.clock_timestamp() if self.db.bind.dialect.name == "postgresql" else func.now()
         return utc(self.db.scalar(select(clock)))
 
     def command(self, *, actor: UUID, route: str, key: UUID, body, request_id: UUID, action: Callable, status=200):
+        # Mutation-specific durable witnesses must run after deferred database
+        # effects and receipt insertion, including for ordinary internal callers.
+        self._command_postconditions = []
+        try:
+            return self._execute_command(actor=actor, route=route, key=key, body=body,
+                                         request_id=request_id, action=action, status=status)
+        finally:
+            self._command_postconditions = None
+
+    def _require_command_postcondition(self, check: Callable[[], None]):
+        if self._command_postconditions is None:
+            raise SocialError('COMMAND_REQUIRED', 'This mutation requires a durable command transaction.', 503)
+        self._command_postconditions.append(check)
+
+    def _execute_command(self, *, actor: UUID, route: str, key: UUID, body, request_id: UUID, action: Callable, status=200):
         """Receipt, mutation and audit share one transaction; PG lock serializes keys."""
         self.actor, self.request_id = actor, request_id
         request_hash = canonical_hash(body)
@@ -97,6 +114,8 @@ class SocialService:
                     or canonical_hash(stored['response']) != canonical_hash(result)
                     or iso(stored['expires_at']) != iso(receipt.expires_at)):
                 raise SocialError('COMMAND_RECEIPT_FAILED', 'The durable command receipt could not be confirmed. The transaction was rolled back; retry the same command.', 503)
+            for check in self._command_postconditions:
+                check()
         log_event("social.command_committed", request_id=request_id, post_id=resource_id, action=route, result="committed")
         return status, result
 

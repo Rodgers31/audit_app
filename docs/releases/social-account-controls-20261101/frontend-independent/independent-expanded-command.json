@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "/Users/roger/.codex/visualizations/2026/10/31/01a193b2-b534-7a01-8250-1edf848b9ba5/dependencies/runtime/node-v24.22.1-darwin-arm64/bin/node",
+    "/Users/roger/.codex/worktrees/admin-social-release-check/audit_app/frontend/node_modules/jest/bin/jest.js",
+    "--config",
+    "/Users/roger/.codex/visualizations/2026/10/29/01a1886d-f9ce-70c1-8bdf-14a2bb51c304/admin-redesign/dependabot-manual-publish-20261102/frontend-independent/jest.config.cjs",
+    "--runInBand",
+    "--no-cache"
+  ],
+  "source_sha256": {
+    "frontend/lib/api/social.ts": "e33f7659d6609400354addb437b81e7a4c648db763c71e9c546cbb079af193b9",
+    "frontend/components/admin/social/connections/AccountPublishingControl.tsx": "115a9c95fcdbb2635e1c255f60c747981bfdfe4641d25619db0d541918412de2"
+  },
+  "exit": 1,
+  "seconds": 0.8472349643707275,
+  "unchanged": true
+}
